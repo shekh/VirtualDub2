@@ -62,6 +62,7 @@ public:
 	~VDVideoFilterPreviewZoomPopup();
 
 	void Update(int x, int y, const uint32 pixels[7][7]);
+	void UpdateText();
 
 	VDZINT_PTR DlgProc(VDZUINT msg, VDZWPARAM wParam, VDZLPARAM lParam);
 
@@ -72,8 +73,12 @@ protected:
 
 	RECT mBitmapRect;
 
+	int x,y;
 	uint32	mBitmap[7][7];
 	BITMAPINFO mBitmapInfo;
+	HPEN black_pen;
+	HPEN white_pen;
+	bool draw_delayed;
 };
 
 VDVideoFilterPreviewZoomPopup::VDVideoFilterPreviewZoomPopup()
@@ -90,21 +95,31 @@ VDVideoFilterPreviewZoomPopup::VDVideoFilterPreviewZoomPopup()
 	mBitmapInfo.bmiHeader.biYPelsPerMeter	= 0;
 	mBitmapInfo.bmiHeader.biClrUsed			= 0;
 	mBitmapInfo.bmiHeader.biClrImportant	= 0;
+	black_pen = CreatePen(PS_SOLID,0,RGB(0,0,0));
+	white_pen = CreatePen(PS_SOLID,0,RGB(255,255,255));
 }
 
 VDVideoFilterPreviewZoomPopup::~VDVideoFilterPreviewZoomPopup() {
+	DeleteObject(black_pen);
+	DeleteObject(white_pen);
 }
 
 void VDVideoFilterPreviewZoomPopup::Update(int x, int y, const uint32 pixels[7][7]) {
 	memcpy(mBitmap, pixels, sizeof mBitmap);
+	this->x = x;
+	this->y = y;
+	if(!draw_delayed) {
+		SetTimer(mhdlg,1,20,0);
+		draw_delayed = true;
+	}
+}
 
-	uint32 px = pixels[2][2] & 0xffffff;
+void VDVideoFilterPreviewZoomPopup::UpdateText() {
+	uint32 px = mBitmap[3][3] & 0xffffff;
 	SetControlTextF(IDC_POSITION, L"(%d,%d) = #%06X", x, y, px);
 	SetControlTextF(IDC_RED, L"R: %d", px >> 16);
 	SetControlTextF(IDC_GREEN, L"G: %d", (px >> 8) & 0xff);
 	SetControlTextF(IDC_BLUE, L"B: %d", px & 0xff);
-
-	InvalidateRect(mhdlg, &mBitmapRect, FALSE);
 }
 
 VDZINT_PTR VDVideoFilterPreviewZoomPopup::DlgProc(VDZUINT msg, VDZWPARAM wParam, VDZLPARAM lParam) {
@@ -117,11 +132,18 @@ VDZINT_PTR VDVideoFilterPreviewZoomPopup::DlgProc(VDZUINT msg, VDZWPARAM wParam,
 			OnPaint();
 			return TRUE;
 
-#if 0
+		case WM_TIMER:
+			if(wParam==1) {
+				KillTimer(mhdlg,wParam);
+				draw_delayed = false;
+				InvalidateRect(mhdlg,0,false);
+				UpdateText();
+			}
+			break;
+
 		case WM_ERASEBKGND:
 			SetWindowLongPtr(mhdlg, DWL_MSGRESULT, OnEraseBkgnd((HDC)wParam));
 			return TRUE;
-#endif
 	}
 
 	return VDDialogFrameW32::DlgProc(msg, wParam, lParam);
@@ -131,6 +153,7 @@ bool VDVideoFilterPreviewZoomPopup::OnLoaded() {
 	HWND hwndImage = GetDlgItem(mhdlg, IDC_IMAGE);
 
 	memset(&mBitmapRect, 0, sizeof mBitmapRect);
+	draw_delayed = false;
 
 	if (hwndImage) {
 		GetWindowRect(hwndImage, &mBitmapRect);
@@ -149,7 +172,8 @@ bool VDVideoFilterPreviewZoomPopup::OnEraseBkgnd(HDC hdc) {
 		ExcludeClipRect(hdc, mBitmapRect.left, mBitmapRect.top, mBitmapRect.right, mBitmapRect.bottom);
 
 		GetClientRect(mhdlg, &r);
-		FillRect(hdc, &r, (HBRUSH)GetClassLongPtr(mhdlg, GCLP_HBRBACKGROUND));
+		//FillRect(hdc, &r, (HBRUSH)GetClassLongPtr(mhdlg, GCLP_HBRBACKGROUND));
+		FillRect(hdc, &r, (HBRUSH) (COLOR_BTNFACE+1));
 		RestoreDC(hdc, saveHandle);
 		return true;
 	}
@@ -172,6 +196,24 @@ void VDVideoFilterPreviewZoomPopup::OnPaint() {
 				7,
 				7,
 				mBitmap, &mBitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+
+		HPEN pen = black_pen;
+		uint32 px = mBitmap[3][3] & 0xffffff;
+		int pr = px >> 16;
+		int pg = (px >> 8) & 0xff;
+		int pb = px & 0xff;
+		if(pr+pg+pb<300) pen = white_pen;
+
+		HPEN pen0 = (HPEN)SelectObject(hdc,pen);
+		int cx = (mBitmapRect.right + mBitmapRect.left)/2;
+		int cy = (mBitmapRect.bottom + mBitmapRect.top)/2;
+
+		MoveToEx(hdc,cx-5,cy,0);
+		LineTo(hdc,cx+6,cy);
+		MoveToEx(hdc,cx,cy-5,0);
+		LineTo(hdc,cx,cy+6);
+
+		SelectObject(hdc,pen0);
 		EndPaint(mhdlg, &ps);
 	}
 }
@@ -205,6 +247,7 @@ public:
 	long SampleFrames();
 	int64 FMSetPosition(int64 pos);
 	void FMSetPositionCallback(FilterModPreviewPositionCallback, void *);
+	void FMSetZoomCallback(FilterModPreviewZoomCallback, void *);
 	HWND GetHwnd(){ return mhdlg; }
 	int TranslateAcceleratorMessage(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
 
@@ -224,6 +267,7 @@ private:
 
 	void UpdateButton();
 	void RedrawFrame();
+	void ExitZoomMode();
 
 	HWND		mhdlg;
 	HWND		mhwndButton;
@@ -263,10 +307,15 @@ private:
 	void							*mpvSampleCBData;
 	FilterModPreviewPositionCallback	mpPositionCallback;
 	void							*mpvPositionCBData;
+	FilterModPreviewZoomCallback	mpZoomCallback;
+	void							*mpvZoomCBData;
+	PreviewZoomInfo   zoom_info;
 
 	MyError		mFailureReason;
 
 	VDVideoFilterPreviewZoomPopup	mZoomPopup;
+	HCURSOR mode_cursor;
+	HCURSOR cross_cursor;
 
 	vdrefptr<VDFilterFrameVideoSource>	mpVideoFrameSource;
 	vdrefptr<VDFilterFrameBuffer>		mpVideoFrameBuffer;
@@ -312,7 +361,10 @@ FilterPreview::FilterPreview(VDFilterChainDesc *pFilterChainDesc, FilterInstance
 	, mpButtonCallback(NULL)
 	, mpSampleCallback(NULL)
 	, mpPositionCallback(NULL)
+	, mpZoomCallback(NULL)
 {
+	mode_cursor = 0;
+	cross_cursor = LoadCursor(0,IDC_CROSS);
 }
 
 FilterPreview::~FilterPreview() {
@@ -323,6 +375,17 @@ FilterPreview::~FilterPreview() {
 void FilterPreview::SetInitialTime(VDTime t) {
 	mInitialTimeUS = t;
 	mInitialFrame = -1;
+}
+
+void FilterPreview::ExitZoomMode() {
+	if(mZoomPopup.IsCreated()){
+		mZoomPopup.Destroy();
+		mode_cursor = 0;
+		if (mpZoomCallback) {
+			zoom_info.flags = zoom_info.popup_cancel;
+			mpZoomCallback(zoom_info,mpvZoomCBData);
+		}
+	}
 }
 
 INT_PTR CALLBACK FilterPreview::StaticDlgProc(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -370,6 +433,16 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		OnPaint();
 		return TRUE;
 
+	case WM_LBUTTONDOWN:
+		if(mZoomPopup.IsCreated()) {
+			if (mpZoomCallback) {
+				zoom_info.flags = zoom_info.popup_click;
+				mpZoomCallback(zoom_info,mpvZoomCBData);
+			}
+			return TRUE;
+		}
+		break;
+
 	case WM_MOUSEMOVE:
 		{
 			POINT pt = {(SHORT)LOWORD(lParam), (SHORT)HIWORD(lParam)};
@@ -377,11 +450,14 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 			int xoffset = pt.x - mDisplayX;
 			int yoffset = pt.y - mDisplayY;
 
-			if ((wParam & MK_SHIFT) && mFiltSys.isRunning() && mpVideoFrameBuffer && (unsigned)xoffset < (unsigned)mDisplayW && (unsigned)yoffset < (unsigned)mDisplayH) {
+			int DisplayW,DisplayH;
+			mpVideoWindow->GetFrameSize(DisplayW,DisplayH);
+
+			if ((wParam & MK_SHIFT) && mFiltSys.isRunning() && mpVideoFrameBuffer && xoffset < DisplayW && yoffset < DisplayH) {
 				const VDPixmap& output = VDPixmapFromLayout(mFiltSys.GetOutputLayout(), (void *)mpVideoFrameBuffer->LockRead());
 				uint32 pixels[7][7];
-				int x = VDFloorToInt((xoffset + 0.5) * (double)output.w / (double)mDisplayW);
-				int y = VDFloorToInt((yoffset + 0.5) * (double)output.h / (double)mDisplayH);
+				int x = VDFloorToInt((xoffset + 0.5) * (double)output.w / (double)DisplayW);
+				int y = VDFloorToInt((yoffset + 0.5) * (double)output.h / (double)DisplayH);
 
 				for(int i=0; i<7; ++i) {
 					for(int j=0; j<7; ++j) {
@@ -391,17 +467,51 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 
 				mpVideoFrameBuffer->Unlock();
 
+				zoom_info.x = x;
+				zoom_info.y = y;
+				uint32 px = pixels[3][3] & 0xffffff;
+				int pr = px >> 16;
+				int pg = (px >> 8) & 0xff;
+				int pb = px & 0xff;
+				zoom_info.r = float(pr)/255;
+				zoom_info.g = float(pg)/255;
+				zoom_info.b = float(pb)/255;
+				zoom_info.a = 0;
+
 				POINT pts = pt;
 				ClientToScreen(mhdlg, &pts);
 				mZoomPopup.Create((VDGUIHandle)mhdlg);
-				SetWindowPos(mZoomPopup.GetWindowHandle(), NULL, pts.x + 32, pts.y + 32, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
+				HMONITOR monitor = MonitorFromPoint(pts,MONITOR_DEFAULTTONEAREST);
+				MONITORINFO minfo = {sizeof(MONITORINFO)};
+				GetMonitorInfo(monitor,&minfo);
+				RECT r0;
+				GetWindowRect(mZoomPopup.GetWindowHandle(),&r0);
+				int zw = r0.right-r0.left;
+				int zh = r0.bottom-r0.top;
+				if(pts.x+32+zw>minfo.rcWork.right)
+					pts.x -= 32+zw;
+				else
+					pts.x += 32;
+				if(pts.y+32+zh>minfo.rcWork.bottom)
+					pts.y -= 32+zh;
+				else
+					pts.y += 32;
+
+				SetWindowPos(mZoomPopup.GetWindowHandle(), NULL, pts.x, pts.y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
 				mZoomPopup.Update(x, y, pixels);
 				ShowWindow(mZoomPopup.GetWindowHandle(), SW_SHOWNOACTIVATE);
 
 				TRACKMOUSEEVENT tme={sizeof(TRACKMOUSEEVENT), TME_LEAVE, mhdlg, 0};
 				TrackMouseEvent(&tme);
+				mode_cursor = cross_cursor;
+
+				if(mpZoomCallback) {
+					zoom_info.flags = zoom_info.popup_update;
+					mpZoomCallback(zoom_info,mpvZoomCBData);
+				}
+
 			} else {
-				mZoomPopup.Destroy();
+				ExitZoomMode();
 			}
 		}
 		return 0;
@@ -412,12 +522,19 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		break;
 
 	case WM_MOUSELEAVE:
-		mZoomPopup.Destroy();
+		ExitZoomMode();
 		break;
 
 	case WM_KEYUP:
 		if (wParam == VK_SHIFT)
-			mZoomPopup.Destroy();
+			ExitZoomMode();
+		break;
+
+	case WM_SETCURSOR:
+		if(mode_cursor){
+			SetCursor(mode_cursor);
+			return true;
+		}
 		break;
 
 	case WM_NOTIFY:
@@ -505,6 +622,7 @@ LRESULT WINAPI preview_pos_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM l
 		}
 
 	case WM_MOUSEACTIVATE:
+		SetActiveWindow(owner->GetHwnd());
 		return MA_NOACTIVATE;
 
 	case WM_ACTIVATE:
@@ -911,6 +1029,11 @@ void FilterPreview::SetSampleCallback(VDXFilterPreviewSampleCallback pfpsc, void
 void FilterPreview::FMSetPositionCallback(FilterModPreviewPositionCallback pfppc, void *pvData) {
 	mpPositionCallback = pfppc;
 	mpvPositionCBData	= pvData;
+}
+
+void FilterPreview::FMSetZoomCallback(FilterModPreviewZoomCallback pfppc, void *pvData) {
+	mpZoomCallback = pfppc;
+	mpvZoomCBData	= pvData;
 }
 
 void FilterPreview::InitButton(VDXHWND hwnd) {

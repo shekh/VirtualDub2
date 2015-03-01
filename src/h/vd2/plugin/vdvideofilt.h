@@ -156,7 +156,22 @@ public:
 	virtual long SampleFrames()=0;
 };
 
+struct PreviewZoomInfo {
+	int version;
+	enum {
+		popup_update = 1,
+		popup_cancel = 2,
+		popup_click =  4,
+	};
+	int flags;
+	int x,y;
+	float r,g,b,a;
+
+	PreviewZoomInfo() { version = 0; }
+};
+
 typedef void (__cdecl *FilterModPreviewPositionCallback)(int64 pos, void *pData);
+typedef void (__cdecl *FilterModPreviewZoomCallback)(PreviewZoomInfo& info, void *pData);
 
 class IVDXFilterPreview2 : public IVDXFilterPreview {
 public:
@@ -167,6 +182,7 @@ class IFilterModPreview {
 public:
 	virtual int64 FMSetPosition(int64 pos)=0;
 	virtual void FMSetPositionCallback(FilterModPreviewPositionCallback, void *)=0;
+	virtual void FMSetZoomCallback(FilterModPreviewZoomCallback, void *)=0;
 };
 
 class IFilterModTimeline {
@@ -432,7 +448,7 @@ public:
 
 struct VDXFilterFunctions {
 	VDXFilterDefinition *(__cdecl *addFilter)(VDXFilterModule *, VDXFilterDefinition *, int fd_len);
-	void (__cdecl *removeFilter)(VDXFilterDefinition *);
+	void __declspec(deprecated) (__cdecl *removeFilter)(VDXFilterDefinition *);
 	bool (__cdecl *isFPUEnabled)();
 	bool (__cdecl *isMMXEnabled)();
 	void (__cdecl *InitVTables)(VDXFilterVTbls *);

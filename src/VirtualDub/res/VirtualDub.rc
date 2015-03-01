@@ -2216,9 +2216,9 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     LTEXT           "(0, 0) = #FFFFFF",IDC_POSITION,2,2,104,8
     LTEXT           "Static",IDC_IMAGE,43,16,63,56,NOT WS_VISIBLE
-    LTEXT           "R: 0",IDC_RED,2,16,41,8
-    LTEXT           "G: 0",IDC_GREEN,2,25,41,8
-    LTEXT           "B: 0",IDC_BLUE,2,35,41,8
+    LTEXT           "R: 0",IDC_RED,2,16,33,8
+    LTEXT           "G: 0",IDC_GREEN,2,25,33,8
+    LTEXT           "B: 0",IDC_BLUE,2,35,33,8
 END
 
 IDD_BATCH_WIZARD DIALOGEX 0, 0, 384, 220
