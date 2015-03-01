@@ -1141,6 +1141,21 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 				flags = FILTERPARAM_NOT_SUPPORTED;
 		}
 
+		if (fma.filter && fma.filter->paramProc) {
+			vdprotected1("preparing filter \"%s\"", const char *, filter->name) {
+				VDFilterThreadContextSwapper autoSwap(&mThreadContext);
+
+				mFilterModFlags = fma.filter->paramProc(AsVDXFilterActivation(), &g_VDFilterCallbacks);
+			}
+		} else {
+			mFilterModFlags = 0;
+			if(mFilterName==L"Deshaker v3.0" || mFilterName==L"Deshaker v3.1") {
+				VDStringA buf;
+				GetSettingsString(buf);
+				if(buf==" (Pass 1)") mFilterModFlags |= FILTERMODPARAM_TERMINAL;
+			}
+		}
+
 		if (invalidCrop)
 			flags = FILTERPARAM_NOT_SUPPORTED;
 
@@ -2429,6 +2444,10 @@ bool FilterInstance::IsFadedOut(sint64 outputFrame) const {
 	float alpha = (float)(*mpAlphaCurve)((double)outputFrame).mY;
 
 	return (alpha < (0.5f / 255.0f));
+}
+
+bool FilterInstance::IsTerminal() const {
+	return (mFilterModFlags & FILTERMODPARAM_TERMINAL)!=0;
 }
 
 bool FilterInstance::GetDirectMapping(sint64 outputFrame, sint64& sourceFrame, int& sourceIndex) {

@@ -2033,15 +2033,17 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 
 		IVDVideoSource *vsrc = inputVideo;
 		AudioSource *asrc = inputAudio;
+		COMPVARS *comp = &g_Vcompression;
+		if(filters.isTrimmedChain() && pOutputSystem->IsNull()) comp = 0;
 
 		if (lSpillThreshold) {
 			segmentedOutput = new VDAVIOutputSegmentedSystem(pOutputSystem, opts->audio.is_ms, opts->audio.is_ms ? opts->audio.interval * 0.001 : opts->audio.interval, (double)opts->audio.preload / 500.0, (sint64)lSpillThreshold << 20, lSpillFrameThreshold);
-			g_dubber->Init(&vsrc, 1, &asrc, asrc ? 1 : 0, segmentedOutput, &g_Vcompression, &mTimeline.GetSubset(), mVideoTimelineFrameRate);
+			g_dubber->Init(&vsrc, 1, &asrc, asrc ? 1 : 0, segmentedOutput, comp, &mTimeline.GetSubset(), mVideoTimelineFrameRate);
 		} else {
 			if (fAudioOnly == 2)
 				g_dubber->SetPhantomVideoMode();
 
-			g_dubber->Init(&vsrc, 1, &asrc, asrc ? 1 : 0, pOutputSystem, &g_Vcompression, &mTimeline.GetSubset(), mVideoTimelineFrameRate);
+			g_dubber->Init(&vsrc, 1, &asrc, asrc ? 1 : 0, pOutputSystem, comp, &mTimeline.GetSubset(), mVideoTimelineFrameRate);
 		}
 
 		if (!pOptions && mhwnd)

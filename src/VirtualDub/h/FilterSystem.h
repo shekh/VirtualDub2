@@ -88,6 +88,7 @@ public:
 	const VDPixmapLayout& GetOutputLayout() const;
 	bool isRunning() const;
 	bool isEmpty() const;
+	bool isTrimmedChain() const { return mbTrimmedChain; }
 	bool IsThreadingActive() const;
 	uint32 GetThreadCount() const;
 
@@ -122,6 +123,7 @@ private:
 	bool	mbFiltersUseAcceleration;
 	bool	mbAccelDebugVisual;
 	bool	mbAccelEnabled;
+	bool  mbTrimmedChain;
 	sint32	mThreadsRequested;
 	int		mThreadPriority;
 

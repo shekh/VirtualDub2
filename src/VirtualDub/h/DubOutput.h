@@ -45,6 +45,7 @@ public:
 	virtual int GetVideoOutputFormatOverride() = 0;
 
 	virtual bool IsCompressedAudioAllowed() = 0;
+	virtual bool IsNull() = 0;
 };
 
 class VDDubberOutputSystem : public IVDDubberOutputSystem {
@@ -65,6 +66,7 @@ public:
 	virtual int GetVideoOutputFormatOverride() { return 0; }
 
 	virtual bool IsCompressedAudioAllowed() { return true; }
+	virtual bool IsNull() { return false; }
 
 protected:
 	AVIStreamHeader_fixed	mVideoStreamInfo;
@@ -294,6 +296,7 @@ public:
 	bool AcceptsVideo();
 	bool AreNullFramesAllowed() { return true; }
 	bool IsVideoCompressionEnabled() { return true; }
+	bool IsNull() { return true; }
 };
 
 class VDAVIOutputSegmentedSystem : public VDDubberOutputSystem {

@@ -87,6 +87,12 @@ enum {
 ///
 #define FILTERPARAM_HAS_LAG(frames) ((int)(frames) << 16)
 
+enum {
+  /// Filter requires that image is not modified further and cpu time is not wasted.
+  /// Intended for "analyzis" filters.
+  FILTERMODPARAM_TERMINAL = 0x1,
+};
+
 ///////////////////
 
 class VDXFBitmap;
@@ -122,6 +128,7 @@ typedef bool (__cdecl *VDXFilterPrefetch2Proc)(const VDXFilterActivation *fa, co
 typedef bool (__cdecl *VDXFilterEventProc	 )(const VDXFilterActivation *fa, const VDXFilterFunctions *ff, uint32 event, const void *eventData);
 typedef void (__cdecl *VDXFilterAccelRunProc )(const VDXFilterActivation *fa, const VDXFilterFunctions *ff);
 typedef void (__cdecl *FilterModActivateProc )(FilterModActivation *fma, const VDXFilterFunctions *ff);
+typedef long (__cdecl *FilterModParamProc    )(VDXFilterActivation *fa, const VDXFilterFunctions *ff);
 
 typedef int (__cdecl *VDXFilterModuleInitProc)(VDXFilterModule *fm, const VDXFilterFunctions *ff, int& vdfd_ver, int& vdfd_compat);
 typedef int (__cdecl *FilterModModuleInitProc)(VDXFilterModule *fm, const FilterModInitFunctions *ff, int& vdfd_ver, int& vdfd_compat, int& mod_ver, int& mod_min);
@@ -268,6 +275,7 @@ struct VDXFilterDefinition {
 
 struct FilterModDefinition {
 	FilterModActivateProc		activateProc;
+	FilterModParamProc		  paramProc;
 };
 
 //////////

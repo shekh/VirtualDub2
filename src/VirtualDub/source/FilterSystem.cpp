@@ -199,6 +199,7 @@ FilterSystem::FilterSystem()
 	, mbFiltersError(false)
 	, mbAccelEnabled(false)
 	, mbAccelDebugVisual(false)
+	, mbTrimmedChain(false)
 	, mThreadsRequested(-1)
 	, mThreadPriority(VDThread::kPriorityDefault)
 	, mOutputFrameRate(0, 0)
@@ -686,6 +687,8 @@ void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width,
 
 		if (!ent->mOutputName.empty())
 			namedInputs[ent->mOutputName] = prevInput;
+
+		if (fa->IsTerminal()) break;
 	}
 
 	// 2/3) Temp buffers
@@ -917,6 +920,8 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 
 		if (!ent->mOutputName.empty())
 			tailset[ent->mOutputName] = prevTail;
+
+		if (fa->IsTerminal()) break;
 	}
 
 	// check if the last format is accelerated, and add a downloader if necessary
@@ -940,6 +945,7 @@ void FilterSystem::ReadyFilters() {
 		return;
 
 	mbFiltersError = false;
+	mbTrimmedChain = false;
 
 	if (mThreadsRequested >= 0) {
 		mpBitmaps->mpProcessScheduler = new VDScheduler;
@@ -998,6 +1004,11 @@ void FilterSystem::ReadyFilters() {
 			afe.mpProcessNode->Unblock();
 
 			pLastSource = src;
+
+			if(fa && fa->IsTerminal()) {
+				mbTrimmedChain = true;
+				break;
+			}
 		}
 	} catch(const MyError&) {
 		// roll back previously initialized filters (similar to deinit)

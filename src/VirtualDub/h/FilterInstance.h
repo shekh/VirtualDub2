@@ -367,6 +367,7 @@ public:
 
 	bool	IsFiltered(sint64 outputFrame) const;
 	bool	IsFadedOut(sint64 outputFrame) const;
+	bool  IsTerminal() const;
 	bool	GetDirectMapping(sint64 outputFrame, sint64& sourceFrame, int& sourceIndex);
 	sint64	GetNearestUniqueFrame(sint64 outputFrame);
 
@@ -469,6 +470,7 @@ protected:
 
 	uint32		mFlags;
 	uint32		mLag;
+	uint32    mFilterModFlags;
 	int			mAPIVersion;
 
 	VDPosition	mLastResultFrame;
