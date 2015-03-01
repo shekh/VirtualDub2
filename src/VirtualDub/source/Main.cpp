@@ -153,6 +153,11 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				msg.wParam = rc;
 				break;
 			}
+
+			if(g_projectui && g_projectui->edit_token){
+				g_projectui->SetVideoFiltersAsk();
+				g_projectui->edit_token = 0;
+			}
 		}
 
 		if (!g_project->Tick() && !g_projectui->Tick() && !JobPollAutoRun()) {

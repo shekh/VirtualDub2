@@ -817,6 +817,7 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 						"                            (default is minutes, use 's' for seconds)\n"
 						"  /cmd <command>            Run quick script command\n"
 						"  /F <filter>               Load filter\n"
+						"  /edit <instance>          Open video filter configure dialog\n"
 						"  /h                        Disable exception filter\n"
 						"  /hexedit [<filename>]     Open hex editor\n"
 						"  /hexview [<filename>]     Open hex editor (read-only mode)\n"
@@ -1009,6 +1010,11 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 					VDInitInputDrivers();
 
 					guiSetStatus("Loaded external filter module: %s", 255, VDTextWToA(token).c_str());
+				}
+				else if (!wcscmp(token, L"edit")) {
+					if (!cmdLine.GetNextNonSwitchArgument(it, token))
+						throw MyError("Command line error: syntax is /edit <instance>");
+					if (g_projectui) g_projectui->edit_token = token;
 				}
 				else if (!wcscmp(token, L"h")) {
 					SetUnhandledExceptionFilter(NULL);

@@ -148,6 +148,9 @@ public:
 
 	VDVideoFiltersDialogResult GetResult() const { return mResult; }
 
+public:
+	int mEditInstance;
+
 protected:
 	bool OnLoaded();
 	void OnDestroy();
@@ -236,6 +239,7 @@ VDVideoFiltersDialog::VDVideoFiltersDialog()
 	, mInputLength(100)
 	, mInitialTimeUS(-1)
 	, mpVS(NULL)
+	, mEditInstance(-1)
 	, mbShowFormats(false)
 	, mbShowAspectRatios(false)
 	, mbShowFrameRates(false)
@@ -360,6 +364,12 @@ bool VDVideoFiltersDialog::OnLoaded() {
 
 	SetFocusToControl(IDC_FILTER_LIST);
 	VDUIRestoreWindowPlacementW32(mhdlg, "VideoFilters", SW_SHOW);
+
+	if(mEditInstance!=-1){
+		mListView.SetSelectedIndex(mEditInstance);
+		OnCommand(IDC_CONFIGURE, 0);
+		mEditInstance = -1;
+	}
 
 	return true;
 }
@@ -1185,11 +1195,13 @@ void VDVideoFiltersDialog::FilterInputListItem::GetText(int subItem, VDStringW& 
 
 ////////////////////////////////////////////////////////////////////////////
 
-VDVideoFiltersDialogResult VDShowDialogVideoFilters(VDGUIHandle h, IVDVideoSource *pVS, VDPosition initialTime) {
+VDVideoFiltersDialogResult VDShowDialogVideoFilters(VDGUIHandle h, IVDVideoSource *pVS, VDPosition initialTime, int edit_instance) {
 	VDVideoFiltersDialog dlg;
 
 	if (pVS)
 		dlg.Init(pVS, initialTime);
+
+	dlg.mEditInstance = edit_instance;
 
 	dlg.ShowDialog(h);
 

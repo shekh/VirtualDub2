@@ -91,6 +91,9 @@ public:
 	void OpenPrevious();
 	void OpenNext();
 
+public:
+	const wchar_t *edit_token;
+
 protected:
 	void OpenPreviousNext(bool next);
 

@@ -433,6 +433,7 @@ VDProjectUI::VDProjectUI()
 	, mbPanesNeedUpdate(false)
 	, mMRUList(0, "MRU List")
 {
+	edit_token = 0;
 	mMRUList.set_capacity(VDPreferencesGetMRUSize());
 	mMRUList.load();
 }
@@ -1254,8 +1255,14 @@ void VDProjectUI::SetVideoFiltersAsk() {
 	if (mVideoTimelineFrameRate.getLo() && mVideoTimelineFrameRate.getHi())
 		initialTime = mVideoTimelineFrameRate.scale64ir(GetCurrentFrame()*1000000);
 
+	int edit_instance = -1;
+	if (edit_token){
+		int v;
+		if(swscanf(edit_token,L"%d",&v)) edit_instance = v;
+	}
+
 	LockFilterChain(true);
-	VDVideoFiltersDialogResult result = VDShowDialogVideoFilters(mhwnd, inputVideo, initialTime);
+	VDVideoFiltersDialogResult result = VDShowDialogVideoFilters(mhwnd, inputVideo, initialTime, edit_instance);
 	LockFilterChain(false);
 
 	if (result.mbDialogAccepted && result.mbRescaleRequested) {
