@@ -61,6 +61,7 @@ public:
 	virtual void		streamDisown(void *owner) = 0;
 	virtual void		streamBegin(bool fRealTime, bool bForceReset) = 0;
 	virtual void		streamRestart() = 0;
+	virtual void		streamAppendReinit() = 0;
 
 	virtual void		invalidateFrameBuffer() = 0;
 	virtual	bool		isFrameBufferValid() = 0;
@@ -167,6 +168,7 @@ public:
 	virtual void streamDisown(void *owner);
 	virtual void streamBegin(bool fRealTime, bool bForceReset);
 	virtual void streamRestart();
+	virtual void streamAppendReinit(){}
 
 	virtual void invalidateFrameBuffer();
 	virtual	bool isFrameBufferValid() = NULL;

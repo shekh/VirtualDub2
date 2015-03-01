@@ -124,6 +124,8 @@ void AppendAVIAutoscan(const wchar_t *pszFile) {
 			if (!inputAVI->Append(buf))
 				break;
 
+			inputVideo->streamAppendReinit();
+
 			++count;
 
 			s = t;

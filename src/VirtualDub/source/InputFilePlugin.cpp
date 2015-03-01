@@ -404,6 +404,7 @@ public:
 
 	void streamBegin(bool fRealTime, bool bForceReset);
 	void streamRestart();
+	void streamAppendReinit();
 
 	void invalidateFrameBuffer();
 	bool isFrameBufferValid();
@@ -736,6 +737,19 @@ void VDVideoSourcePlugin::streamRestart() {
 	vdwithinputplugin(mpContext) {
 		mpXVDecModel->Reset();
 	}
+}
+
+void VDVideoSourcePlugin::streamAppendReinit() {
+	vdwithinputplugin(mpContext) {
+		IVDXStreamSourceV3 *xssv3 = (IVDXStreamSourceV3 *)mpXS->AsInterface(IVDXStreamSourceV3::kIID);
+		if (xssv3)
+			xssv3->GetStreamSourceInfoV3(mSSInfo);
+		else
+			mpXS->GetStreamSourceInfo(mSSInfo.mInfo);
+	}
+
+	mSampleLast = mSSInfo.mInfo.mSampleCount;
+	streamInfo.dwLength	= VDClampToUint32(mSSInfo.mInfo.mSampleCount);
 }
 
 void VDVideoSourcePlugin::invalidateFrameBuffer() {
