@@ -237,6 +237,7 @@ private:
 	int			mDisplayH;
 
 	VDTime		mInitialTimeUS;
+	sint64		mInitialFrame;
 	sint64		mLastOutputFrame;
 	sint64		mLastTimelineFrame;
 	sint64		mLastTimelineTimeMS;
@@ -289,6 +290,7 @@ FilterPreview::FilterPreview(VDFilterChainDesc *pFilterChainDesc, FilterInstance
 	, mDisplayW(0)
 	, mDisplayH(0)
 	, mInitialTimeUS(-1)
+	, mInitialFrame(-1)
 	, mLastOutputFrame(0)
 	, mLastTimelineFrame(0)
 	, mLastTimelineTimeMS(0)
@@ -310,6 +312,7 @@ FilterPreview::~FilterPreview() {
 
 void FilterPreview::SetInitialTime(VDTime t) {
 	mInitialTimeUS = t;
+	mInitialFrame = -1;
 }
 
 INT_PTR CALLBACK FilterPreview::StaticDlgProc(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -625,6 +628,8 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 		if (mInitialTimeUS >= 0) {
 			const VDFraction outputRate(mFiltSys.GetOutputFrameRate());
 			mpPosition->SetPosition(VDRoundToInt64(outputRate.asDouble() * (double)mInitialTimeUS * (1.0 / 1000000.0)));
+		} else if (mInitialFrame >=0) {
+			mpPosition->SetPosition(mInitialFrame);
 		}
 
 	} catch(const MyError& e) {
@@ -785,6 +790,7 @@ VDPosition FilterPreview::FetchFrame(VDPosition pos) {
 		mLastTimelineTimeMS	= VDRoundToInt64(mFiltSys.GetOutputFrameRate().AsInverseDouble() * 1000.0 * (double)pos);
 
 		mInitialTimeUS = VDRoundToInt64(mFiltSys.GetOutputFrameRate().AsInverseDouble() * 1000000.0 * (double)pos);
+		mInitialFrame = -1;
 
 	} catch(const MyError&) {
 		return -1;
@@ -794,8 +800,13 @@ VDPosition FilterPreview::FetchFrame(VDPosition pos) {
 }
 
 int64 FilterPreview::FMSetPosition(int64 pos) { 
-	mpPosition->SetPosition(pos);
-	OnVideoRedraw();
+	if(mhdlg){
+		mpPosition->SetPosition(pos);
+		OnVideoRedraw();
+	} else {
+		mInitialTimeUS = -1;
+		mInitialFrame = pos;
+	}
 	return pos;
 }
 
