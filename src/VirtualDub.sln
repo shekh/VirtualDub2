@@ -1,203 +1,132 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VirtualDub", "VirtualDub\VirtualDub.vcproj", "{0766DAC1-1BC2-4FC8-BDDA-E083FC2F56F4}"
-	ProjectSection(ProjectDependencies) = postProject
-		{A8006C9B-E3C0-436D-8046-C3180B939E7A} = {A8006C9B-E3C0-436D-8046-C3180B939E7A}
-		{C2082189-3ECB-4079-91FA-89D3C8A305C0} = {C2082189-3ECB-4079-91FA-89D3C8A305C0}
-		{73619A81-5E8C-48E9-A96A-60A48D8A65C7} = {73619A81-5E8C-48E9-A96A-60A48D8A65C7}
-		{0D252872-7542-4232-8D02-53F9182AEE15} = {0D252872-7542-4232-8D02-53F9182AEE15}
-		{AF613049-D4E2-4C65-ADEE-40DC037995CC} = {AF613049-D4E2-4C65-ADEE-40DC037995CC}
-		{308BF83F-B11C-48DC-AAF2-4A2003E8C377} = {308BF83F-B11C-48DC-AAF2-4A2003E8C377}
-		{6AA99A18-196F-4334-A3DE-D9EEA62CD5E9} = {6AA99A18-196F-4334-A3DE-D9EEA62CD5E9}
-		{1D6B560F-064D-401E-AC94-C12B6354429C} = {1D6B560F-064D-401E-AC94-C12B6354429C}
-		{5BAFC3FB-8BFA-4D01-8A71-EBD6CF056283} = {5BAFC3FB-8BFA-4D01-8A71-EBD6CF056283}
-		{8102A7FC-A8CF-4D5A-A5D7-D858B4626D0D} = {8102A7FC-A8CF-4D5A-A5D7-D858B4626D0D}
-		{81ADB599-84B5-4FF3-B781-FB39D5CC63EE} = {81ADB599-84B5-4FF3-B781-FB39D5CC63EE}
-		{E256E8BB-FFDA-4D5A-A999-B796C0C97AF1} = {E256E8BB-FFDA-4D5A-A999-B796C0C97AF1}
-		{E6FA3718-4AD2-4B58-903A-45F35CCD2FDE} = {E6FA3718-4AD2-4B58-903A-45F35CCD2FDE}
-		{D6C8E0F0-B596-4F62-A5A8-760F425B2BAC} = {D6C8E0F0-B596-4F62-A5A8-760F425B2BAC}
-		{146714D9-1D90-4D50-B830-F453484EC2CD} = {146714D9-1D90-4D50-B830-F453484EC2CD}
-		{6CC5D826-A36B-40B6-A40B-63733D47C4B5} = {6CC5D826-A36B-40B6-A40B-63733D47C4B5}
-		{6638DCCD-01B4-49F8-BC66-696648AA0B84} = {6638DCCD-01B4-49F8-BC66-696648AA0B84}
-	EndProjectSection
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VirtualDub", "VirtualDub\VirtualDub.vcxproj", "{0766DAC1-1BC2-4FC8-BDDA-E083FC2F56F4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Kasumi", "Kasumi\Kasumi.vcproj", "{0D252872-7542-4232-8D02-53F9182AEE15}"
-	ProjectSection(ProjectDependencies) = postProject
-		{6AA99A18-196F-4334-A3DE-D9EEA62CD5E9} = {6AA99A18-196F-4334-A3DE-D9EEA62CD5E9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Kasumi", "Kasumi\Kasumi.vcxproj", "{0D252872-7542-4232-8D02-53F9182AEE15}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Ami", "Ami\Ami.vcproj", "{5BAFC3FB-8BFA-4D01-8A71-EBD6CF056283}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C2082189-3ECB-4079-91FA-89D3C8A305C0} = {C2082189-3ECB-4079-91FA-89D3C8A305C0}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Ami", "Ami\Ami.vcxproj", "{5BAFC3FB-8BFA-4D01-8A71-EBD6CF056283}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Asuka", "Asuka\Asuka.vcproj", "{6AA99A18-196F-4334-A3DE-D9EEA62CD5E9}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C2082189-3ECB-4079-91FA-89D3C8A305C0} = {C2082189-3ECB-4079-91FA-89D3C8A305C0}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Asuka", "Asuka\Asuka.vcxproj", "{6AA99A18-196F-4334-A3DE-D9EEA62CD5E9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "disasm", "disasm\disasm.vcproj", "{7E14A488-0038-48FB-B573-CD10369E9CA7}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C2082189-3ECB-4079-91FA-89D3C8A305C0} = {C2082189-3ECB-4079-91FA-89D3C8A305C0}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "disasm", "disasm\disasm.vcxproj", "{7E14A488-0038-48FB-B573-CD10369E9CA7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Meia", "Meia\Meia.vcproj", "{A8006C9B-E3C0-436D-8046-C3180B939E7A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Meia", "Meia\Meia.vcxproj", "{A8006C9B-E3C0-436D-8046-C3180B939E7A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Lina", "Lina\Lina.vcproj", "{CED5BA56-E7A7-4AD4-B8F5-C0259B03A821}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Lina", "Lina\Lina.vcxproj", "{CED5BA56-E7A7-4AD4-B8F5-C0259B03A821}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Priss", "Priss\Priss.vcproj", "{73619A81-5E8C-48E9-A96A-60A48D8A65C7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Priss", "Priss\Priss.vcxproj", "{73619A81-5E8C-48E9-A96A-60A48D8A65C7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Riza", "Riza\Riza.vcproj", "{AF613049-D4E2-4C65-ADEE-40DC037995CC}"
-	ProjectSection(ProjectDependencies) = postProject
-		{6AA99A18-196F-4334-A3DE-D9EEA62CD5E9} = {6AA99A18-196F-4334-A3DE-D9EEA62CD5E9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Riza", "Riza\Riza.vcxproj", "{AF613049-D4E2-4C65-ADEE-40DC037995CC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Setup", "Setup\Setup.vcproj", "{6A3E162D-4403-486B-A1DF-2AA22E2F34FC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Setup", "Setup\Setup.vcxproj", "{6A3E162D-4403-486B-A1DF-2AA22E2F34FC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sylia", "Sylia\Sylia.vcproj", "{146714D9-1D90-4D50-B830-F453484EC2CD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sylia", "Sylia\Sylia.vcxproj", "{146714D9-1D90-4D50-B830-F453484EC2CD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "system", "system\system.vcproj", "{C2082189-3ECB-4079-91FA-89D3C8A305C0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "system", "system\system.vcxproj", "{C2082189-3ECB-4079-91FA-89D3C8A305C0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test", "test\test.vcproj", "{2839395D-BCEF-4D00-B847-031EDA2752E4}"
-	ProjectSection(ProjectDependencies) = postProject
-		{73619A81-5E8C-48E9-A96A-60A48D8A65C7} = {73619A81-5E8C-48E9-A96A-60A48D8A65C7}
-		{C2082189-3ECB-4079-91FA-89D3C8A305C0} = {C2082189-3ECB-4079-91FA-89D3C8A305C0}
-		{0D252872-7542-4232-8D02-53F9182AEE15} = {0D252872-7542-4232-8D02-53F9182AEE15}
-		{1D6B560F-064D-401E-AC94-C12B6354429C} = {1D6B560F-064D-401E-AC94-C12B6354429C}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test", "test\test.vcxproj", "{2839395D-BCEF-4D00-B847-031EDA2752E4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdicmdrv", "vdicmdrv\vdicmdrv.vcproj", "{5F0777EC-CD14-43CD-9BA6-ED9295F6312E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{89AF8B3E-6173-4778-9D7C-A41F0D3CAB9C} = {89AF8B3E-6173-4778-9D7C-A41F0D3CAB9C}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdicmdrv", "vdicmdrv\vdicmdrv.vcxproj", "{5F0777EC-CD14-43CD-9BA6-ED9295F6312E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdremote", "vdremote\vdremote.vcproj", "{34D516A5-3A5B-4F4C-803F-B9360D507E31}"
-	ProjectSection(ProjectDependencies) = postProject
-		{89AF8B3E-6173-4778-9D7C-A41F0D3CAB9C} = {89AF8B3E-6173-4778-9D7C-A41F0D3CAB9C}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdremote", "vdremote\vdremote.vcxproj", "{34D516A5-3A5B-4F4C-803F-B9360D507E31}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdsvrlnk", "vdsvrlnk\vdsvrlnk.vcproj", "{89AF8B3E-6173-4778-9D7C-A41F0D3CAB9C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdsvrlnk", "vdsvrlnk\vdsvrlnk.vcxproj", "{89AF8B3E-6173-4778-9D7C-A41F0D3CAB9C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdub", "vdub\vdub.vcproj", "{3039BD0D-620D-4C6C-93E4-DFD4EDC8042A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdub", "vdub\vdub.vcxproj", "{3039BD0D-620D-4C6C-93E4-DFD4EDC8042A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Dita", "Dita\Dita.vcproj", "{308BF83F-B11C-48DC-AAF2-4A2003E8C377}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Dita", "Dita\Dita.vcxproj", "{308BF83F-B11C-48DC-AAF2-4A2003E8C377}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "helpfile", "helpfile\helpfile.vcproj", "{034CFB04-D0EC-4CBB-BCA6-EFD8F964E9DE}"
-	ProjectSection(ProjectDependencies) = postProject
-		{CED5BA56-E7A7-4AD4-B8F5-C0259B03A821} = {CED5BA56-E7A7-4AD4-B8F5-C0259B03A821}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "helpfile", "helpfile\helpfile.vcxproj", "{034CFB04-D0EC-4CBB-BCA6-EFD8F964E9DE}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDLib", "VDLib\VDLib.vcproj", "{1D6B560F-064D-401E-AC94-C12B6354429C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDLib", "VDLib\VDLib.vcxproj", "{1D6B560F-064D-401E-AC94-C12B6354429C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDXFrame", "VDXFrame\VDXFrame.vcproj", "{8102A7FC-A8CF-4D5A-A5D7-D858B4626D0D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDXFrame", "VDXFrame\VDXFrame.vcxproj", "{8102A7FC-A8CF-4D5A-A5D7-D858B4626D0D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tessa", "Tessa\Tessa.vcproj", "{81ADB599-84B5-4FF3-B781-FB39D5CC63EE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tessa", "Tessa\Tessa.vcxproj", "{81ADB599-84B5-4FF3-B781-FB39D5CC63EE}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdlaunch", "vdlaunch\vdlaunch.vcproj", "{6CC5D826-A36B-40B6-A40B-63733D47C4B5}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdlaunch", "vdlaunch\vdlaunch.vcxproj", "{6CC5D826-A36B-40B6-A40B-63733D47C4B5}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdjson", "vdjson\vdjson.vcproj", "{E6FA3718-4AD2-4B58-903A-45F35CCD2FDE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdjson", "vdjson\vdjson.vcxproj", "{E6FA3718-4AD2-4B58-903A-45F35CCD2FDE}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDFilters", "VDFilters\VDFilters.vcproj", "{E256E8BB-FFDA-4D5A-A999-B796C0C97AF1}"
-	ProjectSection(ProjectDependencies) = postProject
-		{6AA99A18-196F-4334-A3DE-D9EEA62CD5E9} = {6AA99A18-196F-4334-A3DE-D9EEA62CD5E9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDFilters", "VDFilters\VDFilters.vcxproj", "{E256E8BB-FFDA-4D5A-A999-B796C0C97AF1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDCapture", "VDCapture\VDCapture.vcproj", "{D6C8E0F0-B596-4F62-A5A8-760F425B2BAC}"
-	ProjectSection(ProjectDependencies) = postProject
-		{6AA99A18-196F-4334-A3DE-D9EEA62CD5E9} = {6AA99A18-196F-4334-A3DE-D9EEA62CD5E9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDCapture", "VDCapture\VDCapture.vcxproj", "{D6C8E0F0-B596-4F62-A5A8-760F425B2BAC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDDisplay", "VDDisplay\VDDisplay.vcproj", "{6638DCCD-01B4-49F8-BC66-696648AA0B84}"
-	ProjectSection(ProjectDependencies) = postProject
-		{6AA99A18-196F-4334-A3DE-D9EEA62CD5E9} = {6AA99A18-196F-4334-A3DE-D9EEA62CD5E9}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDDisplay", "VDDisplay\VDDisplay.vcxproj", "{6638DCCD-01B4-49F8-BC66-696648AA0B84}"
 EndProject
 Global
 	GlobalSection(SourceCodeControl) = preSolution
 		SccNumberOfProjects = 28
+		SccProjectUniqueName0 = VirtualDub\\VirtualDub.vcxproj
 		SccLocalPath0 = .
-		SccProjectUniqueName1 = VirtualDub\\VirtualDub.vcproj
+		SccProjectFilePathRelativizedFromConnection0 = VirtualDub\\
+		SccProjectUniqueName1 = Kasumi\\Kasumi.vcxproj
 		SccLocalPath1 = .
-		SccProjectFilePathRelativizedFromConnection1 = VirtualDub\\
-		SccProjectUniqueName2 = Kasumi\\Kasumi.vcproj
+		SccProjectFilePathRelativizedFromConnection1 = Kasumi\\
+		SccProjectUniqueName2 = Meia\\Meia.vcxproj
 		SccLocalPath2 = .
-		SccProjectFilePathRelativizedFromConnection2 = Kasumi\\
-		SccProjectUniqueName3 = Meia\\Meia.vcproj
+		SccProjectFilePathRelativizedFromConnection2 = Meia\\
+		SccProjectUniqueName3 = Priss\\Priss.vcxproj
 		SccLocalPath3 = .
-		SccProjectFilePathRelativizedFromConnection3 = Meia\\
-		SccProjectUniqueName4 = Priss\\Priss.vcproj
+		SccProjectFilePathRelativizedFromConnection3 = Priss\\
+		SccProjectUniqueName4 = Riza\\Riza.vcxproj
 		SccLocalPath4 = .
-		SccProjectFilePathRelativizedFromConnection4 = Priss\\
-		SccProjectUniqueName5 = Riza\\Riza.vcproj
+		SccProjectFilePathRelativizedFromConnection4 = Riza\\
+		SccProjectUniqueName5 = system\\system.vcxproj
 		SccLocalPath5 = .
-		SccProjectFilePathRelativizedFromConnection5 = Riza\\
-		SccProjectUniqueName6 = system\\system.vcproj
+		SccProjectFilePathRelativizedFromConnection5 = system\\
+		SccProjectUniqueName6 = Dita\\Dita.vcxproj
 		SccLocalPath6 = .
-		SccProjectFilePathRelativizedFromConnection6 = system\\
-		SccProjectUniqueName7 = Dita\\Dita.vcproj
+		SccProjectFilePathRelativizedFromConnection6 = Dita\\
+		SccProjectUniqueName7 = VDLib\\VDLib.vcxproj
 		SccLocalPath7 = .
-		SccProjectFilePathRelativizedFromConnection7 = Dita\\
-		SccProjectUniqueName8 = VDLib\\VDLib.vcproj
-		SccLocalPath8 = .
-		SccProjectFilePathRelativizedFromConnection8 = VDLib\\
-		SccProjectUniqueName9 = VDXFrame\\VDXFrame.vcproj
-		SccLocalPath9 = ..
-		SccProjectFilePathRelativizedFromConnection9 = src\\VDXFrame\\
-		SccProjectUniqueName10 = Ami\\Ami.vcproj
+		SccProjectFilePathRelativizedFromConnection7 = VDLib\\
+		SccProjectUniqueName8 = VDXFrame\\VDXFrame.vcxproj
+		SccLocalPath8 = ..
+		SccProjectFilePathRelativizedFromConnection8 = src\\VDXFrame\\
+		SccProjectUniqueName9 = VDCapture\\VDCapture.vcxproj
+		SccLocalPath9 = .
+		SccProjectFilePathRelativizedFromConnection9 = VDCapture\\
+		SccProjectUniqueName10 = VDDisplay\\VDDisplay.vcxproj
 		SccLocalPath10 = .
-		SccProjectFilePathRelativizedFromConnection10 = Ami\\
-		SccProjectUniqueName11 = Asuka\\Asuka.vcproj
+		SccProjectFilePathRelativizedFromConnection10 = VDDisplay\\
 		SccLocalPath11 = .
-		SccProjectFilePathRelativizedFromConnection11 = Asuka\\
-		SccProjectUniqueName12 = disasm\\disasm.vcproj
-		SccLocalPath12 = .
-		SccProjectFilePathRelativizedFromConnection12 = disasm\\
-		SccProjectUniqueName13 = Lina\\Lina.vcproj
+		SccProjectUniqueName12 = Ami\\Ami.vcxproj
+		SccLocalPath12 = Ami
+		SccProjectUniqueName13 = VDFilters\\VDFilters.vcxproj
 		SccLocalPath13 = .
-		SccProjectFilePathRelativizedFromConnection13 = Lina\\
-		SccProjectUniqueName14 = Setup\\Setup.vcproj
-		SccLocalPath14 = .
-		SccProjectFilePathRelativizedFromConnection14 = Setup\\
-		SccProjectUniqueName15 = Sylia\\Sylia.vcproj
+		SccProjectFilePathRelativizedFromConnection13 = VDFilters\\
+		SccProjectUniqueName14 = vdlaunch\\vdlaunch.vcxproj
+		SccLocalPath14 = vdlaunch
+		SccProjectUniqueName15 = vdjson\\vdjson.vcxproj
 		SccLocalPath15 = .
-		SccProjectFilePathRelativizedFromConnection15 = Sylia\\
-		SccProjectUniqueName16 = test\\test.vcproj
+		SccProjectFilePathRelativizedFromConnection15 = vdjson\\
+		SccProjectUniqueName16 = Tessa\\Tessa.vcxproj
 		SccLocalPath16 = .
-		SccProjectFilePathRelativizedFromConnection16 = test\\
-		SccProjectUniqueName17 = vdicmdrv\\vdicmdrv.vcproj
-		SccLocalPath17 = .
-		SccProjectFilePathRelativizedFromConnection17 = vdicmdrv\\
-		SccProjectUniqueName18 = vdremote\\vdremote.vcproj
-		SccLocalPath18 = .
-		SccProjectFilePathRelativizedFromConnection18 = vdremote\\
-		SccProjectUniqueName19 = vdsvrlnk\\vdsvrlnk.vcproj
-		SccLocalPath19 = .
-		SccProjectFilePathRelativizedFromConnection19 = vdsvrlnk\\
-		SccProjectUniqueName20 = vdub\\vdub.vcproj
-		SccLocalPath20 = .
-		SccProjectFilePathRelativizedFromConnection20 = vdub\\
-		SccProjectUniqueName21 = helpfile\\helpfile.vcproj
-		SccLocalPath21 = .
-		SccProjectFilePathRelativizedFromConnection21 = helpfile\\
-		SccProjectUniqueName22 = Tessa\\Tessa.vcproj
-		SccLocalPath22 = .
-		SccProjectFilePathRelativizedFromConnection22 = Tessa\\
-		SccProjectUniqueName23 = vdlaunch\\vdlaunch.vcproj
-		SccLocalPath23 = .
-		SccProjectFilePathRelativizedFromConnection23 = vdlaunch\\
-		SccProjectUniqueName24 = vdjson\\vdjson.vcproj
-		SccLocalPath24 = .
-		SccProjectFilePathRelativizedFromConnection24 = vdjson\\
-		SccProjectUniqueName25 = VDFilters\\VDFilters.vcproj
-		SccLocalPath25 = .
-		SccProjectFilePathRelativizedFromConnection25 = VDFilters\\
-		SccProjectUniqueName26 = VDCapture\\VDCapture.vcproj
-		SccLocalPath26 = .
-		SccProjectFilePathRelativizedFromConnection26 = VDCapture\\
-		SccProjectUniqueName27 = VDDisplay\\VDDisplay.vcproj
-		SccLocalPath27 = .
-		SccProjectFilePathRelativizedFromConnection27 = VDDisplay\\
+		SccProjectFilePathRelativizedFromConnection16 = Tessa\\
+		SccProjectUniqueName17 = helpfile\\helpfile.vcxproj
+		SccLocalPath17 = helpfile
+		SccProjectUniqueName18 = vdub\\vdub.vcxproj
+		SccLocalPath18 = vdub
+		SccProjectUniqueName19 = vdsvrlnk\\vdsvrlnk.vcxproj
+		SccLocalPath19 = vdsvrlnk
+		SccProjectUniqueName20 = vdremote\\vdremote.vcxproj
+		SccLocalPath20 = vdremote
+		SccProjectUniqueName21 = vdicmdrv\\vdicmdrv.vcxproj
+		SccLocalPath21 = vdicmdrv
+		SccProjectUniqueName22 = test\\test.vcxproj
+		SccLocalPath22 = test
+		SccProjectUniqueName23 = Sylia\\Sylia.vcxproj
+		SccLocalPath23 = Sylia
+		SccProjectUniqueName24 = Setup\\Setup.vcxproj
+		SccLocalPath24 = Setup
+		SccProjectUniqueName25 = Lina\\Lina.vcxproj
+		SccLocalPath25 = Lina
+		SccProjectUniqueName26 = disasm\\disasm.vcxproj
+		SccLocalPath26 = disasm
+		SccProjectUniqueName27 = Asuka\\Asuka.vcxproj
+		SccLocalPath27 = Asuka
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32

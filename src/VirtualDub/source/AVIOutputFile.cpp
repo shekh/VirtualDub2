@@ -64,26 +64,26 @@ struct _avistdindex_entry {
 };
 
 typedef struct _avisuperindex_chunk {
-	uint32	fcc;					// ’ix##’
+	uint32	fcc;				// ix##
 	uint32	cb;					// size of this structure
 	uint16	wLongsPerEntry;		// must be 4 (size of each entry in aIndex array)
 	uint8	bIndexSubType;			// must be 0 or AVI_INDEX_2FIELD
 	uint8	bIndexType;			// must be AVI_INDEX_OF_INDEXES
 	uint32	nEntriesInUse;		// number of entries in aIndex array that
 								// are used
-	uint32	dwChunkId;			// ’##dc’ or ’##db’ or ’##wb’, etc
+	uint32	dwChunkId;			// ##dc or ##db or ##wb etc
 	uint32	dwReserved[3];		// must be 0
 //	struct _avisuperindex_entry aIndex[];
 } AVISUPERINDEX, * PAVISUPERINDEX;
 
 typedef struct _avistdindex_chunk {
-	uint32	fcc;					// ’ix##’
+	uint32	fcc;				// ix##
 	uint32	cb;
 	uint16	wLongsPerEntry;		// must be sizeof(aIndex[0])/sizeof(uint32)
 	uint8	bIndexSubType;			// must be 0
 	uint8	bIndexType;			// must be AVI_INDEX_OF_CHUNKS
 	uint32	nEntriesInUse;		//
-	uint32	dwChunkId;			// ’##dc’ or ’##db’ or ’##wb’ etc..
+	uint32	dwChunkId;			// ##dc or ##db or ##wb etc
 	uint64	qwBaseOffset;		// all dwOffsets in aIndex array are
 								// relative to this
 	uint32	dwReserved3;			// must be 0

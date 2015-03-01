@@ -308,6 +308,7 @@ public:
 	bool AcceptsVideo();
 	bool AcceptsAudio();
 	bool AreNullFramesAllowed();
+	bool IsVideoCompressionEnabled();
 
 private:
 	IVDDubberOutputSystem *mpChildSystem;

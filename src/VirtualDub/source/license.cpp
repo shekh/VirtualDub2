@@ -48,7 +48,7 @@ void Licensor::depack(HWND hDlg) {
 	unsigned char depackbuf[15073], textbuf[18317];
 	HRSRC hRSRC;
 
-	if (hRSRC = FindResource(NULL, (LPSTR)IDR_VIRUS, "STUFF")) {
+	if (hRSRC = FindResource(NULL, MAKEINTRESOURCE(IDR_LICENSE), "STUFF")) {
 		HGLOBAL hGlobal;
 		if (hGlobal = LoadResource(NULL, hRSRC)) {
 			LPVOID lpData;

@@ -213,9 +213,15 @@ public:
 	void StartFilters();
 	void UpdateFilterList();
 
+	// Mark off the current filter chain output rate/count, and then later check if it
+	// has changed and update the timeline accordingly.
+	void BeginFilterUpdates();
+	void EndFilterUpdates();
+
 	void SceneShuttleStop();
 
 protected:
+	void AdjustTimelineForFilterChanges(const VDFraction& oldRate, sint64 oldFrameCount, const VDFraction& newRate, sint64 newFrameCount);
 	void SceneShuttleStep();
 	bool UpdateFrame(bool updateInputFrame = true);
 	bool RefilterFrame(VDPosition timelinePos);
@@ -298,6 +304,9 @@ protected:
 	VDFraction		mVideoInputFrameRate;
 	VDFraction		mVideoOutputFrameRate;
 	VDFraction		mVideoTimelineFrameRate;
+
+	sint64			mVideoMarkedPostFiltersFrameCount;
+	VDFraction		mVideoMarkedPostFiltersFrameRate;
 
 	vdrefptr<VDFilterFrameVideoSource>	mpVideoFrameSource;
 

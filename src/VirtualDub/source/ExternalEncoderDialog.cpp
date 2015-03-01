@@ -905,6 +905,8 @@ bool VDUIDialogConfigureExternalEncoders::OnCommand(uint32 id, uint32 extcode) {
 			vdvector<vdrefptr<VDExtEncSet > > esets;
 			vdvector<vdrefptr<VDExtEncProfile > > eprofs;
 
+			bool overwriteConfirmed = false;
+
 			const VDJSONValueRef& sets = encoders["sets"];
 			if (sets.IsValid()) {
 				for(VDJSONMemberEnum setEnum(sets.AsObject()); setEnum.IsValid(); ++setEnum) {
@@ -923,8 +925,16 @@ bool VDUIDialogConfigureExternalEncoders::OnCommand(uint32 id, uint32 extcode) {
 
 					eset->mName = setEnum.GetName();
 
-					if (VDGetExternalEncoderSetByName(eset->mName.c_str(), NULL))
-						throw MyError("The file contains an external encoder set called \"%ls\" that already exists.", eset->mName.c_str());
+					if (!overwriteConfirmed && VDGetExternalEncoderSetByName(eset->mName.c_str(), NULL)) {
+						VDStringW message;
+
+						message.sprintf(L"The file contains an external encoder set called \"%ls\" that already exists. Do you want to load the file anyway, replacing existing profiles with the same names?", eset->mName.c_str());
+
+						if (!Confirm(message.c_str(), L"VirtualDub Warning"))
+							throw MyUserAbortError();
+
+						overwriteConfirmed = true;
+					}
 
 					if (videoEncoder.IsValid())
 						eset->mVideoEncoder = videoEncoder.AsString();
@@ -972,8 +982,16 @@ bool VDUIDialogConfigureExternalEncoders::OnCommand(uint32 id, uint32 extcode) {
 
 					eprof->mName = profEnum.GetName();
 
-					if (VDGetExternalEncoderProfileByName(eprof->mName.c_str(), NULL))
-						throw MyError("The file contains an external encoder profile called \"%ls\" that already exists.", eprof->mName.c_str());
+					if (!overwriteConfirmed && VDGetExternalEncoderProfileByName(eprof->mName.c_str(), NULL)) {
+						VDStringW message;
+
+						message.sprintf(L"The file contains an external encoder profile called \"%ls\" that already exists. Do you want to load the file anyway, replacing existing profiles with the same names?", eprof->mName.c_str());
+
+						if (!Confirm(message.c_str(), L"VirtualDub Warning"))
+							throw MyUserAbortError();
+
+						overwriteConfirmed = true;
+					}
 
 					if (program.IsValid()) {
 						const wchar_t *programStr = program.AsString();
@@ -1018,12 +1036,24 @@ bool VDUIDialogConfigureExternalEncoders::OnCommand(uint32 id, uint32 extcode) {
 			// alright, add them all!
 
 			while(!eprofs.empty()) {
-				VDAddExternalEncoderProfile(eprofs.back());
+				auto *eprof = &*eprofs.back();
+
+				vdrefptr<VDExtEncProfile> conflict;
+				if (VDGetExternalEncoderProfileByName(eprof->mName.c_str(), ~conflict))
+					VDRemoveExternalEncoderProfile(conflict);
+
+				VDAddExternalEncoderProfile(eprof);
 				eprofs.pop_back();
 			}
 
 			while(!esets.empty()) {
-				VDAddExternalEncoderSet(esets.back());
+				auto *eset = &*esets.back();
+				vdrefptr<VDExtEncSet> conflict;
+				
+				if (VDGetExternalEncoderSetByName(eset->mName.c_str(), ~conflict))
+					VDRemoveExternalEncoderSet(conflict);
+
+				VDAddExternalEncoderSet(eset);
 				esets.pop_back();
 			}
 

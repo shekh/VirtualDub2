@@ -1,6 +1,22 @@
 VirtualDub change log
 
-Build %build% (1.10.4, stable): [%date%]
+Build %build% (1.10.5, experimental): [%date%]
+   [features added]
+   * Cmdline: /portablealt:<file> can be used to use a specified INI file for settings.
+   * ExtEnc: Existing profiles/sets can now overwritten when loading profiles.
+   * PluginAPI: Added SSE4.2 detection.
+   * UI: Filters dialog now saves its size.
+   
+   [bugs fixed]
+   * AVI: Fixed crash when exporting segments with no audio track.
+   * AVI: Fixed regression where Save Segmented AVI would disable video compression.
+   * Filters: Fixed filters getting the wrong frame layout for secondary frames from secondary sources.
+   * JobControl: Output filename is now set when creating external encoder entries.
+   * Script: Added filters.BeginUpdate/EndUpdate() in saved job scripts to force timeline to update when frame rate changing filters are added.
+   * UI: Confirmation for edit changes on reload can now be disabled.
+   * UI: Fixed some MRU list items not working.
+
+Build 35491 (1.10.4, stable): [October 27, 2013]
    [features added]
    * ExtEnc: Added %%(outputbasename) to insert output filename without extension.
    * ExtEnc: Editor UI now has a drop-down for tokens.

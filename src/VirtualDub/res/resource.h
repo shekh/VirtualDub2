@@ -167,7 +167,7 @@
 #define IDD_JUMPTOFRAME                 230
 #define IDD_OPEN_AVI2                   231
 #define IDD_APPEND_AVI                  231
-#define IDR_VIRUS                       231
+#define IDR_LICENSE                     231
 #define IDD_LICENSE                     232
 #define IDD_DIVX_WARNING                234
 #define IDD_CAPTURE_BT8X8               235

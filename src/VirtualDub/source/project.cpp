@@ -112,6 +112,7 @@ extern int VDPreferencesGetVideoCompressionThreadCount();
 extern bool VDPreferencesGetFilterAccelEnabled();
 extern bool VDPreferencesGetRenderBackgroundPriority();
 extern bool VDPreferencesGetAutoRecoverEnabled();
+extern bool VDPreferencesGetTimelineWarnReloadTruncation();
 
 int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, int format);
 
@@ -400,6 +401,8 @@ VDProject::VDProject()
 	, mVideoInputFrameRate(0,0)
 	, mVideoOutputFrameRate(0,0)
 	, mVideoTimelineFrameRate(0,0)
+	, mVideoMarkedPostFiltersFrameRate(0,0)
+	, mVideoMarkedPostFiltersFrameCount(0)
 	, mAudioSourceMode(kVDAudioSourceMode_Source)
 {
 }
@@ -1168,7 +1171,7 @@ void VDProject::Reopen() {
 
 	FrameSubset& fs = mTimeline.GetSubset();
 
-	if (newFrameCount < oldFrameCount) {
+	if (newFrameCount < oldFrameCount && VDPreferencesGetTimelineWarnReloadTruncation()) {
 		FrameSubset::const_iterator it(fs.begin()), itEnd(fs.end());
 
 		if (it != itEnd) {
@@ -2198,6 +2201,37 @@ void VDProject::UpdateFilterList() {
 
 ///////////////////////////////////////////////////////////////////////////
 
+void VDProject::BeginFilterUpdates() {
+	StartFilters();
+
+	if (filters.isRunning()) {
+		mVideoMarkedPostFiltersFrameRate = filters.GetOutputFrameRate();
+		mVideoMarkedPostFiltersFrameCount = filters.GetOutputFrameCount();
+	} else {
+		mVideoMarkedPostFiltersFrameRate = VDFraction(0, 0);
+		mVideoMarkedPostFiltersFrameCount = 0;
+	}
+}
+
+void VDProject::EndFilterUpdates() {
+	StartFilters();
+
+	VDFraction oldRate = mVideoMarkedPostFiltersFrameRate;
+	sint64 oldCount = mVideoMarkedPostFiltersFrameCount;
+	VDFraction newRate = filters.GetOutputFrameRate();
+	sint64 newCount = filters.GetOutputFrameCount();
+
+	if (oldRate != newRate ||
+		oldCount != newCount)
+	{
+		mVideoMarkedPostFiltersFrameRate = newRate;
+		mVideoMarkedPostFiltersFrameCount = newCount;
+
+		if (oldRate.getLo() > 0)
+			AdjustTimelineForFilterChanges(oldRate, oldCount, newRate, newCount);
+	}
+}
+
 void VDProject::SceneShuttleStop() {
 	if (mSceneShuttleMode) {
 		mSceneShuttleMode = 0;
@@ -2221,6 +2255,31 @@ void VDProject::SceneShuttleStop() {
 			}
 		}
 	}
+}
+
+void VDProject::AdjustTimelineForFilterChanges(const VDFraction& oldRate, sint64 oldFrameCount, const VDFraction& newRate, sint64 newFrameCount) {
+	// rescale everything
+	mTimeline.Rescale(
+			oldRate,
+			oldFrameCount,
+			newRate,
+			newFrameCount);
+
+	mpCB->UITimelineUpdated();
+
+	double rateConversion = newRate.asDouble() / oldRate.asDouble();
+
+	if (IsSelectionPresent()) {
+		VDPosition selStart = GetSelectionStartFrame();
+		VDPosition selEnd = GetSelectionEndFrame();
+
+		selStart = VDCeilToInt64(selStart * rateConversion - 0.5);
+		selEnd = VDCeilToInt64(selEnd * rateConversion - 0.5);
+
+		SetSelection(selStart, selEnd);
+	}
+
+	MoveToFrame(VDCeilToInt64(GetCurrentFrame() * rateConversion - 0.5));
 }
 
 void VDProject::SceneShuttleStep() {

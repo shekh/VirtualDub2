@@ -359,11 +359,14 @@ bool VDVideoFiltersDialog::OnLoaded() {
 	mOldFrameCount	= filters.GetOutputFrameCount();
 
 	SetFocusToControl(IDC_FILTER_LIST);
+	VDUIRestoreWindowPlacementW32(mhdlg, "VideoFilters", SW_SHOW);
 
 	return true;
 }
 
 void VDVideoFiltersDialog::OnDestroy() {
+	VDUISaveWindowPlacementW32(mhdlg, "VideoFilters");
+
 	if (mhContextMenus) {
 		DestroyMenu(mhContextMenus);
 		mhContextMenus = NULL;

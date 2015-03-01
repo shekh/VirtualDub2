@@ -924,7 +924,7 @@ void VDAVIOutputSegmented::Update() {
 
 			mpFirstVideoStream->EndScheduling();
 
-			if (mpFirstAudioStream->GetPendingInfo(-1, audioSamples, audioBytes)) {
+			if (mpFirstAudioStream && mpFirstAudioStream->GetPendingInfo(-1, audioSamples, audioBytes)) {
 				if (!audioSamples && mpFirstAudioStream->IsEnded())
 					mpFirstAudioStream->EndScheduling();
 

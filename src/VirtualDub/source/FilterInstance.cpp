@@ -1591,7 +1591,7 @@ bool FilterInstance::CreateRequest(sint64 outputFrame, bool writable, uint32 bat
 					vdrefptr<IVDFilterFrameClientRequest> srcreq;
 					mSources[vp.mDirectFrameSrcIndex]->CreateRequest(vp.mDirectFrame, false, batchNumber, ~srcreq);
 
-					srcreq->Start(NULL, 0);
+					srcreq->Start(NULL, 0, vp.mDirectFrameSrcIndex);
 
 					r->SetSourceRequest(0, srcreq);
 				} else {
@@ -1605,7 +1605,7 @@ bool FilterInstance::CreateRequest(sint64 outputFrame, bool writable, uint32 bat
 						vdrefptr<IVDFilterFrameClientRequest> srcreq;
 						mSources[prefetchInfo.mSrcIndex]->CreateRequest(prefetchInfo.mFrame, writable, batchNumber, ~srcreq);
 
-						srcreq->Start(NULL, prefetchInfo.mCookie);
+						srcreq->Start(NULL, prefetchInfo.mCookie, prefetchInfo.mSrcIndex);
 
 						r->SetSourceRequest(idx++, srcreq);
 					}
@@ -1670,7 +1670,7 @@ bool FilterInstance::CreateSamplingRequest(sint64 outputFrame, VDXFilterPreviewS
 			vdrefptr<IVDFilterFrameClientRequest> srcreq;
 			mSources[prefetchInfo.mSrcIndex]->CreateRequest(prefetchInfo.mFrame, writable, batchNumber, ~srcreq);
 
-			srcreq->Start(NULL, prefetchInfo.mCookie);
+			srcreq->Start(NULL, prefetchInfo.mCookie, prefetchInfo.mSrcIndex);
 
 			r->SetSourceRequest(idx++, srcreq);
 		}
@@ -1978,12 +1978,15 @@ bool FilterInstance::BeginFrame(VDFilterFrameRequest& request, uint32 sourceOffs
 		VFBitmapInternal& bm = mSourceFrames[i];
 		VDFilterFrameBuffer *fb = request.GetSource(sourceOffset + i);
 
-		bm.mPixmapLayout = mExternalSrcCropped.mPixmapLayout;
+		const uint32 srcIndex = creqsrc->GetSrcIndex();
+		const VDFilterPrepareStreamInfo& streamInfo = mPrepareInfo.mStreams[srcIndex];
+
+		bm.mPixmapLayout = streamInfo.mExternalSrcCropped.mPixmapLayout;
 		bm.BindToFrameBuffer(fb, true);
 
-		bm.mFrameCount = mRealSrc.mFrameCount;
-		bm.mFrameRateLo = mRealSrc.mFrameRateLo;
-		bm.mFrameRateHi = mRealSrc.mFrameRateHi;
+		bm.mFrameCount = streamInfo.mExternalSrcCropped.mFrameCount;
+		bm.mFrameRateLo = streamInfo.mExternalSrcCropped.mFrameRateLo;
+		bm.mFrameRateHi = streamInfo.mExternalSrcCropped.mFrameRateHi;
 		bm.SetFrameNumber(creqsrc->GetFrameNumber());
 		bm.mCookie = creqsrc->GetCookie();
 	}

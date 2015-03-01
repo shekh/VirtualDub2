@@ -29,10 +29,10 @@ enum {
 	MODE_180 = 2
 };
 
-static const char *const g_szMode[]={
-	"left 90\xb0",
-	"right 90\xb0",
-	"180\xb0",
+const wchar_t *const g_szMode[]={
+	L"left 90\u00b0",
+	L"right 90\u00b0",
+	L"180\u00b0",
 };
 
 typedef struct MyFilterData {
@@ -185,7 +185,7 @@ static int rotate_config(VDXFilterActivation *fa, const VDXFilterFunctions *ff, 
 static void rotate_string2(const VDXFilterActivation *fa, const VDXFilterFunctions *ff, char *buf, int maxlen) {
 	MyFilterData *mfd = (MyFilterData *)fa->filter_data;
 
-	_snprintf(buf, maxlen, " (%s)", g_szMode[mfd->mode]);
+	_snprintf(buf, maxlen, " (%s)", VDTextWToA(g_szMode[mfd->mode]).c_str());
 }
 
 static void rotate_script_config(IVDXScriptInterpreter *isi, void *lpVoid, VDXScriptValue *argv, int argc) {

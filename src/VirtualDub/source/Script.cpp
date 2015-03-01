@@ -568,6 +568,14 @@ static void func_VDVFilters_Add(IVDScriptInterpreter *isi, VDScriptValue *argv, 
 	throw MyError("Cannot add filter '%s': no such filter loaded", *argv[0].asString());
 }
 
+static void func_VDVFilters_BeginUpdate(IVDScriptInterpreter *isi, VDScriptValue *argv, int argc) {
+	g_project->BeginFilterUpdates();
+}
+
+static void func_VDVFilters_EndUpdate(IVDScriptInterpreter *isi, VDScriptValue *argv, int argc) {
+	g_project->EndFilterUpdates();
+}
+
 static VDScriptValue obj_VDVFilters_lookup(IVDScriptInterpreter *isi, const VDScriptObject *thisPtr, void *lpVoid, char *szName) {
 	if (!strcmp(szName, "instance"))
 		return VDScriptValue(lpVoid, &obj_VDVFilters_instance);
@@ -578,6 +586,8 @@ static VDScriptValue obj_VDVFilters_lookup(IVDScriptInterpreter *isi, const VDSc
 static const VDScriptFunctionDef obj_VDVFilters_functbl[]={
 	{ func_VDVFilters_Clear			, "Clear", "0" },
 	{ func_VDVFilters_Add			, "Add", "is", },
+	{ func_VDVFilters_BeginUpdate	, "BeginUpdate", "0" },
+	{ func_VDVFilters_EndUpdate		, "EndUpdate", "0" },
 	{ NULL }
 };
 

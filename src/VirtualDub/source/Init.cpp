@@ -423,9 +423,17 @@ bool Init(HINSTANCE hInstance, int nCmdShow, VDCommandLine& cmdLine) {
 	AVIFileInit();
 
 	const bool resetAll = cmdLine.FindAndRemoveSwitch(L"resetall");
-	const VDStringW portableRegPath(VDMakePath(VDGetProgramPath().c_str(), L"VirtualDub.ini"));
 
-	if (cmdLine.FindAndRemoveSwitch(L"portable") || VDDoesPathExist(portableRegPath.c_str())) {
+	const wchar_t *portableAltFile = nullptr;
+	cmdLine.FindAndRemoveSwitch(L"portablealt", portableAltFile);
+
+	VDStringW portableRegPath;
+	if (portableAltFile)
+		portableRegPath = portableAltFile;
+	else
+		portableRegPath = VDMakePath(VDGetProgramPath().c_str(), L"VirtualDub.ini");
+
+	if (portableAltFile || cmdLine.FindAndRemoveSwitch(L"portable") || VDDoesPathExist(portableRegPath.c_str())) {
 		g_portableRegistryPath = portableRegPath;
 		g_pPortableRegistry = new VDRegistryProviderMemory;
 		VDSetRegistryProvider(g_pPortableRegistry);

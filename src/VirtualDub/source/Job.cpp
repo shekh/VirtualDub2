@@ -361,6 +361,7 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 	} else
 		output.addf("VirtualDub.video.SetCompression();");
 
+	output.addf("VirtualDub.video.filters.BeginUpdate();");
 	output.addf("VirtualDub.video.filters.Clear();");
 
 	// Add video filters
@@ -426,6 +427,9 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 
 		++iFilter;
 	}
+
+	// trigger rescaling of timeline if needed (needed if we don't have subset info included).
+	output.addf("VirtualDub.video.filters.EndUpdate();");
 
 	// Add audio filters
 
@@ -673,7 +677,7 @@ void JobAddConfigurationExportViaEncoder(const DubOptions *opt, const wchar_t *s
 		);
 
 	JobAddClose(output);
-	JobCreateEntry(output, srcFile, NULL);
+	JobCreateEntry(output, srcFile, dstFile);
 }
 
 void JobAddConfigurationRunVideoAnalysisPass(const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, List2<InputFilenameNode> *pListAppended, bool includeEditList) {

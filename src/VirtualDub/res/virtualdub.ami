@@ -496,6 +496,10 @@ dialog 1015, "" : fill, child {
 							: minh=100, readonly;
 			}
 		}
+		
+		group 0, "Timeline options" {
+			checkbox 100, "Warn if reload would change edits";
+		}
 	}
 }
 

@@ -6,7 +6,9 @@ out
 *.suo
 *.aps
 src/VDCapture/h/*.inl
+src/Riza/h/*.inl
 src/VDDisplay/autogen
 src/VDFilters/autogen
+src/VirtualDub/autogen
 version2.bin
 verstub.asm

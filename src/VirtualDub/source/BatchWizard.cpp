@@ -300,7 +300,7 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 				if (failed)
 					message.append_sprintf("\n\n%u file(s) could not be renamed and have been left in the list.", failed);
 
-				MessageBox(mhdlg, message.c_str(), g_szError, (failed ? MB_ICONWARNING : MB_ICONINFORMATION)|MB_OK);
+				MessageBox(mhdlg, message.c_str(), "VirtualDub notice", (failed ? MB_ICONWARNING : MB_ICONINFORMATION)|MB_OK);
 			}
 			return true;
 

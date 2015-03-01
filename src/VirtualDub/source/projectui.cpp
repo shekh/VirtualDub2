@@ -272,6 +272,7 @@ namespace {
 		{ ID_FILE_NEWINSTANCE,			"File.NewInstance" },
 		{ ID_FILE_OPENPREVIOUS,			"File.OpenPrevious" },
 		{ ID_FILE_OPENNEXT,				"File.OpenNext" },
+		{ ID_FILE_CLOSEANDDELETE,		"File.CloseAndDelete" },
 		{ ID_QUEUEBATCHOPERATION_SAVEASAVI,	"Jobs.SaveAsAVI" },
 		{ ID_QUEUEBATCHOPERATION_SAVECOMPATIBLEAVI,	"Jobs.SaveAsOldAVI" },
 		{ ID_QUEUEBATCHOPERATION_SAVESEGMENTEDAVI,	"Jobs.SaveSegmentedAVI" },
@@ -1258,29 +1259,7 @@ void VDProjectUI::SetVideoFiltersAsk() {
 	LockFilterChain(false);
 
 	if (result.mbDialogAccepted && result.mbRescaleRequested) {
-		// rescale everything
-		const VDFraction& oldRate = result.mOldFrameRate;
-		const VDFraction& newRate = result.mNewFrameRate;
-		mTimeline.Rescale(
-				oldRate,
-				result.mOldFrameCount,
-				newRate,
-				result.mNewFrameCount);
-		this->UITimelineUpdated();
-
-		double rateConversion = newRate.asDouble() / oldRate.asDouble();
-
-		if (IsSelectionPresent()) {
-			VDPosition selStart = GetSelectionStartFrame();
-			VDPosition selEnd = GetSelectionEndFrame();
-
-			selStart = VDCeilToInt64(selStart * rateConversion - 0.5);
-			selEnd = VDCeilToInt64(selEnd * rateConversion - 0.5);
-
-			SetSelection(selStart, selEnd);
-		}
-
-		MoveToFrame(VDCeilToInt64(GetCurrentFrame() * rateConversion - 0.5));
+		AdjustTimelineForFilterChanges(result.mOldFrameRate, result.mOldFrameCount, result.mNewFrameRate, result.mNewFrameCount);
 	}
 
 	UpdateDubParameters();
@@ -2087,7 +2066,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 		default:
 			if (id >= ID_AUDIO_SOURCE_AVI_0 && id <= ID_AUDIO_SOURCE_AVI_0+99) {
 				SetAudioSourceNormal(id - ID_AUDIO_SOURCE_AVI_0);
-			} else if (id >= ID_MRU_FILE0 && id <= ID_MRU_FILE3) {
+			} else if (id >= ID_MRU_FILE0 && id <= ID_MRU_FILE0+99) {
 				const int index = id - ID_MRU_FILE0;
 				VDStringW name(mMRUList[index]);
 

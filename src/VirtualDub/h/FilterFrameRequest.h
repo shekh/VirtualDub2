@@ -45,7 +45,7 @@ struct VDFilterFrameRequestError : public vdrefcounted<IVDRefCount> {
 
 class IVDFilterFrameClientRequest : public IVDRefCount {
 public:
-	virtual void Start(IVDFilterFrameClient *callback, uint64 cookie) = 0;
+	virtual void Start(IVDFilterFrameClient *callback, uint64 cookie, uint32 srcIndex) = 0;
 	virtual VDFilterFrameBuffer *GetResultBuffer() = 0;
 	virtual bool IsResultBufferStealable() = 0;
 	virtual bool IsCompleted() = 0;
@@ -53,6 +53,7 @@ public:
 	virtual VDFilterFrameRequestError *GetError() = 0;
 	virtual sint64 GetFrameNumber() = 0;
 	virtual uint64 GetCookie() = 0;
+	virtual uint32 GetSrcIndex() = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -90,7 +91,7 @@ public:
 	void Init(VDFilterFrameRequest *request);
 	void Shutdown();
 
-	void Start(IVDFilterFrameClient *client, uint64 cookie);
+	void Start(IVDFilterFrameClient *client, uint64 cookie, uint32 srcIndex);
 	VDFilterFrameBuffer *GetResultBuffer();
 	bool IsResultBufferStealable();
 
@@ -102,11 +103,13 @@ public:
 
 	sint64 GetFrameNumber();
 	uint64 GetCookie();
+	uint32 GetSrcIndex();
 
 protected:
 	VDFilterFrameRequest *mpRequest;
 	IVDFilterFrameClient *mpClient;
 	uint64	mCookie;
+	uint32	mSrcIndex;
 
 	VDFilterFrameRequestAllocator *mpAllocator;
 };

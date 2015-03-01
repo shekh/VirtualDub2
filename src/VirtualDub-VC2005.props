@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="UserMacros">
+    <VDBaseDir>..\..</VDBaseDir>
+    <VDDirTag>$(VDConfigDirTag)$(VDPlatformDirTag)</VDDirTag>
+    <VDLibPath>$(VDBaseDir)\lib\$(VDDirTag)</VDLibPath>
+    <VDOutputPath>$(VDBaseDir)\out\$(VDDirTag)</VDOutputPath>
+    <VDObjPath>$(VDBaseDir)\obj\$(VDDirTag)\$(ProjectName)</VDObjPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
+    <IntDir>$(VDObjPath)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>h;..\h;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_DEPRECATE;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <BuildMacro Include="VDBaseDir">
+      <Value>$(VDBaseDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="VDDirTag">
+      <Value>$(VDDirTag)</Value>
+    </BuildMacro>
+    <BuildMacro Include="VDLibPath">
+      <Value>$(VDLibPath)</Value>
+    </BuildMacro>
+    <BuildMacro Include="VDOutputPath">
+      <Value>$(VDOutputPath)</Value>
+    </BuildMacro>
+    <BuildMacro Include="VDObjPath">
+      <Value>$(VDObjPath)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>

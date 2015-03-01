@@ -1,0 +1,1350 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{dbce8185-d554-4205-b97d-fb21063da080}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{f1123bc1-6dca-40f3-8323-ca9010bd98cd}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;fi;fd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{7c5da467-4e9c-48f3-81f5-1c2622843612}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe;ami</Extensions>
+    </Filter>
+    <Filter Include="Source - Capture">
+      <UniqueIdentifier>{b6e4f865-f114-4dcb-965c-b43585d324f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source - MPEG/MJPEG support">
+      <UniqueIdentifier>{fb92ae9b-64fb-4b89-acba-ab180b34cec4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers - MPEG/MJPEG support">
+      <UniqueIdentifier>{ce2aef77-dfc8-478e-ad77-f0ba587f8b26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Text resources">
+      <UniqueIdentifier>{0c50dc40-e9a9-4266-9f67-22eb4372025c}</UniqueIdentifier>
+      <Extensions>.txt</Extensions>
+    </Filter>
+    <Filter Include="Source - Controls">
+      <UniqueIdentifier>{17398e2e-325a-406b-9594-8babc7d90d6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers - Controls">
+      <UniqueIdentifier>{ebe914c7-9ca2-4a68-9130-5cfaf794a1f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Files - YUV codec">
+      <UniqueIdentifier>{22be4c06-fdbd-45c1-aedc-6cd4373606c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers - dTV">
+      <UniqueIdentifier>{eedabfdb-86e5-4d55-b789-649205cc789f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers - Capture">
+      <UniqueIdentifier>{d9ea790d-a8ba-413d-8652-8c9c5762ca7c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Precompiled Header Files">
+      <UniqueIdentifier>{b21382ab-a272-49d5-9ec5-bfca65cc9a3d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assembly Files %28x86%29">
+      <UniqueIdentifier>{a561e8f3-5dac-49eb-9c82-b423852ed2a1}</UniqueIdentifier>
+      <Extensions>.asm</Extensions>
+    </Filter>
+    <Filter Include="Assembly Files - MPEG/MJPEG %28x86%29">
+      <UniqueIdentifier>{8259de22-0ee8-401d-8aa5-17023cf40705}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source - I/O drivers">
+      <UniqueIdentifier>{d72027e5-3242-4ee4-911c-c3244ebf9d93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers - I/O drivers">
+      <UniqueIdentifier>{83f3e812-98b8-4467-a3ed-912553b8bedd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters">
+      <UniqueIdentifier>{601fb123-6e3e-42e3-af9d-387c05a2a0c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters\Source - Filters">
+      <UniqueIdentifier>{6e8c5e12-40a4-46e0-8993-7906bfccc188}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters\Source - Input Drivers">
+      <UniqueIdentifier>{f1a72baf-09db-4ad5-b51f-a141cc47b17c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters\Source - Audio Filters">
+      <UniqueIdentifier>{cc0c8d64-5bae-4beb-8a2d-3bf55ec464d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters\Headers - Audio Filters">
+      <UniqueIdentifier>{05e6418f-98d8-4b87-beb7-861a9fd40fd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters\Assembly Files - Filters %28x86%29">
+      <UniqueIdentifier>{ed7c43f0-185d-45af-b533-892a529c71ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters\Assembly Files - Filters %28x64%29">
+      <UniqueIdentifier>{c9ca823d-d4c5-4c21-a3f3-e00c1457f382}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters\Headers - Filters">
+      <UniqueIdentifier>{330db76b-83b0-4fb4-a566-b83c01e2fa6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters\Interface headers - plugins">
+      <UniqueIdentifier>{1ed800f3-c9c5-45fa-908d-70ae627c1577}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters\Pixel Shader Files">
+      <UniqueIdentifier>{6d58659b-c64b-4343-ab5a-445f9e3ef86d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Filters\Compiled Pixel Shaders">
+      <UniqueIdentifier>{dc544164-021d-4a4f-90af-087d80e784fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Imported Files">
+      <UniqueIdentifier>{3e46d2ab-718b-43aa-86fb-96cf2fdb2473}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Manifest Files">
+      <UniqueIdentifier>{adfc090f-f190-435a-bb9c-1ae7d36cdb97}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="source\about.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\acompchoose.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\afiltdlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AsyncBlitter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Audio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AudioFilterSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\autodetect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AutoRecover.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\auxdlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIPipe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIStripeSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\backface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\BatchWizard.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Command.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\compchoose.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Crash.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Disasm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Dub.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DubFrameRequestQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DubIO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DubOutput.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DubPreviewClock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DubProcess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DubProcessVideo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DubProcessVideoDisplay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DubStatus.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DubUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DynamicCode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ExternalEncoderDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ExternalEncoderProfile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FastReadStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Filtdlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterAccelContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterAccelConverter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterAccelDownloader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterAccelEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterAccelEngine_SSE2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterAccelFrameAllocator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterAccelReadbackBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterAccelUploader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterCallbacks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterChainDesc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameAllocator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameAllocatorManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameAllocatorMemory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameAllocatorProxy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameBufferAccel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameBufferMemory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameConverter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameManualSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameRequest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameSharingPredictor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterFrameVideoSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterInstance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterListAddDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterListCropDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterPreview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Filters.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FrameSubset.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\gui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Histogram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\imageiff.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\imagejpeg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\imagejpegdec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Init.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Job.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\JobControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\JobControlDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\leaks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\license.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\memcheck.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\misc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\MonoBitmap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\MRUList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\optdlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\oshelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\plugins.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\PluginsDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\prefs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\project.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\projectui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\SceneDetector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Script.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\server.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ShutdownDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\sparseavi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\test_dub.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\test_pal8.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\test_pixmaps.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\test_resampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\test_videodecode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\test_videofilt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ThreadedVideoCompressor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\timeline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\uiframe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\VBitmap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\VideoSequenceCompressor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\capbt848.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\capclip.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\capdialogs.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\capemu.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\capfilter.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\capgraph.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Caphisto.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\capspill.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\capture.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\captureui.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\caputils.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\capvumeter.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\capwarn.cpp">
+      <Filter>Source - Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="source\MJPEGDecoder.cpp">
+      <Filter>Source - MPEG/MJPEG support</Filter>
+    </ClCompile>
+    <ClCompile Include="source\Mpeg.cpp">
+      <Filter>Source - MPEG/MJPEG support</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AccelEditDialog.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AudioDisplay.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ClippingControl.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FilterGraph.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\HexViewer.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\HotKeyExControl.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\LevelControl.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\LogWindow.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ParameterCurveControl.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\PositionControl.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\ProgressDialog.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\RTProfileDisplay.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\RTProfileDisplay2.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\VideoWindow.cpp">
+      <Filter>Source - Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="source\CVideoCompressor.cpp">
+      <Filter>Files - YUV codec</Filter>
+    </ClCompile>
+    <ClCompile Include="source\icdriver.cpp">
+      <Filter>Files - YUV codec</Filter>
+    </ClCompile>
+    <ClCompile Include="source\yuvcodec.cpp">
+      <Filter>Files - YUV codec</Filter>
+    </ClCompile>
+    <ClCompile Include="source\stdafx.cpp">
+      <Filter>Precompiled Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AudioSource.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutput.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputCLI.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputFile.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputFLM.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputGIF.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputImages.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputPreview.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputRawAudio.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputRawVideo.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputSegmented.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputStriped.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIOutputWAV.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIReadCache.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIReadHandler.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIReadHandlerTunnelW32.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\AVIReadIndex.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\DubSource.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFile.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileANIM.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileASF.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileAVI.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileFLM.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileGIF.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileImages.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileMP3.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFilePlugin.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileRawVideo.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileTest.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileTestPhysics.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileWAV.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\VideoSource.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\VideoSourceImages.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_convolute.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_curves.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_debugcrop.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_debugerror.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_emboss.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_fill.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_levels.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_list.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_logo.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_logo_mmx.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\F_resize.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_resize_config.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_showinfo.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\f_test.cpp">
+      <Filter>Filters\Source - Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\if_list.cpp">
+      <Filter>Filters\Source - Input Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\if_testid.cpp">
+      <Filter>Filters\Source - Input Drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_base.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_centercut.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_centermix.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_chorus.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_formatconv.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_gain.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_input.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_list.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_mix.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_newrate.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_pitchshift.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_pitchshift2.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_polyphase.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_sink.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_split.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="source\af_timestretch.cpp">
+      <Filter>Filters\Source - Audio Filters</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="h\afiltdlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AsyncBlitter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\Audio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AudioFilterSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\autodetect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AutoRecover.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\auxdlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIPipe.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIStripeSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\Avisynth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\backface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\command.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\convert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\crash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\disasm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\Dub.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DubFrameRequestQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DubIO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DubOutput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DubPreviewClock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DubProcess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DubProcessVideo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DubProcessVideoDisplay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DubStatus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DubUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DynamicCode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\ExternalEncoderProfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\f_convolute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FastReadStream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\filtdlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterAccelContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterAccelConverter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterAccelDownloader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterAccelEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterAccelFrameAllocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterAccelReadbackBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterAccelUploader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterChainDesc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameAllocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameAllocatorManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameAllocatorMemory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameAllocatorProxy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameBufferAccel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameBufferMemory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameCache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameConverter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameManualSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameRequest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameSharingPredictor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterFrameVideoSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterPreview.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\filters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\Fixes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FrameSubset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\gui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\helpcoach.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\helpfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\Histogram.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\imageiff.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\imagejpeg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\imagejpegdec.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\indeo_if.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\job.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\JobControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\misc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\MonoBitmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\MRUList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\optdlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\oshelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\plugins.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\prefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\project.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\projectui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="res\resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\VDFilters\res\resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\VDCapture\res\resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\SceneDetector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\script.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\server.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\ThreadedVideoCompressor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\timeline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\uiframe.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\VBitmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\VideoSequenceCompressor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\VirtualDub.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\MJPEGDecoder.h">
+      <Filter>Headers - MPEG/MJPEG support</Filter>
+    </ClInclude>
+    <ClInclude Include="h\mpeg.h">
+      <Filter>Headers - MPEG/MJPEG support</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AccelEditDialog.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AudioDisplay.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\ClippingControl.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\FilterGraph.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\HexViewer.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\HotKeyExControl.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\LevelControl.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\ParameterCurveControl.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\PositionControl.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\ProgressDialog.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\RTProfileDisplay.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\VideoWindow.h">
+      <Filter>Headers - Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="h\CVideoCompressor.h">
+      <Filter>Files - YUV codec</Filter>
+    </ClInclude>
+    <ClInclude Include="h\IVideoCompressor.h">
+      <Filter>Files - YUV codec</Filter>
+    </ClInclude>
+    <ClInclude Include="h\IVideoDriver.h">
+      <Filter>Files - YUV codec</Filter>
+    </ClInclude>
+    <ClInclude Include="h\yuvcodec.h">
+      <Filter>Files - YUV codec</Filter>
+    </ClInclude>
+    <ClInclude Include="h\dTVdrv.h">
+      <Filter>Headers - dTV</Filter>
+    </ClInclude>
+    <ClInclude Include="h\capclip.h">
+      <Filter>Headers - Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="h\capdialogs.h">
+      <Filter>Headers - Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="h\capfilter.h">
+      <Filter>Headers - Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="h\capgraph.h">
+      <Filter>Headers - Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="h\caphisto.h">
+      <Filter>Headers - Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="h\capspill.h">
+      <Filter>Headers - Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="h\capture.h">
+      <Filter>Headers - Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="h\captureui.h">
+      <Filter>Headers - Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="h\caputils.h">
+      <Filter>Headers - Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="h\capvumeter.h">
+      <Filter>Headers - Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="h\stdafx.h">
+      <Filter>Precompiled Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AudioSource.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AudioSourceAVI.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutput.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputCLI.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputFile.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputFLM.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputGIF.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputImages.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputPreview.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputRawAudio.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputRawVideo.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputSegmented.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIoutputStriped.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputWAV.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIReadCache.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIReadHandler.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIReadIndex.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\DubSource.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\InputFile.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\InputFileANIM.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\InputFileAVI.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\InputFileImages.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\InputFileMP3.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\InputFileTestPhysics.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\InputFileWAV.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\VideoSource.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\VideoSourceAVI.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\VideoSourceImages.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\af_base.h">
+      <Filter>Filters\Headers - Audio Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="h\af_input.h">
+      <Filter>Filters\Headers - Audio Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="h\af_polyphase.h">
+      <Filter>Filters\Headers - Audio Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="h\af_sink.h">
+      <Filter>Filters\Headers - Audio Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="h\f_resize_config.h">
+      <Filter>Filters\Headers - Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\h\vd2\plugin\vdaudiofilt.h">
+      <Filter>Filters\Interface headers - plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\h\vd2\plugin\vdinputdriver.h">
+      <Filter>Filters\Interface headers - plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\h\vd2\plugin\vdplugin.h">
+      <Filter>Filters\Interface headers - plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\h\vd2\plugin\vdvideoaccel.h">
+      <Filter>Filters\Interface headers - plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\h\vd2\plugin\vdvideofilt.h">
+      <Filter>Filters\Interface headers - plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\h\vd2\plugin\vdvideoutil.h">
+      <Filter>Filters\Interface headers - plugins</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\addpoint.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\Changes.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\dragpoint.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\ico00001.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\icon1.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\license.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\modifypoint.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\pos_back.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\pos_end.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\pos_mark.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\pos_markout.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\pos_next.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\pos_play.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\pos_prev.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\pos_star.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\pos_stop.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\rel_notes.bin">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\removepoint.cur">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\scenefwd.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\scenerev.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\virtuald.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="h\mjpeg_color.inl">
+      <Filter>Headers - MPEG/MJPEG support</Filter>
+    </None>
+    <None Include="res\credits.txt">
+      <Filter>Text resources</Filter>
+    </None>
+    <None Include="autogen\f_resize.inl">
+      <Filter>Filters\Compiled Pixel Shaders</Filter>
+    </None>
+    <None Include="autogen\FilterAccelEngine.inl">
+      <Filter>Filters\Compiled Pixel Shaders</Filter>
+    </None>
+    <None Include="manifest\comctl6.manifest">
+      <Filter>Manifest Files</Filter>
+    </None>
+    <None Include="manifest\comctl6_x64.manifest">
+      <Filter>Manifest Files</Filter>
+    </None>
+    <None Include="manifest\win7.manifest">
+      <Filter>Manifest Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\VirtualDub.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="..\VDCapture\res\VDCapture.rc">
+      <Filter>Imported Files</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="..\VDFilters\res\VDFilters.rc">
+      <Filter>Imported Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="source\a_bitmap.asm">
+      <Filter>Assembly Files %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a_chromasmoother.asm">
+      <Filter>Assembly Files %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a_convertout.asm">
+      <Filter>Assembly Files %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a_histogram.asm">
+      <Filter>Assembly Files %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a_scene.asm">
+      <Filter>Assembly Files %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a_yuv422torgb.asm">
+      <Filter>Assembly Files %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a_mjpgdec.asm">
+      <Filter>Assembly Files - MPEG/MJPEG %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a_yuv2rgbhq.asm">
+      <Filter>Assembly Files - MPEG/MJPEG %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a_yuvtable.asm">
+      <Filter>Assembly Files - MPEG/MJPEG %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a_cmult.asm">
+      <Filter>Filters\Assembly Files - Filters %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a_convolute.asm">
+      <Filter>Filters\Assembly Files - Filters %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\A_resize.asm">
+      <Filter>Filters\Assembly Files - Filters %28x86%29</Filter>
+    </YASM>
+    <YASM Include="source\a64_resize.asm">
+      <Filter>Filters\Assembly Files - Filters %28x64%29</Filter>
+    </YASM>
+  </ItemGroup>
+  <ItemGroup>
+    <PixelShaderAssembler Include="source\f_resize.vdshaders">
+      <Filter>Filters\Pixel Shader Files</Filter>
+    </PixelShaderAssembler>
+    <PixelShaderAssembler Include="source\FilterAccelEngine.vdshaders">
+      <Filter>Filters\Pixel Shader Files</Filter>
+    </PixelShaderAssembler>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="res\virtualdub.ami">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="res\Changes.txt">
+      <Filter>Text resources</Filter>
+    </CustomBuild>
+    <CustomBuild Include="res\rel_notes.txt">
+      <Filter>Text resources</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>

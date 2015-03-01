@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup
+    Condition="'$(PixelShaderAssemblerBeforeTargets)' == '' and '$(PixelShaderAssemblerAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+    <PixelShaderAssemblerBeforeTargets>Midl</PixelShaderAssemblerBeforeTargets>
+    <PixelShaderAssemblerAfterTargets>CustomBuild</PixelShaderAssemblerAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PixelShaderAssemblerDependsOn
+      Condition="'$(ConfigurationType)' != 'Makefile'">_SelectedFiles;$(PixelShaderAssemblerDependsOn)</PixelShaderAssemblerDependsOn>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <PixelShaderAssembler>
+      <OutputPath>$(IntDir)</OutputPath>
+      <CommandLineTemplate>"$(VDBaseDir)\out\$(VDConfigDirTag)\asuka.exe" psa "%(FullPath)" "%(OutputPath)\%(Filename).inl"</CommandLineTemplate>
+      <Outputs>%(OutputPath)\%(Filename).inl</Outputs>
+    </PixelShaderAssembler>
+  </ItemDefinitionGroup>
+</Project>

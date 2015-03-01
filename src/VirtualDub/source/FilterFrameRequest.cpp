@@ -73,9 +73,10 @@ void VDFilterFrameClientRequest::Shutdown() {
 	}
 }
 
-void VDFilterFrameClientRequest::Start(IVDFilterFrameClient *client, uint64 cookie) {
+void VDFilterFrameClientRequest::Start(IVDFilterFrameClient *client, uint64 cookie, uint32 srcIndex) {
 	mpClient = client;
 	mCookie = cookie;
+	mSrcIndex = srcIndex;
 
 	if (mpRequest->IsCompleted())
 		IssueCallback();
@@ -115,6 +116,10 @@ sint64 VDFilterFrameClientRequest::GetFrameNumber() {
 
 uint64 VDFilterFrameClientRequest::GetCookie() {
 	return mCookie;
+}
+
+uint32 VDFilterFrameClientRequest::GetSrcIndex() {
+	return mSrcIndex;
 }
 
 ///////////////////////////////////////////////////////////////////////////

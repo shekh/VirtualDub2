@@ -5,5 +5,5 @@
 // prevent data loss
 #pragma warning(disable: 4819)
 
-#define _WIN32_WINNT 0x0400
+#define _WIN32_WINNT 0x0501
 #include <vd2/system/vdtypes.h>

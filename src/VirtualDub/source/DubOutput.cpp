@@ -820,3 +820,7 @@ bool VDAVIOutputSegmentedSystem::AcceptsAudio() {
 bool VDAVIOutputSegmentedSystem::AreNullFramesAllowed() {
 	return mpChildSystem->AreNullFramesAllowed();
 }
+
+bool VDAVIOutputSegmentedSystem::IsVideoCompressionEnabled() {
+	return mpChildSystem->IsVideoCompressionEnabled();
+}
