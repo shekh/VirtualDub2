@@ -64,6 +64,7 @@ public:
 	void SetSourcePAR(const VDFraction& fr);
 	void SetResizeParentEnabled(bool enabled);
 	double GetMaxZoomForArea(int w, int h);
+	void SetBorderless(bool v){ mbBorderless=v; }
 
 private:
 	HWND mhwnd;
@@ -82,6 +83,7 @@ private:
 	bool mbUseSourcePAR;
 	bool mbResizing;
 	bool mbMouseTransparent;
+	bool mbBorderless;
 
 	IVDVideoDisplay *mpDisplay;
 	VDStringW	mSourcePARTextPattern;
@@ -131,6 +133,7 @@ VDVideoWindow::VDVideoWindow(HWND hwnd)
 	, mbUseSourcePAR(false)
 	, mbResizing(false)
 	, mbMouseTransparent(false)
+	, mbBorderless(false)
 	, mpDisplay(NULL)
 {
 	SetWindowLongPtr(mhwnd, 0, (LONG_PTR)this);
@@ -221,11 +224,13 @@ void VDVideoWindow::SetZoom(double zoom) {
 double VDVideoWindow::GetMaxZoomForArea(int w, int h) {
 	double frameAspect;
 
-	w -= 8;
+	if (!mbBorderless)
+		w -= 8;
 	if (w <= 0)
 		return 0;
 
-	h -= 8;
+	if (!mbBorderless)
+		h -= 8;
 	if (h <= 0)
 		return 0;
 
@@ -281,8 +286,13 @@ void VDVideoWindow::Resize() {
 		if (h < 1)
 			h = 1;
 
+		if (!mbBorderless) {
+			w += 8;
+			h += 8;
+		}
+
 		++mInhibitParamUpdateLocks;
-		SetWindowPos(mhwnd, NULL, 0, 0, w+8, h+8, SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
+		SetWindowPos(mhwnd, NULL, 0, 0, w, h, SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
 		--mInhibitParamUpdateLocks;
 	}
 }
@@ -448,6 +458,9 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 }
 
 void VDVideoWindow::NCPaint(HRGN hrgn) {
+	if (mbBorderless)
+		return;
+	
 	HDC hdc;
 	
 	// MSDN docs are in error -- if you do not include 0x10000, GetDCEx() will
@@ -490,19 +503,23 @@ void VDVideoWindow::NCPaint(HRGN hrgn) {
 }
 
 void VDVideoWindow::RecalcClientArea(RECT& rc) {
-	rc.left += 4;
-	rc.right -= 4;
-	rc.top += 4;
-	rc.bottom -= 4;
+	if (!mbBorderless) {
+		rc.left += 4;
+		rc.right -= 4;
+		rc.top += 4;
+		rc.bottom -= 4;
+	}
 }
 
 LRESULT VDVideoWindow::RecalcClientArea(NCCALCSIZE_PARAMS& params) {
 	// Win32 docs don't say you need to do this, but you do.
 
-	params.rgrc[0].left += 4;
-	params.rgrc[0].right -= 4;
-	params.rgrc[0].top += 4;
-	params.rgrc[0].bottom -= 4;
+	if (!mbBorderless) {
+		params.rgrc[0].left += 4;
+		params.rgrc[0].right -= 4;
+		params.rgrc[0].top += 4;
+		params.rgrc[0].bottom -= 4;
+	}
 
 	return 0;//WVR_ALIGNTOP|WVR_ALIGNLEFT;
 }
@@ -514,7 +531,7 @@ LRESULT VDVideoWindow::HitTest(int x, int y) {
 	GetClientRect(mhwnd, &rc);
 	ScreenToClient(mhwnd, &pt);
 
-	if (pt.x >= 4 && pt.y >= 4 && pt.x < rc.right-4 && pt.y < rc.bottom-4)
+	if (mbBorderless || (pt.x >= 4 && pt.y >= 4 && pt.x < rc.right-4 && pt.y < rc.bottom-4))
 		return mbMouseTransparent ? HTTRANSPARENT : HTCLIENT; //HTCAPTION;
 	else {
 		int xseg = std::min<int>(16, rc.right/3);

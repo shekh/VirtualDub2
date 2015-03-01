@@ -91,6 +91,9 @@ public:
 	void OpenPrevious();
 	void OpenNext();
 
+	void DisplayPreview(bool v);
+	HWND GetHwnd(){ return (HWND)mhwnd; }
+
 public:
 	const wchar_t *edit_token;
 
@@ -175,6 +178,8 @@ protected:
 	HWND		mhwndOutputDisplay;
 	IVDVideoDisplay	*mpInputDisplay;
 	IVDVideoDisplay	*mpOutputDisplay;
+
+	HWND		mhwndFilters;
 
 	vdrefptr<IVDUIParameterCurveControl> mpCurveEditor;
 	HWND		mhwndCurveEditor;

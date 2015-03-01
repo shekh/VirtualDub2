@@ -37,9 +37,11 @@
 #include "resource.h"
 #include "oshelper.h"
 #include "dub.h"
+#include "projectui.h"
 
 extern HINSTANCE	g_hInst;
 extern VDProject *g_project;
+extern vdrefptr<VDProjectUI> g_projectui;
 extern IVDPositionControlCallback *VDGetPositionControlCallbackTEMP();
 
 int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, int format);
@@ -202,6 +204,8 @@ public:
 	bool SampleCurrentFrame();
 	long SampleFrames();
 	int64 FMSetPosition(int64 pos);
+	HWND GetHwnd(){ return mhdlg; }
+	int TranslateAcceleratorMessage(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
 
 private:
 	static INT_PTR CALLBACK StaticDlgProc(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam);
@@ -223,6 +227,7 @@ private:
 	HWND		mhdlg;
 	HWND		mhwndButton;
 	HWND		mhwndParent;
+	HWND    mhwndPosHost;
 	HWND		mhwndPosition;
 	HWND		mhwndVideoWindow;
 	HWND		mhwndDisplay;
@@ -279,6 +284,7 @@ FilterPreview::FilterPreview(VDFilterChainDesc *pFilterChainDesc, FilterInstance
 	: mhdlg(NULL)
 	, mhwndButton(NULL)
 	, mhwndParent(NULL)
+	, mhwndPosHost(NULL)
 	, mhwndPosition(NULL)
 	, mhwndVideoWindow(NULL)
 	, mhwndDisplay(NULL)
@@ -345,6 +351,11 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		mhwndVideoWindow = NULL;
 
 		mDlgNode.Remove();
+
+		DestroyWindow(mhwndPosHost);
+		mhwndPosHost = NULL;
+
+		g_projectui->DisplayPreview(false);
 		return TRUE;
 
 	case WM_SIZE:
@@ -417,7 +428,6 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 							RECT r;
 							GetWindowRect(mhwndVideoWindow, &r);
 
-							r.bottom += 64;
 							AdjustWindowRectEx(&r, GetWindowLong(mhdlg, GWL_STYLE), FALSE, GetWindowLong(mhdlg, GWL_EXSTYLE));
 							SetWindowPos(mhdlg, NULL, 0, 0, r.right-r.left, r.bottom-r.top, SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
 						}
@@ -463,6 +473,44 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 	return FALSE;
 }
 
+LRESULT WINAPI preview_pos_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	if(msg==WM_NCCREATE || msg==WM_CREATE){
+		CREATESTRUCT* create = (CREATESTRUCT*)lparam;
+		SetWindowLongPtr(wnd,GWLP_USERDATA,(LPARAM)create->lpCreateParams);
+	}
+
+	FilterPreview* owner = (FilterPreview*)GetWindowLongPtr(wnd,GWLP_USERDATA);
+
+	switch(msg){
+	case WM_NOTIFY:
+	case WM_COMMAND:
+		return SendMessage(owner->GetHwnd(),msg,wparam,lparam);
+
+	case WM_KEYDOWN:
+	case WM_KEYUP:
+	case WM_CHAR:
+		{
+			MSG m = {0};
+			m.hwnd = owner->GetHwnd();
+			m.message = msg;
+			m.wParam = wparam;
+			m.lParam = lparam;
+			m.time = GetMessageTime();
+			return owner->TranslateAcceleratorMessage(&m)!=0;
+		}
+
+	case WM_MOUSEACTIVATE:
+		return MA_NOACTIVATE;
+
+	case WM_ACTIVATE:
+		if(LOWORD(wparam)==WA_ACTIVE || LOWORD(wparam)==WA_CLICKACTIVE && lparam) SetActiveWindow((HWND)lparam);
+		return 0;
+	}
+
+	return DefWindowProcW(wnd,msg,wparam,lparam);
+}
+
 void FilterPreview::OnInit() {
 	mpTimeline = &g_project->GetTimeline();
 	mTimelineRate = g_project->GetTimelineFrameRate();
@@ -470,8 +518,22 @@ void FilterPreview::OnInit() {
 	mWidth = 0;
 	mHeight = 0;
 
-	mhwndPosition = CreateWindow(POSITIONCONTROLCLASS, NULL, WS_CHILD|WS_VISIBLE, 0, 0, 0, 64, mhdlg, (HMENU)IDC_FILTDLG_POSITION, g_hInst, NULL);
+	int host_style_ex = WS_EX_NOACTIVATE;
+	int host_style = WS_POPUP|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_VISIBLE;
+	WNDCLASSW cls={CS_OWNDC,NULL,0,0,GetModuleHandleW(0),0,0,0,0,L"preview_pos_host"};
+	cls.lpfnWndProc=preview_pos_host_proc;
+	RegisterClassW(&cls);
+	mhwndPosHost = CreateWindowExW(host_style_ex,cls.lpszClassName,0,host_style,0,0,0,0,mhdlg,0,cls.hInstance,this);
+	RECT r1;
+	GetClientRect(g_projectui->GetHwnd(),&r1);
+	POINT p1 = {0,r1.bottom-64};
+	MapWindowPoints(g_projectui->GetHwnd(),0,&p1,1);
+	SetWindowPos(mhwndPosHost,mhdlg,p1.x,p1.y,r1.right,64,SWP_NOACTIVATE);
+	EnableWindow(mhwndPosHost,true);
+
+	mhwndPosition = CreateWindow(POSITIONCONTROLCLASS, NULL, WS_CHILD|WS_VISIBLE, 0, 0, 0, 64, mhwndPosHost, (HMENU)IDC_FILTDLG_POSITION, g_hInst, NULL);
 	mpPosition = VDGetIPositionControl((VDGUIHandle)mhwndPosition);
+	SetWindowPos(mhwndPosition, NULL, 0, 0, r1.right, 64, SWP_NOZORDER|SWP_NOACTIVATE);
 
 	mpPosition->SetRange(0, mpTimeline->GetLength());
 	mpPosition->SetFrameTypeCallback(VDGetPositionControlCallbackTEMP());
@@ -489,6 +551,7 @@ void FilterPreview::OnInit() {
 	mpVideoWindow->SetChild(mhwndDisplay);
 	mpVideoWindow->SetDisplay(mpDisplay);
 	mpVideoWindow->SetMouseTransparent(true);
+	mpVideoWindow->SetBorderless(true);
 
 	mDlgNode.hdlg = mhdlg;
 	mDlgNode.mhAccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_PREVIEW_KEYS));
@@ -503,7 +566,7 @@ void FilterPreview::OnResize() {
 	mDisplayX	= 0;
 	mDisplayY	= 0;
 	mDisplayW	= r.right;
-	mDisplayH	= r.bottom - 64;
+	mDisplayH	= r.bottom;
 
 	if (mDisplayW < 0)
 		mDisplayW = 0;
@@ -511,7 +574,7 @@ void FilterPreview::OnResize() {
 	if (mDisplayH < 0)
 		mDisplayH = 0;
 
-	SetWindowPos(mhwndPosition, NULL, 0, r.bottom - 64, r.right, 64, SWP_NOZORDER|SWP_NOACTIVATE);
+	//SetWindowPos(mhwndPosition, NULL, 0, r.bottom - 64, r.right, 64, SWP_NOZORDER|SWP_NOACTIVATE);
 	SetWindowPos(mhwndVideoWindow, NULL, mDisplayX, mDisplayY, mDisplayW, mDisplayH, SWP_NOZORDER|SWP_NOACTIVATE);
 
 	InvalidateRect(mhdlg, NULL, TRUE);
@@ -625,6 +688,16 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 		else
 			mpPosition->SetRange(0, mFiltSys.GetOutputFrameCount());
 
+		VDPosition sel_start = g_project->GetSelectionStartFrame();
+		VDPosition sel_end = g_project->GetSelectionEndFrame();
+		if(sel_start!=0 && sel_end!=-1){
+			if(srcRate!=mFiltSys.GetOutputFrameRate()){
+				sel_start = 0;
+				sel_end = -1;
+			}
+		}
+		mpPosition->SetSelection(sel_start, sel_end);
+
 		if (mInitialTimeUS >= 0) {
 			const VDFraction outputRate(mFiltSys.GetOutputFrameRate());
 			mpPosition->SetPosition(VDRoundToInt64(outputRate.asDouble() * (double)mInitialTimeUS * (1.0 / 1000000.0)));
@@ -645,8 +718,8 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 
 	if (fResize) {
 		r.left = r.top = 0;
-		r.right = w + 8;
-		r.bottom = h + 8 + 64;
+		r.right = w;
+		r.bottom = h;
 
 		AdjustWindowRect(&r, GetWindowLong(mhdlg, GWL_STYLE), FALSE);
 
@@ -869,6 +942,7 @@ void FilterPreview::Display(VDXHWND hwndParent, bool fDisplay) {
 	} else if (mpFilterChainDesc) {
 		mhwndParent = (HWND)hwndParent;
 		mhdlg = CreateDialogParam(g_hInst, MAKEINTRESOURCE(IDD_FILTER_PREVIEW), (HWND)hwndParent, StaticDlgProc, (LPARAM)this);
+		g_projectui->DisplayPreview(true);
 	}
 
 	UpdateButton();

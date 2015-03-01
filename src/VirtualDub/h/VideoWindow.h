@@ -26,6 +26,7 @@ public:
 	virtual void SetSourcePAR(const VDFraction& fr) = 0;
 	virtual void SetZoom(double zoom) = 0;
 	virtual double GetMaxZoomForArea(int w, int h) = 0;
+	virtual void SetBorderless(bool) = 0;
 };
 
 IVDVideoWindow *VDGetIVideoWindow(HWND hwnd);

@@ -38,7 +38,7 @@ struct VDVideoFiltersDialogResult {
 	sint64		mNewFrameCount;
 };
 
-VDVideoFiltersDialogResult VDShowDialogVideoFilters(VDGUIHandle h, IVDVideoSource *pVS, VDPosition initialTime, int edit_instance=-1);
+VDVideoFiltersDialogResult VDShowDialogVideoFilters(VDGUIHandle h, IVDVideoSource *pVS, VDPosition initialTime, int edit_instance=-1, HWND* owner_ref=0);
 VDVideoFiltersDialogResult VDShowDialogVideoFilters(VDGUIHandle hParent, int w, int h, int format, const VDFraction& rate, sint64 length, VDPosition initialTime);
 
 #endif

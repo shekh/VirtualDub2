@@ -411,6 +411,7 @@ VDProjectUI::VDProjectUI()
 	, mhwndOutputFrame(NULL)
 	, mhwndInputDisplay(NULL)
 	, mhwndOutputDisplay(NULL)
+	, mhwndFilters(NULL)
 	, mpInputDisplay(NULL)
 	, mpOutputDisplay(NULL)
 	, mhwndStatus(NULL)
@@ -1262,7 +1263,7 @@ void VDProjectUI::SetVideoFiltersAsk() {
 	}
 
 	LockFilterChain(true);
-	VDVideoFiltersDialogResult result = VDShowDialogVideoFilters(mhwnd, inputVideo, initialTime, edit_instance);
+	VDVideoFiltersDialogResult result = VDShowDialogVideoFilters(mhwnd, inputVideo, initialTime, edit_instance, &mhwndFilters);
 	LockFilterChain(false);
 
 	if (result.mbDialogAccepted && result.mbRescaleRequested) {
@@ -4066,5 +4067,21 @@ void VDProjectUI::OnAudioDisplaySetAudioOffset(IVDUIAudioDisplayControl *source,
 	g_dubOpts.audio.offset += (long)inputAudio->samplesToMs(offset);
 
 	source->Rescan();
+}
+
+void VDProjectUI::DisplayPreview(bool v)
+{
+	ShowWindow(mhwndPosition, v ? SW_HIDE:SW_SHOWNOACTIVATE);
+	if (mhwndFilters) ShowWindow(mhwndFilters, v ? SW_HIDE:SW_SHOWNOACTIVATE);
+	mpUIBase->SetVisible(!v);
+	
+	if (v) {
+		::ShowWindow(mhwndInputFrame, SW_HIDE);
+		::ShowWindow(mhwndOutputFrame, SW_HIDE);
+	} else {
+		bool videoPresent = inputVideo != NULL;
+		::ShowWindow(mhwndInputFrame, mPaneLayoutMode != kPaneLayoutOutput && videoPresent);
+		::ShowWindow(mhwndOutputFrame, mPaneLayoutMode != kPaneLayoutInput && videoPresent);
+	}
 }
 
