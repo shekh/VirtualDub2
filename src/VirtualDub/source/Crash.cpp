@@ -1840,7 +1840,7 @@ static bool DoSave(const char *pszFilename, const wchar_t *pwszFilename, HANDLE 
 	VDDebugCrashTextOutputFile out(pszFilename, pwszFilename);
 
 	out.WriteF(
-			"VirtualDub crash report -- build %d ("
+			"VirtualDub FilterMod crash report -- build %d ("
 #ifdef DEBUG
 			"debug"
 #elif defined(_M_AMD64)

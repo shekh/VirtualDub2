@@ -306,6 +306,10 @@ void VDSubstituteStrings(VDStringW& s) {
 					t.append("Unknown compiler");
 				#endif
 				break;
+
+			case L'm':
+				t.append(L"Includes modifications: see sourceforge.net/projects/vdfiltermod");
+				break;
 		}
 
 		posLast = pos + 2;

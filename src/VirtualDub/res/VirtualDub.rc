@@ -901,7 +901,7 @@ CAPTION "About VirtualDub"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,283,218,50,14
-    LTEXT           "VirtualDub $v$s - Copyright (C) 1998-2012 by Avery Lee, All Rights Reserved.\nCompiled with $k\n\nThis program is free software and may be distributed according to the terms of the GNU General Public License.",IDC_STATIC_VERSION,7,7,326,45
+    LTEXT           "VirtualDub $v$s - Copyright (C) 1998-2012 by Avery Lee, All Rights Reserved.\n$m\nCompiled with $k\nThis program is free software and may be distributed according to the terms of the GNU General Public License.",IDC_STATIC_VERSION,7,7,326,45
     LTEXT           "Build 0/release (baka baka baka)",IDC_FINALS_SUCK,7,54,238,8
     GROUPBOX        "Special thanks",IDC_STATIC,7,71,326,142
     LTEXT           "Please send all comments, criticism, etc. to <phaeron@virtualdub.org>.",IDC_STATIC,7,220,254,8
