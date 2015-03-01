@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="VirtualDub-VC2005"
+	IntermediateDirectory="$(VDObjPath)"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="h;..\h"
+		PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE,_SCL_SECURE_NO_DEPRECATE,_SECURE_SCL=0"
+		StringPooling="true"
+		BufferSecurityCheck="false"
+		FloatingPointModel="2"
+		RuntimeTypeInfo="false"
+		WarningLevel="4"
+		DebugInformationFormat="3"
+	/>
+	<UserMacro
+		Name="VDBaseDir"
+		Value="..\.."
+	/>
+	<UserMacro
+		Name="VDDirTag"
+		Value="$(VDConfigDirTag)$(VDPlatformDirTag)"
+	/>
+	<UserMacro
+		Name="VDLibPath"
+		Value="$(VDBaseDir)\lib\$(VDDirTag)"
+	/>
+	<UserMacro
+		Name="VDOutputPath"
+		Value="$(VDBaseDir)\out\$(VDDirTag)"
+	/>
+	<UserMacro
+		Name="VDObjPath"
+		Value="$(VDBaseDir)\obj\$(VDDirTag)\$(ProjectName)"
+	/>
+</VisualStudioPropertySheet>

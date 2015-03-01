@@ -1,0 +1,1000 @@
+<lina:for-each name="/dialog-docs/dialog">
+	<lina:tag name="lina:create">
+		<lina:attrib name="file"><lina:arg name="filename"/></lina:attrib>
+		<lina:attrib name="title">Dialogs: <lina:arg name="name"/></lina:attrib>
+		<lina:body/>
+	</lina:tag>
+</lina:for-each>
+
+<lina:data>
+	<dialog-docs>
+		<dialog name="Video filters" filename="d-videofilters.html">
+			<blockquote>
+				<lina:image src="pics/d-videofilters.png"/>
+			</blockquote>
+			<ul>
+				<li><a href="video-filters.html">Video filter reference</a></li>
+			</ul>
+
+			<p>
+				Video filters transform video frames sequentially, such as blurring the image,
+				resizing the image frame, or applying noise reduction. VirtualDub's video filter
+				system takes chains of filters, which are set up through the Video Filters dialog.
+			</p>
+			<dl class="useitalics">
+				<dt>Filter name and parameters</dt>
+				<dd>
+					Each filter entry has the name of the filter beside the frame sizes, as well as
+					a parameter list for the filter. The parameter list is filter-specific and is
+					only shown to aid in scanning the filter chain.
+				</dd>
+
+				<dt>Enable/disable</dt>
+				<dd>
+					The checkbox at the left side of each entry in the filter list allows individual
+					entries to be toggled on and off. When a filter is disabled, it neither affects
+					the video nor influences other filters in the list. This is useful for quickly
+					switching between different configurations for testing.
+				</dd>
+								
+				<dt>Frame sizes</dt>
+				<dd>
+					Each video filter in the list is shown with the size of the video frame entering
+					the filter and the video frame size produced by that filter. Video filter chains
+					may be created without a video loaded, and when the video is changed, the input
+					and output frame sizes for each frame will change accordingly.
+					<lina:note>
+						If no video is loaded, VirtualDub will compute frame sizes as if a 320x240
+						input were present.
+					</lina:note>
+				</dd>
+				
+				<dt>Frame formats</dt>
+				<dd>
+					If <i>show formats</i> is checked, the filter list will also show the image formats
+					of the input and output frames of each filter. This clearly shows which portions
+					of the video filter pipeline are running in different RGB or YCbCr color spaces.
+				</dd>
+
+				<dt>Cropping</dt>
+				<dd>
+					Cropping can be applied at the beginning of any filter by selecting the entry
+					and selecting the <em>Cropping...</em> button. Once cropping borders are set,
+					the cropped frame is reflected in the input frame size for that filter entry.
+				</dd>
+				<dd>
+					The crop dialog gives a choice between <i>precise</i> and <i>fast</i> cropping
+					mode when YCbCr formats are involved. When the crop parameters can't be exactly
+					supported with the given format, the filter pipeline chooses between either
+					converting formats to one that can support the exact requested crop, or adjusting
+					the crop parameters; <i>precise</i> converts, and <i>fast</i> adjusts. For
+					instance, attempting to crop to odd pixel boundaries in 4:2:0 YCbCr (YV12) will
+					cause a conversion to 4:4:4 YCbCr (YV24) in precise mode and rounding to even pixel
+					coordinates in fast mode. The default is precise. The RGB32 and 4:4:4 YCbCr (YV24)
+					formats are the top-level formats that can support any crop for their respective
+					color spaces.
+				</dd>
+
+				<dt>Filter order</dt>
+				<dd>
+					Filters are executed from top to bottom; use the <em>Move Up</em> and <em>Move Down</em>
+					buttons move the currently selected filter up or down one slot. Frame sizes are automatically
+					recomputed as filters are moved.
+				</dd>
+
+				<dt>Loading filters</dt>
+				<dd>
+					The <em>Add Filters</em> sub-dialog has a <em>Load...</em> button for loading third-party
+					video filters. These video filters need to be written specifically for VirtualDub and
+					have a <tt>.vdf</tt> file extension.
+
+					<lina:note>
+						Video filters loaded from this dialog are loaded only for the current session. If
+						you want filters loaded all the time, move them under <tt>plugins\</tt>
+						in VirtualDub's program directory.
+					</lina:note>
+				</dd>
+				
+				<dt>Alignment marker</dt>
+				<dd>
+					A <tt>[A]</tt> marker appears beside a filter when VirtualDub has to perform memory realignment
+					on entry to the filter. This doesn't change quality in any way, but does lower performance
+					a tiny bit.
+				</dd>
+				
+				<dt>Conversion marker</dt>
+				<dd>
+					A <tt>[C]</tt> marker appears beside a filter when VirtualDub has to perform a conversion
+					on entry to the filter. The most common conversion needed is a color space conversion.
+					This can happen because the filter does not support the output from the previous filter,
+					or because the cropping parameters for the filter are not possible with the original
+					image format. Reconfiguring the pipeline to avoid conversions can result in slight quality
+					and/or speed boosts.
+				</dd>
+				
+				<dt>Blending</dt>
+				<dd>
+					A <tt>[B]</tt> marker means that a filter is being blended. When blending is active, the
+					<i>Curve Editor</i> in the main view can be used to blend the result of the filter in and out
+					over time.
+				</dd>
+				<dd>
+					Blending is only permitted when the input and output frames on the filter are the same size;
+					otherwise, an error will result. For instance, you can't blend a <i>resize</i> filter that
+					is taking a 320x240 frame and producing 640x480 output.
+				</dd>
+			</dl>
+		</dialog>
+
+		<dialog name="Video frame rate control" filename="d-videoframerate.html">
+			<blockquote>
+				<lina:image src="pics/d-videoframerate.png"/>
+			</blockquote>
+
+			<p>
+				The <em>Video frame rate control</em> dialog allows you to alter the frame rate of video,
+				reduce the number of frames, or remove 3:2 pulldown.
+			</p>
+
+			<dl>
+				<dt>Adjusting frame rate</dt>
+				<dd>
+					If the source video has the wrong frame rate or doesn't natively have a frame rate
+					(image sequence), you can specify one in the source correction portion of the dialog.
+					You can either type in a rate, or have VirtualDub automatically choose a &quot;same length&quot;
+					setting, such that the video and audio tracks end at the same time.
+
+					<lina:note>
+						No frames are added or deleted by this setting, so if the video is synchronized
+						with the audio beforehand it won't be after you change the frame rate. Similarly, if the video isn't
+						synchronized, you may be able to fix it with this setting.
+					</lina:note>
+
+					<lina:note>
+						Manually entered frame rates are rounded to the nearest microsecond period. In particular,
+						you cannot enter an exact NTSC fraction (30000/1001).
+					</lina:note>
+				</dd>
+
+				<dt>Frame rate decimation</dt>
+				<dd>
+					<em>Decimation</em> pulls frames from a source at regular intervals. This is useful for
+					producing &quot;thumbnail&quot; videos with small sizes, and for dropping the rate of a video
+					without introducing jerkiness due to uneven frame rate. The decimation interval must be
+					a positive integer.
+				</dd>
+
+				<dt>Inverse telecine (3:2 pulldown)</dt>
+				<dd>
+					<p>
+						<em>3:2 pulldown</em>, or telecine, is the process by which film-rate material (24 fps) is converted to
+						NTSC rate (29.97 fps). This is done by splitting the film frames into fields, and then &quot;pulling&quot;
+						fields down in an alternating 3,2,3,2... pattern. This produces five output frames for every four
+						input frames, in a characteristic pattern of three progressive frames, followed by two interlaced frames.
+						The resultant 30 fps stream is then slowed down slightly to the target 29.97 fps.
+					</p>
+					<p>
+						<em>Inverse telecine (IVTC)</em> attempts to recover the original 24 fps stream by analyzing the
+						input frames and removing the duplicate fields. In <em>adaptive mode</em>, VirtualDub attempts to
+						guess the position of the 3:2 pattern, while in <em>manual mode</em>, you specify the offset and polarity.
+						In both cases, the input frame rate is dropped by 20%, changing a 29.97 fps input to 23.976 fps.
+					</p>
+					<p>
+						The third mode, <em>reconstruct from blurred fields</em>, handles the case where a video has been
+						telecined, and then the fields blurred together, usually by shrinking the video size. In this case
+						the original frames cannot be recovered by matching fields, but can be recovered through simple
+						frame algebra. The reconstructed frames will have more noise and possibly ghosting where clipping
+						at black or white has occurred, but if successful the result is a smooth progressive video.
+					</p>
+
+					<lina:note>
+						All of VirtualDub's IVTC modes assume a regular 3-2 pattern. More complex telecine patterns are possible
+						which cannot be removed through this system.
+					</lina:note>
+				</dd>
+			</dl>
+		</dialog>
+
+		<dialog name="Video color depth" filename="d-videocolordepth.html">
+			<blockquote>
+				<lina:image src="pics/d-videocolordepth.png"/>
+			</blockquote>
+
+			<p>
+				Selects the desired image formats for video decompression and video compression.	
+			</p>
+
+			<dl>
+				<dt>Decompression format</dt>
+				<dd>
+					<p>
+						Selects a color format to target when decompressing the input video.
+					</p>
+					<p>
+						For a compressed source, this format is requested directly from the video codec. "Autoselect"
+						will choose a common, safe RGB format, such as 24-bit, 32-bit, or 15-bit RGB.
+					</p>
+					<p>
+						For an uncompressed source (or Avisynth script), the desired format is produced through image
+						conversion if it is not the same as the source. YCbCr-to-YCbCr conversions do not round-trip
+						through RGB. "Autoselect" chooses the source format so that no conversion is necessary.
+					</p>
+					<p>
+						If the video codec cannot produce the format you have selected, VirtualDub will automatically
+						attempt to degrade the video format to a similar format that is supported. For instance, if
+						16-bit RGB fails, 24-bit RGB will be tried. The fallback code avoids color space conversions
+						if possible; if a YCbCr format fails, other YCbCr formats will be tested before resorting
+						to RGB.
+					</p>
+				</dd>
+
+				<dt>Output format</dt>
+				<dd>
+					<p>
+						Selects a color format for output. During preview, this is the format sent to the display panes.
+						When video compression is active, this selects the format received by the video compressor.
+					</p>
+
+					<p>
+						The output format is produced by conversion from the input format. When video filters are in
+						use, the input format is converted to 32-bit RGB, processed, and the result converted to
+						the output format. If video filters are not being used, the input format is converted directly
+						to the output format.
+					</p>
+
+					<lina:note>
+						As is standard in GDI bitmaps, the 32-bit format has a dummy alpha channel, used only for
+						padding. VirtualDub cannot currently target a 32-bit format with meaningful alpha.
+					</lina:note>
+
+					<lina:note>
+						The size of the output format doesn't necessarily relate to how well the output compresses
+						through a video codec. For instance, converting from 24-bit RGB to 16-bit RGB can hinder
+						compression, because it increases quantization noise (banding) in the image.
+					</lina:note>
+				</dd>
+			</dl>
+
+			<h2>Format descriptions</h2>
+			<dl>
+				<dt>16-bit RGB (555)</dt>
+				<dd>This is a format with five bits per channel (32 levels) for each of red, green, and blue. It is
+					a relatively low-precision format that is prone to some banding artifacts but is common on older
+					video display hardware, as it is faster and consumes less memory than 24-bit RGB. This format
+					is sometimes known as HiColor.</dd>
+
+				<dt>16-bit RGB (565)</dt>
+				<dd>This is a slightly improved version of 16-bit RGB (555), as it uses the unused bit to improve
+					precision in green.</dd>
+
+				<dt>24-bit RGB (888)</dt>
+				<dd>This is a format with eight bits per channel (256 levels) for each of red, green, and blue. It
+					is common for photographic images and is often known as TrueColor. This is the safest and most
+					reliable format to use for video interchange.</dd>
+
+				<dt>32-bit RGB (8888) (dummy alpha channel)</dt>
+				<dd>This is similar to 24-bit RGB, except that it has an additional unused eight bits per pixel.
+					Picture quality is identical to 24-bit, but the additional padding makes the pixels a more
+					convenient size for computation. This format is sometimes slightly faster than 24-bit for
+					processing, but should be avoided for storage as it wastes one-third more space.</dd>
+
+				<dt>4:2:2 YCbCr (UYVY)</dt>
+				<dd>This is a format which uses the YCbCr color space (luma, chroma-blue, chroma-red), which is
+					closer to the way color images are perceived by the human brain. It averages only 16 bits per
+					pixel with similar perceptual quality to 24-bit RGB by only storing color information at half
+					horizontal resolution, producing slight color bleeding but only taking two-thirds as much space.
+					<p>
+						This format, as do all other YCbCr formats listed below, encodes luminance (Y) with
+						a range of [16, 235] and chroma (Cb/Cr, or U/V), with a range of [16, 240].
+					</p>
+					<p>
+					UYVY is accepted directly by many video codecs. Since many video codecs internally use color
+					spaces similar to YCbCr, using this format with video codecs can speed up rendering.
+					</p>
+				</dd>
+
+				<dt>4:2:2 YCbCr (YUY2)</dt>
+				<dd>This is the same as 4:2:2 YCbCr (UYVY), except for a shuffling of data bytes. It has the same
+					quality and performance advantages as UYVY.
+				</dd>
+
+				<dt>4:2:0 planar YCbCr (YV12)</dt>
+				<dd>This is a YCbCr format with an average of 12 bits per pixel and half resolution both horizontally
+					and vertically in color information. It thus takes 25% less space than UYVY or YUY2, but with some
+					vertical bleeding. "Planar" refers to the organization of data in the format, where luma, chroma-blue,
+					and chroma-red are stored separately.
+					<p>
+						Some codecs accept this format directly for further increases in performance over the 4:2:2
+						formats. However, it should be avoided for interlaced video, where the loss of vertical color
+						resolution can cause motion artifacts between fields.
+					</p>
+					<lina:note>
+						Although 4:2:0 YCbCr formats exist that accommodate interlacing, the YV12 four-character code (FOURCC)
+						denotes a specific 4:2:0 encoding that is non-interlaced.
+					</lina:note>
+				</dd>
+
+				<dt>4:2:2 planar YCbCr (YV16)</dt>
+				<dd>This is a YCbCr format with an average of 16 bits per pixel and half horizontal resolution in
+					color information.
+					<p>
+						The YV16 format is rare and not well supported by video codecs and playback applications,
+						but is supported here for completeness.
+					</p>
+				</dd>
+
+				<dt>4:1:0 planar YCbCr (YVU9)</dt>
+				<dd>This is a YCbCr format with an average of 9 bits per pixel and quarter resolution both horizontally
+					and vertically in color information. YVU9 thus takes 43% less space than UYVY/YUY2 and 62% less
+					space than 24-bit RGB, but at the cost of significant color bleeding.
+				</dd>
+
+				<dt>Luminance only (Y8)</dt>
+				<dd>Y8 is a monochrome format, and thus selecting it will cause video to be converted to grayscale.
+					However, it only requires half of the space of UYVY or YUY2 at 8 bits per pixel.
+					<p>
+					Y8 uses the same luma scale as YCbCr, 16-240, so there is a very slight loss of luma precision
+					compared to 24-bit RGB. However, conversion between Y8 and YCbCr formats is lossless in luma and
+					extremely fast.
+					</p>
+				</dd>
+			</dl>
+
+		</dialog>
+
+		<dialog name="Video range" filename="d-videorange.html">
+			<blockquote>
+				<lina:image src="pics/d-videorange.png"/>
+			</blockquote>
+
+			<p>
+				Selects a subset of the input to use.
+			</p>
+
+			<dl>
+				<dt>Input range</dt>
+				<dd>
+					Controls how much video at the beginning and ends of the source is skipped during processing,
+					so that only a portion in the middle is used. All offsets can be set in either frames or
+					milliseconds (ms).
+
+					<lina:note>
+						Offsets persist even if you load a new file.
+					</lina:note>
+
+					<lina:note>
+						The end offset is the number of milliseconds from the end, not from the beginning.  It is
+						usually easier to set start/end points from the position control (<em>HOME</em>/<em>END</em>).
+					</lina:note>
+
+					<lina:note>
+						You can only select a single range with this dialog; use the <em>delete frames</em> feature
+						to extract multiple segments in a single pass.
+					</lina:note>
+				</dd>
+
+				<dt>Offset audio to maintain a/v sync</dt>
+				<dd>
+					Controls whether the start offset applies to the audio stream.  If unchecked, the start offset
+					deletes frames only from the video stream, advancing it that many frames ahead of the audio stream.
+					This will alter audio/video synchronization accordingly.
+				</dd>
+
+				<dt>Cut off audio when video stream ends</dt>
+				<dd>
+					If the audio stream is longer than the video stream, this controls whether the extra audio
+					is used or not.  Generally, players continue to show the last video frame while the remaining
+					audio plays.
+				</dd>
+			</dl>
+
+		</dialog>
+
+		<dialog name="Video compression" filename="d-videocompression.html">
+			<blockquote>
+				<lina:image src="pics/d-videocompression.png"/>
+			</blockquote>
+
+			<p>
+				VirtualDub can use video codecs installed in Windows to compress video.
+
+				<lina:note>
+					Video codecs are external drivers created by third parties and are not part of VirtualDub.
+					VirtualDub does not install codecs by itself and does not provide any video compression technology of its own.
+				</lina:note>
+			</p>
+
+			<dl>
+				<dt>Selecting a video codec</dt>
+				<dd>
+					Currently installed video codecs are listed in the top left pane; select a codec to use
+					or choose &quot;uncompressed RGB&quot; to disable video compression. Once a codec is
+					selected, diagnostic information appears on the right side.  Every codec has a unique
+					<em>fourcc</em>, or four character code, associated with it.
+
+					<lina:note>
+						Not all codecs are usable -- sometimes programs install versions of a codec designed
+						only to decompress video, not to compress it. Also, sometimes the codecs are keyed
+						to a particular program due to licensing concerns, and thus won't work in VirtualDub.
+					</lina:note>
+
+					<lina:note>
+						For performance reasons, many codecs split the video frame into equal-size tiles and
+						thus require the frame width and height to be specific multiples of the tile size.
+						Requiring the width to be a multiple of four pixels is very common. VirtualDub
+						attempts to detect such limitations and displays any such information in the right
+						pane. In some rare cases with broken codecs this check fails, and the result may
+						be a &quot;bad format&quot; error when you attempt to begin compression.
+					</lina:note>
+				</dd>
+
+				<dt>Configuring the codec</dt>
+				<dd>
+					Some codecs accept <em>quality</em>, <em>data rate</em>, and <em>key frame interval</em>
+					parameters. The higher the quality, generally the slower the codec runs and the larger
+					the output, but the better the video looks after compression. By setting a data rate, you
+					request that the codec attempt to produce output at a fixed size-per-time ratio, set
+					in kilobytes/second. And by setting a key frame interval, you are enforcing that seek
+					points are placed at regular intervals in the video in order to reduce wait time when
+					seeking. Nearly all codecs support additional parameters, which can be set by pressing
+					the <em>Configure</em> button. The dialog that appears is codec-specific; please consult
+					the documentation for each codec for further details.
+
+					<lina:note>
+						Codecs are designed for a particular range of frame sizes and compression ratios and
+						perform inefficiently outside that range. In particular, for most codecs, setting Quality to 100
+						is likely to produce ridiculous file sizes and may not even produce
+						perfect-looking video. Small file size and perfect-quality video are mutually exclusive. If you need perfect quality and are willing to put up
+						with large file sizes, lossless codecs exist that are created specifically for this
+						purpose.
+					</lina:note>
+
+					<lina:note>
+						If the codec allows you to enter a key frame interval but you don't enter one, you may
+						get a video with a single key frame at the beginning. This means that every time you
+						seek backwards in the video the player will have to decompress the entire video from the start
+						up to that point, which is a tad slow. Key frames generally have lower compression
+						ratios, so the interval determines a tradeoff between seek latency and compression
+						efficacy.
+					</lina:note>
+
+					<lina:note>
+						Data rates specified here only pertain to video. Make sure to allow for audio
+						and for file structure overhead.
+					</lina:note>
+
+					<lina:note>
+						Many modern codecs do adaptive key frame placement and more complex data rate regulation,
+						and place all their settings in their configuration dialog. Although the data rate
+						entry in VirtualDub's configuration dialog is specified in units of kilo<b>bytes</b> per second,
+						or 1024 bytes/sec, codec dialogs generally use kilo<b>bits</b> per second (Kbits/sec),
+						or 1000 bits/sec (125 bytes/sec).
+					</lina:note>
+				</dd>
+			</dl>
+		</dialog>
+
+		<dialog name="Audio filters" filename="d-audiofilters.html">
+			<blockquote>
+				<lina:image src="pics/d-audiofilters.png"/>
+			</blockquote>
+
+			<ul>
+				<li><a href="audio-filters.html">Audio filter reference</a></li>
+			</ul>
+
+			<p>
+				VirtualDub's advanced audio filter mode supports a <em>filter graph model</em>, where you can chain
+				filters in complex, branching configurations. Filters are represented by rectangular <em>nodes</em>
+				on the graph; each node may have <em>input pins</em> on the left and <em>output pins</em> on the right.
+			</p>
+
+			<dl>
+				<dt>Adding and removing filter nodes</dt>
+				<dd>
+					To add filters, click the <em>Add...</em> button. This displays the <em>Add filter</em> subdialog,
+					which displays a list of available filters. In that subdialog, click a filter entry and then <em>Add</em>
+					to add the filter to the graph, or alternatively, double-click the filter entry. The subdialog
+					stays up until you are done adding filters and close it. Filter nodes added by mistake can be
+					removed by clicking on them and pressing the <em>Delete</em> key or button.
+				</dd>
+
+				<dt>Connecting filter nodes</dt>
+				<dd>
+					To connect filters together, drag from an input pin of one node to the output pin of another.
+					(You cannot connect two input pins or two output pins.) An arrow will be displayed showing the connection.
+					As with nodes, connections may be selected and deleted. Since this process is rather tedious, by
+					default the <em>auto-connect</em> option is enabled. Auto-connect ties the first unused
+					output pin of the currently selected filter to the first input pin of the newly added filter, and
+					then selects the new filter. Simple chains can then be established just by adding the filters
+					sequentially.
+				</dd>
+
+				<dt>Filter graph restrictions</dt>
+				<dd>
+					The following rules apply to audio filter graphs:
+					<ul>
+						<li>There must be exactly one &quot;input&quot; node.</li>
+						<li>There must be exactly one &quot;output&quot; node.</li>
+						<li>All pins must be connected.</li>
+						<li>No cycles are allowed, although parallel branching is permitted.</li>
+						<li>Parallel paths must run at the same speed.</li>
+					</ul>
+					The last rule means you can't take a stream, slow it down with &quot;stretch&quot;, and then mix it back
+					with itself.
+				</dd>
+			</dl>
+		</dialog>
+		<dialog name="Audio interleaving" filename="d-audiointerleaving.html">
+			<blockquote>
+				<lina:image src="pics/d-audiointerleaving.png"/>
+			</blockquote>
+
+			<p>
+				Although video clips have simultaneous audio and video streams that play at the same time, the files
+				that contain them are a single stream. <em>Interleaving</em> fakes having two streams by slicing the
+				audio and video streams into chunks and mixing them together in chunks by time. A player reading
+				an interleaved file receives a little bit of audio, then a bit of video, and then more audio, etc., buffering
+				them in memory for a short time before playing the two together. VirtualDub's <em>audio interleaving</em>
+				dialog controls how interleaving is performed.
+			</p>
+
+			<lina:note>
+				Audio interleaving has absolutely <i>zero</i> impact on when audio plays -- regardless of how audio and
+				video frames are scattered in an AVI file, they still maintain the same timing relationship, because
+				the index block sequences them properly.
+			</lina:note>
+
+			<lina:note>
+				Interleaving audio and video is not necessary unless the file is stored on a medium that streams
+				much more efficiently than it handles random access, such as a CD-ROM drive or transmission over the
+				Internet. High-speed devices such as hard disks can handle playback from non-interleaved files without
+				problem, which is a consideration as interleaving isn't free -- it costs a small amount of overhead
+				in the file size.
+			</lina:note>
+
+			<dl>
+				<dt>Enable audio/video interleaving</dt>
+				<dd>
+					If this option is selected, audio blocks are interleaved between video frames throughout the file. If
+					not, all of the audio is placed at the end.
+				</dd>
+
+				<dt>Preload</dt>
+				<dd>
+					Players require a certain amount of audio to be buffered ahead of time before starting video playback.
+					The <em>preload</em> option controls how much audio is placed at the beginning of the file before
+					the first video frame, in milliseconds. Usual values for this are 500ms (half second) or 1000ms (full second).
+					If this setting is improperly adjusted, the file may not play optimally on slow computers or slow
+					devices, although with modern video players this is less of a concern.
+				</dd>
+
+				<dt>Interleave interval</dt>
+				<dd>
+					Controls how often audio blocks are scattered throughout the file -- the shorter the interval, the less
+					buffering required by the player, but the more overhead in the output file. If the interleaving interval
+					is too large, players will have to seek back in forth in the file, which has the worst of both worlds since
+					the interleaving won't allow the player to do large, contiguous reads in the file. Usual values for this
+					option are either interleave once per frame (1 frame) or every half second (500ms).
+				</dd>
+
+				<dt>Audio skew correction</dt>
+				<dd>
+					This isn't really an interleaving option, and is the only option here that actually does affect audio
+					sync -- but it is here for lack of a better place. Audio delay basically shifts the audio track back and forth,
+					either by dropping samples from the beginning or adding samples at the start (zero for PCM, duplicated
+					first sample for compressed audio). Use this option to shift an audio track into place if it seems
+					a bit off.
+
+					<lina:note>
+						Audio compression may impede use of delays. Some formats, particularly, ADPCM, use large block sizes
+						that will limit the granularity of adjustments. The MP3 format used in AVI, on the other hand, has a hack
+						in its format that prevents applications from seeing the &quot;true&quot; block size of the format.
+						The result is generally junk produced at the beginning of the MP3 stream, which may not
+						produce the desired delay depending on the player.  An audio editor specifically designed to edit
+						MPEG audio streams is required in these cases.
+					</lina:note>
+				</dd>
+			</dl>
+		</dialog>
+		<dialog name="Audio compression" filename="d-audiocompression.html">
+			<blockquote>
+				<lina:image src="pics/d-audiocompression.png"/>
+			</blockquote>
+
+			<p>
+				VirtualDub can use audio codecs installed in Windows to compress video.
+
+				<lina:note>
+					Audio codecs are external drivers created by third parties and are not part of VirtualDub.
+					VirtualDub does not install codecs by itself and does not provide any audio compression technology of its own.
+				</lina:note>
+			</p>
+			
+			<dl>
+				<dt>Selecting a audio codec</dt>
+				<dd>
+					Currently installed audio codecs are listed on the left.  Select <em>No compression (PCM)</em>
+					to disable audio compression, or choose a codec. Once a codec is chosen, the available
+					compression formats produced by the codec are shown on the right. By default, VirtualDub
+					only displays those formats that can be produced by the codec from the current audio
+					source and filtering settings. Uncheck <em>show all formats</em> to display all formats
+					allowed by the codec, but note that attempting a conversion unsupported by the codec will
+					generally result in an error.
+
+					<lina:note>
+						Not all codecs are usable -- sometimes programs install versions of a codec designed
+						only to decompress audio, not to compress it. Also, sometimes the codecs are keyed
+						to a particular program due to licensing concerns, and thus won't work in VirtualDub.
+						In particular, codecs installed by some versions of Windows Media are not licensed
+						for general use and won't work except for in an ASF file under Windows Media Player.
+					</lina:note>
+
+					<lina:note>
+						Installing two codecs that compress and decompress the same format may confuse
+						VirtualDub.  This includes having more than one MP3 codec, or having both Windows
+						Media Audio and &quot;DivX Audio&quot; installed.
+					</lina:note>
+
+					<lina:note>
+						There are four common versions of the <em>MPEG Layer-3</em> codec that appear the same,
+						except for the compression formats supported:
+						<ul>
+							<li><tt>L3CODECX.ACM</tt> - no compression supported</li>
+							<li><tt>L3CODECA.ACM</tt> (Advanced) - up to 56Kbps</li>
+							<li><tt>L3CODECP.ACM</tt> (Professional) - up to 128Kbps</li>
+							<li><tt>L3CODECP.ACM</tt> (Radium warez version) - up to 256Kbps</li>
+						</ul>
+						All four of these codecs are very similar and have the same ID in the Windows Audio
+						Compression Manager, so two programs that come with different versions sometimes
+						overwrite each others' codecs when installing. If you used to have certain MP3
+						compression options and no longer have them, it's possible a program you recently
+						installed has done this.
+					</lina:note>
+				</dd>
+
+			</dl>
+		</dialog>
+		<dialog name="Audio conversion" filename="d-audioconversion.html">
+			<blockquote>
+				<lina:image src="pics/d-audioconversion.png"/>
+			</blockquote>
+
+			<p>
+				The audio conversion dialog allows for conversion between different PCM audio formats,
+				including changes in sampling frequency, sample precision, and channels.
+			</p>
+
+			<lina:note>
+				Audio conversion is only permitted if advanced filtering is off -- if advanced audio
+				filtering is on, use the <em>resample</em> filter.
+			</lina:note>
+
+			<dl>
+				<dt>Sampling rate conversions</dt>
+				<dd>
+					Allows changes in the sampling rate of the audio stream, without changing the pitch
+					of the audio itself (resampling). You can select one of the common sampling rates,
+					or <em>custom</em> to resample to any other rate. Higher sampling rates represent higher
+					frequencies better and give &quot;brighter&quot; audio, but consume more space.
+
+					<dl>
+						<dt>Integral conversion</dt>
+						<dd>
+							Forces the conversion to operate by integral multiplies (one-half, one-third, twice, three times, etc).
+							Use this if you want to convert to a integral factor of the original rate that's close but not
+							exactly the same as one of the listed values, i.e. 22047.5Hz. If the frequency you select is
+							exactly what you want then this option should be unchecked.
+						</dd>
+
+						<dt>High quality</dt>
+						<dd>
+							Switches the resampling filter from point sampling to a triangle filter for better quality. This reduces
+							aliasing, which sounds like noise or halo in the output.
+						</dd>
+					</dl>
+					<lina:note>
+						The sampling rate converter controlled by this dialog is rather antiquated and not very high-quality
+						by today's standards. The <em>resample</em> filter introduced in VirtualDub 1.5 uses a 65-point windowed-sinc
+						filter and produces better quality than the triangle filter allowed here. It is slated to replace this
+						resampler as the primary resampler in a later version.
+					</lina:note>
+				</dd>
+
+				<dt>Precision</dt>
+				<dd>
+					Controls the accuracy of audio samples -- 8-bit samples only take half as much space as 16-bit, but
+					can't represent soft sounds as accurately and have a higher noise floor.
+
+					<lina:note>
+						8-bit should really only be used if you are outputting uncompressed PCM to another program that needs it,
+						or aren't changing existing 8-bit PCM.  Otherwise, instinctually choose 16-bit.  Modern audio codecs work
+						in different audio representations, such as subbands or cosines, and thus don't get better compression
+						with 8-bit source than with 16-bit.
+					</lina:note>
+				</dd>
+
+				<dt>Channels</dt>
+				<dd>
+					<p>
+						Allows conversion of stereo audio to mono or mono to stereo. For stereo-to-mono conversions, the two channels
+						are summed at half amplitude (<tt>(l+r)/2</tt>).  For mono-to-stereo conversions, the single channel is replicated
+						into the left and right outputs.
+					</p>
+					<p>
+						The <em>left</em> and <em>right</em> options convert a stereo stream to mono by discarding the unwanted channel.
+						This is particularly useful for some dual-language or karaoke produced, where two mono streams are stored
+						as the left and right channels of a stereo track.
+					</p>
+
+					<lina:note>
+						For simple audio encodings such as PCM or ADPCM, dropping a stereo stream to mono halves the size of the
+						audio stream. More complex encodings such as MP3, however, can encode a stereo stream as &quot;center&quot;
+						and &quot;side&quot; tracks or volume differentials (mid/side and intensity modes of joint stereo). Such methods
+						take advantage of similarities between the stereo channels and can make stereo relatively cheap to encode
+						over mono.
+					</lina:note>
+				</dd>
+
+				<dt>Bandwidth required</dt>
+				<dd>
+					Shows how much space would be required per second of audio without compression (uncompressed PCM),
+					in kilobytes per second (KB/s). CD-quality audio, for instance, requires 172KB/sec (176,400 bytes per second).
+				</dd>
+			</dl>
+		</dialog>
+		<dialog name="Audio volume" filename="d-audiovolume.html">
+			<blockquote>
+				<lina:image src="pics/d-audiovolume.png"/>
+			</blockquote>
+
+			<p>
+				Permits volume adjustments to audio, to make the audio louder or softer.
+			</p>
+
+			<lina:note>
+				VirtualDub hard clips when amplifying audio, so boosting the volume too much will result in distortion.
+			</lina:note>
+
+			<lina:note>
+				It is easier to make soft audio louder than to make loud audio softer -- if the source audio was so
+				loud that it clipped during recording, introducing distortion, reducing volume after the fact won't
+				remove the distortion. On the other hand, amplifying soft audio also amplifies quantization noise,
+				which is particularly bad with 8-bit source. Try not to adjust volume more than you need to; it is
+				better to record audio at the right volume in the first place.
+			</lina:note>
+		</dialog>
+
+		<dialog name="Capture settings" filename="d-capturesettings.html">
+			<blockquote>
+				<lina:image src="pics/d-capturesettings.png"/>
+			</blockquote>
+
+			<p>
+				Controls basic video capture settings.
+			</p>
+
+			<dl>
+				<dt>Wait for OK to capture</dt>
+				<dd>If checked, a dialog is displayed after capture is initialized.  This minimizes click-to-capture delay.</dd>
+
+				<dt>Frame rate</dt>
+				<dd>Controls how fast video frames are captured.
+					<lina:note>Frame rates are rounded to the nearest microsecond period.</lina:note>
+				</dd>
+
+				<dt>Round to nearest millisecond</dt>
+				<dd>
+					Some capture drivers only allow frame rates corresponding to integer periods in milliseconds.
+					With such a driver, for instance, the two closest rates to 15 fps are 14.925 fps (67 ms) and 15.152 fps (66 ms).
+					This button allows you to see the actual rate that would occur.
+				</dd>
+			</dl>
+
+			<h2>Obsolete settings</h2>
+			<p>
+				Many settings that used to be in this dialog have been obsoleted or moved:
+			</p>
+
+			<dl>
+				<dt>Capture audio</dt>
+				<dd>Now an option on the Audio menu.</dd>
+
+				<dt>Abort hotkey and button</dt>
+				<dd>
+					The abort hotkey is now always Esc. Also, it is program-local (VirtualDub must have focus for it to work).
+				</dd>
+
+				<dt>Audio and video buffer limits, audio buffer size</dt>
+				<dd>
+					Set automatically.
+				</dd>
+
+				<dt>Drop % limit, maximum index entries, lock video stream to audio</dt>
+				<dd>
+					These options applied only to AVICap (compatibility mode) capture, which is no longer supported.
+				</dd>
+			</dl>
+
+		</dialog>
+
+		<dialog name="Preferences" filename="d-preferences.html">
+			<blockquote>
+				<lina:image src="pics/d-preferences.png"/>
+			</blockquote>
+			<p>
+				Sets application preferences.
+			</p>
+
+			<p>Main tab:</p>
+			<dl>
+				<dt>Output color depth</dt>
+				<dd>
+					Selects the default color precision for video display -- 24-bit looks better, but 16-bit is generally
+					faster.  This does not affect file output.
+				</dd>
+
+				<dt>Process priority</dt>
+				<dd>
+					Force VirtualDub to be at a higher or lower priority than other applications when processing files.
+					VirtualDub will always use CPU time that goes unused by other programs, but you can use this setting
+					to force it to use more or less CPU when other applications need it as well.
+				</dd>
+
+				<dt>Automatically add extension to filenames when saving</dt>
+				<dd>
+					Controls whether file extensions (<tt>.avi</tt>) are automatically added when you type a filename
+					without one in a save dialog.
+				</dd>
+			</dl>
+
+			<p>Display tab (none of these options affect file output):</p>
+			<dl>
+				<dt>Enable 16-bit dithering</dt>
+				<dd>
+					If enabled, 24-bit images are dithered when displaying in 16-bit to reduce banding, at the cost
+					of a little speed.
+				</dd>
+				
+				<dt>Use DirectX for display panes</dt>
+				<dd>
+					Enables accelerated video display for the display panes. This usually results in
+					much better display performance as well as a better looking, smoother (interpolated) image.
+					Disabling this option forces use of the safest but slowest display mechanism, which uses
+					Windows GDI to render video images.
+				</dd>
+
+				<dt>Use DirectX when Terminal Services is active</dt>
+				<dd>
+					Enables accelerated video display over a remote session using Windows Terminal Services or
+					Remote Desktop. Due to apparent bugs in the Terminal Server implementation, allowing DirectX
+					acceleration in this mode can cause video to always display in the upper-left corner of the
+					desktop, so by default VirtualDub disables acceleration when it detects a remote session.
+					This is often faster anyway.
+				</dd>
+
+				<dt>Use Direct3D</dt>
+				<dd>
+					Enables use of the Direct3D 9.0c accelerated 3D graphics API to display video. This enables
+					use of the filtering options in the display panes to select between point sampling and
+					bilinear filtering, and if the 3D device is powerful enough, bicubic filtering.
+				</dd>
+
+				<dt>Use effect file</dt>
+				<dd>
+					Enables use of a D3DX effect file (<tt>.fx</tt>) to specify custom Direct3D vertex and pixel shaders
+					to display video. This requires an additional DirectX system DLL to be installed and knowledge
+					of the effect file format to create the appropriate effects. Consult the <a href="fxvideo.html">video
+					shader reference</a> for details.
+				</dd>
+
+				<dt>Use OpenGL</dt>
+				<dd>
+					Enables use of the OpenGL accelerated 3D graphics API to display video. This enables use of
+					the filtering options in the display panes to select between point sampling and bilinear
+					filtering. Note that use of OpenGL when an accelerated 3D device is not present may result
+					in substantial performance degredation.
+				</dd>
+			</dl>
+
+			<p>Scene tab:</p>
+			<dl>
+				<dt>Interframe (cut) and intraframe (fade) thresholds</dt>
+				<dd>
+					Controls the sensitivity of the scene forward/backward buttons on the position bar.
+					A &quot;scene change&quot; is detected whenever there is a significant change in the image
+					(cut), or scene details drop below a threshold (fade).
+				</dd>
+			</dl>
+
+			<p>CPU tab:</p>
+			<dl>
+				<dt>Use default optimizations, or force specific optimizations</dt>
+				<dd>
+					By default, VirtualDub automatically detects your CPU and chooses appropriately optimized
+					code paths.  If you experience problems due to incorrect detection, you can force specific
+					codepaths on or off in this tab.  Note that enabling an optimization not supported by your
+					CPU will result in a crash or incorrect execution.
+
+					<lina:note>
+						Video and audio codecs do their own CPU-specific dispatch, and are not controllable by
+						these settings.  If you experience problems with a codec that is not detecting your
+						CPU correctly, you must contact the codec manufacturer for help.
+					</lina:note>
+				</dd>
+			</dl>
+
+			<p>AVI tab:</p>
+			<dl>
+				<dt>Restrict legacy AVI support to 1 gigabyte</dt>
+				<dd>
+					Extended AVI files (AVI 2.0 or OpenDML AVI) are composed of two parts: a legacy AVI portion,
+					and extended AVI blocks.  This option drops the limit for the legacy portion from 2GB to 1GB,
+					for applications that cannot handle AVI files between 1-2GB, and may be helpful if you have
+					running applications that scan AVI files and choke on large ones.  It has no effect on
+					programs that handle extended AVI files.
+				</dd>
+
+				<dt>Do not correct MPEG layer III audio streams</dt>
+				<dd>
+					Some MP3 codecs do not generate MP3 streams at exactly the same rate as specified in their
+					audio format when 44.1KHz sampling rates are used -- this causes a small discrepancy in
+					audio sync of around 0.5%.  By default, VirtualDub recomputes the data rate and automatically
+					corrects the audio header when MP3 compression is active.  This option allows you to disable
+					correction if it is causing problems, such as an MP3 stream being generated in a format that
+					VirtualDub cannot parse correctly.
+				</dd>
+
+				<dt>Directly decode YCbCr (YUV) sources</dt>
+				<dd>
+					By default, VirtualDub will directly decode AVI video streams with uncompressed YCbCr
+					formats that it recognizes, including UYVY, YUY2, YV16, YV12, I420, IYUV, Y41P, YVU9,
+					Y8, and Y800, even if an external video codec would otherwise be used. This can result
+					in better quality as VirtualDub uses bilinear interpolation when upsampling chroma.
+					Disabling this option will disable YCbCr decode support and allow use of video codecs
+					to handle such data.
+				</dd>
+
+				<dt>Align large uncompressed frames to sector boundary</dt>
+				<dd>
+					Some self-contained, professional-level hardware playback devices attain higher performance when working with AVIs that
+					have video frames aligned to sector boundaries on the disk rather than the simple
+					two-byte alignment required by AVI. Enabling this option causes sector alignment to
+					be used, at the cost of slightly larger AVI files. The additional alignment is
+					only in effect when a recognized uncompressed video format is used and the size of
+					the video frame exceeds the specified threshold size.
+				</dd>
+			</dl>
+
+			<p>Timeline page:</p>
+			<dl>
+				<dt>Timeline format</dt>
+				<dd>
+					This option allows customization of the timestamp indicator on VirtualDub's main UI.
+					Formatting specifiers &mdash; a percent sign followed by a letter &mdash; cause
+					various pieces of information to be substituted into the given string. The permitted
+					formatting specifiers are listed below the editable string.
+				</dd>
+			</dl>
+
+			<p>Render options:</p>
+			<dl>
+				<dt>Confirm when abort button is pressed</dt>
+				<dd>
+					When enabled, attempts to abort a preview or save operation will cause a confirmation
+					dialog to be displayed before actually aborting.
+				</dd>
+			</dl>
+
+			<p>Threading options:</p>
+			<dl>
+				<dt>Video compression threads</dt>
+				<dd>
+					Controls the number of threads used for video compression; zero disables multithreaded
+					video compression. See <a href="p-compression.html">compression</a> for more details.
+				</dd>
+			</dl>
+
+		</dialog>
+	</dialog-docs>
+</lina:data>

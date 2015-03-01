@@ -1,0 +1,128 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "winresrc.h"
+#ifndef IDC_STATIC
+#define IDC_STATIC (-1)
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""winresrc.h""\r\n"
+    "#ifndef IDC_STATIC\r\n"
+    "#define IDC_STATIC (-1)\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_SCREENCAP_OPTS DIALOGEX 0, 0, 300, 226
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Screen capture settings"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    GROUPBOX        "Position",IDC_STATIC,7,7,124,66
+    CONTROL         "Track &mouse pointer",IDC_POSITION_TRACKMOUSE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,12,17,81,10
+    CONTROL         "Use &fixed offset",IDC_POSITION_FIXED,"Button",BS_AUTORADIOBUTTON,12,27,67,10
+    LTEXT           "&X:",IDC_STATIC,24,38,11,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_POSITION_X,37,38,40,12,ES_AUTOHSCROLL
+    LTEXT           "&Y:",IDC_STATIC,24,52,11,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_POSITION_Y,37,52,40,12,ES_AUTOHSCROLL
+    GROUPBOX        "Panning area",IDC_STATIC,138,7,155,66
+    CONTROL         "&Entire desktop",IDC_PANNING_DESKTOP,"Button",BS_AUTORADIOBUTTON | WS_GROUP,143,17,62,10
+    CONTROL         "&Active top-level window",IDC_PANNING_ACTIVEWINDOW,
+                    "Button",BS_AUTORADIOBUTTON,143,27,92,10
+    CONTROL         "Active top-level c&lient area",IDC_PANNING_ACTIVECLIENT,
+                    "Button",BS_AUTORADIOBUTTON,143,37,101,10
+    GROUPBOX        "Capture options",IDC_STATIC,7,72,286,129
+    CONTROL         "&Capture mouse pointer image",IDC_DRAW_CURSOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,83,110,10
+    LTEXT           "Acceleration mode",IDC_STATIC,14,97,73,10
+    COMBOBOX        IDC_ACCEL_MODE,79,94,207,80,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "OpenGL acceleration greatly lowers CPU usage when doing screen capture and permits advanced GPU processing of the captured image. At least a GeForce 1, Radeon 8500, or equivalent is required for hardware YUV conversion support.",IDC_STATIC_OPENGL,24,109,265,32
+    CONTROL         "&Rescale from larger area:",IDC_RESCALE_IMAGE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,23,145,97,10
+    LTEXT           "Source &width",IDC_STATIC_WIDTH,145,146,50,12
+    EDITTEXT        IDC_WIDTH,197,145,58,12,ES_AUTOHSCROLL
+    LTEXT           "Source &height",IDC_STATIC_HEIGHT,145,161,50,12
+    EDITTEXT        IDC_HEIGHT,197,159,58,12,ES_AUTOHSCROLL
+    CONTROL         "Remove &unchanged frames\n(Requires at least a GeForce 3 or Radeon 8500)",IDC_REMOVE_DUPES,
+                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,23,179,254,16
+    DEFPUSHBUTTON   "OK",IDOK,190,205,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,243,205,50,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_SCREENCAP_OPTS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 293
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 219
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

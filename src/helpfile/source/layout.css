@@ -1,0 +1,64 @@
+body {
+	background: #fff;
+	color: #000;
+	font-size: 10pt;
+	padding: 0;
+	margin: 0;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+h1 { font-size: 20pt; background: #c0e0ff; padding: 0 4px; font-weight: normal }
+h2 {
+	font-size: 12pt;
+	font-weight: normal;
+	background: #8ea;
+	padding: 0 4px;
+	border-left: 2px solid #afd;
+	border-top: 2px solid #afd;
+	border-bottom: 2px solid #5a8;
+	border-right: 2px solid #5a8;
+}
+
+h3 {
+	font-size: 12pt;
+	font-weight: normal;
+	border-bottom: 1px solid #000;
+}
+
+td {
+	vertical-align: top;
+	font-size: 10pt;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+td.pageleft {
+	padding: 4px; background: #f0ece0;
+	border-left: 2px solid #ffffff;
+	border-right: 2px solid #c0c0c0
+}
+div.pagetop {
+	font-size: 14pt; font-weight: normal; text-decoration: none;
+	padding: 0px 4px;
+	margin: 0;
+	background: #c0e0f0;
+	border-left: 2px solid #f0f8ff;
+	border-top: 2px solid #f0f8ff;
+	border-bottom: 2px solid #a0c0e0;
+	border-right: 2px solid #a0c0e0;
+}
+div.body {
+	margin-left: 8px;
+	margin-right: 8px;
+	padding: 0;
+	border: 0;
+}
+
+a {
+	text-decoration: none;
+}
+
+dt { color: #246; margin: 16px 0 6px 4px }
+dl.useitalics dt { font-style: italic }
+em { font-weight: normal; color: #800 }
+.footnotelink { font-size: 6pt; vertical-align: super; }
+.footnote { font-size: 8pt; }
+
+div.tocindent { margin-left: 8px }

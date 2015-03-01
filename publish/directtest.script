@@ -1,0 +1,115 @@
+declare vd = VirtualDub;
+declare vdv = vd.video;
+declare vdvf = vd.video.filters;
+declare vda = vd.audio;
+declare vds = vd.subset;
+declare log = vd.Log;
+declare tostr = Sylia.ToString;
+declare assert = Sylia.Assert;
+declare validate = vdv.__ValidateFrames;
+
+// override the default mode to make sure we aren't tripped by saved settings
+vdv.SetInputFormat(0);
+vdv.SetOutputFormat(0);
+
+// create test file
+vd.Open("", "TestId", 0);
+assert(vdv.width == 8);
+assert(vdv.height == 4);
+
+// test frames [0,9] via selection
+vd.Open("", "TestId", 0);
+vdv.SetMode(0);
+vdv.SetRange(0, 9000);
+vd.SaveAVI("__test0.avi");
+vd.Open("__test0.avi");
+
+validate(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+// test frames [5, 9] via selection
+vd.Open("", "TestId", 0);
+vdv.SetRange(500, 9000);
+vd.SaveAVI("__test0.avi");
+vd.Open("__test0.avi");
+
+validate(5, 6, 7, 8, 9);
+
+// test frames [4, 7] -> [0, 7] via selection
+vd.Open("", "TestId", 0);
+vdv.SetRange(400, 9200);
+vd.SaveAVI("__test0.avi");
+vd.Open("__test0.avi");
+
+validate(0, 1, 2, 3, 4, 5, 6, 7);
+
+// test frames [0,9] via subset
+vd.Open("", "TestId", 0);
+vdv.SetMode(0);
+vdv.SetRange();
+vds.Clear();
+vds.AddRange(0, 10);
+vd.SaveAVI("__test0.avi");
+vd.Open("__test0.avi");
+
+validate(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+// test frames [5, 9] via subset
+vd.Open("", "TestId", 0);
+vds.Clear();
+vds.AddRange(5, 5);
+vd.SaveAVI("__test0.avi");
+vd.Open("__test0.avi");
+
+validate(5, 6, 7, 8, 9);
+
+// test frames [4, 7] -> [0, 7] via subset
+vd.Open("", "TestId", 0);
+vds.Clear();
+vds.AddRange(4, 4);
+vd.SaveAVI("__test0.avi");
+vd.Open("__test0.avi");
+
+validate(0, 1, 2, 3, 4, 5, 6, 7);
+
+// Test frame extraction with selection after deleting key frame via subset.
+
+vd.Open("", "TestId", 0);
+vds.Clear();
+vds.AddRange(15, 10);
+vdv.SetRange(200, 600);
+vd.SaveAVI("__test0.avi");
+vd.Open("__test0.avi");
+
+validate(15, 16, 17, 18);
+
+// Versions <1.7.X had a bug where they would do a nearest-keyframe check using the
+// video source on the start point, even though the start point was in timeline
+// frames. This then got fixed up _again_ on the timeline itself, resulting in more
+// frames included than necessary. This only happened if you had both the subset and
+// selection active.
+//
+// In this case, we use [13, 23] as the subset, and then select timeline frames [2, 3].
+// This should give [15, 16]. However, in 1.7.8, the 2 gets looked up in the video
+// source to get key frame 0, backing off the selection to [0, 3]. This then produces
+// [13, 16], and key frame restrictions then net [10, 16].
+
+vd.Open("", "TestId", 0);
+vds.Clear();
+vds.AddRange(13, 10);
+vdv.SetRange(200, 600);
+vd.SaveAVI("__test0.avi");
+vd.Open("__test0.avi");
+
+validate(15, 16);
+
+// Reset the mode to full and retry the first test. The same restrictions should not
+// be in effect.
+vd.Open("", "TestId", 0);
+vdv.SetMode(3);
+vds.Clear();
+vds.AddRange(15, 10);
+vdv.SetRange(200, 600);
+vd.SaveAVI("__test0.avi");
+vd.Open("__test0.avi");
+
+assert(vdv.length == 2);

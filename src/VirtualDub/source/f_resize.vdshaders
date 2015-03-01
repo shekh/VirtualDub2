@@ -1,0 +1,161 @@
+kVDFilterResizeFP_2tap::
+	extern sampler2D src : register(s0);
+	extern sampler2D weights0 : register(s1);
+	extern float2 srcstep : register(c0);
+	
+	half4 main(
+		half2 uv0 : TEXCOORD0,
+		half2 uv1 : TEXCOORD1,
+		half2 weightuv0 : TEXCOORD2
+		) : COLOR0
+	{
+		half4 w0 = tex2D(weights0, weightuv0);
+		w0.y = w0.y * (255.0h / 128.0f) - 0.5h;
+		half2 uvcorrect = w0.w * srcstep;
+		half4 p0 = tex2D(src, uv0 + uvcorrect);
+		half4 p1 = tex2D(src, uv1 + uvcorrect);
+		
+		return lerp(p0, p1, w0.y);
+	}
+
+kVDFilterResizeFP_4tap::
+	extern sampler2D src : register(s0);
+	extern sampler2D weights : register(s1);
+	extern float2 srcstep : register(c0);
+	
+	half4 main(
+		half2 uv0 : TEXCOORD0,
+		half2 uv1 : TEXCOORD1,
+		half2 uv2 : TEXCOORD2,
+		half2 uv3 : TEXCOORD3,
+		half2 weightuv0 : TEXCOORD4
+		) : COLOR0
+	{
+		half4 w0 = tex2D(weights, weightuv0);
+		half2 uvcorrect = w0.w * srcstep;
+		
+		w0.xyz = w0.xyz * (255.0h / 128.0h) - 0.5h;
+		w0.w = 1 - dot(w0.xyz, half3(1, 1, 1));
+		half4 p0 = tex2D(src, uv0 + uvcorrect);
+		half4 p1 = tex2D(src, uv1 + uvcorrect);
+		half4 p2 = tex2D(src, uv2 + uvcorrect);
+		half4 p3 = tex2D(src, uv3 + uvcorrect);
+		
+		return p0*w0.x + p1*w0.y + p2*w0.z + p3*w0.w;
+	}
+
+kVDFilterResizeFP_6tap::
+	extern sampler2D src : register(s0);
+	extern sampler2D weights : register(s1);
+	extern float2 srcstep : register(c0);
+	
+	half4 main(
+		half2 uv0 : TEXCOORD0,
+		half2 uv1 : TEXCOORD1,
+		half2 uv2 : TEXCOORD2,
+		half2 uv3 : TEXCOORD3,
+		half2 uv4 : TEXCOORD4,
+		half2 uv5 : TEXCOORD5,
+		half2 weightuv0 : TEXCOORD6,
+		half2 weightuv1 : TEXCOORD7
+		) : COLOR0
+	{
+		half4 w0 = tex2D(weights, weightuv0);
+		half4 w1 = tex2D(weights, weightuv1);
+		half2 uvcorrect = w1.w * srcstep;
+		
+		w0 = w0 * (255.0h / 128.0h) - 0.5h;
+		w1 = w1 * (255.0h / 128.0h) - 0.5h;
+		half4 p0 = tex2D(src, uv0 + uvcorrect);
+		half4 p1 = tex2D(src, uv1 + uvcorrect);
+		half4 p2 = tex2D(src, uv2 + uvcorrect);
+		half4 p3 = tex2D(src, uv3 + uvcorrect);
+		half4 p4 = tex2D(src, uv4 + uvcorrect);
+		half4 p5 = tex2D(src, uv5 + uvcorrect);
+		
+		return p0*w0.x + p1*w0.y + p2*w0.z + p3*w0.w + p4*w1.x + p5*w1.y;
+	}
+
+kVDFilterResizeFP_8tap::
+	extern sampler2D src : register(s0);
+	extern sampler2D weights : register(s1);
+	extern float2 srcstep : register(c0);
+	
+	half4 main(
+		half4 uv06 : TEXCOORD0,
+		half4 uv17 : TEXCOORD1,
+		half2 uv2 : TEXCOORD2,
+		half2 uv3 : TEXCOORD3,
+		half2 uv4 : TEXCOORD4,
+		half2 uv5 : TEXCOORD5,
+		half2 weightuv0 : TEXCOORD6,
+		half2 weightuv1 : TEXCOORD7
+		) : COLOR0
+	{
+		half4 w0 = tex2D(weights, weightuv0);
+		half4 w1 = tex2D(weights, weightuv1);
+		half2 uvcorrect = w1.w * srcstep;
+		
+		w0 = w0 * (255.0h / 128.0h) - 0.5h;
+		w1.xyz = w1.xyz * (255.0h / 128.0h) - 0.5h;
+		w1.w = 1.0f - dot(half4(w1.xyz, dot(w0, half4(1, 1, 1, 1))), half4(1, 1, 1, 1));
+		
+		half4 p0 = tex2D(src, uv06.xy + uvcorrect);
+		half4 p1 = tex2D(src, uv17.xy + uvcorrect);
+		half4 p2 = tex2D(src, uv2 + uvcorrect);
+		half4 p3 = tex2D(src, uv3 + uvcorrect);
+		half4 p4 = tex2D(src, uv4 + uvcorrect);
+		half4 p5 = tex2D(src, uv5 + uvcorrect);
+		half4 p6 = tex2D(src, uv06.wz + uvcorrect);
+		half4 p7 = tex2D(src, uv17.wz + uvcorrect);
+		
+		return p0*w0.x + p1*w0.y + p2*w0.z + p3*w0.w + p4*w1.x + p5*w1.y + p6*w1.z + p7*w1.w;
+	}
+
+kVDFilterResizeFP_10tap::
+	extern sampler2D src : register(s0);
+	extern sampler2D weights : register(s1);
+	extern float2 srcstep : register(c0);
+	
+	half4 main(
+		half4 uv05 : TEXCOORD0,
+		half4 uv16 : TEXCOORD1,
+		half4 uv27 : TEXCOORD2,
+		half4 uv38 : TEXCOORD3,
+		half4 uv49 : TEXCOORD4,
+		half2 weightuv0 : TEXCOORD5,
+		half2 weightuv1 : TEXCOORD6,
+		half2 weightuv2 : TEXCOORD7
+		) : COLOR0
+	{
+		half4 w0 = tex2D(weights, weightuv0);
+		half4 w1 = tex2D(weights, weightuv1);
+		half4 w2 = tex2D(weights, weightuv2);
+		half2 uvcorrect = w2.w * srcstep;
+		
+		w0 = w0 * (255.0h / 128.0h) - 0.5h;
+		w1 = w1 * (255.0h / 128.0h) - 0.5h;
+		w2.xy = w2.xy * (255.0h / 128.0h) - 0.5h;
+		
+		half4 p0 = tex2D(src, uv05.xy + uvcorrect);
+		half4 p1 = tex2D(src, uv16.xy + uvcorrect);
+		half4 p2 = tex2D(src, uv27.xy + uvcorrect);
+		half4 p3 = tex2D(src, uv38.xy + uvcorrect);
+		half4 p4 = tex2D(src, uv49.xy + uvcorrect);
+		half4 p5 = tex2D(src, uv05.wz + uvcorrect);
+		half4 p6 = tex2D(src, uv16.wz + uvcorrect);
+		half4 p7 = tex2D(src, uv27.wz + uvcorrect);
+		half4 p8 = tex2D(src, uv38.wz + uvcorrect);
+		half4 p9 = tex2D(src, uv49.wz + uvcorrect);
+		
+		return p0*w0.x
+			 + p1*w0.y
+			 + p2*w0.z
+			 + p3*w0.w
+			 + p4*w1.x
+			 + p5*w1.y
+			 + p6*w1.z
+			 + p7*w1.w
+			 + p8*w2.x
+			 + p3*w2.y;
+	}

@@ -1,0 +1,140 @@
+kVDFilterDeinterlaceFP_ELA1::
+	extern sampler2D src : register(s0);
+
+	half4 main(
+		half4 top0bot0 : TEXCOORD0,
+		half4 top1bot1 : TEXCOORD1,
+		half4 top2bot2 : TEXCOORD2,
+		half4 top3bot3 : TEXCOORD3,
+		half4 top4bot4 : TEXCOORD4,
+		half4 top5bot5 : TEXCOORD5,
+		half2 top6c : TEXCOORD6,
+		half2 bot6c : TEXCOORD7
+		) : COLOR0
+	{
+		half3 top0 = tex2D(src, top0bot0.xy).xyz;
+		half3 top1 = tex2D(src, top1bot1.xy).xyz;
+		half3 top2 = tex2D(src, top2bot2.xy).xyz;
+		half3 top3 = tex2D(src, top3bot3.xy).xyz;
+		half3 top4 = tex2D(src, top4bot4.xy).xyz;
+		half3 top5 = tex2D(src, top5bot5.xy).xyz;
+		half3 top6 = tex2D(src, top6c).xyz;
+		half3 bot0 = tex2D(src, top0bot0.wz).xyz;
+		half3 bot1 = tex2D(src, top1bot1.wz).xyz;
+		half3 bot2 = tex2D(src, top2bot2.wz).xyz;
+		half3 bot3 = tex2D(src, top3bot3.wz).xyz;
+		half3 bot4 = tex2D(src, top4bot4.wz).xyz;
+		half3 bot5 = tex2D(src, top5bot5.wz).xyz;
+		half3 bot6 = tex2D(src, bot6c).xyz;
+
+		half3 d0 = abs(top0 - bot4) + 2*abs(top1 - bot5) + abs(top2 - bot6);
+		half3 d1 = abs(top1 - bot3) + 2*abs(top2 - bot4) + abs(top3 - bot5);
+		half3 d2 = abs(top2 - bot2) + 2*abs(top3 - bot3) + abs(top4 - bot4);
+		half3 d3 = abs(top3 - bot1) + 2*abs(top4 - bot2) + abs(top5 - bot3);
+		half3 d4 = abs(top4 - bot0) + 2*abs(top5 - bot1) + abs(top6 - bot2);
+		
+		half3 offsetl = d0 < d1 ? half3(-2, -2, -2) : half3(-1, -1, -1);
+		half3 offsetr = d4 < d3 ? half3(+2, +2, +2) : half3(+1, +1, +1);
+		half3 offset = min(d1, d3) < d2 ? d1 < d3 ? offsetl : offsetr : half3(0, 0, 0);
+		
+		return half4((128.0f / 255.0f) + offset*(32.0f/255.0f), 0);
+	}
+
+kVDFilterDeinterlaceFP_ELA2::
+	extern sampler2D srcela : register(s0);
+	extern sampler2D src : register(s1);
+	extern float size : register(c0);
+
+	half4 main(
+		half2 eladirc : TEXCOORD0,
+		half2 top0c : TEXCOORD1,
+		half2 bot0c : TEXCOORD2
+		) : COLOR0
+	{
+		half3 eladir = (tex2D(srcela, eladirc).xyz - (128.0f / 255.0f)) * (255.0f / 32.0f) * size;
+		half3 topr = tex2D(src, top0c + half2(eladir.r, 0)).xyz;
+		half3 botr = tex2D(src, bot0c - half2(eladir.r, 0)).xyz;
+		half3 topg = tex2D(src, top0c + half2(eladir.g, 0)).xyz;
+		half3 botg = tex2D(src, bot0c - half2(eladir.g, 0)).xyz;
+		half3 topb = tex2D(src, top0c + half2(eladir.b, 0)).xyz;
+		half3 botb = tex2D(src, bot0c - half2(eladir.b, 0)).xyz;
+
+		half3 offset = half3(topr.r + botr.r, topg.g + botg.g, topb.b + botb.b);
+		
+		return half4(0.5h*offset, 0);
+	}
+
+kVDFilterDeinterlaceFP_Final::
+	extern sampler2D srcfield0 : register(s0);
+	extern sampler2D srcfield1 : register(s1);
+	extern sampler2D srcfield2 : register(s2);
+	extern sampler2D srcfield3 : register(s3);
+	extern sampler2D srcfield4 : register(s4);
+	extern sampler2D srcpred : register(s5);
+
+	half4 main(
+		half2 txc0 : TEXCOORD0,
+		half2 txc1 : TEXCOORD1,
+		half2 txc2 : TEXCOORD2,
+		half2 txc3 : TEXCOORD3,
+		half2 txc4 : TEXCOORD4,
+		half2 txcpred : TEXCOORD5,
+		half switcher : TEXCOORD6) : COLOR0
+	{
+		//   a b
+		//  c d e
+		//   f g
+		//  h i j
+		//   k l
+
+		half3 pxa = tex2D(srcfield1, txc0).xyz;
+		half3 pxb = tex2D(srcfield3, txc0).xyz;
+		half3 pxc = tex2D(srcfield0, txc1).xyz;
+		half3 pxd = tex2D(srcfield2, txc1).xyz;
+		half3 pxe = tex2D(srcfield4, txc1).xyz;
+		half3 pxf = tex2D(srcfield1, txc2).xyz;
+		half3 pxg = tex2D(srcfield3, txc2).xyz;
+		half3 pxh = tex2D(srcfield0, txc3).xyz;
+		half3 pxi = tex2D(srcfield2, txc3).xyz;
+		half3 pxj = tex2D(srcfield4, txc3).xyz;
+		half3 pxk = tex2D(srcfield1, txc4).xyz;
+		half3 pxl = tex2D(srcfield3, txc4).xyz;
+		
+		// compute temporal differences
+		half3 tdiffc = abs(pxf - pxg);
+		half3 tdiffp = abs(pxc - pxd) + abs(pxh - pxi);
+		half3 tdiffn = abs(pxd - pxe) + abs(pxi - pxj);
+		
+		half3 tdiff = max(tdiffc, max(tdiffp, tdiffn));
+		
+		// additional spatial deinterlacing
+		half3 p0 = (pxa + pxb)*0.5h;
+		half3 p1 = pxd;
+		half3 p2 = (pxf + pxg)*0.5h;
+		half3 p3 = pxi;
+		half3 p4 = (pxk + pxl)*0.5f;
+		
+		half3 d12 = p1 - p2;
+		half3 d10 = p1 - p0;
+		half3 d32 = p3 - p2;
+		half3 d34 = p3 - p4;
+		
+		half3 min_32_12 = min(d32, d12);
+		half3 max_32_12 = max(d32, d12);
+
+		half3 min_10_34 = min(d10, d34);
+		half3 max_10_34 = max(d10, d34);
+
+		half3 mx = max(max_32_12, min_10_34);
+		half3 mn = min(min_32_12, max_10_34);
+		tdiff = max(max(tdiff, mn), -mx);
+
+		half3 lo = p2 - tdiff;
+		half3 hi = p2 + tdiff;
+
+		half4 pred = tex2D(srcpred, txcpred);
+		pred.xyz = max(lo, pred.xyz);
+		pred.xyz = min(hi, pred.xyz);
+
+		return half4(frac(switcher) >= 0.5 ? pred.xyz : tex2D(srcfield2, txc2).xyz, 0);
+	}

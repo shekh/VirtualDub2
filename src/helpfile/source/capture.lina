@@ -1,0 +1,1235 @@
+<lina:create file="capture.html" title="Video capture">
+	<p>
+		<em>Video capture</em> is the process of taking video from an external hardware source, such as analog video, and digitizing
+		it into a form that can be used on a computer. VirtualDub allows use of several classes of video capture hardware to do
+		this conversion, depositing the result as an <tt>.avi</tt> file on disk.
+	</p>
+	<h2>What you need to use capture mode</h2>
+	<p>
+		In order to use VirtualDub's video capture mode, you need:
+	</p>
+	<ul>
+		<li>A video capture device.</li>
+		<li>An external video source.</li>
+	</ul>
+	<p>
+		Video capture mode cannot be used to capture streaming video over a network or graphics on your own local machine (unless
+		you loop-back TV out into a video capture device).
+	</p>
+</lina:create>
+
+<lina:create file="c-spillmode.html" title="Capture: Multi-segment mode">
+	<p>
+		<em>Spill mode</em> allows a video capture operation to be split across multiple files. This allows file
+		size limits to be bypassed and also permits use of multiple partitions.
+	</p>
+
+	<h2>Selecting spill drives for capture</h2>
+	<p>
+		Select the <em>Capture &gt; Capture drives</em> to set up the drive array for spill mode:
+	</p>
+	<blockquote>
+		<lina:image src="pics/c-spilldrives.png"/>
+	</blockquote>
+
+	<dl>
+		<dt>Add/remove spill drive</dt>
+		<dd>
+			<p>
+				Add a new spill drive, or remove the currently selected drive. When adding a new drive, click on the threshold
+				or path portion of the entry to edit it.
+			</p>
+			<p>
+				Capture drives can be on the same physical hard drive, but should not share the same logical hard drive (volume).
+				It is a bad idea to add two entries for the same volume, as the two will have the same free space totals.
+				For instance, <tt>C:\</tt> and <tt>C:\Capture</tt> should not both be added to the list unless a different
+				partition is mounted at <tt>C:\Capture</tt>.
+			</p>
+		</dd>
+
+		<dt>Threshold</dt>
+		<dd>
+			<p>
+				The threshold controls the minimum amount of disk space, in megabytes, that must be free on the drive for VirtualDub to use
+				it. For instance, if the threshold is set to 50MB and the minimum capture file size is 100MB, VirtualDub will not start a
+				new file on that drive unless there is at least 50MB + 100MB = 150MB free space, and will stop writing to a file being
+				generated there once free space drops below 50MB.
+			</p>
+		</dd>
+
+		<dt>Try not to create AVI files smaller than... MB</dt>
+		<dd>
+			Sets the minimum file size that should be creatable above a spill drive's threshold before a file should be started on it.
+			This prevents VirtualDub from switching to a spill drive that only has 14MB above its threshold; not only is this annoying,
+			but it can result in back-to-back file switches, which can cause problems.
+		</dd>
+
+		<dt>Try not to create AVI files larger than... MB</dt>
+		<dd>
+			Sets the maximum file size that VirtualDub should aim for before switching to a new file. The maximum value for this file is
+			2048MB, because VirtualDub disables its large AVI file support when writing spill files. It should be set some amount below
+			that to provide a buffer to account for latency during the video capture, which is why the default is 1900MB.
+		</dd>
+	</dl>
+
+	<h2>Using multi-segment capture</h2>
+	<p>
+		Enable <em>Capture &gt; Enable multisegment capture</em> to allow use of spill drives. The capture filename will then be used
+		to generate the prefix for sequentially numbered files, so that a base name of <tt>capture.avi</tt> produces <tt>capture.00.avi</tt>,
+		<tt>capture.01.avi</tt>, <tt>capture.02.avi</tt>, etc. Then begin capture as usual to start capturing to a series of sequential
+		files.
+	</p>
+	<lina:note>
+		Make sure the capture path is on one of the spill drives, or VirtualDub will switch to one of the drives shortly after the start
+		of the capture, leaving a ~50MB runt as the first file.
+	</lina:note>
+
+	<h2>Caveats with multi-segment capture</h2>
+	<p>
+		As when editing, audio and video compression can impact the ability of VirtualDub to produce clean cuts between segments.
+		In the interest of speed, VirtualDub is a bit sloppy when writing capture segments. Issues include:
+	</p>
+	<ul>
+		<li>
+			If video compression with delta frames is being used, a segment can start on a delta frame. This is OK if VirtualDub is loading
+			the capture segment, but can be a problem if you are trying to load individual segments into a program that doesn't expect
+			raw stream slices, because the delta frame is undecodable without the previous segment.
+		</li>
+		<li>
+			Audio compression can cause a segment's audio to be slightly desynchronized from the video, subject to the block size of the
+			audio compression. This isn't a problem when joining all of the segments together, though.
+		</li>
+		<li>
+			There may be one additional segment that has a video stream with no video frames in it; this can occur when writing out the
+			final audio during a capture, more audio has been captured than video, and the audio spills over into a new segment but the
+			video doesn't.
+		</li>
+	</ul>
+	<p>
+		If you will attempt to load individual segments or load the files into a different program, it is recommended that you use
+		video compression that does not use delta frames, and disable audio compression.
+	</p>
+
+	<h2>Reading multi-segment capture files</h2>
+	<p>
+		Each capture segment written by VirtualDub contains a record in it that indicates the location of the next segment. This makes
+		it possible for VirtualDub to follow the sequence of capture files without knowing the list of spill drives, even if the sequence
+		hops between drives. The algorithm for following the chain is as follows:
+	</p>
+	<ul>
+		<li>Try the same directory as the previous segment.</li>
+		<li>If that doesn't work, try the directory indicated by the segment hint in the AVI file.</li>
+		<li>If that still doesn't work, ask the user to locate the next segment.</li>
+	</ul>
+	<p>
+		It is thus not a good idea to mix segments from different captures, as VirtualDub may get confused if it sees a <tt>capture.06.avi</tt>
+		that is actually from a different sequence than <tt>capture.05.avi</tt> in the same location.
+	</p>
+	<p>
+		The format of the segment hint is a chunk with the FOURCC <tt>segm</tt> within the AVI header block. It consists of a single
+		byte which is <tt>00</tt> if no further segments are present, or <tt>01</tt> if more segments should be loaded, followed by
+		the filename of the next segment, null terminated. (Regrettably, this is 8-bit ANSI encoded, not 16-bit Unicode.) The full
+		filename is encoded, although only the path is used, and the filename should still follow the <i>basename</i>.<i>nn</i>.avi
+		convention.
+	</p>
+
+</lina:create>
+
+<lina:create file="c-pipeline.html" title="Capture: Pipeline">
+	<style>
+		table.pipeline {
+		}
+
+		table.pipeline th {
+			background: #8ae;
+		}
+
+		table.pipeline td {
+			background: #aea;
+			text-align: center;
+			vertical-align: middle;
+			padding: 0px 16px;
+		}
+	</style>
+
+	<p>
+		Like during a render-to-disk, captured audio and video flows through a series of processing
+		stages before written to disk. This is what VirtualDub's capture pipeline looks like:
+	</p>
+
+	<table class="pipeline">
+		<tr>
+			<th>Video path</th>
+			<th>Audio path</th>
+		</tr>
+		<tr>
+			<td>Video callback</td>
+			<td>Audio callback</td>
+		</tr>
+		<tr>
+			<td colspan="2" align="center">Statistics layer</td>
+		</tr>
+		<tr>
+			<td colspan="2" align="center">Resynchronizer</td>
+		</tr>
+		<tr>
+			<td>Capture filters</td>
+			<td rowspan="4">Audio compression</td>
+		</tr>
+		<tr>
+			<td>Video filters</td>
+		</tr>
+		<tr>
+			<td>Video display</td>
+		</tr>
+		<tr>
+			<td>Video compression</td>
+		</tr>
+		<tr>
+			<td colspan="2" align="center">Spill synchronizer</td>
+		</tr>
+		<tr>
+			<td colspan="2">Disk write</td>
+		</tr>
+	</table>
+	<dl>
+		<dt>Video/audio callback</dt>
+		<dd>
+			This is the entry point at which the capture API (VFW/DirectShow) notifies VirtualDub that
+			audio or video data has been captured.
+		</dd>
+
+		<dt>Statistics layer</dt>
+		<dd>
+			Most of the statistics in the information sidebar are collected at this point. Additional
+			information not available from the capture layer, such as the timestamp of audio capture,
+			is added at this point.
+		</dd>
+
+		<dt>Resynchronizer</dt>
+		<dd>
+			Audio/video resynchronization occurs at this point, both adjusting the video timing and
+			resampling audio. The exact operations performed here are controlled by the settings in
+			the <a href="c-timing.html">Timing dialog</a>.
+		</dd>
+
+		<dt>Capture video filters</dt>
+		<dd>
+			Capture-specific video filters such as field swap, 2:1 vertical reduction, and level
+			compression occur here. Unlike the regular video filters, capture filters run directly
+			in the capture format, either YCbCr or RGB &mdash; if the capture filter can't run in
+			the current format, an error is displayed instead of a conversion being performed.
+		</dd>
+
+		<dt>Video filters</dt>
+		<dd>
+			Any standard video filters execute now; the video may be converted to a different YCbCr
+			format or to 32-bit RGB before entering the video filter chain. If the video filter chain
+			is not enabled, no conversion occurs.
+		</dd>
+
+		<dt>Video display</dt>
+		<dd>
+			If the display mode is set to Preview, the video stream is tapped off at this point
+			for display purposes.
+		</dd>
+
+		<dt>Video/audio compression</dt>
+		<dd>
+			The selected video and audio compression codecs now apply data compression.
+		</dd>
+
+		<dt>Spill synchronizer</dt>
+		<dd>
+			If spill mode is enabled for multi-file capture, the spill synchronization code now
+			determines which file the audio and video streams write into, to ensure that each
+			file is cleanly cut with the same audio and video durations.
+		</dd>
+
+		<dt>Video/audio write, disk write</dt>
+		<dd>
+			Audio and video data is buffered and eventually written to disk.
+		</dd>
+	</dl>
+</lina:create>
+
+<lina:create file="c-filtering.html" title="Capture: Filtering">
+	<p>
+		VirtualDub allows the incoming video to be filtered before it is compressed and written to disk.
+		This requires a lot of CPU power to do reliably, but correcting, shrinking, and cleaning up the
+		video before it is compressed can result in higher quality captures without requiring an additional
+		post-process pass.
+	</p>
+	<p>
+		All capture filters are accessible through the <em>Video</em> menu. If the video display mode is
+		set to Preview <em>and</em> preview acceleration is enabled, the post-filtered result can be
+		seen on the preview display.
+	</p>
+
+	<h2>Capture format compatibility</h2>
+	<p>
+		Unlike the normal filter system, the capture filter system does not attempt to automatically convert
+		video filters to accommodate filter stages. Care must be taken to choose a video format which is compatible
+		with all of the filters you wish to use:
+	</p>
+
+	<style>
+		table.formats {
+		}
+
+		table.formats th {
+			background: #8ae;
+			font-size: 12px;
+		}
+
+		table.formats td {
+			background: #aea;
+			text-align: center;
+			vertical-align: middle;
+			padding: 0px 16px;
+		}
+	</style>
+	<blockquote>
+		<table class="formats">
+			<tr>
+				<th>Format</th>
+				<th>Crop</th>
+				<th>Swap fields</th>
+				<th>Noise reduction</th>
+				<th>Vertical reduction</th>
+				<th>Extend luma</th>
+				<th>Filter chain</th>
+			</tr>
+			<tr><td>15-bit RGB</td>	<td>Yes</td><td>Yes</td><td>   </td><td>   </td><td>   </td><td>Yes</td></tr>
+			<tr><td>16-bit RGB</td>	<td>Yes</td><td>Yes</td><td>   </td><td>   </td><td>   </td><td>Yes</td></tr>
+			<tr><td>24-bit RGB</td>	<td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>   </td><td>Yes</td></tr>
+			<tr><td>32-bit RGB</td>	<td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>   </td><td>Yes</td></tr>
+			<tr><td>UYVY</td>		<td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+			<tr><td>YUY2</td>		<td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+			<tr><td>YV16</td>		<td>Yes</td><td>Yes</td><td>   </td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+			<tr><td>YV12</td>		<td>Yes</td><td>   </td><td>   </td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+			<tr><td>I420</td>		<td>Yes</td><td>   </td><td>   </td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+			<tr><td>IYUV</td>		<td>Yes</td><td>   </td><td>   </td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+			<tr><td>YVU9</td>		<td>Yes</td><td>   </td><td>   </td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+			<tr><td>Y41P</td>		<td>Yes</td><td>Yes</td><td>   </td><td>Yes</td><td>   </td><td>Yes</td></tr>
+			<tr><td>Y8</td>			<td>Yes</td><td>Yes</td><td>   </td><td>Yes</td><td>   </td><td>Yes</td></tr>
+		</table>
+	</blockquote>
+
+	<p>
+		If a capture video filter is not compatible with the input format, it is automatically disabled. Note that
+		compressed video formats are not supported at all &mdash; if the capture device outputs compressed data,
+		no video filtering is possible at all.
+	</p>
+
+	<h2>Detailed description of capture filters</h2>
+
+	<dl>
+		<dt>Cropping</dt>
+		<dd>
+			<p>
+				Discards borders of the video, resulting in a smaller output video. If the video is letterboxed, applying
+				cropping can improve performance as well as reduce output file sizes. It is nearly free if vertical reduction
+				or RGB filtering is enabled.
+			</p>
+			<p>
+				The video format imposes restrictions on the alignment of the cropping boundaries. RGB formats can
+				be cropped to pixel accuracy; YUY2/UYVY can only be cropped to the nearest even pixel boundary horizontally,
+				and YV12/I420 to the nearest 2x2 pixel block.
+			</p>
+		</dd>
+
+		<dt>Swap fields</dt>
+		<dd>
+			<p>
+				Swaps even and odd scanlines within the image to correct for a video capture device that is
+				assembling fields in reverse order. This affliction looks like a "raspy" effect in the image.
+				Field swapping is a relatively fast operation.
+			</p>
+		</dd>
+
+		<dt>Noise reduction</dt>
+		<dd>
+			<p>
+				Applies a quick, first-order recursive filter to reduce the amount of noise within the image.
+				This is a primitive noise reduction filter, but can be effective, particularly for light noise
+				or videos with low motion. The amount of noise reduction is adjustable; higher thresholds produce
+				more noise reduction at the cost of higher motion artifacts.
+			</p>
+		</dd>
+
+		<dt>Vertical reduction</dt>
+		<dd>
+			<p>
+				Reduces the vertical height of the captured video by one-half using either bilinear or bicubic resampling.
+				This is useful if the additional vertical resolution is not required, but better image quality is desired
+				than would be obtained by using the capture device's scaler, which often handles such a request by simply
+				throwing away one of the fields (every other scanline). This option consumes a decent amount of CPU power
+				and should be used with care; however, it can also significantly speed up subsequent video compression
+				due to the smaller output image.
+			</p>
+			<p>
+				Note that vertical reduction causes fields to be blended together, which can cause ghosting artifacts due
+				to motion within the image.
+			</p>
+		</dd>
+
+		<dt>Extend luma black point</dt>
+		<dd>
+			<p>
+				Compresses the luminance range of an image so that "superblack" levels from 0-15 are scaled to within the
+				valid luminance range of 16-235, out of 0-255. These levels are ordinarily shown as red at the lower end of
+				the histogram scale and would be clamped to black without this option. This is only useful if the capture
+				format uses the YCbCr color space, as these values are already lost if RGB is used.
+			</p>
+			<p>
+				The transform is a straightforward linear mapping of the luminance values from [0, 235] to [16, 235], if
+				<em>extend luma white point</em> is disabled, or [0, 255] to [16, 235] if that option is also enabled.
+			</p>
+		</dd>
+
+		<dt>Extend luma white point</dt>
+		<dd>
+			<p>
+				Compresses the luminance range of an image so that "superwhite" levels from 0-15 are scaled to within the
+				valid luminance range of 16-235, out of 0-255. These levels are ordinarily shown as red at the upper end of
+				the histogram scale and would be clamped to white without this option. This is only useful if the capture
+				format uses the YCbCr color space, as these values are already lost if RGB is used. However, it can allow
+				for recovery of very bright colors that would ordinarily white-out or become garish yellows due to signal
+				overamplification.
+			</p>
+			<p>
+				The transform is a straightforward linear mapping of the luminance values from [16, 255] to [16, 235], if
+				<em>extend luma black point</em> is disabled, or [0, 255] to [16, 235] if that option is also enabled.
+			</p>
+		</dd>
+
+		<dt>Filters / Enable RGB Filtering</dt>
+		<dd>
+			<p>
+				Pushes video through the normal VirtualDub video processing filter chain. Nearly all video filters
+				can be used here; however, the <em>temporal smoother</em> should be avoided as it has a frame lag, which
+				is not supported in capture mode.
+			</p>
+			<p>
+				Normal video filters can consume significant CPU power and should be used carefully. In particular,
+				if the incoming video format is not supported by a filter, VirtualDub may be forced to convert to a
+				different format before running the filter.
+			</p>
+			<p>
+				By default, the output of the filter chain is converted to 24-bit RGB before being written to disk or
+				passed through the video compressor. Enabling the <i>Skip 24-bit Conversion</i> option causes the
+				output of the last filter to be used directly, avoiding this conversion.
+			</p>
+		</dd>
+	</dl>
+</lina:create>
+
+<lina:create file="c-driverselect.html" title="Capture: Driver types and driver selection">
+	<p>
+		In order to use a video capture hardware device, you need a <em>capture driver</em> to interface VirtualDub to the hardware.
+		This software should come with your hardware device and should be installed in Windows as part of the software package that
+		came with it. If you are missing the driver software, check the vendor's website or contact the vector for a replacement
+		as otherwise you will not be able to use the hardware with VirtualDub.
+	</p>
+	<p>
+		All capture devices detected by VirtualDub are displayed at the end of the <em>Devices</em> menu. Selecting a driver entry
+		causes the current capture driver to be stopped and the new capture driver to be started.
+	</p>
+	<p>
+		There are two types of video capture drivers in Windows, which behave differently in their capabilities. It is important
+		to know the type of video capture driver you have installed as the distinction affects which features of VirtualDub's
+		capture mode can be used. VirtualDub can use drivers that are written to either driver model.
+	</p>
+
+	<h2>Video for Windows (VFW) capture drivers</h2>
+	<p>
+		Video for Windows is the original video API for Windows, and is the older driver type of the two. These drivers can sometimes
+		be found for versions of Windows as old as Windows 95, and it is even possible to use a capture driver written for
+		Windows 3.1 (which is very much not recommended). These drivers have several limitations:
+	</p>
+	<ul>
+		<li>
+			Audio capture is always done through the sound card, or a driver that makes the capture device's audio path look
+			like a sound card.
+		</li>
+		<li>
+			VFW-model drivers expose few settings programmatically; settings such as audio control, channel selection, video
+			standard, video image settings, etc. are only exposed through the driver's own dialogs. These are accessible through
+			the <em>Video display</em>, <em>Video format</em>, and <em>Video settings</em> commands in the Video menu. Unfortunately,
+			this means that VirtualDub cannot save or restore these settings, or control them directly.
+		</li>
+	</ul>
+	<p>
+		One advantage of VFW-model drivers is that they are often mature and well-debugged, and thus reliable. Another is that VFW
+		drivers are supported by both the VFW and DirectShow capture APIs in Windows, making them usable across a wide variety
+		of capture applications.
+	</p>
+	<p>
+		VFW drivers can be
+		found for all versions of Windows, from Windows 95 to Windows XP. However, starting with Windows 2000 more manufacturers
+		have started shipping WDM-model drivers instead. A few video capture devices have support for both.
+	</p>
+	<p>
+		A VFW-model driver can be identified by the <tt>(VFW)</tt> tag after the entry in the <em>Device</em> menu.
+	</p>
+
+	<h2>Windows Driver Model (WDM) capture drivers (DirectShow-based)</h2>
+	<p>
+		The newer type of video capture driver in Windows uses the Windows Driver Model (WDM), which was introduced in Windows
+		98 and 2000. The Microsoft DirectShow API is the primary API to use these drivers. Because the DirectShow API supports
+		a larger variety of commands and settings than VFW, the functionality set of a WDM driver is significantly improved:
+	</p>
+	<ul>
+		<li>WDM devices can expose integrated audio capture directly.</li>
+		<li>Nearly all settings exposed in UI, such as video saturation, are also exposed programmatically for unattended control.</li>
+		<li>If available, VirtualDub can directly control the TV tuner channel, as well as audio/video source selection.</li> 
+	</ul>
+	<p>
+		DirectShow is a much more complex API than VFW, however, and WDM-model drivers historically have been a lot less stable
+		than their VFW counterparts. It is not unusual to see problems such as capture applications that cannot be closed, because
+		their program execution is stuck in the capture driver. WDM is the proscribed driver model going forward, however, so the
+		situation should improve over time.
+	</p>
+	<p>
+		A WDM driver that requires use of DirectShow will have a <tt>(DirectShow)</tt> tag besides its entry in the <em>Device</em> menu.
+	</p>
+	<p>
+		The <em>Video display</em>, <em>Video format</em>, and <em>Video settings</em> dialogs will not normally be available
+		when DirectShow is in use. The settings in those dialogs are usually available on the driver's <em>Capture pin</em> and
+		<em>Capture filter</em> dialogs instead. The exception is if a Video for Windows (VFW) driver is being used through DirectShow;
+		these drivers are indicated by <tt>(VFW &gt; Directshow)</tt> next to their name in the <em>Device</em> menu. Using
+		a driver in this manner piles the limitations of DirectShow on top of the limitations of VFW, so it is usually better
+		to use those drivers directly with VFW instead.
+	</p>
+
+	<h2>The Microsoft WDM Image Capture (Win32) driver</h2>
+	<p>
+		If you have a Windows Driver Model (WDM) driver installed, you may also have an entry in the device list called
+		<tt>Microsoft WDM Image Capture (Win32) (VFW)</tt>. This entry comes from a Microsoft driver called <tt>VFWWDM32</tt> and
+		is a wrapper that allows WDM-model drivers to be used through the older Video for Windows (VFW) API. The WDM driver
+		that is adapted can be selected through the <em>Video Source</em> driver dialog.
+	</p>
+	<p>
+		There are unfortunately some quirks in the way this adapter works, and some video capture devices will work erratically
+		or not at all through this wrapper. Device settings not accessible through VFW will also still not be available when using
+		it. If possible, use the capture device directly in DirectShow mode rather than using the <tt>VFWWDM32</tt> driver.
+	</p>
+
+	<h2>Custom drivers</h2>
+	<p>
+		A few manufacturers had difficulty migrating their capture drivers from the relatively lenient Windows
+		95/98/ME versions to the newer, stricter versions of Windows based on the NT kernel. Instead of shipping a proper VFW
+		or WDM driver &mdash; both of which are possible on NT/2000/XP &mdash; these manufacturers shipped a custom driver along
+		with a custom, hardware-specific capture application. These capture devices are unfortunately not usable with VirtualDub
+		because they use a proprietary programming interface (API).
+	</p>
+
+	<h2>The video emulation driver</h2>
+	<p>
+		The <em>Video emulation</em> capture driver is not a real capture driver installed in Windows, but rather an internal
+		video capture minidriver in VirtualDub used for testing. It accepts a video file, selected using the <tt>Video source</tt>
+		menu command, and plays that video, pretending to be a live video source pushing audio and video data from that file.
+		Although primarily useful for VirtualDub program development, it is also sometimes useful for diagnosing compatibility
+		problems and determining if problems lie in VirtualDub or in a video capture driver.
+	</p>
+	<p>
+		Note that additional load is placed on the hard disk and on the CPU by the video decoding, so this driver isn't necessarily
+		useful for performance testing.
+	</p>
+</lina:create>
+
+<lina:create file="c-hardwaresetup.html" title="Capture: Hardware setup">
+	<p>
+		Here are some of the connectors you should have on your system:
+	</p>
+	<ul>
+		<li>
+			<em>Capture card coaxial input</em>: A round, threaded connector with a small hole in the middle that accepts modulated signals with audio (multiple channels).
+		</li>
+		<li>
+			<em>Capture card composite input</em>: A smooth, non-threaded (RCA) connector with a large hole in the middle. This connector accepts a single video input
+			without audio. The composite video cable, or the composite video portion of an octopus cable, usually has a yellow connector.
+		</li>
+		<li>
+			<em>Capture card S-Video input</em>: A rounded socket with four pin holes and a small rectangular slot (DIN-4). This connector accepts a single video input
+			without audio, but with brightness and color information separated. The result is higher video quality than composite input. S-Video cables usually have a black
+			connector.
+		</li>
+		<li>
+			<em>Capture card line input</em>: A mini-mono or mini-stereo socket about 1/8" in size, this is the audio input for the composite video and S-Video inputs.
+		</li>
+		<li>
+			<em>Capture card line output</em>: Also a mini-phone socket about 1/8" in size, this is the audio output from the capture card.
+		</li>
+		<li>
+			<em>Sound card line input</em>: A third mini-phone socket, this is the input to the sound card for recording. On sound cards with color-coded inputs, this should
+			be blue in color.
+		</li>
+	</ul>
+	<p>
+		If you have an all-in-one style capture device that does both video and audio, especially one over USB, then hooking it up
+		is a no-brainer: just connect everything to the capture device. You don't have a choice anyway. If you have a "TV tuner" style
+		device, though, then some of the capture work is also being done by the sound card, and you have to hook up a couple of cables
+		to get everything working.
+	</p>
+
+	<h2>Capturing from cable (coaxial input)</h2>
+	<p>
+		In this scenario, you have a TV tuner type capture card and want to capture from a TV channel.
+	</p>
+	<ul>
+		<li>Connect the round coaxial cable to the capture card.</li>
+		<li>Connect the line-out from the capture card to the sound card line-in.</li>
+	</ul>
+	<p>
+		The TV tuner card accepts the cable input, selects and decodes the desired channel, captures the video, and splits off
+		the audio for your sound card to capture.
+	</p>
+
+	<h2>Capturing from audio/video outputs</h2>
+	<p>
+		In this scenario, you have a TV tuner type capture card and want to capture from another device that has separate audio
+		and video outputs, such as a VCR or video game console.
+	</p>
+	<ul>
+		<li>Connect the composite video or S-Video output to the same video input on the capture card.</li>
+		<li>Connect the audio output from the output device to the capture card line-in.</li>
+		<li>Connect the line-out from the capture card to the sound card line-in.</li>
+	</ul>
+	<p>
+		The problem you will often encounter here is that the output device will have a pair of round RCA connectors, one for
+		each of the left/right stereo channels (red and white), while the capture and sound cards will have 1/8" mini-stereo inputs. A cable with
+		a male 1/8" on one end with stereo RCA male connectors on the other end, along with a pair of RCA female-female adaptors,
+		will help you hook everything up here.
+	</p>
+	<p>
+		This assumes that you have a capture card that has integrated audio capture. If your capture card simply passes through
+		the audio, it's better just to connect the audio output directly to the sound card:
+	</p>
+	<ul>
+		<li>Connect the composite video or S-Video output to the same video input on the capture card.</li>
+		<li>Connect the audio output from the output device directly to the sound card line-in.</li>
+	</ul>
+	<p>
+		This shortens the audio path for better quality, and you won't have to worry about whether the capture card's audio
+		mixer is set to the right level or the correct input.
+	</p>
+
+</lina:create>
+
+<lina:create file="c-performance.html" title="Capture: Performance">
+	<p>
+		Capturing live video is a real-time operation and places high demands on your system. Here are some steps you
+		can take to improve video capture performance.
+	</p>
+	<h2>
+		Shut down background tasks and applications
+	</h2>
+	<p>
+		Interruptions by background programs can interfere with video
+		capture and cause dropped frames. Applications you should watch out for, and temporarily disable, include:
+	</p>
+	<ul>
+		<li>virus scanners</li>
+		<li>disk defragmenters</li>
+		<li>search indexers, especially the Microsoft Indexing Service (formerly Microsoft Office Fast Find Indexer)</li>
+		<li>task schedulers</li>
+		<li>on-screen tickers and status readers &mdash; particularly anything that flashes or scrolls on-screen</li>
+	</ul>
+	<p>
+		CPU usage is a problem here, but competition for the hard disk is usually a much worse problem: any attempts
+		to access the disk by another application will cause the disk to seek back and forth, which seriously cuts
+		available write bandwidth.
+	</p>
+	<p>
+		Absolutely avoid using the CD-ROM drive during video capture, as the access traffic during the spin-up of the
+		CD-ROM drive can cause the hard drive to go off-line for more than a second.
+	</p>
+	<p>
+		It is not recommended to use other applications during video capture. Even if the other applications are light
+		in disk and CPU usage, they may cause momentary hiccups that result in dropped frames or timing anomalies during
+		the capture. The less that is going on in the system, the more accurate VirtualDub's timing statistics are and
+		the better it can keep audio and video streams in synchronization.
+	</p>
+
+	<lina:note>
+		When in capture mode, VirtualDub temporarily sets its process priority to High and disables both the screensaver
+		and power saving mode on the display device. It isn't necessary to change these manually.
+	</lina:note>
+
+	<h2>
+		Keep the disk clean
+	</h2>
+
+	<p>
+		Hard drives reach peak write performance when writing sequentially on disk &mdash; the more they have to seek
+		around to different regions, the lower the available bandwidth. When files are scattered throughout a disk, free
+		space is broken into a lot of small chunks, which is called <em>fragmentation</em>. This means that it is important to have large
+		areas of contiguous free space on a drive. Here are some tips to improve disk write performance:
+	</p>
+	<ul>
+		<li>
+			Run Disk Defragmenter and check that free space is not overly fragmented on the target drive. The fragmentation
+			of existing files doesn't matter, just the free space. It's OK if the free space is split into a few dozen
+			chunks, as a seek every minute isn't a problem. If it's really swiss-cheesed, though, consider defragmenting.
+		</li>
+		<li>
+			Have extra free space on the drive. VirtualDub allocates large blocks of space a time to give Windows a chance
+			to find clear areas on the drive; however, this becomes more difficult as the drive gets full and Windows scavenges
+			for the last free space on the disk. Fragmentation becomes much worse once you start filling the last 5-10% of a drive.
+		</li>
+		<li>
+			Use a different partition or disk than the one that holds Windows system files, as that partition typically
+			has a large number of small, volatile files and fragments very quickly.
+		</li>
+	</ul>
+
+	<h2>
+		Use appropriate video compression and video formats
+	</h2>
+	<p>
+		Uncompressed video capture dumps a <em>lot</em> of data onto the disk &mdash; 720x480 in 16-bit YUY2 at 29.97 fps produces
+		approximately 20 megabytes per second. Modern computers have much more CPU power and thus you can reduce the strain on
+		the disk by storing the video in a more efficient format.
+	</p>
+	<p>
+		Start by choosing an efficient raw video format for your capture device to produce:
+	</p>
+	<ul>
+		<li><em>32-bit RGB</em>: Avoid this format, as it wastes 33% of the space used.</li>
+		<li><em>24-bit RGB</em>: This is the baseline, most compatible format. Start here.</li>
+		<li><em>15/16-bit RGB</em>: Avoid, as it introduces serious banding (quantization) artifacts.</li>
+		<li><em>16-bit YCbCr (UYVY or YUY2)</em>: Try this format. It is closer to the format produced internally by most hardware
+			video decoders and used internally by many video codecs, but it is 33% smaller than 24-bit RGB. Using this format will
+			often significantly improve performance.</li>
+	</ul>
+	<p>
+		Apply video compression on top of this to further reduce data bandwidth. Because the raw video capture will likely
+		need some post-editing to be useful, avoid formats that overly degrade video or are difficult to edit.
+	</p>
+	<ul>
+		<li>
+			The <em>Huffyuv</em> video codec by Ben Rudiak-Gould is an excellent capture codec to use, as it is lossless, typically
+			achieves around a 2:1 compression ratio, and can work directly with YCbCr video. It is very fast and should work in
+			real-time on a 500MHz or faster CPU.
+		</li>
+		<li>
+			<em>Motion-JPEG (MJPEG)</em> codecs are also an excellent choice. They are lossy and thus will reduce video quality
+			very slightly, but the compression ratio is significantly better than lossless codecs like Huffyuv, at least 4:1 with
+			little or no perceptible quality loss. The Motion JPEG format
+			is also field-savvy and will store interlaced video without screwing up the fields.
+		</li>
+		<li>
+			<em>Digital Video (DV)</em> is another format to consider. Like Motion JPEG, DV is also a slightly-lossy format that is
+			friendly to interlaced video. It does take a bit more CPU to compress and decompress, however. Also, unlike Motion JPEG,
+			DV is always constant in data rate &mdash; 3.6MB/sec &mdash; so it is easy to predict how much disk space is required for
+			a given amount of time.
+		</li>
+		<li>
+			<em>MPEG-4</em> and other high-compression video formats should be avoided, as they require significant
+			CPU power to compress and may not be able to keep up with the incoming video at adequate quality. Also, their extremely
+			long delta frame chains can make the resulting video difficult or impossible to edit.
+		</li>
+	</ul>
+	<p>
+		Note that if you have a capture device that has hardware video compression, your options here are likely very limited.
+		In that case, browse the capture driver's configuration dialogs, usually <em>Video &gt; Video Source</em> or <em>Video &gt; Capture Filter</em>,
+		and select a format with relatively light compression.
+	</p>
+
+	<h2>
+		Disable audio compression
+	</h2>
+	Uncompressed audio requires much less bandwidth than uncompressed video and reasonable audio compression usually
+	requires a lot of CPU power. This is particularly true of modern audio compression formats such as MPEG audio layer III (MP3).
+	It is highly recommended that you <em>not</em> use audio compression during video capture, as it can consume a lot of CPU
+	and make video capturing less reliable.
+
+</lina:create>
+
+<lina:create file="c-infopanel.html" title="Capture: Information panel">
+	<blockquote>
+		<lina:image src="pics/c-infopanel.png"/>
+	</blockquote>
+	<p>
+		The information panel shows current disk, video, and audio status during a video capture. It is toggled through the <i>Option &gt; Show information panel</i>
+		menu command. Not all entries are always shown; the subset that is displayed can be changed in Preferences.
+	</p>
+	<dl>
+		<dt>Frames captured</dt>
+		<dd>The total number of video frames captured.</dd>
+
+		<dt>Total time</dt>
+		<dd>The amount of time the capture has been running, in days:hours:minutes:seconds.</dd>
+
+		<dt>Time left</dt>
+		<dd>The estimated amount of time the capture can continue, based on available disk space, video frame rate, and
+			current compression ratios.</dd>
+
+		<dt>Total file size</dt>
+		<dd>The total amount of data written to disk in the current capture session.</dd>
+
+		<dt>Disk space free</dt>
+		<dd>How much disk space is left on the capture drive(s).</dd>
+
+		<dt>CPU usage</dt>
+		<dd>Estimated CPU utilization during the video capture. This includes CPU usage by processes other than VirtualDub.
+			<lina:note>
+				On a system with multiple logical CPUs (SMP, dual core, or hyperthreading), this value may rise above 100%,
+				up to 100% times the number of CPUs. Video capture is mostly single-threaded, so approaching 100% in these
+				situations may still indicate CPU overload.
+			</lina:note>
+		</dd>
+
+		<dt>Spill status</dt>
+		<dd>
+			Current status of a multi-segment capture operation. Normally this will indicate which segment number
+			is currently being written; it will also indicate when the capture engine is in the process of spilling
+			over from one segment to the next. If the spill takes a long time or never completes, this can prevent
+			VirtualDub from switching files and may be indicative of a bad audio/video timing problem.
+		</dd>
+
+		<dt>Video: Size</dt>
+		<dd>Total amount of video data written to disk.</dd>
+
+		<dt>Video: Average rate</dt>
+		<dd>The overall rate at which video frames are arriving from the video capture device. The more this
+			diverges from nominal, the more likely sync and frame drop problems are to appear.</dd>
+
+		<dt>Video: Data rate</dt>
+		<dd>The overall rate at which video data is being written to disk, in bytes/kilobytes/megabytes per second.
+			When video compression is in use, this statistic refers to compressed video data.
+		</dd>
+
+		<dt>Video: Compression</dt>
+		<dd>The overall video compression ratio. Ratios greater than 1.0:1 indicate shrinkage in video size, whereas
+		less than 1.0:1 means enlargement (i.e. the "compression" is making the video bigger). Lossless algorithms
+		typically range from 1:1 to 3:1, whereas lossy compression can go much higher.
+		</dd>
+
+		<dt>Video: Avg frame size</dt>
+		<dd>The average size, in bytes, of each video frame written to disk. When video compression is in use, this
+			statistic refers to compressed video frames.
+		</dd>
+
+		<dt>Video: Frames dropped</dt>
+		<dd>This refers to the number of aberrations in the video stream which caused VirtualDub to drop a frame
+			in the video stream due to them being crowded too close together (too fast). Fewer is better, although
+			it is normal for frame drops to occur where there are disruptions in the video stream, such as the
+			start of a new recording on a tape.
+		</dd>
+
+		<dt>Video: Frames inserted</dt>
+		<dd>This refers to the number of aberrations in the video stream which caused VirtualDub to insert a placeholder frame
+			into the video stream due to there being too few frames in that area (too slow). Fewer is better, although
+			it is normal for frame inserts to occur where there are disruptions in the video stream, such as the
+			start of a new recording on a tape.
+		</dd>
+
+		<dt>Video: Resampling factor</dt>
+		<dd>When video timing correction is enabled, this indicates the factor by which "video time" is being accelerated
+			or slowed to match the expected output rate. This is only active if video timing correction is enabled. Unlike
+			audio resampling, video resampling only affects the assignment of frame numbers to incoming video frames; a
+			number other than 1x does not mean that video frames are being interpolated.
+		</dd>
+
+		<dt>Audio: Size</dt>
+		<dd>Total amount of audio data written to disk.</dd>
+
+		<dt>Audio: Average rate</dt>
+		<dd>
+			The average rate of the raw PCM data in the audio stream, relative to real time. This is the estimated actual
+			frequency of the incoming audio data. Small discrepancies in this value from expected are normal, as all clocks
+			have some error; however, large discrepancies in this value from the specified sampling rate may
+			indicate that the sound card has an audio clock with poor accuracy. Audio resampling can be used to stretch
+			the audio to compensate.
+		</dd>
+
+		<dt>Audio: Relative rate</dt>
+		<dd>The average rate of the raw PCM data in the audio stream, relative to the <i>corrected</i> video stream.
+			This is thus the frequency of the audio if the video stream were perfectly timed, as it is assumed in
+			the on-disk video. Discrepancies between this value and the ideal frequency indicate overall sync error.
+			Small errors are expected due to measurement issues.
+		</dd>
+
+		<dt>Audio: Data rate</dt>
+		<dd>Average bandwidth of audio data written to disk. When audio compression is active, this refers to
+			the compressed result.
+		</dd>
+
+		<dt>Audio: Compression</dt>
+		<dd>The overall audio compression ratio; larger ratios mean smaller audio on disk.
+		</dd>
+
+		<dt>Audio: Resample</dt>
+		<dd>Stretch factor applied to the audio stream, in semitones, in order to correct for speed errors relative to the video stream. This is only active if the timing setting
+			is "sync audio to video." A semitone is a step between minor notes on the musical scale, such as between the notes C and C#; a factor
+			of +/-12.000 is a full octave (half or double speed).
+			Positive values indicate the audio is being sped up (higher pitch), negative values indicate slowing (lower pitch), and zero means
+			no change to the audio speed.
+			<p>
+				This value is an instantaneous measurement, not an average, so a varying adjustment means varying speeds in
+				the written audio track.
+			</p>
+			<p>
+				An adjustment within about 0.030 semitones is not usually noticeable, and slow, gradual drifts or oscillations in this value
+				are normal. However, factors above +/-0.100 semitones and rapid changes in this value indicate warbling in
+				the resampler's output, which may indicate timing problems.
+			</p>
+		</dd>
+
+		<dt>Sync: Video timing adjust</dt>
+		<dd>Amount of adjustment, in milliseconds, applied to the video stream caused by detected differences from audio timing. This
+			is only pertinent if the timing setting is "sync video to audio." Positive values mean the video stream
+			is being sped up; negative values mean it is being slowed down. It is normal for this value to increment or decrement
+			occasionally over the course of a video capture session.
+		</dd>
+
+		<dt>Sync: Relative latency</dt>
+		<dd>Estimated difference in arrival time, in milliseconds, between the audio and video streams. This is the difference between when VirtualDub sees
+			a video frame and the audio that corresponds to that frame, not necessarily a sync error in the output. Positive values
+			indicate the audio is arriving later, whereas negative values indicate it is arriving earlier. This value will typically be
+			in to 10-100ms range for "TV tuner" style devices and possibly as high as +/-300ms for devices with integrated compression.
+
+			<p>
+			An abnormally large value here, particularly in the range of seconds or more, likely indicates a timing problem.
+			</p>
+		</dd>
+
+		<dt>Sync: Current error</dt>
+		<dd>Estimated sync error between the audio and video streams; zero means that the audio and video streams are in sync. This is only
+			calculated if the sync mode is "sync audio to video." The audio resync controller continually adjusts the audio resampling rate
+			in an attempt to drive this error as close to zero as possible.
+		</dd>
+	</dl>
+</lina:create>
+
+<lina:create file="c-timing.html" title="Capture: Timing dialog">
+	<blockquote>
+		<lina:image src="pics/c-timing.png"/>
+	</blockquote>
+	<p>
+		The <em>Capture timing</em> dialog allows control of the way VirtualDub matches video to audio during a capture operation. Video frames
+		can arrive from the video capture driver with non-regular timestamps due to timing accuracy issues and interference with background
+		tasks in the system; timing disturbances can also occur due to irregularities in the source video signal. During the video capture process,
+		the varying timestamps have to be matched to regular frame slots in the output video stream.
+	</p>
+	<dl>
+		<dt>Drop frames when captured frames are too close together</dt>
+		<dd>
+			<p>
+				If enabled, VirtualDub discards frames that are spaced too close together for the output frame rate. For instance, three frames with
+				timestamps 10ms apart (100 fps) cannot fit into a 29.97 fps stream. If this option is disabled, all captured frames are written
+				to the output stream.
+			</p>
+			<p>
+				Unless the audio resampler is enabled (see below), disabling this option can result in desynchronization of the audio and
+				video streams.
+			</p>
+			<p>
+				This option is enabled by default.
+			</p>
+		</dd>
+
+		<dt>Insert null frames when captured frames are too far apart</dt>
+		<dd>
+			<p>
+				If enabled, VirtualDub inserts dummy frames into the output video whenever captured frames are spaced too far apart for the output
+				frame rate. For example, two captured frames spaced 66ms apart would have a dummy frame between them in a 29.97 fps stream.
+				This dummy frame is identifiable in the video stream as a zero-byte frame and displays the same image as the previous non-dummy
+				frame.
+			</p>
+			<p>
+				Unless the audio resampler is enabled (see below), disabling this option can result in desynchronization of the audio and
+				video streams.
+			</p>
+			<p>
+				This option is enabled by default.
+			</p>
+		</dd>
+
+		<dt>Null frame burst limit</dt>
+		<dd>
+			<p>
+				Controls the maximum number of dummy frames in a row that VirtualDub will insert when captured frames are too far apart. This limits
+				the amount of damage that occurs if timestamps in the video stream are wildly incorrect for a moment, such as a full day ahead.
+			</p>
+			<p>
+				The default for this option is 10.
+			</p>
+		</dd>
+
+		<dt>Resync mode: Do not resync between audio and video streams</dt>
+		<dd>
+			<p>
+				In this mode, auto-resync is disabled: VirtualDub will not monitor the audio and video streams for timing discrepancies. This means that the quality
+				of synchronization in the output video is dependant on the accuracy of the audio and video clocks; for example, if the sound device
+				is recording slightly slower than the requested sampling rate, or the video capture device reports timestamps that are 0.1% too fast,
+				the output video will be accordingly desynchronized.
+			</p>
+			<p>
+				It is highly recommended that you enable auto-resync, as the audio and video clocks are never exactly identical unless both are
+				being captured on the same device.
+			</p>
+		</dd>
+
+		<dt>Resync mode: Sync video to audio by adjusting video timing</dt>
+		<dd>
+			<p>
+				VirtualDub will speed up or slow down the video clock to match the audio clock. This will affect the number of frame drops and inserts
+				in the video stream. If the audio clock is more inaccurate this will result in more drops/inserts; if the video clock is the worse one,
+				this can sometimes <i>reduce</i> the number of drops and inserts.
+			</p>
+			<p>
+				The amount of adjustment to the video clock is reported on the information side bar as the <em>VT adjust</em> field.
+			</p>
+		</dd>
+
+		<dt>Resync mode: Sync audio to video by resampling the audio to a faster or slower rate</dt>
+		<dd>
+			<p>
+				The audio will be stretched or compressed to match the video clock. The video stream is not affected, but the audio stream will have
+				a slightly higher or lower pitch and speed. As the discrepancy in clocks is typically very small, this change is not normally noticeable.
+				This mode is only usable if the audio device is capturing in an uncompressed (PCM) format; if a compressed format is in use and this
+				mode is selected, the <em>sync video to audio</em> mode is used instead. Note that this only applies to the raw audio capture format;
+				any audio codec can still be used.
+			</p>
+			<p>
+				The amount of adjustment to the audio stream is noted in the information side bar as the <em>Resample</em> field.
+			</p>
+			<p>
+				This mode is selected by default.
+			</p>
+			<p>
+				The behavior of the audio resampler was significantly changed for 1.6.12.
+			</p>
+		</dd>
+
+		<dt>Correct video timing rate errors</dt>
+		<dd>
+			<p>
+				If enabled, VirtualDub will attempt to adjust video timing to compensate for frames arriving slightly faster or slower than expected.
+				This can reduce the number of frame drops or inserts incurred during video capture, at the expense of making the video clip play slightly
+				faster or slower than real-time. This option is meant to be used with the <em>sync audio to video</em> resync mode, or when audio
+				is not being captured.
+			</p>
+			<p>
+				Video timing correction is automatically disabled if the resync mode is set to <em>sync video to audio</em> or if the resync mode is automatically
+				forced to that mode because <em>sync audio to video</em> can't be used due to compressed audio. It is also automatically disabled if
+				integrated A/V capture is detected and resync disabling is enabled (see below).
+			</p>
+			<p>
+				The behavior of the video timing corrector was significantly changed for 1.6.12.
+			</p>
+		</dd>
+
+		<dt>Automatically disable resync when integrated audio/video capture is detected</dt>
+		<dd>
+			<p>
+				Capture devices that have both audio and video capture integrated usually use a shared clock to avoid sync errors between the streams.
+				When enabled, this option causes VirtualDub to automatically disable auto-resync when such a situation is detected.
+			</p>
+			<p>
+				Note that VirtualDub must see both audio and video devices on the same capture driver for this option to take effect. If you are using
+				a capture device which exposes its audio capture as a separate sound driver in Windows, VirtualDub will not see it as integrated.
+			</p>
+		</dd>
+	</dl>
+</lina:create>
+
+<lina:create file="c-troubleshooting.html" title="Capture: Troubleshooting">
+	<h2>Fireworks on entering capture mode or selecting a particular capture driver</h2>
+	<p>
+		VirtualDub tries to change settings in such a way that if the settings cause the driver to blow up, that
+		the modified settings aren't saved &mdash; but occasionally the failure occurs later, in the form of a hang,
+		crash, blue-screen, etc. The result is that
+		you can't use the capture device any more, because as soon as you try entering capture mode VirtualDub
+		auto-selects the last capture driver, and then restores the saved settings, and... well, you get the point.
+	</p>
+	<p>
+		Fortunately, there is an escape hatch.
+	</p>
+	<p>
+		Holding down a Shift key when entering capture mode will prevent VirtualDub from automatically
+		selecting the last used capture driver. The easiest way to do this is to hold Shift when selecting
+		<em>Capture AVI...</em> from the menu. Similarly, holding down Shift when selecting a capture driver
+		will prevent any saved settings that were recorded for that driver from being restored. The errant settings
+		can then be changed and re-saved to correct the problem.
+	</p>
+	<p>
+		Note that this doesn't help for any settings that the capture driver itself saves and that VirtualDub doesn't
+		know about. In that case, you can either attempt to reinstall the driver, or find the location in the Registry
+		where it saves those settings, and try to change them.
+	</p>
+
+	<h2>System-wide hang, blue-screen, or instant reboot when using the "overlay" display mode</h2>
+	<p>
+		The "overlay" display mode on most capture devices causes the capture hardware to stream the video
+		image directly into the display memory of the video card. Sometimes the capture device and video card
+		don't cooperate well and the result is a lockup or blowup when overlay display mode is chosen. In
+		most cases it is better to choose the Preview mode instead, as then VirtualDub can directly control
+		the video display, but sometimes it is possible to switch a Video for Windows capture driver's method of overlay
+		display to a more compatible mode.
+	</p>
+	<p>
+		If this is occurring, check if the capture driver has an options screen. In Windows XP, navigate as follows:
+	</p>
+	<ul>
+		<li>Start Menu, Settings, Control Panel, Sounds and Audio Devices</li>
+		<li>Hardware tab, Legacy Video Capture Devices entry, Properties button</li>
+		<li>Select the Properties tab, find the video capture driver, and then the Properties button.</li>
+	</ul>
+	<p>
+		If the <em>Settings...</em> button is not disabled (grayed out), select it and browse through the driver's
+		configuration dialog. Look for an option called "overlay mode" or "use DrawDib"; this will switch the driver
+		to a slower, but more compatible method of display.
+	</p>
+
+	<h2>No color, rainbow coloring, or simply bad color</h2>
+	<p>
+		First, check that you are using the correct video input and that the capture device is configured
+		to use the right one. On some devices the composite video input is simply the S-Video input with an adapter,
+		so it is possible to set the video input to S-Video and still see a grayscale version of a composite video
+		input.
+	</p>
+	<p>
+		If you have both S-Video as well as an "external" or "camera" input, sometimes the external/camera input
+		works better, inexplicably.
+	</p>
+	<p>
+		Check the video standard in use. Attempting to capture an NTSC stream as PAL, PAL as SECAM, etc. will
+		result in scrambled color. The video standard is normally controlled in <em>Video settings</em> for
+		VFW drivers and <em>Capture filter</em> for WDM drivers, although the location may vary.
+	</p>
+
+	<h2>Video capture mysteriously stops</h2>
+	<p>
+		Check <em>Capture &gt; Stop Conditions</em> and make sure no conditions have been inadvertently enabled.
+	</p>
+	<p>
+		Interruptions in video sources, causing a loss of video signal, can occasionally cause this problem.
+	</p>
+	<p>
+		On Windows NT-based platforms, locking the workstation with Ctrl+Alt+Del can cause a capture operation
+		to stop. In general, it is best to avoid doing anything that might change desktops or the video
+		display mode.
+	</p>
+</lina:create>
+
+<lina:create title="Capture: Audio setup" file="c-audiosetup.html">
+
+	<h2>Using Windows Volume Control to adjust recording levels</h2>
+	<p>
+		If your video capture device relies on the installed sound card to capture audio, you will need to
+		adjust the recording levels on the sound card through the Volume Control tool in Windows. Double-click
+		on the speaker icon in the notification area of the taskbar, or in Windows XP, launch it through
+		<em>Start &gt; Programs &gt; Accessories &gt; Entertainment &gt; Volume Control</em>. You can also
+		launch it from VirtualDub using the <em>Audio &gt; Windows mixer...</em> menu command.
+	</p>
+	<p>
+		Once Volume Control is open, select <em>Options &gt; Properties</em> from the menu:
+	</p>
+
+	<blockquote>
+		<lina:image src="pics/c-volume1.png"/>
+	</blockquote>
+
+	<p>
+		The display on your system will differ slightly. Change the current control set from Playback to
+		Recording, and make sure the appropriate input in checked in the list of controls to show, depending
+		on which sound card input the capture device's audio output is plugged into (usually Line-In or
+		Aux-In).
+	</p>
+
+	<blockquote>
+		<lina:image src="pics/c-volume2.png"/>
+	</blockquote>
+
+	<p>
+		Check that the correct inputs are selected for recording. If not, first check if it can be changed
+		in VirtualDub using the <em>Audio &gt; Audio input</em> submenu; the Volume Control should automatically
+		update as VirtualDub changes inputs. Otherwise, the correct input should be manually selected.
+		Now use the volume slider for the input to adjust the volume of the captured audio.
+	</p>
+
+	<h2>Checking levels with the volume meter</h2>
+
+	<p>
+		To check volume levels, display the volume meter in VirtualDub by selecting <em>Audio &gt; Volume meter</em> from the menu, or press the <em>V</em>
+		key.
+	</p>
+
+	<blockquote>
+		<lina:image src="pics/c-vumeter.png"/>
+	</blockquote>
+
+	<p>
+		The volume meter samples incoming audio from the recording input and displays the current and long-term peaks in blue
+		and red, respectively.
+		It measures sound power in decibels (dB); -6 dB is one-quarter maximum power, or one-half maximum amplitude.
+		Lower peak values mean quieter audio.
+	</p>
+	<p>
+		Audio should be adjusted so that it is reasonably loud without clipping (bars go all the way to the right end) &mdash;
+		once this happens audio is distorted. It is usually safer for the audio to be on the quieter side, although if it is
+		really quiet quality will be lost due to limited precision, even after amplification in post-processing.
+	</p>
+</lina:create>
+
+<lina:create title="Capture: Screen capture" file="c-screencap.html">
+	<p>
+		The <em>screen capture</em> entry is a special capture "driver" within VirtualDub that allows the video screen
+		to be used as the capture source instead of an external source.
+	</p>
+	<h2>Selecting the region to capture</h2>
+	<p>
+		Use the <em>Video > Set Custom Format...</em> menu option to choose the size of image to capture. Use 32-bit RGB as
+		the format.
+	</p>
+	<p>
+		By default, the image capture will occur at the top-left corner of the screen. The <em>Video > Source...</em> menu
+		option exposes a couple of additional options to control the origin: it can be centered on the mouse cursor, to
+		the current active top-level window, or both. When both options are active, VirtualDub will pan around the bounds
+		of the active window according to the cursor position.
+	</p>
+	<h2>Starting the capture and performance implications</h2>
+	<p>
+		You will usually want to set hotkey shortcuts for starting and stopping the capture via <em>Capture > Preferences</em>,
+		so as to avoid capturing the VirtualDub window itself.
+	</p>
+	<p>
+		Capturing from the screen is very CPU-intensive and depends greatly on the speed of your CPU and video card.
+		The size of the region captured greatly influences the CPU usage, so if you have problems, consider capturing
+		a smaller size. More modern video cards and video drivers also tend to be more efficient at screen capture.
+	</p>
+	<h2>Enabling OpenGL acceleration</h2>
+	<p>
+		If you have a video card with 3D acceleration, you may be able to enable <em>OpenGL acceleration mode</em>, which
+		enables additional features and also speeds up the screen capture process.
+	</p>
+	<p>
+		The amount of acceleration possible depends on your video card's features.
+	</p>
+	<ul>
+		<li><em>Basic OpenGL support</em> allows 32-bit capture with hardware accelerated resizing.</li>
+		<li><em>Advanced blending support</em> permits hardware accelerated conversion to YCbCr formats, including
+			<em>YUY2</em>, <em>UYVY</em>, and <em>YV12</em>. For cases where some color bleeding can be tolerated, this
+			drops the raw data bandwidth requirements by 50-60%, and also speeds up real-time video compression if used.
+			You need at least an NVIDIA GeForce video card (<tt>NV_register_combiners</tt> OpenGL extension) for hardware YCbCr conversion.
+		</li>
+		<li><em>Pixel (fragment) shader support</em> lowers the load on the video card. To take advantage of pixel shader
+			support, you need at least an NVIDIA GeForce 3 (<tt>NV_register_combiners2</tt> extension) or an ATI
+			RADEON 8500 (<tt>ATI_fragment_shader</tt> extension).
+		</li>
+		<li><em>Occlusion query support</em> allows duplicate frames to be removed on the video card with neglegible
+			CPU load. Occlusion query support requires the <tt>NV_occlusion_query</tt> OpenGL extension (this is generally
+			supported on 3D accelerators from both NVIDIA and ATI).
+		</li>
+	</ul>
+	<lina:note>
+		As of this writing, some video card drivers for Windows Vista are not compatible with the methods used here to capture
+		the screen through OpenGL. If this is the case on your system, you will need to disable OpenGL acceleration so that
+		the slower, more compatible GDI-based method is used.
+	</lina:note>
+</lina:create>

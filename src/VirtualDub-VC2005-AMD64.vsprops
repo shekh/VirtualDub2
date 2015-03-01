@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="VirtualDub-VC2005-AMD64"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		DisableSpecificWarnings="4244;4267"
+	/>
+	<UserMacro
+		Name="VDPlatformDirTag"
+		Value="AMD64"
+	/>
+	<UserMacro
+		Name="ML"
+		Value="/Dxmmword=qword"
+		PerformEnvironmentSet="true"
+	/>
+</VisualStudioPropertySheet>

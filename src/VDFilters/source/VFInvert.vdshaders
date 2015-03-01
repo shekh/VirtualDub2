@@ -1,0 +1,8 @@
+kVDFilterInvertPS:
+	ps_2_0
+	def c0, 1, 0, 0, 0
+	dcl t0.xy
+	dcl_2d s0
+	texld_pp r0, t0, s0
+	add_pp r0, c0.x, -r0
+	mov_pp oC0, r0

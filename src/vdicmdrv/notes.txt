@@ -1,0 +1,4 @@
+ANNOYING PROBLEMS
+=================
+o  XingMPEG Encoder requires *write* access to any AVI files it opens (unconfirmed).
+o  XingMPEG Encoder leaves files open when the compressor cannot be found (confirmed).

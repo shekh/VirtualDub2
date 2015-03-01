@@ -1,0 +1,1553 @@
+<lina:include file="source/render/compression.lina" />
+<lina:include file="source/render/externalencoder.lina"/>
+
+<lina:create file="p-mainui.html" title="Processing: Main UI">
+	<blockquote>
+		<lina:image src="pics/p-mainui.png"/>
+	</blockquote>
+
+	<dl>
+		<dt>Display panes</dt>
+		<dd>
+			<p>
+				Two rectangular panes occupy most of VirtualDub's interface; the left one is the <em>input pane</em>
+				and the right one is the <em>output pane</em>. As the current position is moved through the video,
+				the panes will update with the original and filtered result of that frame. This allows convenient
+				before-and-after comparisons of the video.
+			</p>
+			<p>
+				The positioning and size of the display panes can be modified in a number of ways; see <a href="p-displays.html">Display panes</a>
+				for more information.
+			</p>
+		</dd>
+
+		<dt>Position slider</dt>
+		<dd>
+			<p>
+				Drag the slider below the panes to change the current position within the video. If enabled, the display
+				panes will update to show the selected frame. Holding Shift while dragging forces the current position
+				to be placed only on key frames. Using the right mouse button to drag the slider instead of the left
+				causes the drag to occur at a much slower rate for more precise positioning.
+			</p>
+			<p>	
+				Each position on the position slider corresponds to the <i>start</i> of each frame in the video timeline.
+				As a result, there is one additional position at the end corresponding to the end of the video. For
+				instance, with a 2280 frame video the slider may be positioned from 0 to 2280.
+			</p>
+		</dd>
+
+		<dt>Playback controls (<lina:image src="pics/p-mainui-playback.png"/>)</dt>
+		<dd>
+			Starts and stops preview playback of the video. The play button with the small "I" only plays the input video;
+			the one with the small "O" previews both the input and the filtered output video. Previewing the output
+			video requires a lot more CPU power and may not be able to occur in real-time if the video frame is
+			large or complex video filters are in use.
+		</dd>
+
+		<dt>Frame step controls (<lina:image src="pics/p-mainui-framestep.png"/>)</dt>
+		<dd>
+			Jumps to the beginning, previous frame, next frame, and end of the video, respectively. These actions
+			can also be performed through the keyboard using Ctrl+Left-arrow, Left-arrow, Right-arrow, and Ctrl+Right-arrow.
+		</dd>
+
+		<dt>Key frame step controls (<lina:image src="pics/p-mainui-keystep.png"/>)</dt>
+		<dd>
+			<p>
+				Jumps to the previous or next <em>key frame</em> in the video. A <em>key frame</em> is a frame that is stored
+				fully-contained in the video file and doesn't depend on any other frames for decoding; these are the fastest
+				seek points in the video and often of slightly higher quality as well. Stepping by key frame is often significantly
+				faster and is handy when browsing through the video. In addition, the key frames represent appropriate cut
+				points when <a href="p-direct.html">editing in Direct mode</a>.
+			</p>
+			<p>
+				The key frame step controls can also be activated through the keyboard using Shift+Left-arrow and Shift+Right-arrow.
+			</p>
+			<p>
+				When the video source is an MPEG-1 file, the key frame step controls jump between I-frames.
+			</p>
+		</dd>
+
+		<dt>Scene step controls (<lina:image src="pics/p-mainui-scenestep.png"/>)</dt>
+		<dd>
+			<p>
+				Jumps to the previous or next scene in the video. Scene detection is done by image analysis heuristics, by looking
+				for large picture changes that indicate possible cuts or fades in the video. The thresholds for determining a fade
+				or a cut can be controlled in the Preferences dialog.
+			</p>
+			<p>
+				When scanning through a large amount of video, the display panes will begin to update at a slower rate. This is normal.
+				The pane updates are reduced after a short period in order to reduce their CPU usage and speed up the scan.
+			</p>
+		</dd>
+
+		<dt>Mark-in and mark-out controls (<lina:image src="pics/p-mainui-mark.png"/>)</dt>
+		<dd>
+			<p>
+				Sets the starting and ending points for the selection to the current position. The selection is used by the commands
+				in the Edit menu to modify the portions of video to be rendered. Also, if a portion of video is selected when a save command
+				is used, only that portion of video is processed.
+			</p>
+			<p>
+				The Home and End keys can also be used to select video.
+			</p>
+			<lina:note>
+				Since the position slider moves to the <i>beginning</i> of frames, the mark-out point must be placed one frame <em>after</em>
+				the last frame to be selected. This means that if 300 frames are to be deleted starting at frame 100, the selection should
+				be started (mark-in) at frame 100 and ended (mark-out) at frame 100+300 = 400, not at frame 399. This is referred to as
+				<em>end-point exclusive</em> selection.
+			</lina:note>
+		</dd>
+
+		<dt>Timestamp display (<lina:image src="pics/p-mainui-timestamp.png"/>)</dt>
+		<dd>
+			<p>
+				Displays the current frame number, timestamp, and frame type at the current position. Frame types are as follows:
+			</p>
+			<ul>
+				<li><tt>[K]</tt>: A key frame. (AVI)</li>
+				<li><tt>[ ]</tt>: A delta frame &mdash; stored as a difference from the previous frame. (AVI)</li>
+				<li><tt>[D]</tt>: A drop or null frame, which repeats the previous frame. These are most often found in capture files. (AVI)</li>
+				<li><tt>[I]</tt>: An I-frame; similar to a key frame. (MPEG-1)</li>
+				<li><tt>[P]</tt>: A P-frame, or <i>forward predicted</i> frame. These are stored as a difference from an earlier frame. (MPEG-1)</li>
+				<li><tt>[B]</tt>: A B-frame, or <i>bidirectionally predicted</i> frame. These are stored as a difference from both an earlier frame and a future frame. (MPEG-1)</li>
+				<li><tt>[M]</tt>: A masked frame. These are frames that have been tagged in VirtualDub's timeline as not to be processed; instead, the previous frame should be
+					used. This is most often used to bypass errors in the source. The end frame will also show up as one of these.</li>
+			</ul>
+			<p>
+				The format of the timestamp display can be customized in Preferences.
+			</p>
+		</dd>
+	</dl>
+</lina:create>
+
+<lina:create file="p-edit.html" title="Processing: Editing the source video">
+	<p>
+		Although VirtualDub is not a full non-linear editing (NLE) application, it does have some limited
+		functionality for editing source video. Unwanted portions of video can thus be trimmed off from
+		a video before it is processed, saving disk space and time.
+	</p>
+	<h2>Selecting and editing portions of the timeline</h2>
+	<p>
+		Use the <em>Edit &gt; Set selection start</em> and <em>Edit &gt; Set selection end</em> commands to select
+		a portion of video. This can also be done through the Home and End keys on the keyboard, or through
+		the mark-in and mark-out buttons below the position slider. The current selection is then indicated by
+		a sky-blue area on the position slider.
+	</p>
+	<p>
+		Once a portion of video has been selected, the <em>Delete</em> command (keyboard shortcut: Delete key) can
+		be used to remove that video from the timeline. The <em>Cut</em>, <em>Copy</em>, and <em>Paste</em> commands
+		can also be used to reorder video (they cannot be used to splice or combine video files together, however).
+		The <em>Undo/Redo</em> commands can be used to reverse mistakes, and the <em>Reset timeline</em> command
+		undoes all edits entirely, restoring the timeline to the entirety of the source video.
+	</p>
+	<p>
+		Editing the timeline only creates an edit list within VirtualDub for later use; it never modifies
+		the source file in any way. In particular, deleting a section of the timeline does not delete anything
+		from the source file, and the edited result must be saved to a new file. Editing a video file thus requires
+		disk space to hold both the original and the edited clip.
+	</p>
+	<p>
+		As a shortcut, the selection mark-in/mark-out commands also modify the range selection that is exposed via
+		the <em>Video &gt; Select range...</em> menu command. Thus, selecting a portion of video prior to a save
+		command causes only that selection to be rendered to disk. If this is undesired, clear the selection using
+		the <em>Edit &gt; Clear selection (Ctrl+D)</em> command.
+	</p>
+	<h2>Caveats when editing</h2>
+	<p>
+		VirtualDub does not have support for transitions, so any edits will be abrupt unless the edit points are
+		located at places in the source video that hide the seam. Silent fades to black are a good place to
+		remove selections of video.
+	</p>
+	<p>
+		Editing can be performed in any video or audio mode, including Direct mode, which causes the render-to-disk
+		to be extremely fast and without quality loss in most cases. However, there are serious limitations with
+		editing in this mode that restrict where edits can be performed; also, advanced audio and video compression
+		can impede VirtualDub's ability to edit cleanly. For more information, see <a href="p-direct.html">Direct mode</a>.
+	</p>
+	<h2>Masking frames</h2>
+	<p>
+		A single frame or section of frames can be <i>masked</i>; this prevents the imagery from those frames
+		from being used and instead forces reuse of the image of the last unmasked frame. In Direct mode,
+		the masked frame data is deleted entirely and empty padding frames are written instead. However, in
+		either case the audio is untouched, so the video simply appears to freeze for the duration of the
+		masked range. This can be used either to remove single-frame glitches or to remove compressed frames
+		that are damaged.
+	</p>
+	<p>
+		Note that similar restrictions apply to masked frames as to deleted frames with regard to masking frames
+		that are not key frames, and VirtualDub will similarly fix masked ranges that cannot be supported
+		in Direct mode.
+	</p>
+</lina:create>
+
+<lina:create file="p-render.html" title="Processing: Rendering and saving the processed output">
+	<p>
+		Once the source video has been edited as necessary and appropriate processing parameters set, the
+		video can be <em>rendered</em> to generate the final result. This can either be previewed live or saved
+		to a file on disk.
+	</p>
+	<h2>Previewing the edited result</h2>
+	<p>
+		The <em>File &gt; Preview output from start...</em> command begins rendering the timeline to the video
+		display so that it can be previewed. Most video and audio processing operations are active in this mode,
+		with the notable exception of audio and video compression, which are disabled. The result that is seen
+		in the output display pane and heard from the system speakers is thus representative of the output of
+		the video and audio filter systems, but may be of higher quality than what would be stored in compressed
+		form.
+	</p>
+	<p>
+		Rendering filtered audio and video in real-time consumes a lot of CPU power and in many cases VirtualDub
+		will have difficulty attaining full frame rate given a complex filter chain. When this occurs, the audio
+		may lose sync and begin to stutter as the video frame rate drops below real-time, since all video frames
+		are still displayed. The <em>Option &gt; Drop video frames when behind</em> option can help here by allowing
+		VirtualDub to process only a portion of the video frames in order to maintain real-time performance.
+		This only affects preview and does not remove frames during any save-to-disk operation.
+		Note that this may not be sufficient in extreme cases where the audio chain or the hard disk is unable
+		to attain real-time either.
+	</p>
+	<p>
+		The <em>Sync to audio</em> option also affects preview by changing the way that VirtualDub synchronizes
+		audio and video playback; it should normally be left on, but if there are problems with audio timing
+		that prevent synchronized playback from occurring, disabling this option may allow preview to proceed.
+		Like the option to drop frames, this option too only pertains to previewing and does not affect renders
+		to disk.
+	</p>
+	<h2>Saving the processed result to disk</h2>
+	<p>
+		<em>File &gt; Save AVI...</em> starts a render process to disk. A new AVI file is then generated containing
+		the processed video and audio.
+	</p>
+	<p>
+		VirtualDub is normally able to write AVI files larger than 2GB using a extension to the AVI file format
+		called the <em>OpenDML hierarchical index</em>. This is done in such a way that older applications that
+		do not understand the hierarchical index can still open the first 2GB of the file. However, occasionally
+		an application cannot open such AVI files at all. The <em>File &gt; Save old format AVI</em> command
+		disables VirtualDub's use of that extension so that only an original-format AVI is written. Note that
+		this format does not support AVI files larger than 2GB, so care must be taken to appropriately trim or
+		compress the video to fit below this threshold.
+	</p>
+	<p>
+		If only the audio is desired, the <em>File &gt; Save WAV...</em> menu option produces an audio file on
+		disk using the WAV format. All audio options are active, except for the interleaving interval, which
+		does not apply since no video is being written. Video is not processed in this mode. Note that audio
+		compression <i>is</i> active since WAV files can either be compressed or uncompressed, so be sure to
+		disable audio compression if an uncompressed WAV file is desired.
+	</p>
+	<p>
+		Although VirtualDub can read MPEG-1 files, it is not currently able to write them, even in Direct mode.
+	</p>
+	<h2>Analysis passes</h2>
+	<p>
+		Some video filters and video codecs may require <i>analysis passes</i> in order to effectively filter or
+		compress video. In the analysis passes, the video is scanned to determine difficult areas of motion or
+		other features; knowledge of the <i>entire</i> video can then be used to optimize the final output.
+		This is known as <em>multi-pass</em> processing.
+	</p>
+	<p>
+		For various reasons, VirtualDub does not know that a multi-pass operation is required by a video filter
+		or codec and cannot automate the process. However, the <em>File &gt; Run video analysis pass</em>
+		assists in running analysis passes by running the video pipeline without writing a dummy file to disk.
+		The audio pipeline is disabled as well for additional speed.
+	</p>
+</lina:create>
+
+<lina:create file="p-pipeline.html" title="Processing: The pipeline">
+	<style>
+		table.pipeline {
+		}
+
+		table.pipeline th {
+			background: #8ae;
+		}
+
+		table.pipeline td {
+			background: #aea;
+		}
+	</style>
+
+	<p>
+		VirtualDub's processing of audio and video during a render-to-disk operation is split into several pipeline stages.
+		Some of these stages are enabled or disabled depending on the current audio/video mode selected.
+	</p>
+
+	<h2>Video pipeline</h2>
+	<p>
+		The video pipeline can be run in one of four different modes:
+	</p>
+	<ul>
+		<li>
+			<p>
+				<em>Direct stream copy</em>: In this mode, video frames are copied directly from input to output. No
+				recompression takes place, and thus no quality loss can occur. This is the fastest possible mode for
+				editing video in VirtualDub.
+			</p>
+			<p>
+				Because the video is not recompressed, video compression imposes restrictions on how the video can
+				be edited.
+			</p>
+		</li>
+		<li>
+			<p>
+				<em>Fast recompress</em>: Video is decompressed and then recompressed using the desired output codec.
+				VirtualDub automatically chooses a intermediate video format to use between the codecs for quality
+				and speed.
+			</p>
+			<p>
+				An output video codec must be chosen in this mode.
+			</p>
+		</li>
+		<li>
+			<p>
+				<em>Normal recompress</em>: Video is decompressed and then recompressed using the desired output codec.
+				This is similar to Fast Recompress except that the input and output formats can be chosen
+				in the <a href="d-videocolordepth.html">Video color depth</a> dialog, and the two can be different,
+				requiring a conversion in between.
+			</p>
+			<p>
+				If no output video codec is chosen, the video is written to disk uncompressed in the output format.
+			</p>
+		</li>
+		<li>
+			<p>
+				<em>Full processing mode</em>: All pipeline stages and features are enabled.
+			</p>
+		</li>
+	</ul>
+	<p>
+		Here's what the video pipeline looks like:
+	</p>
+
+	<blockquote>
+		<table class="pipeline">
+			<tr>
+				<th>Direct</th>
+				<th>Recompress</th>
+				<th>Full</th>
+			</tr>
+			<tr>
+				<td>Frame sequencing</td>
+			</tr>
+			<tr>
+				<td>Read frame</td>
+			</tr>
+			<tr>
+				<td rowspan="6"></td>
+				<td>Decompress frame</td>
+			</tr>
+			<tr>
+				<td rowspan="3"></td>
+				<td>Inverse telecine</td>
+			</tr>
+			<tr>
+				<td>Convert to 32-bit RGB</td>
+			</tr>
+			<tr>
+				<td>Run video filters</td>
+			</tr>
+			<tr>
+				<td>Convert to target format</td>
+			</tr>
+			<tr>
+				<td>Compress frame</td>
+			</tr>
+			<tr>
+				<td>Write video</td>
+			</tr>
+		</table>
+	</blockquote>
+	<p>
+		Here's what the various stages do:
+	</p>
+	<dl>
+		<dt>Frame sequencing</dt>
+		<dd>
+			<p>
+				Video frames are selected from sources and ordered. This is where any edits done to the timeline take place,
+				along with the frame rate options, including rate adjustment, conversion, and decimation.
+			</p>
+			<p>
+				If Direct mode is selected, there are some restrictions as to how frames can be inserted or dropped. Any edits
+				to the timeline that violate these restrictions are adjusted here to comply.
+			</p>
+		</dd>
+
+		<dt>Read frame</dt>
+		<dd>
+			<p>
+				Video frames are read from disk.
+			</p>
+		</dd>
+
+		<dt>Decompress frame</dt>
+		<dd>
+			<p>
+				Compressed video frames are run through a video codec to produce uncompressed video frames. The format is
+				selected in the <a href="d-videocolordepth.html">Video color depth</a> dialog.
+			</p>
+			<p>
+				In Fast Recompress mode, the format is automatically selected based on compatibility between the input and
+				output video codecs.
+			</p>
+			<p>
+				By default, any empty ("dropped") frames in the input are simply duplicated here. This behavior can be
+				changed through the <em>Video &gt; Preserve empty frames</em> option, which causes each empty frame to
+				be copied straight to the output, regardless of the video filter chain or output codec. This can be useful
+				if the video stream has been upsampled to a higher frame rate using empty frames.
+			</p>
+		</dd>
+
+		<dt>Inverse telecine</dt>
+		<dd>
+			<p>
+				If inverse telecine (3:2 pulldown removal) is enabled in <a href="d-videoframerate.html">Video frame rate
+				control</a>, fields are reordered and the video stream frame rate is reduced by 25% at this point.
+			</p>
+		</dd>
+
+		<dt>Convert to 32-bit RGB</dt>
+		<dd>
+			<p>
+				Video filters in VirtualDub currently only run in 32-bit RGB, so the video frames are converted to 32-bit
+				RGB at this point.
+			</p>
+			<lina:note>
+				In previous versions of VirtualDub, enabling full processing mode would always force a conversion to 32-bit
+				RGB. This is no longer the case &mdash; if no video filters are used, this conversion step is omitted
+				and the video is directly converted to the output format as in Normal Recompress mode.
+			</lina:note>
+		</dd>
+
+		<dt>Run video filters</dt>
+		<dd>
+			<p>All <a href="d-videofilters.html">video filters</a> are run at this point.</p>
+		</dd>
+
+		<dt>Convert to output format</dt>
+		<dd>
+			<p>
+				The video frames are converted from their current format to the output format specified
+				in the <a href="d-videocolordepth.html">Video color depth</a> dialog. If the formats are the same,
+				no conversion takes place.
+			</p>
+			<p>
+				Conversions between YCbCr formats are done directly in YCbCr space without an RGB intermediate step.
+				Chroma is subsampled or supersampled as necessary using bilinear filtering.
+			</p>
+		</dd>
+
+		<dt>Compress frame</dt>
+		<dd>
+			<p>
+				If a <a href="d-videocompression.html">video compression codec is selected</a>, it is now used to
+				compress the video frame.
+			</p>
+		</dd>
+
+		<dt>Write video</dt>
+		<dd>
+			<p>
+				The video frame is now written to disk.
+			</p>
+		</dd>
+	</dl>
+
+	<h2>Audio pipeline</h2>
+	<p>
+		The audio pipeline has three modes: Direct, Full without audio filters, and Full with audio filters. Enabling audio filters
+		replaces other types of audio processing in the pipeline, thus the parallel path.
+	</p>
+
+	<blockquote>
+		<table class="pipeline">
+			<tr>
+				<th>Direct</th>
+				<th colspan="2">Full</th>
+			</tr>
+			<tr>
+				<td>Sequencing</td>
+			</tr>
+			<tr>
+				<td>Read audio</td>
+			</tr>
+			<tr>
+				<td rowspan="5"></td>
+				<td>Decompress audio</td>
+			</tr>
+			<tr>
+				<td>Format conversion</td>
+				<td rowspan="3">Filter graph</td>
+			</tr>
+			<tr>
+				<td>Resampling</td>
+			</tr>
+			<tr>
+				<td>Volume adjustment</td>
+			</tr>
+			<tr>
+				<td>Compression</td>
+			</tr>
+			<tr>
+				<td>Write audio</td>
+			</tr>
+		</table>
+	</blockquote>
+
+	<dl>
+		<dt>Sequencing</dt>
+		<dd>
+			Any audio edits take place here. These are basically the same in time as the video edits.
+		</dd>
+
+		<dt>Read audio</dt>
+		<dd>
+			Source audio is read from disk.
+		</dd>
+
+		<dt>Decompress audio</dt>
+		<dd>
+			Audio is decompressed using an audio codec, if necessary, producing uncompressed PCM audio. This is usually in
+			16-bit mono or 16-bit stereo format.
+		</dd>
+
+		<dt>Format conversion</dt>
+		<dd>
+			Precision and channel changes requested under <a href="d-audioconversion.html">audio conversion</a> now take
+			place, including switching between 8-bit and 16-bit samples, as
+			well as mixing down to mono or cloning channels to produce stereo.
+		</dd>
+
+		<dt>Resampling</dt>
+		<dd>
+			<p>
+				Changes in sampling rate requested in the <a href="d-audioconversion.html">audio conversion dialog</a> now take
+				place. If high quality mode is off, point sampling is used, otherwise linear interpolation is used.
+			</p>
+			<p>
+				If higher quality resampling is required, the resample audio filter should be used instead, which uses a multi-tap
+				windowed sinc filter.
+			</p>
+		</dd>
+
+		<dt>Volume adjustment</dt>
+		<dd>
+			<p>
+				If volume adjustment is enabled, the audio is now attenuated or amplified using a linear multiplication with
+				clamping.
+			</p>
+		</dd>
+
+		<dt>Compression</dt>
+		<dd>
+			<p>
+				The audio is now recompressed using the selected output audio codec. If no audio codec is selected,
+				the audio is simply written out using its current format.
+			</p>
+		</dd>
+
+		<dt>Write audio</dt>
+		<dd>
+			<p>
+				The finished audio is written to disk.
+			</p>
+		</dd>
+	</dl>
+
+</lina:create>
+
+<lina:create file="p-direct.html" title="Processing: Direct mode">
+	<p>
+		VirtualDub allows audio and video streams to be processed in <em>direct mode</em>. In this mode, data is simply
+		copied from input and output. This has the advantage of much faster rendering and no quality loss, while still
+		allowing a limited amount of editing.
+	</p>
+	<p>
+		Because of the way that audio and video compression works, there are some limitations imposed on the types and
+		locations of edits that can be done in direct mode. However, because audio and video modes are independent, it
+		is possible to have only one pipeline run in direct mode, and not incur the limitations that would be imposed
+		by the other.
+	</p>
+	<h2>Limitations on editing compressed video streams</h2>
+	<p>
+		Video compression imposes severe restrictions on where edits can occur in the video stream in direct mode.
+		Most compression occurs by removing redundant data between adjacent frames, which results in a <em>delta frame</em>
+		that is dependant on the previous frame to be decoded properly. The result is that the previous frame can't
+		be removed without making that delta frame undecodable. Frames which aren't dependant on the previous frame
+		are known as <em>key frames</em> and serve as anchor points in the stream for seeking and editing purposes.
+	</p>
+	<p>
+		The rule that must be heeded when editing a direct mode stream in VirtualDub is that <em>a portion of video to
+		be removed must end on a keyframe</em>.
+	</p>
+	<p>
+		Key frames are denoted by <tt>[K]</tt> next to the timestamp below the seek bar in VirtualDub; delta frames
+		are denoted by <tt>[ ]</tt> instead. Because selections in VirtualDub are <em>endpoint exclusive</em> &mdash;
+		meaning that the frame you end the selection on is not included in the selection &mdash; you want to <em>end the
+		selection on a key frame</em>.
+	</p>
+	<style>
+		table.timeline {
+			margin-left: 32px;
+		}
+
+		table.timeline th {
+			background: #8ae;
+		}
+
+		table.timeline td {
+			background: #aea;
+			padding-right: 16px
+		}
+
+		table.timeline td.cut {
+			background: #a88;
+		}
+		table.timeline td.broken {
+			background: #f00;
+		}
+	</style>
+	<p>
+		As an example, assume that you have a set of frames like this:
+	</p>
+	<table class="timeline"><tr>
+		<td>K</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>K</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>K</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr></table>
+	<p>
+		This cut is <i>kosher</i>:
+	</p>
+	<table class="timeline"><tr>
+		<td>K</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">K</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td>K</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr></table>
+	<p>
+		This cut, however, is not, because it leaves a delta frame that is missing its predecessor:
+	</p>
+	<table class="timeline"><tr>
+		<td>K</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td class="cut">K</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">K</td>
+		<td class="cut">&nbsp;</td>
+		<td class="broken">&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr></table>
+	<p>
+		When such a cut is made, VirtualDub automatically adjusts the cut ranges until the restrictions of delta frame
+		compression are satisfied. Thus, the above cut would actually give the following:
+	</p>
+	<table class="timeline"><tr>
+		<td>K</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td class="cut">K</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td>K</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr></table>
+	<p>
+		The rules for such automatic corrections:
+	</p>
+	<ul>
+		<li>VirtualDub will not let you write a video stream with dangling delta frames.</li>
+		<li>Frames are always added back in, but never removed, duplicated or reordered.</li>
+	</ul>
+	<p>
+		Thus, if you make a mistake, you can always load in the edited file and <em>re-edit</em> in direct mode, making a larger cut that satisfies
+		the rules.
+	</p>
+	<p>
+		The same restrictions apply to masking frames as to deleting frames; if an unmasked delta frame exists
+		after a masked frame, the masked frame will be converted to unmasked before the operation begins.
+	</p>
+	<p>
+		A <em>null frame</em> or <em>drop frame</em>, which is a zero-byte frame that simply duplicates the previous frame,
+		has special handling in VirtualDub's pipeline. These are denoted by <tt>[D]</tt> next to the timestamp indicator and
+		are occasionally produced during video capture.
+		Such frames are dependant upon the previous frame, but can still be removed without affecting decoding. Note that
+		these frames occupy time in the stream, however, and so deleting them will remove the corresponding audio segment
+		as well.
+	</p>
+	<p>
+		It is sometimes possible to bypass the restrictions on cut positions by using <a href="p-smartrendering.html">smart rendering</a>.
+	</p>
+	<h2>Video frame decimation/conversion in direct mode</h2>
+	<p>
+		The frame rate decimation and conversion modes resample a video stream by inserting or removing frames. This essentially
+		involves micro-editing of the stream at the frame level and suffers from similar limitations with compressed streams.
+		Here are the frame rate limitations when using direct mode:
+	</p>
+	<ul>
+		<li>
+			<em>Frame rate adjustment</em> simply tweaks the frame rate of the video stream and can be used without limitation.
+		</li>
+		<li>
+			<em>Conversion to a higher rate</em> works by inserting zero-byte null frames into the output stream, and can also
+			be used without limitation. (This means you can convert a 30fps stream to 120fps with no loss and with almost no
+			size increase.)
+		</li>
+		<li>
+			<em>Conversion to a lower rate</em> has to delete frames, but suffers from the limitation on dependant frame removal.
+			If used on a compressed stream, the option is only able to remove frames immediately before a key frame, which means
+			that sequences of delta frames are longer than a few frames, the video will stutter and audio sync will be affected.
+			Conversion to a lower rate is thus only usable with a stream that has few or no delta frames.
+		</li>
+		<li>
+			<em>Decimation</em> is equivalent to conversion to a 1/N frame rate and has the same issues.
+		</li>
+	</ul>
+	<p>
+		As with edits, null frames also receive special treatment here, so if a video has been upsampled from 30fps to 120fps
+		by inserting null frames, conversion can be used to discard the null frames and drop the stream back to 30fps.
+	</p>
+	<h2>Video streams that are direct-mode friendly</h2>
+	<p>
+		A video stream using a format that only uses key frames imposes no limitations on the location
+		of cuts in direct mode. Such formats include:
+	</p>
+	<ul>
+		<li>Any uncompresed RGB or paletted format</li>
+		<li>Any uncompressed YCbCr format (UYVY, YUY2, YV12, I420, etc.)</li>
+		<li>Video compression that only uses key frames, such as Huffyuv, Motion JPEG, or DV.</li>
+	</ul>
+	<p>
+		These formats are thus very friendly to direct-mode editing and are good choices for capture or intermediate
+		video files.
+	</p>
+	<h2>Limitations on direct-mode imposed by source format</h2>
+	<p>
+		MPEG-1 video streams cannot be copied in direct mode, because MPEG-1 video compression is incompatible with the
+		AVI file format. Also, MPEG-1 audio streams are always decompressed to raw PCM regardless of the audio mode setting.
+	</p>
+	<p>
+		DV files that use interleaved storage (type-1 DV AVI) may have their audio streams slightly modified when
+		processing the audio stream in direct mode, because VirtualDub has to resample the audio stream in some cases
+		to force a consistent audio sample rate. This is not a problem for AVIs that have the DV data split into
+		traditional audio and video streams (type-2).
+	</p>
+	<h2>Limitations on editing imposed by audio compression</h2>
+	<p>
+		Audio compression works by processing blocks of audio as individual units. In direct mode, VirtualDub copies these
+		blocks as atomic units, so the length of time corresponding to the block sets the minimum granularity for edits, and
+		thus the accuracy of edits that can be performed.<a href="#blockalign" class="footnotelink">[1]</a>
+	</p>
+	<p>
+		For some formats that simply translate samples 1:1, such as A-law and &mu;-law, the block size is one sample
+		and no restrictions are necessary. Other formats, such as ADPCM, can have a block size as large as 2048 samples
+		(0.18s at 11KHz). The <a href="d-audiocompression.html">audio compression</a> dialog indicates the block size for
+		each selectable format.
+	</p>
+	<p>
+		VirtualDub does <em>not</em> attempt to adjust edits to match audio granularity because the
+		audio block size rarely corresponds to an integral number of video frames in time, which would require fractional
+		edits. The difference between the ideal cut point and the cut point imposed by audio compression appears as sync
+		error and thus editing a compressed audio stream should be avoided if possible.
+	</p>
+	<p>
+		Some compressed formats, particularly MPEG audio layer III, have additional decoding restrictions that are not
+		described adequately in the audio format structure, such as dependencies on previous frames, or even specify a
+		block size that is blatantly false (namely, one byte). Because VirtualDub is not able to detect or correct for
+		such limitations, editing streams in such formats can result in audible decoding errors due to block fragments
+		at the cut point and is not recommended.
+	</p>
+	<p class="footnote" id="blockalign">
+		[1] The size of the block is set, in bytes, by the <tt>nBlockAlign</tt> field in the <tt>WAVEFORMATEX</tt> structure that describes the audio format.
+	</p>
+</lina:create>
+
+<lina:create file="p-smartrendering.html" title="Processing: Smart rendering">
+	<h2>What smart rendering does</h2>
+	<p>
+		Smart rendering attempts to identify which portions of a video stream must be re-encoded and which can be
+		copied verbatim from the source file. This can save a lot of time, as typically only the regions around
+		an edit must be re-encoded. It also preserves the quality of most of the non-edited video.
+	</p>
+	<p>
+		As an example, take this edit:
+	</p>
+	<style>
+		table.timeline {
+			margin-left: 32px;
+		}
+
+		table.timeline th {
+			background: #8ae;
+		}
+
+		table.timeline td {
+			background: #aea;
+			padding-right: 16px
+		}
+
+		table.timeline td.cut {
+			background: #a88;
+		}
+		table.timeline td.broken {
+			background: #f00;
+		}
+	</style>
+	<table class="timeline"><tr>
+		<td>K</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td class="cut">K</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">&nbsp;</td>
+		<td class="cut">K</td>
+		<td class="cut">&nbsp;</td>
+		<td class="broken">&nbsp;</td>
+		<td class="broken">&nbsp;</td>
+		<td class="broken">&nbsp;</td>
+		<td>K</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr></table>
+	<p>
+		The red frames indicate frames which are meant to be kept, but cannot be preserved in their
+		original form because their dependencies have been removed. Without the prior frames, it is not
+		possible to decode those dangling frames before the next key frame. Ordinarily when
+		<a href="p-direct.html">direct stream copy mode</a> is used, VirtualDub would add the previous
+		two frames back into the output file to satisfy video compression restrictions.
+	</p>
+	<p>
+		Smart rendering re-encodes the affected frames instead. The result is that, in exchange for
+		a little degredation in those three frames, the edit occurs in the exact desired location and
+		the rest of the frames are left intact.
+	</p>
+	<h2>Requirements for smart rendering</h2>
+	<p>
+		To use smart rendering, the following are required:
+	</p>
+	<ul>
+		<li>The video must be compressed.</li>
+		<li>A video codec must be installed which can produce the same format as the source. Note that some
+			video codecs can decode more formats than they can encode, which means you may be able to open
+			a video file using a codec, and encode with that codec, but not encode to the same format as
+			the source.
+		</li>
+		<li>Inverse telecine must be disabled.</li>
+	</ul>
+	<p>
+		In addition, the video codec must be configured to match the source. There are often parameters in
+		the video codec's configuration dialog that VirtualDub cannot programmatically access, and which
+		may affect the encoding in incompatible ways. When in doubt, try to match the source; this includes
+		parameters such as B-frame encoding, packed bitstream, and color space. For instance, with Huffyuv,
+		the prediction mode must match.
+	</p>
+	<p>
+		If the video codec in use has an option for multi-pass rendering, it must be disabled for smart
+		rendering.
+	</p>
+	<h2>Filtering video while smart rendering</h2>
+	<p>
+		In order to use video filters while smart rendering is active, all video filters must be appropriately
+		scoped using opacity curves. Any frames for which any filters have an opacity above zero will be
+		forced to re-render.
+	</p>
+	<p>
+		Any video filter instance which does not have an opacity curve attached will force all frames to render,
+		since it must process all frames. Since filters which change the frame size cannot have opacity
+		curves attached, any size-changing in the filter list will defeat smart rendering.
+	</p>
+	<h2>Caveats of smart rendering</h2>
+	<p>
+		Not all video codecs will work with smart rendering, even if they normally work for regular encoding.
+		If you can encode two videos with the same video codec, join them together, and play back the result,
+		then smart rendering is more likely to work. This is usually not a problem with video compression
+		algorithms that do not use delta frames; Motion JPEG, for instance, should work without problems.
+	</p>
+	<p>
+		Quality at the join point may be an issue. The video codec is not aware that VirtualDub is using
+		it to smart-render transitions, so it may not be able to match quality very well with the frames
+		that are copied. This is especially an issue with short runs, since the codec may require a few
+		frames to "ramp up" in bitrate. If this occurs, consider increasing bitrate when using smart rendering.
+	</p>
+	<h2>Technical details</h2>
+	<p>
+		When smart rendering is active, VirtualDub tries to copy all the frames verbatim; whenever it
+		detects a violation in frame dependencies, it drops to recompressing frames, and continues to do
+		so until the next key frame, at which direct copying resumes. The recompression of the necessary
+		segments is done by "hot-starting" the video codec for each segment; from the video codec's standpoint,
+		each range to be recompressed is a separate video. The copied and re-encoded sections are then
+		seamlessly joined during the output process.
+	</p>
+</lina:create>
+
+<lina:create file="p-displays.html" title="Processing: Display panes">
+	<p>
+		The <em>display panes</em> are the rectangular displays in which the input and output video are shown
+		when scrubbing over the timeline, previewing the output, or rendering to disk.
+	</p>
+
+	<h2>Adjusting the display panes</h2>
+	<p>
+		Right-click on a display pane to bring up a context menu.
+	</p>
+
+	<blockquote>
+		<lina:image src="pics/p-displaymenu.png"/>
+	</blockquote>
+
+	<p>
+		This menu allows the adjustment of the size, aspect ratio, and filtering mode of each display pane.
+		All of these settings are purely for display purposes &mdash; none have any effect on the video
+		written to disk. This means that a video pane can be stretched 2:1 vertically to display a field-split
+		video at the correct aspect ratio without ill effects.
+	</p>
+	<p>
+		The size and aspect ratio can also be adjusted by dragging the bottom and right borders of the display
+		pane. If the aspect ratio is anything other than <em>free adjust</em>, the pane dimensions are constrained
+		to that aspect ratio during resizing; otherwise, both aspect ratio and size are adjusted during the
+		drag.
+	</p>
+	<p>
+		<em>Reset to exact size</em> sets the size and aspect ratio of the display pane so that each pixel in
+		the display pane corresponds to exactly one pixel in the video.
+	</p>
+	<p>
+		<em>Preferred filter</em> allows different stretch filters to be selected for aesthetic and performance
+		reasons. <em>Point</em> makes it easiest to spot individual pixels; <em>bicubic</em> is generally the
+		filter with the highest perceptual quality. The default display mode does not expose this option; one of
+		the 3D display drivers must be enabled in <em>Options &gt; Preferences &gt; Display</em>.
+		Enabling the OpenGL driver allows selection between point and bilinear, while the Direct3D9 driver also
+		allows selection of <em>bicubic</em> if the 3D video hardware is powerful enough.
+	</p>
+
+	<h2>Display pane placement and enable/disable</h2>
+	<p>
+		By default, the input (source) pane is on the left, while the output (filtered) pane is on the right.
+		This ordering can be swapped through the <em>Options &gt; Swap input/output panes</em> menu option.
+		A vertical formation can be used in place of the horizontal one by enabling <em>Options &gt; Vertical display</em>.
+	</p>
+	<p>
+		The <em>Options &gt; Display input video</em> and <em>Options &gt; Display output video</em> menu
+		commands temporarily disable updating of either of the display panes, which can be advantageous for
+		performance. In particular, if the video filter chain contains filters which are expensive to run,
+		disabling the output pane can significantly speed up navigation through the timeline.
+	</p>
+
+	<h2>Auto-fallback and auto-sparse</h2>
+	<p>
+		Whenever VirtualDub loses focus to another application, it automatically disables accelerated preview
+		for its display panes, falling back to Windows GDI for video display, in order to release system
+		resources. This results in a blockier display if VirtualDub needs to redraw itself. Also, display
+		updates are slower when GDI is in use, although this is not ordinarily a problem unless a preview
+		is running.
+	</p>
+	<p>
+		During a render-to-disk operation, VirtualDub intentionally sparses display updates so that they do not
+		occur faster than once per
+		processed frame, or every half second, whichever is less frequent. This keeps the display updates from consuming a significant
+		amount of CPU power. As a result, unless the video frame is very large and the processing rate relatively
+		low, it does not usually make much difference in render times whether the panes are enabled or not.
+	</p>
+
+	<h2>Interlaced display</h2>
+	<p>
+		Selecting a field mode from <em>Options &gt; Preview field mode</em> in the menu switches the display mode
+		for preview from frames to fields. This causes each frame to be updated twice on screen, one field at
+		a time, at twice the frame rate. Displaying a field at a time more closely mimics the way that analog
+		video is actually displayed and delivers smoother motion for video that was originally delivered in
+		analog format.
+	</p>
+	<p>
+		<em>Field order A</em> causes the top field (even scanlines) to be displayed first. <em>Field order B</em>
+		displays the bottom field (odd scanlines) to be displayed first. It is more common for capture devices
+		to use field order B. Also, fo interlaced display to be effective, the video must be captured at full
+		frame rate; capturing at less than full frame rate will result in an uneven sampling of fields in time.
+	</p>
+	<p>
+		No adaptive deinterlacing is attempted during interlaced display, so a thin comb of scanlines will be
+		visible in scenes with fast motion. Also, each field is scaled independently, so some artifacts will
+		be seen when stretching the display panes vertically, and bilinear filtering will not be effective
+		along that axis.
+	</p>
+
+	<h2>Tearing</h2>
+	<p>
+		During times of smooth motion, it may be possible to see a momentary rip in the video, where the
+		top and bottom portions of the video do not update together. This happens when VirtualDub attempts to
+		update the displayed frame while the screen itself is updating that portion, and is known as <em>tearing</em>.
+		This effect is purely a display effect and does not imply a problem with the source video or any
+		rendered output. It also only happens on video that is moving or changing; it is not visible on
+		a static frame.
+	</p>
+	<p>
+		Tearing can be mitigated or avoided under <em>Options &gt; Preferences &gt; Displays &gt; Avoid tearing (enable vsync)</em>.
+		This will cause VirtualDub to schedule display updates to be non-visible if possible. However, it only works
+		with the DirectX (DirectDraw) and Direct3D display minidrivers, and can consume additional CPU when enabled.
+		The anti-tearing code is automatically disabled during video capture and during renders to avoid consuming
+		CPU during these lengthy operations.
+	</p>
+
+</lina:create>
+
+<lina:create file="frameserver.html" title="Processing: Frameserver">
+	<p>
+		The <em>frameserver</em> feature allows other programs to pull video directly from VirtualDub's
+		rendering pipeline. This allows video to be filtered through VirtualDub and then processed by another
+		application without the need to write an intermediate file to disk.
+	</p>
+
+	<h2>Starting the frameserver</h2>
+	<p>
+		The frameserver is built into VirtualDub and is accessible through the <em>File &gt; Start frameserver</em>
+		menu command. This command starts a frameserver in the system with the currently loaded video and filtering
+		settings. After the frameserver is started, other applications can connect to it.
+	</p>
+	<p>
+		Not all features in VirtualDub work while the frameserver is active. The following processing
+		features do work:
+	</p>
+	<ul>
+		<li>Most video filters.</li>
+		<li>Video frame rate adjustment.</li>
+		<li>Video frame rate conversion.</li>
+		<li>Range selection and the edit list.</li>
+	</ul>
+	<p>
+		The following features are disabled when the frameserver is active:
+	</p>
+	<ul>
+		<li>Video filters that have a lag &mdash; most notably the <em>temporal smoother</em>. The filter will
+			function, but there will be a delay in the video.</li>
+		<li>Video compression.</li>
+		<li>Inverse telecine (3:2 pulldown removal).</li>
+		<li>Audio compression.</li>
+		<li>Audio filters.</li>
+		<li>Audio conversion.</li>
+		<li>Audio volume adjustment.</li>
+		<li>Audio interleaving (most are not applicable).</li>
+	</ul>
+	<p>
+		Video is always sent from the frameserver in 24-bit RGB format for maximum compatibility.
+	</p>
+	<p>
+		When the frameserver is started, VirtualDub will ask you for a name to use for the new frameserver,
+		as well as to save a <em>signpost</em> file. The name is used to distinguish frameservers on the system;
+		the signpost file tells the client driver which frameserver to connect to. The signpost file, which
+		normally uses the <tt>.vdr</tt> filename extension, is used as input to the client application and
+		contains the frameserver name.
+	</p>
+	<lina:note>
+		Although the frameserver name contains the name of the computer, connections across the network
+		are not currently supported.
+	</lina:note>
+
+	<h2>Connecting a client application through the AVIFile driver</h2>
+	<p>
+		The best way to connect a client to VirtualDub's frameserver is through the <em>AVIFile driver</em>.
+		AVIFile is a older programming API in Windows that allows programs to extract audio and video from
+		media files, such as AVI. As it is extensible, VirtualDub ships with an AVIFile driver that extends
+		such programs to read their data directly from the frameserver rather than from a file on disk.
+	</p>
+	<lina:note>
+		It can often be difficult or impossible to tell whether an application uses the AVIFile APIs
+		to read media files, and is thus compatible with this connection method; often the only way to
+		tell is to try. However, this method is very similar to the connection method used by the <em>Avisynth</em>
+		scriptable video processor, so applications which are Avisynth compatible will usually work
+		with VirtualDub's frameserver as well.
+	</lina:note>
+	<p>
+		To install the frameserver, use the <tt>auxsetup</tt> program that comes with VirtualDub. This will
+		copy the driver to Windows' system folder and add entries to the Windows Registry to enable its use
+		in AVIFile. This tool can also be used to remove the driver. On Windows NT/2000/XP, you must be running
+		as a local administrator to install or uninstall the AVIFile driver.
+	</p>
+	<p>
+		Once the AVIFile driver is installed, AVIFile-based applications should be able to connect to the
+		frameserver simply by opening the <tt>.vdr</tt> file that was created when the frameserver was started.
+		VirtualDub is itself capable of doing this, so opening a second instance is a way to test the frameserver
+		connection.
+	</p>
+	<p>
+		After an application is connected and has started pulling audio and video data, the activity totals on
+		the frameserver dialog will increment as data is transferred.
+	</p>
+
+	<h2>Installing the AVIFile driver in proxy mode</h2>
+	<p>
+		Some applications use the AVIFile API are still not able to use the frameserver because they require
+		the <tt>.avi</tt> filename extension or otherwise prevent non-AVI drivers from being used. In this case,
+		enabling a special mode of the VirtualDub AVIFile driver called <em>proxy mode</em> can help. To do
+		this, install the <tt>proxyon.reg</tt> file that comes with VirtualDub; this adds additional entries
+		in the Windows Registry to remap the <tt>AVI</tt> entry as well. Use the <tt>proxyoff.reg</tt> file
+		to undo this.
+	</p>
+	<lina:note>
+		Proxy mode works by forcing all AVI files through VirtualDub's driver, which then attempts to proxy
+		through all real AVI files to the regular Windows driver. Although attempts have been made to ensure
+		this is as compatible as possible, there may occasionally be applications that do not work properly
+		when proxy mode is enabled. It is recommended that proxy mode be enabled only when required to use
+		the frameserver, and disabled in all other cases.
+	</lina:note>
+	<p>
+		Once proxy mode has been enabled, renaming the <tt>.vdr</tt> signpost file to use the <tt>.avi</tt>
+		filename extension will allow additional applications to function.
+	</p>
+	<p>
+		As an additional bonus, when proxy mode is enabled, the AVIFile driver will tunnel through any
+		file that begins with the nine characters <tt>#avisynth</tt> through to the <em>Avisynth</em>
+		scriptable video processing tool. The additional compatibility unlocked by proxy mode is thus also
+		extended to Avisynth.
+	</p>
+
+	<h2>Installing and using the 64-bit frameserver and frameclient</h2>
+	<p>
+		Use of the frameserver and frameclient with 64-bit programs, including the 64-bit version of VirtualDub,
+		requires special procedures.
+	</p>
+	<p>
+		The 32-bit version of VirtualDub, and the 32-bit frameserver/frameclient libraries, will work without
+		modification under Windows x64 Edition. However, frameserving with 64-bit programs involved requires
+		the 64-bit versions of the frameserver/frameclient libraries to be installed. Doing this currently
+		requires manual steps:
+	</p>
+	<ul>
+		<li>Copy <tt>vdsvrlnk64.dll</tt> and <tt>vdremote64.dll</tt> to the <tt>Windows\System32</tt> folder.</li>
+		<li>Install the <tt>frameserver64.reg</tt> patch into the Registry.</li>
+	</ul>
+	<p>
+		Once this is done, the 64-bit programs can interact with the frameserver system. This includes crossing
+		data between 32-bit and 64-bit applications. In addition to frameserving between 64-bit applications, it
+		is also possible to frameserve from 64-bit VirtualDub to a 32-bit application, as well as from 32-bit
+		VirtualDub to a 64-bit application.
+	</p>
+</lina:create>
+
+<lina:create file="p-filtering.html" title="Processing: Filtering video">
+	<p>
+		The ability to apply <em>video filters</em> to a video is one of VirtualDub's more powerful features.
+		This allows application of a number of algorithms to improve the quality of a video, including
+		noise reduction, blurring, sharpening, brightness/contrast, and gamma correction.
+	</p>
+
+	<h2>Using video filters</h2>
+	<blockquote>
+		<lina:image src="pics/d-videofilters.png"/>
+	</blockquote>
+	<p>
+		The <em>Video &gt; Filters...</em> menu command is the entry point into using the video
+		filter system. Video filters in VirtualDub are arranged in a linear chain, such that the output
+		of the first filter becomes the input of the second, the output of the second becomes the input
+		of the third, and so on. Therefore, the order in which the video filters are listed is the order
+		in which they are applied. By default, no filters are in this list, meaning that the video
+		filter system is skipped entirely.
+	</p>
+	<p>
+		The video processing mode must be set to <em>Full processing mode</em> for the video filter system
+		to be enabled. If the video processing mode is set to anything else, the <em>Filters...</em> menu
+		option is grayed and the video filter chain is disabled.
+	</p>
+	<p>
+		For more information, see the documentation for the <a href="d-videofilters.html">video filters dialog</a>.
+	</p>
+
+	<h2>Common video processing operations</h2>
+	<p>
+		VirtualDub contains a number of internal video filters that assist in a number of common video
+		processing tasks. Consult the <a href="video-filters.html">video filter reference</a> for full
+		details, but here are some useful filter techniques:
+		<ul>
+			<li>
+				The <em>resize</em> filter will change video to a different resolution (size), in pixels. It can
+				also be used to letterbox a video by adding borders.
+			</li>
+			<li>
+				<em>Levels</em> is useful to adjust brightness and contrast in a video, particularly when blacks
+				are not truly black, or whites are not truly white.
+			</li>
+			<li>
+				You can crop at the beginning of any filter by selecting it and then the Crop button. If you don't
+				have any filters, though, just add <em>null transform</em> to give you a place to crop.
+			</li>
+			<li>
+				<em>Temporal smoother</em> can be effective at denoising a video. You will need to adjust the
+				threshold to set a balance between less noise and motion artifacts, however.
+			</li>
+			<li>
+				Use <em>chroma smoother</em> to correct for blocky color produced by video codecs that do not
+				interpolate color information properly.
+			</li>
+			<li>
+				<em>Rotate</em> a video by 90&deg; increments until it is upright, or use the slower but more powerful
+				<em>rotate2</em> if the rotation is arbitrary.
+			</li>
+			<li>
+				When video shows keystoning from being displayed or shot off-center, try <em>perspective</em> to
+				map it back parallel to the screen.
+			</li>
+			<li>
+				Stamp a <em>logo</em> on video to mark it as yours.
+			</li>
+		</ul>
+		<p>
+			The order in which filters are applied can make a significant difference in performance and quality.
+			In terms of performance, a smaller video frame is faster to process, so when down,
+			try putting filters after the reduction, and when resizing up, prefer placing them before the enlargement.
+			In terms of quality, blurring reduces noise, and sharpening amplifies it &mdash; so do your noise reduction
+			early and your enhancement transforms late.
+		</p>
+	</p>
+
+	<h2>External video filters</h2>
+	<p>
+		VirtualDub exposes an application programming interface (API) that allows video filters to be written
+		as plugins, extending the video filtering capabilities of the program. Such plugins can include effect
+		plugins that render on top of the video, such as adding an animated logo or titles, or add noise reduction,
+		motion compensation, and deinterlacing capabilities.
+	</p>
+	<p>
+		Video filters can be loaded on the spot by using the <em>Load...</em> button on the Add Filters dialog,
+		but for filters that you use frequently, an easier way is to place them in the <em>plugins</em> folder
+		inside the VirtualDub program directory. Any <tt>.vdf</tt> files in this folder are automatically loaded
+		on startup, and the plugins within added to the available list. Note that VirtualDub does not currently
+		support video filters written to a standard other than its own API.
+	</p>
+	<p>
+		Check the <a href="http://www.virtualdub.org/">VirtualDub
+		website</a> for downloadable documentation and C++ header files for writing your own video filter.
+	</p>
+</lina:create>
+
+<lina:create file="p-audiodisplay.html" title="Processing: Audio display">
+	<p>
+		The audio display in VirtualDub displays a visualization of the audio track for spotting errant sounds and
+		good editing points.
+	</p>
+	<lina:note>
+		Currently, compressed audio streams cannot be displayed &mdash; only uncompressed (PCM) audio can be
+		shown. An error will be displayed if the display is opened with a compressed audio stream.
+	</lina:note>
+	<h2>Opening the audio display</h2>
+	<p>
+		Select <em>View > Audio Display</em> from the menu to open the audio display. By default, the
+		display opens in waveform mode, showing the sound wave from the audio track.
+	</p>
+	<blockquote>
+		<lina:image src="pics/p-mainui-audiodisplay-waveform.png" width="403" height="109" />
+	</blockquote>
+	<p>
+		A waveform is shown for each channel in the audio track. The red line indicates the speaker position for
+		each channel over time; it oscillates back and forth across the green centerline for normal sound, and
+		a steady line that doesn't oscillate indicates quiet. The frame numbers are displayed at the bottom, and
+		the gray lines next to them indicate the start of the video frame in time. The area highlighted in dark
+		blue corresponds to the time during which the video frame is displayed.
+	</p>
+	<p>
+		The horizontal time scale can be changed by right-clicking on the display and selecting the <em>Zoom in</em>
+		or <em>Zoom out</em> option from the resulting context menu. Zoom in to see the waveform in greater time
+		resolution, and zoom out to see more of the waveform over time in the display.
+	</p>
+	
+	<h2>Spectrogram mode</h2>
+	<p>
+		Right-click on the audio display to access the context menu, and you can switch the audio display
+		to <i>spectrogram mode</i>. Although spectogram mode is slower to update than waveform mode, it is
+		generally a more useful way to visualize a sound track.
+	</p>
+	<blockquote>
+		<lina:image src="pics/p-mainui-audiodisplay-spectrogram.jpeg" width="497" height="134" />
+	</blockquote>
+	<p>
+		Spectrogram mode is different from waveform mode in that it shows frequency over time instead of amplitude.
+		The frequency scale is shown on the left side, and the
+		graph indicates the intensity of sound at each frequency. The higher the mark, the higher the frequency,
+		and the brighter the mark, the louder the sound.
+	</p>
+	<p>
+		Keep in mind that a sound rarely shows up as a single, sharp blip &mdash; in practice, you will see a set of
+		lines moving in parallel due to the <i>harmonics</i> of the sound, and for noise-like sounds, the image
+		will show static. Constant horizontal lines indicate pure tones; if you see one low in the graph, it may
+		be 50Hz or 60Hz power line hum leaking into the audio signal, indicating a possible grounding problem
+		in your audio setup (a common problem).
+	</p>
+	<p>
+		If the sound track is low in volume, the graph may be somewhat dim and difficult to see. The <em>Spectral Boost</em>
+		option in the right-click context menu allows the signal to be amplified, increasing the brightness of the
+		graph.
+	</p>
+	
+	<h2>Selecting frames</h2>
+	<p>
+		You can select video frames in the audio display by clicking with the left mouse button, similarly to how
+		you can select a range by using the mark-in/out buttons on the position control.
+	</p>
+	<ul>
+		<li>Hold down the Shift key and drag with the left mouse button to set the selection.</li>
+		<li>The selection is displayed in light blue at the bottom of the display.</li>
+		<li>To avoid clicks and pops when editing, choose endpoints where the sound is quietest.
+			It is usually best to get as close as possible to a <i>zero crossing</i> where the waveform
+			crosses the centerline. This is often difficult with multiple channels and only being able to cut on
+			frame boundaries, but fortunately, you don't need a perfect cut for the jump to be inaudible.</li>
+	</ul>
+	
+	<h2>Shifting audio</h2>
+	<p>
+		You can also shift the audio track back and forth from the audio display to fix audio sync errors.
+	</p>
+	<ul>
+		<li>Identify a portion of the video clip where both the video frame and the audio waveform/spectrogram are
+			distinctive.</li>
+		<li>Hold down the Control key and click with the left mouse button on a portion of audio.</li>
+		<li>Drag horizontally to when the audio should play.</li>
+		<li>The audio display will now update with the new offset.</li>
+	</ul>
+	<p>
+		This changes the same setting as the <i>audio displacement</i> field of the <a href="d-audiointerleaving.html">Audio interleaving</a>
+		dialog.
+	</p>
+</lina:create>
+
+<lina:create file="p-filtercurves.html" title="Processing: Video filter curves">
+	<p>
+		Video filter curves allow you to fade a video filter's output with its input, thus allowing filter strength
+		to vary over the course of a video.
+	</p>
+	<h2>Attaching an opacity curve to a video filter</h2>
+	<p>
+		In the <a href="d-videofilters.html">video filters dialog</a>, select the filter instance whose output you
+		wish to fade, and activate the Blend button. The mark <tt>[B]</tt> will appear before the filter's name,
+		indicating that an opacity curve has been attached. Then close the video filters dialog.
+	</p>
+	<p>
+		In the main editor, select <em>View &gt; Curve editor</em> from the menu, and select the video filter instance
+		from the combo box that appears. The curve editor will then be displayed for that filter instance's opacity
+		curve.
+	</p>
+	<h2>Editing curves</h2>
+	<blockquote>
+		<lina:image src="pics/p-mainui-curveedit.png" width="424" height="122" />
+	</blockquote>
+	<p>
+		Select <em>View &gt; Curve Editor</em> to bring up the curve editor. The combo box drop-down at the top
+		of the editor allows any of the opacity curves of blended filters to be selected. The curve being edited is
+		displayed in the pane, with the horizontal axis representing frames and the vertical axis representing opacity.
+	</p>
+	<ul>
+		<li>
+			<b>To create or add points to the curve</b>, hold down the Shift key and click with the left mouse button to create
+			points in the editor.
+		</li>
+		
+		<li>
+			<b>To edit the curve</b>, click with the left mouse button on a point and drag to the desired location. Raise
+			points higher to make the filter's output more opaque, and lower to make it more translucent.
+		</li>
+		
+		<li>
+			<b>To delete curve points</b>, hold down the Control (Ctrl) key, and left-click on the points to be deleted.
+		</li>
+		
+		<li>
+			<b>To make a curve segment into a line, or vice versa</b>, hold down the Shift key and click on the segment with
+			the right mouse button.
+		</li>
+	</ul>
+	<h2>Effects of using opacity curves</h2>
+	<p>
+		Using an opacity curve will slow down video processing slightly for any transition regions where the curve value is midway
+		between zero (transparent) and one (opaque), thus requiring a blend. VirtualDub optimizes processing for the cases
+		where the curve specifies either fully transparent or opaque operation, however, in which case the blend operation is
+		omitted or the filter is skipped entirely.
+	</p>
+	<p>
+		Opacity curves are essential when using video filters with <a href="p-smartrendering.html">smart rendering</a>.
+		VirtualDub can only copy video frames wherever the opacity curve completely fades out the video filter's output; anywhere
+		the curve partially or fully blends in the video filter, smart rendering is disabled and video frames must be processed
+		and recompressed. By using the opacity curve to narrow the video filter's operation, however, it is possible to filter
+		only a select set of video frames and leave the rest untouched.
+	</p>
+</lina:create>
+
+<lina:create file="p-artifacts.html" title="Processing: Video artifacts">
+	<p>
+		<em>Artifacts</em>, or undesirable errors, invariably creep into video. If you are working with analog
+		video or with video compression, some artifacting is inevitable. Knowing different types of artifacts
+		and their causes can help you determine which are due to shortcomings in hardware and software, deficiencies
+		in your video process, or even software (or hardware!) bugs.
+	</p>
+	<p>
+		A few artifacts and their causes are listed below. This is not meant to be an exhaustive list of artifacts
+		you may encounter, but it should cover the common ones. 
+	</p>
+	<h2>Quilting (Compression artifacts)</h2>
+	<blockquote>
+		<img src="pics/artifact-compression.jpeg"/>
+		<lina:image src="pics/artifact-compression.jpeg" width=128 height=128 />
+	</blockquote>
+	<p>
+		<em>Quilting</em> results from high levels of compression on an image that cause warbling and
+		edge artifacts to appear in the output. The term "quilting" refers to the fact that video
+		compression is usually done in blocks of 8x8 or 16x16 pixels, so if the compression factor
+		is set very high such that the blocks don't match well, the result looks like a quilt. The
+		warbles around sharp edges are result of discarding detail from the image for higher compression.
+		In other words, it's not that warbles were added, but that the detail which would sharpen the
+		edge and flatten the area around it has been dropped.
+	</p>
+	<p>
+		Advanced video compression algorithms, particularly those based on the MPEG-4 video standard,
+		have <em>post-processing filters</em> designed to reduce these artifacts, which can give the
+		video a smeared and cartoony look that is less objectionable.
+	</p>
+	<p>
+		To reduce quilting artifacts:
+	</p>
+	<ul>
+		<li>Use more advanced video compression formats.</li>
+		<li>Compress less &mdash; use more bitrate and produce larger video files.</li>
+		<li>Use multi-pass compression if available, to better distribute bits to where they are needed.</li>
+	</ul>
+
+	<h2>Combing (interlacing artifacts)</h2>
+	<blockquote>
+		<img src="pics/artifact-interlacing.png"/>
+		<lina:image src="pics/artifact-interlacing.png" width=128 height=128 />
+	</blockquote>
+	<p>
+		Analog video is delivered using a mechanism known as <em>interlacing</em> to reduce flicker. Instead
+		of sending entire frames at 29.97 frames per second (25 for PAL/SECAM), the video is sent in halves called
+		<em>fields</em>, at 59.94 fields per second (50 for PAL/SECAM). These fields are <i>interlaced</i>
+		together such that a frame is composed of alternating lines from each field; the even lines make up
+		the <em>even field</em> and the odd lines make up the <em>odd field</em>. The result is high resolution
+		in static scenes and smoother motion in fast-moving scenes, with less flicker and without requiring
+		more bandwidth.
+	</p>
+	<p>
+		The catch with interlacing is that you can't have both higher resolution and smoother motion at the same
+		time, so artifacts appear whenever you try to extract both. The process of removing the interlacing and displaying the result non-interlaced is known as <em>deinterlacing</em>.
+		Displaying each field by itself gives smoother motion at the cost of resolution and is known as <em>bob deinterlacing</em>.
+		Pairing fields up and displaying them together as frames gives higher resolution in exchange for smeared
+		motion and combing artifacts and is called <em>weave deinterlacing</em>. Both produce frames at field rate
+		(59.94 or 50 fps). Trying to switch between the two
+		on a per-frame or even per-area basis depending on the amount of local motion is <em>adaptive deinterlacing</em>
+		and can produce an even higher quality image.
+	</p>
+	<p>
+		Most video capture devices do not attempt to deinterlace and simply pair fields together, which is similar
+		to weave deinterlacing except that it gives half the field rate (29.97 or 25). If the video was produced originally
+		from full frames at that rate, this has a 50/50 chance of producing whole frames instead of a combed mess.
+		There is no requirement that this be the case, though, and since the alternating fields are evenly staggered in
+		time they usually aren't. In that case there is no "correct" way to deinterlace the video, and different deinterlacing
+		techniques must be tried to produce the best quality non-interlaced video.
+	</p>
+	<p>
+		Material derived from 24 fps film is a special case in that the video is sourced from whole frames and split into
+		fields in a specific pattern; this is called <em>telecine</em>. In NTSC, this is done by slowing the video down very
+		slightly and combining fields in a 3:2 pattern; VirtualDub's inverse telecine feature, accessible in the <a href="d-videoframerate.html">video frame rate control dialog</a>,
+		can sometimes undo this pattern. In the case of PAL, the video is usually just sped up by 4% from 24 fps to 25 fps,
+		so the most that is usually required is a single-field delay to pair up the fields correctly. 
+	</p>
+
+	<h2>Banding (quantization artifacts)</h2>
+	<blockquote>
+		<img src="pics/artifact-banding.png"/>
+		<lina:image src="pics/artifact-banding.png" width=128 height=128 />
+	</blockquote>
+	<p>
+		<em>Banding</em> occurs when the bit depth used to represent pixels in an image is too low;
+		the result is stairstepping in the image as pixels are forced to hop between colors that
+		are far enough apart to distinguish visually. This is most visible in large, shallow gradients,
+		which become bands of solid color.
+	</p>
+	<p>
+		When banding is observed, you should first check the display settings for your system to ensure
+		that the display is set to 24-bit color or 32-bit color, which will produce the least banding.
+		In particular, selecting a 15-bit or 16-bit display mode will introduce banding on screen that
+		may not be present in the actual video.
+	</p>
+	<p>
+		Selecting 15-bit RGB or 16-bit RGB as a processing format will introduce noticeable banding into
+		an image, so these formats should generally be avoided. It is still possible to see banding with
+		YCbCr formats or 24/32-bit RGB if the gradient is very shallow and over a large area; using
+		higher-precision formats or dithering can alleviate this. Note that VirtualDub does not currently
+		support a format that has greater than 8 bits of precision per channel (256 levels).
+	</p>
+
+	<h2>Scaling artifacts</h2>
+	<blockquote>
+		<img src="pics/artifact-scaling.png"/>
+		<lina:image src="pics/artifact-scaling.png" width=128 height=128 />
+	</blockquote>
+	<p>
+		Rough and slightly blocky edges may be indicative of a poor scaling algorithm being used to
+		resize video. In particular, use of a <em>nearest neighbor</em> or <em>point sampling</em>
+		algorithm can give a blocky look to video due to the lack of interpolation ("smooth" stretching)
+		during the resize, which means that rows and columns are just duplicated or deleted instead of
+		being blended to modify the video's size. The result is that thin creases appear in the image.
+	</p>
+	<p>
+		A bad resize operation is difficult to undo after the fact if you no longer have the source, but
+		if you can redo the bad operation, try moving any scaling operations later in the process so
+		they can be done using VirtualDub's high-quality <em>resize</em> filter, with a bilinear or bicubic filter.
+		For instance, if you are attempting to capture analog video at a 480x360 resolution, try using
+		640x480 or 640x576 &mdash; something closer to the native resolution &mdash; and then scaling
+		in post-processing. This will often take more CPU power and storage, however.
+	</p>
+
+	<h2>Rainbows (pitch/stride errors)</h2>
+	<blockquote>
+		<img src="pics/artifact-rainbow.png"/>
+		<lina:image src="pics/artifact-rainbow.png" width=128 height=128 />
+	</blockquote>
+	<p>
+		A regular slant to a decoded image with rainbows across scanlines is usually indicative of a
+		buggy video codec that does not compute <em>pitch</em> or <em>stride</em> correctly. The technical
+		reason for this is that padding at the end of each horizontal row is not being accounted
+		for correctly, resulting in each row being progressively further off. This isn't that important
+		to diagnose the problem, though.
+	</p>
+	<p>
+		The key to fixing the problem is that multiples of <em>four pixels</em> in width usually
+		work around this bug, because in that case the row-end correction is unnecessary. If attempting
+		to compress with a video codec gives striped results when using widths like 321, 639, etc. but
+		316, 320, 324, 636, 640, 644... work, then you are experiencing this issue.
+	</p>
+</lina:create>

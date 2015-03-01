@@ -1,0 +1,66 @@
+declare s = Sylia;
+declare a = s.Assert;
+declare tn = s.TypeName;
+declare ts = s.ToString;
+declare l = VirtualDub.Log;
+
+// test basic value types
+a(tn(1) == "int");
+a(tn(0x80000000) == "long");
+a(tn(1.0) == "double");
+
+// test basic type promotion
+a(tn(1+1) == "int");
+a(tn(1+0x80000000) == "long");
+a(tn(1+1.0) == "double");
+a(tn(0x80000000+0x80000000) == "long");
+a(tn(0x80000000+1.0) == "double");
+a(tn(1.0+1.0) == "double");
+
+a(tn(~0) == "int");
+a(tn(~0x80000000) == "long");
+a(tn(!0) == "int");
+a(tn(!0x80000000) == "int");
+a(tn(+0) == "int");
+a(tn(+0x80000000) == "long");
+a(tn(+1.0) == "double");
+a(tn(-0) == "int");
+a(tn(-0x80000000) == "long");
+a(tn(-1.0) == "double");
+
+// test basic type coercion
+declare to = s.TestOverloading;
+a(to() == 1);
+a(to(1) == 2);
+a(to(0x80000000) == 3);
+a(to(1.0) == 4); 
+
+a(to(1,1) == 5);
+a(to(1,0x80000000) == 6);
+a(to(1,1.0) == 7);
+
+a(to(0x80000000,1) == 8);
+a(to(0x80000000,0x80000000) == 9);
+a(to(0x80000000,1.0) == 10);
+
+a(to(1.0,1) == 11);
+a(to(1.0,0x80000000) == 12);
+a(to(1.0,1.0) == 13);
+
+a(to(1.0,1,0) == 14);
+
+// test casting
+a(tn((int)1) == "int");
+a(tn((int)0x80000000) == "int");
+a(tn((int)1.0) == "int");
+a(tn((long)1) == "long");
+a(tn((long)0x80000000) == "long");
+a(tn((long)1.0) == "long");
+a(tn((double)1) == "double");
+a(tn((double)0x80000000) == "double");
+a(tn((double)1.0) == "double");
+a(ts((int)1.5) == "1");
+a(ts((int)0x80000000) == "-2147483648");
+a((double)0x80000000 == 2147483648.0);
+
+l("Basic language test successful.");

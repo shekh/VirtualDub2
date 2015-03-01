@@ -1,0 +1,294 @@
+///////////////////////////////////// YV12 shaders (NV1x) /////////////////////////////////////
+
+// NV_register_combiners: RGB -> Y1,Y2 -> gb
+technique YV12_NV1x_Y_gb {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners {
+			def c0, 0.299f * 219.0f / 255.0f, 0.587f * 219.0f / 255.0f, 0.114f * 219.0f / 255.0f, 16.0f / 255.0f
+			def c1, 0.0f, 1.0f, 0.0f, 0.0f
+
+			dd r0.rgb, r1.rgb, t0, c0, t1, c0
+			mma discard, discard, r0.rgb, r0, v0, r1, c1
+
+			final zero, r0, r0, c0.a, zero, zero, zero
+		};
+	}
+}
+
+// NV_register_combiners: RGB -> Y1,Y2 -> ra
+technique YV12_NV1x_Y_ra {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners {
+			def c0, 0.299f * 219.0f / 255.0f, 0.587f * 219.0f / 255.0f, 0.114f * 219.0f / 255.0f, 16.0f / 255.0f
+
+			dd	r0.rgb, r1.rgb, t0, c0, t1, c0
+
+			add r0.rgb, r0, c0.a
+			+ add r0.a, r1.b, c0
+		};
+	}
+}
+
+// NV_register_combiners: RGB -> Cr -> rb/ga
+technique YV12_NV1x_Cr {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners {
+			def c0, ((1.0f-0.299f) * 224.0f / 255.0f * 0.713f) * -0.5f + 0.5f, (-0.587f * 224.0f / 255.0f * 0.713f) * -0.5f + 0.5f, (-0.114f * 224.0f / 255.0f * 0.713f) * -0.5f + 0.5f, 128.0f / 255.0f
+			def c1, 0, 1, 0, 0
+
+			dd_bias r0.rgb, r1.rgb, t0, c0_bx2, t1, c0_bx2
+
+			mma discard, discard, r0.rgb, -r0, 1-c1, -r1.rgb, c1
+			+ mov r0.a, -r1.b
+		};
+	}
+}
+
+// NV_register_combiners: RGB -> Cb -> rgb/a
+technique YV12_NV1x_Cb {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners {
+			def c0, (-0.299f * 224.0f / 255.0f * 0.564f) * -0.5f + 0.5f, (-0.587f * 224.0f / 255.0f * 0.564f) * -0.5f + 0.5f, ((1.0f-0.114f) * 224.0f / 255.0f * 0.564f) * -0.5f + 0.5f, 128.0f / 255.0f
+			def c1, 0, 1, 0, 0
+
+			dd_bias r0.rgb, r1.rgb, t0, c0_bx2, t1, c0_bx2
+
+			mma discard, discard, r0.rgb, -r0, 1-c1, -r1, c1
+			+ mov r0.a, -r1.b
+		};
+	}
+}
+
+///////////////////////////////////// YV12 shaders (NV2x) /////////////////////////////////////
+
+// NV_register_combiners2: RGB -> Y1,Y2,Y3,Y4 -> bgra
+technique YV12_NV2x_Y {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners2 {
+			def c0, 0.299f * 219.0f / 255.0f, 0.587f * 219.0f / 255.0f, 0.114f * 219.0f / 255.0f, 16.0f / 255.0f
+			def c1, 0, 0, 1, 0
+			def c2, 1, 0, 0, 16.0f / 255.0f
+
+			dd t0.rgb, t1.rgb, t0, c0, t1, c0
+			dd t2.rgb, t3.rgb, t2, c0, t3, c0
+			mma discard, discard, r0.rgb, c1, t0, 1-c1, t1
+			mma discard, discard, r0.rgb, c2, t2, 1-c2, r0
+			+ add r0.a, t3.b, c0
+
+			final zero, r0, r0, c0.a, zero, zero, r0
+		};
+	}
+}
+
+// NV_register_combiners: RGB -> Cr -> rb/ga
+technique YV12_NV2x_Cr {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners2 {
+			def c0, ((1.0f-0.299f) * 224.0f / 255.0f * 0.713f) * -0.25f + 0.5f, (-0.587f * 224.0f / 255.0f * 0.713f) * -0.25f + 0.5f, (-0.114f * 224.0f / 255.0f * 0.713f) * -0.25f + 0.5f, 128.0f / 255.0f
+			def c1, 0, 1, 0, 0
+
+			dda_bias discard, discard, r0.rgb, t0, c0_bx2, t1, c0_bx2
+			dda_bias discard, discard, r1.rgb, t1, c0_bx2, t2, c0_bx2
+			mma discard, discard, r0.rgb, -r0, 1-c1, -r1, c1
+			+ mov r0.a, -r1.b
+		};
+	}
+}
+
+// NV_register_combiners: RGB -> Cb -> rb/ga
+technique YV12_NV2x_Cb {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners2 {
+			def c0, (-0.299f * 224.0f / 255.0f * 0.564f) * -0.25f + 0.5f, (-0.587f * 224.0f / 255.0f * 0.564f) * -0.25f + 0.5f, ((1.0f-0.114f) * 224.0f / 255.0f * 0.564f) * -0.25f + 0.5f, 128.0f / 255.0f
+			def c1, 0, 1, 0, 0
+
+			dda_bias discard, discard, r0.rgb, t0, c0_bx2, t1, c0_bx2
+			dda_bias discard, discard, r1.rgb, t1, c0_bx2, t2, c0_bx2
+			mma discard, discard, r0.rgb, -r0, 1-c1, -r1, c1
+			+ mov r0.a, -r1.b
+		};
+	}
+}
+
+///////////////////////////////////// YV12 shaders (ATIFS) /////////////////////////////////////
+
+technique YV12_ATIFS_Y {
+	pass {
+		fragmentshader = fragment_shader ATI_fragment_shader {
+			def c0, 0.299f, 0.587f, 0.114f, 0
+			def c1, 219.0f / 255.0f, 16.0f / 255.0f, 0, 0
+			texld r0, t0
+			texld r1, t1
+			texld r2, t2
+			texld r3, t3
+			dp3 r4, r3, c0
+			dp3 r4.b, r0, c0
+			dp3 r4.g, r1, c0
+			dp3 r4.r, r2, c0
+			mad r0, r4, c1.r, c1.g
+		};
+	}
+}
+
+technique YV12_ATIFS_Cb {
+	pass {
+		fragmentshader = fragment_shader ATI_fragment_shader {
+			def c0, (-0.299f) * 0.5f + 0.5f, (-0.587f) * 0.5f + 0.5f, ((1.0f-0.114f)) * 0.5f + 0.5f, 0
+			def c1, 0.564f * 224.0f / 255.0f, 128.0f / 255.0f, 0, 0
+			texld r0, t0
+			texld r1, t1
+			texld r2, t2
+			texld r3, t3
+			dp3 r4, r3, c0_bx2
+			dp3 r4.b, r0, c0_bx2
+			dp3 r4.g, r1, c0_bx2
+			dp3 r4.r, r2, c0_bx2
+			mad r0, r4, c1.r, c1.g
+		};
+	}
+}
+
+technique YV12_ATIFS_Cr {
+	pass {
+		fragmentshader = fragment_shader ATI_fragment_shader {
+			def c0, ((1.0f-0.299f)) * 0.5f + 0.5f, (-0.587f) * 0.5f + 0.5f, (-0.114f) * 0.5f + 0.5f, 0
+			def c1, 0.713f * 224.0f / 255.0f, 128.0f / 255.0f, 0, 0
+			texld r0, t0
+			texld r1, t1
+			texld r2, t2
+			texld r3, t3
+			dp3 r4, r3, c0_bx2
+			dp3 r4.b, r0, c0_bx2
+			dp3 r4.g, r1, c0_bx2
+			dp3 r4.r, r2, c0_bx2
+			mad r0, r4, c1.r, c1.g
+		};
+	}
+}
+
+///////////////////////////////////// YUY2 shaders (NV1x) /////////////////////////////////////
+
+// NV_register_combiners: RGB -> (Y1 -> r, Y2 -> b)
+technique YUY2_NV1x_Y {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners {
+			def c0, 0.299f * 219.0f / 255.0f, 0.587f * 219.0f / 255.0f, 0.114f * 219.0f / 255.0f, 16.0f / 255.0f
+			def c1, 1, 0, 0, 0
+
+			dd r0.rgb, r1.rgb, t1, c0, t0, c0
+
+			mma discard, discard, r0.rgb, r0, c1, r1, v0
+			
+			final zero, r0, r0, c0.a, zero, zero, r0
+		};
+	}
+}
+
+// NV_register_combiners: RGB -> (Cb -> rgb, Cr -> a)
+technique YUY2_NV1x_C {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners {
+			def c0, (-0.299f * 224.0f / 255.0f * 0.564f) * 0.5f + 0.5f, (-0.587f * 224.0f / 255.0f * 0.564f) * 0.5f + 0.5f, ((1.0f-0.114f) * 224.0f / 255.0f * 0.564f) * 0.5f + 0.5f, 128.0f / 255.0f
+			def c1, ((1.0f-0.299f) * 224.0f / 255.0f * 0.713f) * 0.5f + 0.5f, (-0.587f * 224.0f / 255.0f * 0.713f) * 0.5f + 0.5f, (-0.114f * 224.0f / 255.0f * 0.713f) * 0.5f + 0.5f, 128.0f / 255.0f
+
+			dd r0.rgb, r1.rgb, t0, c0_bx2, t0, c1_bx2
+
+			add r0.rgb, r0, c0.a
+			+ add r0.a, r1.b, c0.a
+		};
+	}
+}
+
+///////////////////////////////////// YUY2 shaders (NV2x) /////////////////////////////////////
+
+// NV_register_combiners2: RGB -> YUY2
+technique YUY2_NV2x {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners2 {
+			def c0, (-0.299f) * 0.5f + 0.5f, (-0.587f) * 0.5f + 0.5f, ((1.0f-0.114f)) * 0.5f + 0.5f, 128.0f / 255.0f
+			def c1, ((1.0f-0.299f)) * 0.5f + 0.5f, (-0.587f) * 0.5f + 0.5f, (-0.114f) * 0.5f + 0.5f, 128.0f / 255.0f
+			def c2, 0.299f, 0.587f, 0.114f, 0
+			def c3, 0.564f * 224.0f / 255.0f, 0.564f * 224.0f / 255.0f, 0.564f * 224.0f / 255.0f, 128.0f / 255.0f
+			def c4, 0, 0, 219.0f / 255.0f, 0
+			def c5, 219.0f / 255.0f, 0, 0, 0
+			def c6, 0, 1, 0, 0
+			def c7, 0.713f * 224.0f / 255.0f, 0.713f * 224.0f / 255.0f, 0.713f * 224.0f / 255.0f, 128.0f / 255.0f
+			def c8, 16.0f / 255.0f, 0.0f / 255.0f, 16.0f / 255.0f, 0
+			
+			// downfilter chroma pixel
+			add_d2 t2.rgb, t2, t3
+
+			// compute Cr and Cb
+			dd t2.rgb, t3.rgb, t2, c0_bx2, t2, c1_bx2
+
+			// compute Y1 and Y2
+			dd t0.rgb, t1.rgb, t0, c2, t1, c2
+			+ mad t2.a, t2.b, c3.b, c3
+
+			// merge Y1 (b) and Y2 (r)
+			mma discard, discard, r0.rgb, t0, c4, t1, c5
+
+			// merge Cb (g)
+			mad r0.rgb, t2.a, c6, r0
+			+ mad r0.a, t3.b, c7.b, c7
+
+			final zero, r0, r0, c8, zero, zero, r0
+		};
+	}
+}
+
+///////////////////////////////////// YUY2 shaders (ATIFS) /////////////////////////////////////
+technique YUY2_ATIFS {
+	pass {
+		fragmentshader = fragment_shader ATI_fragment_shader {
+			def c0, (-0.299f) * 0.5f + 0.5f, (-0.587f) * 0.5f + 0.5f, ((1.0f-0.114f)) * 0.5f + 0.5f, 128.0f / 255.0f
+			def c1, ((1.0f-0.299f)) * 0.5f + 0.5f, (-0.587f) * 0.5f + 0.5f, (-0.114f) * 0.5f + 0.5f, 128.0f / 255.0f
+			def c2, 0.299f, 0.587f, 0.114f, 0
+			def c5, 219.0f / 255.0f, 0.564f * 224.0f / 255.0f, 219.0f / 255.0f, 0.713f * 224.0f / 255.0f
+			def c8, 16.0f / 255.0f, 128.0f / 255.0f, 16.0f / 255.0f, 128.0f / 255.0f
+
+			texld r0, t0
+			texld r1, t1
+			texld r2, t2
+			texld r3, t3
+
+			// downfilter chroma pixel
+			add_d2 r2.rgb, r2, r3
+
+			// compute Cr (a) and Cb (g)
+			dp3 r4, r2, c1_bx2
+			dp3 r4.g, r2, c0_bx2
+			
+			// compute Y1 (b) and Y2 (r)
+			dp3 r4.b, r0, c2
+			dp3 r4.r, r1, c2
+
+			mad r0, r4, c5, c8
+		};
+	}
+}
+
+///////////////////////////////////// Differencing shaders (NV1x) /////////////////////////////////////
+
+technique difference_NV1x {
+	pass {
+		fragmentshader = fragment_shader NV_register_combiners {
+			add r0, t0, -t1
+			dp3 r0.rgb, r0, r0
+			final zero, r0, r0, zero, zero, zero, r0.b
+		};
+	}
+}
+
+technique difference_ATIFS {
+	pass {
+		fragmentshader = fragment_shader ATI_fragment_shader {
+			texld r0, t0
+			texld r1, t1
+			add r0.rgb, r0, -r1
+			dp3 r0.rgb, r0, r0
+			mov r0.a, r0.b
+			mov r0.a, r0.b
+		};
+	}
+}

@@ -1,0 +1,69 @@
+<lina:create file="crash.html">
+	<p>
+		So, you managed to crash VirtualDub....
+	</p>
+
+	<p>
+		VirtualDub attempts to diagnose the immediate cause for your crash in the initial crash
+		dialog that is displayed; this is usually helpful in determining the cause of your
+		crash.  While reading the context dump, please note the following:
+	</p>
+
+	<ul>
+		<li>The analysis is not always correct.  Sometimes a failure causes the CPU to go off into nowhere and the analyzer
+			reports misleading information.
+		</li>
+
+		<li>VirtualDub reports the immediate cause of the crash, but that may not always indicate the true cause, if
+			the failure is delayed.
+		</li>
+
+		<li>Third-party drivers can cause VirtualDub to crash.  This includes capture drivers, video codecs, and audio codecs.
+		</li>
+	</ul>
+
+	<p>
+	VirtualDub produces a crash dump file (<tt>crashinfo.txt</tt>) that can be of help to the program author
+	when diagnosing a crash, as noted in the crash dialog.  However, before submitting a crash dump, please attempt the following diagnosis
+	steps:
+	</p>
+
+	<ul>
+		<li><em>Upgrade to the latest version of VirtualDub if one is available.</em>  Newer versions almost always
+			fix bugs.  The <em>Help | Change Log...</em> menu option will tell you what fixes have been applied.
+		</li>
+
+		<li><em>Try to reproduce it.</em>  Crashes that only happen once aren't fixable.
+		</li>
+
+		<li><em>Remove third-party drivers.</em> If you are using audio and video codecs, try using no codec at all and
+			see if it makes a difference.  Third-party codecs are the #1 cause of crashes within VirtualDub and it is
+			very helpful if you can identify the codec as a trigger, so that the root cause of the problem is more
+			easily found.  Also, please attempt to update to the latest version of any drivers, as the bug you are
+			experiencing may already have been fixed.
+
+			<lina:note>
+				If VirtualDub's context info tells you that an instruction not supported by your CPU was executed in
+				a particular codec, while that codec was being used, 99.9% of the time the cause is the codec not
+				properly checking your CPU before executing optimized code.  VirtualDub does not have control over this
+				and you must consult the codec manufacturer for technical support in this case.  Make sure your CPU
+				meets the stated minimum requirements for that codec.
+			</lina:note>
+		</li>
+
+		<li><em>Determine if a particular setting is implicated.</em> If a particular filter is needed to trigger the
+			crash, I need to know that.
+		</li>
+
+		<li><em>Check your input.</em> Many crashes in codecs are caused by AVI files being damaged during transmission
+			over the Internet.  Suspect this has occurred if you are consistently getting crashes on a particular video
+			frame.
+		</li>
+
+		<li><em>Un-overclock and check system temperature.</em> A rare, but nasty, case of crashes is an overclocked CPU,
+			or worse, an overheated CPU (frozen fans are not unheard of).  If you are overclocking, please attempt to
+			downclock to the correct speeds for your CPU and motherboard before reporting a crash.
+		</li>
+	</ul>
+
+</lina:create>

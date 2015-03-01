@@ -1,0 +1,37 @@
+2:1 reduction (high quality)
+2:1 reduction
+blur more
+blur
+bob doubler
+box blur
+brightness/contrast
+chroma smoother
+convert format
+deinterlace
+emboss
+field bob
+field swap
+fill
+flip horizontally
+flip vertically
+general convolution
+grayscale
+HSV adjust
+interlace
+interpolate
+invert
+IVTC
+levels
+motion blur
+null transform
+perspective
+resize
+rotate
+rotate2
+sharpen
+smoother
+temporal smoother
+threshold
+TV
+warp resize
+warp sharp

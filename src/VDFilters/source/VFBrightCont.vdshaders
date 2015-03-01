@@ -1,0 +1,8 @@
+kVDFilterBrightContFP:
+	ps_2_0
+	dcl_2d s0
+	dcl t0.xy
+	texld r0, t0, s0
+	mad r0.ga, r0, c0.x, c0.y
+	mad r0.rb, r0, c0.x, c0.z
+	mov oC0, r0

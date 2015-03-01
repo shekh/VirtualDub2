@@ -1,0 +1,261 @@
+<root>
+	<lina:set-option name="output-dir" target="../../out/Helpfile"/>
+	<lina:set-option name="link-truncate" baseurl="" notruncate/>
+
+	<lina:fireball src="source/layout.css" dst="layout.css"/>
+
+	<lina:macro name="create">
+		<lina:tag name="lina:htmlhelp-addfile">
+			<lina:attrib name="file"><lina:arg name="file"/></lina:attrib>
+		</lina:tag>
+		<lina:tag name="lina:write">
+			<lina:attrib name="file"><lina:arg name="file"/></lina:attrib>
+			<html>
+				<head>
+					<link rel="stylesheet" href="layout.css" type="text/css"/>
+					<title>
+						<lina:if-not-arg name="title">VirtualDub help</lina:if-not-arg><lina:if-arg name="title"><lina:arg name="title"/></lina:if-arg>
+					</title>
+				</head>
+				<body>
+					<div class="pagetop">
+									VirtualDub help<lina:if-arg name="title"> - <lina:arg name="title"/></lina:if-arg>
+					</div><div class="body">
+						<lina:body/>
+                    </div>
+				</body>
+			</html>
+		</lina:tag>
+	</lina:macro>
+
+	<lina:create file="index.html">
+		<p>
+			Welcome to the new helpfile for VirtualDub 1.5+.
+		</p>
+
+		<p>
+			The old help file used to have some general tips on how to create video, but I've come
+			to the conclusion that such a help file is too much effort to maintain and that my efforts
+			in this area are better spent explaining what the options do rather than how to use them.
+			So, currently, this help file currently consists of comprehensive explanations of what
+			various settings dialogs in VirtualDub do.
+		</p>
+	</lina:create>
+
+	<lina:macro name="note">
+		<table border="0" cellpadding="0" cellspacing="0" style="padding: 1px; margin: 16px 0px">
+			<tr>
+				<td style="padding-right: 20px"><span style="border: 0 solid red; border-bottom-width: 1px">Note</span></td>
+				<td width="*"><lina:body/></td>
+			</tr>
+		</table>
+	</lina:macro>
+
+	<lina:macro name="dt">
+		<dt><span class="dtitle"><lina:body/></span></dt>
+	</lina:macro>
+
+	<lina:macro name="image">
+		<lina:tag name="lina:fireball">
+			<lina:attrib name="src">source/<lina:arg name="src"/></lina:attrib>
+			<lina:attrib name="dst"><lina:arg name="src"/></lina:attrib>
+		</lina:tag>
+		<lina:tag name="img">
+			<lina:attrib name="src"><lina:arg name="src"/></lina:attrib>
+			<lina:if-arg name="width"><lina:attrib name="width"><lina:arg name="width"/></lina:attrib></lina:if-arg>
+			<lina:if-arg name="height"><lina:attrib name="height"><lina:arg name="height"/></lina:attrib></lina:if-arg>
+		</lina:tag>
+	</lina:macro>
+
+
+	<lina:include file="source/dialogs.lina"/>
+	<lina:include file="source/videofilters.lina"/>
+	<lina:include file="source/audiofilters.lina"/>
+	<lina:include file="source/crash.lina"/>
+	<lina:include file="source/capture.lina"/>
+	<lina:include file="source/render.lina"/>
+	<lina:include file="source/fxvideo.lina"/>
+	<lina:include file="source/htmltoc.lina"/>
+	<lina:include file="source/avi.lina"/>
+
+	<lina:include file="source/batch/distributed.lina" />
+	
+	<lina:create file="capwarn.html">
+		Below are listed some issues you may have with video capture drivers.  VirtualDub detects these
+		drivers by name and/or filename, and the particular version you have installed may not have
+		the problems listed.  These are intended as notices for behavior to watch out for.
+
+		<h2>miro/Pinnacle capture driver issues</h2>
+		<p>
+			You may experience abnormally slow UI response with this driver when using overlay display
+			mode and dialogs or menus overlap the display window.  Switching to Preview mode will avoid
+			this.  Also, under <em>Preferences</em>, the <em>Disable preview/overlay for menus and dialogs</em>
+			option may be helpful, as it attempts to automatically disable video as appropriate.
+		</p>
+
+		<h2>Zoran capture driver issues</h2>
+		<p>
+			Some versions of this driver round off frame rates to the nearest millisecond period.  For instance,
+			specifying 15 fps as the desired frame rate may result in an actual capture rate of 14.925 fps (67 ms/frame)
+			or 15.152 fps (66 ms/frame).  The capture settings dialog has a &quot;round&quot; button to help you
+			specify an attainable frame rate, avoiding frame drops that would otherwise occur due to the discrepancy.
+			The Quick FPS menu at the bottom right of the window also has frame rates pre-rounded to milliseconds
+			for convenience.
+		</p>
+
+		<h2>Brooktree/Conexant BT8x8 driver issues</h2>
+		<p>
+			The BT8x8 series of video capture chips can't capture the same video data to both memory and
+			the display at the same time.  As a result, attempting to capture both fields (height &gt;240 NTSC or &gt;288 PAL)
+			while Overlay display is enabled may result in the overlay stopping or strange errors appearing.
+			Use Preview mode or disable display in order to capture both fields.
+		</p>
+		<p>
+			Note that this may not apply to you if the chip is integrated into your video card.
+		</p>
+	</lina:create>
+	
+	<lina:create file="non-admin.html" title="Running VirtualDub as non-administrator">
+		<p>
+			VirtualDub can be run from a Windows user account with limited privileges, but there are some
+			limitations to be aware of.
+		</p>
+		<h2>File layout</h2>
+		<p>
+			Currently, VirtualDub stores batch queue information in a writable file called VirtualDub.jobs, placed next to
+			the program file (VirtualDub.exe). If VirtualDub is located in a folder that is not writable by the current user,
+			the job queue will not be saved between sessions.
+		</p>
+		<h2>Operations that require elevated privileges</h2>
+		<p>
+			The "shutdown when finished" option in the Job Control dialog requires shutdown privileges.
+		</p>
+		<p>
+			Preallocating disk space in capture mode works differently depending on whether the "Manage Volume" privilege is available, which
+			is normally granted only to administrators. If this privilege is available, VirtualDub preallocates space very
+			quickly; if it is not available, then capture files can still be preallocated, but Windows will zero the entire file, which can
+			take some time.
+		</p>
+		<lina:note>
+			The turbo preallocation mode causes the capture file to contain whatever was previously on the disk, which may cause the contents
+			of previously deleted files to reappear until the capture finishes and the unused space is re-deleted. If you are on a shared
+			system, you may want to protect the directory with the capture file so that non-administrators cannot read the old data in the
+			capture file.
+		</lina:note>
+	</lina:create>
+	
+	<lina:create file="cmdline.html" title="Command-line operation">
+		<p>
+			It is possible to invoke VirtualDub in the background and control it in a limited fashion from other
+			programs.
+		</p>
+		
+		<h2>VirtualDub command-line options</h2>
+		<p>
+			First, specifying a filename on the command line causes VirtualDub to load it as a video file on startup.
+			This is the same as loading it using <em>File &gt; Open video file...</em>, with the default autodetect-format
+			mode.
+		</p>
+		<blockquote><pre>virtualdub "My video.avi"</pre></blockquote>
+		<p>
+			The /s flag runs a script; its one argument is the filename of the script to run. Configuration files (.vcf) are
+			scripts. Note that the order of arguments is significant; some settings, such as the edit list, are reset when
+			a video file is opened.
+		</p>
+		<blockquote><pre>virtualdub /s mySettings.vcf myVideo.avi</pre></blockquote>
+		<p>
+			When /x is used, VirtualDub exits when it runs through the whole command line. Its position relative to other
+			options does not matter.
+		</p>
+		<blockquote><pre>virtualdub myVideo.avi /s reprocess.script /x</pre></blockquote>
+		<p>
+			The /p flag tells VirtualDub to add a batch job using the current settings and the given source and destination
+			filenames. The /b flag adds jobs to process an entire directory into another.
+		</p>
+		<blockquote><pre>virtualdub /s mySettings.vcf /p source.avi dest.avi /x</pre></blockquote>
+		<p>
+			/r causes VirtualDub to process the job queue; /c tells VirtualDub to clear it.
+		</p>
+		<blockquote><pre>virtualdub /s mySettings.vcf /c /b source dest /r /x</pre></blockquote>
+		<p>
+			/i invokes a script with arguments. All arguments following the script filename until the next switch are
+			passed to the script in the <tt>VirtualDub.params[]</tt> array.
+		</p>
+		<blockquote><pre>virtualdub /i process.script from.avi to.avi /x</pre></blockquote>
+		<p>
+			Finally, the <tt>/queryVersion</tt> flag causes VirtualDub to exit with its build number as the return code.
+			This can be used to programmatically adapt to multiple versions.
+		</p>
+		<blockquote><pre>virtualdub /queryVersion</pre></blockquote>
+		<p>
+			For the full list of supported command-line switches, run <tt>virtualdub /?</tt>.
+		</p>
+		
+		<h2>Invoking VirtualDub</h2>
+		<p>
+			The <tt>start</tt> command can be used to launch VirtualDub with lower
+			priority than usual for background operation.
+		</p>
+		<blockquote><pre>start /low virtualdub.exe</pre></blockquote>
+		<p>
+			Because <tt>virtualdub.exe</tt> and <tt>veedub64.exe</tt> are GUI programs, the command interpreter in Windows
+			will not wait for them to exit before returning. In addition, its main window will appear as usual. This can
+			be changed by using the <tt>vdub.exe</tt> or <tt>vdub64.exe</tt> front ends, which launch the main application
+			in a special command-line mode.
+		</p>
+		<blockquote><pre>vdub /i GetVideoLength.script foo.avi</pre></blockquote>
+		<p>
+			When the command line front end is used, VirtualDub automatically starts with its main window minimized (but not
+			hidden), and automatically exits when it has completed processing (implicit /x). In addition, log output is
+			diverted to standard output.
+		</p>
+		
+		<h2>Caveat: Using VirtualDub in unattended processes</h2>
+		<p>
+			If you integrate VirtualDub as part of an unattended process and need to track processes, you should remember
+			that <tt>vdub.exe</tt> and <tt>vdub64.exe</tt> are just front ends for <tt>VirtualDub.exe</tt> and
+			<tt>Veedub64.exe</tt>. This has implications for monitoring the VirtualDub process or forcibly killing it.
+			If you send a Ctrl+C event to the command-line driver, it will attempt to soft-stop the main process
+			via a WM_QUIT event. However, if you kill the command-line driver process outright, the main process will
+			continue to run. If you need to forcibly kill the VirtualDub process, you must kill the main GUI process;
+			killing the command-line driver process is optional as it will automatically exit anyway whenever the
+			GUI child terminates.
+		</p>
+
+	</lina:create>
+
+	<lina:create file="amd64.html" title="AMD64 version">
+		<p>
+			VirtualDub comes in two versions, the regular 32-bit x86 version, and a 64-bit version for processors that support
+			the AMD64 architecture. The AMD64 version has some differences from the 32-bit version.
+		</p>
+		<p>
+			There is currently no version for the 64-bit Intel Itanium architecture.
+		</p>
+		<h2>System requirements of VirtualDub for AMD64</h2>
+		<p>
+			In addition to the regular system requirements, the AMD64 version of VirtualDub also requires:
+		</p>
+		<ul>
+			<li>A CPU that supports executing AMD64 code. As of this writing, this includes the AMD Athlon 64, AMD Opteron, and
+				Intel Xeons with EM64T.</li>
+			<li>Windows XP x64 Edition, Vista x64 Edition, or another version of Windows which natively runs in AMD64 long mode.</li>
+		</ul>
+		<p>
+			It is not possible to run the AMD64 version of VirtualDub on a 32-bit version of Windows even if the CPU is
+			64-bit capable.
+		</p>
+		<h2>Differences between the x86 and AMD64 versions</h2>
+		<p>
+			Not all functionality has been ported to 64-bit, so the selection of video filters is reduced compared to the
+			32-bit version. In addition, some functionality which is supported is not fully optimized compared to the 32-bit
+			equivalent, so the 64-bit version may or may not be faster than the 32-bit version for your scenario.
+		</p>
+		<p>
+			Due to an OS limitation, 64-bit programs cannot load 32-bit DLLs, and vice-versa. As a result, use of the 64-bit version
+			of VirtualDub requires 64-bit video codecs and 64-bit video filters; 32-bit video codecs will not show up in the video
+			codec list or be available for opening AVI files, and 32-bit video filters will not load. In addition, AVIFile drivers must
+			be 64-bit to be used on load; in particular, VirtualDub for AMD64 cannot be used with the regular 32-bit version of Avisynth.
+		</p>
+	</lina:create>
+</root>

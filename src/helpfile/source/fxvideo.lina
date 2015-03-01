@@ -1,0 +1,402 @@
+<lina:create file="fxvideo.html" title="Video display shader support">
+	
+	<p>
+		VirtualDub has a special video display driver called the <em>D3D FX driver</em> that allows the power of a 3D
+		accelerator to be unleashed when displaying video. This is only for display purposes &mdash; the result can't
+		be saved to disk &mdash; but it is useful for improving display quality as well as experimenting with different
+		image processing algorithms. The power and ease of programming for modern GPUs makes it possible to prototype a
+		shader for an algorithm in minutes that runs in real-time.
+	</p>
+
+	<h2>Requirements and enabling the driver</h2>
+	<p>
+		A 3D accelerator with hardware support for vertex and pixel shaders is required to use the Direct3D FX display
+		driver in VirtualDub. A video card which supports at least pixel shader 2.0 is highly recommended, as pixel
+		shader models 1.1-1.4 are very restricted in the amount of computation and texture fetches that can be performed
+		in a single pass.
+	</p>
+	<p>
+		In addition, you must have <tt>d3dx9_25.dll</tt>, the D3DX DLL from the DirectX 9.0c April 2005 release, installed.
+		This DLL does not come with VirtualDub and must be installed from the DirectX redistributable; currently it is
+		<em>not</em> installed by the standard DirectX 9.0c install on Windows Update. As of July 3, 2006, the April
+		2005 D3DX dll redistributable is available as <tt>directx_9c_Apr05sdk_redist.exe</tt> at the following URL:
+	</p>
+	<blockquote><a href="http://www.microsoft.com/downloads/details.aspx?FamilyId=402111C4-6478-46C1-BBD9-1BF9FCCE52F4&displaylang=en">http://www.microsoft.com/downloads/details.aspx?&#x200B;FamilyId=402111C4-6478-46C1-BBD9-1BF9FCCE52F4&amp;&#x200B;displaylang=en</a></blockquote>
+	<p>
+		Note that <tt>d3dx9_25.dll</tt> is a system DLL &mdash; it is intended to be installed only by the DirectX Setup
+		installer into the <tt>Windows\System32</tt> directory.
+	</p>
+
+	<p>
+		To enable the FX driver, go to <em>Options &gt; Preferences &gt; Display</em>. DirectX support, Direct3D support,
+		and the FX driver should all be enabled. The filename of an <tt>.fx</tt> file must be supplied to use; if a full
+		path is not given, the file is assumed to come from VirtualDub's program directory.
+	</p>
+	<p>
+		For detailed documentation on the <tt>.fx</tt> file format, consult the Microsoft DirectX 9.0c SDK.
+	</p>
+
+	<h2>Available surfaces and textures</h2>
+	<p>
+		A total of three textures and one surface are available for use:
+	</p>
+	<ul>
+		<li>The output render target, sized to the output frame.</li>
+		<li>The source texture, which holds the current video frame.</li>
+		<li>The previous source texture, which holds the last video frame.</li>
+		<li>Two temporary render target textures, which are at least as large as the desktop.</li>
+	</ul>
+	<p>
+		Declaring variables with specific names will automatically cause them to be bound to the textures:
+	</p>
+<blockquote><pre>
+texture vd_srctexture;
+texture vd_prevsrctexture;   // new - 1.7.1
+texture vd_prevsrc2texture;  // new - 1.7.3
+texture vd_temptexture;
+texture vd_temptexture2;
+</pre></blockquote>
+	<p>
+		The output render target is at least <tt>X8R8G8B8</tt>. The temporary render targets are of format <tt>A8R8G8B8</tt>;
+		in addition, they are guaranteed to be powers of two as long as the device does not support full
+		non-power-of-two textures; in particular, the restrictions of the <tt>NONPOW2CONDITIONAL</tt> caps bit do
+		not have to be followed when using them.
+	</p>
+	<p>
+		The <tt>vd_srctexture</tt> variable can take a single annotation:
+	</p>
+	<dl>
+		<dt>bool vd_forceframeupload = <i>force_flag</i>; // new - 1.7.1</dt>
+		<dd>
+			If <tt>true</tt>, this annotation changes the behavior of image upload when operating in field
+			mode. Normally, when field display mode is enabled, the even and odd fields of the source texture
+			are alternately updated; this effectively applies weave deinterlacing to the input. When <tt>vd_forceframeupload</tt>
+			is set to <tt>true</tt>, both fields are uploaded on the first field of every frame.
+		</dd>
+	</dl>
+
+	<h2>Technique selection and execution</h2>
+	<p>
+		A technique must be named either <em>point</em>, <em>bilinear</em>, or <em>bicubic</em> for it to be used.
+		Each of these names maps to one of the filtering modes in the right-click context menu of the video pane;
+		this allows up to three techniques to be selected from the <tt>.fx</tt> file. If a technique is not available,
+		a nearby available technique from the three is used instead.
+	</p>
+	<p>
+		When a video frame is displayed, VirtualDub sequentially executes each of the passes in the file. If interlaced
+		display mode is enabled, the technique is executed twice per frame, after each field is updated. This allows
+		field-savvy shaders to do adaptive deinterlacing on the video input.
+	</p>
+	<p>
+		Each pass is executed with a quad (four vertex rectangular mesh). The components of the vertex declaration accessible
+		from the vertex shader are (all are two component):
+	</p>
+	<ul>
+		<li><em>POSITION:</em> The four corners of the output viewport. These are already corrected for the Direct3D half-pixel offset so that they exactly encompass the screen.</li>
+		<li><em>TEXCOORD0:</em> The four corners of the source image subrect within the source texture.</li>
+		<li><em>TEXCOORD1:</em> Full-texture analogs of the first texcoord set &mdash; (0,0), (0,1), (1,0), and (1,1).</li>
+	</ul>
+	<p>
+		Thus, passing POSITION and TEXCOORD0 through is enough to do a straight blit using point or bilinear sampling.
+	</p>
+
+	<h2>Pass annotations</h2>
+	<p>
+		Passes within a rendering technique can be annotated to instruct VirtualDub to take certain actions prior to
+		executing that pass.
+	</p>
+	<dl>
+		<dt>float4 vd_clear = { red, green, blue, alpha };</dt>
+		<dd>
+			Clears the render target to the given color. All channel values are normalized and range from 0-1.
+		</dd>
+
+		<dt>string vd_target = "temp";<br/>
+			string vd_target = "temp2";<br/>
+		</dt>
+		<dd>
+			Selects the render target texture to use for rendering. If this is not specified, the output render target
+			is used instead. The viewport is automatically set to the entire texture.
+		</dd>
+		
+		<dt>int vd_fieldmask = mask; // new - 1.7.1</dt>
+		<dd>
+			Restricts a pass to running in only certain fields during field playback:
+			<ul>
+				<li>1 - run during even field only</li>
+				<li>2 - run during odd field only</li>
+				<li>3 - run during either field</li>
+			</ul>
+			If this annotation is absent, the pass always runs.
+		</dd>
+	</dl>
+	<p>
+		This is an example of a pass with annotations:
+	</p>
+	<blockquote><pre>
+pass p0
+&lt;
+	string vd_target = "temp";
+	float4 vd_clear = { 0, 0, 0, 0 };
+&gt;
+{
+	VertexShader = compile vs_2_0 VS();
+	PixelShader = compile ps_2_0 PS();
+}
+	</pre></blockquote>
+	<h2>Exported variables</h2>
+	<p>
+		Declaring global variables with specific names will cause those variables to automatically be filled in
+		by VirtualDub with data useful for rendering. These values are constant throughout the technique execution, as the
+		source values do not change between passes.
+	</p>
+	<p>
+		Here are the supported variables:
+	</p>
+	<dl>
+		<dt>float4 vd_vpsize;</dt>
+		<dd>
+			Viewport size and inverse viewport size. This is the size of the output window, in pixels. <tt>vd_vpsize.xy</tt> gives
+			the width and height of the viewport; <tt>vd_vpsize.wz</tt> gives 1/width and 1/height.
+		</dd>
+
+		<dt>float4 vd_texsize;</dt>
+		<dd>
+			Texture size and inverse texture size for the source texture. This is the size of the input source image <em>texture</em>, in
+			texels (it is <em>not</em> the source image size). <tt>vd_texsize.xy</tt> gives the width and height of the texture;
+			<tt>vd_texsize.wz</tt> gives 1/width and 1/height. This is useful for computing UV coordinates.
+		</dd>
+
+		<dt>float4 vd_srcsize;</dt>
+		<dd>
+			Size and inverse size of the source image. This is the size of the video frame, which is in the top-left subrect of the source
+			texture. <tt>vd_srcsize.xy</tt> gives the size of the video frame, and <tt>vd_srcsize.wz</tt> gives 1/width and 1/height.
+		</dd>
+
+		<dt>float4 vd_tempsize;<br/>
+			float4 vd_temp2size;
+		</dt>
+		<dd>
+			Texture size and inverse texture size for the primary and secondary render target textures, respectively.
+		</dd>
+
+		<dt>float4 vd_vpcorrect;</dt>
+		<dd>
+			<p>
+				Screen space mapping and correction for the viewport. <tt>pos * vd_vpcorrect.xy + vd_vpcorrect.wz</tt> transforms
+				<tt>pos</tt> from screen space coordinates, where (0,0) is the bottom-left corner and <tt>vd_vpsize.xy</tt> is the top-right corner,
+				to the correct normalized display coordinates (NDC) for the output render target.
+			</p>
+			<p>
+				The annoying half-pixel shift imposed by Direct3D is taken care of in the translation &mdash; the screen space coordinates
+				established by this transform use OpenGL-style pixel placement, with pixel centers at half-integers.
+			</p>
+		</dd>
+
+		<dt>float4 vd_vpcorrect2;</dt>
+		<dd>
+			<p>
+				This is the same as <tt>vd_vpcorrect</tt>, except that the coordinate mapping is inverted so that (0,0) is the top-left.
+			</p>
+		</dd>
+
+		<dt>float4 vd_tvpcorrect;<br/>
+			float4 vd_tvpcorrect2;<br/>
+			float4 vd_t2vpcorrect;<br/>
+			float4 vd_t2vpcorrect2;
+		</dt>
+		<dd>
+			<p>
+				These are the analogous screen space mappings for the primary and secondary render target textures, respectively.
+			</p>
+		</dd>
+	</dl>
+
+	<h2>Custom textures (1.7.3+)</h2>
+	<p>
+		Annotations can be used to control the dimensions of a texture:
+	</p>
+	<dl>
+		<dt>string ResourceType;</dt>
+		<dd>
+			Specifies the Direct3D resource type of the texture. Can be <tt>1D</tt>, <tt>2D</tt>, <tt>3D</tt>, or <tt>cube</tt>. The
+			default is 2D.
+		</dd>
+		
+		<dt>float2/3 Dimensions;</dt>
+		<dd>
+			Specifies the width, height, and depth of a texture, in texels. The texture size is automatically adjusted to
+			powers of two as needed.
+		</dd>
+		
+		<dt>string Format;</dt>
+		<dd>
+			Specifies the Direct3D format of a texture. The format name is the same as the <tt>D3DFORMAT</tt> constant name, without the
+			<tt>D3DFMT_</tt> prefix, i.e. <tt>A8R8G8B8</tt>.
+		</dd>
+		
+		<dt>string Function;</dt>
+		<dd>
+			Specifies the name of a function to use as a texture shader for initializing the texture.
+		</dd>
+		
+		<dt>int MIPLevels;</dt>
+		<dd>
+			Specifies the number of mip map levels to allocate. A value of zero means to allocate a full mip chain.
+		</dd>
+		
+		<dt>float2 ViewportRatio;</dt>
+		<dd>
+			Specifies a pair of ratios so that the size of the texture is proportional to the viewport size. If a texture shader is
+			specified, it is re-evaluated every time the texture size is updated.
+		</dd>
+		
+		<dt>int width;</dt>
+		<dd>
+			Specifies the width of the texture, in texels. This is used only if the <tt>Dimensions</tt> annotation is not present.
+		</dd>
+		
+		<dt>int height;</dt>
+		<dd>
+			Specifies the height of the texture, in texels. This is used only if the <tt>Dimensions</tt> annotation is not present.
+		</dd>
+	</dl>
+	<p>
+		The type of a texture can also be specified by semantic:
+	</p>
+	<dl>
+		<dt>RenderColorTarget</dt>
+		<dd>
+			Specifies that the texture should be allocated with Direct3D <tt>RENDERTARGET</tt> usage.
+		</dd>
+		
+		<dt>RenderDepthStencilTarget</dt>
+		<dd>
+			Specifies that the texture should be allocated with Direct3D <tt>DEPTHSTENCIL</tt> usage.
+		</dd>
+	</dl>
+	<p>
+		Whenever a custom texture is created, a mirror variable with the suffix <tt>_size</tt> with type float or vector is checked
+		for. If this variable is present, its x and y components are filled with the width and height in texels, and w and z with
+		the reciprocal width and height (note that the order is w and z, not z and w).
+	</p>
+	
+	<h2>Texture shaders</h2>
+	<p>
+		<em>D3DX texture shaders</em> can be used to precalculate a texture prior to video display. These shaders
+		are only run once when the <tt>.fx</tt> file is loaded, and the result then reused for each video frame.
+		As they run on the CPU, they can use shader features not necessarily supported by the GPU, and are thus useful for
+		computing lookup tables to work around the feeble calculation abilities of lower shader models.
+	</p>
+	<p>
+		VirtualDub uses a set of annotations on the texture object to control texture shader execution. These annotations
+		are compatible with those used by the EffectEdit tool. The generated texture is always of the format <tt>A8R8G8B8</tt>.
+	</p>
+	<dl>
+		<dt>float width;<br/>
+			float height;
+		</dt>
+		<dd>
+			Sets the width and height of the texture. These are not adjusted to device requirements, so it is safest
+			to use powers of two.
+		</dd>
+
+		<dt>string target;</dt>
+		<dd>
+			The profile to use when compiling the texture shader. It defaults to <tt>tx_1_0</tt> if absent.
+		</dd>
+
+		<dt>string function;</dt>
+		<dd>
+			The name of the HLSL function to use for the texture shader.
+		</dd>
+	</dl>
+	<p>
+		Here is an example of a texture shader in use:
+	</p>
+	<blockquote><pre>
+texture proceduraltex
+&lt;
+	string function = "gen";
+	int width = 16;
+	int height = 256;
+&gt;;
+
+float4 gen(float2 texcoord : POSITION,
+           float2 texelSize : PSIZE) : color0
+{
+	return texcoord.xyxy;
+}
+	</pre></blockquote>
+	<p>
+		Starting with 1.7.3, texture shaders can be applied to volume and cube textures.
+	</p>
+
+	<h2>Caveats</h2>
+	<p>
+		VirtualDub does not (cannot) do emulation of pixel shader models that are not supported by the GPU.
+		This is particularly important for older video cards only supporting pixel shader 1.1-1.4, which
+		are much more restrictive than pixel shader 2.0 or 3.0. Some restrictions to watch out for:
+	</p>
+	<ul>
+		<li>ps_1_x does not have a way to normalize a vector or retrieve its length.</li>
+		<li>ps_1_1 through ps_1_3 can't do dependant texture reads except through the special texture
+			addressing operations, which can only be accessed from shader assembly. A dependant texture
+			read is a texture read based on a calculated texture coordinate, i.e. not from a texture
+			coordinate set.
+		</li>
+		<li>
+			ps_1_4 can do dependant texture reads, but only one layer deep, and with limited precision.
+		</li>
+	</ul>
+	<p>
+		This is not to say that interesting and useful display shaders can't be written in downlevel
+		shader models, but it requires some careful thought and coding. ps_1_4 is pretty rare as it
+		was only introduced in the ATI RADEON 8xxx series; ps_1_1 was introduced with the NVIDIA GeForce 3
+		and ps_1_2/ps_1_3 with the GeForce 4, however. All cards with given shader model support can
+		run all downlevel shaders, however, so a GeForce FX 5800 can run ps_1_4 shaders even though
+		its highest supported model is ps_2_a.
+	</p>
+	
+	<h2>An example shader</h2>
+	<p>
+		This effect file produces an emboss effect on the displayed video. It should work on any video
+		card with pixel shader support.
+	</p>
+<blockquote><pre>
+texture vd_srctexture;
+float4 vd_texsize;
+
+sampler src = sampler_state {
+	Texture = &lt;vd_srctexture&gt;;
+	AddressU = clamp;
+	AddressV = clamp;
+	MinFilter = linear;
+	MagFilter = linear;
+	MipFilter = linear;
+};
+
+void VS(
+	float4 pos : POSITION,
+	float2 uv : TEXCOORD0,
+	out float4 hPos : POSITION,
+	out float2 uv0 : TEXCOORD0,
+	out float2 uv1 : TEXCOORD1)
+{
+	hPos = pos;
+	uv0 = uv - vd_texsize.wz;
+	uv1 = uv + vd_texsize.wz;
+}
+
+float4 PS(float2 uv0 : TEXCOORD0, float2 uv1 : TEXCOORD1) : COLOR0 {
+	return tex2D(src, uv1) - (tex2D(src, uv0) - 0.5);
+}
+
+technique point {
+	pass {
+		VertexShader = compile vs_1_1 VS();
+		PixelShader = compile ps_1_1 PS();
+	}
+}
+</pre></blockquote>
+</lina:create>

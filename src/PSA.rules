@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="Pixel shader assembler"
+	Version="8.00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="PixelShaderAssembler"
+			DisplayName="Pixel shader assembler"
+			CommandLine="&quot;$(VDBaseDir)\out\$(VDConfigDirTag)\asuka.exe&quot; psa &quot;$(InputPath)&quot; &quot;[$OutputPath]\$(InputName).inl&quot;"
+			Outputs="&quot;[$OutputPath]\$(InputName).inl&quot;"
+			FileExtensions="*.vdshaders"
+			>
+			<Properties>
+				<StringProperty
+					Name="OutputPath"
+					DisplayName="Output Path"
+					Description="Output Path"
+					DefaultValue="$(IntDir)"
+				/>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>

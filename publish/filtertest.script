@@ -1,0 +1,139 @@
+declare vd = VirtualDub;
+declare vdv = vd.video;
+declare vdvf = vd.video.filters;
+declare vda = vd.audio;
+declare vds = vd.subset;
+declare log = vd.Log;
+declare tostr = Sylia.ToString;
+declare assert = Sylia.Assert;
+
+// override the default mode to make sure we aren't tripped by saved settings
+vdv.SetInputFormat(0);
+vdv.SetOutputFormat(0);
+
+// create test file
+vd.__OpenTest(0);
+assert(vdv.width == 640);
+assert(vdv.height == 480);
+
+vds.Clear();
+vds.AddRange(0, 10);
+vdv.SetFrameRate2(30, 1, 0);
+vdvf.Add("resize");
+vdvf.instance[0].Config(160, 120, 4);
+vd.SaveAVI("__test.avi");
+
+// load and verify test file
+vd.Open("__test.avi");
+vdv.SetFrameRate(0, 0, 0);
+vdvf.Clear();
+
+assert(vdv.width == 160);
+assert(vdv.height == 120);
+assert(vdv.length == 10);
+assert(vdv.framerate == 30.0);
+
+// __test2.avi: IVTC on, no filters
+vdvf.Add("IVTC");
+vdvf.instance[0].Config(1,0,-1);
+vds.Delete();
+vd.SaveAVI("__test2.avi");
+
+// __test3.avi: IVTC off, bob doubler
+vdvf.Clear();
+vdvf.Add("bob doubler");
+vds.Delete();
+vd.SaveAVI("__test3.avi");
+
+// __test4.avi: IVTC on, bob doubler
+vdvf.Clear();
+vdvf.Add("IVTC");
+vdvf.Add("bob doubler");
+vdvf.instance[0].Config(1,0,-1);
+vds.Delete();
+vd.SaveAVI("__test4.avi");
+
+// clear filters and IVTC again
+vdvf.Clear();
+
+// check __test2-__test4
+vd.Open("__test2.avi");
+assert(vdv.length == 8);
+assert(vdv.framerate == 24.0);
+
+vd.Open("__test3.avi");
+assert(vdv.length == 20);
+assert(vdv.framerate == 60.0);
+
+vd.Open("__test4.avi");
+assert(vdv.length == 16);
+assert(vdv.framerate == 48.0);
+
+// add a second bob doubler, and verify that frame rates make sense
+vd.Open("__test.avi");
+vdvf.Add("bob doubler");
+vdvf.Add("bob doubler");
+assert(vdvf.instance[0].__srcrate == 30.0);
+assert(vdvf.instance[0].__dstrate == 60.0);
+assert(vdvf.instance[1].__srcrate == 60.0);
+assert(vdvf.instance[1].__dstrate == 120.0);
+
+// repeat with IVTC on
+vdvf.Clear();
+vdvf.Add("IVTC");
+vdvf.instance[0].Config(1,0,-1);
+vdvf.Add("bob doubler");
+vdvf.Add("bob doubler");
+assert(vdvf.instance[0].__srcrate == 30.0);
+assert(vdvf.instance[0].__dstrate == 24.0);
+assert(vdvf.instance[1].__srcrate == 24.0);
+assert(vdvf.instance[1].__dstrate == 48.0);
+assert(vdvf.instance[2].__srcrate == 48.0);
+assert(vdvf.instance[2].__dstrate == 96.0);
+
+vdvf.Clear();
+
+
+///////////////////////////////////////////////////////////////////////////
+//
+// IVTC test
+//
+///////////////////////////////////////////////////////////////////////////
+
+// write out a series of AVI files with lengths 1-10 with IVTC enabled
+
+vd.Open("__test.avi");
+vdvf.Clear();
+vdvf.Add("IVTC");
+vdvf.instance[0].Config(1,0,-1);
+vds.Clear();
+vds.AddRange(0, 1);
+vd.SaveAVI("__testlen-1.avi");
+vds.Clear();
+vds.AddRange(0, 2);
+vd.SaveAVI("__testlen-2.avi");
+vds.Clear();
+vds.AddRange(0, 3);
+vd.SaveAVI("__testlen-3.avi");
+vds.Clear();
+vds.AddRange(0, 4);
+vd.SaveAVI("__testlen-4.avi");
+vds.Clear();
+vds.AddRange(0, 5);
+vd.SaveAVI("__testlen-5.avi");
+vds.Clear();
+vds.AddRange(0, 6);
+vd.SaveAVI("__testlen-6.avi");
+vds.Clear();
+vds.AddRange(0, 7);
+vd.SaveAVI("__testlen-7.avi");
+vds.Clear();
+vds.AddRange(0, 8);
+vd.SaveAVI("__testlen-8.avi");
+vds.Clear();
+vds.AddRange(0, 9);
+vd.SaveAVI("__testlen-9.avi");
+vds.Clear();
+vds.AddRange(0, 10);
+vd.SaveAVI("__testlen-10.avi");
+vdvf.Clear();

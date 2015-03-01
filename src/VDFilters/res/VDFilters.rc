@@ -1,0 +1,730 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "winresrc.h"
+#ifndef IDC_STATIC
+#define IDC_STATIC (-1)
+#endif
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""winresrc.h""\r\n"
+    "#ifndef IDC_STATIC\r\n"
+    "#define IDC_STATIC (-1)\r\n"
+    "#endif\r\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_FILTER_ALIASFORMAT DIALOGEX 0, 0, 214, 113
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: alias format"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Color space",IDC_STATIC_COLORSPACE,7,7,69,10,SS_CENTERIMAGE
+    CONTROL         "No change",IDC_CS_NONE,"Button",BS_AUTORADIOBUTTON,76,7,50,10
+    CONTROL         "Rec. 601 (SD)",IDC_CS_601,"Button",BS_AUTORADIOBUTTON,76,17,61,10
+    CONTROL         "Rec. 709 (HD)",IDC_CS_709,"Button",BS_AUTORADIOBUTTON,76,27,61,10
+    LTEXT           "Component range",IDC_STATIC,7,45,69,10,SS_CENTERIMAGE
+    CONTROL         "No change",IDC_CR_NONE,"Button",BS_AUTORADIOBUTTON,76,45,50,10
+    CONTROL         "Limited (Y: 16-235, C: 16-240)",IDC_CR_LIMITED,"Button",BS_AUTORADIOBUTTON,76,55,113,10
+    CONTROL         "Full (0-255)",IDC_CR_FULL,"Button",BS_AUTORADIOBUTTON,76,65,53,10
+    DEFPUSHBUTTON   "OK",IDOK,104,92,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,157,92,50,14
+END
+
+IDD_FILTER_ROTATE DIALOG  0, 0, 122, 81
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: rotate"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "Rotate image:",IDC_STATIC,7,7,45,8
+    CONTROL         "&Left by 90°",IDC_ROTATE_LEFT,"Button",BS_AUTORADIOBUTTON,7,17,50,10
+    CONTROL         "&Right by 90°",IDC_ROTATE_RIGHT,"Button",BS_AUTORADIOBUTTON,7,27,55,10
+    CONTROL         "&Around 180°",IDC_ROTATE_180,"Button",BS_AUTORADIOBUTTON,7,37,55,10
+    DEFPUSHBUTTON   "OK",IDOK,7,60,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,65,60,50,14
+END
+
+IDD_FILTER_TV DIALOG  0, 0, 138, 118
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: tv"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    CONTROL         "Y channel (luminance)",IDC_MODE_Y,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,7,7,86,10
+    CONTROL         "I channel (chrominance axis 1)",IDC_MODE_I,"Button",BS_AUTORADIOBUTTON,7,16,112,10
+    CONTROL         "Q channel (chrominance axis 2)",IDC_MODE_Q,"Button",BS_AUTORADIOBUTTON,7,25,115,10
+    CONTROL         "I/Q (chrominance) 3x3 average",IDC_MODE_IQAVERAGE3,
+                    "Button",BS_AUTORADIOBUTTON,7,34,115,10
+    CONTROL         "I/Q (chrominance) 5x5 average",IDC_MODE_IQAVERAGE5,
+                    "Button",BS_AUTORADIOBUTTON,7,43,115,10
+    CONTROL         "I/Q 5x5 avg/temporal soften",IDC_MODE_IQAV5TMP,"Button",BS_AUTORADIOBUTTON,7,52,105,10
+    CONTROL         "Chrominance shift up",IDC_MODE_CHROMAUP,"Button",BS_AUTORADIOBUTTON,7,61,82,10
+    CONTROL         "Chrominance shift down",IDC_MODE_CHROMADOWN,"Button",BS_AUTORADIOBUTTON,7,70,91,10
+    DEFPUSHBUTTON   "OK",IDOK,27,97,50,14,WS_GROUP
+    PUSHBUTTON      "Cancel",IDCANCEL,81,97,50,14
+END
+
+IDD_FILTER_FIELDBOB DIALOG  0, 0, 256, 90
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "filter: field bob"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    GROUPBOX        "Even field",IDC_STATIC,7,7,118,55
+    CONTROL         "Normal",IDC_EVEN_NONE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,14,18,38,10
+    CONTROL         "Smooth",IDC_EVEN_SMOOTH,"Button",BS_AUTORADIOBUTTON,14,28,38,10
+    CONTROL         "Quarter scanline up",IDC_EVEN_HALFUP,"Button",BS_AUTORADIOBUTTON,14,38,77,10
+    CONTROL         "Quarter scanline down",IDC_EVEN_HALFDOWN,"Button",BS_AUTORADIOBUTTON,14,48,87,10
+    GROUPBOX        "Odd field",IDC_STATIC,131,7,118,55
+    CONTROL         "Normal",IDC_ODD_NONE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,138,18,38,10
+    CONTROL         "Smooth",IDC_ODD_SMOOTH,"Button",BS_AUTORADIOBUTTON,138,28,38,10
+    CONTROL         "Quarter scanline up",IDC_ODD_HALFUP,"Button",BS_AUTORADIOBUTTON,138,38,77,10
+    CONTROL         "Quarter scanline down",IDC_ODD_HALFDOWN,"Button",BS_AUTORADIOBUTTON,138,48,87,10
+    DEFPUSHBUTTON   "OK",IDOK,146,69,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,199,69,50,14
+END
+
+IDD_FILTER_FIELDDELAY DIALOGEX 0, 0, 186, 68
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Field delay"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "&Field mode:",IDC_STATIC,7,7,38,8
+    CONTROL         "&Top field first -> bottom field first",IDC_FIELDMODE_TFFTOBFF,
+                    "Button",BS_AUTORADIOBUTTON,12,17,123,10
+    CONTROL         "&Bottom field first -> top field first",IDC_FIELDMODE_BFFTOTFF,
+                    "Button",BS_AUTORADIOBUTTON,12,27,121,10
+    PUSHBUTTON      "Show  &preview",IDC_PREVIEW,7,47,50,14
+    DEFPUSHBUTTON   "OK",IDOK,76,47,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,47,50,14
+END
+
+IDD_FILTER_INTERLACE DIALOGEX 0, 0, 183, 84
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Interlace"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "&Source format",IDC_STATIC,7,7,66,10
+    CONTROL         "&Progressive frames",IDC_SOURCE_PROGRESSIVE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,73,7,77,10
+    CONTROL         "&Alternating fields",IDC_SOURCE_ALTERNATING,"Button",BS_AUTORADIOBUTTON,73,17,70,10
+    LTEXT           "&Field order",IDC_STATIC,7,35,66,10
+    CONTROL         "&Even field first",IDC_FIELDORDER_EVENFIRST,"Button",BS_AUTORADIOBUTTON | WS_GROUP,73,35,92,10
+    CONTROL         "&Odd field first",IDC_FIELDORDER_ODDFIRST,"Button",BS_AUTORADIOBUTTON,73,46,92,10
+    DEFPUSHBUTTON   "OK",IDOK,73,63,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,126,63,50,14
+END
+
+IDD_FILTER_INTERPOLATE DIALOGEX 0, 0, 231, 81
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Interpolate"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "&Frame rate target",IDC_STATIC,7,7,66,12,SS_CENTERIMAGE
+    CONTROL         "&Scale frame rate by:",IDC_FRAMERATE_SCALE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,73,7,81,12
+    CONTROL         "&Target frame rate (fps):",IDC_FRAMERATE_TARGET,"Button",BS_AUTORADIOBUTTON,73,19,93,10
+    EDITTEXT        IDC_EDIT_SCALE,174,7,50,12,ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_EDIT_TARGET,174,19,50,12,ES_AUTOHSCROLL | WS_DISABLED
+    LTEXT           "&Interpolation mode",IDC_STATIC,7,33,66,10,SS_CENTERIMAGE
+    CONTROL         "&Nearest frame (duplicate)",IDC_INTERP_NONE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,73,33,98,10
+    CONTROL         "&Linear blending",IDC_INTERP_LINEAR,"Button",BS_AUTORADIOBUTTON,73,43,64,10
+    PUSHBUTTON      "&Show Preview",IDC_PREVIEW,7,60,50,14
+    DEFPUSHBUTTON   "OK",IDOK,121,60,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,174,60,50,14
+END
+
+IDD_FILTER_BRIGHTCONT DIALOGEX 0, 0, 280, 98
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: brightness/contrast"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    LTEXT           "&Brightness",IDC_STATIC,7,10,34,8
+    CONTROL         "Slider1",IDC_BRIGHTNESS,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,51,7,222,20
+    LTEXT           "Black",IDC_STATIC,51,26,19,8
+    LTEXT           "Normal",IDC_STATIC,150,26,23,8
+    LTEXT           "White",IDC_STATIC,253,26,20,8
+    LTEXT           "&Contrast",IDC_STATIC,7,44,27,8
+    CONTROL         "Slider2",IDC_CONTRAST,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,51,42,222,20
+    LTEXT           "0%",IDC_STATIC,55,62,10,8
+    LTEXT           "100%",IDC_STATIC,153,62,18,8
+    LTEXT           "200%",IDC_STATIC,255,62,18,8
+    PUSHBUTTON      "Show &preview",IDC_PREVIEW,7,77,50,14,WS_DISABLED
+    DEFPUSHBUTTON   "OK",IDOK,165,77,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,223,77,50,14
+END
+
+IDD_FILTER_ROTATE2 DIALOG  0, 0, 188, 93
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: rotate2"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "Rotation &angle",IDC_STATIC,7,7,49,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_ANGLE,61,7,77,12,ES_AUTOHSCROLL
+    LTEXT           "Filtering &mode",IDC_STATIC,7,22,44,12,SS_CENTERIMAGE
+    COMBOBOX        IDC_FILTERMODE,61,22,108,78,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Fill color",IDC_STATIC,7,40,26,12,SS_CENTERIMAGE
+    PUSHBUTTON      "Pick &color...",IDC_PICKCOLOR,103,39,58,14
+    CONTROL         "&Expand frame to fit",IDC_EXPANDBOUNDS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,61,56,75,10
+    DEFPUSHBUTTON   "OK",IDOK,76,72,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,131,72,50,14
+    LTEXT           "degrees",IDC_STATIC,143,7,26,12,SS_CENTERIMAGE
+    LTEXT           "",IDC_COLOR,61,40,32,12,SS_SUNKEN
+    PUSHBUTTON      "Show &preview",IDC_PREVIEW,7,72,50,14
+END
+
+IDD_FILTER_IVTC DIALOGEX 0, 0, 250, 162
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: IVTC"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Field assembly mode",IDC_STATIC,7,7,77,10,SS_CENTERIMAGE
+    CONTROL         "&Decomb frames only",IDC_MODE_DECOMB,"Button",BS_AUTORADIOBUTTON | WS_GROUP,84,7,81,10
+    CONTROL         "&Reduce frame rate",IDC_MODE_REDUCE,"Button",BS_AUTORADIOBUTTON,84,17,76,10
+    LTEXT           "Field mode",IDC_STATIC,7,32,77,10,SS_CENTERIMAGE
+    CONTROL         "&Autodetect",IDC_FIELDORDER_AUTO,"Button",BS_AUTORADIOBUTTON | WS_GROUP,84,32,52,10
+    CONTROL         "&Top field first (TFF)",IDC_FIELDORDER_TFF,"Button",BS_AUTORADIOBUTTON,84,42,77,10
+    CONTROL         "&Bottom field first (BFF)",IDC_FIELDORDER_BFF,"Button",BS_AUTORADIOBUTTON,84,52,88,10
+    CONTROL         "B&lurred fields",IDC_FIELDORDER_BLURRED,"Button",BS_AUTORADIOBUTTON,84,62,57,10
+    CONTROL         "&Single field only (remove duplicated frame)",IDC_FIELDORDER_DUPLICATED,
+                    "Button",BS_AUTORADIOBUTTON,84,72,152,10
+    LTEXT           "Field blur &weighting",IDC_STATIC,7,85,77,8
+    CONTROL         "",IDC_BLEND_WEIGHTING,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,84,84,159,15
+    LTEXT           "Pattern phase",IDC_STATIC,7,104,77,10,SS_CENTERIMAGE
+    CONTROL         "Adapti&ve",IDC_PHASE_ADAPTIVE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,84,104,45,10
+    CONTROL         "&Manual",IDC_PHASE_MANUAL,"Button",BS_AUTORADIOBUTTON,84,114,39,10
+    LTEXT           "O&ffset of first combed frame:",IDC_STATIC,96,124,100,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_PHASE,196,124,47,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Show &preview",IDC_PREVIEW,7,141,50,14,WS_DISABLED
+    DEFPUSHBUTTON   "OK",IDOK,140,141,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,193,141,50,14
+END
+
+IDD_FILTER_HSV DIALOG  0, 0, 272, 84
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "filter: HSV Adjust"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "&Hue",IDC_STATIC,7,7,49,16,SS_CENTERIMAGE
+    CONTROL         "Slider1",IDC_HUE,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,56,7,172,16
+    LTEXT           "&Saturation",IDC_STATIC,7,23,49,16,SS_CENTERIMAGE
+    CONTROL         "Slider1",IDC_SATURATION,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,56,23,172,16
+    LTEXT           "&Value",IDC_STATIC,7,39,49,16,SS_CENTERIMAGE
+    CONTROL         "Slider1",IDC_VALUE,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,56,39,172,16
+    PUSHBUTTON      "Show &preview",IDC_PREVIEW,7,63,50,14
+    DEFPUSHBUTTON   "OK",IDOK,162,63,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,215,63,50,14
+    RTEXT           "",IDC_STATIC_HUE,228,7,37,16,SS_CENTERIMAGE
+    RTEXT           "",IDC_STATIC_SATURATION,228,23,37,16,SS_CENTERIMAGE
+    RTEXT           "",IDC_STATIC_VALUE,228,39,37,16,SS_CENTERIMAGE
+END
+
+IDD_FILTER_TIMESMOOTH DIALOG  0, 0, 186, 49
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "filter: timesmooth"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,77,28,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,28,50,14
+    PUSHBUTTON      "Show preview",IDC_PREVIEW,7,28,50,14
+    LTEXT           "Filter strength",IDC_STATIC,7,7,43,15,SS_CENTERIMAGE
+    CONTROL         "Slider1",IDC_STRENGTH,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,57,7,122,20
+END
+
+IDD_FILTER_GAMMACORRECT DIALOGEX 0, 0, 186, 63
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: gamma correct"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Conversion mode:",IDC_STATIC,7,7,59,8
+    CONTROL         "&Linear to sRGB",IDC_LINEARTOSRGB,"Button",BS_AUTORADIOBUTTON,7,18,63,10
+    CONTROL         "&sRGB to linear",IDC_SRGBTOLINEAR,"Button",BS_AUTORADIOBUTTON,7,28,61,10
+    DEFPUSHBUTTON   "OK",IDOK,77,42,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,42,50,14
+END
+
+IDD_FILTER_BOX DIALOG  0, 0, 229, 95
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: box blur"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "Filter &radius",IDC_STATIC,7,11,36,8
+    CONTROL         "Slider1",IDC_SLIDER_WIDTH,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,57,7,115,18
+    LTEXT           "Filter &power",IDC_STATIC,7,29,36,8
+    CONTROL         "Slider1",IDC_SLIDER_POWER,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,57,26,115,18
+    PUSHBUTTON      "Show preview",IDC_PREVIEW,7,74,50,14
+    DEFPUSHBUTTON   "OK",IDOK,117,74,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,172,74,50,14
+    RTEXT           "radius 1",IDC_STATIC_WIDTH,172,9,50,8
+    RTEXT           "2 (quadratic)",IDC_STATIC_POWER,172,28,50,8
+END
+
+IDD_FILTER_PERSPECTIVE DIALOG  0, 0, 317, 205
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Perspective"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "New &width",-1,7,7,67,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_WIDTH,74,7,236,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "New &height",-1,7,20,67,12,SS_CENTERIMAGE
+    EDITTEXT        IDC_HEIGHT,74,20,236,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Filtering mode",-1,7,149,67,12,SS_CENTERIMAGE
+    COMBOBOX        IDC_FILTER,74,149,236,68,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Show &preview",IDC_PREVIEW,7,184,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,260,184,50,14
+    DEFPUSHBUTTON   "OK",IDOK,207,184,50,14
+    CONTROL         "Unproject",IDC_UNPROJECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,74,164,236,12
+    LTEXT           "Static",IDC_FIELD,74,36,167,108
+    PUSHBUTTON      "&Sample frame",IDC_SAMPLE,60,184,50,14,WS_DISABLED
+END
+
+IDD_FILTER_BOBDOUBLER DIALOGEX 0, 0, 209, 114
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Bob doubler"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "&Field order",IDC_STATIC,7,7,35,8
+    CONTROL         "&Top field first",IDC_FIELDORDER_TFF,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,86,7,58,10
+    CONTROL         "&Bottom field first",IDC_FIELDORDER_BFF,"Button",BS_AUTORADIOBUTTON,86,17,69,10
+    LTEXT           "&Deinterlacing method",IDC_STATIC,7,33,68,8
+    CONTROL         "B&ob",IDC_DEINTERLACE_BOB,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,86,33,28,10
+    CONTROL         "&ELA",IDC_DEINTERLACE_ELA,"Button",BS_AUTORADIOBUTTON,86,43,28,10
+    CONTROL         "&Adaptive ELA",IDC_DEINTERLACE_ADAPTIVEELA,"Button",BS_AUTORADIOBUTTON,86,53,59,10
+    CONTROL         "None - &alternate fields",IDC_DEINTERLACE_NONEHALF,
+                    "Button",BS_AUTORADIOBUTTON,86,63,87,10
+    CONTROL         "None - &double up frames",IDC_DEINTERLACE_NONEFULL,
+                    "Button",BS_AUTORADIOBUTTON,86,73,95,10
+    PUSHBUTTON      "Show &preview",IDC_PREVIEW,7,93,50,14
+    DEFPUSHBUTTON   "OK",IDOK,99,93,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,152,93,50,14
+END
+
+IDD_FILTER_WARPRESIZE DIALOGEX 0, 0, 186, 82
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: warp resize"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Target &width",IDC_STATIC,7,7,50,12
+    EDITTEXT        IDC_WIDTH,83,7,96,12,ES_AUTOHSCROLL
+    LTEXT           "Target &height",IDC_STATIC,7,21,50,12
+    EDITTEXT        IDC_HEIGHT,83,21,96,13,ES_AUTOHSCROLL
+    CONTROL         "Show &gradient map",IDC_SHOW_GRADIENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,83,35,96,13
+    DEFPUSHBUTTON   "OK",IDOK,77,61,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,61,50,14
+END
+
+IDD_FILTER_SMOOTHER DIALOG  0, 0, 270, 79
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Smoother"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "Detail &threshold",IDC_STATIC,7,11,50,8
+    CONTROL         "Slider1",IDC_SLIDER,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,78,7,154,21
+    CONTROL         "Enable noise &prefilter",IDC_PREFILTER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,73,41,81,10
+    PUSHBUTTON      "Show preview",IDC_PREVIEW,7,58,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,213,58,50,14
+    DEFPUSHBUTTON   "OK",IDOK,160,58,50,14
+    LTEXT           "Detailed",IDC_STATIC,73,27,27,8
+    RTEXT           "Smooth",IDC_STATIC,152,27,80,8
+    LTEXT           "",IDC_VALUE,238,10,25,8
+END
+
+IDD_FILTER_WARPSHARP DIALOGEX 0, 0, 230, 71
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Warp sharp"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "&Depth",IDC_STATIC,7,7,20,15,SS_CENTERIMAGE
+    CONTROL         "",IDC_DEPTH,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,53,7,144,15
+    RTEXT           "Static",IDC_STATIC_DEPTH,200,7,19,15,SS_CENTERIMAGE
+    LTEXT           "&Blur passes",IDC_STATIC,7,27,37,15,SS_CENTERIMAGE
+    CONTROL         "",IDC_BLUR,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,53,27,144,15
+    RTEXT           "Static",IDC_STATIC_BLUR,200,27,19,15,SS_CENTERIMAGE
+    PUSHBUTTON      "Show &preview",IDC_PREVIEW,7,50,50,14
+    DEFPUSHBUTTON   "OK",IDOK,121,50,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,173,50,50,14
+END
+
+IDD_FILTER_SINGVAR DIALOGEX 0, 0, 215, 63
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    CONTROL         "Slider1",IDC_SLIDER,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,7,7,176,21
+    LTEXT           "None",IDC_STATIC,7,28,80,8
+    RTEXT           "Maximum",IDC_STATIC,110,28,80,8
+    LTEXT           "",IDC_VALUE,7,43,59,8,WS_DISABLED
+    DEFPUSHBUTTON   "OK",IDOK,105,42,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,159,42,50,14
+    PUSHBUTTON      "Show &preview",IDC_PREVIEW,7,41,50,14
+    RTEXT           "Static",IDC_SETTING,183,9,25,8
+END
+
+IDD_FILTER_CONVERTFORMAT DIALOGEX 0, 0, 240, 119
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Convert format"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "New &format:",IDC_STATIC,7,7,55,18
+    LISTBOX         IDC_FORMATS,64,7,169,87,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Cancel",IDCANCEL,183,98,50,14
+    DEFPUSHBUTTON   "OK",IDOK,131,98,50,14
+END
+
+IDD_FILTER_CHROMASMOOTHER DIALOG  0, 0, 193, 108
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "filter: chroma smoother"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "Source &color space:",IDC_STATIC,7,7,64,8
+    CONTROL         "4:4:4 (disable chroma smoothing)",IDC_MODE_DISABLE,
+                    "Button",BS_AUTORADIOBUTTON,21,19,119,10
+    CONTROL         "4:2:0 (MPEG-&1)",IDC_MODE_420MPEG1,"Button",BS_AUTORADIOBUTTON,21,29,65,10
+    CONTROL         "4:2:0 (MPEG-2, MPEG-&4)",IDC_MODE_420MPEG2,"Button",BS_AUTORADIOBUTTON,21,39,95,10
+    CONTROL         "4:2:2 (MPEG-&2)",IDC_MODE_422,"Button",BS_AUTORADIOBUTTON,21,49,65,10
+    CONTROL         "4:1:0 (Indeo®)",IDC_MODE_410,"Button",BS_AUTORADIOBUTTON,21,59,98,10
+    CONTROL         "4:1:1 (NTSC DV)",IDC_MODE_411,"Button",BS_AUTORADIOBUTTON,21,69,69,10
+    DEFPUSHBUTTON   "OK",IDOK,84,87,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,136,87,50,14
+    PUSHBUTTON      "Show &preview",IDC_PREVIEW,7,87,50,14,WS_DISABLED
+END
+
+IDD_FILTER_DEINTERLACE DIALOGEX 0, 0, 374, 132
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Deinterlace"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    GROUPBOX        "Deinterlacing &mode",IDC_STATIC,7,7,178,96
+    CONTROL         "Interpolate using &Yadif algorithm",IDC_MODE_INTERP_YADIF,
+                    "Button",BS_AUTORADIOBUTTON | WS_GROUP,13,18,165,10
+    CONTROL         "Interpolate using &ELA algorithm",IDC_MODE_INTERP_ELA,
+                    "Button",BS_AUTORADIOBUTTON,13,28,165,10
+    CONTROL         "Interpolate using &bob algorithm",IDC_MODE_INTERP_BOB,
+                    "Button",BS_AUTORADIOBUTTON,13,38,116,10
+    CONTROL         "Blend fields",IDC_MODE_INTERP_BLEND,"Button",BS_AUTORADIOBUTTON,13,48,52,10
+    CONTROL         "Duplicate fields",IDC_MODE_DUP,"Button",BS_AUTORADIOBUTTON,13,58,64,10
+    CONTROL         "Discard fields",IDC_MODE_DISCARD,"Button",BS_AUTORADIOBUTTON,13,68,58,10
+    CONTROL         "Unfold fields side-by-side",IDC_MODE_UNFOLD,"Button",BS_AUTORADIOBUTTON,13,78,93,10
+    CONTROL         "Fold side-by-side fields together",IDC_MODE_FOLD,"Button",BS_AUTORADIOBUTTON,13,88,114,10
+    GROUPBOX        "Field order",IDC_STATIC,189,7,178,96
+    CONTROL         "Keep &top field, interpolate/discard bottom field",IDC_FIELDMODE_KEEPTOP,
+                    "Button",BS_AUTORADIOBUTTON | WS_GROUP,195,17,165,10
+    CONTROL         "Keep bottom field, interpolate/discard top field",IDC_FIELDMODE_KEEPBOTTOM,
+                    "Button",BS_AUTORADIOBUTTON,195,27,165,10
+    CONTROL         "&Double frame rate, top field first",IDC_FIELDMODE_DOUBLETFF,
+                    "Button",BS_AUTORADIOBUTTON,195,37,119,10
+    CONTROL         "D&ouble frame rate, bottom field first",IDC_FIELDMODE_DOUBLEBFF,
+                    "Button",BS_AUTORADIOBUTTON,195,47,131,10
+    DEFPUSHBUTTON   "OK",IDOK,264,111,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,317,111,50,14
+END
+
+IDD_FILTER_MERGELAYERS DIALOGEX 0, 0, 238, 106
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Merge Layers"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "&Blending mode",IDC_STATIC,7,7,47,57
+    LISTBOX         IDC_BLEND_MODE,69,7,162,87,WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Show &Preview",IDC_PREVIEW,7,85,50,14,WS_DISABLED
+    DEFPUSHBUTTON   "OK",IDOK,127,85,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,181,85,50,14
+END
+
+IDD_FILTER_BLENDLAYERS DIALOGEX 0, 0, 238, 143
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Blend Layers"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "&Blending mode",IDC_STATIC,7,7,47,57
+    LISTBOX         IDC_BLEND_MODE,69,7,162,87,WS_VSCROLL | WS_TABSTOP
+    LTEXT           "&Amount",IDC_STATIC,7,99,26,15,SS_CENTERIMAGE
+    CONTROL         "",IDC_AMOUNT,"msctls_trackbar32",TBS_BOTH | TBS_NOTICKS | WS_TABSTOP,69,99,135,15
+    LTEXT           "Static",IDC_STATIC_AMOUNT,212,99,19,15,SS_CENTERIMAGE,WS_EX_RIGHT
+    PUSHBUTTON      "Show &Preview",IDC_PREVIEW,7,122,50,14,WS_DISABLED
+    DEFPUSHBUTTON   "OK",IDOK,127,122,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,181,122,50,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_FILTER_ALIASFORMAT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 207
+        VERTGUIDE, 76
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 106
+    END
+
+    IDD_FILTER_ROTATE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 115
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 74
+    END
+
+    IDD_FILTER_TV, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 131
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 111
+    END
+
+    IDD_FILTER_FIELDBOB, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 249
+        VERTGUIDE, 14
+        VERTGUIDE, 138
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 83
+        HORZGUIDE, 62
+    END
+
+    IDD_FILTER_FIELDDELAY, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 61
+    END
+
+    IDD_FILTER_INTERLACE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 176
+        VERTGUIDE, 73
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 77
+    END
+
+    IDD_FILTER_INTERPOLATE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 224
+        VERTGUIDE, 73
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 74
+    END
+
+    IDD_FILTER_BRIGHTCONT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 273
+        VERTGUIDE, 51
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 91
+    END
+
+    IDD_FILTER_ROTATE2, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 181
+        VERTGUIDE, 61
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 86
+    END
+
+    IDD_FILTER_IVTC, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 243
+        VERTGUIDE, 84
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 155
+    END
+
+    IDD_FILTER_HSV, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 265
+        VERTGUIDE, 56
+        VERTGUIDE, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 77
+    END
+
+    IDD_FILTER_TIMESMOOTH, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 42
+    END
+
+    IDD_FILTER_GAMMACORRECT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 56
+    END
+
+    IDD_FILTER_BOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 222
+        VERTGUIDE, 57
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+
+    IDD_FILTER_PERSPECTIVE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 310
+        VERTGUIDE, 21
+        VERTGUIDE, 74
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 198
+    END
+
+    IDD_FILTER_BOBDOUBLER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 202
+        VERTGUIDE, 86
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 107
+    END
+
+    IDD_FILTER_WARPRESIZE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 75
+    END
+
+    IDD_FILTER_SMOOTHER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 263
+        VERTGUIDE, 73
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 72
+        HORZGUIDE, 35
+    END
+
+    IDD_FILTER_WARPSHARP, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 223
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 64
+    END
+
+    IDD_FILTER_SINGVAR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 208
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 56
+        HORZGUIDE, 35
+    END
+
+    IDD_FILTER_CONVERTFORMAT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 233
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 112
+    END
+
+    IDD_FILTER_CHROMASMOOTHER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 186
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 101
+    END
+
+    IDD_FILTER_DEINTERLACE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 367
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 125
+    END
+
+    IDD_FILTER_BLENDLAYERS2, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 231
+        VERTGUIDE, 69
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 99
+    END
+
+    IDD_FILTER_MERGELAYERS2, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 231
+        VERTGUIDE, 69
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 136
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

@@ -1,0 +1,13 @@
+Paul Hsieh	Constant multiply table
+Robert Blum	Faster asm grayscale code
+Joerg Anders	Java MPEG-1 player source
+Steven Weixel	Rainbow Runner testing
+Reliable Software	FFT spectrum analyzer source at www.relisoft.com
+Serguei Grigoriev	Capture bug reports, OpenDML spec
+Donald Graft	Smart deinterlacer and lots of advice
+Jason Haitsuka	Iomega Buz testing and for putting up with me
+Steven Don	Noise reduction algorithm and filter
+Chris Carton	Tracked a very annoying SMP bug
+Nullsoft	Couldn't have coded without WinAmp
+MacKenzie Patterson III	Strange bug reports and comic relief
+[...and to anyone else I've forgotten: You all make it worthwhile.]

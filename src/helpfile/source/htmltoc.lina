@@ -1,0 +1,56 @@
+<lina:htmlhelp-project file="help.hhp" toc="help.hhc" output="VirtualDub.chm" title="VirtualDub help" fullstop="fullstop.txt" />
+<lina:fireball src="source/fullstop.txt" dst="fullstop.txt"/>
+
+<lina:htmlhelp-toc file="help.hhc">
+	<tocnode target="index.html" name="Introduction"/>
+	<tocnode name="Processing">
+		<tocnode target="p-mainui.html" name="Main UI"/>
+		<tocnode target="p-edit.html" name="Editing"/>
+		<tocnode name="Video filters">
+			<tocnode target="p-filtering.html" name="Filtering"/>
+			<tocnode target="p-filtercurves.html" name="Filter curves"/>
+			<tocnode target="video-filters.html" name="Video filter reference"/>
+		</tocnode>
+		<tocnode target="p-compression.html" name="Compression"/>
+		<tocnode target="p-render.html" name="Rendering/saving"/>
+		<tocnode target="p-artifacts.html" name="Artifacts"/>
+		<tocnode target="p-pipeline.html" name="The pipeline"/>
+		<tocnode target="p-direct.html" name="Direct mode"/>
+		<tocnode target="p-smartrendering.html" name="Smart rendering"/>
+		<tocnode target="p-displays.html" name="Display panes"/>
+		<tocnode target="p-audiodisplay.html" name="Audio display"/>
+		<tocnode target="frameserver.html" name="Frameserver"/>
+		<tocnode target="p-externalencoder.html" name="Using external encoders"/>
+		<tocnode target="fxvideo.html" name="Video shader reference"/>
+	</tocnode>
+	<tocnode target="capture.html" name="Video capture">
+		<tocnode target="c-hardwaresetup.html" name="Hardware setup"/>
+		<tocnode target="c-driverselect.html" name="Driver selection"/>
+		<tocnode target="c-audiosetup.html" name="Audio setup"/>
+		<tocnode target="c-pipeline.html" name="Pipeline"/>
+		<tocnode target="c-filtering.html" name="Filtering"/>
+		<tocnode target="c-infopanel.html" name="Info panel"/>
+		<tocnode target="c-spillmode.html" name="Multi-segment mode"/>
+		<tocnode target="c-timing.html" name="Timing dialog"/>
+		<tocnode target="c-performance.html" name="Performance"/>
+		<tocnode target="c-troubleshooting.html" name="Troubleshooting"/>
+		<tocnode target="c-screencap.html" name="Screen capture"/>
+	</tocnode>
+	<tocnode name="Dialogs">
+		<lina:for-each name="/dialog-docs/dialog">
+			<lina:tag name="tocnode">
+				<lina:attrib name="target"><lina:arg name="filename"/></lina:attrib>
+				<lina:attrib name="name"><lina:arg name="name"/></lina:attrib>
+			</lina:tag>
+		</lina:for-each>
+	</tocnode>
+	<tocnode name="Batch operation">
+		<tocnode target="b-distributed.html" name="Distributed mode"/>
+	</tocnode>
+	<tocnode name="Advanced operation">
+		<tocnode target="amd64.html" name="AMD64 version"/>
+		<tocnode target="cmdline.html" name="Command-line operation"/>
+		<tocnode target="non-admin.html" name="Running VirtualDub as non-administrator"/>
+	</tocnode>
+	<tocnode target="crash.html" name="On a crash..."/>
+</lina:htmlhelp-toc>

@@ -1,0 +1,47 @@
+VirtualDub release notes
+Known issues
+
+[Video capture in this version]
+* The capture emulation driver is meant for development and testing, and may be removed or disabled in a future version.
+* VFW AVICap capture mode has been removed.
+* Video for Windows video capture drivers will appear twice in the device list, once for the VFW driver (VFW) and again for DirectShow's VFW adapter (VFW>DirectShow). You will probably have better performance with using the VFW driver directly.
+* Histogram and video display acceleration do not yet work when the source video is compressed.
+* Under the VFW driver, DV capture will only result in video, because the interleaved stream is marked as video; DV won't work at all under the DirectShow driver.
+
+[AMD64 version]
+* The AMD64 build can only be run under a 64-bit version of Windows, such as Windows XP Professional x64 Edition. It cannot be run on 32-bit Windows even on a 64-bit capable CPU.
+* Due to OS limitations, 32-bit drivers and filters cannot be accessed from the 64-bit version. This limitation may be lifted in a later version.
+* Some functionality is unoptimized or missing in the AMD64 build due to unported code, most notably video filters and some of the bitmap conversion routines. Current AMD64 builds should not be used for benchmarking.
+
+[AVI import]
+* MJPEG field operations require interlaced MJPEG; they will not function if the codec writes out full-height MJPEG as single images.
+* In-stream palette changes (256 color or less) are not supported.
+* Streams that do not start at time zero (dwStart != 0) are not supported properly.
+
+[AVI output]
+* Output files cannot exceed 4GB on Windows 95/98/ME platforms due to kernel limitations.
+* Output files cannot exceed 4GB on Windows 2000/XP platforms if a partition is formatted as FAT32, due to filesystem limitations. There is no such problem with NTFS.
+
+[DV import]
+* Type-1 DV files may have some variance in timing in their audio track; this variance is corrected by VirtualDub through resampling. As a result, an extracted audio track may differ slightly even if Direct Stream Copy mode is selected. This is less likely to happen with 48KHz audio.
+* Type-2 DV files are always produced as output even if the input was type-1.
+
+[MPEG import]
+* MPEG-2 (SVCD, VOBs) are not supported.
+* Timestamps are ignored when processing MPEG-1 files. Files that have bad joins or a very rough cut at the start may experience sync problems.
+
+[Video compression]
+* Many video codecs do not like frame sizes that are not multiples of 4 pixels, and will report bad format (-2) errors if so, or produce rainbow-sheared output.
+* Multipass operations are entirely provided by codecs. VirtualDub does not know that multipass is enabled and if the passes are not performed in correct order, the codec may report errors that do not make full sense, such as "bad format (-2)." Check that you have run the first pass correctly if you are getting errors.
+
+[Video display]
+* The default GDI and DirectDraw drivers do not support filtering modes; the 3D drivers must be enabled for these to work.
+* The OpenGL driver supports point and bilinear modes.
+* Minimum hardware requirements for the bicubic mode in the Direct3D 9 driver are at least a NVIDIA GeForce 2, ATI RADEON, or equivalent. Incapable video cards will drop back to bilinear. Quality will be much better on pixel shader capable hardware.
+* If video does not display properly on a secondary monitor, disable DirectX acceleration in Options > Preferences.
+* Video may appear darker during preview than during editing if a hardware video overlay is used to accelerate playback. The difference is usually caused by overlay contrast or saturation settings in the video driver that are off-ideal. Check adjustment instructions for your video card for details.
+
+
+
+For more information, please visit the VirtualDub web page:
+http://www.virtualdub.org/

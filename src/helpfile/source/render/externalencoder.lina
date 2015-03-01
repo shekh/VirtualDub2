@@ -1,0 +1,324 @@
+<lina:create file="p-externalencoder.html" title="Processing: External encoder support">
+	<p>
+		External encoder support allows VirtualDub to interface to encoding programs that
+		don't support a full-fledged encoding API, but instead use a simple pipe interface
+		called stdin.
+	</p>
+	<h2>
+		Requirements
+	</h2>
+	<p>
+		The external encoding mode uses three types of applications:
+	</p>
+	<ul>
+		<li>Video encoders</li>
+		<li>Audio encoders</li>
+		<li>Multiplexers</li>
+	</ul>
+	<p>
+		Video encoders and audio encoders take video and audio streams and compress them,
+		respectively. The multiplexer then takes the output files from the encoders and
+		combines them to form a single combined audio/video file. For AVI files, VirtualDub
+		uses codecs installed in Windows to do the encoding, and then handles the multiplexing
+		internally; these are all separate programs when using external encoding.
+	</p>
+	<h2>
+		Operation
+	</h2>
+	<p>
+		Rendering through a set of external encoders works similarly to a normal render
+		operation. During the main portion of the render, both the video and audio encoders
+		are active in parallel, so they can benefit from multiple CPU cores in the system.
+		For instance, the video encoder could use two cores, and the audio encoder could
+		use another cores. This is in addition to the threading done within VirtualDub itself,
+		so audio/video decompression and filtering can use even more cores to make the most
+		use of multi-core systems.
+	</p>
+	<h2>
+		Configuring an external encoder set
+	</h2>
+	<p>
+		An <i>external encoder set</i> is a collection of external encoders that can be
+		used to render a video. An external encoder set includes one or more of:
+	</p>
+	<ul>
+		<li>Video encoder</li>
+		<li>Audio encoder</li>
+		<li>Multiplexer</li>
+	</ul>
+	<p>
+		All three of these are chosen from encoder profiles to allow encoder settings to
+		be reused. For instance, the same multiplexer settings could be reused whenever
+		an AVI or MPEG-4 file is being produced, even if the encoders use different settings.
+	</p>
+	<h3>
+		Options
+	</h3>
+	<ul>
+		<li>
+			<b>File description</b>: The name of the output format, as shown in the file dialog
+			UI. This is used as descriptive text for the file format produced by the encoding
+			set.
+		</li>
+		<li>
+			<b>File extension</b>: The default filename extension to use in the file dialog
+			UI. The leading period is optional but not necessary.
+		</li>
+		<li>
+			<b>Process partial output when render is aborted</b>: Causes the multiplexer is
+			run at the end of a process even if an error occurs during encoding or the Abort
+			button is pressed.
+		</li>
+		<li>
+			<b>Replace temp audio/video paths with output path</b>: If set, then the temporary
+			output path setting for the audio or video encoder is ignored, and the primary output
+			path is substituted instead. Use this setting if the encoder set only includes an
+			audio or video encoder to have the encoder write directly to the output path.
+		</li>
+	</ul>
+	<h2>
+		Configuring an external encoder
+	</h2>
+	<p>
+		In order to use an encoding program, an <i>encoder profile</i> has to be created
+		for it. The encoder profile tells VirtualDub how to run the encoder.
+	</p>
+	<h3>
+		Command-line tokens
+	</h3>
+	<p>
+		The <i>command line</i> specifies the location of the encoder program and the
+		arguments passed to it from VirtualDub.
+		Tokens are special strings placed in the command line to specify that values from
+		the encoding process should be passed to the encoder. All tokens are of the form
+		%(<i>name</i>). The available tokens are:
+	</p>
+	<ul>
+		<li>
+			<b>%(width)</b>: The width of a video frame, in pixels.
+		</li>
+		<li>
+			<b>%(height)</b>: The height of a video frame, in pixels.
+		</li>
+		<li>
+			<b>%(fps)</b>: The frame rate of the video stream, as a real number. This number
+			includes the fractional portion, i.e. 29.97. The decimal separator is always a period
+			regardless of locale.
+		</li>
+		<li>
+			<b>%(fpsnum)</b>: The numerator of the video stream frame rate, when represented
+			as a fraction, in decimal. The valid range is 1-4294967295.
+		</li>
+		<li>
+			<b>%(fpsden)</b>: The denominator of the video stream frame rate, when represented
+			as a fraction. The valid range is 1-4294967295.
+		</li>
+		<li>
+			<b>%(outputname)</b>: The filename and extension of the final output file. This
+			does not include the drive specifier or directory.
+		</li>
+		<li>
+			<b>%(outputfile)</b>: The path to the final output file, including possible drive
+			specifiers and directories.
+		</li>
+		<li>
+			<b>%(tempvideofile)</b>: The path and filename of a temporary file produced by the
+			video encoder. This file does not exist unless produced by the video encoder; it
+			is used as a temporary file to hold compressed video data that is eventually processed
+			by the multiplexer.
+		</li>
+		<li>
+			<b>%(tempaudiofile)</b>: Same as %(tempvideofile), but for the audio encoder.
+		</li>
+		<li>
+			<b>%(samplingrate)</b>: The sampling rate of the audio stream, in Hz. For compressed
+			streams, this refers to the decoded sampling rate, e.g. 48000 Hz. The sampling rate
+			is always an integer.
+		</li>
+		<li>
+			<b>%(samplingratekhz)</b>: The sampling rate of the audio stream, in KHz. This value
+			is always an integer; any fractional values are rounded.
+		</li>
+		<li>
+			<b>%(channels)</b>: The number of channels in the audio stream: 1 for mono, 2 for
+			stereo, 6 for 5.1.
+		</li>
+		<li>
+			<b>%(audioprecision)</b>: The number of bits per sample in the audio stream, e.g.
+			8 or 16.
+		</li>
+		<li>
+			<b>%(hostdir)</b>: The path to the VirtualDub program directory. The path does not
+			end in a slash.
+		</li>
+		<li>
+			<b>%(programdir)</b>: The path to the encoder program directory. The path does not
+			end in a slash.
+		</li>
+		<li>
+			<b>%(systemdir)</b>: The path to the Windows system directory. In 64-bit versions
+			of Windows, this refers to the system32 directory for 32-bit versions of VirtualDub,
+			and the SysWOW64 directory for 64-bit versions. The path does not end in a slash.
+		</li>
+	</ul>
+	<h3>
+		Options
+	</h3>
+	<ul>
+		<li>
+			<b>Interpret non-zero return code as error</b>: This option causes VirtualDub to
+			abort the rendering operation and report a failed render if an encoder or multiplexer
+			program exits with a non-zero return value. This option should be enabled by default,
+			and disabled only if the program does not follow standard return code conventions.
+			The downside of disabling this option is that failed encodes will not be detected
+			properly.
+		</li>
+		<li>
+			<b>Redirect standard output to log</b>: Traps any output from the program to the
+			standard output (stdout) channel and puts it into the log. This is useful for diagnostic
+			purposes. Normally this should be enabled unless the program only outputs non-useful
+			information to standard output, such as a startup banner.
+		</li>
+		<li>
+			<b>Redirect standard error to log</b>: Traps any output from the program to the
+			standard error (stderr) channel and puts it into the log. This is useful for catching
+			error messages and should normally be enabled. However, sometimes programs output
+			a lot of spammy status messages to stderr, and if those can't be disabled via a
+			“quiet” option then stderr redirection should be disabled.
+		</li>
+		<li>
+			<b>Delete output file before starting</b>: If set, the output file for the program
+			is deleted if present prior to running the program. Enable this if the program refuses
+			to overwrite an existing file.
+		</li>
+	</ul>
+	<h3>
+		Audio encoder specific options
+	</h3>
+	<ul>
+		<li>
+			<b>Raw audio data</b>: Send audio data to the external encoder as raw audio data.
+		</li>
+		<li>
+			<b>WAV file</b>: Send audio data to the external encoder as an open-ended Microsoft
+			WAVE file.
+		</li>
+		<li>
+			<b>Bypass compression</b>: Causes the audio compression setting in VirtualDub to
+			be ignored, disabling any compression. If the source audio data is compressed, it
+			is decompressed prior to being passed to the external encoder.
+		</li>
+	</ul>
+	<h2>
+		Importing and exporting profiles
+	</h2>
+	<p>
+		External encoder profiles and sets are normally stored as part of VirtualDub's settings.
+		You can also export them to a file to save them for another installation or to share
+		them with other users.
+	</p>
+	<h3>
+		Exporting profiles
+	</h3>
+	<p>
+		To export profiles, click the Export button on the Configure External Encoders dialog
+		and then specify a filename. All external encoders and encoding sets are written
+		to the file.
+	</p>
+	<h3>
+		Importing profiles
+	</h3>
+	<p>
+		To import profiles, click the Import button on the Configure External Encoders dialog
+		and then specify a profile file. All encoders and sets in the file are imported.
+	</p>
+	<p>
+		<b>Note</b>: The imported profiles are added to the ones already created. You cannot
+		import from a file if there are name conflicts between the names in the file and
+		the names of existing profiles or sets.
+	</p>
+	<h3>
+		Customizing profiles
+	</h3>
+	<p>
+		You can manually edit the .vdprof file to remove unwanted profiles and sets, making
+		a tailored file for a specific encoding use. The .vdprof file uses JSON formatting
+		and can be edited in a text editor.
+	</p>
+	<p>
+		If an encoder program name in a .vdprof file is a relative path, it is resolved
+		during import as being relative to the .vdprof file itself. This allows .vdprof
+		files to be deployed next to an encoder such that when imported, the external program
+		path is automatically correct regardless of the install location of the encoder.
+	</p>
+	<h2>
+		Writing your own external encoder
+	</h2>
+	<p>
+		An external encoder must satisfy the following conditions:
+	</p>
+	<ul>
+		<li>Must accept raw audio or video data through standard input.</li>
+		<li>Must write output data to a file.</li>
+		<li>Must not spawn blocking (modal) UI.</li>
+		<li>
+			Should exit with a zero return code for success or a non-zero return code for failure.
+		</li>
+		<li>Should accept filenames on the command line with spaces.</li>
+	</ul>
+	<p>
+		These are easy to satisfy with a simple C/C++ program.
+	</p>
+	<h3>
+		Accepting video data
+	</h3>
+	<p>
+		Video encoders receive video frames as a series of YCbCr encoded frames. The frames
+		are encoded from in left-to-right and then top-to-bottom (reading) order; the plane
+		order is Y, then Cb, then Cr. There is no padding within scanlines or between planes
+		or frames. The width and height of the frame are always even to ensure that the
+		chroma planes are an integral number of pixels.
+	</p>
+	<p>
+		The color space is 4:2:0 YCbCr using Rec. 601 limited-range, 8-bit per channel encoding.
+		The normal excursions are 16-235 for luma and 16-240 for chroma, but values from 0-255
+		may be encoded. Chroma positioning
+		is per MPEG-2 conventions, with chroma samples coaligned with luma samples horizontally
+		and centered vertically. Frames are always encoded as progressive scan.
+	</p>
+	<h3>
+		Accepting audio in .wav format
+	</h3>
+	<p>
+		Audio encoders have the option of receiving data in the form of a Microsoft waveform
+		(.wav) container file instead of raw data. The advantage is that the .wav file contains
+		the format of the data, so the encoding application does not need to receive format
+		information on the command line, allowing for easy and automatic configuration.
+	</p>
+	<p>
+		In order to accept data in .wav format in a single pass (streamed) scenario, some
+		format parsing restrictions must be relaxed. When receiving .wav data, an external
+		encoder should ignore the length fields on the outer RIFF container and the inner
+		data chunk, and parse all data from the beginning of the data chunk to the end of
+		the stream. Also, the fact chunk should not be expected and be ignored if present,
+		even for a compressed stream.
+	</p>
+	<h3>
+		Changing the stdin data mode (Visual C++ Specific)
+	</h3>
+	<p>
+		For encoding programs written using Microsoft Visual C++, an additional step is
+		required in order to receive data correctly. By default, the VC++ runtime library
+		applies a text mode translation to standard input, which in particular will cause
+		truncation of the input stream on a control-Z character (hex 1A). To avoid this
+		problem, reset the handling mode for stdin to binary mode:
+	</p>
+	<blockquote>
+		<pre>
+#include &lt;io.h&gt;
+#include &lt;fcntl.h&gt;
+
+_setmode(_fileno(stdin), _O_BINARY);
+		</pre>
+	</blockquote>
+</lina:create>

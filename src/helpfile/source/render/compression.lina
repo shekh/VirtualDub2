@@ -1,0 +1,71 @@
+<lina:create file="p-compression.html" title="Processing: Compression">
+	<h2>Using video compression</h2>
+	<p>
+		Raw video is very large and consumes a lot of disk space, so usually video compression is used to
+		decrease the size of the video. To enable video compression, the video mode must be set to a
+		mode other than direct stream copy, and a codec must be chosen in the <a href="d-videocompression.html">Video Compression dialog</a>.
+		This codec is then used to compress the video.
+	</p>
+	<p>
+		There are two types of video compression, <i>lossy</i> and <i>lossless</i>. Lossless compression means
+		that the compressed video is exactly the same quality as the original, whereas lossy compression discards
+		less important portions of the video to reduce size. The advantage of lossless compression is that it
+		preserves the video exactly; lossy compression lowers the quality a bit, but typically gets much better
+		compression. Typically a lossless codec will only compress video up to around 3:1, whereas a lossy codec
+		can get as much as 100:1.
+	</p>
+	<p>
+		When creating intermediate video, prefer using either lossless video compression or video compression
+		that is amenable to editing, i.e. key frame only and higher quality over compression ratio. It is best
+		to work with higher quality video and wait until the very end to apply the final video codec with
+		the desired compression ratio. For instance, you might use 720x480 video compressed with DV during
+		production, and in the final pass, reduce to 320x240 and encode with an MPEG-4 based codec.
+	</p>
+	<p>
+		Remember that for anyone to play the videos that you create, they must have a video codec which can
+		decompress the video. For instance, if you use Huffyuv to encode, the recipient of the video needs to have
+		Huffyuv or another compatible codec installed to play it. For this reason, it is best to stick with
+		video codecs that are installed on most systems or are easily obtained. You can also use an external
+		tool to encode to MPEG, which is playable on most modern systems, even those not running Microsoft Windows.
+	</p>
+	<p>
+		If you have video hardware installed that also comes with a video codec, videos created by it will most
+		likely not be playable by anyone who doesn't have the same hardware. For instance, if you use a FooBar
+		video card to capture in FooBar Motion format, probably only those who have FooBar video cards will be
+		able to play it. Occasionally, the hardware vendor will have a software decoder available for download
+		on their website that can be used to play the video on systems that lack the hardware.
+	</p>
+	<h2>Multithreaded video compression</h2>
+	<p>
+		By accessing the <a href="d-preferences.html">Preferences dialog</a> via <em>Options &gt; Preferences</em>, you can access the Threading section. In
+		the Threading section, you can control the number of threads used for video compression. Using threads for video compression allows the compression
+		to run in parallel with other stages of the pipeline, which can increase performance with systems that have multiple CPUs or CPUs with multiple cores.
+	</p>
+	<p>
+		The default is zero, which runs the video compression inline with the rest of the video stages. Changing this to 1 creates a separate thread
+		to run the video compressor. Values greater than one are not yet supported.
+	</p>
+	<p>
+		Multithreaded video compression with one thread should be compatible with most video codecs, but if you have problems, you may need to disable
+		threaded compression. It's also not always guaranteed that it is faster overall; you can open the real-time profiler in the View menu before
+		starting the operation to profile the rendering pipeline and determine if the video codec is actually running in parallel with other operations
+		or if some other stage is the bottleneck.
+	</p>
+	<h2>Using audio compression</h2>
+	<p>
+		You can also reduce the size of the audio as well by using an audio codec to apply compression. Use
+		the <a href="d-audiocompression.html">Audio Compression dialog</a> to select an audio codec and
+		a compression format. Audio compression ratios typically vary from around 3:1 to 10:1.
+	</p>
+	<p>
+		Similar cautions apply to audio compression as for video compression. When producing final compressed audio, try to choose widely decodeable formats where the audio
+		codecs are either easy to get or often already installed. Such formats include adaptive
+		pulse-code modulation (ADPCM) and MPEG audio layer III (MP3).
+	</p>
+	<p>
+		Because audio is much smaller than video, and because compressed audio edits even more poorly than
+		compressed video, it is best to capture and do intermediate processing with uncompressed audio (PCM).
+		Wait until the very last step to compress the audio, and try to avoid recompressing audio when possible.
+	</p>
+</lina:create>
+

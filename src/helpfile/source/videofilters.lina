@@ -1,0 +1,448 @@
+<lina:create file="video-filters.html" title="Video filter reference">
+	<table>
+		<lina:for-each name="/video-filters/filter">
+			<tr>
+				<td><lina:tag name="a"><lina:attrib name="href">#<lina:pull name="name"/></lina:attrib><lina:pull name="name"/></lina:tag></td>
+				<td><lina:pull name="desc"/></td>
+			</tr>
+		</lina:for-each>
+	</table>
+
+	<lina:for-each name="/video-filters/filter">
+		<h2><lina:tag name="a"><lina:attrib name="name"><lina:pull name="name"/></lina:attrib><lina:pull name="name"/></lina:tag></h2>
+		<ul>
+			<li><lina:pull name="desc"/></li>
+		</ul>
+		<lina:if-present name="long">
+			<lina:pull name="long"/>
+		</lina:if-present>
+	</lina:for-each>
+</lina:create>
+
+<lina:data>
+	<video-filters>
+		<filter>
+			<name>2:1 reduction</name>
+			<desc>Shrink video to half-size using a non-overlapping 2x2 kernel.</desc>
+			<long>
+				This filter is equivalent to applying a 2x2 box filter (average 4 pixels) and then doing a point-sampled
+				resize by half. It gives sharper results than <em>2:1 reduction (high quality)</em>, at the cost of
+				some sparkling (aliasing). Where better quality is required, the <em>resize</em> filter
+				should be used in <em>precise bicubic</em> or <em>Lanczos3</em> mode instead.
+				<lina:note>This filter is deprecated and will be removed in a later version.</lina:note>
+			</long>
+		</filter>
+		<filter>
+			<name>2:1 reduction (high quality)</name>
+			<desc>Shrink video to half-size using an overlapping 3x3 kernel.</desc>
+			<long>
+				This filter is equivalent to applying a radius-1 Gaussian blur and then doing a point-sampled resize
+				by half. It is marginally better than <em>2:1 reduction</em> in avoiding aliasing (sparkling),
+				at the cost of a blurrier output. Where better quality is required, the <em>resize</em> filter
+				should be used in <em>precise bicubic</em> or <em>Lanczos3</em> mode instead.
+				<lina:note>This filter is deprecated and will be removed in a later version.</lina:note>
+			</long>
+		</filter>
+		<filter>
+			<name>blur</name>
+			<desc>Apply a radius-1 Gaussian blur to video.</desc>
+		</filter>
+		<filter>
+			<name>blur more</name>
+			<desc>Apply a radius-2 Gaussian blur to video.</desc>
+		</filter>
+		<filter>
+			<name>bob doubler</name>
+			<desc>Interpolate interlaced video to field rate.</desc>
+			<long>
+				This filter converts interlaced video at frame rate to progressive video at field rate.
+				For instance, 30 fps interlaced video is converted to 60 fps without interlacing.
+				Field order and interpolation algorithm can be chosen.
+			</long>
+		</filter>
+		<filter>
+			<name>box blur</name>
+			<desc>Apply fast approximated blurs to video.</desc>
+			<long>
+				<em>Box blur</em> is so named because it uses &quot;box&quot; filters -- it averages
+				blocks of pixels together. Two passes gives a triangle filter, three gives a quadratic,
+				and four gives a cubic. The advantage of <em>box blur</em> is that it can do very
+				large blurs very quickly, such as radius-50 cubic blur. The main disadvantage is that
+				it cannot do small or intermediate (radius-5.2) blurs.
+			</long>
+		</filter>
+		<filter>
+			<name>brightness/contrast</name>
+			<desc>Perform fast linear luminance adjustments.</desc>
+			<long>
+				<em>Brightness/contrast</em> provides quick and dirty adjustments -- one of the
+				side effects that saturation is affected by contrast, and hues can shift if clamping
+				at white or black occurs.  Consider using <em>levels</em> or <em>HSV adjust</em> for
+				non-subtle adjustments.
+			</long>
+		</filter>
+		<filter>
+			<name>chroma smoother</name>
+			<desc>Re-interpolate color information in an image without affecting brightness.</desc>
+			<long>
+				<p>
+					Video compression algorithms often store color (chroma) information at a lower resolution than grayscale
+					brightness information, since the eye is less sensitive to detail in color; however, some video codecs don't
+					interpolate chroma well on decompression, resulting in blockiness around sharp color transitions. The
+					<em>chroma smoother</em> filter attempts to apply a blur solely in the color channels to correct this situation.
+				</p>
+				<p>
+					Each chroma option in <em>chroma smoother</em>'s configuration corresponds to a blur that is tuned for
+					a particular type of chroma subsampling; assuming that the video decoder did not interpolate chroma at all,
+					choosing the correct setting will produce a result approximating bilinear interpolation. Of course, stronger
+					or weaker options can be picked to taste.
+				</p>
+			</long>
+		</filter>
+		<filter>
+			<name>convert format</name>
+			<desc>Convert video to a different image format.</desc>
+			<long>
+				Use this filter to force video to be converted to a different image format. This is mainly useful for diagnostic
+				purposes, although it is also useful in capture mode to force a specific output format.
+			</long>
+		</filter>
+		<filter>
+			<name>deinterlace</name>
+			<desc>Split, unsplit, discard, and duplicate fields.</desc>
+			<long>
+				This filter applies quick-and-dirty field operations -- discarding one field is a brutal, but quick-and-dirty
+				way to remove combing from the image. For better quality an adaptive deinterlacer should be used instead.
+				The <em>fold</em> and <em>unfold</em> modes allow you to temporarily split a video into a double-width video,
+				with even fields on the left and odd fields on the right. This essentially allows any filter to be applied
+				on a field basis rather than a frame basis, avoiding blurring between fields which shows up as ghosting in
+				interlaced output.
+			</long>
+		</filter>
+		<filter>
+			<name>emboss</name>
+			<desc>Apply psuedo-3D edge detection matrices.</desc>
+			<long>
+				<p>
+					<em>Emboss</em> gives a 3D-like effect by &quot;lighting&quot; the video from a particular direction.
+					This highlights edges in the image. It can also be used to amplify a video in order to look for low-level
+					noise.
+				</p>
+				<p>
+					All forms of the <em>emboss</em> filter can also be done manually by the <a href="#general convolution">general
+					convolution</a> filter.
+				</p>
+			</long>
+		</filter>
+		<filter>
+			<name>field bob</name>
+			<desc>Resamples alternating frames to remove jittering when splitting fields to frames.</desc>
+		</filter>
+		<filter>
+			<name>field swap</name>
+			<desc>Swaps even and odd fields to fix mistakes.</desc>
+		</filter>
+		<filter>
+			<name>fill</name>
+			<desc>Fills a rectangle in the video with a solid color.</desc>
+			<long>
+				If you need a translucent (alpha-blended) fill, use the <em>logo</em> filter with a solid color
+				as the logo.
+			</long>
+		</filter>
+		<filter>
+			<name>flip horizontally</name>
+			<desc>Flips video frame horizontally.</desc>
+		</filter>
+		<filter>
+			<name>flip vertically</name>
+			<desc>Flips video frame vertically.</desc>
+		</filter>
+		<filter>
+			<name>general convolution</name>
+			<desc>Apply an arbitrary 3x3 filtering matrix.</desc>
+			<long>
+				<p>
+					A <em>convolution filter</em> is a filter that uses a local area of pixels to compute a new pixel. It can be
+					thought of as either taking a weighted sum of an area of source pixels, or adding a weighted area to the output
+					scaled by the source pixel (the two are equivalent). Filters that can be performed using convolution include
+					blurs, sharpens, and edge detectors.
+				</p>
+				<p>
+					The <em>general convolution</em> filter allows a 3x3 filter to be specified. Each value in the filter is
+					specified as a value from a scale to 0-256, where 256 means a value of 1.0 (yes, this is a programmerism).
+					Values can be specified outside this somewhat, including negative numbers, although large values like 10,000
+					are inadvisable. Each value then specifies either the amount of source to include in the result, or the amount
+					of result to produce from the center source pixel (again, depending on your perspective).
+				</p>
+				<p>
+					The <em>clipping</em> option should almost always be enabled; if it is not, the result will be incorrect when
+					the result of the filter is below black or above white.
+				</p>
+				<p>
+					<em>Bias</em> is a value to add to the result, again in the range 0-255. It is useful when both positive and
+					negative values need to be visualized, such as error values. It acts much like a <em>brightness</em> adjustment.
+				</p>
+				<p>
+					Some hints regarding design of convolution filters:
+				</p>
+				<ul>
+					<li>The sum of all of the values in the matrix is the <em>gain</em> of the filter, which determines the change
+						in contrast produced by the filter. A sum of 256 results in unity gain, i.e. no change. Higher sums amplify
+						the image and lower sums mute it. A zero sum completely removes the image, and a negative sum inverts it.
+					</li>
+					<li>
+						Filter matrices that consist of all positive elements are blurs. For instance, here is a blur matrix:
+<blockquote><pre>
+28 28 28
+28 32 28
+28 28 28
+</pre></blockquote>
+					</li>
+					<li>
+						Matrices that aren't symmetrical &mdash; those that are lopsided in a direction &mdash; will have edge detection effects.
+					</li>
+					<li>
+						A bright pixel in the image will take on the shape of the filter matrix.
+					</li>
+				</ul>
+			</long>
+		</filter>
+		<filter>
+			<name>grayscale</name>
+			<desc>Convert a color video to grayscale.</desc>
+			<long>
+				The formula used for conversion is <tt>Y = 0.211R + 0.715G + 0.074B</tt>.
+			</long>
+		</filter>
+		<filter>
+			<name>HSV adjust</name>
+			<desc>Adjust hue, saturation, and value.</desc>
+			<long>
+				You can rotate hues, control the strength of color (saturation), or modify brightness (value) using this filter.
+				<em>HSV adjust</em> does not allow value adjustments to affect hue -- if a pixel becomes too bright or dark,
+				its saturation is reduced accordingly to avoid clamping. This prevents orange, for instance, from becoming hot
+				yellow when the image is amplified.
+			</long>
+		</filter>
+		<filter>
+			<name>invert</name>
+			<desc>Create or undo negatives.</desc>
+		</filter>
+		<filter>
+			<name>levels</name>
+			<desc>Apply non-linear ramp adjustments.</desc>
+			<long>
+				<em>Levels</em> does contrast, brightness, and gamma adjustments.  It actually consists of three steps:
+				<ol>
+					<li>Scale input range up to full range.  The black level and white levels are the first and third parameters
+						on the top; anything lower than the black level becomes black, and anything above the white level becomes
+						white.</li>
+					<li>Apply gamma correction (middle top parameter).  You can either type in the gamma correction power, or
+						you can move the slider, which controls which level in the source image becomes middle gray (50%). Black
+						and white always stay black and white through this correction step.</li>
+					<li>Scale to output range (bottom parameters) -- the image levels are finally scaled down to the black
+						and white levels indicated here.</li>
+				</ol>
+				You also have the option of working in luma (Y) space. This causes <em>levels</em> to work in brightness (luma) only,
+				leaving color information alone. This preserves hue and saturation in the image, except for possible clipping at
+				black and white.
+				<lina:note>
+					<em>Levels</em> always works with full scale levels -- black and white are 0 and 255, not 16 and 235
+					as in YCbCr space.
+				</lina:note>
+			</long>
+		</filter>
+		<filter>
+			<name>logo</name>
+			<desc>Plop your very own bug into the frame.</desc>
+			<long>
+				<dl>
+					<dt>Enable per-pixel blending using the alpha channel</dt>
+					<dd>
+						An image can be augmented using an additional monochrome map called an <em>alpha channel</em>.
+						This map contains a single value per pixel indicating how opaque or translucent that pixel should be;
+						it allows logos to be created that have shaded areas. Most photographic image editing packages have
+						options to edit an alpha, mask, or opacity layer on an image for this purpose. For use with this
+						filter, it is best to save such images in TARGA (<tt>.tga</tt>) format with 32-bit pixels.
+					</dd>
+
+					<dt>Use premultiplied alpha</dt>
+					<dd>
+						Affects the interpretation of the alpha channel. Normally alpha channels simply control blending of
+						an image, but when creating an image from scratch that has soft edges, creating such an alpha channel
+						may be difficult. Premultiplied alpha refers to a method of blending where the image itself is expected
+						to be pre-darkened where it is not fully opaque, to the point of being black where alpha indicates
+						transparent areas. In a painting package, you may find this more convenient to create, as you can
+						simply draw on top of "transparent black."
+					</dd>
+
+					<dt>Use gray channel of secondary image for alpha channel</dt>
+					<dd>
+						When it is inconvenient to create a single image with an alpha channel, enabling this option will
+						allow the alpha to be supplied using the brightness of a second image. This image should have the
+						same size as the main logo image, although it need not be of the same format.
+					</dd>
+
+					<dt>Opacity</dt>
+					<dd>
+						Global translucency control; 0% will hide the logo, 100% shows the logo at full opacity, and intermediate
+						values will fade it out somewhat. When per-pixel blending is enabled, this option will scale down all
+						of the alpha values.
+					</dd>
+
+					<dt>Justification, X/Y offset</dt>
+					<dd>
+						Specifies the position of the image. If justification is something other than TL (top-left), the positioning
+						will be relative to another point within the image, which is useful for consistently placing logos in
+						the bottom-right corner when working with videos of different sizes.
+					</dd>
+				</dl>
+			</long>
+		</filter>
+		<filter>
+			<name>motion blur</name>
+			<desc>Blur video in time to create motion trails.</desc>
+		</filter>
+		<filter>
+			<name>null transform</name>
+			<desc>Does nothing, but can be used to crop.</desc>
+		</filter>
+		<filter>
+			<name>resize</name>
+			<desc>Convert video to a different size.</desc>
+			<long>
+				When resampling video from one size to another, pixels in the new frame size don't necessarily map exactly to pixels
+				in the source. A <em>resampling filter</em> is used to compute the intermediate pixels from the pixels in the source.
+				VirtualDub's resize filter gives you a number of choices for the resampling filter:
+				<dl>
+					<dt>Nearest neighbor (point sampling)</dt>
+					<dd>
+						Choose the nearest source pixel. This results in the crispest video, but has sparkling and &quot;chunkiness&quot;
+						problems. It is the fastest resampling mode and is useful for previews.
+					</dd>
+
+					<dt>Bilinear (triangle interpolation filter)</dt>
+					<dd>
+						Compute the desired pixel by linearly averaging the closest four source pixels. This gives a considerably
+						better result than nearest neighbor, but results in a lot of blurring and gives diamond-shaped artifacts when
+						enlarging. This is the resampling mode for most 3D texture mappers and interpolating video hardware overlays.
+						High-ratio shrink operations (&lt;~60% or so) will give aliasing with this mode and for those the <em>precise
+						bilinear</em> mode should be used instead.
+					</dd>
+
+					<dt>Bicubic (cubic spline interpolation filter)</dt>
+					<dd>
+						Compute the desired pixel by fitting cubic spline curves to the closest 16 source pixels. This gives a sharper
+						result than the bilinear filter, although when enlarging it results in a slight halo (ringing) around edges.
+						High-ratio shrink operations (&lt;~60% or so) will give aliasing with this mode and for those the <em>precise
+						bicubic</em> mode should be used instead.
+					</dd>
+
+					<dt>Precise bilinear (triangle decimation filter)</dt>
+					<dd>
+						Compute the desired pixel by applying a triangle filter to the closest N source pixels, where N=4 for enlarging
+						and N&gt;4 for shrinking. This mode is the same as <em>bilinear</em> for enlargement but gives better results
+						when shrinking.
+					</dd>
+
+					<dt>Precise bicubic (cubic spline decimation filter)</dt>
+					<dd>
+						Compute the desired pixel by applying a triangle filter to the closest N source pixels, where N=16 for enlarging
+						and N&gt;16 for shrinking. This mode is the same as <em>bicubic</em> for enlargement but gives better results
+						when shrinking. Three different modes are given, A=-1.0, A=-.75, and A=-0.6. These vary the &quot;stiffness&quot;
+						of the cubic spline and control the peaking of the filter, which perceptually alters the sharpness of the output.
+						A=-0.6 gives the most consistent results mathematically, but the other modes may produce more visually pleasing
+						results.
+					</dd>
+
+					<dt>Lanczos3 (three-lobed decimation filter)</dt>
+					<dd>
+						Compute the desired pixel by applying a three-lobed sinc filter to the closest N source pixels, where N=64 for
+						enlarging and N&gt;64 for shrinking. This produces slightly better results than the <em>precise bicubic</em>
+						mode, at the expense of slower speed and more haloing (ringing). However, for a single pass the difference is
+						very small and you should consider using <em>precise bicubic</em> instead.
+					</dd>
+				</dl>
+
+				The <em>resize</em> filter uses OpenGL conventions for pixel mapping, mapping the entire source texture onto the entire
+				destination rect. Areas in the image are proportionally enlarged or shrunk with the picture frame: enlarging the frame
+				2x results in all features in the image being twice as large. This means that high enlargement ratios will result in
+				some duplicated pixels around the border of the destination image (U/V clamping).
+
+				<lina:note>
+					The <em>new width</em> and <em>new height</em> fields do not have to be integers &mdash; they can be fractional.
+					VirtualDub will resize the video to that fractional size and then extend the borders to hit the next highest
+					integer size in pixels. The means that exact aspect ratios can be maintained in the image content of a video even
+					though the frame size is slightly off due to integral rounding.
+				</lina:note>
+			</long>
+		</filter>
+		<filter>
+			<name>rotate</name>
+			<desc>Rotate video by right angles.</desc>
+		</filter>
+		<filter>
+			<name>rotate2</name>
+			<desc>Rotate video by arbitrary angles.</desc>
+			<long>
+				<p>
+					While <em>rotate2</em> can be used for right-angle rotations, that job should be left to <em>rotate</em>, which
+					can do them faster and more accurately.
+				</p>
+				<p>
+					<em>rotate2</em> is equivalent to a 1:1 texture-mapped quad, rotated around the center point of the quad by
+					the designated angle, with linear or cubic spline interpolation filters applied to the texture mapping.
+				</p>
+			</long>
+		</filter>
+		<filter>
+			<name>sharpen</name>
+			<desc>Make video crisper.</desc>
+			<long>
+				<em>Sharpen</em> cannot distinguish between artifacts, noise, and edges -- so sharpening edges with
+				this filter will also make blocking and noise worse.  Thus, there is a limit to how much video
+				can be improved with sharpening, particularly highly-compressed or noisy video.
+			</long>
+		</filter>
+		<filter>
+			<name>smoother</name>
+			<desc>Adaptively blur a video while trying to preserve edges.</desc>
+		</filter>
+		<filter>
+			<name>temporal smoother</name>
+			<desc>Adaptively noise-reduce video across frames.</desc>
+			<long>
+				A <em>temporal</em> filter is one that works along time -- <em>temporal smoother</em> doesn't compare pixels
+				within a frame, but across a 7-frame window. It is effective at reducing noise, but for best effect, it should
+				be combined with a filter that works within a frame (spatial filter). Raising the power of the filter increases
+				the amount of noise reduction but can also result in smearing of details when motion occurs as well as
+				sparkling during transitions. It works best with a setting of 3-5.
+			</long>
+		</filter>
+		<filter>
+			<name>threshold</name>
+			<desc>Convert video to black and while by comparing against a threshold.</desc>
+		</filter>
+		<filter>
+			<name>TV</name>
+			<desc>Blur or resample video in luma/chroma space.</desc>
+			<long>
+				Due to the way that analog video encoding works, the color information in the video (chroma) typically has
+				lower resolution and more noise than the brightness information (luma). This problem is especially severe
+				with videotape. The <em>TV</em> filter can reduce chroma noise by averaging only the chroma, while leaving
+				the luma alone. This can reduce color flickering in a video, but should be used carefully as too much
+				chroma blurring will lead to bleeding.
+			</long>
+		</filter>
+		<filter>
+			<name>warp resize</name>
+			<desc>Resize video using an edge-sensitive algorithm.</desc>
+			<long>
+				<em>Warp resize</em> attempts to resize video more intelligently by detecting edges in the video and
+				warping areas to sharpen edges. It works better with computer-generated video or animations than with
+				natural video.
+			</long>
+		</filter>
+	</video-filters>
+</lina:data>

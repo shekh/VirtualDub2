@@ -1,0 +1,851 @@
+// The IDs below are deliberately not exposed via a header file to avoid having to recompile
+// the entire app when editing strings.
+
+stringset 1 {		// kVDST_Dub
+	message 0, "Dub: Output segment overflow occurred -- segment byte size may be too low.";
+	message 1, "Dub: Switching to new segment.";
+	message 2, "Dub: I/O thread has not cycled for thirty seconds -- possible livelock. (Thread action: %[1]hs) (Current address: %[0]p)";
+	message 3, "Dub: Processing thread has not cycled for thirty seconds -- possible livelock. (Thread action: %[1]hs) (Current address: %[0]p)";
+	message 5, "Dub: Video codec is requesting B-frame delay %d frames longer than end of video! Stopping video stream to avert possible infinite loop.";
+	message 6, "Dub: Fast recompress mode started with format: %hs.";
+	message 7, "Dub: Recompressing using format: %hs.";
+	message 8, "Dub: Input (decompression) format is: %hs.";
+	message 9, "Dub: Output (compression) format is: %hs.";
+	message 10, "Dub: Reducing video compression thread count to one because video compressor is using delta frame compression and the key frame interval is longer than one frame.";
+}
+
+stringset 2 {		// kVDST_AVIReadHandler
+	message 0, "AVI: Avisynth detected. Extended error handling enabled.";
+	message 1, "AVI: OpenDML hierarchical index detected on stream %d.";
+	message 2, "AVI: Index not found or damaged -- reconstructing via file scan.";
+	message 3, "AVI: Invalid chunk detected at %lld. Enabling aggressive recovery mode.";
+	message 4, "AVI: Invalid block found at %lld -- disabling streaming.";
+	message 5, "AVI: Stream %d has an invalid sample rate. Substituting %lg samples/sec as a placeholder.";
+	message 6, "AVI: Palette changes detected. These are not currently supported -- color palette errors may appear in the output.";
+	message 7, "AVI: The text information chunk of type '%hs' at %llx was not not fully read because it was too long (%u bytes).";
+	message 8, "AVI: Stream %u (%hs) has a non-zero start position of %u samples (%+lld ms). VirtualDub does not currently support a non-zero start time and the stream will be interpreted as starting from zero.";
+	message 9, "AVI: Indexing was aborted at byte location %llx.";
+}
+
+stringset 3 {		// kVDST_VideoSource
+	message 0, "AVI: Resuming normal decoding (concealment off) at frame %u";
+	message 1, "AVI: Decoding error on frame %u -- attempting to bypass.";
+	message 2, "AVI: Frame %u is too short (%d < %d bytes) but decoding anyway.";
+	message 3, "Video codec \"%.64hs\" is buggy and returned to VirtualDub with MMX active. Applying workaround.";
+	message 4, "AVI: Video format structure in file is abnormally large (%d bytes > 16K). Truncating to %d bytes.";
+	message 5, "Video codec \"%.128ls\" modified the video format passed to it by VirtualDub.  This indicates a codec "
+		"bug that may cause the Windows video codec system to malfunction.  Please remove the errant codec "
+		"or replace it with an updated version from the original vendor.";
+	message 6, "Video codec \"%.128ls\" is claiming to be able to decompress formats that it does not actually "
+		"support. This can cause the Windows video codec system to malfunction and may cause applications "
+		"to crash.  Please remove the errant codec or replace it with an updated version from the original vendor.";
+}
+
+stringset 4 {		// kVDST_InputFileAVI
+	message 0, "AVI: Opening file \"%ls\"";
+	message 1, "AVI: Keyframe flag reconstruction was not specified in open options and the video stream "
+						"is not a known keyframe-only type.  Seeking in the video stream may be extremely slow.";
+	message 2, "AVI: Type-1 DV file detected -- VirtualDub cannot extract audio from this type of interleaved stream.";
+	message 3, "AVI: An invalid nBlockAlign value of zero in the audio stream format was fixed.";
+}
+
+stringset 5 {		// kVDST_Mpeg
+	message 0, "MPEGAudio: Concealing decoding error on frame %lu: %hs.";
+	message 1, "MPEG: Opening file \"%ls\"";
+	message 2, "MPEG: Anachronistic or discontinuous timestamp found in %ls stream %d at byte position %lld, from %lld to %lld. This may indicate an improper join.";
+	message 3, "MPEG: File ended unexpectedly during parsing at byte position %lld -- file may be damaged or incomplete.";
+}
+
+stringset 6 {		// kVDST_AudioSource
+	message 0, "AVI: Truncated or invalid MP3 audio format detected (%d bytes, should be %d). Attempting to fix.";
+	message 1, "AVI: Variable bitrate (VBR) audio detected. VBR audio in AVI is non-standard and you may encounter sync errors up to %.0lfms when attempting to extract WAV files "
+		"or playing in some players. If this is a problem, use Full Processing mode is recommended to decompress or recompress the audio. (This warning can be disabled in Options, Preferences, AVI. bitrate: %.1lf ± %.1lf kbps)";
+	message 2, "AVI: A non-zero wBitsPerSample value was detected in the MP3 audio format structure. This has been corrected in-memory to zero for better compatibility "
+		"with commonly installed MP3 audio codecs.";
+	message 3, "AVI: Truncated or invalid compressed audio format detected (%d bytes, should be %d). Attempting to fix.";
+}
+
+stringset 7 {		// kVDST_ProjectUI
+	message 0, "%s";
+	message 1, "%s - [%s]";
+	message 2, "%s - [%s] (render in progress)";
+	message 3, "Undo %ls";
+	message 4, "Redo %ls";
+}
+
+stringset 8 {		// kVDST_CaptureUI
+	message 0, "VirtualDub cannot display the incoming video, as it is in an unsupported format for display/analysis.";
+
+
+	////////// capture info names; note that these must be kept short, and kept in sync with the VDCaptureInfoId enumeration
+
+	message 100, "Frames captured";
+	message 101, "Total time";
+	message 102, "Time left";
+	message 103, "Total file size";
+	message 104, "Disk space free";
+	message 105, "CPU usage";
+	message 106, "Spill status";
+
+	// video
+	message 107, "Size";
+	message 108, "Average rate";
+	message 109, "Data rate";
+	message 110, "Compression ratio";
+	message 111, "Avg frame size";
+	message 112, "Frames dropped";
+	message 113, "Frames inserted";
+	message 114, "Resample";
+
+	// audio
+	message 115, "Size";
+	message 116, "Average rate";
+	message 117, "Relative rate";
+	message 118, "Data rate";
+	message 119, "Compression ratio";
+	message 120, "Resample";
+
+	// sync
+	message 121, "VT adjust";
+	message 122, "Relative latency";
+	message 123, "Current error";
+
+	////////// capture group names
+	message 201, "Video";
+	message 202, "Audio";
+	message 203, "Sync";
+}
+
+stringset 9 {		// kVDST_Project
+	message 0, "The new video file has fewer video frames than the current file (%lld < %lld). Switching to it will result in changes to the edit list. Do you want to continue?";
+	message 1, "delete frame %lld";
+	message 2, "delete %[1]lld frames at %[0]lld";
+	message 3, "cut frame %lld";
+	message 4, "cut %[1]lld frames at %[0]lld";
+	message 5, "mask frame %lld";
+	message 6, "mask %[1]lld frames at %[0]lld";
+	message 7, "paste";
+	message 8, "scan for errors";
+	message 9, "reset timeline";
+	message 10, "crop to selection";
+}
+
+stringset 10 {		// kVDST_VideoSequenceCompressor
+	message 0, "Video codec \"%.128hs\" modified its input image buffer and appears to have a bug. Check with the vendor "
+		"for an updated version of the codec.";
+}
+
+stringset 11 {		// kVDST_RawVideoFormats
+	message 5, "BGR, 16-bit (555), little endian";
+	message 6, "BGR, 16-bit (565), little endian";
+	message 7, "BGR, 24-bit, 0-255";
+	message 8, "BGR, 32-bit, 0-255";
+	message 9, "Grayscale, 8-bit, 16-235 range";
+	message 10, "4:2:2 YCbCr (UYVY), R.601, 8-bit, Y:16-235, coaligned";
+	message 11, "4:2:2 YCbCr (YUYV), R.601, 8-bit, Y:16-235, coaligned";
+	message 13, "4:4:4 YCbCr planar, R.601, 8-bit, Y:16-235";
+	message 14, "4:2:2 YCbCr planar, R.601, 8-bit, Y:16-235, coaligned";
+	message 15, "4:2:0 YCbCr planar, R.601, 8-bit, Y:16-235, coaligned";
+	message 16, "4:1:1 YCbCr planar, R.601, 8-bit, Y:16-235, coaligned";
+	message 17, "4:1:0 YCbCr planar, R.601, 8-bit, Y:16-235, coaligned";
+	message 18, "4:2:2 YCbCr planar, R.601, 8-bit, Y:16-235, centered";
+	message 19, "4:2:0 YCbCr planar, R.601, 8-bit, Y:16-235, centered";
+	message 22, "4:2:2 YCbCr (UYVY), R.709, 8-bit, Y:16-235, coaligned";
+	message 24, "Grayscale, 8-bit, 0-255 range";
+	message 25, "4:2:2 YCbCr (YUYV), R.709, 8-bit, Y:16-235, coaligned";
+	message 26, "4:4:4 YCbCr planar, R.709, 8-bit, Y:16-235, coaligned";
+	message 27, "4:2:2 YCbCr planar, R.709, 8-bit, Y:16-235, coaligned";
+	message 28, "4:2:0 YCbCr planar, R.709, 8-bit, Y:16-235, coaligned";
+	message 29, "4:1:1 YCbCr planar, R.709, 8-bit, Y:16-235, coaligned";
+	message 30, "4:1:0 YCbCr planar, R.709, 8-bit, Y:16-235, coaligned";
+	message 31, "4:2:2 YCbCr (UYVY), R.601, 8-bit, Y:0-255, coaligned";
+	message 32, "4:2:2 YCbCr (YUYV), R.601, 8-bit, Y:0-255, coaligned";
+	message 33, "4:4:4 YCbCr planar, R.601, 8-bit, Y:0-255";
+	message 34, "4:2:2 YCbCr planar, R.601, 8-bit, Y:0-255, coaligned";
+	message 35, "4:2:0 YCbCr planar, R.601, 8-bit, Y:0-255, coaligned";
+	message 36, "4:1:1 YCbCr planar, R.601, 8-bit, Y:0-255, coaligned";
+	message 37, "4:1:0 YCbCr planar, R.601, 8-bit, Y:0-255, coaligned";
+	message 38, "4:2:2 YCbCr (UYVY), R.709, 8-bit, Y:0-255, coaligned";
+	message 39, "4:2:2 YCbCr (YUYV), R.709, 8-bit, Y:0-255, coaligned";
+	message 40, "4:4:4 YCbCr planar, R.709, 8-bit, Y:0-255";
+	message 41, "4:2:2 YCbCr planar, R.709, 8-bit, Y:0-255, coaligned";
+	message 42, "4:2:0 YCbCr planar, R.709, 8-bit, Y:0-255, coaligned";
+	message 43, "4:1:1 YCbCr planar, R.709, 8-bit, Y:0-255, coaligned";
+	message 44, "4:1:0 YCbCr planar, R.709, 8-bit, Y:0-255, coaligned";
+}
+
+stringset 100 {		// kVDST_PNGDecodeErrors
+	message 1, "The file is not a PNG image.";
+	message 2, "The image file is incomplete.";
+	message 3, "The PNG header is bad.";
+	message 4, "The image uses an unsupported compression algorithm.";
+	message 5, "The image uses an unsupported interlacing algorithm.";
+	message 6, "The image uses an unsupported filter algorithm.";
+	message 7, "The palette in the image is bad.";
+	message 8, "The compressed image data is bad.";
+	message 9, "The compressed image data contains an unrecognized filter mode.";
+	message 10, "The PNG file contains data that is required to decode the image but which this decoder does not support.";
+	// 11 is out of memory
+	message 12, "A chunk in the PNG file is corrupted (bad checksum).";
+	message 13, "The PNG file appears to be valid, but uses an encoding mode that is not supported.";
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+stringset 1000 {
+	message 10, "OK";
+	message 11, "Cancel";
+	message 12, "Save";
+}
+
+enum {
+	kID_OK		= 10,
+	kID_Cancel	= 11,
+	kID_Save	= 12
+};
+
+enum {
+	kTemplateOKCancel = 1000
+};
+
+
+
+template kTemplateOKCancel {
+	using valign=bottom {
+		set 0 : align=right, spacing=3 {
+			now minw=50, minh=14;
+			button kID_OK, [1000, 10];
+			button kID_Cancel, [1000, 11];
+		}
+	}
+}
+
+dialog 1000, "Preferences" : minw=350, maxw=350, aspect=140, valign=top+expand {
+	set 0: vertical {
+		set 0 : spacing=5 {
+			now fill;
+
+			listbox 100 : minw=50, sunken, align=left {
+				listitem "Main";
+				listitem "Display";
+				listitem "Scene";
+				listitem "CPU";
+				listitem "AVI";
+				listitem "Timeline";
+				listitem "Render";
+				listitem "Disk I/O";
+				listitem "Images";
+				listitem "Threading";
+				listitem "Playback";
+				listitem "3D accel";
+				listitem "Batch";
+				listitem "Auto-recover";
+				listitem "Startup";
+				listitem "History";
+				listitem "Exit";
+			}
+
+			pageset 101 : value={@100} {
+				page 1010;
+				page 1011;
+				page 1012;
+				page 1013;
+				page 1014;
+				page 1015;
+				page 1016;
+				page 1017;
+				page 1018;
+				page 1019;
+				page 1020;
+				page 1021;
+				page 1022;
+				page 1023;
+				page 1024;
+				page 1025;
+				page 1026;
+			}
+		}
+
+		using valign=bottom {
+			set 0 : align=right, spacing=3 {
+				now minw=50, minh=14;
+				button kID_Save, [1000, 12];
+				button kID_OK, [1000, 10];
+				button kID_Cancel, [1000, 11];
+			}
+		}
+	}
+}
+
+dialog 1010, "" : fill, child {
+	now align=fill;
+	set 0 : vertical, spacing=1 {
+		group 0, "Quick preview defaults" {
+			grid 0 : spacing=2 {
+				now valign=fill;
+				column 0: minw=100;
+				column 1: affinity=1;
+
+				label 0, "Output color depth";
+				combobox 100 {
+					listitem "Fastest (16-bit)";
+					listitem "Use output setting";
+					listitem "Match display depth";
+					listitem "16-bit (HiColor)";
+					listitem "24-bit (TrueColor)";
+				}
+
+				nextrow;
+
+				label 0, "Process priority";
+				
+				combobox 101 {
+					listitem "Default";
+					listitem "Idle";
+					listitem "Lowest";
+					listitem "Even lower";
+					listitem "Lower";
+					listitem "Normal";
+					listitem "Higher";
+					listitem "Even higher";
+					listitem "Highest";
+				}
+			}
+		}
+
+		group 0, "Dub defaults" {
+			grid 0 : spacing=2 {
+				now valign=fill;
+				column 0: minw=100;
+				column 1: affinity=1;
+
+				label 0, "Process priority";
+				combobox 102 {
+					listitem "Default";
+					listitem "Idle";
+					listitem "Lowest";
+					listitem "Even lower";
+					listitem "Lower";
+					listitem "Normal";
+					listitem "Higher";
+					listitem "Even higher";
+					listitem "Highest";
+				}
+				
+				nextrow;
+				checkbox 105, "Background I/O priority" : column = 1;
+				
+				nextrow;
+				
+				label 0, "Speed limit";
+				trackbar 104 : minh=16;
+			}
+		}
+
+		group 0, "File options" {
+			checkbox 103, "Automatically add extension to filenames when saving";
+		}
+	}
+}
+
+dialog 1011, "" : fill, child {
+	now align=fill;
+	group 0, "Display options" {
+		set 0 : vertical {
+			now valign=top, align=left;
+			checkbox 100, "Enable dithering for 16-bit displays";
+			checkbox 101, "Use DirectX for display panes";
+			using marginl=20, enable = {@101} {
+				checkbox 102, "Use DirectX when Terminal Services is active (may cause display corruption)";
+				checkbox 107, "Use DirectX overlay surfaces";
+
+				// it is NOT a good idea to enable both Direct3D and OpenGL
+				checkbox 103, "Use Direct3D (requires DirectX 9)" : enable={@103 || (@101 && !@104 && !@112)};
+				set 200: spacing=3, marginl=40, enable={@103}, vertical, align=fill {
+					now valign=center, marginl=0;
+
+					checkbox 109, "Use high precision conversion";
+					
+					set 0 : align=fill {
+						checkbox 105, "Use effect file:";
+						textedit 300, "" : minw=60, sunken, align=fill, enable={@105};
+					}
+
+					textarea 0, "Effect file support requires d3dx_25.dll (April 2005 or newer version of DirectX 9.0c runtime)." : minh=20, readonly, fill;
+				}			
+				checkbox 104, "Use OpenGL" : enable={@104 || (@101 && !@103 && !@112)};
+				checkbox 112, "Use Direct3D 9/11 (EXPERIMENTAL)" : enable={@112 || (@101 && !@103 && !@104)};
+				checkbox 106, "Avoid tearing (enable vsync)";
+				
+				set 0 : align=fill, spacing=3 {
+					now valign=center, align=left, marginl=0;
+					
+					label 0, "Multi-monitor mode:";
+					combobox 111 : align=fill {
+						listitem "Auto-switch to nearest monitor (recommended)";
+						listitem "Force primary display device";
+						listitem "Disable secondary display support";
+					}
+				}
+			}
+			checkbox 110, "Disable accelerated display when inactive";
+			checkbox 108, "Show debug information";
+		}
+	}
+}
+
+dialog 1012, "" : fill, child {
+	now align=fill;
+	group 0, "Scene change thresholds" {
+		grid 0 : spacing=2 {
+			now valign=fill;
+			column 0: affinity=0, minw=80;
+			column 1: affinity=50;
+			column 2: affinity=50;
+			column 3: affinity=0, minw=30;
+			label 0, "Interframe (cut)";
+			trackbar 100 : colspan=2, minh=16;
+			label 101, "val";
+			nextrow;
+			label 0, "Intraframe (fade)";
+			trackbar 200 : colspan=2, minh=16;
+			label 201, "val";
+			nextrow;
+			label 0, "Less sensitive" : align=left, column=1;
+			label 0, "More sensitive" : align=right;
+		}
+	}
+}
+
+dialog 1013, "" : fill, child {
+	now align=fill;
+	group 0, "Performance optimizations" {
+		set 0: vertical {
+			now valign=top, align=fill;
+			option 100, "Enable all available CPU-specific optimizations";
+			option 101, "Use only specific CPU extensions";
+			now marginl=20;
+			grid 102 : enable={@100==1}, vertical {
+				checkbox 200, "FPU";
+				checkbox 201, "MMX";
+				checkbox 202, "Integer SSE";
+				checkbox 203, "SSE";
+				checkbox 204, "SSE2";
+				checkbox 207, "SSE3";
+				checkbox 208, "SSSE3";
+				checkbox 209, "SSE4.1";
+				checkbox 210, "AVX";
+				nextrow;
+				checkbox 205, "3DNow!";
+				checkbox 206, "3DNow! 2";
+			}
+		}
+	}
+}
+
+dialog 1014, "" : fill, child {
+	now align=fill;
+	group 0, "AVI options" {
+		set 0: vertical {
+			now valign=top, align=left;
+			checkbox 100, "Use 1GB instead of 2GB as threshold for OpenDML indexing";
+			checkbox 101, "Disable auto-correction of data rate for MPEG layer III audio streams";
+			checkbox 102, "Directly decode uncompressed YCbCr (YUV) sources";
+			checkbox 103, "Align large uncompressed frames to sector boundary";
+			set 300: spacing=3, marginl=12, enable={@103} {
+				now valign=center;
+				label 0, "Byte &threshold:";
+				textedit 200, "" : minw=60, sunken;
+			}
+			checkbox 104, "Prefer internal video decoders over installed third-party codecs (MJPEG and DV)";
+			checkbox 105, "Prefer internal audio decoders over installed third-party codecs" : marginb = 5;
+			
+			grid 0 : spacing=2, fill {
+				now valign = center;
+				label 0, "Superindex entry limit";
+				textedit 201, "" : minw=60, sunken;
+				nextrow;
+				label 0, "Index entries per block";
+				textedit 202, "" : minw=60, sunken;
+				
+				nextrow;
+				textarea 0, "For AVI files larger than 2GB, approximately one superindex entry is needed for every 2GB block of file, and 1-2 entries for every video frame. The default settings of 256/8192 are good for about 0.5TB and nine hours. Each additional superindex entry adds 16 bytes per stream to the header." : margint=5, colspan=2, fill, readonly, minh=40;
+			}
+			
+			checkbox 106, "Warn when VBR audio is detected";
+			checkbox 108, "Warn when non-zero starting offset is detected";
+			checkbox 107, "Use video stream fccHandler in codec search";
+		}
+	}
+}
+
+dialog 1015, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		group 0, "Timeline format" {
+			set 0: vertical, spacing=3 {
+				textedit 200, "" : sunken;
+				textarea 0,	"%f: frame\n"
+							"%h, %m, %s, %p, %t: hour, minute, second, picture, tick\n"
+							"%c: frame type\n"
+							"Use capital versions for source values.\n"
+							"\n"
+							"%B, %L: byte position and length of source frame\n"
+							"%D: distance from last key frame\n"
+							"%[>]...: use end instead of current position\n"
+							: minh=100, readonly;
+			}
+		}
+	}
+}
+
+dialog 1016, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		group 0, "Render options" {
+			set 0: vertical, spacing=3 {
+				now valign=top, align=left;
+				checkbox 100, "Confirm when abort button is pressed";
+				checkbox 101, "Warn if no audio is written";
+				checkbox 102, "Prevent system from going to sleep during render";
+			}
+		}
+	}
+}
+
+dialog 1017, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		group 0, "Turbo I/O" {
+			set 0: vertical {
+				label 0, "Disk I/O write mode:" : marginb=5;
+				set 0: marginl=10, vertical {
+					option 100, "Buffered - slowest, but most compatible";
+					option 101, "Write through - slower";
+					option 102, "Unbuffered - faster";
+					option 103, "Asynchronous unbuffered - fastest (Windows NT only)";
+				}
+			}
+		}
+	}
+}
+
+dialog 1018, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		group 0, "Image sequence defaults" {
+			grid 0 : spacing=2, fill {
+				now valign = center;
+				label 0, "Default frame rate";
+				textedit 100, "" : minw=60, sunken;
+			}
+		}
+	}
+}
+
+dialog 1019, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		grid 0 : spacing=2, align=fill, valign=top {
+			label 0, "&Video compression threads";
+			textedit 100, "" : minw=60, sunken;
+
+			nextrow;
+			textarea 0, "Zero disables video compressor multithreading; '1' causes the compressor to run in a separate thread for better performance on dual-core and SMP systems. Values greater than 1 are not yet supported." : margint=5, colspan=2, fill, readonly, minh=40;
+			
+			nextrow;
+			label 0, "&Video filter threading";
+			combobox 101 {
+				listitem "Disabled";
+				listitem "Auto";
+				listitem "1 thread";
+				listitem "2 threads";
+				listitem "3 threads";
+				listitem "4 threads";
+				listitem "5 threads";
+				listitem "6 threads";
+				listitem "7 threads";
+				listitem "8 threads";
+			}
+			
+			nextrow;
+			label 0, "&Video filter process-ahead";
+			combobox 102 {
+				listitem "Auto";
+				listitem "1 frame";
+				listitem "2 frames";
+				listitem "3 frames";
+				listitem "4 frames";
+				listitem "5 frames";
+				listitem "6 frames";
+				listitem "7 frames";
+				listitem "8 frames";
+			}
+		}
+	}
+}
+
+dialog 1020, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		label 0, "&Preferred audio playback device";
+		combobox 100, "" : margint = 2;			
+	}
+}
+
+dialog 1021, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		group 0, "3D hardware acceleration options" {
+			checkbox 100, "Enable 3D video &filter acceleration (VDXA)";
+		}
+	}
+}
+
+dialog 1022, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		group 0, "Batch mode options" {
+			checkbox 100, "Show &status window for batch operations";
+		}
+	}
+}
+
+dialog 1023, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		group 0, "Auto-recover options" {
+			set 0: vertical, spacing=3 {
+				label 0, "VirtualDub can optionally save recovery information before beginning a preview or render operation. If a program failure occurs, this information can then be used to restore the project state." : readonly, multiline;
+				checkbox 100, "&Enable auto-recover";
+			}
+		}
+	}
+}
+
+dialog 1024, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		group 0, "Startup options" {
+			set 0: vertical, spacing=3 {
+				label 0, "The following location will be used for configuration files, including the job queue and auto-recover files:" : readonly, multiline;
+				set 0: marginl=10, vertical {
+					option 100, "Program directory";
+					option 101, "User profile";
+				}
+			}
+		}
+	}
+}
+
+dialog 1025, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		group 0, "History options" {
+			grid 0 : spacing=5, align=left, valign=top {
+				now valign=center;
+				
+				label 0, "MRU list size" : align=left;
+				textedit 100, "" : sunken, align=fill, minw=50;
+				
+				nextrow;
+					
+				button 101, "Clear history" : minw=50, align=left;
+			}
+		}
+	}
+}
+
+dialog 1026, "" : fill, child {
+	now align=fill;
+	set 0: vertical {
+		group 0, "Exit options" {
+			checkbox 100, "&Ask for confirmation on close";
+		}
+	}
+}
+
+dialog 2000, "Capture preferences" : minw=350, maxw=350, aspect=140, valign=top+expand {
+	set 0: vertical, spacing=5 {
+		set 0 : spacing=5 {
+			now fill;
+
+			listbox 100 : minw=50, sunken, align=left {
+				listitem "Side panel";
+				listitem "Hotkeys";
+			}
+
+			pageset 101 : value={@100} {
+				page 2010;
+				page 2011;
+			}
+		}
+
+		using valign=bottom {
+			set 0 : align=right, spacing=3 {
+				now minw=50, minh=14;
+				button kID_OK, [1000, 10];
+				button kID_Cancel, [1000, 11];
+			}
+		}
+	}
+}
+
+dialog 2010, "" : fill, child {
+	now fill;
+	set 0 : vertical {
+		group 0, "Information panel items" {
+			set 0: vertical, spacing=3 {
+				label 0, "Select the items that should appear in the side panel:" : valign=top;
+				listview 100, "" : checkable, fill, noheader, sunken;
+			}
+		}
+	}
+}
+
+dialog 2011, "" : fill, child {
+	now fill;
+	set 0 : vertical {
+		group 0, "Hotkeys" {
+			grid 0 : spacing=2, valign=top {
+				column 0: minw=100;
+				column 1: affinity=1;
+
+				label 0, "Start capture";
+				hotkey 100;
+				nextrow;
+				label 1, "Stop capture";
+				hotkey 101;				
+			}
+		}
+	}
+}
+
+dialog 2100, "Select raw audio format" : minw=200, aspect=140, align=fill, valign=fill+expand {
+	set 0 : vertical, fill, spacing=3 {
+		listbox 100 : sunken, fill;
+		include template kTemplateOKCancel;
+	}
+}
+
+dialog 2101, "Capture timing options" : aspect=140, maxw=350 {
+	set 0 : vertical {
+		group 0, "General options" : align=fill {
+			set 0 : vertical {
+				checkbox 100, "&Drop frames when captured frames are too close together";
+				checkbox 101, "&Insert null frames when captured frames are too far apart";
+				set 400: spacing=3, marginl=12, enable={@101} {
+					now valign=center;
+					label 0, "Null frame burst &limit:";
+					textedit 300, "" : minw=30, sunken;
+				}
+				label 0, "Resync mode:" : margint=5, marginb=5;
+				set 0: marginl=10, vertical {
+					option 200, "Do &not resync between audio and video streams";
+					option 201, "Sync &video to audio by adjusting video timing";
+					option 202, "Sync &audio to video by resampling the audio to a faster or slower rate";
+				}
+				checkbox 102, "&Correct video timing for fewer frame drops/inserts" : margint=5, enable={@200 != 1};
+				checkbox 103, "Automatically disable resync when integrated audio/video capture is detected" : marginb=5;
+
+				label 0, "Audio latency determination:" : margint=5, marginb=5;
+				grid 0 : marginl = 10 {
+					now valign=center;
+					option 210, "Automatic" : column=0, row=0;
+					option 211, "Fixed" : column=0, row=1;
+					label 0, "Number of audio blocks to use at start:" : column=1, row=0, enable={@210==0};
+					textedit 301, "" : minw=30, sunken, column=2, row=0, enable={@210==0};
+					label 0, "Audio start time in video time (ms):" : column=1, row=1, enable={@210==1};
+					textedit 302, "" : minw=30, sunken, column=2, row=1, enable={@210==1};
+				}
+			}
+		}
+			
+		group 0, "DirectShow options" : align=fill, marginb = 5 {
+			set 0 : vertical {
+				checkbox 104, "Use audio timestamps when available";
+				checkbox 105, "Disable timestamps for preview";
+				checkbox 106, "Force audio clock when audio playback is enabled";
+				checkbox 107, "Ignore video timestamps from capture driver";
+			}
+		}
+		
+		include template kTemplateOKCancel;
+	}
+}
+
+dialog 2102, "Capture device options" : aspect=140, maxw=350 {
+	set 0 : vertical {
+		checkbox 105, "Save current display &mode as default";
+		checkbox 106, "S&witch audio source when changing video source";
+		checkbox 107, "Disable &overlay display when displaying menus";
+		checkbox 108, "Disable &preview display when displaying menus" : marginb=5;
+		include template kTemplateOKCancel;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+dialog 3000, "Create test video" : aspect=140, maxw=350 {
+	set 0 : vertical, spacing=5 {
+		grid 0 : spacing=2, align=fill {
+			now valign=top;
+			column 0: minw=60;
+			column 1: affinity=1;
+
+			label 0, "Video";
+			listbox 100 : minw=120, minh=100, sunken {
+				listitem "RGB color cube";
+				listitem "RGB color cube (TFF)";
+				listitem "RGB color cube (BFF)";
+				listitem "Chroma subsampling offset";
+				listitem "Channel levels (RGB)";
+				listitem "Checkerboard";
+				listitem "Zone plates";
+				listitem "3:2 pulldown (TFF)";
+				listitem "3:2 pulldown (BFF)";
+				listitem "Channel levels (YCbCr LR)";
+				listitem "Channel levels (YCbCr FR)";
+			}
+		}
+
+		include template kTemplateOKCancel;
+	}
+}
+
+dialog 3001, "Create animated GIF" : aspect=140, maxw=350, align=fill {
+	set 0 : vertical, spacing=5, align=fill {
+		grid 0 : spacing=2, align=fill {
+			column 0: minw=60;
+			column 1: affinity=1;
+
+			label 0, "&Filename" : valign=center;
+			set 0 {
+				textedit 100, "" : minw=200, sunken, align=fill, valign=fill;
+				button 300, "&..." : valign=fill;
+			}
+			
+			nextrow;
+			
+			label 0, "&Looping" : valign=top;
+			grid 0 : spacing=0, align=left {
+				now align=left;
+				option 200, "Play &once" : colspan=2;
+				nextrow;
+				option 201, "&Infinite loop" : colspan=2;
+				nextrow;
+				option 202, "Loop &count:" : marginr=5;
+				textedit 101 : minw=50, sunken, enable={@200==2};
+			}
+		}
+
+		include template kTemplateOKCancel;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+// output window for resampler benchmark
+dialog 9000, "Output window" : minw=350, aspect=140, valign=fill+expand {
+	textarea 100, "" : fill;
+}

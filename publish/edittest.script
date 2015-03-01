@@ -1,0 +1,42 @@
+declare vd = VirtualDub;
+declare vdv = vd.video;
+declare vdvf = vd.video.filters;
+declare vda = vd.audio;
+declare vds = vd.subset;
+declare log = vd.Log;
+declare tostr = Sylia.ToString;
+declare assert = Sylia.Assert;
+declare validate = vdv.__ValidateFrames2;
+
+// override the default mode to make sure we aren't tripped by saved settings
+vdv.SetInputFormat(0);
+vdv.SetOutputFormat(0);
+
+// create test file
+vd.Open("", "TestId", 0);
+assert(vdv.width == 8);
+assert(vdv.height == 4);
+
+// test frames [0,9] via selection
+vd.Open("", "TestId", 0);
+vdv.SetRange(0, 9000);		// 100-10
+vd.SaveAVI("__test0.avi");
+vd.Open("__test0.avi");
+
+assert(vdv.framerate == 10);
+validate(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+// set frame rate to 20 and revalidate
+//
+// Note that for compatibility reasons, the range source always be in source time,
+// regardless of frame rate adjustment.
+vd.Open("", "TestId", 0);
+vdv.SetFrameRate2(20, 1, 1);
+vdv.SetRange(0, 9500);		// 100-95
+vd.SaveAVI("__test1.avi");
+vdv.SetFrameRate2(0, 0, 1);
+
+vd.Open("__test1.avi");
+
+assert(vdv.framerate == 20);
+validate(0, 1, 2, 3, 4);

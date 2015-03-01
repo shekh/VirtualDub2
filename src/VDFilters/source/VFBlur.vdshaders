@@ -1,0 +1,50 @@
+kVDFilterBlurPS:
+	ps_2_0
+	def c0, 0.25, 0, 0, 0
+	dcl_2d s0
+	dcl t0.xy
+	dcl t1.xy
+	dcl t2.xy
+	dcl t3.xy
+	texld r0, t0, s0
+	texld r1, t1, s0
+	texld r2, t2, s0
+	texld r3, t3, s0
+	mul r0, r0, c0.x
+	mad r0, r1, c0.x, r0
+	mad r0, r2, c0.x, r0
+	mad r0, r3, c0.x, r0
+	mov oC0, r0
+
+kVDFilterBlurMorePS:
+	ps_2_0
+	def c0, 0.09765625, 0.1171875, 0.140625, 0
+	dcl_2d s0
+	dcl t0.xyzw
+	dcl t1.xy
+	dcl t2.xy
+	dcl t3.xy
+	dcl t4.xy
+	dcl t5.xy
+	dcl t6.xy
+	dcl t7.xy
+	texld r0, t0, s0
+	texld r1, t1, s0
+	texld r2, t2, s0
+	texld r3, t3, s0
+	texld r4, t4, s0
+	texld r5, t5, s0
+	texld r6, t6, s0
+	texld r7, t7, s0
+	mov r8.xy, t0.wzyx
+	texld r8, r8, s0
+	mul r0, r0, c0.x
+	mad r0, r1, c0.x, r0
+	mad r0, r2, c0.x, r0
+	mad r0, r3, c0.x, r0
+	mad r0, r4, c0.y, r0
+	mad r0, r5, c0.y, r0
+	mad r0, r6, c0.y, r0
+	mad r0, r7, c0.y, r0
+	mad r0, r8, c0.z, r0
+	mov oC0, r0

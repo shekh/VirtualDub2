@@ -1,0 +1,237 @@
+<lina:create file="audio-filters.html" title="Audio filter reference">
+	<table>
+		<lina:for-each name="/audio-filters/filter">
+			<tr>
+				<td><lina:tag name="a"><lina:attrib name="href">#<lina:pull name="name"/></lina:attrib><lina:pull name="name"/></lina:tag></td>
+				<td><lina:pull name="desc"/></td>
+			</tr>
+		</lina:for-each>
+	</table>
+
+	<lina:for-each name="/audio-filters/filter">
+		<h2><lina:tag name="a"><lina:attrib name="name"><lina:pull name="name"/></lina:attrib><lina:pull name="name"/></lina:tag></h2>
+		<ul>
+			<li><lina:pull name="desc"/></li>
+		</ul>
+		<lina:if-present name="long">
+			<lina:pull name="long"/>
+		</lina:if-present>
+	</lina:for-each>
+</lina:create>
+
+<lina:data>
+	<audio-filters>
+		<filter>
+			<name>butterfly</name>
+			<desc>Converts between left/right and mid/side stereo channels.</desc>
+			<long>
+				<em>Butterfly</em> computes the sum and differences between the left and right channels.
+				This allows stereo algorithms to be applied in mid/side mode -- for instance, <em>butterfly</em>
+				and <em>gain</em> can be used to increase or decrease stereo separation. <em>Bufferfly</em>
+				is its own inverse and can be used to switch to or from mid/side representation.
+			</long>
+		</filter>
+		<filter>
+			<name>center cut</name>
+			<desc>Extract a center channel from stereo audio.</desc>
+			<long>
+				<em>Center cut</em> uses FFT phase analysis to guess the sounds of the center channel, then
+				subtracts the channel to produce left/right and center outputs.  Because downmixing three
+				arbitrary channels down to two is irreversible, this separation is not perfect and some
+				artifacts may result from the algorithm.
+			</long>
+		</filter>
+		<filter>
+			<name>center mix</name>
+			<desc>Mix a mono stream with a stereo stream.</desc>
+			<long>
+				The first input must be the stereo stream, the second the mono.  Both must have the
+				same sampling rate.
+			</long>
+		</filter>
+		<filter>
+			<name>discard</name>
+			<desc>Dump unwanted audio.</desc>
+			<long>
+				Since all pins in an audio filter graph must be connected, use the <em>discard</em>
+				filter to sink any outputs you do not want.
+			</long>
+		</filter>
+		<filter>
+			<name>gain</name>
+			<desc>Modify the volume of audio.</desc>
+			<long>
+				The amplified or attenuated output is hard clipped, so boosting the gain on an audio
+				stream that is already hits full volume at peak will cause clipping distortion.
+			</long>
+		</filter>
+		<filter>
+			<name>highpass</name>
+			<desc>Cut out sounds below a given frequency.</desc>
+			<long>
+				High pass filters are good for simulating tinny transmission media, such as two-way radio.
+				This particular filter uses a 129-point FIR filter; the transition band, the area
+				where the filter tapers off from zero gain to full gain, is about 1.4KHz at a
+				sampling rate of 44KHz. This places some limits on how effective the high pass
+				filter is in some extreme situations.  For instance, an ideal high pass filter
+				passes all audio with a cutoff of zero, but this filter will mute some sound up to
+				about 700Hz at 44KHz sample rate.
+			</long>
+		</filter>
+		<filter>
+			<name>input</name>
+			<desc>Pull audio from AVI or WAV source.</desc>
+		</filter>
+		<filter>
+			<name>lowpass</name>
+			<desc>Cut out sounds above a given frequency.</desc>
+			<long>
+				Low pass filters are good for eliminating hiss and other high-frequency noises.
+				This particular filter uses a 129-point FIR filter; the transition band, the area
+				where the filter tapers off from full gain to zero gain, is about 1.4KHz at a
+				sampling rate of 44KHz. This places some limits on how effective the low pass
+				filter is in some extreme situations.  For instance, an ideal low pass filter
+				kills all audio with a cutoff of zero, but this filter will give you muted sound
+				up to about 700Hz at 44KHz sample rate.
+			</long>
+		</filter>
+		<filter>
+			<name>mix</name>
+			<desc>Add together audio streams.</desc>
+			<long>
+				<p>
+					The mix is simple addition with hard clipping, so if you combine the mix with
+					an attenuating gain filter to reduce the post-mix volume, the gain filter should
+					be first.  If one input has fewer channels than the other, the lowest N channels
+					common between the two are mixed, and the remaining channels are passed through.
+				</p>
+				<p>
+					You cannot mix two streams that have different sampling rates -- resample one
+					to match the other to do this.
+				</p>
+			</long>
+		</filter>
+		<filter>
+			<name>output</name>
+			<desc>Sink from graph into output file.</desc>
+			<long>
+				You need one of these in any audio filter graph. It automagically morphs into the
+				file output or audio playback filter as appropriate.
+			</long>
+		</filter>
+		<filter>
+			<name>pitch shift</name>
+			<desc>Modify the pitch of audio without changing speed.</desc>
+			<long>
+				<p>
+					<em>Pitch shift</em> works by stretching or contracting its input, slicing
+					it into small sections, and then overlapping and mixing them. This alters the pitch
+					of the audio without changing its speed; since the frequency spectrum is scaled,
+					harmonics are preserved.  When raising pitch, some portions of audio are duplicated,
+					and when lowering pitch, some audio portions are dropped.  <em>Pitch shift</em>
+					tries to shift the segments around to reduce artifacts, but occasionally you may hear
+					some hiccups, or duplicated/missing beats.  That's why it's ratty, but it's fun to play
+					with.  The filter is most effective within about +/-10%.
+				</p>
+				<p>
+					If you combine <em>pitch shift</em> with <em>stretch</em> and use the same ratios
+					for both, you get a time stretcher, which alters the speed of audio without changing
+					its pitch.
+				</p>
+			</long>
+		</filter>
+		<filter>
+			<name>ratty pitch shift</name>
+			<desc>Modify the pitch of audio without changing speed (old algorithm).</desc>
+			<long>
+				<p>
+					<em>Ratty pitch shift</em> works by stretching or contracting its input, slicing
+					it into small sections, and then overlapping and mixing them. This alters the pitch
+					of the audio without changing its speed; since the frequency spectrum is scaled,
+					harmonics are preserved.  When raising pitch, some portions of audio are duplicated,
+					and when lowering pitch, some audio portions are dropped.  <em>Ratty pitch shift</em>
+					tries to shift the segments around to reduce artifacts, but occasionally you may hear
+					some hiccups, or duplicated/missing beats.  That's why it's ratty, but it's fun to play
+					with.  The filter is most effective within about +/-10%.
+				</p>
+				<p>
+					If you combine <em>ratty pitch shift</em> with <em>stretch</em> and use the same ratios
+					for both, you get a time stretcher, which alters the speed of audio without changing
+					its pitch.
+				</p>
+			</long>
+		</filter>
+		<filter>
+			<name>resample</name>
+			<desc>Convert audio to a different sampling frequency.</desc>
+			<long>
+				This filter uses a 32-phase, 129-tap filter bank to resample audio -- it is higher
+				quality than the <em>Audio | Conversion...</em> option and should be preferred for
+				converting between sampling rates.  The transition band is ~1.4KHz at 44KHz sampling
+				rate, and as a result, very sharp downsampling, such as 44KHz to 8KHz, may result
+				in some aliasing.  This sounds a bit like a halo.  You can reduce the aliasing by
+				applying a low pass filter with a cutoff ~700Hz lower than half the source or half
+				the target sampling rate, whichever is lower.  However, this will muffle the sound
+				somewhat.
+			</long>
+		</filter>
+		<filter>
+			<name>split</name>
+			<desc>Split an audio stream into two identical copies.</desc>
+		</filter>
+		<filter>
+			<name>stereo chorus</name>
+			<desc>Add a chorus effect.</desc>
+			<long>
+				<p>
+					<em>Stereo chorus</em> mixes audio back into itself with a varying delay of 24-26 ms,
+					controlled by two LFOs at 3.3Hz that are offset by 90&deg;.  This adds a bit
+					of stereo separation to sound.
+				</p>
+				<p>
+					You use either mono or stereo sound as input to <em>stereo chorus</em>; when mono
+					is used, it is first duplicated to stereo channels before chorus is added.
+				</p>
+			</long>
+		</filter>
+		<filter>
+			<name>stereo merge</name>
+			<desc>Merge two mono streams into a stereo stream.</desc>
+			<long>
+				Both streams must have the same sampling rate.
+			</long>
+		</filter>
+		<filter>
+			<name>stereo split</name>
+			<desc>Split a stereo stream into two mono streams.</desc>
+		</filter>
+		<filter>
+			<name>stretch</name>
+			<desc>Stretch or contract audio, modifying length and pitch.</desc>
+			<long>
+				This effect is the same that you would get by running an audio tape too fast or
+				too slow -- the audio speeds up and raises pitch, or slows down and becomes grumpy.
+				<em>Stretch</em> uses polyphase resampling and thus doesn't introduce transient
+				artifacts; if you only need to make small adjustments to the length of the audio
+				track, this is a good way to do it.
+				<lina:note>
+					<em>Stretch</em> feeds its output at a different rate than it consumes its input, since
+					it changes the speed of audio streams.  Audio filter graphs must never
+					combine two branches that run at different speeds -- the result is either unstable
+					seeking or the filter graph freezing up.  Be particularly careful of this when
+					creating parallel branches that later merge.
+				</lina:note>
+			</long>
+		</filter>
+		<filter>
+			<name>time stretch</name>
+			<desc>Stretch or contract audio, modifying length without changing pitch.</desc>
+			<long>
+				Use <i>time stretch</i> to make an audio track run slightly faster or slower, without
+				causing chipmuck or ogre effects. Typically this is matched with a corresponding
+				change in video speed, keeping the two in sync. This is equivalent to combining
+				pitch shift and stretch filters, but with slightly higher quality and ease of use.
+			</long>
+		</filter>
+	</audio-filters>
+</lina:data>

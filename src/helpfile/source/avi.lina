@@ -1,0 +1,61 @@
+<lina:create file="avi.html" title="AVI technical issues">
+	<h2>Unsupported features</h2>
+	<p>
+		A non-zero <em>dwStart</em> value, which indicates that the starting time of the first sample in the stream
+		is later than time zero, is currently not supported. The value is ignored and streams are interpreted
+		as if they started at zero.
+	</p>
+	<p>
+		Videos with frames that have 256 colors or less (8-bit or lower) and which have mid-stream palette changes
+		will not decode properly; a warning is displayed on load and the palette changes are lost.
+	</p>
+
+	<h2>Variable bit-rate (VBR) audio</h2>
+	<p>
+		Only partial read support is available for VBR audio, used most commonly with MPEG layer III (MP3) audio
+		streams. A warning is displayed on load; seeking and decoding will be correct, but the current version
+		of VirtualDub will not write an AVI file with VBR audio. The reason for this is that VBR encodings are not directly supported by
+		the format; it is implemented using an undocumented workaround and compatibility is spotty, with some
+		decoders unable to play the file correctly.
+	</p>
+	<p>
+		<em>dwSampleSize</em> in an AVI stream header indicates the sample size of a stream, independent
+		of the sizes of the chunks that those samples are stored in. Zero is a valid value indicating variable
+		sample size, and is commonly used for video streams. It cannot be used for audio streams, however, as
+		the Microsoft AVIFile and DirectShow parsers ignore <em>dwSampleSize</em> for those streams and use the
+		audio format's <em>nBlockAlign</em> value instead, which cannot be zero.
+	</p>
+	<p>
+		The essential feature of the popular encoding for VBR audio streams is an audio format whose <em>nBlockAlign</em>
+		value equals or exceeds the actual size of any sample in the stream. When this is the case, DirectShow's
+		AVI splitter rounds up the sizes when determining how many samples are in each chunk. For instance,
+		a single 152 byte sample might be written in an <em>01wb</em> chunk even though the <em>nBlockAlign</em> field
+		is 300. The parser is then able to accurately seek to any point in the audio stream between chunks.
+		One sample per chunk is not required; multiple samples can be aggregated, trading a coarser seek granularity
+		for lower header overhead. VirtualDub mimics the behavior of the AVI Splitter when interpreting VBR audio
+		streams.
+	</p>
+	<p>
+		1152 is commonly seen as the <em>nBlockAlign</em> and <em>dwScale</em> fields of a VBR MP3 audio stream,
+		which happens to be the number of PCM samples encoded in each frame of an MPEG-1 audio frame. This particular
+		value is not needed for VBR functionality, but it is convenient as it encodes the exact chunk rate of the
+		stream when paired with <em>dwRate</em> equal to the sampling rate. However, for this to work, a value of
+		576 would have to be used for MPEG-2 audio streams (sampling rates of 24KHz or less), and in addition,
+		a value of 1152 is not sufficient in all cases as certain configurations of MPEG audio can exceed 1152 bytes per
+		frame.
+	</p>
+	<p>
+		On load, VirtualDub will automatically reinterpret the <em>nBlockAlign</em> of a VBR MP3 stream as the standard
+		value of 1, for greater decoder compatibility.
+	</p>
+	<p>
+		The AVIFile library in versions of Windows, at least up through Windows XP, is not compatible with this
+		method of VBR encoding. Since it rounds down instead of up when computing the number of samples per chunk,
+		it will not see any samples at all in most VBR-encoded audio streams and be completely unable to read any
+		audio from the AVI file.
+	</p>
+	<p>
+		It is highly recommended that the tradeoffs of flexibility versus compatibility be considered when deciding
+		whether to use or support creation of VBR streams in AVI.
+	</p>
+</lina:create>

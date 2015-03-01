@@ -1,0 +1,37 @@
+kVDVFMergeLayersFP_Lerp::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern sampler2D src2 : register(s2);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1,
+		float4 uv2 : TEXCOORD2
+		) : COLOR0
+	{
+		half4 c0 = (half4)tex2D(src0, uv0.xy);
+		half4 c1 = (half4)tex2D(src1, uv1.xy);
+		half4 c2 = (half4)tex2D(src2, uv2.xy);
+		
+		return lerp(c0, c1, c2);
+	}
+
+kVDVFMergeLayersFP_Select::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern sampler2D src2 : register(s2);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1,
+		float4 uv2 : TEXCOORD2
+		) : COLOR0
+	{
+		half4 c0 = (half4)tex2D(src0, uv0.xy);
+		half4 c1 = (half4)tex2D(src1, uv1.xy);
+		half4 c2 = (half4)tex2D(src2, uv2.xy);
+		
+		return c2 >= 0.5h ? c1 : c0;
+	}

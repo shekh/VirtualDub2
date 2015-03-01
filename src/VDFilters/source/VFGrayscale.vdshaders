@@ -1,0 +1,24 @@
+kVDVFGrayscaleFP_RGB::
+	extern sampler2D src0 : register(s0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0
+		) : COLOR0
+	{
+		half3 kLumaAxis = { 0.30h, 0.59h, 0.11h };
+		half3 c0 = (half3)tex2D(src0, uv0.xy).xyz;
+		
+		return dot(c0, kLumaAxis);
+	}
+
+kVDVFGrayscaleFP_YUV::
+	extern sampler2D src0 : register(s0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0
+		) : COLOR0
+	{
+		half3 c0 = (half3)tex2D(src0, uv0.xy).xyz;
+		
+		return half4(128.0h/255.0h, c0.y, 128.0h/255.0h, 128.0h/255.0h);
+	}

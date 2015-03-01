@@ -1,0 +1,111 @@
+<lina:create file="b-distributed.html" title="Batch operation: Distributed mode">
+	<h2>Introduction</h2>
+	<p>
+		<i>Distributed mode</i> allows you to farm out jobs to multiple instances of VirtualDub, either on the same machine
+		or on a local network. This permits greater throughput and also better flexibility in running jobs, as the instance(s)
+		that create the jobs need not be the same ones that run them. On a single machine, this allows setting up one job
+		interactively while other jobs are proceeding in the background, or taking advantage of multiple CPU cores than
+		a single instance of VirtualDub can use; on multiple machines, this allows automation of parallel video processing
+		on a farm of machines.
+	</p>
+	<h2>Setting up distributed mode</h2>
+	<p>
+		In order to run VirtualDub's batch system in distributed mode, all instances of VirtualDub need read/write access to the
+		location that holds the VirtualDub job file. This file is shared and modified by all running copies of VirtualDub.
+		If multiple computers are participating, the file needs to be located on a file share with read/write access. The file
+		can be named anything and can be different paths on different machines; each instance is pointed to the file by either
+		the <em>File &gt; Use shared job list...</em> command in the Job Control dialog.
+	</p>
+	<p>
+		<b>Security warning</b>&nbsp; Anyone with write access to the job file can add jobs to it and cause
+		any attached instances of VirtualDub to create or overwrite arbitrary files with arbitrary data. This could potentially
+		lead to files being damaged or the machine being compromised if unwanted intruders are allowed to tamper with
+		the job queue. When the job file is exposed on a file share, make sure it is secured appropriately so that only
+		computers and users under your control have access to the file. Running distributed mode with the job file exposed on the Internet
+		is not recommended.
+	</p>
+	<p>
+		The instances also need access to the source and output file paths. For instance, if a job specifies an input of
+		<tt>c:\sources\foo.avi</tt> and an output of <tt>d:\outputs\bar.avi</tt>, both paths need to be valid on <em>all</em>
+		machines. This can obviously pose problems when paths are poorly chosen, so it is best to use a unified path. This can
+		be done by mounting a network path with the same driver or mount point on all machines, or by using UNC paths (<tt>\\server\share</tt>).
+		Local remapping can also be done by the <tt>subst</tt> command.
+	</p>
+	<p>
+		If third party codecs and filters are involved, which they invariably are, you need to ensure that those are present
+		on all instances of VirtualDub. Video filters and input driver plugins, in particular, should be auto-loaded via the
+		plugin directories as the job script will not load them manually. Codecs that use auxiliary files like stats files
+		need to be configured such that the temporary files land in valid locations on all machines, as well.
+	</p>
+	<h2>Running jobs from the distributed queue</h2>
+	<p>
+		Once all computers are set up to use the distributed queue, any changes to the job queue on one machine will be reflected
+		to the rest. You can start the job queue manually on each instance via the Run button as usual, but it is better to check
+		the <i>Autostart</i> checkbox instead, which causes VirtualDub to automatically run any job that appears in the queue
+		in the Waiting state. Jobs are assigned to instances only when they become idle, so load balancing occurs automatically &mdash;
+		an instance will only hold onto one job at a time, the one it is currently working on.
+	</p>
+	<p>
+		When jobs are started or completed by other machines, they will appear in the job queue with the name of the computer and
+		the process ID (PID) of the instance of VirtualDub. This tag persists even if the job fails. If a particular instance is
+		malfunctioning and not completing jobs properly, the computer name and PID can be used to identify the bad instance and
+		remove it from the pool.
+	</p>
+	<p>
+		The job queue can be modified from one instance while others are active, such as adding, removing, postponing, or reordering
+		jobs. These changes will automatically be reflected and merged on other machines, so you can even reorder jobs that are
+		in progress. You cannot directly delete a job that is in progress, but you can remotely request an abort by selecting
+		the job entry and clicking Abort, or by double-clicking on it. This will change the job status to Aborting, and assuming that
+		the instance is still running, i.e. it hasn't crashed or hung, it will abort as soon as the change propagates and is noticed.
+	</p>
+	<p>
+		While a job is in progress, no other instances of VirtualDub will attempt to run it. If the instance that was
+		handling that job fails, the job may be stuck in the queue in either In Progress or Aborting status. If this occurs,
+		make sure that the instance is killed on the remote machine first, and then Abort the job again. This will take two tries
+		if it is In Progress, one to change it to Aborting, and another to reset it to Waiting. Note that VirtualDub will issue a warning
+		before forcing a job from Aborting state to Waiting, because if another instance is actually still running that job, resetting
+		it may cause two instances to run the same job, leading to problems.
+	</p>
+	<h2>Command-line automation</h2>
+	<p>
+		You can automatically launch VirtualDub in distributed job queue mode via the command-line. The <tt>/master</tt> switch takes
+		the path and filename of the job file as an argument and automatically sets it as the distributed job queue file; the <tt>/slave</tt>
+		switch also enables the autostart option. If you have a remote launch mechanism, you can remotely launch VirtualDub on worker
+		machines with the <tt>/slave</tt> option, and then launch a local copy as <tt>/master</tt> in order to manipulate the job queue.
+	</p>
+	<p>
+		Note that other than the initial state of the autostart option, there is no difference otherwise between instances of VirtualDub
+		started in master or slave mode, or than just setting the job file and autostart option manually.
+	</p>
+	<h2>Transferring jobs between distributed and local mode</h2>
+	<p>
+		You can take the <tt>VirtualDub.jobs</tt> file and copy it to a new location, or save a copy using the <em>File &gt; Save job list...</em>
+		command, and use that as a distributed job queue. This is handy for preparing jobs without having to first set up distributed mode
+		or for transferring locally set up to jobs to a distributed queue. If you disconnect all instances from a distributed job file,
+		you can also reload that job file as a local queue.
+	</p>
+	<p>
+		<b>Warning</b>&nbsp; The default <tt>virtualdub.jobs</tt> file itself is used as the local job queue and should not be used directly
+		as a distributed job queue. The distributed job queue will be corrupted if an instance of VirtualDub is using the queue
+		file in local mode, as the instance in local mode will not attempt to merge changes, and VirtualDub will issue a warning
+		if you attempt to do so. You can copy the local job file or save it under a different name or path and use that file as
+		the distributed job queue file, but you must not use the local job file itself.
+	</p>
+	<h2>Caveats</h2>
+	<p>
+		The distributed job file is managed via a revision-based diff and merge system. While the merge algorithm is designed to avoid
+		traditional merging problems that would destroy the job queue, notably duplication or deletion errors, it can sometimes resolve
+		conflicts in unexpected ways. It is generally safe to modify individual jobs by postponing or restarting them. However, if two
+		instances try to reorder the job list at exactly the same time, one of them will win and force its ordering on the other. This
+		is safe in that the job queue will still be correct, but the reordering on the losing instance will have to be redone. Therefore,
+		it is recommended that you modify the job queue from only one instance of VirtualDub at a time.
+	</p>
+	<p>
+		There is a delay between the time that a change is made locally and when it is committed to the shared file, and another delay
+		before other instance notice the change and pick it up. This can lead to some slightly odd behavior when conflicts occur, such
+		as if a job finishes on a remote machine right when you try to abort it. The job system tries to resolve such conflicts in the
+		most sensible manner; for instance, in the abort-done case, the "done" status overrides the "aborting" status, since the file
+		is already complete. If the resolution is unsatisfactory, simply reapply the change.
+	</p>
+</lina:create>
+

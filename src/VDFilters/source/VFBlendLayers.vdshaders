@@ -1,0 +1,296 @@
+kVDVFBlendLayersFP_Lerp::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return lerp(c0, c1, (half)opacity);
+	}
+
+kVDVFBlendLayersFP_Min::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return lerp(c0, min(c0, c1), (half)opacity);
+	}
+
+kVDVFBlendLayersFP_Max::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return lerp(c0, max(c0, c1), (half)opacity);
+	}
+
+kVDVFBlendLayersFP_Add::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return c0 + c1 * (half)opacity;
+	}
+
+kVDVFBlendLayersFP_Multiply::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return lerp(c0, c0 * c1, (half)opacity);
+	}
+
+kVDVFBlendLayersFP_LinearBurn::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return c0 + (c1 - 1.0h) * (half)opacity;
+	}
+
+kVDVFBlendLayersFP_ColorBurn::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return lerp(c0, 1.0h - (1.0h - c0) / max(c1, 1e-5h), (half)opacity);
+	}
+
+kVDVFBlendLayersFP_Screen::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return c0 + (c1 - c0*c1) * (half)opacity;
+	}
+
+kVDVFBlendLayersFP_ColorDodge::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return lerp(c0, c0 / max(1.0h - c1, 1e-5h), (half)opacity);
+	}
+
+kVDVFBlendLayersFP_Overlay::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return lerp(c0, c0 < 0.5h ? c0*c1*2.0h : 2.0h*(c0 + c1 - c0*c1) - 1.0h, (half)opacity);
+	}
+
+kVDVFBlendLayersFP_SoftLight::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half3 c = tex2D(src0, uv0.xy).rgb;
+		half3 d = tex2D(src1, uv1.xy).rgb;
+		
+		half3 factor = d <= 0.5h ? c*(1-c)
+					 : c <= 0.25h ? c*((16*c-12)*c+3)
+					 : sqrt(c) - c;
+		
+		return half4(c + (2*d-1) * factor * (half)opacity, 0);
+	}
+
+kVDVFBlendLayersFP_HardLight::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half3 c = tex2D(src0, uv0.xy).rgb;
+		half3 d = tex2D(src1, uv1.xy).rgb;
+		
+		return half4(d < 0.5h ? c*d*2 : 2*(c+d-c*d)-1, 0);
+	}
+
+kVDVFBlendLayersFP_VividLight::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half3 c = tex2D(src0, uv0.xy).rgb;
+		half3 d = tex2D(src1, uv1.xy).rgb;
+		half3 flip = d < 0.5h;
+		half3 a = flip ? 1 - c : c;
+		half3 b = flip ? d : 1 - d;
+		
+		half3 r = a / max(2*b, 1e-5h);
+		
+		return half4(flip ? 1 - r : r, 0);
+	}
+
+kVDVFBlendLayersFP_LinearLight::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half3 c = tex2D(src0, uv0.xy).rgb;
+		half3 d = tex2D(src1, uv1.xy).rgb;
+		
+		return half4(c + (2*d - 1), 0);
+	}
+
+kVDVFBlendLayersFP_PinLight::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half3 c = tex2D(src0, uv0.xy).rgb;
+		half3 d = tex2D(src1, uv1.xy).rgb;
+		
+		return half4(d < 0.5h ? min(c, d*2) : max(c, d*2-1), 0);
+	}
+
+kVDVFBlendLayersFP_HardMix::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half3 c = tex2D(src0, uv0.xy).rgb;
+		half3 d = tex2D(src1, uv1.xy).rgb;
+		
+		return half4(c + d > 1, 0);
+	}
+	
+kVDVFBlendLayersFP_Difference::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return lerp(c0, abs(c0 - c1), (half)opacity);
+	}
+
+kVDVFBlendLayersFP_Exclusion::
+	extern sampler2D src0 : register(s0);
+	extern sampler2D src1 : register(s1);
+	extern float opacity : register(c0);
+
+	half4 main(
+		float4 uv0 : TEXCOORD0,
+		float4 uv1 : TEXCOORD1
+		) : COLOR0
+	{
+		half4 c0 = tex2D(src0, uv0.xy);
+		half4 c1 = tex2D(src1, uv1.xy);
+		
+		return c0 + (c1 - 2.0h*c0*c1) * (half)opacity;
+	}
