@@ -1720,7 +1720,7 @@ bool VDCaptureDriverDS::Init(VDGUIHandle hParent) {
 		FILTER_INFO fi;
 
 		if (SUCCEEDED(mpCapFilt->QueryFilterInfo(&fi))) {
-			mAudioDevices.push_back(tDeviceVector::value_type(nullptr, VDStringW(fi.achName)));
+			mAudioDevices.push_back(tDeviceVector::value_type(0, VDStringW(fi.achName)));
 
 			fi.pGraph->Release();
 		}

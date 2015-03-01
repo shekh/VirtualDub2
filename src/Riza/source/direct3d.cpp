@@ -40,6 +40,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #define VDDEBUG_D3D VDDEBUG
+#define D3DSWAPEFFECT_FLIPEX (D3DSWAPEFFECT)5;
 
 using namespace nsVDD3D9;
 

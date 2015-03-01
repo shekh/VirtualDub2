@@ -27,3 +27,5 @@
 #include <stdarg.h>
 #include <math.h>
 #include <ctype.h>
+
+const int MIIM_FTYPE = 0x100;

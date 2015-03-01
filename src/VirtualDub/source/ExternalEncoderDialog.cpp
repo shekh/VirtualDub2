@@ -1036,7 +1036,7 @@ bool VDUIDialogConfigureExternalEncoders::OnCommand(uint32 id, uint32 extcode) {
 			// alright, add them all!
 
 			while(!eprofs.empty()) {
-				auto *eprof = &*eprofs.back();
+				VDExtEncProfile *eprof = &*eprofs.back();
 
 				vdrefptr<VDExtEncProfile> conflict;
 				if (VDGetExternalEncoderProfileByName(eprof->mName.c_str(), ~conflict))
@@ -1047,7 +1047,7 @@ bool VDUIDialogConfigureExternalEncoders::OnCommand(uint32 id, uint32 extcode) {
 			}
 
 			while(!esets.empty()) {
-				auto *eset = &*esets.back();
+				VDExtEncSet *eset = &*esets.back();
 				vdrefptr<VDExtEncSet> conflict;
 				
 				if (VDGetExternalEncoderSetByName(eset->mName.c_str(), ~conflict))

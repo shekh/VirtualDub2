@@ -424,7 +424,7 @@ bool Init(HINSTANCE hInstance, int nCmdShow, VDCommandLine& cmdLine) {
 
 	const bool resetAll = cmdLine.FindAndRemoveSwitch(L"resetall");
 
-	const wchar_t *portableAltFile = nullptr;
+	const wchar_t *portableAltFile = 0;
 	cmdLine.FindAndRemoveSwitch(L"portablealt", portableAltFile);
 
 	VDStringW portableRegPath;
