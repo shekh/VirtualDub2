@@ -28,6 +28,7 @@ struct VDXFilterModule {		// formerly FilterModule
 	struct VDXFilterModule *next, *prev;
 	VDXHINSTANCE			hInstModule;
 	VDXFilterModuleInitProc	initProc;
+	FilterModModuleInitProc	filterModInitProc;
 	VDXFilterModuleDeinitProc	deinitProc;
 };
 

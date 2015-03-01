@@ -92,6 +92,8 @@ enum {
 class VDXFBitmap;
 class VDXFilterActivation;
 struct VDXFilterFunctions;
+class FilterModActivation;
+struct FilterModInitFunctions;
 struct VDXFilterModule;
 class IVDXVideoPrefetcher;
 class IVDXAContext;
@@ -119,8 +121,10 @@ typedef void (__cdecl *VDXFilterCopy2Proc    )(VDXFilterActivation *fa, const VD
 typedef bool (__cdecl *VDXFilterPrefetch2Proc)(const VDXFilterActivation *fa, const VDXFilterFunctions *ff, sint64 frame, IVDXVideoPrefetcher *prefetcher);
 typedef bool (__cdecl *VDXFilterEventProc	 )(const VDXFilterActivation *fa, const VDXFilterFunctions *ff, uint32 event, const void *eventData);
 typedef void (__cdecl *VDXFilterAccelRunProc )(const VDXFilterActivation *fa, const VDXFilterFunctions *ff);
+typedef void (__cdecl *FilterModActivateProc )(FilterModActivation *fma, const VDXFilterFunctions *ff);
 
 typedef int (__cdecl *VDXFilterModuleInitProc)(VDXFilterModule *fm, const VDXFilterFunctions *ff, int& vdfd_ver, int& vdfd_compat);
+typedef int (__cdecl *FilterModModuleInitProc)(VDXFilterModule *fm, const FilterModInitFunctions *ff, int& vdfd_ver, int& vdfd_compat, int& mod_ver, int& mod_min);
 typedef void (__cdecl *VDXFilterModuleDeinitProc)(VDXFilterModule *fm, const VDXFilterFunctions *ff);
 
 //////////
@@ -148,6 +152,11 @@ public:
 class IVDXFilterPreview2 : public IVDXFilterPreview {
 public:
 	virtual bool IsPreviewDisplayed() = 0;
+};
+
+class IFilterModPreview {
+public:
+  virtual int64 FMSetPosition(int64 pos)=0;
 };
 
 class IVDXVideoPrefetcher : public IVDXUnknown {
@@ -255,6 +264,10 @@ struct VDXFilterDefinition {
 	// NEW - V17 / 1.10.2
 	VDXShowStaticAboutProc		mpStaticAboutProc;
 	VDXShowStaticConfigureProc	mpStaticConfigureProc;
+};
+
+struct FilterModDefinition {
+	FilterModActivateProc		activateProc;
 };
 
 //////////
@@ -377,6 +390,14 @@ public:
 	VDXFBitmap *const *mpSourceStreams;	// (V16+)
 };
 
+class FilterModActivation {
+public:
+	const VDXFilterDefinition *filter;
+	const FilterModDefinition *filterMod;
+	void *filter_data;
+  IFilterModPreview *fmpreview;
+};
+
 // These flags must match those in cpuaccel.h!
 
 #ifndef f_VIRTUALDUB_CPUACCEL_H
@@ -409,7 +430,9 @@ struct VDXFilterFunctions {
 	long (__cdecl *getHostVersionInfo)(char *buffer, int len);	// ADDED: V7 (VirtualDub 1.4d)
 };
 
-
+struct FilterModInitFunctions {
+	VDXFilterDefinition *(__cdecl *addFilter)(VDXFilterModule *, VDXFilterDefinition *, int fd_len, FilterModDefinition*, int md_len);
+};
 
 
 

@@ -409,6 +409,11 @@ VDFilterActivationImpl::VDFilterActivationImpl()
 	mOutputFrameArray[0] = &dst;
 
 	SetSourceStreamCount(1);
+
+	fma.filter = 0;
+	fma.filterMod = 0;
+	fma.filter_data = 0;
+	fma.fmpreview = 0;
 }
 
 VDFilterActivationImpl::VDFilterActivationImpl(const VDFilterActivationImpl& src)
@@ -438,6 +443,11 @@ VDFilterActivationImpl::VDFilterActivationImpl(const VDFilterActivationImpl& src
 	mOutputFrameArray[0] = &dst;
 
 	SetSourceStreamCount(1);
+
+	fma.filter = 0;
+	fma.filterMod = 0;
+	fma.filter_data = 0;
+	fma.fmpreview = 0;
 }
 
 void VDFilterActivationImpl::SetSourceStreamCount(uint32 n) {
@@ -774,6 +784,10 @@ FilterInstance::FilterInstance(const FilterInstance& fi)
 	filter = const_cast<FilterDefinition *>(&fi.mpFDInst->Attach());
 	filter_data = fi.filter_data;
 
+	fma.filter = filter;
+	fma.filterMod = const_cast<FilterModDefinition *>(&fi.mpFDInst->GetFilterModDef());
+	fma.filter_data = filter_data;
+
 	mAPIVersion = fi.mpFDInst->GetAPIVersion();
 	VDASSERT(mAPIVersion);
 }
@@ -799,6 +813,8 @@ FilterInstance::FilterInstance(FilterDefinitionInstance *fdi)
 	, mPrepareInfo2()
 {
 	filter = const_cast<FilterDefinition *>(&fdi->Attach());
+	fma.filter = filter;
+	fma.filterMod = const_cast<FilterModDefinition *>(&fdi->GetFilterModDef());
 	mAPIVersion = fdi->GetAPIVersion();
 	VDASSERT(mAPIVersion);
 
@@ -838,7 +854,18 @@ FilterInstance::FilterInstance(FilterDefinitionInstance *fdi)
 			}
 		}
 
+		if (fma.filterMod->activateProc) {
+			fma.filter_data = filter_data;
+			try {
+				VDFilterThreadContextSwapper autoContextSwap(&mThreadContext);
+				fma.filterMod->activateProc(&fma, &g_VDFilterCallbacks);
+			} catch(const MyError& e) {
+				throw MyError("Cannot initialize filter '%s': %s", filter->name, e.gets());
+			}
+		}
+
 		mFilterName = VDTextAToW(filter->name);
+
 	} else
 		filter_data = NULL;
 
@@ -895,6 +922,11 @@ FilterInstance *FilterInstance::Clone() {
 			def->copyProc(AsVDXFilterActivation(), &g_VDFilterCallbacks, fi->filter_data);
 		else
 			memcpy(fi->filter_data, filter_data, def->inst_data_size);
+
+		if (fma.filterMod->activateProc) {
+			fi->fma.filter_data = fi->filter_data;
+			fma.filterMod->activateProc(&fi->fma, &g_VDFilterCallbacks);
+		}
 	}
 
 	return fi;
@@ -918,12 +950,13 @@ bool FilterInstance::IsAcceleratable() const {
 	return filter->accelRunProc != NULL;
 }
 
-bool FilterInstance::Configure(VDXHWND parent, IVDXFilterPreview2 *ifp2) {
+bool FilterInstance::Configure(VDXHWND parent, IVDXFilterPreview2 *ifp2, IFilterModPreview *ifmpreview) {
 	VDExternalCodeBracket bracket(mFilterName.c_str(), __FILE__, __LINE__);
 	bool success;
 
 	this->ifp = ifp2;
 	this->ifp2 = ifp2;
+	this->fma.fmpreview = ifmpreview;
 
 	vdprotected1("configuring filter \"%s\"", const char *, filter->name) {
 		VDFilterThreadContextSwapper autoSwap(&mThreadContext);
@@ -933,6 +966,7 @@ bool FilterInstance::Configure(VDXHWND parent, IVDXFilterPreview2 *ifp2) {
 
 	this->ifp2 = NULL;
 	this->ifp = NULL;
+	this->fma.fmpreview = NULL;
 
 	return success;
 }

@@ -176,7 +176,7 @@ void VDVideoFilterPreviewZoomPopup::OnPaint() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FilterPreview : public IVDXFilterPreview2, public vdrefcounted<IVDVideoFilterPreviewDialog> {
+class FilterPreview : public IVDXFilterPreview2, public IFilterModPreview, public vdrefcounted<IVDVideoFilterPreviewDialog> {
 	FilterPreview(const FilterPreview&);
 	FilterPreview& operator=(const FilterPreview&);
 public:
@@ -184,6 +184,7 @@ public:
 	~FilterPreview();
 
 	IVDXFilterPreview2 *AsIVDXFilterPreview2() { return this; }
+	IFilterModPreview *AsIFilterModPreview() { return this; }
 	void SetInitialTime(VDTime t);
 
 	void SetButtonCallback(VDXFilterPreviewButtonCallback, void *);
@@ -200,6 +201,7 @@ public:
 	void Close();
 	bool SampleCurrentFrame();
 	long SampleFrames();
+	int64 FMSetPosition(int64 pos);
 
 private:
 	static INT_PTR CALLBACK StaticDlgProc(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam);
@@ -788,6 +790,12 @@ VDPosition FilterPreview::FetchFrame(VDPosition pos) {
 		return -1;
 	}
 
+	return pos;
+}
+
+int64 FilterPreview::FMSetPosition(int64 pos) { 
+	mpPosition->SetPosition(pos);
+	OnVideoRedraw();
 	return pos;
 }
 

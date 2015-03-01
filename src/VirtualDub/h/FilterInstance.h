@@ -193,6 +193,8 @@ protected:
 
 	SourceStreamPtrArray	mSourceStreamPtrArray;
 	SourceStreamArray		mSourceStreamArray;
+
+	FilterModActivation fma;
 };
 
 class VDFilterScriptWrapper : public VDScriptObject {
@@ -333,7 +335,7 @@ public:
 	bool	GetExcessiveFrameSizeState() const { return mbExcessiveFrameSize; }
 
 	bool	IsConfigurable() const;
-	bool	Configure(VDXHWND parent, IVDXFilterPreview2 *ifp2);
+	bool	Configure(VDXHWND parent, IVDXFilterPreview2 *ifp2, IFilterModPreview *ifmpreview);
 
 	void	PrepareReset();
 	uint32	Prepare(const VFBitmapInternal *inputs, uint32 numInputs, VDFilterPrepareInfo& prepareInfo);

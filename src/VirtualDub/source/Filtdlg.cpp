@@ -453,7 +453,7 @@ bool VDVideoFiltersDialog::OnCommand(uint32 id, uint32 extcode) {
 							if (mInitialTimeUS >= 0)
 								fp->SetInitialTime(mInitialTimeUS);
 
-							fRemove = !fa->Configure((VDXHWND)mhdlg, fp->AsIVDXFilterPreview2());
+							fRemove = !fa->Configure((VDXHWND)mhdlg, fp->AsIVDXFilterPreview2(), fp->AsIFilterModPreview());
 						}
 
 						fp = NULL;
@@ -517,7 +517,7 @@ bool VDVideoFiltersDialog::OnCommand(uint32 id, uint32 extcode) {
 							if (mInitialTimeUS >= 0)
 								fp->SetInitialTime(mInitialTimeUS);
 
-							fa->Configure((VDXHWND)mhdlg, fp->AsIVDXFilterPreview2());
+							fa->Configure((VDXHWND)mhdlg, fp->AsIVDXFilterPreview2(), fp->AsIFilterModPreview());
 						}
 
 						fp = NULL;

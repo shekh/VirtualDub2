@@ -87,3 +87,7 @@ VDXFilterFunctions g_VDFilterCallbacks={
 	VDFilterCallbackGetCPUFlags,
 	VDFilterCallbackGetHostVersionInfo,
 };
+
+FilterModInitFunctions g_FilterModCallbacks={
+	FilterModAdd,
+};

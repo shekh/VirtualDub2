@@ -69,6 +69,7 @@ FilterDefinitionInstance::~FilterDefinitionInstance() {
 
 void FilterDefinitionInstance::Assign(const FilterDefinition& def, int len) {
 	memset(&mDef, 0, sizeof mDef);
+	memset(&mFilterModDef, 0, sizeof mFilterModDef);
 	memcpy(&mDef, &def, std::min<size_t>(sizeof mDef, len));
 
 	mName			= def.name;
@@ -94,8 +95,14 @@ void FilterDefinitionInstance::Assign(const FilterDefinition& def, int len) {
 	mbHasStaticConfigure = (mDef.mpStaticConfigureProc != NULL);
 }
 
+void FilterDefinitionInstance::AssignFilterMod(const FilterModDefinition& def, int len) {
+	memset(&mFilterModDef, 0, sizeof mFilterModDef);
+	memcpy(&mFilterModDef, &def, std::min<size_t>(sizeof mFilterModDef, len));
+}
+
 void FilterDefinitionInstance::Deactivate() {
 	memset(&mDef, 0, sizeof mDef);
+	memset(&mFilterModDef, 0, sizeof mFilterModDef);
 }
 
 const FilterDefinition& FilterDefinitionInstance::Attach() {
@@ -124,7 +131,7 @@ void FilterDefinitionInstance::Detach() {
 
 static ListAlloc<FilterDefinitionInstance>	g_filterDefs;
 
-FilterDefinition *FilterAdd(VDXFilterModule *fm, FilterDefinition *pfd, int fd_len) {
+FilterDefinitionInstance *FilterBaseAdd(VDXFilterModule *fm, FilterDefinition *pfd, int fd_len) {
 	VDExternalModule *pExtModule = VDGetExternalModuleByFilterModule(fm);
 
 	if (pExtModule) {
@@ -135,19 +142,34 @@ FilterDefinition *FilterAdd(VDXFilterModule *fm, FilterDefinition *pfd, int fd_l
 
 			if (fdi.GetModule() == pExtModule && fdi.GetName() == pfd->name) {
 				fdi.Assign(*pfd, fd_len);
-				return const_cast<FilterDefinition *>(&fdi.GetDef());
+				return &fdi;
 			}
 		}
 
 		vdautoptr<FilterDefinitionInstance> pfdi(new FilterDefinitionInstance(pExtModule));
 		pfdi->Assign(*pfd, fd_len);
 
-		const FilterDefinition *pfdi2 = &pfdi->GetDef();
+		FilterDefinitionInstance* fdi = pfdi;
 		g_filterDefs.AddTail(pfdi.release());
 
-		return const_cast<FilterDefinition *>(pfdi2);
+		return fdi;
 	}
 
+	return NULL;
+}
+
+FilterDefinition *FilterAdd(VDXFilterModule *fm, FilterDefinition *pfd, int fd_len) {
+	FilterDefinitionInstance* fdi = FilterBaseAdd(fm,pfd,fd_len);
+	if(fdi) return const_cast<FilterDefinition *>(&fdi->GetDef());
+	return NULL;
+}
+
+FilterDefinition *FilterModAdd(VDXFilterModule *fm, FilterDefinition *pfd, int fd_len, FilterModDefinition *pfm, int fm_len) {
+	FilterDefinitionInstance* fdi = FilterBaseAdd(fm,pfd,fd_len);
+	if(fdi){
+		fdi->AssignFilterMod(*pfm, fm_len);
+		return const_cast<FilterDefinition *>(&fdi->GetDef());
+	}
 	return NULL;
 }
 

@@ -18,6 +18,7 @@
 #include "misc.h"
 
 extern VDXFilterFunctions g_VDFilterCallbacks;
+extern FilterModInitFunctions g_FilterModCallbacks;
 
 namespace {
 	class VDShadowedPluginDescription : public VDPluginDescription, public vdrefcounted<IVDRefCount> {
@@ -282,6 +283,7 @@ void VDExternalModule::ReconnectOldPlugins() {
 
 		try {
 			mModuleInfo.initProc   = (VDXFilterModuleInitProc  )GetProcAddress((HINSTANCE)mModuleInfo.hInstModule, "VirtualdubFilterModuleInit2");
+			mModuleInfo.filterModInitProc   = (FilterModModuleInitProc  )GetProcAddress((HINSTANCE)mModuleInfo.hInstModule, "FilterModModuleInit");
 			mModuleInfo.deinitProc = (VDXFilterModuleDeinitProc)GetProcAddress((HINSTANCE)mModuleInfo.hInstModule, "VirtualdubFilterModuleDeinit");
 
 			if (!mModuleInfo.initProc) {
@@ -304,8 +306,15 @@ void VDExternalModule::ReconnectOldPlugins() {
 			int ver_hi = VIRTUALDUB_FILTERDEF_VERSION;
 			int ver_lo = VIRTUALDUB_FILTERDEF_COMPATIBLE;
 
-			if (mModuleInfo.initProc(&mModuleInfo, &g_VDFilterCallbacks, ver_hi, ver_lo))
-				throw MyError("Error initializing module \"%s\".",nameA.c_str());
+			if (mModuleInfo.filterModInitProc) {
+				int mod_hi = 1;
+				int mod_lo = 1;
+				if (mModuleInfo.filterModInitProc(&mModuleInfo, &g_FilterModCallbacks, ver_hi, ver_lo, mod_hi, mod_lo))
+					throw MyError("Error initializing module \"%s\".",nameA.c_str());
+			} else {
+				if (mModuleInfo.initProc(&mModuleInfo, &g_VDFilterCallbacks, ver_hi, ver_lo))
+					throw MyError("Error initializing module \"%s\".",nameA.c_str());
+			}
 
 			if (ver_hi < VIRTUALDUB_FILTERDEF_COMPATIBLE) {
 				mModuleInfo.deinitProc(&mModuleInfo, &g_VDFilterCallbacks);

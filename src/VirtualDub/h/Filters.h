@@ -43,6 +43,7 @@ public:
 	~FilterDefinitionInstance();
 
 	void Assign(const FilterDefinition& def, int len);
+	void AssignFilterMod(const FilterModDefinition& def, int len);
 	void Deactivate();
 
 	const FilterDefinition& Attach();
@@ -51,6 +52,7 @@ public:
 	int	GetAPIVersion() const { return mAPIVersion; }
 
 	const FilterDefinition& GetDef() const { return mDef; }
+	const FilterModDefinition& GetFilterModDef() const { return mFilterModDef; }
 	VDExternalModule	*GetModule() const { return mpExtModule; }
 
 	const VDStringA&	GetName() const { return mName; }
@@ -64,6 +66,7 @@ protected:
 	VDExternalModule	*mpExtModule;
 	int					mAPIVersion;
 	VDXFilterDefinition	mDef;
+	FilterModDefinition	mFilterModDef;
 	VDAtomicInt			mRefCount;
 	VDStringA			mName;
 	VDStringA			mAuthor;
@@ -78,7 +81,9 @@ extern VDFilterChainDesc	g_filterChain;
 
 extern FilterSystem	filters;
 
-VDXFilterDefinition *FilterAdd(VDXFilterModule *fm, VDXFilterDefinition *pfd, int fd_len);
+FilterDefinitionInstance *FilterBaseAdd(VDXFilterModule *fm, VDXFilterDefinition *pfd, int fd_len);
+FilterDefinition *FilterAdd(VDXFilterModule *fm, VDXFilterDefinition *pfd, int fd_len);
+FilterDefinition *FilterModAdd(VDXFilterModule *fm, VDXFilterDefinition *pfd, int fd_len, FilterModDefinition *pfm, int fm_len);
 void				FilterAddBuiltin(const VDXFilterDefinition *pfd);
 void				FilterRemove(VDXFilterDefinition *fd);
 void				VDFilterRemoveAll(VDExternalModule *module);
