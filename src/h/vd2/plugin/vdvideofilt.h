@@ -156,6 +156,8 @@ public:
 	virtual long SampleFrames()=0;
 };
 
+typedef void (__cdecl *FilterModPreviewPositionCallback)(int64 pos, void *pData);
+
 class IVDXFilterPreview2 : public IVDXFilterPreview {
 public:
 	virtual bool IsPreviewDisplayed() = 0;
@@ -163,7 +165,15 @@ public:
 
 class IFilterModPreview {
 public:
-  virtual int64 FMSetPosition(int64 pos)=0;
+	virtual int64 FMSetPosition(int64 pos)=0;
+	virtual void FMSetPositionCallback(FilterModPreviewPositionCallback, void *)=0;
+};
+
+class IFilterModTimeline {
+public:
+	virtual int64 GetTimelinePos()=0;
+	virtual int64 TimelineToFilterSource(int64 frame)=0;
+	virtual int64 FilterSourceToTimeline(int64 frame)=0;
 };
 
 class IVDXVideoPrefetcher : public IVDXUnknown {
@@ -403,7 +413,8 @@ public:
 	const VDXFilterDefinition *filter;
 	const FilterModDefinition *filterMod;
 	void *filter_data;
-  IFilterModPreview *fmpreview;
+	IFilterModPreview *fmpreview;
+	IFilterModTimeline *fmtimeline;
 };
 
 // These flags must match those in cpuaccel.h!

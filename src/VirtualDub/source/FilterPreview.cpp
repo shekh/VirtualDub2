@@ -204,6 +204,7 @@ public:
 	bool SampleCurrentFrame();
 	long SampleFrames();
 	int64 FMSetPosition(int64 pos);
+	void FMSetPositionCallback(FilterModPreviewPositionCallback, void *);
 	HWND GetHwnd(){ return mhdlg; }
 	int TranslateAcceleratorMessage(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
 
@@ -260,6 +261,8 @@ private:
 	void							*mpvButtonCBData;
 	VDXFilterPreviewSampleCallback	mpSampleCallback;
 	void							*mpvSampleCBData;
+	FilterModPreviewPositionCallback	mpPositionCallback;
+	void							*mpvPositionCBData;
 
 	MyError		mFailureReason;
 
@@ -308,6 +311,7 @@ FilterPreview::FilterPreview(VDFilterChainDesc *pFilterChainDesc, FilterInstance
 	, mpTimeline(0)
 	, mpButtonCallback(NULL)
 	, mpSampleCallback(NULL)
+	, mpPositionCallback(NULL)
 {
 }
 
@@ -865,6 +869,9 @@ VDPosition FilterPreview::FetchFrame(VDPosition pos) {
 		mInitialTimeUS = VDRoundToInt64(mFiltSys.GetOutputFrameRate().AsInverseDouble() * 1000000.0 * (double)pos);
 		mInitialFrame = -1;
 
+		if (mpPositionCallback)
+			mpPositionCallback(pos,mpvPositionCBData);
+
 	} catch(const MyError&) {
 		return -1;
 	}
@@ -899,6 +906,11 @@ void FilterPreview::SetButtonCallback(VDXFilterPreviewButtonCallback pfpbc, void
 void FilterPreview::SetSampleCallback(VDXFilterPreviewSampleCallback pfpsc, void *pvData) {
 	mpSampleCallback	= pfpsc;
 	mpvSampleCBData	= pvData;
+}
+
+void FilterPreview::FMSetPositionCallback(FilterModPreviewPositionCallback pfppc, void *pvData) {
+	mpPositionCallback = pfppc;
+	mpvPositionCBData	= pvData;
 }
 
 void FilterPreview::InitButton(VDXHWND hwnd) {

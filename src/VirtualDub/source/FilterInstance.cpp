@@ -34,6 +34,7 @@
 #include "filters.h"
 
 extern FilterFunctions g_VDFilterCallbacks;
+extern VDProject *g_project;
 
 /////////////////////////////////////
 
@@ -1064,6 +1065,8 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 	memset(&mfsi, 0, sizeof mfsi);
 	mSourceFrameCount = 0;
 	mpSourceFrames = NULL;
+
+	fma.fmtimeline = &g_project->filterModTimeline;
 
 	uint32 flags = FILTERPARAM_SWAP_BUFFERS;
 

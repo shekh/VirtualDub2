@@ -405,6 +405,7 @@ VDProject::VDProject()
 	, mVideoMarkedPostFiltersFrameCount(0)
 	, mAudioSourceMode(kVDAudioSourceMode_Source)
 {
+	filterModTimeline.project = this;
 }
 
 VDProject::~VDProject() {
@@ -2431,4 +2432,17 @@ void VDProject::SetAudioSource() {
 void VDProject::OnDubAbort(IDubber *, const bool&) {
 	if (mpCB)
 		mpCB->UIAbortDubMessageLoop();
+}
+
+int64 FilterModTimeline::GetTimelinePos() {
+	return project->GetCurrentFrame();
+}
+
+int64 FilterModTimeline::TimelineToFilterSource(int64 frame) {
+	return project->GetTimeline().TimelineToSourceFrame(frame);
+}
+
+int64 FilterModTimeline::FilterSourceToTimeline(int64 frame) {
+	bool masked;
+	return project->GetTimeline().GetSubset().revLookupFrame(frame,masked);
 }

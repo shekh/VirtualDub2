@@ -25,6 +25,7 @@ class IDubber;
 struct VDAVIOutputRawVideoFormat;
 struct VDAVIOutputCLITemplate;
 class VDFile;
+class VDProject;
 
 enum VDAudioSourceMode {
 	kVDAudioSourceMode_None		= 0,
@@ -71,6 +72,16 @@ enum {
 	kVDProjectCmd_ScrubUpdateNext,
 	kVDProjectCmd_SetSelectionStart,
 	kVDProjectCmd_SetSelectionEnd
+};
+
+class FilterModTimeline: public IFilterModTimeline {
+public:
+	VDProject* project;
+
+	FilterModTimeline(){ project=0; }
+	virtual int64 GetTimelinePos();
+	virtual int64 TimelineToFilterSource(int64 frame);
+	virtual int64 FilterSourceToTimeline(int64 frame);
 };
 
 class VDProject {
@@ -219,6 +230,8 @@ public:
 	void EndFilterUpdates();
 
 	void SceneShuttleStop();
+
+	FilterModTimeline filterModTimeline;
 
 protected:
 	void AdjustTimelineForFilterChanges(const VDFraction& oldRate, sint64 oldFrameCount, const VDFraction& newRate, sint64 newFrameCount);
