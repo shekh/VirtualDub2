@@ -1144,11 +1144,11 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 				flags = FILTERPARAM_NOT_SUPPORTED;
 		}
 
-		if (fma.filter && fma.filter->paramProc) {
+		if (fma.filterMod && fma.filterMod->paramProc) {
 			vdprotected1("preparing filter \"%s\"", const char *, filter->name) {
 				VDFilterThreadContextSwapper autoSwap(&mThreadContext);
 
-				mFilterModFlags = fma.filter->paramProc(AsVDXFilterActivation(), &g_VDFilterCallbacks);
+				mFilterModFlags = fma.filterMod->paramProc(AsVDXFilterActivation(), &g_VDFilterCallbacks);
 			}
 		} else {
 			mFilterModFlags = 0;
