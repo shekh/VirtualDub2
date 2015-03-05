@@ -107,6 +107,11 @@ public:
 	void interleave_X8R8G8B8();
 	void interleave_B8R8();
 
+	void conv_X16_to_8888();
+	void conv_8888_to_X16();
+	void conv_X16_to_X32F();
+	void conv_X32F_to_X16();
+
 	void merge_fields(uint32 w, uint32 h, uint32 bpr);
 	void split_fields(uint32 bpr);
 

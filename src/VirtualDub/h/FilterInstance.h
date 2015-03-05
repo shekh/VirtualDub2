@@ -144,6 +144,9 @@ public:
 	virtual FilterModPixmapInfo* GetPixmapInfo(VDXPixmap* pixmap) {
 		return &((VDPixmap*)pixmap)->info;
 	}
+	virtual uint64 GetFormat_XRGB64() {
+		return nsVDPixmap::kPixFormat_XRGB64;
+	}
 };
 
 class FilterInstanceAutoDeinit;

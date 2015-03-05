@@ -81,6 +81,7 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
 	/* YUV420ib_Planar_FR */		{ "YUV420ib-FR",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
 	/* YUV420ib_Planar_709 */		{ "YUV420ib-709",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
 	/* YUV420ib_Planar_709_FR */	{ "YUV420ib-709-FR",false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+	/* RGB64 */						{ "XRGB64",	false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
 };
 
 namespace {

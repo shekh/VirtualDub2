@@ -47,6 +47,7 @@ static long flipv_param(VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 		case nsVDXPixmap::kPixFormat_YUV422_YUYV_FR:
 		case nsVDXPixmap::kPixFormat_YUV422_YUYV_709:
 		case nsVDXPixmap::kPixFormat_YUV422_YUYV_709_FR:
+		case nsVDPixmap::kPixFormat_XRGB64:
 			break;
 		case nsVDXPixmap::kPixFormat_YUV444_Planar:
 		case nsVDXPixmap::kPixFormat_YUV444_Planar_FR:

@@ -22,18 +22,31 @@ class VDVFFlipHorizontally : public VDXVideoFilter {
 public:
 	uint32 GetParams();
 	void Run();
+	void Run64();
 };
 
 uint32 VDVFFlipHorizontally::GetParams() {
 	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
 
-	if (pxlsrc.format != nsVDXPixmap::kPixFormat_XRGB8888)
-		return FILTERPARAM_NOT_SUPPORTED;
+	switch(pxlsrc.format) {
+		case nsVDXPixmap::kPixFormat_XRGB8888:
+		case nsVDPixmap::kPixFormat_XRGB64:
+			break;
+
+		default:
+			return FILTERPARAM_NOT_SUPPORTED;
+	}
 
 	return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_SWAP_BUFFERS;
 }
 
 void VDVFFlipHorizontally::Run() {
+	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
+	if (pxlsrc.format == nsVDPixmap::kPixFormat_XRGB64) {
+		Run64();
+		return;
+	}
+
 	uint32 *src = fa->src.data, *srct;
 	uint32 *dst = fa->dst.data-1;
 	unsigned long h, w;
@@ -48,6 +61,20 @@ void VDVFFlipHorizontally::Run() {
 		src = (uint32 *)((char *)src + fa->src.pitch);
 		dst = (uint32 *)((char *)dst + fa->dst.pitch);
 	} while(--h);
+}
+
+void VDVFFlipHorizontally::Run64() {
+	int w = fa->dst.w;
+	{for(int y=0; y<fa->dst.h; y++){
+		uint64 *src = (uint64*)(size_t(fa->src.data) + fa->src.pitch*y);
+		uint64 *dst = (uint64*)(size_t(fa->dst.data) + fa->dst.pitch*y + w*8);
+
+		{for(int x=0; x<w; x++){
+			dst--;
+			*dst = *src;
+			src++;
+		}}
+	}}
 }
 
 extern const VDXFilterDefinition g_VDVFFlipHorizontally = VDXVideoFilterDefinition<VDVFFlipHorizontally>(

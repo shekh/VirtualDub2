@@ -168,7 +168,8 @@ void VDPixmapInitBlittersReference(VDPixmapBlitterTable& table) {
 		kPixFormat_YUV420ib_Planar,
 		kPixFormat_YUV420ib_Planar_FR,
 		kPixFormat_YUV420ib_Planar_709,
-		kPixFormat_YUV420ib_Planar_709_FR;
+		kPixFormat_YUV420ib_Planar_709_FR,
+		kPixFormat_XRGB64;
 
 	uberblitDstFormats =
 		kPixFormat_XRGB1555,
@@ -222,7 +223,8 @@ void VDPixmapInitBlittersReference(VDPixmapBlitterTable& table) {
 		kPixFormat_YUV420ib_Planar,
 		kPixFormat_YUV420ib_Planar_FR,
 		kPixFormat_YUV420ib_Planar_709,
-		kPixFormat_YUV420ib_Planar_709_FR;
+		kPixFormat_YUV420ib_Planar_709_FR,
+		kPixFormat_XRGB64;
 
 	table.AddBlitter(uberblitSrcFormats, uberblitDstFormats, VDPixmapBlt_UberblitAdapter);
 

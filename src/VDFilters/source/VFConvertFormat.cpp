@@ -25,6 +25,7 @@
 namespace {
 	const int kFormats[]={
 		nsVDXPixmap::kPixFormat_XRGB8888,
+		nsVDPixmap::kPixFormat_XRGB64,
 		nsVDXPixmap::kPixFormat_YUV444_Planar,
 		nsVDXPixmap::kPixFormat_YUV422_Planar,
 		nsVDXPixmap::kPixFormat_YUV420_Planar,
@@ -90,6 +91,7 @@ VDVFilterConvertFormatConfigDialog::VDVFilterConvertFormatConfigDialog(int forma
 
 bool VDVFilterConvertFormatConfigDialog::OnLoaded() {
 	LBAddString(IDC_FORMATS, L"32-bit RGB");
+	LBAddString(IDC_FORMATS, L"64-bit RGB");
 
 	VDStringW s;
 	for(int i=0; i<4; ++i) {
@@ -187,6 +189,10 @@ void VDVFilterConvertFormat::GetSettingString(char *buf, int maxlen) {
 		case nsVDXPixmap::kPixFormat_XRGB8888:
 		default:
 			s = "RGB32";
+			break;
+
+		case nsVDPixmap::kPixFormat_XRGB64:
+			s = "RGB64";
 			break;
 
 		case nsVDXPixmap::kPixFormat_YUV444_Planar:

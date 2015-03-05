@@ -502,7 +502,7 @@ bool VDDialogSelectVideoFormatW32::OnErase(VDZHDC hdc) {
 
 void VDDialogSelectVideoFormatW32::FormatItem::Init(int format) {
 	mFormat = format;
-	VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == 57);
+	VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == 58);
 }
 
 void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s) const {

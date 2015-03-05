@@ -906,6 +906,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\source\uberblit_rgb64.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\source\uberblit_swizzle.cpp"
 				>
 			</File>
@@ -1076,6 +1080,10 @@
 			</File>
 			<File
 				RelativePath=".\h\uberblit_rgb.h"
+				>
+			</File>
+			<File
+				RelativePath=".\h\uberblit_rgb64.h"
 				>
 			</File>
 			<File

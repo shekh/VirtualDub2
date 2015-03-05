@@ -428,6 +428,7 @@ bool VDVideoDisplayMinidriverGDI::Init(HWND hwnd, HMONITOR hmonitor, const VDVid
 	case nsVDPixmap::kPixFormat_Y8_FR:
 	case nsVDPixmap::kPixFormat_YUV422_V210:
 	case nsVDPixmap::kPixFormat_YUV420_NV12:
+	case nsVDPixmap::kPixFormat_XRGB64:
 		if (!info.bAllowConversion)
 	default:
 			return false;
@@ -557,6 +558,7 @@ bool VDVideoDisplayMinidriverGDI::Init(HWND hwnd, HMONITOR hmonitor, const VDVid
 				case nsVDPixmap::kPixFormat_YUV422_UYVY_709:
 				case nsVDPixmap::kPixFormat_YUV420_NV12:
 				case nsVDPixmap::kPixFormat_RGB565:
+				case nsVDPixmap::kPixFormat_XRGB64:
 					switch(mScreenFormat) {
 					case nsVDPixmap::kPixFormat_XRGB1555:
 						bih.bV4BitCount			= 16;

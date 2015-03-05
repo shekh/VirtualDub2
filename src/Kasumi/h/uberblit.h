@@ -30,7 +30,8 @@ enum VDPixmapFormatToken {
 	kVDPixType_V210			= 0x00000013,		// v210 (4:2:2 10 bit)
 	kVDPixType_8_B8R8		= 0x00000014,		// NV12
 	kVDPixType_B8R8			= 0x00000015,
-	kVDPixType_Mask			= 0x0000003F,
+	kVDPixType_16x4_LE		= 0x00100000,
+	kVDPixType_Mask			= 0x0010003F,
 
 	kVDPixSamp_444			= 0x00000040,
 	kVDPixSamp_422			= 0x00000080,

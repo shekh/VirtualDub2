@@ -82,6 +82,7 @@ uint32 VDPixmapGetFormatTokenFromFormat(int format) {
 	case kPixFormat_YUV420ib_Planar_FR:		return kVDPixType_8_8_8 | kVDPixSamp_420_MPEG2INT2 | kVDPixSpace_YCC_601_FR;
 	case kPixFormat_YUV420ib_Planar_709:	return kVDPixType_8_8_8 | kVDPixSamp_420_MPEG2INT2 | kVDPixSpace_YCC_709;
 	case kPixFormat_YUV420ib_Planar_709_FR:	return kVDPixType_8_8_8 | kVDPixSamp_420_MPEG2INT2 | kVDPixSpace_YCC_709_FR;
+	case kPixFormat_XRGB64:		return kVDPixType_16x4_LE | kVDPixSamp_444 | kVDPixSpace_BGR;
 	default:
 		VDASSERT(false);
 		return 0;
@@ -130,6 +131,7 @@ namespace {
 			case kVDPixType_V210:
 			case kVDPixType_8_B8R8:
 			case kVDPixType_B8R8:
+			case kVDPixType_16x4_LE:
 			default:
 				return 0;
 
@@ -425,6 +427,10 @@ namespace {
 							gen.interleave_X8R8G8B8();
 							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8888;
 							break;
+						case kVDPixType_16x4_LE:
+							gen.conv_X16_to_8888();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8888;
+							break;
 						default:
 							VDASSERT(false);
 							break;
@@ -681,6 +687,22 @@ namespace {
 					}
 					break;
 
+				case kVDPixType_16x4_LE:
+					switch(srcType) {
+						case kVDPixType_8888:
+							gen.conv_8888_to_X16();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
+							break;
+						case kVDPixType_32Fx4_LE:
+							gen.conv_X32F_to_X16();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
+							break;
+						default:
+							targetType = kVDPixType_32Fx4_LE;
+							goto type_reconvert;
+					}
+					break;
+
 				default:
 					VDASSERT(false);
 					break;
@@ -742,6 +764,10 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 	case kVDPixType_8888:
 	case kVDPixType_32F_LE:
 		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w*4);
+		break;
+
+	case kVDPixType_16x4_LE:
+		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w*8);
 		break;
 
 	case kVDPixType_32Fx4_LE:
@@ -869,6 +895,11 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 		case kVDPixType_V210:
 			gen.conv_V210_to_32F();
 			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_32F_32F_32F_LE;
+			break;
+
+		case kVDPixType_16x4_LE:
+			gen.conv_X16_to_X32F();
+			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_32Fx4_LE;
 			break;
 		}
 

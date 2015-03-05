@@ -28,6 +28,7 @@
 #include "uberblit_ycbcr.h"
 #include "uberblit_ycbcr_generic.h"
 #include "uberblit_rgb.h"
+#include "uberblit_rgb64.h"
 #include "uberblit_swizzle.h"
 #include "uberblit_pal.h"
 #include "uberblit_16f.h"
@@ -1173,6 +1174,50 @@ void VDPixmapUberBlitterGenerator::conv_32F_to_8() {
 void VDPixmapUberBlitterGenerator::conv_X32F_to_8888() {
 	StackEntry *args = &mStack.back();
 	VDPixmapGen_X32B32G32R32F_To_X8R8G8B8 *src = new VDPixmapGen_X32B32G32R32F_To_X8R8G8B8;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
+void VDPixmapUberBlitterGenerator::conv_X16_to_8888() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_X16R16G16B16_To_X8R8G8B8 *src = new VDPixmapGen_X16R16G16B16_To_X8R8G8B8;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
+void VDPixmapUberBlitterGenerator::conv_8888_to_X16() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_X8R8G8B8_To_X16R16G16B16 *src = new VDPixmapGen_X8R8G8B8_To_X16R16G16B16;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
+void VDPixmapUberBlitterGenerator::conv_X32F_to_X16() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_X32B32G32R32F_To_X16R16G16B16 *src = new VDPixmapGen_X32B32G32R32F_To_X16R16G16B16;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
+void VDPixmapUberBlitterGenerator::conv_X16_to_X32F() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_X16R16G16B16_To_X32B32G32R32F *src = new VDPixmapGen_X16R16G16B16_To_X32B32G32R32F;
 
 	src->Init(args[0].mpSrc, args[0].mSrcIndex);
 

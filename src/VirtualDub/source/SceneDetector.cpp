@@ -580,8 +580,11 @@ void SceneDetector::BitmapToLummap(uint32 *lummap, const VDPixmap& pxsrc) {
 						*lummap++ = scene_lumtileI8(src, pxsrc.w&7, mh, pxsrc.pitch);
 					break;
 
+				case nsVDPixmap::kPixFormat_XRGB64:
+					break;
+
 				default:
-					VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == nsVDPixmap::kPixFormat_YUV420ib_Planar_709_FR + 1);
+					VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == nsVDPixmap::kPixFormat_XRGB64 + 1);
 					VDASSERT(false);
 			}
 		} while(--h);
