@@ -1,0 +1,4 @@
+This library contains parts of FFMPEG (http://ffmpeg.org).
+Files were modified to cut down dependencies on FFMPEG sources.
+Some features like location tags were disabled.
+Support for YUV formats was disabled.

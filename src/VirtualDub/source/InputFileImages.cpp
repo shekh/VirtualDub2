@@ -21,6 +21,7 @@
 
 #include <vd2/system/error.h>
 #include <vd2/system/filesys.h>
+#include <vd2/libav_tiff/tiff_image.h>
 #include "ProgressDialog.h"
 #include "VideoSourceImages.h"
 #include "InputFileImages.h"
@@ -163,7 +164,7 @@ public:
 	uint32 GetFlags() { return kF_Video; }
 
 	const wchar_t *GetFilenamePattern() {
-		return L"Image sequence (*.png,*.bmp,*.tga,*.jpg,*.jpeg,*.iff)\0*.png;*.bmp;*.tga;*.jpg;*.jpeg;*.iff\0";
+		return L"Image sequence (*.png,*.bmp,*.tga,*.jpg,*.jpeg,*.tif,*.tiff,*.iff)\0*.png;*.bmp;*.tga;*.jpg;*.jpeg;*.tif;*.tiff;*.iff\0";
 	}
 
 	bool DetectByFilename(const wchar_t *pszFilename) {
@@ -191,6 +192,9 @@ public:
 
 			// Check for MayaIFF (FOR4....CIMG)
 			if (VDIsMayaIFFHeader(pHeader, nHeaderSize))
+				return kDC_High;
+
+			if (VDIsTiffHeader(pHeader, nHeaderSize))
 				return kDC_High;
 
 			if (buf[0] == 0xFF && buf[1] == 0xD8) {

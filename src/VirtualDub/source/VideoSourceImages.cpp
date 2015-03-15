@@ -10,6 +10,7 @@
 #include <vd2/Dita/resources.h>
 #include <vd2/Meia/decode_png.h>
 #include <vd2/Kasumi/pixmapops.h>
+#include <vd2/libav_tiff/tiff_image.h>
 #include "ProgressDialog.h"
 #include "InputFileImages.h"
 #include "VideoSourceImages.h"
@@ -66,6 +67,7 @@ private:
 	vdautoptr<IVDJPEGDecoder> mpJPEGDecoder;
 	vdautoptr<IVDImageDecoderIFF> mpIFFDecoder;
 	vdautoptr<IVDImageDecoderPNG> mpPNGDecoder;
+	vdautoptr<IVDImageDecoderTIFF> mpTIFFDecoder;
 };
 
 IVDVideoSource *VDCreateVideoSourceImages(VDInputFileImages *parent) {
@@ -210,6 +212,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 	bool bIsBMP = false;
 	bool bIsIFF = false;
 	bool bIsTGA = false;
+	bool bIsTIFF = false;
 
 	bIsPNG = VDDecodePNGHeader(inputBuffer, data_len, w, h, bHasAlpha);
 	if (!bIsPNG) {
@@ -219,13 +222,15 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 			if (!bIsBMP) {
 				bIsIFF = VDIsMayaIFFHeader(inputBuffer, data_len);
 				if (!bIsIFF)
-					bIsTGA = DecodeTGAHeader(inputBuffer, data_len, w, h, bHasAlpha);
+				  bIsTIFF = VDIsTiffHeader(inputBuffer, data_len);
+				  if (!bIsTIFF)
+					  bIsTGA = DecodeTGAHeader(inputBuffer, data_len, w, h, bHasAlpha);
 			}
 		}
 	}
 
-	if (!bIsBMP && !bIsTGA && !bIsJPG && !bIsPNG && !bIsIFF)
-		throw MyError("Image file must be in PNG, Windows BMP, truecolor TARGA format, MayaIFF, or sequential JPEG format.");
+	if (!bIsBMP && !bIsTGA && !bIsJPG && !bIsPNG && !bIsIFF && !bIsTIFF)
+		throw MyError("Image file must be in PNG, Windows BMP, truecolor TARGA format, MayaIFF, TIFF, or sequential JPEG format.");
 
 	if (bIsJPG) {
 		if (!mpJPEGDecoder)
@@ -241,6 +246,13 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 		pxIFF = mpIFFDecoder->Decode(inputBuffer, data_len);
 		w = pxIFF.w;
 		h = pxIFF.h;
+	}
+
+	if (bIsTIFF) {
+		if (!mpTIFFDecoder)
+			mpTIFFDecoder = VDCreateImageDecoderTIFF();
+		mpTIFFDecoder->Decode(inputBuffer, data_len);
+		mpTIFFDecoder->GetSize(w, h);
 	}
 
 	// Check image header.
@@ -291,6 +303,20 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 
 	if (bIsIFF)
 		VDPixmapBlt(getTargetFormat(), pxIFF);
+
+	if (bIsTIFF) {
+		const VDPixmap& dst = getTargetFormat();
+		switch(dst.format){
+		case nsVDPixmap::kPixFormat_XRGB8888:
+			mpTIFFDecoder->GetImage((char *)mvbFrameBuffer.data + mvbFrameBuffer.pitch * (mvbFrameBuffer.h - 1), -mvbFrameBuffer.pitch, nsVDPixmap::kPixFormat_XRGB8888);
+			break;
+		default:
+			VDPixmapBuffer buf;
+			buf.init(w,h,nsVDPixmap::kPixFormat_XRGB8888);
+			mpTIFFDecoder->GetImage(buf.data, buf.pitch, nsVDPixmap::kPixFormat_XRGB8888);
+			VDPixmapBlt(dst, buf);
+		}
+	}
 
 	if (bIsBMP)
 		DecodeBMP(inputBuffer, data_len, VDAsPixmap(mvbFrameBuffer));
