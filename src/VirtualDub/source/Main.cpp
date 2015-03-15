@@ -508,7 +508,9 @@ void VDSaveImageSeqDialogW32::ChangeExtension(const wchar_t *newExtension) {
 		!wcscmp(mPostfix.c_str(), L".jpeg") ||
 		!wcscmp(mPostfix.c_str(), L".jpg") ||
 		!wcscmp(mPostfix.c_str(), L".tga") ||
-		!wcscmp(mPostfix.c_str(), L".png")
+		!wcscmp(mPostfix.c_str(), L".png") ||
+		!wcscmp(mPostfix.c_str(), L".tiff") ||
+		!wcscmp(mPostfix.c_str(), L".tif")
 		) {
 		VDSetWindowTextW32(GetDlgItem(mhdlg, IDC_FILENAME_SUFFIX), newExtension);
 	}
@@ -530,6 +532,8 @@ INT_PTR VDSaveImageSeqDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 							: mFormat == AVIOutputImages::kFormatTGAUncompressed ? IDC_FORMAT_TGAUNCOMPRESSED
 							: mFormat == AVIOutputImages::kFormatBMP ? IDC_FORMAT_BMP
 							: mFormat == AVIOutputImages::kFormatJPEG ? IDC_FORMAT_JPEG
+							: mFormat == AVIOutputImages::kFormatTIFF_LZW ? IDC_FORMAT_TIFF_LZW
+							: mFormat == AVIOutputImages::kFormatTIFF_RAW ? IDC_FORMAT_TIFF_RAW
 							: IDC_FORMAT_PNG
 							, BST_CHECKED);
 		CheckDlgButton(mhdlg, IDC_QUICK, mbQuickCompress ? BST_CHECKED : BST_UNCHECKED);
@@ -626,6 +630,22 @@ INT_PTR VDSaveImageSeqDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 				UpdateEnables();
 				mFormat = AVIOutputImages::kFormatPNG;
 				ChangeExtension(L".png");
+			}
+			return TRUE;
+
+		case IDC_FORMAT_TIFF_LZW:
+			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
+				UpdateEnables();
+				mFormat = AVIOutputImages::kFormatTIFF_LZW;
+				ChangeExtension(L".tiff");
+			}
+			return TRUE;
+
+		case IDC_FORMAT_TIFF_RAW:
+			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
+				UpdateEnables();
+				mFormat = AVIOutputImages::kFormatTIFF_RAW;
+				ChangeExtension(L".tiff");
 			}
 			return TRUE;
 

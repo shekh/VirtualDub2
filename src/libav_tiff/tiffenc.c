@@ -538,7 +538,7 @@ fail:
     return ret < 0 ? ret : 0;
 }
 
-int tiff_encode_init(AVCodecContext *avctx)
+int tiff_encode_init(AVCodecContext *avctx, int compr)
 {
     TiffEncoderContext *s = av_mallocz(sizeof(TiffEncoderContext));
     avctx->priv_data = s;
@@ -551,7 +551,7 @@ int tiff_encode_init(AVCodecContext *avctx)
     //avctx->coded_frame->key_frame = 1;
     s->avctx = avctx;
 
-    s->compr = TIFF_LZW;
+    s->compr = compr;
 
     return 0;
 }

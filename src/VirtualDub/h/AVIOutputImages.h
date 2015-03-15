@@ -38,6 +38,8 @@ public:
 		kFormatJPEG,
 		kFormatPNG,
 		kFormatTGAUncompressed,
+		kFormatTIFF_LZW,
+		kFormatTIFF_RAW,
 		kFormatCount
 	};
 

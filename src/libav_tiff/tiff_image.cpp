@@ -1,6 +1,7 @@
 #include <vd2/libav_tiff/tiff_image.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmaputils.h>
+#include <vd2/Kasumi/pixmapops.h>
 #include <vd2/system/error.h>
 
 extern "C" {
@@ -10,7 +11,7 @@ int tiff_init(AVCodecContext *avctx);
 int tiff_end(AVCodecContext *avctx);
 int tiff_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt);
 int tiff_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFrame *pict, int *got_packet);
-int tiff_encode_init(AVCodecContext *avctx);
+int tiff_encode_init(AVCodecContext *avctx, int compr);
 int tiff_encode_close(AVCodecContext *avctx);
 };
 
@@ -42,8 +43,16 @@ protected:
   AVFrame* frame;
 };
 
+class VDImageEncoderTIFF : public IVDImageEncoderTIFF {
+	void Encode(const VDPixmap& px, void *&p, uint32& len, bool lzw_compress, bool alpha);
+};
+
 IVDImageDecoderTIFF *VDCreateImageDecoderTIFF() {
 	return new VDImageDecoderTIFF;
+}
+
+IVDImageEncoderTIFF *VDCreateImageEncoderTIFF() {
+	return new VDImageEncoderTIFF;
 }
 
 void VDImageDecoderTIFF::GetSize(int& w, int& h)
@@ -161,4 +170,61 @@ void VDImageDecoderTIFF::GetImage(void *p, int pitch, int format)
   }}
 
   av_frame_free(&frame);
+}
+
+void VDImageEncoderTIFF::Encode(const VDPixmap& px, void *&p, uint32& len, bool lzw_compress, bool alpha)
+{
+  VDPixmapBuffer buf;
+  buf.init(px.w,px.h,alpha ? nsVDPixmap::kPixFormat_XRGB8888:nsVDPixmap::kPixFormat_RGB888);
+	VDPixmapBlt(buf, px);
+
+  {for(int y=0; y<px.h; y++){
+    uint8_t* s = (uint8_t*)buf.data + buf.pitch*y;
+
+    if(buf.format==nsVDPixmap::kPixFormat_RGB888) {for(int x=0; x<px.w; x++){
+      int a = s[0];
+      int b = s[2];
+      s[0] = b;
+      s[2] = a;
+
+      s+=3;
+    }}
+
+    if(buf.format==nsVDPixmap::kPixFormat_XRGB8888) {for(int x=0; x<px.w; x++){
+      int a = s[0];
+      int b = s[2];
+      s[0] = b;
+      s[2] = a;
+
+      s+=4;
+    }}
+  }}
+
+  AVFrame frame = {0};
+  frame.width = px.w;
+  frame.height = px.h;
+  frame.data[0] = (uint8_t*)buf.data;
+  frame.linesize[0] = buf.pitch;
+
+  switch(buf.format){
+  case nsVDPixmap::kPixFormat_RGB888:
+    frame.pix_fmt = AV_PIX_FMT_RGB24;
+    break;
+  case nsVDPixmap::kPixFormat_XRGB8888:
+    frame.pix_fmt = AV_PIX_FMT_RGBA;
+    break;
+  }
+
+  AVCodecContext ctx = {0};
+  ctx.pix_fmt = frame.pix_fmt;
+  ctx.width = frame.width;
+  ctx.height = frame.height;
+  tiff_encode_init(&ctx, lzw_compress ? TIFF_LZW:TIFF_RAW);
+  AVPacket pkt = {0};
+  int got_packet = 0;
+  tiff_encode_frame(&ctx,&pkt,&frame,&got_packet);
+  tiff_encode_close(&ctx);
+
+  p = pkt.data;
+  len = pkt.size;
 }

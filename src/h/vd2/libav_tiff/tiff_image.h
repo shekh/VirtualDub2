@@ -16,6 +16,13 @@ public:
 	virtual void GetImage(void *p, int pitch, int format) = 0;
 };
 
+class VDINTERFACE IVDImageEncoderTIFF {
+public:
+	virtual ~IVDImageEncoderTIFF() {}
+	virtual void Encode(const VDPixmap& px, void *&p, uint32& len, bool lzw_compress, bool alpha) = 0;
+};
+
 IVDImageDecoderTIFF *VDCreateImageDecoderTIFF();
+IVDImageEncoderTIFF *VDCreateImageEncoderTIFF();
 
 #endif

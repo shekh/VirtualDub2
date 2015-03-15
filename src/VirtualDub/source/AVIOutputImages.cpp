@@ -22,6 +22,7 @@
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmaputils.h>
 #include <vd2/Riza/bitmap.h>
+#include <vd2/libav_tiff/tiff_image.h>
 #include "AVIOutput.h"
 #include "AVIOutputImages.h"
 #include "imagejpeg.h"
@@ -60,6 +61,7 @@ private:
 
 	vdautoptr<IVDJPEGEncoder>		mpJPEGEncoder;
 	vdautoptr<IVDImageEncoderPNG>	mpPNGEncoder;
+	vdautoptr<IVDImageEncoderTIFF>	mpTIFFEncoder;
 	vdfastvector<char>				mOutputBuffer;
 
 public:
@@ -86,6 +88,8 @@ AVIVideoImageOutputStream::AVIVideoImageOutputStream(const wchar_t *pszPrefix, c
 		mpJPEGEncoder = VDCreateJPEGEncoder();
 	else if (mFormat == AVIOutputImages::kFormatPNG)
 		mpPNGEncoder = VDCreateImageEncoderPNG();
+	else if (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW)
+		mpTIFFEncoder = VDCreateImageEncoderTIFF();
 }
 
 AVIVideoImageOutputStream::~AVIVideoImageOutputStream() {
@@ -107,7 +111,32 @@ void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 
 	using namespace nsVDFile;
 	VDFile mFile(szFileName, kWrite | kDenyNone | kCreateAlways | kSequential);
 
-	if (mFormat == AVIOutputImages::kFormatJPEG) {
+	if (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW) {
+		bool pack_lzw = mFormat == AVIOutputImages::kFormatTIFF_LZW;
+		VDPixmapLayout pxl;
+
+		switch(bih.biBitCount) {
+		case 16:
+			VDMakeBitmapCompatiblePixmapLayout(pxl, bih.biWidth, bih.biHeight, nsVDPixmap::kPixFormat_XRGB1555, 0);
+			break;
+		case 24:
+			VDMakeBitmapCompatiblePixmapLayout(pxl, bih.biWidth, bih.biHeight, nsVDPixmap::kPixFormat_RGB888, 0);
+			break;
+		case 32:
+			VDMakeBitmapCompatiblePixmapLayout(pxl, bih.biWidth, bih.biHeight, nsVDPixmap::kPixFormat_XRGB8888, 0);
+			break;
+		default:
+			VDNEVERHERE;
+		}
+
+		void *p;
+		uint32 len;
+		mpTIFFEncoder->Encode(VDPixmapFromLayout(pxl, (void *)pBuffer), p, len, pack_lzw, false);
+
+		mFile.write(p, len);
+		free(p);
+
+	} else if (mFormat == AVIOutputImages::kFormatJPEG) {
 		mOutputBuffer.clear();
 
 		mpJPEGEncoder->Init(mQuality, true);
@@ -372,7 +401,7 @@ AVIOutputImages::AVIOutputImages(const wchar_t *szFilePrefix, const wchar_t *szF
 	, mFormat(format)
 	, mQuality(quality)
 {
-	VDASSERT(format == kFormatBMP || format == kFormatTGA || format == kFormatTGAUncompressed || format == kFormatJPEG || format == kFormatPNG);
+	VDASSERT(format == kFormatBMP || format == kFormatTGA || format == kFormatTGAUncompressed || format == kFormatJPEG || format == kFormatPNG || format == kFormatTIFF_LZW || format == kFormatTIFF_RAW);
 }
 
 AVIOutputImages::~AVIOutputImages() {

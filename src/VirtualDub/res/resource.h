@@ -768,8 +768,9 @@
 #define IDC_FORMAT_JPEG                 1384
 #define IDC_SLIDER_WHITEUP              1385
 #define IDC_FORMAT_PNG                  1385
-#define IDC_FORMAT_TGA2                 1386
 #define IDC_FORMAT_TGAUNCOMPRESSED      1386
+#define IDC_FORMAT_TIFF_LZW             1387
+#define IDC_FORMAT_TIFF_RAW             1388
 #define IDC_SPIN_XOFFSET                1389
 #define IDC_SPIN_YOFFSET                1390
 #define IDC_OPACITY                     1391
