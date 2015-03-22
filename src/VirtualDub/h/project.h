@@ -84,6 +84,12 @@ public:
 	virtual int64 FilterSourceToTimeline(int64 frame);
 };
 
+class FilterModSystem: public IFilterModSystem {
+public:
+	virtual bool CreateVideoFilter(VDXHWND hParent, FilterReturnInfo& a);
+	virtual bool FindVideoFilter(const char* name, FilterReturnInfo& a);
+};
+
 class VDProject {
 public:
 	VDProject();
@@ -232,6 +238,7 @@ public:
 	void SceneShuttleStop();
 
 	FilterModTimeline filterModTimeline;
+	FilterModSystem filterModSystem;
 
 protected:
 	void AdjustTimelineForFilterChanges(const VDFraction& oldRate, sint64 oldFrameCount, const VDFraction& newRate, sint64 newFrameCount);

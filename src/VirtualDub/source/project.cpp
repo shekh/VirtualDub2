@@ -2446,3 +2446,45 @@ int64 FilterModTimeline::FilterSourceToTimeline(int64 frame) {
 	bool masked;
 	return project->GetTimeline().GetSubset().revLookupFrame(frame,masked);
 }
+
+FilterDefinitionInstance *VDUIShowDialogAddFilter(VDGUIHandle hParent);
+
+bool FilterModSystem::CreateVideoFilter(VDXHWND hParent, FilterReturnInfo& a)
+{
+	FilterDefinitionInstance *fdi = VDUIShowDialogAddFilter((VDGUIHandle)hParent);
+	if(!fdi) return false;
+	a.setName(fdi->GetName().c_str());
+	a.setMaker(fdi->GetAuthor().c_str());
+	a.setDesc(fdi->GetDescription().c_str());
+	VDExternalModule* xm = fdi->GetModule();
+	if(xm)
+		a.setModulePath(xm->GetFilename().c_str());
+	else
+		a.setBuiltinDef(&fdi->GetDef());
+	return true;
+}
+
+bool FilterModSystem::FindVideoFilter(const char* name, FilterReturnInfo& a)
+{
+	std::list<FilterBlurb>	filterList;
+
+	FilterEnumerateFilters(filterList);
+
+	for(std::list<FilterBlurb>::const_iterator it(filterList.begin()), itEnd(filterList.end()); it!=itEnd; ++it) {
+		const FilterBlurb& fb = *it;
+
+		if (strfuzzycompare(fb.name.c_str(), name)) {
+			a.setName(fb.name.c_str());
+			a.setMaker(fb.author.c_str());
+			a.setDesc(fb.description.c_str());
+			VDExternalModule* xm = fb.key->GetModule();
+			if(xm)
+				a.setModulePath(xm->GetFilename().c_str());
+			else
+				a.setBuiltinDef(&fb.key->GetDef());
+			return true;
+		}
+	}
+
+	return false;
+}

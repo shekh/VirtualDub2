@@ -101,6 +101,7 @@ struct VDXFilterFunctions;
 class FilterModActivation;
 struct FilterModInitFunctions;
 struct VDXFilterModule;
+struct VDXFilterDefinition;
 class IVDXVideoPrefetcher;
 class IVDXAContext;
 
@@ -190,6 +191,21 @@ public:
 	virtual int64 GetTimelinePos()=0;
 	virtual int64 TimelineToFilterSource(int64 frame)=0;
 	virtual int64 FilterSourceToTimeline(int64 frame)=0;
+};
+
+class FilterReturnInfo {
+public:
+	virtual void setName(const char* s)=0;
+	virtual void setDesc(const char* s)=0;
+	virtual void setMaker(const char* s)=0;
+	virtual void setModulePath(const wchar_t* s)=0;
+	virtual void setBuiltinDef(const VDXFilterDefinition* desc)=0;
+};
+
+class IFilterModSystem {
+public:
+	virtual bool CreateVideoFilter(VDXHWND hParent, FilterReturnInfo& a)=0;
+	virtual bool FindVideoFilter(const char* name, FilterReturnInfo& a)=0;
 };
 
 class IVDXVideoPrefetcher : public IVDXUnknown {
@@ -431,6 +447,7 @@ public:
 	void *filter_data;
 	IFilterModPreview *fmpreview;
 	IFilterModTimeline *fmtimeline;
+	IFilterModSystem *fmsystem;
 };
 
 // These flags must match those in cpuaccel.h!

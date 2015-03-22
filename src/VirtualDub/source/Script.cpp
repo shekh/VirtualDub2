@@ -195,7 +195,7 @@ void RunScriptMemory(const char *mem, bool stopAtReloadMarker) {
 //
 ///////////////////////////////////////////////////////////////////////////
 
-static bool strfuzzycompare(const char *s, const char *t) {
+bool strfuzzycompare(const char *s, const char *t) {
 	char c,d;
 
 	// Collapse spaces to one, convert symbols to _, and letters to uppercase...

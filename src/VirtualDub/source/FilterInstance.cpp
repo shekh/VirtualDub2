@@ -1067,6 +1067,7 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 	mpSourceFrames = NULL;
 
 	fma.fmtimeline = &g_project->filterModTimeline;
+	fma.fmsystem = &g_project->filterModSystem;
 
 	uint32 flags = FILTERPARAM_SWAP_BUFFERS;
 

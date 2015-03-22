@@ -27,6 +27,7 @@ void DeinitScriptSystem();
 void RunScript(const wchar_t *name, void *hwnd=0);
 void RunScriptMemory(const char *mem, bool stopAtReloadMarker = false);
 
+bool strfuzzycompare(const char *s, const char *t);
 void memunbase64(char *t, const char *s);
 void membase64(char *t, const char *s, long l);
 
