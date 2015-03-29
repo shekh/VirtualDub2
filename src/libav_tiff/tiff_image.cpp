@@ -135,7 +135,7 @@ void VDImageDecoderTIFF::GetImage(void *p, int pitch, int format)
       d[3] = 255;
 
       s2+=3;
-      d+=3;
+      d+=4;
     }}
 
     if(frame->pix_fmt==AV_PIX_FMT_RGBA64LE) {for(int x=0; x<frame->width; x++){
