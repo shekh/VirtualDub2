@@ -24,6 +24,12 @@ public:
 		srcCr->AddWindowRequest(0, 0);
 	}
 
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo unused;
+		mpSrcY->TransformPixmapInfo(src,unused);
+		mpSrcCb->TransformPixmapInfo(src,unused);
+		mpSrcCr->TransformPixmapInfo(src,unused);
+	}
 
 protected:
 	IVDPixmapGen *mpSrcY;

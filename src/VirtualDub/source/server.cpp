@@ -635,7 +635,9 @@ LRESULT Frameserver::SessionFrame(LPARAM lParam, WPARAM original_frame) {
 		VDPixmap pxdst(VDPixmapFromLayout(mFrameLayout, fs->arena));
 
 		VDFilterFrameBuffer *buf = creq->GetResultBuffer();
-		VDPixmapBlt(pxdst, VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead()));
+		VDPixmap px = VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead());
+		px.info = buf->info;
+		VDPixmapBlt(pxdst, px);
 		buf->Unlock();
 	} catch(const MyError&) {
 		return VDSRVERR_FAILED;

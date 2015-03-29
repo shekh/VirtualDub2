@@ -121,6 +121,12 @@ public:
 	void Start();
 	uint32 GetType(uint32 output) const;
 
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo unused;
+		mpSrcCb->TransformPixmapInfo(src,unused);
+		mpSrcCr->TransformPixmapInfo(src,unused);
+	}
+
 protected:
 	void Compute(void *dst0, sint32 y);
 
@@ -159,6 +165,13 @@ public:
 		mpSrcCr->Start();
 
 		StartWindow(((mWidth + 1) & ~1) * 2);
+	}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo unused;
+		mpSrcY->TransformPixmapInfo(src,unused);
+		mpSrcCb->TransformPixmapInfo(src,unused);
+		mpSrcCr->TransformPixmapInfo(src,unused);
 	}
 
 	uint32 GetType(uint32 output) const {
@@ -235,6 +248,13 @@ public:
 		StartWindow(((mWidth + 1) & ~1) * 2);
 	}
 
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo unused;
+		mpSrcY->TransformPixmapInfo(src,unused);
+		mpSrcCb->TransformPixmapInfo(src,unused);
+		mpSrcCr->TransformPixmapInfo(src,unused);
+	}
+
 	uint32 GetType(uint32 output) const {
 		return (mpSrcY->GetType(mSrcIndexY) & ~kVDPixType_Mask) | kVDPixType_G8B8_G8R8;
 	}
@@ -306,6 +326,13 @@ public:
 		mpSrcCr->Start();
 
 		StartWindow(mWidth * 4);
+	}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo unused;
+		mpSrcY->TransformPixmapInfo(src,unused);
+		mpSrcCb->TransformPixmapInfo(src,unused);
+		mpSrcCr->TransformPixmapInfo(src,unused);
 	}
 
 	uint32 GetType(uint32 output) const {

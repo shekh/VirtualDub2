@@ -92,12 +92,13 @@ VDFilterFrameVideoSource::RunResult VDFilterFrameVideoSource::RunRequests(const 
 
 			VDFilterFrameBuffer *buf = mpRequest->GetResultBuffer();
 			const VDPixmap& pxsrc = mpVS->getTargetFormat();
-			const VDPixmap& pxdst = VDPixmapFromLayout(mLayout, buf->LockWrite());
+			VDPixmap pxdst = VDPixmapFromLayout(mLayout, buf->LockWrite());
 
 			if (!mpBlitter)
 				mpBlitter = VDPixmapCreateBlitter(pxdst, pxsrc);
 
 			mpBlitter->Blit(pxdst, pxsrc);
+			buf->info = pxdst.info;
 
 			buf->Unlock();
 

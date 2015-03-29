@@ -36,6 +36,13 @@ public:
 		StartWindow(qw * 128);
 	}
 
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo unused;
+		mpSrcR->TransformPixmapInfo(src,unused);
+		mpSrcG->TransformPixmapInfo(src,unused);
+		mpSrcB->TransformPixmapInfo(src,unused);
+	}
+
 	uint32 GetType(uint32 output) const {
 		return (mpSrcG->GetType(mSrcIndexG) & ~kVDPixType_Mask) | kVDPixType_V210;
 	}

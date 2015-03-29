@@ -75,6 +75,7 @@ VDPixmapUberBlitterDirectCopy::~VDPixmapUberBlitterDirectCopy() {
 
 void VDPixmapUberBlitterDirectCopy::Blit(const VDPixmap& dst, const VDPixmap& src) {
 	Blit(dst, NULL, src);
+	(const_cast<VDPixmap&>(dst)).info = src.info;
 }
 
 void VDPixmapUberBlitterDirectCopy::Blit(const VDPixmap& dst, const vdrect32 *rDst, const VDPixmap& src) {
@@ -186,24 +187,25 @@ void VDPixmapUberBlitter::Blit(const VDPixmap& dst, const vdrect32 *rDst, const 
 
 	if (mOutputs[2].mpSrc) {
 		if (mbIndependentPlanes)
-			Blit3Separated(dst, rDst);
+			Blit3Separated(dst, rDst, src.info);
 		else if (mbIndependentChromaPlanes)
-			Blit3Split(dst, rDst);
+			Blit3Split(dst, rDst, src.info);
 		else
-			Blit3(dst, rDst);
+			Blit3(dst, rDst, src.info);
 	} else if (mOutputs[1].mpSrc) {
 		if (mbIndependentPlanes)
-			Blit2Separated(dst, rDst);
+			Blit2Separated(dst, rDst, src.info);
 		else
-			Blit2(dst, rDst);
+			Blit2(dst, rDst, src.info);
 	} else
-		Blit(dst, rDst);
+		Blit(dst, rDst, src.info);
 }
 
-void VDPixmapUberBlitter::Blit(const VDPixmap& dst, const vdrect32 *rDst) {
+void VDPixmapUberBlitter::Blit(const VDPixmap& dst, const vdrect32 *rDst, const FilterModPixmapInfo& src) {
 	const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(dst.format);
 
 	mOutputs[0].mpSrc->AddWindowRequest(0, 0);
+	mOutputs[0].mpSrc->TransformPixmapInfo(src,(const_cast<VDPixmap&>(dst)).info);
 	mOutputs[0].mpSrc->Start();
 
 	void *p = dst.data;
@@ -246,7 +248,7 @@ void VDPixmapUberBlitter::Blit(const VDPixmap& dst, const vdrect32 *rDst) {
 		VDPixmapGenerate(p, dst.pitch, bpr, h, mOutputs[0].mpSrc, mOutputs[0].mSrcIndex);
 }
 
-void VDPixmapUberBlitter::Blit3(const VDPixmap& px, const vdrect32 *rDst) {
+void VDPixmapUberBlitter::Blit3(const VDPixmap& px, const vdrect32 *rDst, const FilterModPixmapInfo& src) {
 	const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(px.format);
 	IVDPixmapGen *gen = mOutputs[1].mpSrc;
 	int idx = mOutputs[1].mSrcIndex;
@@ -255,11 +257,16 @@ void VDPixmapUberBlitter::Blit3(const VDPixmap& px, const vdrect32 *rDst) {
 	IVDPixmapGen *gen2 = mOutputs[0].mpSrc;
 	int idx2 = mOutputs[0].mSrcIndex;
 
+	FilterModPixmapInfo unused;
+
 	gen->AddWindowRequest(0, 0);
+	gen->TransformPixmapInfo(src,unused);
 	gen->Start();
 	gen1->AddWindowRequest(0, 0);
+	gen1->TransformPixmapInfo(src,unused);
 	gen1->Start();
 	gen2->AddWindowRequest(0, 0);
+	gen2->TransformPixmapInfo(src,unused);
 	gen2->Start();
 
 	uint32 auxstep = 0x80000000UL >> formatInfo.auxhbits;
@@ -303,7 +310,7 @@ void VDPixmapUberBlitter::Blit3(const VDPixmap& px, const vdrect32 *rDst) {
 	VDCPUCleanupExtensions();
 }
 
-void VDPixmapUberBlitter::Blit3Split(const VDPixmap& px, const vdrect32 *rDst) {
+void VDPixmapUberBlitter::Blit3Split(const VDPixmap& px, const vdrect32 *rDst, const FilterModPixmapInfo& src) {
 	const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(px.format);
 	IVDPixmapGen *gen = mOutputs[1].mpSrc;
 	int idx = mOutputs[1].mSrcIndex;
@@ -312,11 +319,16 @@ void VDPixmapUberBlitter::Blit3Split(const VDPixmap& px, const vdrect32 *rDst) {
 	IVDPixmapGen *gen2 = mOutputs[0].mpSrc;
 	int idx2 = mOutputs[0].mSrcIndex;
 
+	FilterModPixmapInfo unused;
+
 	gen->AddWindowRequest(0, 0);
+	gen->TransformPixmapInfo(src,unused);
 	gen->Start();
 	gen1->AddWindowRequest(0, 0);
+	gen1->TransformPixmapInfo(src,unused);
 	gen1->Start();
 	gen2->AddWindowRequest(0, 0);
+	gen2->TransformPixmapInfo(src,unused);
 	gen2->Start();
 
 	uint32 auxstep = 0x80000000UL >> formatInfo.auxhbits;
@@ -370,7 +382,7 @@ void VDPixmapUberBlitter::Blit3Split(const VDPixmap& px, const vdrect32 *rDst) {
 	VDCPUCleanupExtensions();
 }
 
-void VDPixmapUberBlitter::Blit3Separated(const VDPixmap& px, const vdrect32 *rDst) {
+void VDPixmapUberBlitter::Blit3Separated(const VDPixmap& px, const vdrect32 *rDst, const FilterModPixmapInfo& src) {
 	const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(px.format);
 	IVDPixmapGen *gen = mOutputs[1].mpSrc;
 	int idx = mOutputs[1].mSrcIndex;
@@ -379,11 +391,16 @@ void VDPixmapUberBlitter::Blit3Separated(const VDPixmap& px, const vdrect32 *rDs
 	IVDPixmapGen *gen2 = mOutputs[0].mpSrc;
 	int idx2 = mOutputs[0].mSrcIndex;
 
+	FilterModPixmapInfo unused;
+
 	gen->AddWindowRequest(0, 0);
+	gen->TransformPixmapInfo(src,unused);
 	gen->Start();
 	gen1->AddWindowRequest(0, 0);
+	gen1->TransformPixmapInfo(src,unused);
 	gen1->Start();
 	gen2->AddWindowRequest(0, 0);
+	gen2->TransformPixmapInfo(src,unused);
 	gen2->Start();
 
 	int qw = px.w;
@@ -444,16 +461,20 @@ void VDPixmapUberBlitter::Blit3Separated(const VDPixmap& px, const vdrect32 *rDs
 	VDCPUCleanupExtensions();
 }
 
-void VDPixmapUberBlitter::Blit2(const VDPixmap& px, const vdrect32 *rDst) {
+void VDPixmapUberBlitter::Blit2(const VDPixmap& px, const vdrect32 *rDst, const FilterModPixmapInfo& src) {
 	const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(px.format);
 	IVDPixmapGen *gen = mOutputs[0].mpSrc;
 	int idx = mOutputs[0].mSrcIndex;
 	IVDPixmapGen *gen1 = mOutputs[1].mpSrc;
 	int idx1 = mOutputs[1].mSrcIndex;
 
+	FilterModPixmapInfo unused;
+
 	gen->AddWindowRequest(0, 0);
+	gen->TransformPixmapInfo(src,unused);
 	gen->Start();
 	gen1->AddWindowRequest(0, 0);
+	gen1->TransformPixmapInfo(src,unused);
 	gen1->Start();
 
 	uint32 auxstep = 0x80000000UL >> formatInfo.auxhbits;
@@ -493,16 +514,20 @@ void VDPixmapUberBlitter::Blit2(const VDPixmap& px, const vdrect32 *rDst) {
 	VDCPUCleanupExtensions();
 }
 
-void VDPixmapUberBlitter::Blit2Separated(const VDPixmap& px, const vdrect32 *rDst) {
+void VDPixmapUberBlitter::Blit2Separated(const VDPixmap& px, const vdrect32 *rDst, const FilterModPixmapInfo& src) {
 	const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(px.format);
 	IVDPixmapGen *gen = mOutputs[0].mpSrc;
 	int idx = mOutputs[0].mSrcIndex;
 	IVDPixmapGen *gen1 = mOutputs[1].mpSrc;
 	int idx1 = mOutputs[1].mSrcIndex;
 
+	FilterModPixmapInfo unused;
+
 	gen->AddWindowRequest(0, 0);
+	gen->TransformPixmapInfo(src,unused);
 	gen->Start();
 	gen1->AddWindowRequest(0, 0);
+	gen1->TransformPixmapInfo(src,unused);
 	gen1->Start();
 
 	int qw = px.w;

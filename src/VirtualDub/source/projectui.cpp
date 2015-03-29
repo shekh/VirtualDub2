@@ -3703,6 +3703,7 @@ void VDProjectUI::RefreshInputPane() {
 	if (mpCurrentInputFrame && mpCurrentInputFrame->IsSuccessful()) {
 		VDFilterFrameBuffer *srcFrame = mpCurrentInputFrame->GetResultBuffer();
 		VDPixmap px(VDPixmapFromLayout(filters.GetInputLayout(), (void *)srcFrame->LockRead()));
+		px.info = srcFrame->info;
 		UIRefreshInputFrame(&px);
 		srcFrame->Unlock();
 	} else
@@ -3721,6 +3722,7 @@ void VDProjectUI::RefreshOutputPane() {
 	if (mpCurrentOutputFrame && mpCurrentOutputFrame->IsSuccessful()) {
 		VDFilterFrameBuffer *dstFrame = mpCurrentOutputFrame->GetResultBuffer();
 		VDPixmap px(VDPixmapFromLayout(filters.GetOutputLayout(), (void *)dstFrame->LockRead()));
+		px.info = dstFrame->info;
 		UIRefreshOutputFrame(&px);
 		dstFrame->Unlock();
 	} else

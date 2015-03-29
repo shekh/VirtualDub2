@@ -25,12 +25,12 @@ public:
 	void Blit(const VDPixmap& dst, const vdrect32 *rDst, const VDPixmap& src);
 
 protected:
-	void Blit(const VDPixmap& dst, const vdrect32 *rDst);
-	void Blit3(const VDPixmap& dst, const vdrect32 *rDst);
-	void Blit3Split(const VDPixmap& dst, const vdrect32 *rDst);
-	void Blit3Separated(const VDPixmap& px, const vdrect32 *rDst);
-	void Blit2(const VDPixmap& dst, const vdrect32 *rDst);
-	void Blit2Separated(const VDPixmap& px, const vdrect32 *rDst);
+	void Blit(const VDPixmap& dst, const vdrect32 *rDst, const FilterModPixmapInfo& src);
+	void Blit3(const VDPixmap& dst, const vdrect32 *rDst, const FilterModPixmapInfo& src);
+	void Blit3Split(const VDPixmap& dst, const vdrect32 *rDst, const FilterModPixmapInfo& src);
+	void Blit3Separated(const VDPixmap& px, const vdrect32 *rDst, const FilterModPixmapInfo& src);
+	void Blit2(const VDPixmap& dst, const vdrect32 *rDst, const FilterModPixmapInfo& src);
+	void Blit2Separated(const VDPixmap& px, const vdrect32 *rDst, const FilterModPixmapInfo& src);
 
 	friend class VDPixmapUberBlitterGenerator;
 

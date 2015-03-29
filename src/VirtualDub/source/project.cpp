@@ -876,6 +876,7 @@ bool VDProject::UpdateFrame(bool updateInputFrame) {
 					if (mpCurrentInputFrame->IsSuccessful()) {
 						VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
 						VDPixmap px(VDPixmapFromLayout(filters.GetInputLayout(), (void *)buf->LockRead()));
+						px.info = buf->info;
 						mpCB->UIRefreshInputFrame(&px);
 						buf->Unlock();
 					} else {
@@ -910,6 +911,7 @@ bool VDProject::UpdateFrame(bool updateInputFrame) {
 						} else if (mpCurrentOutputFrame->IsSuccessful()) {
 							VDFilterFrameBuffer *buf = mpCurrentOutputFrame->GetResultBuffer();
 							VDPixmap px(VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead()));
+							px.info = buf->info;
 							mpCB->UIRefreshOutputFrame(&px);
 							buf->Unlock();
 						} else {
@@ -1000,6 +1002,7 @@ bool VDProject::RefilterFrame(VDPosition timelinePos) {
 		if (mpCB) {
 			VDFilterFrameBuffer *buf = mpCurrentOutputFrame->GetResultBuffer();
 			VDPixmap px(VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead()));
+			px.info = buf->info;
 			mpCB->UIRefreshOutputFrame(&px);
 			buf->Unlock();
 		}
@@ -1605,7 +1608,9 @@ void VDProject::CopySourceFrameToClipboard() {
 		return;
 
 	VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
-	CopyFrameToClipboard((HWND)mhwnd, VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)buf->LockRead()));
+	VDPixmap px = VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)buf->LockRead());
+	px.info = buf->info;
+	CopyFrameToClipboard((HWND)mhwnd, px);
 	buf->Unlock();
 }
 
@@ -1614,7 +1619,9 @@ void VDProject::CopyOutputFrameToClipboard() {
 		return;
 
 	VDFilterFrameBuffer *buf = mpCurrentOutputFrame->GetResultBuffer();
-	CopyFrameToClipboard((HWND)mhwnd, VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead()));
+	VDPixmap px = VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead());
+	px.info = buf->info;
+	CopyFrameToClipboard((HWND)mhwnd, px);
 	buf->Unlock();
 }
 
@@ -2251,6 +2258,7 @@ void VDProject::SceneShuttleStop() {
 			if (mpCurrentInputFrame && mpCurrentInputFrame->IsSuccessful()) {
 				VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
 				VDPixmap px(VDPixmapFromLayout(filters.GetInputLayout(), (void *)buf->LockRead()));
+				px.info = buf->info;
 				mpCB->UIRefreshInputFrame(&px);
 				buf->Unlock();
 			} else {
@@ -2336,7 +2344,8 @@ void VDProject::SceneShuttleStep() {
 		return;
 	}
 
-	const VDPixmap px(VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)p));
+	VDPixmap px(VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)p));
+	px.info = buf->info;
 	const bool sceneBreak = mpSceneDetector->Submit(px);
 
 	buf->Unlock();

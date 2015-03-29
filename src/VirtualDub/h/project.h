@@ -239,6 +239,7 @@ public:
 
 	FilterModTimeline filterModTimeline;
 	FilterModSystem filterModSystem;
+	FilterModPixmap filterModPixmap;
 
 protected:
 	void AdjustTimelineForFilterChanges(const VDFraction& oldRate, sint64 oldFrameCount, const VDFraction& newRate, sint64 newFrameCount);

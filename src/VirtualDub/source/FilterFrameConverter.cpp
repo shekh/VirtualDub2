@@ -95,6 +95,7 @@ VDFilterFrameConverter::RunResult VDFilterFrameConverter::RunRequests(const uint
 
 	VDFilterFrameBuffer *dstbuf = mpRequest->GetResultBuffer();
 	mPixmapSrc = VDPixmapFromLayout(mSourceLayout, (void *)srcbuf->LockRead());
+	mPixmapSrc.info = srcbuf->info;
 	mPixmapDst = VDPixmapFromLayout(mLayout, dstbuf->LockWrite());
 
 	mbRequestPending = true;
@@ -120,6 +121,9 @@ VDFilterFrameConverter::RunResult VDFilterFrameConverter::RunProcess() {
 	VDPROFILEBEGINEX("Convert", (uint32)mpRequest->GetTiming().mOutputFrame);
 	mpBlitter->Blit(mPixmapDst, mPixmapSrc);
 	VDPROFILEEND();
+
+	VDFilterFrameBuffer *dstbuf = mpRequest->GetResultBuffer();
+	dstbuf->info = mPixmapDst.info;
 
 	mbRequestSuccess = true;
 	mbRequestPending = false;

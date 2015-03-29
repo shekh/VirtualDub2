@@ -1029,6 +1029,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ReadVideoFrame(const 
 
 				VDPROFILEBEGINEX("V-BlitIn", (uint32)frameInfo.mDisplayFrame);
 				mpInputBlitter->Blit(pxdst, pxsrc);
+				buf->info = pxdst.info;
 
 				buf->Unlock();
 
@@ -1165,7 +1166,8 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	VDPROFILEBEGIN("V-BltOut");
 	const VDPixmapLayout& layout = (mpOptions->video.mode == DubVideoOptions::M_FULL) ? mpVideoFilters->GetOutputLayout() : mpVideoFilters->GetInputLayout();
 	VDFilterFrameBuffer *buf = pOutputReq->GetResultBuffer();
-	const VDPixmap& pxsrc = VDPixmapFromLayout(layout, (void *)buf->LockRead());
+	VDPixmap pxsrc = VDPixmapFromLayout(layout, (void *)buf->LockRead());
+	pxsrc.info = buf->info;
 	if (!mpOutputBlitter)
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc);
 

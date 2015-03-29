@@ -15,6 +15,9 @@ public:
 		mHeight = h;
 	}
 
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+	}
+
 	void AddWindowRequest(int minDY, int maxDY) {
 		if (mWindowMinDY > minDY)
 			mWindowMinDY = minDY;
@@ -91,6 +94,10 @@ public:
 		mSrcHeight = src->GetHeight(srcindex);
 		mWidth = mSrcWidth;
 		mHeight = mSrcHeight;
+	}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		mpSrc->TransformPixmapInfo(src,dst);
 	}
 
 	void AddWindowRequest(int minDY, int maxDY) {

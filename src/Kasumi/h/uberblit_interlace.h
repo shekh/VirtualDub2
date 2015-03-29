@@ -27,6 +27,9 @@ public:
 		mpSrc->AddWindowRequest(minDY*2, maxDY*2+1);
 	}
 
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+	}
+
 	void Start() {
 		mpSrc->Start();
 	}
@@ -74,6 +77,9 @@ public:
 	void AddWindowRequest(int minDY, int maxDY) {
 		mpSrc[0]->AddWindowRequest(minDY >> 1, maxDY >> 1);
 		mpSrc[1]->AddWindowRequest(minDY >> 1, maxDY >> 1);
+	}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
 	}
 
 	void Start() {

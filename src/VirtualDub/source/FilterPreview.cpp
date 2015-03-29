@@ -454,7 +454,8 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 			mpVideoWindow->GetFrameSize(DisplayW,DisplayH);
 
 			if ((wParam & MK_SHIFT) && mFiltSys.isRunning() && mpVideoFrameBuffer && xoffset < DisplayW && yoffset < DisplayH) {
-				const VDPixmap& output = VDPixmapFromLayout(mFiltSys.GetOutputLayout(), (void *)mpVideoFrameBuffer->LockRead());
+				VDPixmap output = VDPixmapFromLayout(mFiltSys.GetOutputLayout(), (void *)mpVideoFrameBuffer->LockRead());
+				output.info = mpVideoFrameBuffer->info;
 				uint32 pixels[7][7];
 				int x = VDFloorToInt((xoffset + 0.5) * (double)output.w / (double)DisplayW);
 				int y = VDFloorToInt((yoffset + 0.5) * (double)output.h / (double)DisplayH);
@@ -907,8 +908,10 @@ void FilterPreview::OnVideoRedraw() {
 				const void *p = mpVideoFrameBuffer->LockRead();
 
 				const VDPixmapLayout& layout = mFiltSys.GetOutputLayout();
+				VDPixmap px = VDPixmapFromLayout(layout, (void *)p);
+				px.info = mpVideoFrameBuffer->info;
 
-				mpDisplay->SetSourcePersistent(false, VDPixmapFromLayout(layout, (void *)p));
+				mpDisplay->SetSourcePersistent(false, px);
 			} else {
 				VDFilterFrameRequestError *err = req->GetError();
 

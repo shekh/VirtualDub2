@@ -43,6 +43,8 @@ class VDFilterFrameBuffer	: public vdrefcounted<IVDRefUnknown>
 	VDFilterFrameBuffer(const VDFilterFrameBuffer&);
 	VDFilterFrameBuffer& operator=(const VDFilterFrameBuffer&);
 public:
+	FilterModPixmapInfo info;
+
 	VDFilterFrameBuffer();
 
 	int AddRef();

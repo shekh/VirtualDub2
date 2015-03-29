@@ -37,6 +37,7 @@
 ///////////////////////////
 
 extern const char *LookupVideoCodec(uint32);
+extern VDProject *g_project;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -88,6 +89,8 @@ void VDInputDriverContextImpl::EndExternalCall() {
 }
 
 void * VDXAPIENTRY VDInputDriverContextImpl::GetExtendedAPI(const char *pExtendedAPIName) {
+	if (strcmp(pExtendedAPIName,"IFilterModPixmap")==0)
+		return &g_project->filterModPixmap;
 	return NULL;
 }
 
@@ -435,12 +438,14 @@ protected:
 	vdrefptr<IVDXVideoSource> mpXVS;
 	vdrefptr<IVDXStreamSource> mpXS;
 	vdrefptr<IVDXVideoDecoder> mpXVDec;
+	vdrefptr<IFilterModVideoDecoder> mpFMVDec;
 	vdrefptr<IVDXVideoDecoderModel> mpXVDecModel;
 
 	vdrefptr<VDInputDriverContextImpl>	mpContext;
 
 	VDXStreamSourceInfoV3	mSSInfo;
 	VDXVideoSourceInfo	mVSInfo;
+	VDPixmap mTargetFormat;
 };
 
 VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverContextImpl *pContext, InputFile *pParent)
@@ -502,6 +507,8 @@ VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverCont
 						,s ? s : "unknown");
 		}
 	}
+
+	mpFMVDec = (IFilterModVideoDecoder*)mpXS->AsInterface(IFilterModVideoDecoder::kIID);
 
 	// create a video decoder model.
 	vdwithinputplugin(mpContext) {
@@ -604,12 +611,18 @@ const VDFraction VDVideoSourcePlugin::getPixelAspectRatio() const {
 }
 
 const VDPixmap& VDVideoSourcePlugin::getTargetFormat() {
-	const VDPixmap *p;
 	vdwithinputplugin(mpContext) {
-		p = (const VDPixmap *)&mpXVDec->GetFrameBuffer();
+		const VDXPixmap *px = &mpXVDec->GetFrameBuffer();
+		memcpy(&mTargetFormat,px,sizeof(VDXPixmap));
+
+		mTargetFormat.info.clear();
+		if (mpFMVDec) {
+			const FilterModPixmapInfo *info = &mpFMVDec->GetFrameBufferInfo();
+			memcpy(&mTargetFormat.info,info,sizeof(FilterModPixmapInfo));
+		}
 	}
 
-	return *p;
+	return mTargetFormat;
 }
 
 bool VDVideoSourcePlugin::setTargetFormat(int format) {

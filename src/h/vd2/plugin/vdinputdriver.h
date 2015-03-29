@@ -140,6 +140,12 @@ public:
 	virtual const void *		VDXAPIENTRY GetFrameBufferBase() = 0;
 };
 
+class IFilterModVideoDecoder : public IVDXUnknown {
+public:
+	enum { kIID = VDXMAKEFOURCC('F', 'M', 'd', 'e') };
+	virtual const FilterModPixmapInfo&	VDXAPIENTRY GetFrameBufferInfo() = 0;
+};
+
 enum VDXVideoFrameType {
 	kVDXVFT_Independent,
 	kVDXVFT_Predicted,

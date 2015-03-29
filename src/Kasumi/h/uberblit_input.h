@@ -23,6 +23,10 @@ public:
 		mPitch = pitch;
 	}
 
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		dst = src;
+	}
+
 	void AddWindowRequest(int minY, int maxY) {
 	}
 

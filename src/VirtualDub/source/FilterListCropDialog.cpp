@@ -344,6 +344,7 @@ void VDFilterClippingDialog::UpdateFrame(VDPosition pos) {
 					if (req->IsSuccessful()) {
 						VDFilterFrameBuffer *buf = req->GetResultBuffer();
 						VDPixmap px(VDPixmapFromLayout(srcLayout, (void *)buf->LockRead()));
+						px.info = buf->info;
 						mpClipCtrl->BlitFrame(&px);
 						buf->Unlock();
 					} else {

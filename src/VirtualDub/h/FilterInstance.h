@@ -139,6 +139,13 @@ protected:
 	VDFilterFrameBuffer	*mpBuffer;
 };
 
+class FilterModPixmap: public IFilterModPixmap {
+public:
+	virtual FilterModPixmapInfo* GetPixmapInfo(VDXPixmap* pixmap) {
+		return &((VDPixmap*)pixmap)->info;
+	}
+};
+
 class FilterInstanceAutoDeinit;
 
 struct VDFilterThreadContext {

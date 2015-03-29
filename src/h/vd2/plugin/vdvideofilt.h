@@ -448,6 +448,7 @@ public:
 	IFilterModPreview *fmpreview;
 	IFilterModTimeline *fmtimeline;
 	IFilterModSystem *fmsystem;
+	IFilterModPixmap *fmpixmap;
 };
 
 // These flags must match those in cpuaccel.h!

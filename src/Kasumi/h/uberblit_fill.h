@@ -16,6 +16,9 @@ public:
 	void AddWindowRequest(int minY, int maxY) {
 	}
 
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+	}
+
 	void Start() {
 	}
 

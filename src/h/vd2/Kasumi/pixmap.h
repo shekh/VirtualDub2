@@ -6,6 +6,7 @@
 #endif
 
 #include <vd2/system/vdtypes.h>
+#include <vd2/plugin/vdplugin.h>
 
 namespace nsVDPixmap {
 	enum VDPixmapFormat {
@@ -88,6 +89,8 @@ struct VDPixmap {
 	vdpixoffset		pitch2;
 	void			*data3;		// Cr (V) for YCbCr
 	vdpixoffset		pitch3;
+
+	FilterModPixmapInfo info;
 };
 
 struct VDPixmapLayout {

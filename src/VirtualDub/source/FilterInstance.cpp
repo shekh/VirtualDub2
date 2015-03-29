@@ -43,7 +43,7 @@ namespace {
 	static const uint32 kFrameSizeLimit = 0x08000000;		// 128MB
 
 	void StructCheck() {
-		VDASSERTCT(sizeof(VDPixmap) == sizeof(VDXPixmap));
+		VDASSERTCT(sizeof(VDPixmap)-sizeof(FilterModPixmapInfo) == sizeof(VDXPixmap));
 		VDASSERTCT(sizeof(VDPixmapLayout) == sizeof(VDXPixmapLayout));
 				
 		VDASSERTCT(offsetof(VDPixmap, data) == offsetof(VDXPixmap, data));
@@ -201,7 +201,9 @@ void VFBitmapInternal::Unbind() {
 }
 
 void VFBitmapInternal::Fixup(void *base) {
-	mPixmap = VDPixmapFromLayout(mPixmapLayout, base);
+	VDPixmap px = VDPixmapFromLayout(mPixmapLayout, base);
+	px.info = mPixmap.info;
+	mPixmap = px;
 	data = (uint32 *)((pitch < 0 ? (char *)base - pitch*(h-1) : (char *)base) + offset);
 
 	VDAssertValidPixmap(mPixmap);
@@ -1068,6 +1070,7 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 
 	fma.fmtimeline = &g_project->filterModTimeline;
 	fma.fmsystem = &g_project->filterModSystem;
+	fma.fmpixmap = &g_project->filterModPixmap;
 
 	uint32 flags = FILTERPARAM_SWAP_BUFFERS;
 
@@ -1998,6 +2001,7 @@ bool FilterInstance::BeginFrame(VDFilterFrameRequest& request, uint32 sourceOffs
 	if (creqsrc0) {
 		mRealSrc.SetFrameNumber(creqsrc0->GetFrameNumber());
 		mRealSrc.mCookie = creqsrc0->GetCookie();
+		mRealSrc.mPixmap.info = creqsrc0->GetInfo();
 	} else {
 		mRealSrc.SetFrameNumber(-1);
 		mRealSrc.mCookie = 0;
@@ -2008,6 +2012,8 @@ bool FilterInstance::BeginFrame(VDFilterFrameRequest& request, uint32 sourceOffs
 
 	mRealDst.SetFrameNumber(timing.mOutputFrame);
 	mExternalDst.BindToFrameBuffer(resultBuffer, false);
+
+	mRealDst.mPixmap.info = mRealSrc.mPixmap.info;
 
 	mSourceFrameArray.resize(sourceCount);
 	mSourceFrames.resize(sourceCount);
@@ -2283,6 +2289,8 @@ void FilterInstance::RunFilterInner() {
 	if (mFlags & FILTERPARAM_NEEDS_LAST)
 		VDPixmapBlt(mRealLast.mPixmap, mRealSrc.mPixmap);
 
+	mRealDst.GetBuffer()->info = mRealDst.mPixmap.info;
+	
 	mbFirstFrame = false;
 }
 

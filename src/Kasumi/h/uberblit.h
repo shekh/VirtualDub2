@@ -90,6 +90,7 @@ public:
 	virtual uint32 GetType(uint32 output) const = 0;
 	virtual const void *GetRow(sint32 y, uint32 output) = 0;
 	virtual void ProcessRow(void *dst, sint32 y) = 0;
+	virtual void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) = 0;
 };
 
 #endif

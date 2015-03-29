@@ -54,6 +54,7 @@ public:
 	virtual sint64 GetFrameNumber() = 0;
 	virtual uint64 GetCookie() = 0;
 	virtual uint32 GetSrcIndex() = 0;
+	virtual FilterModPixmapInfo& GetInfo() = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -104,6 +105,7 @@ public:
 	sint64 GetFrameNumber();
 	uint64 GetCookie();
 	uint32 GetSrcIndex();
+	FilterModPixmapInfo& GetInfo();
 
 protected:
 	VDFilterFrameRequest *mpRequest;
