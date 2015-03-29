@@ -228,6 +228,8 @@ public:
 
 	void SetFilenamePattern(const wchar_t *pszSegmentPrefix, const wchar_t *pszSegmentSuffix, int nMinimumDigits);
 	void SetFormat(int format, int quality);
+	bool IsVideoImageOutputEnabled();
+	bool IsVideoImageOutputRequired();
 
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);

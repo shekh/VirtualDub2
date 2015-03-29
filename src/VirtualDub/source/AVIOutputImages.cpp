@@ -49,7 +49,7 @@ namespace {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-class AVIVideoImageOutputStream : public AVIOutputStream {
+class AVIVideoImageOutputStream : public AVIOutputStream, public IVDVideoImageOutputStream {
 private:
 	DWORD dwFrame;
 	const wchar_t *mpszPrefix;
@@ -69,9 +69,20 @@ public:
 	~AVIVideoImageOutputStream();
 
 	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples);
+	void WriteVideoImage(const VDPixmap *px);
 	void partialWriteBegin(uint32 flags, uint32 bytes, uint32 samples);
 	void partialWrite(const void *pBuffer, uint32 cbBuffer) {}
 	void partialWriteEnd() {}
+
+	void *AsInterface(uint32 id) {
+		if (id == IVDMediaOutputStream::kTypeID)
+			return static_cast<IVDMediaOutputStream *>(this);
+
+		if (id == IVDVideoImageOutputStream::kTypeID)
+			return static_cast<IVDVideoImageOutputStream *>(this);
+
+		return NULL;
+	}
 };
 
 AVIVideoImageOutputStream::AVIVideoImageOutputStream(const wchar_t *pszPrefix, const wchar_t *pszSuffix, int iDigits, int format, int quality)
@@ -96,6 +107,31 @@ AVIVideoImageOutputStream::~AVIVideoImageOutputStream() {
 	delete[] mpPackBuffer;
 }
 
+void AVIVideoImageOutputStream::WriteVideoImage(const VDPixmap *px) {
+	if (mFormat != AVIOutputImages::kFormatTIFF_LZW && mFormat != AVIOutputImages::kFormatTIFF_RAW) {
+		throw MyError("The current output video format is not supported by the selected output path.");
+	}
+
+	wchar_t szFileName[MAX_PATH];
+	swprintf(szFileName, MAX_PATH, L"%ls%0*d%ls", mpszPrefix, mDigits, dwFrame++, mpszSuffix);
+
+	using namespace nsVDFile;
+	VDFile mFile(szFileName, kWrite | kDenyNone | kCreateAlways | kSequential);
+
+	if (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW) {
+		bool pack_lzw = mFormat == AVIOutputImages::kFormatTIFF_LZW;
+
+		void *p;
+		uint32 len;
+		mpTIFFEncoder->Encode(*px, p, len, pack_lzw, false);
+
+		mFile.write(p, len);
+		free(p);
+	}
+
+	mFile.close();
+}
+
 void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples) {
 	wchar_t szFileName[MAX_PATH];
 
@@ -111,32 +147,7 @@ void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 
 	using namespace nsVDFile;
 	VDFile mFile(szFileName, kWrite | kDenyNone | kCreateAlways | kSequential);
 
-	if (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW) {
-		bool pack_lzw = mFormat == AVIOutputImages::kFormatTIFF_LZW;
-		VDPixmapLayout pxl;
-
-		switch(bih.biBitCount) {
-		case 16:
-			VDMakeBitmapCompatiblePixmapLayout(pxl, bih.biWidth, bih.biHeight, nsVDPixmap::kPixFormat_XRGB1555, 0);
-			break;
-		case 24:
-			VDMakeBitmapCompatiblePixmapLayout(pxl, bih.biWidth, bih.biHeight, nsVDPixmap::kPixFormat_RGB888, 0);
-			break;
-		case 32:
-			VDMakeBitmapCompatiblePixmapLayout(pxl, bih.biWidth, bih.biHeight, nsVDPixmap::kPixFormat_XRGB8888, 0);
-			break;
-		default:
-			VDNEVERHERE;
-		}
-
-		void *p;
-		uint32 len;
-		mpTIFFEncoder->Encode(VDPixmapFromLayout(pxl, (void *)pBuffer), p, len, pack_lzw, false);
-
-		mFile.write(p, len);
-		free(p);
-
-	} else if (mFormat == AVIOutputImages::kFormatJPEG) {
+	if (mFormat == AVIOutputImages::kFormatJPEG) {
 		mOutputBuffer.clear();
 
 		mpJPEGEncoder->Init(mQuality, true);

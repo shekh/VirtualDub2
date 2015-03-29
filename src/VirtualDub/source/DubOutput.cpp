@@ -558,6 +558,8 @@ IVDMediaOutput *VDAVIOutputImagesSystem::CreateSegment() {
 
 	if (!mVideoFormat.empty())
 		pOutput->createVideoStream()->setFormat(&mVideoFormat[0], mVideoFormat.size());
+	else if (mVideoImageLayout.format)
+		pOutput->createVideoStream();
 
 	pOutput->init(NULL);
 
@@ -584,6 +586,13 @@ bool VDAVIOutputImagesSystem::AcceptsVideo() {
 	return true;
 }
 
+bool VDAVIOutputImagesSystem::IsVideoImageOutputEnabled() {
+	return mFormat==AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW;
+}
+
+bool VDAVIOutputImagesSystem::IsVideoImageOutputRequired() { 
+	return IsVideoImageOutputEnabled(); 
+}
 
 ///////////////////////////////////////////////////////////////////////////
 //

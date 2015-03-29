@@ -174,12 +174,29 @@ void VDImageDecoderTIFF::GetImage(void *p, int pitch, int format)
 
 void VDImageEncoderTIFF::Encode(const VDPixmap& px, void *&p, uint32& len, bool lzw_compress, bool alpha)
 {
+  int temp_format;
+  switch(px.format){
+  case nsVDPixmap::kPixFormat_XRGB8888:
+    temp_format = alpha ? nsVDPixmap::kPixFormat_XRGB8888:nsVDPixmap::kPixFormat_RGB888;
+    break;
+  case nsVDPixmap::kPixFormat_RGB888:
+    temp_format = px.format;
+    break;
+  case nsVDPixmap::kPixFormat_XRGB64:
+    temp_format = px.format;
+    break;
+  default:
+    temp_format = nsVDPixmap::kPixFormat_RGB888;
+  }
+  
   VDPixmapBuffer buf;
-  buf.init(px.w,px.h,alpha ? nsVDPixmap::kPixFormat_XRGB8888:nsVDPixmap::kPixFormat_RGB888);
+  buf.init(px.w,px.h,temp_format);
 	VDPixmapBlt(buf, px);
 
   {for(int y=0; y<px.h; y++){
     uint8_t* s = (uint8_t*)buf.data + buf.pitch*y;
+    uint16_t* s2 = (uint16_t*)(size_t(buf.data) + buf.pitch*y);
+    uint16_t* d2 = s2;
 
     if(buf.format==nsVDPixmap::kPixFormat_RGB888) {for(int x=0; x<px.w; x++){
       int a = s[0];
@@ -198,6 +215,27 @@ void VDImageEncoderTIFF::Encode(const VDPixmap& px, void *&p, uint32& len, bool 
 
       s+=4;
     }}
+
+    if(buf.format==nsVDPixmap::kPixFormat_XRGB64 && alpha) {for(int x=0; x<px.w; x++){
+      int a = s2[0];
+      int b = s2[2];
+      s2[0] = b;
+      s2[2] = a;
+
+      s2+=4;
+    }}
+
+    if(buf.format==nsVDPixmap::kPixFormat_XRGB64 && !alpha) {for(int x=0; x<px.w; x++){
+      int a = s2[0];
+      int b = s2[2];
+      int c = s2[1];
+      d2[0] = b;
+      d2[1] = c;
+      d2[2] = a;
+
+      s2+=4;
+      d2+=3;
+    }}
   }}
 
   AVFrame frame = {0};
@@ -212,6 +250,9 @@ void VDImageEncoderTIFF::Encode(const VDPixmap& px, void *&p, uint32& len, bool 
     break;
   case nsVDPixmap::kPixFormat_XRGB8888:
     frame.pix_fmt = AV_PIX_FMT_RGBA;
+    break;
+  case nsVDPixmap::kPixFormat_XRGB64:
+    frame.pix_fmt = alpha ? AV_PIX_FMT_RGBA64LE : AV_PIX_FMT_RGB48LE;
     break;
   }
 
