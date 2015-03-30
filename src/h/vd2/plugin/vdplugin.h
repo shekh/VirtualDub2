@@ -158,8 +158,9 @@ struct VDXRect {
 
 struct FilterModPixmapInfo {
 	enum MappingType {
-		kMappingGamma = 0,
-		kMappingLinear = 1,
+		kMappingUnknown = 0,
+		kMappingGamma = 1,
+		kMappingLinear = 2,
 	};
 	enum AlphaType {
 		kAlphaInvalid = 0,
@@ -183,7 +184,7 @@ struct FilterModPixmapInfo {
 		ref_g = 0;
 		ref_b = 0;
 		ref_a = 0;
-		mapping_type = kMappingGamma;
+		mapping_type = kMappingUnknown;
 		alpha_type = kAlphaInvalid;
 	}
 };

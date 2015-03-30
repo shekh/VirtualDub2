@@ -6,6 +6,7 @@
 bool VDIsTiffHeader(const void *pv, uint32 len);
 
 struct VDPixmap;
+struct FilterModPixmapInfo;
 
 class VDINTERFACE IVDImageDecoderTIFF {
 public:
@@ -13,7 +14,9 @@ public:
 
 	virtual void Decode(const void *src, uint32 srclen) = 0;
 	virtual void GetSize(int& w, int& h) = 0;
+	virtual int GetFormat() = 0;
 	virtual void GetImage(void *p, int pitch, int format) = 0;
+	virtual void GetPixmapInfo(FilterModPixmapInfo& info) = 0;
 };
 
 class VDINTERFACE IVDImageEncoderTIFF {

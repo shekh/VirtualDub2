@@ -64,6 +64,8 @@ private:
 	VDPosition	mCachedHandleFrame;
 	VDFile	mCachedFile;
 
+	nsVDPixmap::VDPixmapFormat mInitFormat;
+
 	vdautoptr<IVDJPEGDecoder> mpJPEGDecoder;
 	vdautoptr<IVDImageDecoderIFF> mpIFFDecoder;
 	vdautoptr<IVDImageDecoderPNG> mpPNGDecoder;
@@ -90,6 +92,7 @@ VideoSourceImages::VideoSourceImages(VDInputFileImages *parent)
 	// This has to be 1 so that read() doesn't kick away the request.
 
 	mSampleLast = mpParent->GetFrameCount();
+	mInitFormat = nsVDPixmap::kPixFormat_Null;
 	getFrame(0);
 
 	// Fill out streamInfo
@@ -175,13 +178,22 @@ int VideoSourceImages::_read(VDPosition lStart, uint32 lCount, void *lpBuffer, u
 }
 
 bool VideoSourceImages::setTargetFormat(int format) {
-	if (!format)
+	if (!format) {
 		format = nsVDPixmap::kPixFormat_XRGB8888;
+		if (mInitFormat==nsVDPixmap::kPixFormat_XRGB64)
+			format = mInitFormat;
+	}
+
+	int w = getImageFormat()->biWidth;
+	int h = getImageFormat()->biHeight;
 
 	switch(format) {
 	case nsVDPixmap::kPixFormat_XRGB1555:
 	case nsVDPixmap::kPixFormat_RGB888:
 	case nsVDPixmap::kPixFormat_XRGB8888:
+		if (!AllocFrameBuffer(w * h * 4))
+			throw MyMemoryError();
+
 		if (!VideoSource::setTargetFormat(format))
 			return false;
 
@@ -190,6 +202,22 @@ bool VideoSourceImages::setTargetFormat(int format) {
 		mvbFrameBuffer.init((void *)getFrameBuffer(), mpTargetFormatHeader->biWidth, mpTargetFormatHeader->biHeight, mpTargetFormatHeader->biBitCount);
 		mvbFrameBuffer.AlignTo4();
 
+		return true;
+
+	case nsVDPixmap::kPixFormat_XRGB64:
+		if (!AllocFrameBuffer(((w+3)&~3) * h * 8))
+			throw MyMemoryError();
+
+		VDPixmap px = {0};
+		px.format = format;
+		px.w = w;
+		px.h = h;
+		px.pitch = w*8;
+		px.data = mpFrameBuffer;
+		mTargetFormat = px;
+
+		invalidateFrameBuffer();
+		
 		return true;
 	}
 
@@ -205,6 +233,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 		return getFrameBuffer();
 
 	int w, h;
+	int format = 0;
 	bool bHasAlpha;
 
 	bool bIsPNG = false;
@@ -253,6 +282,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 			mpTIFFDecoder = VDCreateImageDecoderTIFF();
 		mpTIFFDecoder->Decode(inputBuffer, data_len);
 		mpTIFFDecoder->GetSize(w, h);
+		format = mpTIFFDecoder->GetFormat();
 	}
 
 	// Check image header.
@@ -268,8 +298,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 		}
 
 	} else {
-		if (!AllocFrameBuffer(w * h * 4))
-			throw MyMemoryError();
+		mInitFormat = (nsVDPixmap::VDPixmapFormat)format;
 
 		pFormat->biSize				= sizeof(BITMAPINFOHEADER);
 		pFormat->biWidth			= w;
@@ -305,15 +334,15 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 		VDPixmapBlt(getTargetFormat(), pxIFF);
 
 	if (bIsTIFF) {
-		const VDPixmap& dst = getTargetFormat();
-		switch(dst.format){
-		case nsVDPixmap::kPixFormat_XRGB8888:
-			mpTIFFDecoder->GetImage((char *)mvbFrameBuffer.data + mvbFrameBuffer.pitch * (mvbFrameBuffer.h - 1), -mvbFrameBuffer.pitch, nsVDPixmap::kPixFormat_XRGB8888);
-			break;
-		default:
+		VDPixmap& dst = mTargetFormat;
+		if (dst.format==format) {
+			mpTIFFDecoder->GetPixmapInfo(dst.info);
+			mpTIFFDecoder->GetImage((char *)dst.data, dst.pitch, format);
+		} else {
 			VDPixmapBuffer buf;
-			buf.init(w,h,nsVDPixmap::kPixFormat_XRGB8888);
-			mpTIFFDecoder->GetImage(buf.data, buf.pitch, nsVDPixmap::kPixFormat_XRGB8888);
+			buf.init(w,h,format);
+			mpTIFFDecoder->GetPixmapInfo(buf.info);
+			mpTIFFDecoder->GetImage(buf.data, buf.pitch, format);
 			VDPixmapBlt(dst, buf);
 		}
 	}

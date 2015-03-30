@@ -37,7 +37,9 @@ public:
 
 	void Decode(const void *src, uint32 srclen);
 	void GetSize(int& w, int& h);
+	int GetFormat();
 	void GetImage(void *p, int pitch, int format);
+	void GetPixmapInfo(FilterModPixmapInfo& info);
 
 protected:
   AVFrame* frame;
@@ -59,6 +61,42 @@ void VDImageDecoderTIFF::GetSize(int& w, int& h)
 {
   w = frame->width;
   h = frame->height;
+}
+
+int VDImageDecoderTIFF::GetFormat()
+{
+  switch(frame->pix_fmt){
+  case AV_PIX_FMT_RGBA64BE:
+  case AV_PIX_FMT_RGBA64LE:
+  case AV_PIX_FMT_RGB48BE:
+  case AV_PIX_FMT_RGB48LE:
+    return nsVDPixmap::kPixFormat_XRGB64;
+  default:
+    return nsVDPixmap::kPixFormat_XRGB8888;
+  }
+}
+
+void VDImageDecoderTIFF::GetPixmapInfo(FilterModPixmapInfo& info)
+{
+  switch(frame->pix_fmt){
+  case AV_PIX_FMT_RGBA64BE:
+  case AV_PIX_FMT_RGBA64LE:
+  case AV_PIX_FMT_RGB48BE:
+  case AV_PIX_FMT_RGB48LE:
+    info.ref_r = 0xFFFF;
+    info.ref_g = 0xFFFF;
+    info.ref_b = 0xFFFF;
+    info.ref_a = 0xFFFF;
+    break;
+  }
+
+  switch(frame->pix_fmt){
+  case AV_PIX_FMT_RGBA64BE:
+  case AV_PIX_FMT_RGBA64LE:
+  case AV_PIX_FMT_RGBA:
+    info.alpha_type = FilterModPixmapInfo::kAlphaMask;
+    break;
+  }
 }
 
 void VDImageDecoderTIFF::Decode(const void *src, uint32 srclen)
@@ -123,11 +161,12 @@ void VDImageDecoderTIFF::GetImage(void *p, int pitch, int format)
     }}
   }
 
-  {for(int y=0; y<frame->height; y++){
+  if(format==nsVDPixmap::kPixFormat_XRGB8888) {for(int y=0; y<frame->height; y++){
     uint8_t* d = (uint8_t*)p + pitch*y;
     uint8_t* s1 = (uint8_t*)(frame->data[0] + frame->linesize[0]*y);
     uint16_t* s2 = (uint16_t*)(frame->data[0] + frame->linesize[0]*y);
 
+    /*
     if(frame->pix_fmt==AV_PIX_FMT_RGB48LE) {for(int x=0; x<frame->width; x++){
       d[0] = s2[2] >> 8;
       d[1] = s2[1] >> 8;
@@ -135,7 +174,7 @@ void VDImageDecoderTIFF::GetImage(void *p, int pitch, int format)
       d[3] = 255;
 
       s2+=3;
-      d+=3;
+      d+=4;
     }}
 
     if(frame->pix_fmt==AV_PIX_FMT_RGBA64LE) {for(int x=0; x<frame->width; x++){
@@ -147,6 +186,7 @@ void VDImageDecoderTIFF::GetImage(void *p, int pitch, int format)
       s2+=4;
       d+=4;
     }}
+    */
 
     if(frame->pix_fmt==AV_PIX_FMT_RGB24) {for(int x=0; x<frame->width; x++){
       d[0] = s1[2];
@@ -165,6 +205,31 @@ void VDImageDecoderTIFF::GetImage(void *p, int pitch, int format)
       d[3] = s1[3];
 
       s1+=4;
+      d+=4;
+    }}
+  }}
+
+  if(format==nsVDPixmap::kPixFormat_XRGB64) {for(int y=0; y<frame->height; y++){
+    uint16_t* d = (uint16_t*)(size_t(p) + pitch*y);
+    uint16_t* s = (uint16_t*)(frame->data[0] + frame->linesize[0]*y);
+
+    if(frame->pix_fmt==AV_PIX_FMT_RGB48LE) {for(int x=0; x<frame->width; x++){
+      d[0] = s[2];
+      d[1] = s[1];
+      d[2] = s[0];
+      d[3] = 0xFFFF;
+
+      s+=3;
+      d+=4;
+    }}
+
+    if(frame->pix_fmt==AV_PIX_FMT_RGBA64LE) {for(int x=0; x<frame->width; x++){
+      d[0] = s[2];
+      d[1] = s[1];
+      d[2] = s[0];
+      d[3] = s[3];
+
+      s+=4;
       d+=4;
     }}
   }}
