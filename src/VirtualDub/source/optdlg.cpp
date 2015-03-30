@@ -841,6 +841,7 @@ const VDDialogVideoDepthW32::FormatButtonMapping VDDialogVideoDepthW32::kFormatB
 	{	nsVDPixmap::kPixFormat_RGB565,			IDC_INPUT_RGB565,			IDC_OUTPUT_RGB565,			},
 	{	nsVDPixmap::kPixFormat_RGB888,			IDC_INPUT_RGB888,			IDC_OUTPUT_RGB888,			},
 	{	nsVDPixmap::kPixFormat_XRGB8888,		IDC_INPUT_XRGB8888,			IDC_OUTPUT_XRGB8888,		},
+	{	nsVDPixmap::kPixFormat_XRGB64,			IDC_INPUT_XRGB64,			IDC_OUTPUT_XRGB64,			},
 	{	nsVDPixmap::kPixFormat_YUV422_UYVY,		IDC_INPUT_YUV422_UYVY,		IDC_OUTPUT_YUV422_UYVY,		},
 	{	nsVDPixmap::kPixFormat_YUV422_YUYV,		IDC_INPUT_YUV422_YUY2,		IDC_OUTPUT_YUV422_YUY2,		},
 	{	nsVDPixmap::kPixFormat_YUV420_Planar,	IDC_INPUT_YUV420_PLANAR,	IDC_OUTPUT_YUV420_PLANAR,	},

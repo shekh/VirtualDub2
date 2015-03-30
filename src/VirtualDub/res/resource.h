@@ -345,7 +345,9 @@
 #define IDC_SAMPLINGRATE_44KHZ          1048
 #define IDC_OUTPUT_OTHER                1048
 #define IDC_SAMPLINGRATE_INTEGRAL       1049
+#define IDC_INPUT_XRGB64                1049
 #define IDC_BANDWIDTH_REQD              1050
+#define IDC_OUTPUT_XRGB64               1050
 #define IDC_FRAMERATE_NOCHANGE          1051
 #define IDC_SAMPLINGRATE_HQ             1051
 #define IDC_FRAMERATE_CHANGE            1052
