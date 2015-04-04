@@ -409,6 +409,7 @@ bool VDDialogSelectVideoFormatW32::OnLoaded() {
 		nsVDPixmap::kPixFormat_RGB565,
 		nsVDPixmap::kPixFormat_RGB888,
 		nsVDPixmap::kPixFormat_XRGB8888,
+		nsVDPixmap::kPixFormat_XRGB64,
 		nsVDPixmap::kPixFormat_Y8,
 		nsVDPixmap::kPixFormat_Y8_FR,
 		nsVDPixmap::kPixFormat_YUV422_UYVY,
@@ -513,6 +514,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_RGB565:
 				case nsVDPixmap::kPixFormat_RGB888:
 				case nsVDPixmap::kPixFormat_XRGB8888:
+				case nsVDPixmap::kPixFormat_XRGB64:
 					s = L"RGB";
 					break;
 				case nsVDPixmap::kPixFormat_Y8:
@@ -600,6 +602,9 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
 					s = L"Full";
 					break;
+				case nsVDPixmap::kPixFormat_XRGB64:
+					s = L"Auto";
+					break;
 				case nsVDPixmap::kPixFormat_Y8:
 				case nsVDPixmap::kPixFormat_YUV422_V210:
 				case nsVDPixmap::kPixFormat_YUV444_Planar:
@@ -643,6 +648,9 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 					break;
 				case nsVDPixmap::kPixFormat_XRGB8888:
 					s = L"32-bit (8888)";
+					break;
+				case nsVDPixmap::kPixFormat_XRGB64:
+					s = L"64-bit (16x4)";
 					break;
 				case nsVDPixmap::kPixFormat_Y8:
 				case nsVDPixmap::kPixFormat_Y8_FR:
@@ -719,6 +727,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_RGB565:
 				case nsVDPixmap::kPixFormat_RGB888:
 				case nsVDPixmap::kPixFormat_XRGB8888:
+				case nsVDPixmap::kPixFormat_XRGB64:
 				case nsVDPixmap::kPixFormat_Y8:
 				case nsVDPixmap::kPixFormat_Y8_FR:
 				case nsVDPixmap::kPixFormat_YUV444_Planar:
