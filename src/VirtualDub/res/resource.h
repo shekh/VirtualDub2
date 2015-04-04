@@ -557,6 +557,7 @@
 #define IDC_CHECKRETCODE                1184
 #define IDC_MUXPARTIAL                  1184
 #define IDC_BACKGROUND                  1184
+#define IDC_USE_ALPHA                   1184
 #define IDC_AVI_DISABLEOPTIMIZEDIO      1185
 #define IDC_DISABLE_ALL_MESSAGES        1185
 #define IDC_AUTOLOADSEGMENTS            1185

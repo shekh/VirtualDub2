@@ -38,6 +38,7 @@ extern HINSTANCE g_hInst;
 
 typedef struct MyFilterData {
 	long x1, y1, x2, y2;
+	bool use_alpha, use_alpha_temp;
 	COLORREF color, color_temp;
 	HBRUSH hbrColor;
 
@@ -48,9 +49,17 @@ typedef struct MyFilterData {
 static int fill_run(const FilterActivation *fa, const FilterFunctions *ff) {
 	MyFilterData *mfd = (MyFilterData *)fa->filter_data;
 
+	VDPixmap* px = (VDPixmap*)fa->src.mpPixmap;
+	bool px_alpha = px->info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid;
+	if (mfd->use_alpha && !px_alpha)
+		return 0;
+
 	unsigned long w,h;
-	Pixel *dst, *dst2;
-	Pixel c = (Pixel)(((mfd->color & 0xff)<<16) | (mfd->color & 0xff00) | ((mfd->color & 0xff0000)>>16));
+	Pixel *dst;
+	int r = (mfd->color & 0xff);
+	int g = (mfd->color & 0xff00)>>8;
+	int b = (mfd->color & 0xff0000)>>16;
+	Pixel c = (Pixel)((r<<16) | (g<<8) | (b));
 
 	if (mfd->x1+mfd->x2 >= fa->dst.w) return 0;
 	if (mfd->y1+mfd->y2 >= fa->dst.h) return 0;
@@ -59,12 +68,23 @@ static int fill_run(const FilterActivation *fa, const FilterFunctions *ff) {
 
 	h = fa->dst.h - mfd->y1 - mfd->y2;
 	do {
-		dst2 = dst;
-
 		w = fa->dst.w - mfd->x1 - mfd->x2;
-		do {
-			*dst2++ = c;
-		} while(--w);
+		if (mfd->use_alpha) {
+			uint8* dst2 = (uint8*)dst;
+			do {
+				int a = dst2[3];
+				int ra = 255-a;
+				dst2[0] = uint8((dst2[0]*ra + b*a + 255)>>8);
+				dst2[1] = uint8((dst2[1]*ra + g*a + 255)>>8);
+				dst2[2] = uint8((dst2[2]*ra + r*a + 255)>>8);
+				dst2+=4;
+			} while(--w);
+		} else {
+			Pixel *dst2 = dst;
+			do {
+				*dst2++ = c;
+			} while(--w);
+		}
 
 		dst = (Pixel32 *)((char *)dst + fa->dst.pitch);
 	} while(--h);
@@ -92,8 +112,8 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
         case WM_INITDIALOG:
 			{
 				LONG hspace;
-				RECT rw, rc, rcok, rccancel, rcpickcolor, rccolor;
-				HWND hWnd, hWndCancel, hWndPickColor, hWndColor;
+				RECT rw, rc, rcok, rccancel, rcpickcolor, rccolor, rcalpha;
+				HWND hWnd, hWndCancel, hWndPickColor, hWndColor, hWndAlpha;
 				long x,y;
 
 				mfd = (MyFilterData *)lParam;
@@ -103,6 +123,7 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 				IVDClippingControl *pClipCtrl = VDGetIClippingControl((VDGUIHandle)hWnd);
 
 				mfd->color_temp = mfd->color;
+				mfd->use_alpha_temp = mfd->use_alpha;
 				mfd->hbrColor = CreateSolidBrush(mfd->color);
 
 				pClipCtrl->SetBitmapSize(mfd->mSourceWidth, mfd->mSourceHeight);
@@ -129,15 +150,18 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 				hWnd = GetDlgItem(hDlg, IDOK);
 				hWndPickColor = GetDlgItem(hDlg, IDC_PICK_COLOR);
 				hWndColor = GetDlgItem(hDlg, IDC_COLOR);
+				hWndAlpha = GetDlgItem(hDlg, IDC_USE_ALPHA);
 				GetWindowRect(hWnd, &rcok);
 				GetWindowRect(hWndCancel, &rccancel);
 				GetWindowRect(hWndPickColor, &rcpickcolor);
 				GetWindowRect(hWndColor, &rccolor);
+				GetWindowRect(hWndAlpha, &rcalpha);
 				hspace = rccancel.left - rcok.right;
 				MapWindowPoints(NULL, hDlg, (LPPOINT)&rcok, 2);
 				MapWindowPoints(NULL, hDlg, (LPPOINT)&rccancel, 2);
 				MapWindowPoints(NULL, hDlg, (LPPOINT)&rcpickcolor, 2);
 				MapWindowPoints(NULL, hDlg, (LPPOINT)&rccolor, 2);
+				MapWindowPoints(NULL, hDlg, (LPPOINT)&rcalpha, 2);
 
 				x = rc.right;
 				y = newH - origH;
@@ -151,6 +175,9 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 				SetWindowPos(hWndPickColor, NULL, rcpickcolor.left, rcpickcolor.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
 
 				SetWindowPos(hWndColor	, NULL, rccolor.left,        rccolor.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
+
+				SetWindowPos(hWndAlpha	, NULL, rcalpha.left,        rcalpha.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
+				SendMessage(hWndAlpha,  BM_SETCHECK, mfd->use_alpha ? BST_CHECKED:BST_UNCHECKED, 0);
 			}
 
             return (TRUE);
@@ -168,6 +195,7 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 					mfd->x2 = ccb.x2;
 					mfd->y2 = ccb.y2;
 					mfd->color = mfd->color_temp;
+					mfd->use_alpha = mfd->use_alpha_temp;
 					if (mfd->hbrColor) {
 						DeleteObject(mfd->hbrColor);
 						mfd->hbrColor = NULL;
@@ -200,6 +228,11 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 				}
 
 				return TRUE;
+
+			case IDC_USE_ALPHA:
+				mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+				mfd->use_alpha_temp = IsDlgButtonChecked(hDlg, IDC_USE_ALPHA)!=0;
+				return TRUE;
 			}
             break;
 
@@ -211,10 +244,13 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 			}
 			break;
 
-		case WM_CTLCOLORSTATIC:
-			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
-			return (BOOL)mfd->hbrColor;
-			break;
+		case WM_DRAWITEM:
+			{
+				mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+				DRAWITEMSTRUCT* ds = (DRAWITEMSTRUCT*)lParam;
+				FillRect(ds->hDC,&ds->rcItem,mfd->hbrColor);
+			}
+			return TRUE;
     }
     return FALSE;
 }
@@ -241,7 +277,9 @@ static void fill_script_config(IScriptInterpreter *isi, void *lpVoid, CScriptVal
 	mfd->y1		= argv[1].asInt();
 	mfd->x2		= argv[2].asInt();
 	mfd->y2		= argv[3].asInt();
-	mfd->color	= argv[4].asInt();
+	int arg4	= argv[4].asInt();
+	mfd->color	= arg4 & 0xFFFFFF;
+	mfd->use_alpha = (arg4 & 0x80000000)!=0;
 }
 
 static ScriptFunctionDef fill_func_defs[]={
@@ -256,7 +294,10 @@ static CScriptObject fill_obj={
 static bool fill_script_line(FilterActivation *fa, const FilterFunctions *ff, char *buf, int buflen) {
 	MyFilterData *mfd = (MyFilterData *)fa->filter_data;
 
-	_snprintf(buf, buflen, "Config(%d,%d,%d,%d,0x%06lx)", mfd->x1, mfd->y1, mfd->x2, mfd->y2, mfd->color);
+	int flags = 0;
+	if (mfd->use_alpha)
+		flags += 0x80000000;
+	_snprintf(buf, buflen, "Config(%d,%d,%d,%d,0x%06lx)", mfd->x1, mfd->y1, mfd->x2, mfd->y2, mfd->color | flags);
 
 	return true;
 }
