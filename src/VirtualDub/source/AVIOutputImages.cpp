@@ -32,6 +32,14 @@ class AVIOutputImages;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace {
+	void CopyRow_X1R15(void *dst0, const void *src0, size_t n) {
+		memcpy(dst0,src0,n*2);
+	}
+
+	void CopyRow_X8R24(void *dst0, const void *src0, size_t n) {
+		memcpy(dst0,src0,n*4);
+	}
+
 	void CopyRowSetAlpha_X1R15(void *dst0, const void *src0, size_t n) {
 		uint16 *dst = (uint16 *)dst0;
 		const uint16 *src = (const uint16 *)src0;
@@ -68,7 +76,10 @@ public:
 	AVIVideoImageOutputStream(const wchar_t *pszPrefix, const wchar_t *pszSuffix, int iDigits, int format, int quality);
 	~AVIVideoImageOutputStream();
 
-	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples);
+	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples) {
+		write(flags,pBuffer,cbBuffer,lSamples,0);
+	}
+	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples, FilterModPixmapInfo* info);
 	void WriteVideoImage(const VDPixmap *px);
 	void partialWriteBegin(uint32 flags, uint32 bytes, uint32 samples);
 	void partialWrite(const void *pBuffer, uint32 cbBuffer) {}
@@ -120,10 +131,11 @@ void AVIVideoImageOutputStream::WriteVideoImage(const VDPixmap *px) {
 
 	if (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW) {
 		bool pack_lzw = mFormat == AVIOutputImages::kFormatTIFF_LZW;
+		bool alpha = px->info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid;
 
 		void *p;
 		uint32 len;
-		mpTIFFEncoder->Encode(*px, p, len, pack_lzw, false);
+		mpTIFFEncoder->Encode(*px, p, len, pack_lzw, alpha);
 
 		mFile.write(p, len);
 		free(p);
@@ -132,7 +144,7 @@ void AVIVideoImageOutputStream::WriteVideoImage(const VDPixmap *px) {
 	mFile.close();
 }
 
-void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples) {
+void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples, FilterModPixmapInfo* info) {
 	wchar_t szFileName[MAX_PATH];
 
 	const BITMAPINFOHEADER& bih = *(const BITMAPINFOHEADER *)getFormat();
@@ -245,6 +257,10 @@ void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 
 		const int pelsize = bih.biBitCount >> 3;
 		int srcpitch = (pelsize * bih.biWidth+3)&~3;
 
+		bool wipe_alpha = true;
+		if (info && info->alpha_type!=FilterModPixmapInfo::kAlphaInvalid)
+			wipe_alpha = false;
+
 		if (mFormat == AVIOutputImages::kFormatTGA) {
 			const char *src = (const char *)pBuffer;
 			char *dstlimit = dstbase + pelsize * bih.biWidth * bih.biHeight;
@@ -255,11 +271,17 @@ void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 
 
 				// copy row into scan buffer and perform necessary masking
 				if (pelsize == 2) {
-					CopyRowSetAlpha_X1R15(mpPackBuffer, src, bih.biWidth);
+					if (wipe_alpha)
+						CopyRowSetAlpha_X1R15(mpPackBuffer, src, bih.biWidth);
+					else
+						CopyRow_X1R15(mpPackBuffer, src, bih.biWidth);
 
 					rlesrc = (const char *)mpPackBuffer;
 				} else if (pelsize == 4) {
-					CopyRowSetAlpha_X8R24(mpPackBuffer, src, bih.biWidth);
+					if (wipe_alpha)
+						CopyRowSetAlpha_X8R24(mpPackBuffer, src, bih.biWidth);
+					else
+						CopyRow_X8R24(mpPackBuffer, src, bih.biWidth);
 
 					rlesrc = (const char *)mpPackBuffer;
 				}
@@ -360,7 +382,11 @@ void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 
 		} else if (pelsize == 2) {
 			const char *src = (const char *)pBuffer;
 			for(LONG y=0; y<bih.biHeight; ++y) {
-				CopyRowSetAlpha_X1R15(mpPackBuffer, src, bih.biWidth);
+				if (wipe_alpha)
+					CopyRowSetAlpha_X1R15(mpPackBuffer, src, bih.biWidth);
+				else
+					CopyRow_X1R15(mpPackBuffer, src, bih.biWidth);
+
 				mFile.write(mpPackBuffer, pelsize*bih.biWidth);
 
 				src += srcpitch;
@@ -368,7 +394,11 @@ void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 
 		} else if (pelsize == 4) {
 			const char *src = (const char *)pBuffer;
 			for(LONG y=0; y<bih.biHeight; ++y) {
-				CopyRowSetAlpha_X8R24(mpPackBuffer, src, bih.biWidth);
+				if (wipe_alpha)
+					CopyRowSetAlpha_X8R24(mpPackBuffer, src, bih.biWidth);
+				else
+					CopyRow_X8R24(mpPackBuffer, src, bih.biWidth);
+
 				mFile.write(mpPackBuffer, pelsize*bih.biWidth);
 
 				src += srcpitch;

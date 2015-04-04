@@ -34,11 +34,11 @@ void VDPixmapGen_X16R16G16B16_To_X32B32G32R32F::Compute(void *dst0, sint32 y) {
 		uint16 b = src[0];
 		src += 4;
 
-	  dst[0] = r*mr;
-	  dst[1] = g*mg;
-	  dst[2] = b*mb;
-	  dst[3] = 1.0f;
-	  dst += 4;
+		dst[0] = r*mr;
+		dst[1] = g*mg;
+		dst[2] = b*mb;
+		dst[3] = 1.0f;
+		dst += 4;
 	}
 }
 
@@ -57,11 +57,11 @@ void VDPixmapGen_X32B32G32R32F_To_X16R16G16B16::Compute(void *dst0, sint32 y) {
 		float b = src[2];
 		src += 4;
 
-	  dst[2] = uint16(r*mr);
-	  dst[1] = uint16(g*mg);
-	  dst[0] = uint16(b*mb);
-	  dst[3] = 0;
-	  dst += 4;
+		dst[2] = uint16(r*mr);
+		dst[1] = uint16(g*mg);
+		dst[0] = uint16(b*mb);
+		dst[3] = 0;
+		dst += 4;
 	}
 }
 
@@ -114,32 +114,76 @@ void VDPixmapGen_X16R16G16B16_To_X8R8G8B8::Compute(void *dst0, sint32 y) {
 				uint16 r = src[2];
 				uint16 g = src[1];
 				uint16 b = src[0];
+				uint16 a = src[3];
 				src += 4;
 
 				if(r>ref_r) r=255; else r=(r*mr)>>16;
 				if(g>ref_g) g=255; else g=(g*mg)>>16;
 				if(b>ref_b) b=255; else b=(b*mb)>>16;
+				if(a>ref_a) a=255; else a=(a*ma)>>16;
 
 				uint32 ir = r << 16;
 				uint32 ig = g << 8;
 				uint32 ib = b;
+				uint32 ia = a << 24;
 
-				dst[i] = ir + ig + ib;
+				dst[i] = ir + ig + ib + ia;
 			}
 		} else {
 			for(sint32 i=0; i<w; ++i) {
 				uint16 r = src[2];
 				uint16 g = src[1];
 				uint16 b = src[0];
+				uint16 a = src[3];
 				src += 4;
 
 				uint32 ir = (r>>8) << 16;
 				uint32 ig = (g>>8) << 8;
 				uint32 ib = (b>>8);
+				uint32 ia = a << 24;
 
-				dst[i] = ir + ig + ib;
+				dst[i] = ir + ig + ib + ia;
 			}
 		}
 	}
 }
 
+void VDPixmap_X16R16G16B16_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc) {
+	int ref_r = pxsrc.info.ref_r;
+	int ref_g = pxsrc.info.ref_g;
+	int ref_b = pxsrc.info.ref_b;
+	int ref_a = pxsrc.info.ref_a;
+	uint32 mr = 0xFFFF0000/ref_r;
+	uint32 mg = 0xFFFF0000/ref_g;
+	uint32 mb = 0xFFFF0000/ref_b;
+	uint32 ma = 0xFFFF0000/ref_a;
+	pxdst.info = pxsrc.info;
+	pxdst.info.ref_r = 0xFFFF;
+	pxdst.info.ref_g = 0xFFFF;
+	pxdst.info.ref_b = 0xFFFF;
+	pxdst.info.ref_a = 0xFFFF;
+
+	{for(sint32 y=0; y<pxsrc.h; y++) {
+		const uint16 *src = (const uint16 *)(size_t(pxsrc.data) + pxsrc.pitch*y);
+		uint16 *dst = (uint16 *)(size_t(pxdst.data) + pxdst.pitch*y);
+
+		{for(sint32 x=0; x<pxsrc.w; x++) {
+			uint16 r = src[2];
+			uint16 g = src[1];
+			uint16 b = src[0];
+			uint16 a = src[3];
+			src += 4;
+
+			if(r>ref_r) r=0xFFFF; else r=(r*mr)>>16;
+			if(g>ref_g) g=0xFFFF; else g=(g*mg)>>16;
+			if(b>ref_b) b=0xFFFF; else b=(b*mb)>>16;
+			if(a>ref_a) a=0xFFFF; else a=(a*ma)>>16;
+
+			dst[2] = r;
+			dst[1] = g;
+			dst[0] = b;
+			dst[3] = a;
+			dst += 4;
+		}}
+	}}
+}

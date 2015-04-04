@@ -2,6 +2,7 @@
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmaputils.h>
 #include <vd2/Kasumi/pixmapops.h>
+#include <../Kasumi/h/uberblit_rgb64.h>
 #include <vd2/system/error.h>
 
 extern "C" {
@@ -257,6 +258,10 @@ void VDImageEncoderTIFF::Encode(const VDPixmap& px, void *&p, uint32& len, bool 
   VDPixmapBuffer buf;
   buf.init(px.w,px.h,temp_format);
 	VDPixmapBlt(buf, px);
+
+  if(buf.format==nsVDPixmap::kPixFormat_XRGB64){
+    if(!VDPixmap_X16R16G16B16_IsNormalized(buf.info)) VDPixmap_X16R16G16B16_Normalize(buf,buf);
+  }
 
   {for(int y=0; y<px.h; y++){
     uint8_t* s = (uint8_t*)buf.data + buf.pitch*y;

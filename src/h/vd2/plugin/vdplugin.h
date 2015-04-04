@@ -158,13 +158,14 @@ struct VDXRect {
 
 struct FilterModPixmapInfo {
 	enum MappingType {
-		kMappingUnknown = 0,
-		kMappingGamma = 1,
-		kMappingLinear = 2,
+		kTransferUnknown = 0,
+		kTransferGamma = 1,
+		kTransferLinear = 2,
 	};
 	enum AlphaType {
 		kAlphaInvalid = 0,
 		kAlphaMask = 1,
+		kAlphaMask_pm = 2,
 	};
 
 	uint32 ref_r;
@@ -172,8 +173,9 @@ struct FilterModPixmapInfo {
 	uint32 ref_b;
 	uint32 ref_a;
 
-	uint32 mapping_type;
+	uint32 transfer_type;
 	uint32 alpha_type;
+	int64 frame_num;
 
 	FilterModPixmapInfo() {
 		clear();
@@ -184,8 +186,16 @@ struct FilterModPixmapInfo {
 		ref_g = 0;
 		ref_b = 0;
 		ref_a = 0;
-		mapping_type = kMappingUnknown;
+		transfer_type = kTransferUnknown;
 		alpha_type = kAlphaInvalid;
+		frame_num = -1;
+	}
+
+	void copy_frame(FilterModPixmapInfo& a) {
+		frame_num = a.frame_num;
+	}
+	void copy_alpha(FilterModPixmapInfo& a) {
+		alpha_type = a.alpha_type;
 	}
 };
 
