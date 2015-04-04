@@ -234,7 +234,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 
 	int w, h;
 	int format = 0;
-	bool bHasAlpha;
+	bool bHasAlpha = false;
 
 	bool bIsPNG = false;
 	bool bIsJPG = false;
@@ -260,6 +260,11 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 
 	if (!bIsBMP && !bIsTGA && !bIsJPG && !bIsPNG && !bIsIFF && !bIsTIFF)
 		throw MyError("Image file must be in PNG, Windows BMP, truecolor TARGA format, MayaIFF, TIFF, or sequential JPEG format.");
+
+	mTargetFormat.info.clear();
+	mTargetFormat.info.frame_num = frame_num;
+	if (bHasAlpha)
+		mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaMask;
 
 	if (bIsJPG) {
 		if (!mpJPEGDecoder)
@@ -341,6 +346,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 		} else {
 			VDPixmapBuffer buf;
 			buf.init(w,h,format);
+			buf.info.copy_frame(dst.info);
 			mpTIFFDecoder->GetPixmapInfo(buf.info);
 			mpTIFFDecoder->GetImage(buf.data, buf.pitch, format);
 			VDPixmapBlt(dst, buf);

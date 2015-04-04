@@ -2210,6 +2210,7 @@ void FilterInstance::RunFilterInner() {
 		if (!mpSourceConversionBlitter)
 			mpSourceConversionBlitter = VDPixmapCreateBlitter(mRealSrc.mPixmap, mExternalSrcCropped.mPixmap);
 
+		mExternalSrcCropped.mPixmap.info = mRealSrc.mPixmap.info;
 		mpSourceConversionBlitter->Blit(mRealSrc.mPixmap, mExternalSrcCropped.mPixmap);
 	}
 

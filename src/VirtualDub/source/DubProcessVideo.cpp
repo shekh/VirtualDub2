@@ -1252,7 +1252,7 @@ void VDDubVideoProcessor::WriteFinishedVideoFrame(const void *data, uint32 size,
 			mpVideoImageOut->WriteVideoImage(NULL);
 	} else {
 		VDDubAutoThreadLocation loc(*mppCurrentAction, "writing video frame to disk");
-		mpVideoOut->write(isKey ? AVIOutputStream::kFlagKeyFrame : 0, (char *)data, size, 1);
+		mpVideoOut->write(isKey ? AVIOutputStream::kFlagKeyFrame : 0, (char *)data, size, 1, &pBuffer->mPixmap.info);
 	}
 	mpVInfo->total_size += size + 24;
 

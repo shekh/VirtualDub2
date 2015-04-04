@@ -48,6 +48,7 @@ public:
 	};
 
 	virtual void	write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples) = 0;
+	virtual void	write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples, FilterModPixmapInfo* info) = 0;
 
 	virtual void	partialWriteBegin(uint32 flags, uint32 bytes, uint32 samples) = 0;
 	virtual void	partialWrite(const void *pBuffer, uint32 cbBuffer) = 0;
@@ -97,6 +98,11 @@ public:
 
 	virtual void updateStreamInfo(const AVIStreamHeader_fixed& hdr) {
 		streamInfo = hdr;
+	}
+
+	virtual void	write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples) = 0;
+	virtual void	write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples, FilterModPixmapInfo* info) {
+		write(flags,pBuffer,cbBuffer,samples);
 	}
 
 	virtual void flush() {}

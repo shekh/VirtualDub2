@@ -117,6 +117,8 @@ bool VDPixmapBltDirect(const VDPixmap& dst, const VDPixmap& src, vdpixsize w, vd
 			VDMemcpyRect(dst.data, dst.pitch, src.data, src.pitch, srcinfo.qsize * qw, qh);
 		}
 
+		(const_cast<VDPixmap&>(dst)).info = src.info;
+
 		return true;
 	}
 
