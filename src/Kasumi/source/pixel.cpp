@@ -102,6 +102,27 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 	case nsVDPixmap::kPixFormat_XRGB8888:
 		return ((const uint32 *)((const uint8 *)px.data + px.pitch*y))[x];
 
+	case nsVDPixmap::kPixFormat_XRGB64:
+		{
+			const uint16* s = (const uint16*)(size_t(px.data) + px.pitch*y + x*8);
+			uint32 r = s[2];
+			uint32 g = s[1];
+			uint32 b = s[0];
+			uint32 a = s[3];
+			if(r>px.info.ref_r) r=255; else r=(r*0xFF0/px.info.ref_r+8)>>4;
+			if(g>px.info.ref_g) g=255; else g=(g*0xFF0/px.info.ref_g+8)>>4;
+			if(b>px.info.ref_b) b=255; else b=(b*0xFF0/px.info.ref_b+8)>>4;
+			if(a>px.info.ref_a) a=255; else a=(a*0xFF0/px.info.ref_a+8)>>4;
+
+			uint32 ir = r << 16;
+			uint32 ig = g << 8;
+			uint32 ib = b;
+			uint32 ia = a << 24;
+
+			return ir + ig + ib + ia;
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_Y8:
 		{
 			uint8 luma = ((const uint8 *)px.data + px.pitch*y)[x];
