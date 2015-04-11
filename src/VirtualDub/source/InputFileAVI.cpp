@@ -161,6 +161,16 @@ public:
 				return kDC_High;
 		}
 
+		if (nHeaderSize >= 12) {
+			if (!memcmp(pHeader, "#VapourSynth", 12))
+				return kDC_High;
+		}
+
+		if (nHeaderSize >= 15) {
+			if (!memcmp(pHeader, "\xEF\xBB\xBF#VapourSynth", 15))
+				return kDC_High;
+		}
+
 		return kDC_None;
 	}
 
