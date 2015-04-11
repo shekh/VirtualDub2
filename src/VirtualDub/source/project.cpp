@@ -1138,7 +1138,14 @@ void VDProject::Reopen() {
 
 	VDStringW filename(VDGetFullPath(g_szInputAVIFile));
 
-	IVDInputDriver *pSelectedDriver = pSelectedDriver = VDAutoselectInputDriverForFile(filename.c_str(), IVDInputDriver::kF_Video);
+	IVDInputDriver *pSelectedDriver;
+	if (mInputDriverName.empty()) {
+		pSelectedDriver = VDAutoselectInputDriverForFile(filename.c_str(), IVDInputDriver::kF_Video);
+	} else {
+		pSelectedDriver = VDGetInputDriverByName(mInputDriverName.c_str());
+		if (!pSelectedDriver)
+			throw MyError("The input driver \"%ls\" is no more available.", mInputDriverName);
+	}
 
 	// open file
 
