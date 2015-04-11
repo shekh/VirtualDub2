@@ -1436,7 +1436,7 @@ VDInputDriverPlugin::DetectionConfidence VDInputDriverPlugin::DetectBySignature(
 	}
 
 	if (!(mpShadowedDef->mFlags & VDXInputDriverDefinition::kFlagCustomSignature))
-		return kDC_High;
+		return kDC_Low;
 
 	LoadPlugin();
 
