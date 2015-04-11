@@ -231,7 +231,7 @@ struct VDXPixmapLayout {
 
 class IFilterModPixmap {
 public:
-	virtual FilterModPixmapInfo* GetPixmapInfo(VDXPixmap* pixmap)=0;
+	virtual FilterModPixmapInfo* GetPixmapInfo(const VDXPixmap* pixmap)=0;
 	virtual uint64 GetFormat_XRGB64()=0;
 };
 

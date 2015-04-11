@@ -440,6 +440,11 @@ public:
 	VDXFBitmap *const *mpSourceStreams;	// (V16+)
 };
 
+enum {
+	// This is the highest API version supported by this header file.
+	FILTERMOD_VERSION = 2,
+};
+
 class FilterModActivation {
 public:
 	const VDXFilterDefinition *filter;
@@ -448,6 +453,8 @@ public:
 	IFilterModPreview *fmpreview;
 	IFilterModTimeline *fmtimeline;
 	IFilterModSystem *fmsystem;
+
+	// FilterModVersion>=2
 	IFilterModPixmap *fmpixmap;
 };
 

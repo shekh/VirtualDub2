@@ -307,10 +307,20 @@ void VDExternalModule::ReconnectOldPlugins() {
 			int ver_lo = VIRTUALDUB_FILTERDEF_COMPATIBLE;
 
 			if (mModuleInfo.filterModInitProc) {
-				int mod_hi = 1;
-				int mod_lo = 1;
+				int mod_hi = FILTERMOD_VERSION;
+				int mod_lo = FILTERMOD_VERSION;
 				if (mModuleInfo.filterModInitProc(&mModuleInfo, &g_FilterModCallbacks, ver_hi, ver_lo, mod_hi, mod_lo))
 					throw MyError("Error initializing module \"%s\".",nameA.c_str());
+
+				if (mod_lo > FILTERMOD_VERSION) {
+					mModuleInfo.deinitProc(&mModuleInfo, &g_VDFilterCallbacks);
+
+					throw MyError(
+						"This filter uses too new of a filter interface!  You'll need to upgrade to a newer version of "
+						"VirtualDub to use this filter."
+						);
+				}
+
 			} else {
 				if (mModuleInfo.initProc(&mModuleInfo, &g_VDFilterCallbacks, ver_hi, ver_lo))
 					throw MyError("Error initializing module \"%s\".",nameA.c_str());

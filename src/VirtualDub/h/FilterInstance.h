@@ -141,7 +141,7 @@ protected:
 
 class FilterModPixmap: public IFilterModPixmap {
 public:
-	virtual FilterModPixmapInfo* GetPixmapInfo(VDXPixmap* pixmap) {
+	virtual FilterModPixmapInfo* GetPixmapInfo(const VDXPixmap* pixmap) {
 		return &((VDPixmap*)pixmap)->info;
 	}
 	virtual uint64 GetFormat_XRGB64() {
