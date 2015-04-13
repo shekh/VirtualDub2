@@ -22,11 +22,13 @@
 #include <vd2/VDLib/Dialog.h>
 #include <vd2/VDLib/UIProxies.h>
 #include "script.h"
+#include "project.h"
 #include "oshelper.h"
 #include "resource.h"
 
 extern const char g_szError[];
 extern const wchar_t g_szWarningW[];
+extern VDProject *g_project;
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -105,7 +107,7 @@ VDUIDialogAutoRecover::~VDUIDialogAutoRecover() {
 }
 
 bool VDUIDialogAutoRecover::Scan(const wchar_t *path) {
-	VDDirectoryIterator it(VDMakePath(path, L"VirtualDub_AutoSave_*.vdscript").c_str());
+	VDDirectoryIterator it(VDMakePath(path, L"VirtualDub_AutoSave_*.vdproject").c_str());
 
 	while(it.Next()) {
 		if (it.IsDirectory())
@@ -252,7 +254,7 @@ void VDUICheckForAutoRecoverFiles(VDGUIHandle h) {
 		return;
 
 	try {
-		RunScript(path, h);
+		g_project->OpenProject(path, true);
 
 		try {
 			VDRemoveFile(path);

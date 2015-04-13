@@ -208,6 +208,16 @@ public:
 	virtual bool FindVideoFilter(const char* name, FilterReturnInfo& a)=0;
 };
 
+class IFilterModProject {
+public:
+	virtual bool GetData(void* buf, size_t* buf_size, const wchar_t* id)=0;
+	virtual bool SetData(const void* buf, const size_t buf_size, const wchar_t* id)=0;
+	virtual bool GetProjectData(void* buf, size_t* buf_size, const wchar_t* id)=0;
+	virtual bool SetProjectData(const void* buf, const size_t buf_size, const wchar_t* id)=0;
+	virtual bool GetDataDir(wchar_t* buf, size_t* buf_size)=0;
+	virtual bool GetProjectDir(wchar_t* buf, size_t* buf_size)=0;
+};
+
 class IVDXVideoPrefetcher : public IVDXUnknown {
 public:
 	enum { kIID = VDXMAKEFOURCC('X', 'v', 'p', 'f') };
@@ -442,7 +452,7 @@ public:
 
 enum {
 	// This is the highest API version supported by this header file.
-	FILTERMOD_VERSION = 2,
+	FILTERMOD_VERSION = 3,
 };
 
 class FilterModActivation {
@@ -456,6 +466,9 @@ public:
 
 	// FilterModVersion>=2
 	IFilterModPixmap *fmpixmap;
+
+	// FilterModVersion>=3
+	IFilterModProject *fmproject;
 };
 
 // These flags must match those in cpuaccel.h!

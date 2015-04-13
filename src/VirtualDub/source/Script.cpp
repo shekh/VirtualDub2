@@ -83,10 +83,11 @@ extern bool VDPreferencesGetBatchShowStatusWindow();
 
 void RunScript(const wchar_t *name, void *hwnd) {
 	static const wchar_t fileFilters[]=
-				L"All scripts\0"							L"*.vdscript;*.vcf;*.syl;*.jobs\0"
+				L"All scripts\0"							L"*.vdscript;*.vcf;*.syl;*.jobs;*.vdproject\0"
 				L"VirtualDub configuration file\0"			L"*.vcf\0"
 				L"VirtualDub script\0"						L"*.vdscript;*.syl\0"
 				L"VirtualDub job queue\0"					L"*.jobs\0"
+				L"VirtualDub project\0"						L"*.vdproject\0"
 				L"All Files (*.*)\0"						L"*.*\0"
 				;
 
@@ -132,6 +133,28 @@ void RunScript(const wchar_t *name, void *hwnd) {
 
 	g_project->EndTimelineUpdate();
 	g_project->UpdateFilterList();
+}
+
+void RunProject(const wchar_t *name, void *hwnd) {
+	static const wchar_t projectFilters[]=
+				L"Project scripts\0"						L"*.jobs;*.vdproject\0"
+				L"VirtualDub job queue\0"					L"*.jobs\0"
+				L"VirtualDub project\0"						L"*.vdproject\0"
+				L"All Files (*.*)\0"						L"*.*\0"
+				;
+
+	VDStringW filenameW;
+
+	if (!name) {
+		filenameW = VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, (VDGUIHandle)hwnd, L"Load Project", projectFilters, L"vdproject", 0, 0);
+
+		if (filenameW.empty())
+			return;
+
+		name = filenameW.c_str();
+	}
+
+	g_project->OpenProject(name);
 }
 
 void RunScriptMemory(const char *mem, bool stopAtReloadMarker) {
@@ -440,6 +463,12 @@ static void func_VDVFiltInst_AddInput(IVDScriptInterpreter *isi, VDScriptValue *
 	ent->mSources.push_back_as(*argv[0].asString());
 }
 
+static void func_VDVFiltInst_DataPrefix(IVDScriptInterpreter *isi, VDScriptValue *argv, int argc) {
+	VDFilterChainEntry *ent = (VDFilterChainEntry *)argv[-1].asObjectPtr();
+
+	ent->mpInstance->fmProject.dataPrefix = *argv[0].asString();
+}
+
 static VDScriptValue obj_VDVFiltInst_lookup(IVDScriptInterpreter *isi, const VDScriptObject *thisPtr, void *lpVoid, char *szName) {
 	VDFilterChainEntry *ent = (VDFilterChainEntry *)lpVoid;
 	FilterInstance *pfi = ent->mpInstance;
@@ -501,6 +530,7 @@ static const VDScriptFunctionDef obj_VDVFiltInst_functbl[]={
 	{ func_VDVFiltInst_SetForceSingleFBEnabled, "SetForceSingleFBEnabled", "0i" },
 	{ func_VDVFiltInst_SetOutputName	, "SetOutputName", "0s" },
 	{ func_VDVFiltInst_AddInput			, "AddInput", "0s" },
+	{ func_VDVFiltInst_DataPrefix		, "DataPrefix", "0s" },
 	{ NULL }
 };
 

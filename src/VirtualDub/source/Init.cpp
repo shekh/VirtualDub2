@@ -790,7 +790,7 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 				if (g_capProjectUI)
 					g_capProjectUI->SetCaptureFile(token);
 				else
-					g_project->Open(token);
+					g_project->CmdOpen(token);
 			} else {
 				// parse out the switch name
 				++token;

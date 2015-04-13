@@ -50,6 +50,9 @@ public:
 	const char *	GetName() const				{ return mName.c_str(); }
 	void			SetName(const char *name)	{ mName = name; }
 
+	const char *	GetProjectSubdir() const			{ return mProjectSubdir.c_str(); }
+	void			SetProjectSubdir(const char *name)	{ mProjectSubdir = name; }
+
 	const char *	GetInputFile() const			{ return mInputFile.c_str(); }
 	void			SetInputFile(const char *file)	{ mInputFile = file; }
 	void			SetInputFile(const wchar_t *file);
@@ -96,6 +99,7 @@ protected:
 	VDStringA	mOutputFile;
 	VDStringA	mError;
 	VDStringA	mScript;
+	VDStringA	mProjectSubdir;
 	int			mState;
 	bool		mbContainsReloadMarker;
 	bool		mbModified;

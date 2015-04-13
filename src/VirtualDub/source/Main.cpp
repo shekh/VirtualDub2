@@ -57,7 +57,8 @@
 
 enum {
 	kFileDialog_Config			= 'conf',
-	kFileDialog_ImageDst		= 'imgd'
+	kFileDialog_ImageDst		= 'imgd',
+	kFileDialog_Project 		= 'proj'
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -98,6 +99,7 @@ void SaveAVI(HWND, bool);
 void SaveSegmentedAVI(HWND);
 void SaveImageSeq(HWND);
 void SaveConfiguration(HWND);
+void SaveProject(HWND, bool reset_path);
 
 extern int VDProcessCommandLine(const VDCommandLine& cmdLine);
 
@@ -246,6 +248,11 @@ extern const wchar_t fileFiltersAppend[]=
 
 static const wchar_t fileFiltersSaveConfig[]=
 		L"VirtualDub script (*.vdscript)\0"			L"*.vdscript;*.vcf;*.syl\0"
+		L"All files (*.*)\0"						L"*.*\0"
+		;
+
+static const wchar_t fileFiltersSaveProject[]=
+		L"VirtualDub project (*.vdproject)\0"		L"*.vdproject\0"
 		L"All files (*.*)\0"						L"*.*\0"
 		;
 
@@ -438,7 +445,7 @@ void SaveSegmentedAVI(HWND hWnd, bool queueAsJob) {
 		}
 
 		if (queueAsJob) {
-			JobAddConfiguration(&g_dubOpts, g_szInputAVIFile, NULL, fname.c_str(), true, &inputAVI->listFiles, optVals[3], optVals[1] ? optVals[2] : 0, true, digits);
+			JobAddConfiguration(0, &g_dubOpts, g_szInputAVIFile, NULL, fname.c_str(), true, &inputAVI->listFiles, optVals[3], optVals[1] ? optVals[2] : 0, true, digits);
 		} else {
 			SaveSegmentedAVI(fname.c_str(), false, NULL, optVals[3], optVals[1] ? optVals[2] : 0, digits);
 		}
@@ -720,7 +727,7 @@ void SaveImageSeq(HWND hwnd, bool queueAsJob) {
 			q = dlg.mbQuickCompress ? 0 : 100;
 
 		if (queueAsJob)
-			JobAddConfigurationImages(&g_dubOpts, g_szInputAVIFile, NULL, dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, dlg.mFormat, q, &inputAVI->listFiles);
+			JobAddConfigurationImages(0, &g_dubOpts, g_szInputAVIFile, NULL, dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, dlg.mFormat, q, &inputAVI->listFiles);
 		else
 			SaveImageSequence(dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, false, NULL, dlg.mFormat, q);
 	}
@@ -749,6 +756,27 @@ void SaveConfiguration(HWND hWnd) {
 
 		try {
 			JobWriteConfiguration(filename.c_str(), &g_dubOpts, !!optVals[0], !!optVals[1]);
+		} catch(const MyError& e) {
+			e.post(NULL, g_szError);
+		}
+	}
+}
+
+void SaveProject(HWND hWnd, bool reset_path) {
+	VDStringW filename = g_project->mProjectFilename;
+	
+	if (filename.empty() || reset_path || g_project->mProjectReadonly)
+		filename = VDGetSaveFileName(kFileDialog_Project, (VDGUIHandle)hWnd, L"Save Project", fileFiltersSaveProject, L"vdproject", 0, 0);
+
+	if (!filename.empty()) {
+		try {
+			VDFile f;
+			f.open(filename.c_str(), nsVDFile::kWrite | nsVDFile::kCreateAlways);
+			VDStringW dataSubdir;
+			g_project->SaveData(filename,dataSubdir);
+			g_project->SaveProjectPath(filename,dataSubdir);
+			g_project->SaveScript(f,dataSubdir,true);
+			f.close();
 		} catch(const MyError& e) {
 			e.post(NULL, g_szError);
 		}

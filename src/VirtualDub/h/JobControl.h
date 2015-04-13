@@ -61,6 +61,7 @@ public:
 	void Transform(int fromState, int toState);
 
 	void ListLoad(const wchar_t *lpszName, bool skipIfSignatureSame);
+	void LoadProject(const wchar_t* fileName);
 
 	bool IsModified() {
 		return mbModified;

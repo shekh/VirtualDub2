@@ -18,6 +18,7 @@
 #include "stdafx.h"
 #include <vd2/system/debug.h>
 #include <vd2/system/file.h>
+#include <vd2/system/filesys.h>
 #include <vd2/system/int128.h>
 #include <vd2/system/linearalloc.h>
 #include <vd2/system/protscope.h>
@@ -779,6 +780,7 @@ FilterInstance::FilterInstance(const FilterInstance& fi)
 	, mpAccelContext	(NULL)
 	, mPrepareInfo()
 	, mPrepareInfo2()
+	, fmProject			(fi.fmProject)
 {
 	if (mpAutoDeinit)
 		mpAutoDeinit->AddRef();
@@ -787,6 +789,9 @@ FilterInstance::FilterInstance(const FilterInstance& fi)
 
 	filter = const_cast<FilterDefinition *>(&fi.mpFDInst->Attach());
 	filter_data = fi.filter_data;
+
+	fmProject.inst = this;
+	fma.fmproject = &fmProject;
 
 	fma.filter = filter;
 	fma.filterMod = const_cast<FilterModDefinition *>(&fi.mpFDInst->GetFilterModDef());
@@ -817,6 +822,10 @@ FilterInstance::FilterInstance(FilterDefinitionInstance *fdi)
 	, mPrepareInfo2()
 {
 	filter = const_cast<FilterDefinition *>(&fdi->Attach());
+
+	fmProject.inst = this;
+	fma.fmproject = &fmProject;
+
 	fma.filter = filter;
 	fma.filterMod = const_cast<FilterModDefinition *>(&fdi->GetFilterModDef());
 	mAPIVersion = fdi->GetAPIVersion();
@@ -2767,4 +2776,142 @@ void FilterInstance::InitSharedBuffers(VDFixedLinearAllocator& lastFrameAlloc) {
 		if (mRealLast.dwFlags & VDXFBitmap::NEEDS_HDC)
 			mRealLast.BindToDIBSection(NULL);
 	}
+}
+
+FilterModProject::FilterModProject(const FilterModProject& a) {
+	inst = 0;
+	dataPrefix = a.dataPrefix;
+	{for(Data* const* p=a.data.begin(); p<a.data.end(); p++){
+		Data* d = new Data(**p);
+		data.push_back(d);
+	}}
+}
+
+FilterModProject::~FilterModProject() {
+	{for(Data** p=data.begin(); p<data.end(); p++){
+		delete *p;
+	}}
+}
+
+bool FilterModProject::GetData(void* buf, size_t* buf_size, const wchar_t* id) {
+	Data* d = 0;
+	{for(Data** p=data.begin(); p<data.end(); p++){
+		if((*p)->id==id) {
+			d = *p;
+			break;
+		}
+	}}
+
+	if (!d) {
+		if (dataPrefix.empty() || g_project->mProjectFilename.empty() || g_project->mProjectSubdir.empty()) {
+			*buf_size = 0;
+			return true;
+		}
+
+		d = new Data;
+		d->id = id;
+		data.push_back(d);
+	}
+
+	if (d->read_dirty) {
+		VDStringW name = VDFileSplitPathLeft(g_project->mProjectFilename);
+		name += g_project->mProjectSubdir;
+		name += L"\\.";
+		name += VDTextU8ToW(dataPrefix);
+		name += L".";
+		name += id;
+		VDFile file;
+		if (file.openNT(name.c_str())) {
+			sint64 size = file.size();
+			d->data.resize((size_t)size);
+			file.read(d->data.begin(),(long)size);
+		} else {
+			d->data.clear();
+		}
+		d->read_dirty = false;
+	}
+
+	if(d->data.empty()) {
+		*buf_size = 0;
+		return true;
+	}
+
+	size_t size = d->data.size();
+	if (!buf || *buf_size<size) {
+		*buf_size = size;
+		return false;
+	}
+
+	*buf_size = size;
+	memcpy(buf,d->data.begin(),size);
+	return true;
+}
+
+bool FilterModProject::SetData(const void* buf, const size_t buf_size, const wchar_t* id) {
+	Data* d = 0;
+	{for(Data** p=data.begin(); p<data.end(); p++){
+		if((*p)->id==id) {
+			d = *p;
+			break;
+		}
+	}}
+
+	if (!d) {
+		d = new Data;
+		d->id = id;
+		data.push_back(d);
+	}
+
+	d->data.resize(buf_size);
+	memcpy(d->data.begin(),buf,buf_size);
+	d->read_dirty = false;
+	d->write_dirty = true;
+
+	return true;
+}
+
+bool FilterModProject::GetProjectData(void* buf, size_t* buf_size, const wchar_t* id) {
+	*buf_size = 0;
+	return false;
+}
+
+bool FilterModProject::SetProjectData(const void* buf, const size_t buf_size, const wchar_t* id) {
+	return false;
+}
+
+bool FilterModProject::GetDataDir(wchar_t* buf, size_t* buf_size) {
+	if (g_project->mProjectFilename.empty() || g_project->mProjectSubdir.empty()) {
+		*buf_size = 0;
+		return true;
+	}
+
+	VDStringW data = VDFileSplitPathLeft(g_project->mProjectFilename);
+	data += g_project->mProjectSubdir;
+	size_t size = (data.length()+1)*2;
+	if (!buf || *buf_size<size) {
+		*buf_size = size;
+		return false;
+	}
+
+	*buf_size = size;
+	memcpy(buf,data.c_str(),size);
+	return true;
+}
+
+bool FilterModProject::GetProjectDir(wchar_t* buf, size_t* buf_size) {
+	if (g_project->mProjectFilename.empty()) {
+		*buf_size = 0;
+		return true;
+	}
+
+	VDStringW base = VDFileSplitPathLeft(g_project->mProjectFilename);
+	size_t size = (base.length()+1)*2;
+	if (!buf || *buf_size<size) {
+		*buf_size = size;
+		return false;
+	}
+
+	*buf_size = size;
+	memcpy(buf,base.c_str(),size);
+	return true;
 }

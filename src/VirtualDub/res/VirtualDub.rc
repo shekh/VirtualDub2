@@ -106,6 +106,10 @@ BEGIN
         MENUITEM "Load processing settings...\tCtrl+L", ID_FILE_LOADCONFIGURATION
         MENUITEM "Save processing settings...\tCtrl+S", ID_FILE_SAVECONFIGURATION
         MENUITEM SEPARATOR
+        MENUITEM "Load Project...",             ID_FILE_LOADPROJECT
+        MENUITEM "Save Project",                ID_FILE_SAVEPROJECT
+        MENUITEM "Save Project As...",          ID_FILE_SAVEPROJECTAS
+        MENUITEM SEPARATOR
         MENUITEM "Start frame server...",       ID_FILE_STARTSERVER
         MENUITEM "Ca&pture AVI...",             ID_FILE_CAPTUREAVI
         MENUITEM "Run script...",               ID_FILE_RUNSCRIPT

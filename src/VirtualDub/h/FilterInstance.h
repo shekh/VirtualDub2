@@ -54,6 +54,7 @@ class VDScriptValue;
 class IVDScriptInterpreter;
 
 class FilterDefinitionInstance;
+class FilterInstance;
 
 class VDFilterFrameBuffer;
 class VDFilterFrameRequest;
@@ -318,6 +319,32 @@ struct VDFilterPrepareInfo2 {
 	Streams mStreams;
 };
 
+class FilterModProject : public IFilterModProject {
+public:
+	struct Data {
+		VDStringW id;
+		vdfastvector<uint8> data;
+		bool read_dirty;
+		bool write_dirty;
+
+		Data() { read_dirty=true; write_dirty=false; }
+	};
+
+	FilterInstance* inst;
+	VDStringA dataPrefix;
+	vdfastvector<Data*> data;
+
+	FilterModProject() { inst=0; }
+	FilterModProject(const FilterModProject& a);
+	~FilterModProject();
+	virtual bool GetData(void* buf, size_t* buf_size, const wchar_t* id);
+	virtual bool SetData(const void* buf, const size_t buf_size, const wchar_t* id);
+	virtual bool GetProjectData(void* buf, size_t* buf_size, const wchar_t* id);
+	virtual bool SetProjectData(const void* buf, const size_t buf_size, const wchar_t* id);
+	virtual bool GetDataDir(wchar_t* buf, size_t* buf_size);
+	virtual bool GetProjectDir(wchar_t* buf, size_t* buf_size);
+};
+
 class FilterInstance : protected VDFilterActivationImpl, public VDFilterConfiguration, public vdrefcounted<IVDFilterFrameSource> {
 	FilterInstance& operator=(const FilterInstance&);		// outlaw copy assignment
 
@@ -396,6 +423,9 @@ public:
 
 	sint64		GetLastSourceFrame()	const { return mfsi.lCurrentSourceFrame; }
 	sint64		GetLastOutputFrame()	const { return mfsi.lCurrentFrame; }
+
+	VDStringA mConfigString;
+	FilterModProject fmProject;
 
 protected:
 	class SamplingInfo;

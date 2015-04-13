@@ -152,6 +152,7 @@ extern void OpenImageSeq(HWND hwnd);
 extern void SaveImageSeq(HWND, bool queueAsBatch);
 extern void SaveWAV(HWND, bool queueAsBatch);
 extern void SaveConfiguration(HWND);
+extern void SaveProject(HWND, bool reset_path);
 extern void CreateExtractSparseAVI(HWND hwndParent, bool bExtract);
 
 extern const VDStringW& VDPreferencesGetTimelineFormat();
@@ -265,6 +266,9 @@ namespace {
 		{ ID_FILE_CAPTUREAVI,			"App.SwitchToCaptureMode" },
 		{ ID_FILE_SAVECONFIGURATION,	"File.SaveConfiguration" },
 		{ ID_FILE_LOADCONFIGURATION,	"File.LoadConfiguration" },
+		{ ID_FILE_SAVEPROJECT,			"File.SaveProject" },
+		{ ID_FILE_SAVEPROJECTAS,		"File.SaveProjectAs" },
+		{ ID_FILE_LOADPROJECT,			"File.LoadProject" },
 		{ ID_FILE_RUNSCRIPT,			"App.RunScript" },
 		{ ID_FILE_JOBCONTROL,			"Jobs.OpenJobControlDialog" },
 		{ ID_FILE_AVIINFO,				"File.Information" },
@@ -868,7 +872,7 @@ void VDProjectUI::SaveWAVAsk(bool batchMode) {
 
 	if (!filename.empty()) {
 		if (batchMode)
-			JobAddConfigurationSaveAudio(&g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), false, true);
+			JobAddConfigurationSaveAudio(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), false, true);
 		else
 			SaveWAV(filename.c_str());
 	}
@@ -977,7 +981,7 @@ void VDProjectUI::SaveRawAudioAsk(bool batchMode) {
 	const VDStringW filename(VDGetSaveFileName(kFileDialog_RawAudioOut, mhwnd, L"Save raw audio", L"All types\0*.bin;*.mp3\0Raw audio (*.bin)\0*.bin\0MPEG layer III audio (*.mp3)\0*.mp3\0", NULL));
 	if (!filename.empty()) {
 		if (batchMode)
-			JobAddConfigurationSaveAudio(&g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), true, true);
+			JobAddConfigurationSaveAudio(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), true, true);
 		else
 			SaveRawAudio(filename.c_str(), false);
 	}
@@ -1105,7 +1109,7 @@ void VDProjectUI::SaveRawVideoAsk(bool batchMode) {
 	const VDStringW filename(VDGetSaveFileName(kFileDialog_RawVideoOut, mhwnd, L"Save raw video", L"All types\0*.bin\0Raw YUV (*.yuv)\0*.yuv\0", NULL));
 	if (!filename.empty()) {
 		if (batchMode)
-			JobAddConfigurationSaveVideo(&g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), true, format);
+			JobAddConfigurationSaveVideo(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), true, format);
 		else
 			SaveRawVideo(filename.c_str(), format, false);
 	}
@@ -1231,7 +1235,7 @@ void VDProjectUI::ExportViaEncoderAsk(bool batch) {
 		const VDStringW filename(VDGetSaveFileName(kFileDialog_ExtOut, mhwnd, L"Export via external encoder", filterSpec.c_str(), ext));
 		if (!filename.empty()) {
 			if (batch)
-				JobAddConfigurationExportViaEncoder(&g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), true, eset->mName.c_str());
+				JobAddConfigurationExportViaEncoder(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), true, eset->mName.c_str());
 			else
 				ExportViaEncoder(filename.c_str(), eset->mName.c_str(), false);
 		}
@@ -1245,6 +1249,14 @@ void VDProjectUI::SaveConfigurationAsk() {
 void VDProjectUI::LoadConfigurationAsk() {
 	try {
 		RunScript(NULL, (void *)mhwnd);
+	} catch(const MyError& e) {
+		e.post((HWND)mhwnd, g_szError);
+	}
+}
+
+void VDProjectUI::LoadProjectAsk() {
+	try {
+		RunProject(NULL, (void *)mhwnd);
 	} catch(const MyError& e) {
 		e.post((HWND)mhwnd, g_szError);
 	}
@@ -1684,9 +1696,14 @@ bool VDProjectUI::MenuHit(UINT id) {
 			}
 			break;
 		case ID_FILE_SAVECONFIGURATION:			SaveConfigurationAsk();		break;
+		case ID_FILE_SAVEPROJECT:			SaveProject((HWND)mhwnd,false);		break;
+		case ID_FILE_SAVEPROJECTAS:			SaveProject((HWND)mhwnd,true);		break;
 		case ID_FILE_LOADCONFIGURATION:
 		case ID_FILE_RUNSCRIPT:
 			LoadConfigurationAsk();
+			break;
+		case ID_FILE_LOADPROJECT:
+			LoadProjectAsk();
 			break;
 		case ID_FILE_JOBCONTROL:				OpenJobWindow();							break;
 		case ID_FILE_AVIINFO:					ShowInputInfo();					break;

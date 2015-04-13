@@ -243,6 +243,9 @@ void VDJobQueue::Delete(VDJob *job, bool force_no_update) {
 	if (index >= 0) {
 		if (g_pVDJobQueueStatusCallback)
 			g_pVDJobQueueStatusCallback->OnJobRemoved(*job, index);
+
+		VDStringA dataSubdir(job->GetProjectSubdir());
+		VDProject::DeleteData(mJobFilePath,VDTextU8ToW(dataSubdir));
 	}
 
 	mJobQueue.erase(mJobQueue.begin() + index);
@@ -362,6 +365,10 @@ void VDJobQueue::Run(VDJob *job) {
 
 		VDAutoLogger logger(kVDLogWarning);
 
+		if (g_project) {
+			VDStringA subDir(job->GetProjectSubdir());
+			g_project->SaveProjectPath(mJobFilePath, VDTextU8ToW(subDir), true);
+		}
 		RunScriptMemory(job->GetScript(), false);
 
 		job->mLogEntries = logger.GetEntries();
@@ -375,6 +382,7 @@ void VDJobQueue::Run(VDJob *job) {
 	if (g_project) {
 		g_project->Close();
 		g_project->SetAudioSourceNormal(0);
+		g_project->mProjectFilename.clear();
 	}
 
 	g_fJobMode = false;
@@ -416,7 +424,7 @@ void VDJobQueue::Reload(VDJob *job) {
 
 	MyError err;
 	try {
-		RunScriptMemory(job->GetScript(), true);
+		g_project->OpenJob(mJobFilePath.c_str(), job);
 	} catch(MyError& e) {
 		err.TransferFrom(e);
 	}
@@ -544,6 +552,11 @@ void VDJobQueue::ListLoad(const wchar_t *fileName, bool merge) {
 	}
 }
 
+void VDJobQueue::LoadProject(const wchar_t *fileName) {
+	VDFileStream fileStream(fileName);
+	Load(&fileStream,false);
+}
+
 bool VDJobQueue::Load(IVDStream *stream, bool merge) {
 	JobQueue newJobs;
 	vdautoptr<VDJob> job;
@@ -605,6 +618,12 @@ bool VDJobQueue::Load(IVDStream *stream, bool merge) {
 					VDStringA name;
 					strgetarg(name, t);
 					job->SetName(name.c_str());
+
+				} else if (!_stricmp(s, "data")) {
+
+					VDStringA subdir;
+					strgetarg(subdir, t);
+					job->SetProjectSubdir(subdir.c_str());
 
 				} else if (!_stricmp(s, "input")) {
 
@@ -1017,6 +1036,7 @@ void VDJobQueue::Save(IVDStream *stream, uint64 signature, uint32 revision, bool
 		const int state = vdj->GetState();
 
 		output.FormatLine("// $job \"%s\""		, vdj->GetName());
+		output.FormatLine("// $data \"%s\""		, vdj->GetProjectSubdir());
 		output.FormatLine("// $input \"%s\""	, vdj->GetInputFile());
 		output.FormatLine("// $output \"%s\""	, vdj->GetOutputFile());
 		output.FormatLine("// $state %d"		, state);

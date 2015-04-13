@@ -26,6 +26,7 @@ struct VDAVIOutputRawVideoFormat;
 struct VDAVIOutputCLITemplate;
 class VDFile;
 class VDProject;
+class VDJob;
 
 enum VDAudioSourceMode {
 	kVDAudioSourceMode_None		= 0,
@@ -159,9 +160,15 @@ public:
 
 	////////////////////
 
-	void AutoSave(VDFile& f);
+	void SaveScript(VDFile& f, const VDStringW& dataSubdir, bool relative);
+	void SaveData(const VDStringW& path, VDStringW& dataSubdir, bool make_unique=false) const;
+	void SaveProjectPath(const VDStringW& path, const VDStringW& dataSubdir, bool readOnly=false);
+	static void DeleteData(const VDStringW& path, const VDStringW& dataSubdir);
 
 	void Quit();
+	void CmdOpen(const wchar_t *token);
+	void OpenProject(const wchar_t *pFilename, bool readOnly=false); 
+	void OpenJob(const wchar_t *pFilename, VDJob* job);
 	void Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver = 0, bool fExtendedOpen = false, bool fQuiet = false, bool fAutoscan = false, const char *pInputOpts = 0, uint32 inputOptsLen = 0);
 	void Reopen();
 	void OpenWAV(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver = NULL, bool automated = false, bool extOpts = false, const void *optdata = NULL, int optlen = 0);
@@ -237,9 +244,16 @@ public:
 
 	void SceneShuttleStop();
 
+	VDStringW ExpandProjectPath(const wchar_t* path) const;
+	VDStringW BuildProjectPath(const wchar_t* path) const;
+
 	FilterModTimeline filterModTimeline;
 	FilterModSystem filterModSystem;
 	FilterModPixmap filterModPixmap;
+	VDStringW mProjectFilename;
+	VDStringW mProjectSubdir;
+	VDStringA mProjectName;
+	bool mProjectReadonly;
 
 protected:
 	void AdjustTimelineForFilterChanges(const VDFraction& oldRate, sint64 oldFrameCount, const VDFraction& newRate, sint64 newFrameCount);

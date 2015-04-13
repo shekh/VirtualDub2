@@ -71,6 +71,7 @@ public:
 	void ExportViaEncoderAsk(bool batchMode);
 	void SaveConfigurationAsk();
 	void LoadConfigurationAsk();
+	void LoadProjectAsk();
 	void SetVideoFiltersAsk();
 	void SetVideoFramerateOptionsAsk();
 	void SetVideoDepthOptionsAsk();

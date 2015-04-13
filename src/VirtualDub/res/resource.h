@@ -1381,6 +1381,9 @@
 #define ID_FILTERLIST_ADDINPUT          40550
 #define ID_OPTIONS_PLUG                 40551
 #define ID_OPTIONS_PLUGINS              40552
+#define ID_FILE_LOADPROJECT             40555
+#define ID_FILE_SAVEPROJECT             40556
+#define ID_FILE_SAVEPROJECTAS           40557
 #define ID_AUDIOMODE_11KHZ_8MONO        41000
 #define ID_AUDIOMODE_11KHZ_8STEREO      41001
 #define ID_AUDIOMODE_11KHZ_16MONO       41002
@@ -1436,7 +1439,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        306
-#define _APS_NEXT_COMMAND_VALUE         40555
+#define _APS_NEXT_COMMAND_VALUE         40558
 #define _APS_NEXT_CONTROL_VALUE         1529
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

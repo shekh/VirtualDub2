@@ -42,6 +42,7 @@
 #include "filter.h"
 #include "command.h"
 #include "job.h"
+#include "jobControl.h"
 #include "server.h"
 #include "capture.h"
 #include "script.h"
@@ -166,6 +167,7 @@ public:
 protected:
 	VDProject	*const mpProject;
 	VDStringW	mAutoSavePath;
+	VDStringW	mDataSubdir;
 	VDFile		mAutoSaveFile;
 };
 
@@ -184,7 +186,7 @@ void VDProjectAutoSave::Save() {
 
 	const uint32 signature = VDCreateAutoSaveSignature();
 	for(int counter = 1; counter <= 100; ++counter) {
-		fileName.sprintf(L"VirtualDub_AutoSave_%x_%u.vdscript", signature, counter);
+		fileName.sprintf(L"VirtualDub_AutoSave_%x_%u.vdproject", signature, counter);
 
 		path = VDMakePath(VDGetDataPath(), fileName.c_str());
 
@@ -201,7 +203,9 @@ void VDProjectAutoSave::Save() {
 		// Note that we intentionally KEEP THIS FILE OPEN. This prevents other instances of VirtualDub
 		// from trying to recover while we're active!
 		mAutoSaveFile.open(path.c_str(), nsVDFile::kWrite | nsVDFile::kDenyAll | nsVDFile::kCreateAlways);
-		mpProject->AutoSave(mAutoSaveFile);
+		mpProject->SaveData(path,mDataSubdir);
+		mpProject->SaveScript(mAutoSaveFile,mDataSubdir,false);
+
 		mAutoSaveFile.flushNT();
 	} catch(...) {
 		return;
@@ -218,6 +222,7 @@ void VDProjectAutoSave::Delete() {
 			mAutoSaveFile.close();
 
 			VDRemoveFile(mAutoSavePath.c_str());
+			mpProject->DeleteData(mAutoSavePath,mDataSubdir);
 		}
 	} catch(...) {
 		// whatever it is, eat it -- we do NOT want to terminate due to
@@ -1016,8 +1021,8 @@ void VDProject::LockFilterChain(bool enableLock) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void VDProject::AutoSave(VDFile& f) {
-	JobWriteAutoSave(f, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles);
+void VDProject::SaveScript(VDFile& f, const VDStringW& dataSubdir, bool relative) {
+	JobWriteProjectScript(f, this, relative, dataSubdir, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles);
 }
 
 void VDProject::Quit() {
@@ -1027,13 +1032,304 @@ void VDProject::Quit() {
 		pFrame->Destroy();
 }
 
+void VDProject::CmdOpen(const wchar_t *token) {
+	VDStringW filename(VDGetFullPath(token));
+	size_t l = filename.length();
+	if (l > 10) {
+		if (!_wcsicmp(filename.c_str() + l - 10, L".vdproject")) {
+			OpenProject(filename.c_str());
+			return;
+		}
+	}
+
+	mProjectFilename.clear();
+	Open(token);
+}
+
+void VDProject::OpenProject(const wchar_t *pFilename, bool readOnly) {
+	VDJobQueue jproject;
+	jproject.LoadProject(pFilename);
+	if (jproject.ListSize()==1) {
+		VDJob* job = jproject.ListGet(0);
+		VDStringA subDir(job->GetProjectSubdir());
+		SaveProjectPath(VDStringW(pFilename), VDTextU8ToW(subDir), readOnly);
+		mProjectName = job->GetName();
+		RunScriptMemory(job->GetScript(), true);
+	}
+}
+
+void VDProject::OpenJob(const wchar_t *pFilename, VDJob* job) {
+	VDStringA subDir(job->GetProjectSubdir());
+	SaveProjectPath(VDStringW(pFilename), VDTextU8ToW(subDir), true);
+	RunScriptMemory(job->GetScript(), true);
+}
+
+void VDProject::SaveProjectPath(const VDStringW& path, const VDStringW& dataSubdir, bool readOnly) {
+	mProjectReadonly = readOnly;
+	mProjectFilename = path;
+	mProjectSubdir = dataSubdir;
+}
+
+VDStringA CreateDataPrefix() {
+	char buf[4];
+	static char list[] = "0123456789abcdefghijkmnpqrstuvwxyz";
+	for(int i=0; i<4; i++) {
+		int x = rand() % 34;
+		buf[i] = list[x];
+	}
+
+	return VDStringA(buf,4);
+}
+
+bool ComparePrefix(const VDStringW& name, const VDStringA& prefix) {
+	int size = prefix.length();
+	if (name.length()<size+2)
+		return false;
+	if (name[0]!='.')
+		return false;
+	if (name[size+1]!='.')
+		return false;
+	{for(int i=0; i<size; i++){
+		if (name[i+1]!=prefix[i])
+			return false;
+	}}
+	return true;
+}
+
+bool LooksLikePrefix(const VDStringW& name) {
+	int size = 4;
+	if (name.length()<size+2)
+		return false;
+	if (name[0]!='.')
+		return false;
+	if (name[size+1]!='.')
+		return false;
+	return true;
+}
+
+void EmptyDataDirectory(const VDStringW& dst) {
+	WIN32_FIND_DATAW fd;
+	HANDLE h = FindFirstFileW((dst+L"\\*.*").c_str(),&fd);
+	if (h!=INVALID_HANDLE_VALUE) {
+		do {
+			VDStringW name(fd.cFileName);
+			if(name==L".") continue;
+			if(name==L"..") continue;
+			if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+				continue;
+			} else {
+				DeleteFileW((dst+L"\\"+name).c_str());
+			}
+			
+		} while(FindNextFileW(h,&fd));
+		FindClose(h);
+	}
+}
+
+bool CleanupDataDir(const VDStringW& dst, const VDStringW& src, vdfastvector<FilterInstance*>& used_prefix) {
+	bool empty = true;
+
+	WIN32_FIND_DATAW fd;
+	HANDLE h = FindFirstFileW((src+L"\\*.*").c_str(),&fd);
+	if (h!=INVALID_HANDLE_VALUE) {
+		do {
+			VDStringW name(fd.cFileName);
+			if(name==L".") continue;
+			if(name==L"..") continue;
+
+			if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+				empty = false;
+				continue;
+			} else {
+				bool used = false;
+				{for(FilterInstance** p=used_prefix.begin(); p<used_prefix.end(); p++){
+					if (ComparePrefix(name,(*p)->fmProject.dataPrefix)) {
+						used = true;
+						break;
+					}
+				}}
+				if (!LooksLikePrefix(name))
+					used = true;
+
+				if (used && !dst.empty())
+					CopyFileW((src+L"\\"+name).c_str(),(dst+L"\\"+name).c_str(),false);
+
+				if (!used && dst.empty())
+					DeleteFileW((src+L"\\"+name).c_str());
+
+				if (used)
+					empty = false;
+			}
+			
+		} while(FindNextFileW(h,&fd));
+		FindClose(h);
+	}
+
+	return empty;
+}
+
+void VDProject::DeleteData(const VDStringW& path, const VDStringW& dataSubdir) {
+	if (!dataSubdir.empty()) {
+		VDStringW src = VDFileSplitPathLeft(path);
+		src += dataSubdir;
+		EmptyDataDirectory(src);
+		VDRemoveDirectory(src.c_str());
+	}
+}
+
+void VDProject::SaveData(const VDStringW& path, VDStringW& dataSubdir, bool make_unique) const {
+	JobFlushFilterConfig();
+
+	vdfastvector<FilterInstance*> used_prefix;
+	bool data_empty = true;
+
+	{for(VDFilterChainDesc::Entries::const_iterator it(g_filterChain.mEntries.begin()), itEnd(g_filterChain.mEntries.end()); it != itEnd; ++it) {
+		FilterInstance *fa = (*it)->mpInstance;
+		if (!fa->fmProject.dataPrefix.empty()) 
+			used_prefix.push_back(fa);
+		if (!fa->fmProject.data.empty())
+			data_empty = false;
+	}}
+
+	bool move_project = !VDFileIsPathEqual(path.c_str(), mProjectFilename.c_str());
+
+	if (!move_project) {
+		dataSubdir = mProjectSubdir;
+		if (!dataSubdir.empty()) {
+			VDStringW src = VDFileSplitPathLeft(mProjectFilename);
+			src += dataSubdir;
+			if (!CleanupDataDir(VDStringW(), src, used_prefix)) data_empty = false;
+			if (data_empty) {
+				VDRemoveDirectory(src.c_str());
+				dataSubdir.clear();
+			}
+		}
+	} else {
+		VDStringW base2 = VDFileSplitPathLeft(path);
+		if (dataSubdir.empty())
+			dataSubdir = VDFileSplitExtLeft(VDFileSplitPathRight(path));
+
+		if (make_unique) {
+			const uint32 signature = VDCreateAutoSaveSignature();
+			for(int counter = 1; counter <= 100; ++counter) {
+				VDStringW s;
+				s.sprintf(L"_%x_%u", signature, counter);
+				VDStringW test = base2+dataSubdir+s+L".vd";
+				if (!VDDoesPathExist(test.c_str())){
+					dataSubdir += s;
+					break;
+				}
+			}
+		}
+
+		dataSubdir += L".vd";
+		VDStringW dst = base2+dataSubdir;
+		if ((!data_empty || !mProjectSubdir.empty()) && !VDDoesPathExist(dst.c_str()))
+			VDCreateDirectory(dst.c_str());
+
+		EmptyDataDirectory(dst);
+
+		if (!mProjectSubdir.empty()) {
+			VDStringW src = VDFileSplitPathLeft(mProjectFilename);
+			src += mProjectSubdir;
+			if (!CleanupDataDir(dst, src, used_prefix)) data_empty = false;
+		}
+
+		if (data_empty) {
+			VDRemoveDirectory(dst.c_str());
+			dataSubdir.clear();
+		}
+	}
+
+	if (!data_empty) {
+		VDStringW dst = VDFileSplitPathLeft(path);
+		dst += dataSubdir;
+
+		{for(VDFilterChainDesc::Entries::const_iterator it(g_filterChain.mEntries.begin()), itEnd(g_filterChain.mEntries.end()); it != itEnd; ++it) {
+			FilterInstance *fa = (*it)->mpInstance;
+			if (!fa->fmProject.data.empty()) {
+				if (fa->fmProject.dataPrefix.empty()) {
+					VDStringA s;
+					while (1) {
+						s = CreateDataPrefix();
+						bool failed = false;
+						{for(FilterInstance** p=used_prefix.begin(); p<used_prefix.end(); p++){
+							if ((*p)->fmProject.dataPrefix==s) {
+								failed = true;
+								break;
+							}
+						}}
+						if (!failed) break;
+					}
+
+					fa->fmProject.dataPrefix = s;
+					used_prefix.push_back(fa);
+				}
+
+				VDStringW name = dst;
+				name += L"\\.";
+				name += VDTextU8ToW(fa->fmProject.dataPrefix);
+				name += L".";
+
+				{for(FilterModProject::Data** p=fa->fmProject.data.begin(); p<fa->fmProject.data.end(); p++){
+					VDStringW filename = name + (*p)->id;
+					size_t size = (*p)->data.size();
+					if (size==0) {
+						DeleteFileW(filename.c_str());
+					} else {
+						VDFile file;
+						file.open(filename.c_str(),nsVDFile::kWrite|nsVDFile::kCreateAlways);
+						file.write((*p)->data.begin(),size);
+					}
+				}}
+			}
+		}}
+	}
+}
+
+VDStringW VDProject::BuildProjectPath(const wchar_t* path) const {
+	if (!mProjectFilename.empty()) {
+		VDStringW base = VDFileSplitPathLeft(mProjectFilename);
+
+		if (!mProjectSubdir.empty()) {
+			VDStringW data = base;
+			data += mProjectSubdir;
+			VDStringW rel_data = VDFileGetRelativePath(data.c_str(),path,false);
+			if (!rel_data.empty())
+				return VDStringW(L"$(DATA)\\") + rel_data;
+		}
+
+		VDStringW rel_base = VDFileGetRelativePath(base.c_str(),path,true);
+		if (!rel_base.empty())
+			return VDStringW(L"$(PROJECT)\\") + rel_base;
+	}
+
+	return VDStringW(path);
+}
+
+VDStringW VDProject::ExpandProjectPath(const wchar_t* path) const {
+	if (!mProjectFilename.empty()) {
+		VDStringW base = VDFileSplitPathLeft(mProjectFilename);
+
+		if (wcsncmp(path,L"$(PROJECT)",10)==0)
+			return VDFileResolvePath(base.c_str(),path+10);
+
+		if (wcsncmp(path,L"$(DATA)",7)==0) {
+			VDStringW data = base + mProjectSubdir;
+			return VDFileResolvePath(data.c_str(),path+7);
+		}
+	}
+
+	return VDGetFullPath(path);
+}
+
 void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, bool fExtendedOpen, bool fQuiet, bool fAutoscan, const char *pInputOpts, uint32 inputOptsLen) {
 	Close();
 
 	try {
 		// attempt to determine input file type
 
-		VDStringW filename(VDGetFullPath(pFilename));
+		VDStringW filename(ExpandProjectPath(pFilename));
 
 		if (!pSelectedDriver) {
 			pSelectedDriver = VDAutoselectInputDriverForFile(filename.c_str(), IVDInputDriver::kF_Video);
@@ -1483,7 +1779,7 @@ void VDProject::QueueNullVideoPass() {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
 
-	JobAddConfigurationRunVideoAnalysisPass(&g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, true);
+	JobAddConfigurationRunVideoAnalysisPass(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, true);
 }
 
 void VDProject::CloseAVI() {
@@ -1532,7 +1828,7 @@ void VDProject::SaveAVI(const wchar_t *filename, bool compat, bool addAsJob) {
 		throw MyError("No input file to process.");
 
 	if (addAsJob)
-		JobAddConfiguration(&g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), filename, compat, &inputAVI->listFiles, 0, 0, true, 0);
+		JobAddConfiguration(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), filename, compat, &inputAVI->listFiles, 0, 0, true, 0);
 	else
 		::SaveAVI(filename, false, NULL, compat);
 }
