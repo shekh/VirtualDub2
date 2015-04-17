@@ -17,4 +17,8 @@
 		Value="/Dxmmword=qword"
 		PerformEnvironmentSet="true"
 	/>
+	<UserMacro
+		Name="YasmFormat"
+		Value="win64"
+	/>
 </VisualStudioPropertySheet>
