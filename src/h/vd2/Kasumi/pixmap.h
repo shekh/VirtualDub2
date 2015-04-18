@@ -92,6 +92,20 @@ struct VDPixmap {
 	vdpixoffset		pitch3;
 
 	FilterModPixmapInfo info;
+
+	void clear() {
+		data = 0;
+		palette = 0;
+		w = 0;
+		h = 0;
+		pitch = 0;
+		format = 0;
+		data2 = 0;
+		pitch2 = 0;
+		data3 = 0;
+		pitch3 = 0;
+		info.clear();
+	}
 };
 
 struct VDPixmapLayout {

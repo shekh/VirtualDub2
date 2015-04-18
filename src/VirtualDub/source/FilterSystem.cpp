@@ -757,7 +757,7 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 	mpBitmaps->mpSource = src0;
 	mpBitmaps->mpSource->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 
-	mpBitmaps->mInitialBitmap.mPixmap = VDPixmap();
+	mpBitmaps->mInitialBitmap.mPixmap.clear();
 
 	StreamTail inputTail;
 	inputTail.mpSrc = src0;

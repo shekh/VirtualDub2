@@ -2290,7 +2290,9 @@ void FilterInstance::RunFilterInner() {
 	if (mFlags & FILTERPARAM_NEEDS_LAST)
 		VDPixmapBlt(mRealLast.mPixmap, mRealSrc.mPixmap);
 
-	mRealDst.GetBuffer()->info = mRealDst.mPixmap.info;
+	VDFilterFrameBuffer* dstBuffer = mRealDst.GetBuffer();
+	if (dstBuffer)
+		dstBuffer->info = mRealDst.mPixmap.info;
 	
 	mbFirstFrame = false;
 }
