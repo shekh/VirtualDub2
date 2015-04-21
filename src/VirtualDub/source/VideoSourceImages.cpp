@@ -10,6 +10,7 @@
 #include <vd2/Dita/resources.h>
 #include <vd2/Meia/decode_png.h>
 #include <vd2/Kasumi/pixmapops.h>
+#include <vd2/Kasumi/pixmaputils.h>
 #include <vd2/libav_tiff/tiff_image.h>
 #include "ProgressDialog.h"
 #include "InputFileImages.h"

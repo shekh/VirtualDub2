@@ -142,7 +142,7 @@ VDZINT_PTR VDVideoFilterPreviewZoomPopup::DlgProc(VDZUINT msg, VDZWPARAM wParam,
 			break;
 
 		case WM_ERASEBKGND:
-			SetWindowLongPtr(mhdlg, DWL_MSGRESULT, OnEraseBkgnd((HDC)wParam));
+			SetWindowLongPtr(mhdlg, DWLP_MSGRESULT, OnEraseBkgnd((HDC)wParam));
 			return TRUE;
 	}
 

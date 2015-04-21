@@ -32,6 +32,7 @@
 #include "FilterAccelEngine.h"
 #include "FilterInstance.h"
 #include "filters.h"
+#include "project.h"
 
 extern FilterFunctions g_VDFilterCallbacks;
 extern VDProject *g_project;

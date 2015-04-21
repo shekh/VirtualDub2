@@ -8,4 +8,8 @@
 		Name="VDPlatformDirTag"
 		Value=""
 	/>
+	<UserMacro
+		Name="YasmFormat"
+		Value="win32"
+	/>
 </VisualStudioPropertySheet>
