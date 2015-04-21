@@ -33,6 +33,7 @@
 #include "VideoSource.h"
 #include "AudioSource.h"
 #include "plugins.h"
+#include "project.h"
 
 ///////////////////////////
 

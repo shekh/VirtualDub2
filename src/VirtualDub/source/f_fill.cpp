@@ -20,6 +20,7 @@
 #include <commctrl.h>
 
 #include <vd2/system/refcount.h>
+#include <vd2/kasumi/pixmap.h>
 
 #include "ClippingControl.h"
 

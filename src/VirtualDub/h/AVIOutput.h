@@ -28,6 +28,7 @@
 #include "Fixes.h"
 
 struct VDPixmap;
+struct FilterModPixmapInfo;
 
 class IVDMediaOutputStream : public IVDUnknown {
 public:

@@ -21,6 +21,7 @@
 #include <vd2/system/refcount.h>
 #include <vd2/system/unknown.h>
 #include <vd2/system/vdstl.h>
+#include <vd2/plugin/vdplugin.h>
 
 class IVDFilterFrameAllocator;
 class VDFilterFrameCache;

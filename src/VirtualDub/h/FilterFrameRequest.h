@@ -27,6 +27,7 @@ class VDFilterFrameRequest;
 class IVDFilterFrameClientRequest;
 class VDFilterFrameRequestAllocator;
 class VDXFBitmap;
+struct FilterModPixmapInfo;
 
 ///////////////////////////////////////////////////////////////////////////
 
