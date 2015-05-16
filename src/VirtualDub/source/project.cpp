@@ -1173,7 +1173,8 @@ void VDProject::DeleteData(const VDStringW& path, const VDStringW& dataSubdir) {
 		VDStringW src = VDFileSplitPathLeft(path);
 		src += dataSubdir;
 		EmptyDataDirectory(src);
-		VDRemoveDirectory(src.c_str());
+		if (VDDoesPathExist(src.c_str()))
+			VDRemoveDirectory(src.c_str());
 	}
 }
 
@@ -1200,7 +1201,8 @@ void VDProject::SaveData(const VDStringW& path, VDStringW& dataSubdir, bool make
 			src += dataSubdir;
 			if (!CleanupDataDir(VDStringW(), src, used_prefix)) data_empty = false;
 			if (data_empty) {
-				VDRemoveDirectory(src.c_str());
+				if (VDDoesPathExist(src.c_str()))
+					VDRemoveDirectory(src.c_str());
 				dataSubdir.clear();
 			}
 		}
@@ -1236,7 +1238,8 @@ void VDProject::SaveData(const VDStringW& path, VDStringW& dataSubdir, bool make
 		}
 
 		if (data_empty) {
-			VDRemoveDirectory(dst.c_str());
+			if (VDDoesPathExist(dst.c_str()))
+				VDRemoveDirectory(dst.c_str());
 			dataSubdir.clear();
 		}
 	}

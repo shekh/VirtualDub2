@@ -146,7 +146,7 @@ void RunProject(const wchar_t *name, void *hwnd) {
 	VDStringW filenameW;
 
 	if (!name) {
-		filenameW = VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, (VDGUIHandle)hwnd, L"Load Project", projectFilters, L"vdproject", 0, 0);
+		filenameW = VDGetLoadFileName('proj', (VDGUIHandle)hwnd, L"Load Project", projectFilters, L"vdproject", 0, 0);
 
 		if (filenameW.empty())
 			return;
