@@ -792,6 +792,9 @@ FilterInstance::FilterInstance(const FilterInstance& fi)
 
 	fmProject.inst = this;
 	fma.fmproject = &fmProject;
+	fma.fmtimeline = &g_project->filterModTimeline;
+	fma.fmsystem = &g_project->filterModSystem;
+	fma.fmpixmap = &g_project->filterModPixmap;
 
 	fma.filter = filter;
 	fma.filterMod = const_cast<FilterModDefinition *>(&fi.mpFDInst->GetFilterModDef());
@@ -825,6 +828,9 @@ FilterInstance::FilterInstance(FilterDefinitionInstance *fdi)
 
 	fmProject.inst = this;
 	fma.fmproject = &fmProject;
+	fma.fmtimeline = &g_project->filterModTimeline;
+	fma.fmsystem = &g_project->filterModSystem;
+	fma.fmpixmap = &g_project->filterModPixmap;
 
 	fma.filter = filter;
 	fma.filterMod = const_cast<FilterModDefinition *>(&fdi->GetFilterModDef());
@@ -1077,10 +1083,6 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 	memset(&mfsi, 0, sizeof mfsi);
 	mSourceFrameCount = 0;
 	mpSourceFrames = NULL;
-
-	fma.fmtimeline = &g_project->filterModTimeline;
-	fma.fmsystem = &g_project->filterModSystem;
-	fma.fmpixmap = &g_project->filterModPixmap;
 
 	uint32 flags = FILTERPARAM_SWAP_BUFFERS;
 
