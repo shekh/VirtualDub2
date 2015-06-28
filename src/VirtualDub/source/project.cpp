@@ -1206,8 +1206,12 @@ void VDProject::SaveData(const VDStringW& path, VDStringW& dataSubdir, bool make
 	}}
 
 	bool move_project = !VDFileIsPathEqual(path.c_str(), mProjectFilename.c_str());
-
+	bool alloc_dir = move_project;
 	if (!move_project) {
+		if (mProjectSubdir.empty() && !data_empty) alloc_dir = true;
+	}
+
+	if (!alloc_dir) {
 		dataSubdir = mProjectSubdir;
 		if (!dataSubdir.empty()) {
 			VDStringW src = VDFileSplitPathLeft(mProjectFilename);
