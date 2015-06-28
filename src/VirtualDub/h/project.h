@@ -235,10 +235,14 @@ public:
 	void BeginFilterUpdates();
 	void EndFilterUpdates();
 
+	void BeginLoading();
+	void EndLoading();
+
 	void SceneShuttleStop();
 
 	FilterModTimeline filterModTimeline;
 	FilterModSystem filterModSystem;
+	bool mProjectLoading;
 
 protected:
 	void AdjustTimelineForFilterChanges(const VDFraction& oldRate, sint64 oldFrameCount, const VDFraction& newRate, sint64 newFrameCount);

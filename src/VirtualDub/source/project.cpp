@@ -406,6 +406,7 @@ VDProject::VDProject()
 	, mAudioSourceMode(kVDAudioSourceMode_Source)
 {
 	filterModTimeline.project = this;
+	mProjectLoading = false;
 }
 
 VDProject::~VDProject() {
@@ -454,6 +455,18 @@ void VDProject::EndTimelineUpdate() {
 	UpdateDubParameters();
 	if (mpCB)
 		mpCB->UITimelineUpdated();
+}
+
+void VDProject::BeginLoading() {
+	mProjectLoading = true;
+}
+
+void VDProject::EndLoading() {
+	if (mProjectLoading)
+		ClearUndoStack();
+	mProjectLoading = false;
+	EndTimelineUpdate();
+	UpdateFilterList();
 }
 
 bool VDProject::Undo() {
@@ -1775,7 +1788,7 @@ void VDProject::MoveToFrame(VDPosition frame) {
 		if (mpCB)
 			mpCB->UICurrentPositionUpdated();
 
-		if (!g_dubber)
+		if (!g_dubber && !mProjectLoading)
 			DisplayFrame();
 	}
 }
