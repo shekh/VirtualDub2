@@ -186,6 +186,10 @@ void RunScriptMemory(const char *mem, bool stopAtReloadMarker) {
 					, prelen
 					, errorLineStart + pos - prelen
 					, errorLineStart + pos);
+					
+	} catch(const MyError& e) {
+		g_project->EndLoading();
+		throw e;
 	}
 
 	g_project->EndLoading();
