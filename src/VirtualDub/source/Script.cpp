@@ -158,6 +158,8 @@ void RunProject(const wchar_t *name, void *hwnd) {
 }
 
 void RunScriptMemory(const char *mem, bool stopAtReloadMarker) {
+	g_project->BeginLoading();
+
 	vdautoptr<IVDScriptInterpreter> isi(VDCreateScriptInterpreter());
 	const char *errorLineStart = mem;
 	int errorLine = 1;
@@ -209,7 +211,7 @@ void RunScriptMemory(const char *mem, bool stopAtReloadMarker) {
 					, errorLineStart + pos);
 	}
 
-	g_project->UpdateFilterList();
+	g_project->EndLoading();
 }
 
 ///////////////////////////////////////////////////////////////////////////

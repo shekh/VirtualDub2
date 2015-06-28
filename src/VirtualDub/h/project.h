@@ -242,6 +242,9 @@ public:
 	void BeginFilterUpdates();
 	void EndFilterUpdates();
 
+	void BeginLoading();
+	void EndLoading();
+
 	void SceneShuttleStop();
 
 	VDStringW ExpandProjectPath(const wchar_t* path) const;
@@ -254,6 +257,7 @@ public:
 	VDStringW mProjectSubdir;
 	VDStringA mProjectName;
 	bool mProjectReadonly;
+	bool mProjectLoading;
 
 protected:
 	void AdjustTimelineForFilterChanges(const VDFraction& oldRate, sint64 oldFrameCount, const VDFraction& newRate, sint64 newFrameCount);
