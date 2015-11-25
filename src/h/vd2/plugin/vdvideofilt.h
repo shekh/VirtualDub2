@@ -173,6 +173,7 @@ struct PreviewZoomInfo {
 
 typedef void (__cdecl *FilterModPreviewPositionCallback)(int64 pos, void *pData);
 typedef void (__cdecl *FilterModPreviewZoomCallback)(PreviewZoomInfo& info, void *pData);
+struct tagMSG;
 
 class IVDXFilterPreview2 : public IVDXFilterPreview {
 public:
@@ -184,6 +185,9 @@ public:
 	virtual int64 FMSetPosition(int64 pos)=0;
 	virtual void FMSetPositionCallback(FilterModPreviewPositionCallback, void *)=0;
 	virtual void FMSetZoomCallback(FilterModPreviewZoomCallback, void *)=0;
+
+	// FilterModVersion>=4
+	virtual int FMTranslateAccelerator(tagMSG* msg)=0;
 };
 
 class IFilterModTimeline {
@@ -452,7 +456,7 @@ public:
 
 enum {
 	// This is the highest API version supported by this header file.
-	FILTERMOD_VERSION = 3,
+	FILTERMOD_VERSION = 4,
 };
 
 class FilterModActivation {

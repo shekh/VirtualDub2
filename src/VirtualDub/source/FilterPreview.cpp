@@ -248,6 +248,7 @@ public:
 	int64 FMSetPosition(int64 pos);
 	void FMSetPositionCallback(FilterModPreviewPositionCallback, void *);
 	void FMSetZoomCallback(FilterModPreviewZoomCallback, void *);
+	int FMTranslateAccelerator(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
 	HWND GetHwnd(){ return mhdlg; }
 	int TranslateAcceleratorMessage(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
 
@@ -613,6 +614,7 @@ LRESULT WINAPI preview_pos_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM l
 	case WM_KEYUP:
 	case WM_CHAR:
 		{
+			// currently this is not used because active window is forced to preview anyway
 			MSG m = {0};
 			m.hwnd = owner->GetHwnd();
 			m.message = msg;
