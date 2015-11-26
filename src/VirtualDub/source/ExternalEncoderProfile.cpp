@@ -194,6 +194,7 @@ void VDLoadExternalEncoderProfiles() {
 
 			subKey.getString("Output Filename", profile->mOutputFilename);
 			profile->mType = (VDExtEncType)subKey.getEnumInt("Type", kVDExtEncTypeCount, kVDExtEncType_Audio);
+			subKey.getString("Pixel Format", profile->mPixelFormat);
 			profile->mInputFormat = (VDExtEncInputFormat)subKey.getEnumInt("Input Format", kVDExtEncInputFormatCount, kVDExtEncInputFormat_Raw);
 			profile->mbCheckReturnCode = subKey.getBool("Check Return Code", profile->mbCheckReturnCode);
 			profile->mbLogStdout = subKey.getBool("Log Stdout", profile->mbLogStdout);
@@ -258,6 +259,7 @@ void VDSaveExternalEncoderProfiles() {
 		subKey.setString("Command Arguments", profile->mCommandArguments.c_str());
 		subKey.setString("Output Filename", profile->mOutputFilename.c_str());
 		subKey.setInt("Type", (int)profile->mType);
+		subKey.setString("Pixel Format", profile->mPixelFormat.c_str());
 		subKey.setInt("Input Format", (int)profile->mInputFormat);
 		subKey.setBool("Check Return Code", profile->mbCheckReturnCode);
 		subKey.setBool("Log Stdout", profile->mbLogStdout);

@@ -230,6 +230,7 @@
 #define IDR_FILTER_LIST_CONTEXT         303
 #define IDD_FILTER_OUTPUT_NAME          304
 #define IDD_PLUGINS                     305
+#define IDD_EXTENC_EDIT_VIDEO           306
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -901,6 +902,7 @@
 #define IDC_COPY                        1524
 #define IDC_BUTTON2                     1528
 #define IDC_CMDLINE_ARG                 1528
+#define IDC_PIXEL_FORMAT                1529
 #define IDS_HELP_CONTENTS               1536
 #define IDS_HELP_CHANGELOG              1537
 #define IDS_HELP_RELEASENOTES           1538
@@ -1440,7 +1442,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        306
 #define _APS_NEXT_COMMAND_VALUE         40558
-#define _APS_NEXT_CONTROL_VALUE         1529
+#define _APS_NEXT_CONTROL_VALUE         1530
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

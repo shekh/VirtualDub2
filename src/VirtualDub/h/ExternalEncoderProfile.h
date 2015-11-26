@@ -45,6 +45,7 @@ public:
 	VDExtEncType	mType;
 
 	VDExtEncInputFormat	mInputFormat;
+	VDStringW	mPixelFormat;
 
 	bool	mbCheckReturnCode;
 	bool	mbLogStdout;

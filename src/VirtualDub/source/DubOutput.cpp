@@ -533,7 +533,9 @@ bool VDAVIOutputCLISystem::AcceptsAudio() {
 }
 
 int VDAVIOutputCLISystem::GetVideoOutputFormatOverride() {
-	return nsVDPixmap::kPixFormat_YUV420_Planar;
+	VDAVIOutputRawVideoFormat rawFormat = {};
+	InitOutputFormat(rawFormat,mpVidEncProfile);
+	return rawFormat.mOutputFormat;
 }
 
 bool VDAVIOutputCLISystem::IsCompressedAudioAllowed() {

@@ -910,15 +910,29 @@ void AVIOutputCLI::SetInputLayout(const VDPixmapLayout& layout) {
 	mInputLayout = layout;
 }
 
+void InitOutputFormat(VDAVIOutputRawVideoFormat& format, const VDExtEncProfile* vp) {
+	format.mOutputFormat = nsVDPixmap::kPixFormat_YUV420_Planar;
+	format.mScanlineAlignment = 1;
+	format.mbSwapChromaPlanes = false;
+	format.mbBottomUp = false;
+
+	if (vp->mPixelFormat==L"bgr24")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_RGB888;
+
+	if (vp->mPixelFormat==L"bgra")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_XRGB8888;
+
+	if (vp->mPixelFormat==L"bgra64le")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_XRGB64;
+}
+
 IVDMediaOutputStream *AVIOutputCLI::createVideoStream() {
 	if (mpVideoOutput)
 		throw MyError("CLI: Only one video output is supported.");
 
 	VDAVIOutputRawVideoFormat rawFormat = {};
-	rawFormat.mOutputFormat = nsVDPixmap::kPixFormat_YUV420_Planar;
-	rawFormat.mScanlineAlignment = 1;
-	rawFormat.mbSwapChromaPlanes = false;
-	rawFormat.mbBottomUp = false;
+	InitOutputFormat(rawFormat,mTemplate.mpVideoEncoderProfile);
+
 	mpVideoOutput = new AVIOutputRawVideo(rawFormat);
 	mpVideoOutput->SetInputLayout(mInputLayout);
 
@@ -1287,6 +1301,8 @@ void AVIOutputCLI::ExpandTokens(VDStringW& output, const wchar_t *templateLine0,
 			output.append(mTempVideoFile);
 		else if (!vdwcsicmp(token, L"tempaudiofile"))
 			output.append(mTempAudioFile);
+		else if (!vdwcsicmp(token, L"pix_fmt"))
+			output.append(mTemplate.mpVideoEncoderProfile->mPixelFormat);
 		else if (!vdwcsicmp(token, L"samplingrate"))
 			output.append_sprintf(L"%u", mAudioSamplingRate);
 		else if (!vdwcsicmp(token, L"samplingratekhz"))

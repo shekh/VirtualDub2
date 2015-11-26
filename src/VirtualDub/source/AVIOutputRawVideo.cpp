@@ -102,6 +102,35 @@ void AVIVideoOutputStreamRaw::WriteVideoImage(const VDPixmap *px) {
 	}
 
 	mpBlitter->Blit(mOutputPixmap, *px);
+
+	bool wipe_alpha = true;
+	if (px->info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid)
+		wipe_alpha = false;
+
+	if (wipe_alpha && mOutputPixmap.format==nsVDPixmap::kPixFormat_XRGB8888) {
+		char *row = (char*)mOutputPixmap.data;
+		for(int y=0; y<mOutputPixmap.h; ++y) {
+			uint8 *p = (uint8*)row;
+			for(int x=0; x<mOutputPixmap.w; ++x) {
+				p[3] = 0xFF;
+				p += 4;
+			}
+			row += mOutputPixmap.pitch;
+		}
+	}
+
+	if (wipe_alpha && mOutputPixmap.format==nsVDPixmap::kPixFormat_XRGB64) {
+		char *row = (char*)mOutputPixmap.data;
+		for(int y=0; y<mOutputPixmap.h; ++y) {
+			uint16 *p = (uint16*)row;
+			for(int x=0; x<mOutputPixmap.w; ++x) {
+				p[3] = 0xFFFF;
+				p += 4;
+			}
+			row += mOutputPixmap.pitch;
+		}
+	}
+
 	mpParent->write(mOutputBuffer.data(), mOutputBuffer.size());
 }
 

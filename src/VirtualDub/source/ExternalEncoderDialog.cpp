@@ -191,6 +191,7 @@ bool VDUIDialogExtEncMain::OnCommand(uint32 id, uint32 extcode) {
 			L"%(systemdir)\tOS system directory",
 			L"%(tempvideofile)\tTemporary video directory and file name",
 			L"%(tempaudiofile)\tTemporary audio directory and file name",
+			L"%(pix_fmt)\tPixel format, compatible with ffmpeg -pix_fmt",
 			L"%(samplingrate)\tAudio sampling rate, in Hz",
 			L"%(samplingkhz)\tAudio sampling rate, in KHz (fractional)",
 			L"%(channels)\tAudio channel count",
@@ -290,6 +291,66 @@ void VDUIDialogExtEncAudio::OnDataExchange(bool write) {
 
 ///////////////////////////////////////////////////////////////////////////
 
+class VDUIDialogExtEncVideo : public VDDialogFrameW32 {
+public:
+	VDUIDialogExtEncVideo(VDExtEncProfile& profile);
+	~VDUIDialogExtEncVideo();
+
+protected:
+	void OnDataExchange(bool write);
+
+	VDExtEncProfile& mProfile;
+	HFONT fixed_font;
+};
+
+VDUIDialogExtEncVideo::VDUIDialogExtEncVideo(VDExtEncProfile& profile)
+	: VDDialogFrameW32(IDD_EXTENC_EDIT_VIDEO)
+	, mProfile(profile)
+{
+	LOGFONT f = {14,0, 0,0, FW_NORMAL, 0,0,0, ANSI_CHARSET, OUT_TT_ONLY_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH,};
+	strcpy(f.lfFaceName,"courier new");
+	fixed_font = CreateFontIndirect(&f);
+}
+
+VDUIDialogExtEncVideo::~VDUIDialogExtEncVideo() {
+	DeleteObject(fixed_font);
+}
+
+void VDUIDialogExtEncVideo::OnDataExchange(bool write) {
+	HWND cb = GetControl(IDC_PIXEL_FORMAT);
+	if (write) {
+		int sel = SendMessage(cb, CB_GETCURSEL, 0, 0);
+		if (sel==0)
+			mProfile.mPixelFormat = L"yuv420p";
+		if (sel==1)
+			mProfile.mPixelFormat = L"bgr24";
+		if (sel==2)
+			mProfile.mPixelFormat = L"bgra";
+		if (sel==3)
+			mProfile.mPixelFormat = L"bgra64le";
+
+	} else {
+		SendMessage(cb,WM_SETFONT,(WPARAM)fixed_font,0);
+		SendMessage(cb,CB_RESETCONTENT,0,0);
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv420     :   8 bit YUV 4:2:0");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgr24      :   8 bit RGB");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgra       :   8 bit RGBA");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgra64le   :  16 bit RGBA");
+
+		int sel = 0;
+		if (mProfile.mPixelFormat==L"bgr24")
+			sel = 1;
+		if (mProfile.mPixelFormat==L"bgra")
+			sel = 2;
+		if (mProfile.mPixelFormat==L"bgra64le")
+			sel = 3;
+
+		SendMessage(cb,CB_SETCURSEL, sel, 0);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 class VDUIDialogExtEncProfile : public VDDialogFrameW32 {
 public:
 	VDUIDialogExtEncProfile(VDExtEncProfile& profile);
@@ -310,6 +371,7 @@ protected:
 
 	VDUIDialogExtEncMain mMainPane;
 	VDUIDialogExtEncAudio mAudioPane;
+	VDUIDialogExtEncVideo mVideoPane;
 	VDDialogResizerW32 mResizer;
 	VDDelegate mDelegateTabChanged;
 	VDDelegate mDelegateTypeChanged;
@@ -322,6 +384,7 @@ VDUIDialogExtEncProfile::VDUIDialogExtEncProfile(VDExtEncProfile& profile)
 	: VDDialogFrameW32(IDD_EXTENC_EDIT)
 	, mMainPane(profile)
 	, mAudioPane(profile)
+	, mVideoPane(profile)
 	, mProfile(profile)
 {
 	mTabControl.OnSelectionChanged() += mDelegateTabChanged.Bind(this, &VDUIDialogExtEncProfile::OnTabChanged);
@@ -388,6 +451,7 @@ void VDUIDialogExtEncProfile::OnSize() {
 void VDUIDialogExtEncProfile::SyncAll() {
 	mMainPane.Sync(true);
 	mAudioPane.Sync(true);
+	mVideoPane.Sync(true);
 }
 
 void VDUIDialogExtEncProfile::SetActivePane(int idx) {
@@ -396,6 +460,7 @@ void VDUIDialogExtEncProfile::SetActivePane(int idx) {
 	switch(idx) {
 		case 0:
 			mAudioPane.Destroy();
+			mVideoPane.Destroy();
 
 			mMainPane.Create((VDGUIHandle)mhdlg);
 			mMainPane.SetPosition(mPanePos);
@@ -406,10 +471,18 @@ void VDUIDialogExtEncProfile::SetActivePane(int idx) {
 		case 1:
 			mMainPane.Destroy();
 
-			mAudioPane.Create((VDGUIHandle)mhdlg);
-			mAudioPane.SetPosition(mPanePos);
-			mAudioPane.BringToFront();
-			mAudioPane.Show();
+			if (mProfile.mType == kVDExtEncType_Audio) {
+				mAudioPane.Create((VDGUIHandle)mhdlg);
+				mAudioPane.SetPosition(mPanePos);
+				mAudioPane.BringToFront();
+				mAudioPane.Show();
+			}
+			if (mProfile.mType == kVDExtEncType_Video) {
+				mVideoPane.Create((VDGUIHandle)mhdlg);
+				mVideoPane.SetPosition(mPanePos);
+				mVideoPane.BringToFront();
+				mVideoPane.Show();
+			}
 			break;
 	}
 }
@@ -423,6 +496,9 @@ void VDUIDialogExtEncProfile::OnTypeChanged(VDUIDialogExtEncMain *source, VDExtE
 
 	if (type == kVDExtEncType_Audio)
 		mTabControl.AddItem(L"Audio");
+
+	if (type == kVDExtEncType_Video)
+		mTabControl.AddItem(L"Video");
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -173,6 +173,8 @@ struct VDAVIOutputRawVideoFormat {
 	bool	mbBottomUp;
 };
 
+void InitOutputFormat(VDAVIOutputRawVideoFormat& format, const VDExtEncProfile* vp);
+
 class VDAVIOutputRawVideoSystem : public VDDubberOutputSystem {
 public:
 	VDAVIOutputRawVideoSystem(const wchar_t *pszFilename, const VDAVIOutputRawVideoFormat& format);
