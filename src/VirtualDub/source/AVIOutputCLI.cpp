@@ -916,6 +916,15 @@ void InitOutputFormat(VDAVIOutputRawVideoFormat& format, const VDExtEncProfile* 
 	format.mbSwapChromaPlanes = false;
 	format.mbBottomUp = false;
 
+	if (vp->mPixelFormat==L"yuv420p")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_YUV420_Planar;
+
+	if (vp->mPixelFormat==L"yuv422p")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_YUV422_Planar;
+
+	if (vp->mPixelFormat==L"yuv444p")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_YUV444_Planar;
+
 	if (vp->mPixelFormat==L"bgr24")
 		format.mOutputFormat = nsVDPixmap::kPixFormat_RGB888;
 

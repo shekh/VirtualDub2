@@ -323,27 +323,39 @@ void VDUIDialogExtEncVideo::OnDataExchange(bool write) {
 		if (sel==0)
 			mProfile.mPixelFormat = L"yuv420p";
 		if (sel==1)
-			mProfile.mPixelFormat = L"bgr24";
+			mProfile.mPixelFormat = L"yuv422p";
 		if (sel==2)
-			mProfile.mPixelFormat = L"bgra";
+			mProfile.mPixelFormat = L"yuv444p";
 		if (sel==3)
+			mProfile.mPixelFormat = L"bgr24";
+		if (sel==4)
+			mProfile.mPixelFormat = L"bgra";
+		if (sel==5)
 			mProfile.mPixelFormat = L"bgra64le";
 
 	} else {
 		SendMessage(cb,WM_SETFONT,(WPARAM)fixed_font,0);
 		SendMessage(cb,CB_RESETCONTENT,0,0);
-		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv420     :   8 bit YUV 4:2:0");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv420p    :   8 bit YUV 4:2:0");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv422p    :   8 bit YUV 4:2:2");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv444p    :   8 bit YUV 4:4:4");
 		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgr24      :   8 bit RGB");
 		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgra       :   8 bit RGBA");
 		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgra64le   :  16 bit RGBA");
 
 		int sel = 0;
-		if (mProfile.mPixelFormat==L"bgr24")
+		if (mProfile.mPixelFormat==L"yuv420p")
+			sel = 0;
+		if (mProfile.mPixelFormat==L"yuv422p")
 			sel = 1;
-		if (mProfile.mPixelFormat==L"bgra")
+		if (mProfile.mPixelFormat==L"yuv444p")
 			sel = 2;
-		if (mProfile.mPixelFormat==L"bgra64le")
+		if (mProfile.mPixelFormat==L"bgr24")
 			sel = 3;
+		if (mProfile.mPixelFormat==L"bgra")
+			sel = 4;
+		if (mProfile.mPixelFormat==L"bgra64le")
+			sel = 5;
 
 		SendMessage(cb,CB_SETCURSEL, sel, 0);
 	}
@@ -1049,6 +1061,7 @@ bool VDUIDialogConfigureExternalEncoders::OnCommand(uint32 id, uint32 extcode) {
 					const VDJSONValueRef& commandArguments = profInfo["commandArguments"];
 					const VDJSONValueRef& outputFilename = profInfo["outputFilename"];
 					const VDJSONValueRef& type = profInfo["type"];
+					const VDJSONValueRef& pixelFormat = profInfo["pixelFormat"];
 					const VDJSONValueRef& inputFormat = profInfo["inputFormat"];
 					const VDJSONValueRef& checkReturnCode = profInfo["checkReturnCode"];
 					const VDJSONValueRef& logStdout = profInfo["logStdout"];
@@ -1086,6 +1099,9 @@ bool VDUIDialogConfigureExternalEncoders::OnCommand(uint32 id, uint32 extcode) {
 
 					if (type.IsValid())
 						eprof->mType = (VDExtEncType)type.AsInt64();
+
+					if (pixelFormat.IsValid())
+						eprof->mPixelFormat = pixelFormat.AsString();
 
 					if (inputFormat.IsValid())
 						eprof->mInputFormat = (VDExtEncInputFormat)inputFormat.AsInt64();
@@ -1225,6 +1241,9 @@ bool VDUIDialogConfigureExternalEncoders::OnCommand(uint32 id, uint32 extcode) {
 
 									writer.WriteMemberName(L"type");
 									writer.WriteInt((sint64)eprof->mType);
+
+									writer.WriteMemberName(L"pixelFormat");
+									writer.WriteString(eprof->mPixelFormat.c_str());
 
 									writer.WriteMemberName(L"inputFormat");
 									writer.WriteInt((sint64)eprof->mInputFormat);

@@ -19,6 +19,7 @@
 
 #include <vd2/system/error.h>
 #include <vd2/Kasumi/blitter.h>
+#include <../Kasumi/h/uberblit_rgb64.h>
 
 #include "AVIOutputRawVideo.h"
 
@@ -120,14 +121,19 @@ void AVIVideoOutputStreamRaw::WriteVideoImage(const VDPixmap *px) {
 	}
 
 	if (wipe_alpha && mOutputPixmap.format==nsVDPixmap::kPixFormat_XRGB64) {
-		char *row = (char*)mOutputPixmap.data;
-		for(int y=0; y<mOutputPixmap.h; ++y) {
-			uint16 *p = (uint16*)row;
-			for(int x=0; x<mOutputPixmap.w; ++x) {
-				p[3] = 0xFFFF;
-				p += 4;
+		if (!VDPixmap_X16R16G16B16_IsNormalized(mOutputPixmap.info)) 
+			VDPixmap_X16R16G16B16_Normalize(mOutputPixmap,mOutputPixmap);
+
+		if (wipe_alpha) {
+			char *row = (char*)mOutputPixmap.data;
+			for(int y=0; y<mOutputPixmap.h; ++y) {
+				uint16 *p = (uint16*)row;
+				for(int x=0; x<mOutputPixmap.w; ++x) {
+					p[3] = 0xFFFF;
+					p += 4;
+				}
+				row += mOutputPixmap.pitch;
 			}
-			row += mOutputPixmap.pitch;
 		}
 	}
 
