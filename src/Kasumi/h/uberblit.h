@@ -7,6 +7,7 @@
 #include <vd2/Kasumi/blitter.h>
 
 struct VDPixmap;
+struct FilterModPixmapInfo;
 
 enum VDPixmapFormatToken {
 	kVDPixType_1			= 0x00000001,

@@ -2,6 +2,7 @@
 #define f_VD2_KASUMI_UBERBLIT_RGB64_H
 
 #include <vd2/system/cpuaccel.h>
+#include <vd2/plugin/vdplugin.h>
 #include "uberblit_base.h"
 
 bool inline VDPixmap_X16R16G16B16_IsNormalized(const FilterModPixmapInfo& info) {
