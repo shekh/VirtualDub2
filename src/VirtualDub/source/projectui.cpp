@@ -150,6 +150,7 @@ extern void SaveAVI(HWND, bool, bool queueAsBatch);
 extern void SaveSegmentedAVI(HWND, bool queueAsBatch);
 extern void OpenImageSeq(HWND hwnd);
 extern void SaveImageSeq(HWND, bool queueAsBatch);
+extern void SaveImage(HWND, VDPosition frame, VDPixmap* px);
 extern void SaveWAV(HWND, bool queueAsBatch);
 extern void SaveConfiguration(HWND);
 extern void SaveProject(HWND, bool reset_path);
@@ -254,6 +255,7 @@ namespace {
 		{ ID_FILE_SAVEAVI,				"File.SaveAVI" },
 		{ ID_FILE_SAVECOMPATIBLEAVI,	"File.SaveCompatibleAVI" },
 		{ ID_FILE_SAVEIMAGESEQ,			"File.SaveImageSequence" },
+		{ ID_FILE_SAVEIMAGE,			"File.SaveImage" },
 		{ ID_FILE_SAVESEGMENTEDAVI,		"File.SaveSegmentedAVI" },
 		{ ID_FILE_SAVEFILMSTRIP,		"File.SaveFilmstrip" },
 		{ ID_FILE_SAVEANIMATEDGIF,		"File.SaveAnimatedGIF" },
@@ -853,6 +855,27 @@ void VDProjectUI::SaveCompatibleAVIAsk(bool batchMode) {
 
 void VDProjectUI::SaveImageSequenceAsk(bool batchMode) {
 	SaveImageSeq((HWND)mhwnd, batchMode);
+}
+
+void VDProjectUI::SaveImageAsk() {
+	VDPosition frame = GetCurrentFrame();
+
+	if (filters.isRunning() && mpCurrentOutputFrame) {
+		VDFilterFrameBuffer *buf = mpCurrentOutputFrame->GetResultBuffer();
+		VDPixmap px = VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead());
+		px.info = buf->info;
+		buf->Unlock();
+
+		SaveImage((HWND)mhwnd, frame, &px);
+
+	} else if (inputVideo && mpCurrentInputFrame) {
+		VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
+		VDPixmap px = VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)buf->LockRead());
+		px.info = buf->info;
+		buf->Unlock();
+
+		SaveImage((HWND)mhwnd, frame, &px);
+	}
 }
 
 void VDProjectUI::SaveSegmentedAVIAsk(bool batchMode) {
@@ -1647,6 +1670,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_EDIT_JUMPTO:
 		case ID_VIDEO_COPYSOURCEFRAME:
 		case ID_VIDEO_COPYOUTPUTFRAME:
+		case ID_FILE_SAVEIMAGE:
 		case ID_VIDEO_COPYSOURCEFRAMENUMBER:
 		case ID_VIDEO_COPYOUTPUTFRAMENUMBER:
 		case ID_PANELAYOUT_INPUTPANEONLY:
@@ -1678,6 +1702,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_FILE_SAVEAVI:					SaveAVIAsk(false);			break;
 		case ID_FILE_SAVECOMPATIBLEAVI:			SaveCompatibleAVIAsk(false);	break;
 		case ID_FILE_SAVEIMAGESEQ:				SaveImageSequenceAsk(false);		break;
+		case ID_FILE_SAVEIMAGE:					SaveImageAsk();					break;
 		case ID_FILE_SAVESEGMENTEDAVI:			SaveSegmentedAVIAsk(false);		break;
 		case ID_FILE_SAVEFILMSTRIP:				SaveFilmstripAsk();				break;
 		case ID_FILE_SAVEANIMATEDGIF:			SaveAnimatedGIFAsk();			break;
@@ -2203,6 +2228,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEAVI				, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVECOMPATIBLEAVI	, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEIMAGESEQ			, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEIMAGE			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVESEGMENTEDAVI		, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEWAV				, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEFILMSTRIP		, bSourceFileExists);

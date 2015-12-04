@@ -51,6 +51,8 @@ public:
 
 	bool init(const wchar_t *szFile);
 	void finalize();
+
+	static void WriteSingleImage(const wchar_t *name, int format, int q, VDPixmap* px);
 };
 
 #endif

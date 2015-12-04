@@ -19,6 +19,8 @@
 
 #include <windows.h>
 #include <commctrl.h>
+#include <commdlg.h>
+#include <dlgs.h>
 
 #include "resource.h"
 #include "prefs.h"
@@ -730,6 +732,308 @@ void SaveImageSeq(HWND hwnd, bool queueAsJob) {
 			JobAddConfigurationImages(0, &g_dubOpts, g_szInputAVIFile, NULL, dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, dlg.mFormat, q, &inputAVI->listFiles);
 		else
 			SaveImageSequence(dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, false, NULL, dlg.mFormat, q);
+	}
+}
+
+class VDSaveImageDialogW32 {
+public:
+	VDSaveImageDialogW32();
+
+	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
+	void UpdateEnables();
+	void UpdateSlider();
+	void ChangeExtension(const wchar_t *newExtension);
+	void ChangeFilename(const wchar_t *newName);
+	void InitFormat();
+
+	HWND mhdlg;
+	int mFormat;
+	int mQuality;
+	bool mbQuickCompress;
+};
+
+VDSaveImageDialogW32::VDSaveImageDialogW32()
+	: mFormat(AVIOutputImages::kFormatBMP)
+{
+}
+
+void VDSaveImageDialogW32::UpdateEnables() {
+	bool bIsJPEG = 0!=IsDlgButtonChecked(mhdlg, IDC_FORMAT_JPEG);
+	bool bIsPNG = 0!=IsDlgButtonChecked(mhdlg, IDC_FORMAT_PNG);
+
+	EnableWindow(GetDlgItem(mhdlg, IDC_QUALITY), bIsJPEG);
+	EnableWindow(GetDlgItem(mhdlg, IDC_STATIC_QUALITY), bIsJPEG);
+	EnableWindow(GetDlgItem(mhdlg, IDC_QUICK), bIsPNG);
+}
+
+void VDSaveImageDialogW32::UpdateSlider() {
+	mQuality = SendDlgItemMessage(mhdlg, IDC_QUALITY, TBM_GETPOS, 0, 0);
+	SetDlgItemInt(mhdlg, IDC_STATIC_QUALITY, mQuality, FALSE);
+}
+
+void VDSaveImageDialogW32::ChangeExtension(const wchar_t *newExtension) {
+	wchar_t buf[MAX_PATH];
+	HWND parent = (HWND)GetWindowLong(mhdlg,GWL_HWNDPARENT);
+	CommDlg_OpenSave_GetSpec(parent,buf,MAX_PATH);
+	VDStringW name(buf);
+	VDStringW base = VDFileSplitExtLeft(name);
+	VDStringW new_name = base+newExtension;
+	CommDlg_OpenSave_SetControlText(parent, cmb13, new_name.c_str());
+}
+
+int FormatFromName(const wchar_t *cname) {
+	VDStringW name(cname);
+	VDStringW ext = VDFileSplitExtRight(name);
+	if (_wcsicmp(ext.c_str(),L".bmp")==0) return AVIOutputImages::kFormatBMP;
+	if (_wcsicmp(ext.c_str(),L".tga")==0) return AVIOutputImages::kFormatTGA;
+	if (_wcsicmp(ext.c_str(),L".jpg")==0) return AVIOutputImages::kFormatJPEG;
+	if (_wcsicmp(ext.c_str(),L".jpeg")==0) return AVIOutputImages::kFormatJPEG;
+	if (_wcsicmp(ext.c_str(),L".png")==0) return AVIOutputImages::kFormatPNG;
+	if (_wcsicmp(ext.c_str(),L".tif")==0) return AVIOutputImages::kFormatTIFF_RAW;
+	if (_wcsicmp(ext.c_str(),L".tiff")==0) return AVIOutputImages::kFormatTIFF_RAW;
+	return -1;
+}
+
+const wchar_t* ExtFromFormat(int format) {
+	if (format==AVIOutputImages::kFormatBMP) return L".bmp";
+	if (format==AVIOutputImages::kFormatTGA) return L".tga";
+	if (format==AVIOutputImages::kFormatTGAUncompressed) return L".tga";
+	if (format==AVIOutputImages::kFormatPNG) return L".png";
+	if (format==AVIOutputImages::kFormatJPEG) return L".jpeg";
+	if (format==AVIOutputImages::kFormatTIFF_LZW) return L".tiff";
+	if (format==AVIOutputImages::kFormatTIFF_RAW) return L".tiff";
+	return 0;
+}
+
+void VDSaveImageDialogW32::ChangeFilename(const wchar_t *newName) {
+	int format = FormatFromName(newName);
+	if (format!=-1 && format!=mFormat) {
+		mFormat = format;
+		InitFormat();
+	}
+}
+
+void VDSaveImageDialogW32::InitFormat() {
+	CheckDlgButton(mhdlg, IDC_FORMAT_TGA, BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_FORMAT_TGAUNCOMPRESSED, BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_FORMAT_BMP, BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_FORMAT_JPEG, BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_FORMAT_PNG, BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_FORMAT_TIFF_LZW, BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_FORMAT_TIFF_RAW, BST_UNCHECKED);
+
+	CheckDlgButton(mhdlg, mFormat == AVIOutputImages::kFormatTGA ? IDC_FORMAT_TGA
+						: mFormat == AVIOutputImages::kFormatTGAUncompressed ? IDC_FORMAT_TGAUNCOMPRESSED
+						: mFormat == AVIOutputImages::kFormatBMP ? IDC_FORMAT_BMP
+						: mFormat == AVIOutputImages::kFormatJPEG ? IDC_FORMAT_JPEG
+						: mFormat == AVIOutputImages::kFormatTIFF_LZW ? IDC_FORMAT_TIFF_LZW
+						: mFormat == AVIOutputImages::kFormatTIFF_RAW ? IDC_FORMAT_TIFF_RAW
+						: IDC_FORMAT_PNG
+						, BST_CHECKED);
+}
+
+INT_PTR VDSaveImageDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
+	switch(message) {
+	case WM_INITDIALOG:
+		SendDlgItemMessage(mhdlg, IDC_QUALITY, TBM_SETRANGE, TRUE, MAKELONG(0,100));
+		SendDlgItemMessage(mhdlg, IDC_QUALITY, TBM_SETPOS, TRUE, mQuality);
+		CheckDlgButton(mhdlg, IDC_QUICK, mbQuickCompress ? BST_CHECKED : BST_UNCHECKED);
+		InitFormat();
+		UpdateEnables();
+		UpdateSlider();
+
+		return TRUE;
+
+	case WM_HSCROLL:
+		UpdateSlider();
+		return TRUE;
+
+	case WM_COMMAND:
+		switch(LOWORD(wParam)) {
+
+		// There is a distinct sense of non-scalability here
+
+		case IDC_FORMAT_TGA:
+			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
+				UpdateEnables();
+				mFormat = AVIOutputImages::kFormatTGA;
+				ChangeExtension(L".tga");
+			}
+			return TRUE;
+
+		case IDC_FORMAT_TGAUNCOMPRESSED:
+			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
+				UpdateEnables();
+				mFormat = AVIOutputImages::kFormatTGAUncompressed;
+				ChangeExtension(L".tga");
+			}
+			return TRUE;
+
+		case IDC_FORMAT_BMP:
+			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
+				UpdateEnables();
+				mFormat = AVIOutputImages::kFormatBMP;
+				ChangeExtension(L".bmp");
+			}
+			return TRUE;
+
+		case IDC_FORMAT_JPEG:
+			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
+				UpdateEnables();
+				mFormat = AVIOutputImages::kFormatJPEG;
+				ChangeExtension(L".jpeg");
+			}
+			return TRUE;
+
+		case IDC_FORMAT_PNG:
+			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
+				UpdateEnables();
+				mFormat = AVIOutputImages::kFormatPNG;
+				ChangeExtension(L".png");
+			}
+			return TRUE;
+
+		case IDC_FORMAT_TIFF_LZW:
+			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
+				UpdateEnables();
+				mFormat = AVIOutputImages::kFormatTIFF_LZW;
+				ChangeExtension(L".tiff");
+			}
+			return TRUE;
+
+		case IDC_FORMAT_TIFF_RAW:
+			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
+				UpdateEnables();
+				mFormat = AVIOutputImages::kFormatTIFF_RAW;
+				ChangeExtension(L".tiff");
+			}
+			return TRUE;
+
+		case IDC_QUICK:
+			mbQuickCompress = !!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+			return TRUE;
+		}
+		break;
+	}
+
+	return FALSE;
+}
+
+static const char g_szRegKeyImageFormat[]="Image: format";
+static const char g_szRegKeyImageQuality[]="Image: quality";
+static const char g_szRegKeyImageQuickCompress[]="Image: quick compress";
+static const char g_szRegKeyImageDirectory[]="Image: directory";
+
+UINT CALLBACK SaveImageProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch(msg){
+	case WM_INITDIALOG:
+		{
+			OPENFILENAMEW* fn = (OPENFILENAMEW*)lParam;
+			VDSaveImageDialogW32* dlg = (VDSaveImageDialogW32*)fn->lCustData;
+			SetWindowLongPtr(hdlg, DWLP_USER, (LONG_PTR)dlg);
+			dlg->mhdlg = hdlg;
+			dlg->DlgProc(msg,wParam,lParam);
+			return TRUE;
+		}
+
+	case WM_HSCROLL:
+		{
+			VDSaveImageDialogW32* dlg = (VDSaveImageDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
+			dlg->DlgProc(msg,wParam,lParam);
+			return TRUE;
+		}
+
+	case WM_COMMAND:
+		{
+			VDSaveImageDialogW32* dlg = (VDSaveImageDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
+			dlg->DlgProc(msg,wParam,lParam);
+			return TRUE;
+		}
+
+	case WM_NOTIFY:
+		OFNOTIFY* data = (OFNOTIFY*)lParam;
+		if(data->hdr.code==CDN_SELCHANGE){
+			wchar_t buf[MAX_PATH];
+			CommDlg_OpenSave_GetSpec(data->hdr.hwndFrom,buf,MAX_PATH);
+			VDSaveImageDialogW32* dlg = (VDSaveImageDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
+			dlg->ChangeFilename(buf);
+		}
+		break;
+	}
+	return FALSE;
+}
+
+void SaveImage(HWND hwnd, VDPosition frame, VDPixmap* px) {
+	VDSaveImageDialogW32 dlg;
+
+	VDRegistryAppKey key(g_szRegKeyPersistence);
+
+	dlg.mFormat = key.getInt(g_szRegKeyImageFormat, AVIOutputImages::kFormatTGA);
+	if ((unsigned)dlg.mFormat >= AVIOutputImages::kFormatCount)
+		dlg.mFormat = AVIOutputImages::kFormatTGA;
+	dlg.mQuality	= key.getInt(g_szRegKeyImageQuality, 95);
+	dlg.mbQuickCompress	= key.getBool(g_szRegKeyImageQuickCompress, true);
+
+	if (dlg.mQuality < 0)
+		dlg.mQuality = 0;
+	else if (dlg.mQuality > 100)
+		dlg.mQuality = 100;
+
+	OPENFILENAMEW fn = {sizeof(fn),0};
+	fn.hwndOwner = hwnd;
+	fn.Flags	= OFN_PATHMUSTEXIST|OFN_ENABLESIZING|OFN_EXPLORER|OFN_OVERWRITEPROMPT|OFN_HIDEREADONLY;
+	fn.Flags |= OFN_ENABLETEMPLATE | OFN_ENABLEHOOK;
+	fn.hInstance = GetModuleHandle(0);
+	fn.lpTemplateName = MAKEINTRESOURCEW(IDD_SAVEIMAGE_FORMAT);
+	fn.lpfnHook = SaveImageProc;
+	fn.lCustData = (LONG_PTR)&dlg;
+
+	VDStringW dir;
+	if (key.getString(g_szRegKeyImageDirectory, dir))
+		fn.lpstrInitialDir	= dir.c_str();
+	else
+		fn.lpstrInitialDir	= NULL;
+
+	wchar_t wszFile[MAX_PATH];
+	wszFile[0] = 0;
+
+	fn.lpstrFilter	= L"Images\0*.bmp;*.tga;*.jpg;*.jpeg;*.png;*.tif;*.tiff\0";
+	fn.lpstrFile	= wszFile;
+	fn.nMaxFile		= MAX_PATH;
+
+	VDStringW title;
+	title.sprintf(L"Save Image: frame %lld", frame);
+	fn.lpstrTitle = title.c_str();
+
+	BOOL result = GetSaveFileNameW(&fn);
+
+	// If the last path is no longer valid the dialog may fail to initialize, so if it's not
+	// a cancel we retry with no preset filename.
+	if (!result && CommDlgExtendedError()) {
+		wszFile[0] = 0;
+		fn.lpstrInitialDir = NULL;
+		result = GetSaveFileNameW(&fn);
+	}
+
+	if (result) {
+		VDStringW name(wszFile);
+		dir = VDFileSplitPathLeft(name);
+		key.setString(g_szRegKeyImageDirectory, dir.c_str());
+		int format = FormatFromName(wszFile);
+		if (format==-1)
+			name = VDFileSplitExtLeft(name) + ExtFromFormat(dlg.mFormat);
+
+		key.setInt(g_szRegKeyImageFormat, dlg.mFormat);
+		key.setInt(g_szRegKeyImageQuality, dlg.mQuality);
+		key.setBool(g_szRegKeyImageQuickCompress, dlg.mbQuickCompress);
+
+		int q = dlg.mQuality;
+
+		if (dlg.mFormat == AVIOutputImages::kFormatPNG)
+			q = dlg.mbQuickCompress ? 0 : 100;
+
+		AVIOutputImages::WriteSingleImage(name.c_str(),dlg.mFormat,dlg.mQuality,px);
 	}
 }
 

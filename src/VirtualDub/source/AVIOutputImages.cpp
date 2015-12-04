@@ -124,7 +124,10 @@ void AVIVideoImageOutputStream::WriteVideoImage(const VDPixmap *px) {
 	}
 
 	wchar_t szFileName[MAX_PATH];
-	swprintf(szFileName, MAX_PATH, L"%ls%0*d%ls", mpszPrefix, mDigits, dwFrame++, mpszSuffix);
+	if (mDigits>0)
+		swprintf(szFileName, MAX_PATH, L"%ls%0*d%ls", mpszPrefix, mDigits, dwFrame++, mpszSuffix);
+	else
+		swprintf(szFileName, MAX_PATH, L"%ls%ls", mpszPrefix, mpszSuffix);
 
 	using namespace nsVDFile;
 	VDFile mFile(szFileName, kWrite | kDenyNone | kCreateAlways | kSequential);
@@ -154,7 +157,10 @@ void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 
 		throw MyError("Output settings must be 16/24/32-bit RGB, uncompressed in order to save a TARGA, JPEG, or PNG sequence.");
 	}
 
-	swprintf(szFileName, MAX_PATH, L"%ls%0*d%ls", mpszPrefix, mDigits, dwFrame++, mpszSuffix);
+	if (mDigits>0)
+		swprintf(szFileName, MAX_PATH, L"%ls%0*d%ls", mpszPrefix, mDigits, dwFrame++, mpszSuffix);
+	else
+		swprintf(szFileName, MAX_PATH, L"%ls%ls", mpszPrefix, mpszSuffix);
 
 	using namespace nsVDFile;
 	VDFile mFile(szFileName, kWrite | kDenyNone | kCreateAlways | kSequential);
@@ -162,7 +168,8 @@ void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 
 	if (mFormat == AVIOutputImages::kFormatJPEG) {
 		mOutputBuffer.clear();
 
-		mpJPEGEncoder->Init(mQuality, true);
+		IVDJPEGEncoder::eChromaMode cmode = mQuality > 90 ? IVDJPEGEncoder::kYCC444 : IVDJPEGEncoder::kYCC420;
+		mpJPEGEncoder->Init(mQuality, true, cmode);
 
 		switch(bih.biBitCount) {
 		case 16:
@@ -446,6 +453,44 @@ AVIOutputImages::AVIOutputImages(const wchar_t *szFilePrefix, const wchar_t *szF
 }
 
 AVIOutputImages::~AVIOutputImages() {
+}
+
+void AVIOutputImages::WriteSingleImage(const wchar_t *name, int format, int q, VDPixmap* px) {
+	AVIVideoImageOutputStream stream(name,L"",0,format,q);
+
+	if (format == AVIOutputImages::kFormatTIFF_LZW || format == AVIOutputImages::kFormatTIFF_RAW) {
+		stream.WriteVideoImage(px);
+		return;
+	}
+
+	bool alpha = px->info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid;
+
+	int temp_format;
+	switch(px->format){
+	case nsVDPixmap::kPixFormat_XRGB8888:
+		temp_format = alpha ? nsVDPixmap::kPixFormat_XRGB8888:nsVDPixmap::kPixFormat_RGB888;
+		break;
+	case nsVDPixmap::kPixFormat_RGB888:
+		temp_format = px->format;
+		break;
+	default:
+		temp_format = nsVDPixmap::kPixFormat_RGB888;
+	}
+
+	VDPixmapBuffer buf;
+	buf.init(px->w,px->h,temp_format);
+
+	buf.data = (char*)buf.data + buf.pitch*(buf.h-1);
+	buf.pitch = -buf.pitch;
+
+	vdstructex<VDAVIBitmapInfoHeader>	outputFormat;
+	if (!VDMakeBitmapFormatFromPixmapFormat(outputFormat, buf.format, 1, buf.w, buf.h))
+		return;
+
+	VDPixmapBlt(buf, *px);
+
+	stream.setFormat(outputFormat.data(),outputFormat.size());
+	stream.write(0,buf.base(),buf.size(),1,&buf.info);
 }
 
 //////////////////////////////////
