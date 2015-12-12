@@ -5,6 +5,7 @@
 #include <vd2/Dita/accel.h>
 
 void VDUIExtractAcceleratorTableW32(VDAccelTableDefinition& dst, HACCEL haccel, const VDAccelToCommandEntry *pCommands, uint32 nCommands);
+void VDUIMergeAcceleratorTableW32(VDAccelTableDefinition& dst, HACCEL haccel, const int *pCommands, uint32 nCommands, VDAccelTableDefinition& src);
 
 HACCEL VDUIBuildAcceleratorTableW32(const VDAccelTableDefinition& def);
 void VDUIUpdateMenuAcceleratorsW32(HMENU hmenu, const VDAccelTableDefinition& def);

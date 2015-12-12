@@ -10,7 +10,9 @@ struct VDUIAccelerator {
 		kModCtrl		= 0x01,
 		kModShift		= 0x02,
 		kModAlt			= 0x04,
-		kModExtended	= 0x08
+		kModExtended	= 0x08,
+		kAscii			= 0x10,
+		kNoinvert		= 0x20,
 	};
 
 	uint32		mVirtKey;

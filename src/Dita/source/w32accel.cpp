@@ -2,6 +2,43 @@
 #include <vd2/system/w32assist.h>
 #include <vd2/Dita/accel.h>
 
+void VDUIExtractAccelerator(VDAccelTableEntry& ent, const ACCEL& accel) {
+	ent.mCommandId = accel.cmd;
+
+	ent.mAccel.mVirtKey = accel.key;
+	ent.mAccel.mModifiers = 0;
+
+	if (!(accel.fVirt & FVIRTKEY))
+		ent.mAccel.mModifiers |= VDUIAccelerator::kAscii;
+
+	if (accel.fVirt & FNOINVERT)
+		ent.mAccel.mModifiers |= VDUIAccelerator::kNoinvert;
+
+	if (accel.fVirt & FALT)
+		ent.mAccel.mModifiers |= VDUIAccelerator::kModAlt;
+
+	if (accel.fVirt & FCONTROL)
+		ent.mAccel.mModifiers |= VDUIAccelerator::kModCtrl;
+
+	if (accel.fVirt & FSHIFT)
+		ent.mAccel.mModifiers |= VDUIAccelerator::kModShift;
+
+	switch(accel.key) {
+		case VK_INSERT:
+		case VK_DELETE:
+		case VK_HOME:
+		case VK_END:
+		case VK_NEXT:
+		case VK_PRIOR:
+		case VK_LEFT:
+		case VK_RIGHT:
+		case VK_UP:
+		case VK_DOWN:
+			ent.mAccel.mModifiers |= VDUIAccelerator::kModExtended;
+			break;
+	}
+}
+
 void VDUIExtractAcceleratorTableW32(VDAccelTableDefinition& dst, HACCEL haccel, const VDAccelToCommandEntry *pCommands, uint32 nCommands) {
 	uint32 n = CopyAcceleratorTable(haccel, NULL, 0);
 	vdfastvector<ACCEL> accels(n);
@@ -16,36 +53,8 @@ void VDUIExtractAcceleratorTableW32(VDAccelTableDefinition& dst, HACCEL haccel, 
 		for(uint32 j=0; j<nCommands; ++j) {
 			if (pCommands[j].mId == accel.cmd) {
 				VDAccelTableEntry ent;
-				ent.mCommandId = accel.cmd;
+				VDUIExtractAccelerator(ent,accel);
 				ent.mpCommand = pCommands[j].mpName;
-
-				ent.mAccel.mVirtKey = accel.key;
-				ent.mAccel.mModifiers = 0;
-
-				VDASSERT(accel.fVirt & FVIRTKEY);
-				if (accel.fVirt & FALT)
-					ent.mAccel.mModifiers |= VDUIAccelerator::kModAlt;
-
-				if (accel.fVirt & FCONTROL)
-					ent.mAccel.mModifiers |= VDUIAccelerator::kModCtrl;
-
-				if (accel.fVirt & FSHIFT)
-					ent.mAccel.mModifiers |= VDUIAccelerator::kModShift;
-
-				switch(accel.key) {
-				  case VK_INSERT:
-				  case VK_DELETE:
-				  case VK_HOME:
-				  case VK_END:
-				  case VK_NEXT:
-				  case VK_PRIOR:
-				  case VK_LEFT:
-				  case VK_RIGHT:
-				  case VK_UP:
-				  case VK_DOWN:
-					  ent.mAccel.mModifiers |= VDUIAccelerator::kModExtended;
-					  break;
-				}
 
 				dst.Add(ent);
 				found = true;
@@ -55,6 +64,37 @@ void VDUIExtractAcceleratorTableW32(VDAccelTableDefinition& dst, HACCEL haccel, 
 
 		VDASSERT(found);
 	}
+}
+
+void VDUIMergeAcceleratorTableW32(VDAccelTableDefinition& dst, HACCEL haccel, const int *pCommands, uint32 nCommands, VDAccelTableDefinition& src) {
+	uint32 n = CopyAcceleratorTable(haccel, NULL, 0);
+	vdfastvector<ACCEL> accels(n);
+
+	n = CopyAcceleratorTable(haccel, accels.data(), n);
+
+	dst.Clear();
+
+	{for(uint32 i=0; i<n; ++i) {
+		const ACCEL& accel = accels[i];
+		VDAccelTableEntry ent;
+		VDUIExtractAccelerator(ent,accel);
+		ent.mpCommand = "";
+		dst.Add(ent);
+	}}
+
+	{for(uint32 i=0; i<nCommands; ++i) {
+		int cmd = pCommands[i];
+
+		bool found = false;
+		for(uint32 j=0; j<src.GetSize(); ++j) {
+			if (src[j].mCommandId == cmd) {
+				dst.Add(src[j]);
+				found = true;
+			}
+		}
+
+		VDASSERT(found);
+	}}
 }
 
 void VDUIGetAcceleratorStringInternal(const VDUIAccelerator& accel, VDStringW& s) {
@@ -123,7 +163,13 @@ HACCEL VDUIBuildAcceleratorTableW32(const VDAccelTableDefinition& def) {
 
 		ACCEL& accel = accels[i];
 
-		accel.fVirt = FVIRTKEY;
+		accel.fVirt = 0;
+
+		if (!(entry.mAccel.mModifiers & VDUIAccelerator::kAscii))
+			accel.fVirt |= FVIRTKEY;
+
+		if (entry.mAccel.mModifiers & VDUIAccelerator::kNoinvert)
+			accel.fVirt |= FNOINVERT;
 
 		if (entry.mAccel.mModifiers & VDUIAccelerator::kModCtrl)
 			accel.fVirt |= FCONTROL;

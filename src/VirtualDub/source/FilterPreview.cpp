@@ -43,6 +43,7 @@ extern HINSTANCE	g_hInst;
 extern VDProject *g_project;
 extern vdrefptr<VDProjectUI> g_projectui;
 extern IVDPositionControlCallback *VDGetPositionControlCallbackTEMP();
+extern void SaveImage(HWND, VDPosition frame, VDPixmap* px);
 
 int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, int format);
 
@@ -243,6 +244,8 @@ public:
 	void UndoSystem();
 	void RedoSystem();
 	void Close();
+	void CopyOutputFrameToClipboard();
+	void SaveImageAsk();
 	bool SampleCurrentFrame();
 	long SampleFrames();
 	int64 FMSetPosition(int64 pos);
@@ -679,7 +682,7 @@ void FilterPreview::OnInit() {
 	mpVideoWindow->SetBorderless(true);
 
 	mDlgNode.hdlg = mhdlg;
-	mDlgNode.mhAccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_PREVIEW_KEYS));
+	mDlgNode.mhAccel = g_projectui->GetAccelPreview();
 	guiAddModelessDialog(&mDlgNode);
 }
 
@@ -940,6 +943,7 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		if (mpButtonCallback)
 			mpButtonCallback(false, mpvButtonCBData);
 
+		SetActiveWindow(mhwndParent);
 		DestroyWindow(mhdlg);
 		mhdlg = NULL;
 
@@ -955,6 +959,14 @@ bool FilterPreview::OnCommand(UINT cmd) {
 			mpPosition->SetPosition(pos);
 			OnVideoRedraw();
 		}
+		return true;
+
+	case ID_VIDEO_COPYOUTPUTFRAME:
+		CopyOutputFrameToClipboard();
+		return true;
+
+	case ID_FILE_SAVEIMAGE:
+		SaveImageAsk();
 		return true;
 
 	default:
@@ -1076,6 +1088,7 @@ void FilterPreview::Display(VDXHWND hwndParent, bool fDisplay) {
 		return;
 
 	if (mhdlg) {
+		SetActiveWindow(mhwndParent);
 		DestroyWindow(mhdlg);
 		mhdlg = NULL;
 		UndoSystem();
@@ -1119,6 +1132,27 @@ void FilterPreview::Close() {
 	if (mhdlg)
 		Toggle(NULL);
 	UndoSystem();
+}
+
+void FilterPreview::CopyOutputFrameToClipboard() {
+	if (!mFiltSys.isRunning() || !mpVideoFrameBuffer)
+		return;
+
+	VDPixmap px = VDPixmapFromLayout(mFiltSys.GetOutputLayout(), (void *)mpVideoFrameBuffer->LockRead());
+	px.info = mpVideoFrameBuffer->info;
+	g_project->CopyFrameToClipboard(px);
+	mpVideoFrameBuffer->Unlock();
+}
+
+void FilterPreview::SaveImageAsk() {
+	if (!mFiltSys.isRunning() || !mpVideoFrameBuffer)
+		return;
+
+	VDPosition pos = mpPosition->GetPosition();
+	VDPixmap px = VDPixmapFromLayout(mFiltSys.GetOutputLayout(), (void *)mpVideoFrameBuffer->LockRead());
+	px.info = mpVideoFrameBuffer->info;
+	mpVideoFrameBuffer->Unlock();
+	SaveImage(mhdlg, pos, &px);
 }
 
 bool FilterPreview::SampleCurrentFrame() {

@@ -431,6 +431,7 @@ VDProjectUI::VDProjectUI()
 	, mhMenuDisplay(NULL)
 	, mhAccelDub(NULL)
 	, mhAccelMain(NULL)
+	, mhAccelPreview(NULL)
 	, mOldWndProc(NULL)
 	, mbDubActive(false)
 	, mbLockPreviewRestart(false)
@@ -534,6 +535,8 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 		Detach();
 		return false;
 	}
+
+	UpdateAccelPreview();
 
 	mhwndStatus = CreateStatusWindow(WS_CHILD|WS_VISIBLE, "", (HWND)mhwnd, IDC_STATUS_WINDOW);
 	if (!mhwndStatus) {
@@ -642,6 +645,21 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	DragAcceptFiles((HWND)mhwnd, TRUE);
 
 	return true;
+}
+
+void VDProjectUI::UpdateAccelPreview() {
+	if (mhAccelPreview)
+		DestroyAcceleratorTable(mhAccelPreview);
+
+	int merge_list[] = {
+		ID_FILE_SAVEIMAGE,
+		ID_VIDEO_COPYOUTPUTFRAME
+	};
+
+	HACCEL haccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_PREVIEW_KEYS));
+	VDAccelTableDefinition def;
+	VDUIMergeAcceleratorTableW32(def, haccel, merge_list, sizeof(merge_list)/sizeof(merge_list[0]), mAccelTableDef);
+	mhAccelPreview = VDUIBuildAcceleratorTableW32(def);
 }
 
 void VDProjectUI::Detach() {
@@ -1990,6 +2008,8 @@ bool VDProjectUI::MenuHit(UINT id) {
 				DrawMenuBar((HWND)mhwnd);
 
 				mhAccelMain = acc;
+
+				UpdateAccelPreview();
 
 				VDRegistryAppKey accelKey("Accelerators\\Main", true);
 
@@ -4116,7 +4136,11 @@ void VDProjectUI::OnAudioDisplaySetAudioOffset(IVDUIAudioDisplayControl *source,
 
 void VDProjectUI::DisplayPreview(bool v)
 {
-	ShowWindow(mhwndPosition, v ? SW_HIDE:SW_SHOWNOACTIVATE);
+	if (v) {
+		ShowWindow(mhwndPosition, SW_HIDE);
+	} else {
+		ShowWindow(mhwndPosition, mbPositionControlVisible ? SW_SHOWNA : SW_HIDE);
+	}
 	if (mhwndFilters) ShowWindow(mhwndFilters, v ? SW_HIDE:SW_SHOWNOACTIVATE);
 	mpUIBase->SetVisible(!v);
 	

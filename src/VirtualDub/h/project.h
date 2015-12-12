@@ -195,6 +195,7 @@ public:
 	void SetVideoMode(int mode);
 	void CopySourceFrameToClipboard();
 	void CopyOutputFrameToClipboard();
+	void CopyFrameToClipboard(VDPixmap& px);
 	void CopySourceFrameNumberToClipboard();
 	void CopyOutputFrameNumberToClipboard();
 

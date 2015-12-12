@@ -95,6 +95,7 @@ public:
 
 	void DisplayPreview(bool v);
 	HWND GetHwnd(){ return (HWND)mhwnd; }
+	HACCEL GetAccelPreview(){ return mhAccelPreview; }
 
 public:
 	const wchar_t *edit_token;
@@ -122,6 +123,7 @@ protected:
 	void UpdateDubMenu(HMENU hMenu);
 	void RepositionPanes();
 	void UpdateVideoFrameLayout();
+	void UpdateAccelPreview();
 
 	void OpenAudioDisplay();
 	void CloseAudioDisplay();
@@ -198,6 +200,7 @@ protected:
 	int			mMRUListPosition;
 	HACCEL		mhAccelDub;
 	HACCEL		mhAccelMain;
+	HACCEL		mhAccelPreview;
 
 	RECT		mrInputFrame;
 	RECT		mrOutputFrame;

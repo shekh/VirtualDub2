@@ -1933,7 +1933,7 @@ void VDProject::CopySourceFrameToClipboard() {
 	VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
 	VDPixmap px = VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)buf->LockRead());
 	px.info = buf->info;
-	CopyFrameToClipboard((HWND)mhwnd, px);
+	CopyFrameToClipboard(px);
 	buf->Unlock();
 }
 
@@ -1944,8 +1944,12 @@ void VDProject::CopyOutputFrameToClipboard() {
 	VDFilterFrameBuffer *buf = mpCurrentOutputFrame->GetResultBuffer();
 	VDPixmap px = VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead());
 	px.info = buf->info;
-	CopyFrameToClipboard((HWND)mhwnd, px);
+	CopyFrameToClipboard(px);
 	buf->Unlock();
+}
+
+void VDProject::CopyFrameToClipboard(VDPixmap& px) {
+	::CopyFrameToClipboard((HWND)mhwnd, px);
 }
 
 void VDProject::CopySourceFrameNumberToClipboard() {
