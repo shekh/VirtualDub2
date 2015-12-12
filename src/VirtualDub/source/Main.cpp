@@ -773,7 +773,7 @@ void VDSaveImageDialogW32::UpdateSlider() {
 
 void VDSaveImageDialogW32::ChangeExtension(const wchar_t *newExtension) {
 	wchar_t buf[MAX_PATH];
-	HWND parent = (HWND)GetWindowLong(mhdlg,GWL_HWNDPARENT);
+	HWND parent = (HWND)GetWindowLongPtr(mhdlg,GWLP_HWNDPARENT);
 	CommDlg_OpenSave_GetSpec(parent,buf,MAX_PATH);
 	VDStringW name(buf);
 	VDStringW base = VDFileSplitExtLeft(name);
@@ -924,7 +924,7 @@ static const char g_szRegKeyImageQuality[]="Image: quality";
 static const char g_szRegKeyImageQuickCompress[]="Image: quick compress";
 static const char g_szRegKeyImageDirectory[]="Image: directory";
 
-UINT CALLBACK SaveImageProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam)
+UINT_PTR CALLBACK SaveImageProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch(msg){
 	case WM_INITDIALOG:
