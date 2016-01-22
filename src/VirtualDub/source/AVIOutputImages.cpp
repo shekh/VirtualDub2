@@ -478,16 +478,15 @@ void AVIOutputImages::WriteSingleImage(const wchar_t *name, int format, int q, V
 		temp_format = nsVDPixmap::kPixFormat_RGB888;
 	}
 
-	VDPixmapBuffer buf;
-	buf.init(px->w,px->h,temp_format);
-
-	buf.data = (char*)buf.data + buf.pitch*(buf.h-1);
-	buf.pitch = -buf.pitch;
-
 	vdstructex<VDAVIBitmapInfoHeader>	outputFormat;
-	if (!VDMakeBitmapFormatFromPixmapFormat(outputFormat, buf.format, 1, buf.w, buf.h))
+	if (!VDMakeBitmapFormatFromPixmapFormat(outputFormat, temp_format, 1, px->w, px->h))
 		return;
 
+	VDPixmapLayout layout;
+	VDGetPixmapLayoutForBitmapFormat(*outputFormat.data(),outputFormat.size(),layout);
+
+	VDPixmapBuffer buf;
+	buf.init(layout,0);
 	VDPixmapBlt(buf, *px);
 
 	stream.setFormat(outputFormat.data(),outputFormat.size());
