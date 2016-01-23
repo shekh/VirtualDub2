@@ -92,8 +92,6 @@ void VDUIMergeAcceleratorTableW32(VDAccelTableDefinition& dst, HACCEL haccel, co
 				found = true;
 			}
 		}
-
-		VDASSERT(found);
 	}}
 }
 

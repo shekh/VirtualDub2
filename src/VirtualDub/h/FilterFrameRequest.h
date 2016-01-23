@@ -107,6 +107,7 @@ public:
 	uint64 GetCookie();
 	uint32 GetSrcIndex();
 	FilterModPixmapInfo& GetInfo();
+	void *GetExtraInfo();
 
 protected:
 	VDFilterFrameRequest *mpRequest;

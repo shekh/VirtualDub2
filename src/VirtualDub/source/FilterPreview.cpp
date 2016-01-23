@@ -231,6 +231,7 @@ public:
 	IVDXFilterPreview2 *AsIVDXFilterPreview2() { return this; }
 	IFilterModPreview *AsIFilterModPreview() { return this; }
 	void SetInitialTime(VDTime t);
+	void SetFilterList(HWND w){ mhwndFilterList = w; }
 
 	void SetButtonCallback(VDXFilterPreviewButtonCallback, void *);
 	void SetSampleCallback(VDXFilterPreviewSampleCallback, void *);
@@ -248,11 +249,13 @@ public:
 	void SaveImageAsk();
 	bool SampleCurrentFrame();
 	long SampleFrames();
+	long SampleFrames(IFilterModPreviewSample*);
 	int64 FMSetPosition(int64 pos);
 	void FMSetPositionCallback(FilterModPreviewPositionCallback, void *);
 	void FMSetZoomCallback(FilterModPreviewZoomCallback, void *);
 	int FMTranslateAccelerator(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
 	HWND GetHwnd(){ return mhdlg; }
+	FilterSystem *GetFilterSystem(){ return &mFiltSys; }
 	int TranslateAcceleratorMessage(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
 
 private:
@@ -280,6 +283,7 @@ private:
 	HWND		mhwndPosition;
 	HWND		mhwndVideoWindow;
 	HWND		mhwndDisplay;
+	HWND		mhwndFilterList;
 
 	wchar_t		mButtonAccelerator;
 
@@ -344,6 +348,7 @@ FilterPreview::FilterPreview(VDFilterChainDesc *pFilterChainDesc, FilterInstance
 	, mhwndPosition(NULL)
 	, mhwndVideoWindow(NULL)
 	, mhwndDisplay(NULL)
+	, mhwndFilterList(NULL)
 	, mButtonAccelerator(0)
 	, mWidth(0)
 	, mHeight(0)
@@ -969,6 +974,16 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		SaveImageAsk();
 		return true;
 
+	case ID_FILE_SAVEPROJECT:
+		SendMessage(mhwndFilterList,WM_COMMAND,IDC_FILTERS_SAVE,0);
+		return true;
+
+	case ID_VIDEO_FILTERS:
+		EnableWindow(mhwndParent,false);
+		SendMessage(mhwndFilterList,WM_COMMAND,ID_VIDEO_FILTERS,0);
+		EnableWindow(mhwndParent,true);
+		return true;
+
 	default:
 		if (VDHandleTimelineCommand(mpPosition, mpTimeline, cmd)) {
 			OnVideoRedraw();
@@ -1187,7 +1202,7 @@ bool FilterPreview::SampleCurrentFrame() {
 
 			if (frame >= 0) {
 				vdrefptr<IVDFilterFrameClientRequest> req;
-				if (mpThisFilter->CreateSamplingRequest(frame, mpSampleCallback, mpvSampleCBData, 0, ~req)) {
+				if (mpThisFilter->CreateSamplingRequest(frame, mpSampleCallback, mpvSampleCBData, 0, 0, ~req)) {
 					while(!req->IsCompleted()) {
 						if (mFiltSys.Run(NULL, false) == FilterSystem::kRunResult_Running)
 							continue;
@@ -1315,7 +1330,7 @@ long FilterPreview::SampleFrames() {
 				lastFrame = frame;
 			}
 
-			if (mpThisFilter->CreateSamplingRequest(frame, mpSampleCallback, mpvSampleCBData, 0, ~req)) {
+			if (mpThisFilter->CreateSamplingRequest(frame, mpSampleCallback, mpvSampleCBData, 0, 0, ~req)) {
 				while(!req->IsCompleted()) {
 					if (mFiltSys.Run(NULL, false) == FilterSystem::kRunResult_Running)
 						continue;
@@ -1342,6 +1357,100 @@ long FilterPreview::SampleFrames() {
 	}
 
 	RedrawFrame();
+
+	return lCount;
+}
+
+long FilterPreview::SampleFrames(IFilterModPreviewSample* handler) {
+	long lCount = 0;
+
+	if (!mpFilterChainDesc || !mhdlg || !handler)
+		return -1;
+
+	if (!mFiltSys.isRunning()) {
+		RedoSystem();
+
+		if (!mFiltSys.isRunning())
+			return -1;
+	}
+
+	bool image_changed = false;
+
+	// Time to do the actual sampling.
+	try {
+		ProgressDialog pd(mhdlg, "Sampling input video", "Sampling all frames", 1, true);
+
+		pd.setValueFormat("Sampling frame %ld of %ld");
+
+		vdrefptr<IVDFilterFrameClientRequest> req;
+
+		VDPosition sel_start = g_project->GetSelectionStartFrame();
+		VDPosition sel_end = g_project->GetSelectionEndFrame();
+		if (sel_end==-1) sel_end = g_project->GetFrameCount();
+		sint64 total_count = sel_end-sel_start-1;
+
+		VDPosition frame = -1;
+		while(1){
+			VDPosition nextFrame = frame+1;
+			if (frame==-1) nextFrame = sel_start;
+			if (frame>=sel_end-1) nextFrame = -1;
+			handler->GetNextFrame(frame,&nextFrame,&total_count);
+			if (nextFrame==-1) break;
+			frame = nextFrame;
+
+			pd.setLimit(VDClampToSint32(total_count));
+			pd.advance(lCount);
+			pd.check();
+
+			if (mpThisFilter->CreateSamplingRequest(frame, 0, 0, handler, 0, ~req)) {
+				while(!req->IsCompleted()) {
+					if (mFiltSys.Run(NULL, false) == FilterSystem::kRunResult_Running)
+						continue;
+
+					switch(mpVideoFrameSource->RunRequests(NULL)) {
+						case IVDFilterFrameSource::kRunResult_Running:
+						case IVDFilterFrameSource::kRunResult_IdleWasActive:
+						case IVDFilterFrameSource::kRunResult_BlockedWasActive:
+							continue;
+					}
+
+					mFiltSys.Block();
+				}
+
+				int result = FilterInstance::GetSamplingRequestResult(req);
+				if ((result & IFilterModPreviewSample::result_image) && req->GetResultBuffer()) {
+					if (mpVideoFrameBuffer) {
+						mpVideoFrameBuffer->Unlock();
+						mpVideoFrameBuffer = NULL;
+					}
+
+					mpVideoFrameBuffer = req->GetResultBuffer();
+					const void *p = mpVideoFrameBuffer->LockRead();
+
+					const VDPixmapLayout& layout = mFiltSys.GetOutputLayout();
+					VDPixmap px = VDPixmapFromLayout(layout, (void *)p);
+					px.info = mpVideoFrameBuffer->info;
+
+					mpDisplay->SetSourcePersistent(false, px);
+					mpDisplay->Update(IVDVideoDisplay::kAllFields);
+					image_changed = true;
+				}
+
+				++lCount;
+			}
+		}
+	} catch(MyUserAbortError e) {
+
+		handler->Cancel();
+
+	} catch(const MyError& e) {
+		e.post(mhdlg, "Video sampling error");
+	}
+
+	if (image_changed)
+		mpDisplay->Update(IVDVideoDisplay::kAllFields);
+	else
+		RedrawFrame();
 
 	return lCount;
 }

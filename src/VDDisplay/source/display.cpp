@@ -1186,6 +1186,9 @@ void VDVideoDisplayWindow::SyncUpdate(int mode) {
 
 		mSyncDelta = 0.0f;
 
+		// force popups above to discard COPYBITS
+		InvalidateRect(mhwnd,0,false);
+		ValidateRect(mhwnd,0);
 		bool success = mpMiniDriver->Update((IVDVideoDisplayMinidriver::UpdateMode)mode);
 		ReleaseActiveFrame();
 		if (success) {

@@ -39,6 +39,9 @@ public:
 	virtual IVDXFilterPreview2 *AsIVDXFilterPreview2() = 0;
 	virtual IFilterModPreview *AsIFilterModPreview() = 0;
 	virtual void SetInitialTime(VDTime t) = 0;
+	virtual void SetFilterList(HWND w) = 0;
+	virtual HWND GetHwnd() = 0;
+	virtual FilterSystem *GetFilterSystem() = 0;
 };
 
 bool VDCreateVideoFilterPreviewDialog(VDFilterChainDesc *, FilterInstance *, IVDVideoFilterPreviewDialog **);

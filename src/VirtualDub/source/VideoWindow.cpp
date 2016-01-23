@@ -358,6 +358,9 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	case WM_NCPAINT:
 		NCPaint((HRGN)wParam);
 		return 0;
+	case WM_ERASEBKGND:
+		if (mbBorderless) return true;
+		break;
 	case WM_PAINT:
 		{
 			PAINTSTRUCT ps;

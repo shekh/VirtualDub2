@@ -388,7 +388,8 @@ public:
 	void	RegisterSourceAllocReqs(uint32 index, VDFilterFrameAllocatorProxy *prev);
 	void	RegisterAllocatorProxies(VDFilterFrameAllocatorManager *manager);
 	bool	CreateRequest(sint64 outputFrame, bool writable, uint32 batchNumber, IVDFilterFrameClientRequest **req);
-	bool	CreateSamplingRequest(sint64 outputFrame, VDXFilterPreviewSampleCallback sampleCB, void *sampleCBData, uint32 batchNumber, IVDFilterFrameClientRequest **req);
+	bool	CreateSamplingRequest(sint64 outputFrame, VDXFilterPreviewSampleCallback sampleCB, void *sampleCBData, IFilterModPreviewSample* sampleHandler, uint32 batchNumber, IVDFilterFrameClientRequest **req);
+	static int GetSamplingRequestResult(IVDFilterFrameClientRequest *req);
 	RunResult RunRequests(const uint32 *batchNumberLimit);
 	RunResult RunProcess();
 

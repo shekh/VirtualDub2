@@ -159,6 +159,7 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			}
 
 			if(g_projectui && g_projectui->edit_token){
+				g_projectui->StopFilters();
 				g_projectui->SetVideoFiltersAsk();
 				g_projectui->edit_token = 0;
 			}
@@ -1069,8 +1070,10 @@ void SaveConfiguration(HWND hWnd) {
 void SaveProject(HWND hWnd, bool reset_path) {
 	VDStringW filename = g_project->mProjectFilename;
 	
-	if (filename.empty() || reset_path || g_project->mProjectReadonly)
+	if (filename.empty() || reset_path || g_project->mProjectReadonly) {
+		if (!hWnd) return;
 		filename = VDGetSaveFileName(kFileDialog_Project, (VDGUIHandle)hWnd, L"Save Project", fileFiltersSaveProject, L"vdproject", 0, 0);
+	}
 
 	if (!filename.empty()) {
 		try {

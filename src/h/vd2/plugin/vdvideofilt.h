@@ -140,6 +140,18 @@ typedef void (__cdecl *VDXFilterModuleDeinitProc)(VDXFilterModule *fm, const VDX
 typedef void (__cdecl *VDXFilterPreviewButtonCallback)(bool fNewState, void *pData);
 typedef void (__cdecl *VDXFilterPreviewSampleCallback)(VDXFBitmap *, long lFrame, long lCount, void *pData);
 
+class IFilterModPreviewSample {
+public:
+	// Run returns combination of these flags
+	enum {
+		result_image = 1, // destination image can be displayed in preview window
+	};
+
+	virtual int Run(const VDXFilterActivation *fa, const VDXFilterFunctions *ff)=0;
+	virtual void GetNextFrame(sint64 frame, sint64* next_frame, sint64* total_count)=0;
+	virtual void Cancel()=0;
+};
+
 class IVDXFilterPreview {
 public:
 	virtual void SetButtonCallback(VDXFilterPreviewButtonCallback, void *)=0;
@@ -188,6 +200,9 @@ public:
 
 	// FilterModVersion>=4
 	virtual int FMTranslateAccelerator(tagMSG* msg)=0;
+
+	// FilterModVersion>=5
+	virtual long SampleFrames(IFilterModPreviewSample*)=0;
 };
 
 class IFilterModTimeline {
@@ -456,7 +471,7 @@ public:
 
 enum {
 	// This is the highest API version supported by this header file.
-	FILTERMOD_VERSION = 4,
+	FILTERMOD_VERSION = 5,
 };
 
 class FilterModActivation {

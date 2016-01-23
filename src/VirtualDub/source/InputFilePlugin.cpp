@@ -510,6 +510,7 @@ VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverCont
 	}
 
 	mpFMVDec = (IFilterModVideoDecoder*)mpXS->AsInterface(IFilterModVideoDecoder::kIID);
+	if(!mpFMVDec) mpFMVDec = (IFilterModVideoDecoder*)mpXVDec->AsInterface(IFilterModVideoDecoder::kIID);
 
 	// create a video decoder model.
 	vdwithinputplugin(mpContext) {

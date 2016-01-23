@@ -122,6 +122,13 @@ uint32 VDFilterFrameClientRequest::GetSrcIndex() {
 	return mSrcIndex;
 }
 
+void* VDFilterFrameClientRequest::GetExtraInfo() {
+	if (mpRequest)
+		return mpRequest->GetExtraInfo();
+
+	return 0;
+}
+
 FilterModPixmapInfo& VDFilterFrameClientRequest::GetInfo() {
 	return mpRequest->GetResultBuffer()->info;
 }

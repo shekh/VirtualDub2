@@ -757,6 +757,8 @@ class FilterInstance::SamplingInfo : public vdrefcounted<IVDRefCount> {
 public:
 	VDXFilterPreviewSampleCallback mpCB;
 	void *mpCBData;
+	IFilterModPreviewSample* handler;
+	int result;
 };
 
 FilterInstance::FilterInstance(const FilterInstance& fi)
@@ -1697,7 +1699,13 @@ bool FilterInstance::CreateRequest(sint64 outputFrame, bool writable, uint32 bat
 	return true;
 }
 
-bool FilterInstance::CreateSamplingRequest(sint64 outputFrame, VDXFilterPreviewSampleCallback sampleCB, void *sampleCBData, uint32 batchNumber, IVDFilterFrameClientRequest **req) {
+int FilterInstance::GetSamplingRequestResult(IVDFilterFrameClientRequest *req) {
+	VDFilterFrameClientRequest *vdreq = (VDFilterFrameClientRequest*)req;
+	SamplingInfo *sampInfo = (SamplingInfo *)vdreq->GetExtraInfo();
+	return sampInfo ? sampInfo->result : 0;
+}
+
+bool FilterInstance::CreateSamplingRequest(sint64 outputFrame, VDXFilterPreviewSampleCallback sampleCB, void *sampleCBData, IFilterModPreviewSample* sampleHandler, uint32 batchNumber, IVDFilterFrameClientRequest **req) {
 	VDASSERT(mbStarted);
 
 	if (outputFrame < 0)
@@ -1709,6 +1717,8 @@ bool FilterInstance::CreateSamplingRequest(sint64 outputFrame, VDXFilterPreviewS
 	vdrefptr<SamplingInfo> sampInfo(new SamplingInfo);
 	sampInfo->mpCB = sampleCB;
 	sampInfo->mpCBData = sampleCBData;
+	sampInfo->handler = sampleHandler;
+	sampInfo->result = 0;
 
 	vdrefptr<VDFilterFrameRequest> r;
 
@@ -1808,6 +1818,7 @@ bool FilterInstance::OpenRequest() {
 		mRequestCurrentFrame = 1;
 		mRequestEndFrame = 0;
 		mbRequestFrameCompleted = false;
+		mbRequestCacheIntermediateFrames = (samplingInfo->handler!=0);
 		return true;
 	}
 
@@ -2211,9 +2222,10 @@ void FilterInstance::RunFilter() {
 }
 
 void FilterInstance::RunFilterInner() {
-	const SamplingInfo *sampInfo = (const SamplingInfo *)mpRequestInProgress->GetExtraInfo();
+	SamplingInfo *sampInfo = (SamplingInfo *)mpRequestInProgress->GetExtraInfo();
 	VDXFilterPreviewSampleCallback const sampleCB = sampInfo ? sampInfo->mpCB : NULL;
 	void *const sampleCBData = sampInfo ? sampInfo->mpCBData : NULL;
+	IFilterModPreviewSample* sampleHandler = sampInfo ? sampInfo->handler : NULL;
 
 	sint64 outputFrame = mRequestOutputFrame;
 	VDASSERT(outputFrame >= 0);
@@ -2239,7 +2251,7 @@ void FilterInstance::RunFilterInner() {
 
 	const VDPixmap *blendSrc = NULL;
 
-	if (!sampleCB && alpha < 254.5f / 255.0f && mRealSrc.mPixmap.data) {
+	if ((!sampleCB && !sampleHandler) && alpha < 254.5f / 255.0f && mRealSrc.mPixmap.data) {
 		if (mFlags & FILTERPARAM_SWAP_BUFFERS) {
 			if (alpha < 0.5f / 255.0f)
 				skipFilter = true;
@@ -2273,7 +2285,9 @@ void FilterInstance::RunFilterInner() {
 			vdprotected1("running filter \"%s\"", const char *, filter->name) {
 				VDFilterThreadContextSwapper autoSwap(&mThreadContext);
 
-				if (sampleCB) {
+				if (sampleHandler) {
+					sampInfo->result = sampleHandler->Run(AsVDXFilterActivation(), &g_VDFilterCallbacks);
+				} else if (sampleCB) {
 					sampleCB(&AsVDXFilterActivation()->src, mfsi.mOutputFrame, VDClampToSint32(mRealDst.mFrameCount), sampleCBData);
 				} else {
 					// Deliberately ignore the return code. It was supposed to be an error value,
@@ -2292,7 +2306,7 @@ void FilterInstance::RunFilterInner() {
 		}
 	}
 
-	if (!sampleCB && !skipBlit && alpha < 254.5f / 255.0f) {
+	if ((!sampleCB && !sampleHandler) && !skipBlit && alpha < 254.5f / 255.0f) {
 		if (alpha > 0.5f / 255.0f)
 			VDPixmapBltAlphaConst(mRealDst.mPixmap, *blendSrc, 1.0f - alpha);
 		else
