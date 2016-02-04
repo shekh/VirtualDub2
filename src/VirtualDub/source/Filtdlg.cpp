@@ -30,6 +30,7 @@
 
 #include "resource.h"
 #include "FilterPreview.h"
+#include "projectui.h"
 
 #include "filtdlg.h"
 #include "filters.h"
@@ -37,6 +38,7 @@
 #include "FilterFrameVideoSource.h"
 
 extern const char g_szError[];
+extern vdrefptr<VDProjectUI> g_projectui;
 
 //////////////////////////////
 
@@ -44,18 +46,307 @@ FilterDefinitionInstance *VDUIShowDialogAddFilter(VDGUIHandle hParent);
 bool VDShowFilterClippingDialog(VDGUIHandle hParent, FilterInstance *pFiltInst, VDFilterChainDesc *pFilterChainDesc, sint64 initialTimeUS);
 extern void SaveProject(HWND, bool reset_path);
 
+class VDVideoFiltersDialog;
+
+class FiltersEditor{
+public:
+	VDVideoFiltersDialog* dlg_first;
+	VDVideoFiltersDialog* dlg_second;
+	vdrefptr<FilterInstance> config_first;
+	vdrefptr<FilterInstance> config_second;
+	VDFilterChainDesc filter_desc;
+	FilterSystem mFiltSys;
+	vdrefptr<VDFilterFrameVideoSource>	mpVideoFrameSource;
+	vdrefptr<IVDVideoFilterPreviewDialog> preview;
+	vdfastvector<IVDPixmapViewDialog*> extra_view;
+	int mEditInstance;
+	HWND* owner_ref;
+
+	VDFraction	mOldFrameRate;
+	sint64		mOldFrameCount;
+	int			mInputWidth;
+	int			mInputHeight;
+	int			mInputFormat;
+	VDFraction	mInputRate;
+	VDFraction	mInputPixelAspect;
+	sint64		mInputLength;
+	VDTime		mInitialTimeUS;
+	IVDVideoSource	*mpVS;
+	VDVideoFiltersDialogResult mResult;
+
+	FiltersEditor()
+	: mInputWidth(320)
+	, mInputHeight(240)
+	, mInputFormat(nsVDPixmap::kPixFormat_XRGB8888)
+	, mInputRate(30, 1)
+	, mInputPixelAspect(1, 1)
+	, mInputLength(100)
+	, mInitialTimeUS(-1)
+	, mpVS(NULL)
+	{
+		dlg_first = 0;
+		dlg_second = 0;
+		mEditInstance = -1;
+		owner_ref = 0;
+		mResult.mbDialogAccepted = false;
+		mResult.mbChangeDetected = false;
+		mResult.mbRescaleRequested = false;
+	}
+
+	void Init(IVDVideoSource *pVS, VDPosition initialTime);
+	void Init(int w, int h, int format, const VDFraction& rate, sint64 length, VDPosition initialTime);
+	void SetResult();
+	VDVideoFiltersDialogResult GetResult() const { return mResult; }
+
+	void RedoFilters();
+	void ReadyFilters();
+	void EvalView(FilterInstance* fa, IVDPixmapViewDialog* view);
+	void EvalAllViews();
+	void UndoSystem();
+
+	void ActivateNextWindow();
+	void DestroyAllViews();
+	void DestroyView(IVDPixmapViewDialog* view);
+
+	static void DestroyView(IVDPixmapViewDialog* view, void* data) {
+		FiltersEditor* editor = (FiltersEditor*)data;
+		editor->ActivateNextWindow();
+		editor->DestroyView(view);
+	}
+
+	static void SaveScript(FilterInstance* fa) {
+		if (fa) {
+			VDStringA scriptStr;
+			if (fa->GetScriptString(scriptStr)) {
+				fa->mConfigString = scriptStr;
+			} else {
+				fa->mConfigString.clear();
+			}
+		}
+	}
+};
+
+void FiltersEditor::Init(IVDVideoSource *pVS, VDPosition initialTime) {
+	IVDStreamSource *pSS = pVS->asStream();
+	const VDPixmap& px = pVS->getTargetFormat();
+
+	mpVS			= pVS;
+	mInputWidth		= px.w;
+	mInputHeight	= px.h;
+	mInputFormat	= px.format;
+	mInputRate		= pSS->getRate();
+	mInputPixelAspect = pVS->getPixelAspectRatio();
+	mInputLength	= pSS->getLength();
+	mInitialTimeUS	= initialTime;
+
+	mOldFrameRate	= filters.GetOutputFrameRate();
+	mOldFrameCount	= filters.GetOutputFrameCount();
+}
+
+void FiltersEditor::Init(int w, int h, int format, const VDFraction& rate, sint64 length, VDPosition initialTime) {
+	mpVS			= NULL;
+	mInputWidth		= w;
+	mInputHeight	= h;
+	mInputFormat	= format;
+	mInputRate		= rate;
+	mInputLength	= length;
+	mInitialTimeUS	= initialTime;
+
+	mOldFrameRate	= filters.GetOutputFrameRate();
+	mOldFrameCount	= filters.GetOutputFrameCount();
+}
+
+void FiltersEditor::SetResult() {
+	mResult.mOldFrameRate		= mOldFrameRate;
+	mResult.mOldFrameCount		= mOldFrameCount;
+	mResult.mNewFrameRate		= filters.GetOutputFrameRate();
+	mResult.mNewFrameCount		= filters.GetOutputFrameCount();
+
+	mResult.mbRescaleRequested = false;
+	mResult.mbChangeDetected = false;
+
+	if (mResult.mOldFrameRate != mResult.mNewFrameRate || mResult.mOldFrameCount != mResult.mNewFrameCount) {
+		mResult.mbChangeDetected = true;
+		mResult.mbRescaleRequested = true;
+	}
+
+	mResult.mbDialogAccepted = true;
+}
+
+void FiltersEditor::DestroyAllViews() {
+	for(vdfastvector<IVDPixmapViewDialog*>::iterator it(extra_view.begin()), itEnd(extra_view.end());
+		it != itEnd;
+		++it)
+	{
+		(*it)->SetDestroyCallback(0,0);
+		(*it)->Destroy();
+		(*it)->Release();
+	}
+	extra_view.clear();
+	for(VDFilterChainDesc::Entries::const_iterator it(filter_desc.mEntries.begin()), itEnd(filter_desc.mEntries.end());
+		it != itEnd;
+		++it)
+	{
+		(*it)->mpView = 0;
+	}
+}
+
+void FiltersEditor::DestroyView(IVDPixmapViewDialog* view) {
+	for(vdfastvector<IVDPixmapViewDialog*>::iterator it(extra_view.begin()), itEnd(extra_view.end());
+		it != itEnd;
+		++it)
+	{
+		if(*it==view) {
+			view->Release();
+			extra_view.erase(it);
+			break;
+		}
+	}
+
+	for(VDFilterChainDesc::Entries::const_iterator it(filter_desc.mEntries.begin()), itEnd(filter_desc.mEntries.end());
+		it != itEnd;
+		++it)
+	{
+		if((*it)->mpView==view) (*it)->mpView = 0;
+	}
+}
+
+void FiltersEditor::RedoFilters() {
+	if (mInputFormat) {
+		try {
+			mFiltSys.prepareLinearChain(&filter_desc, mInputWidth, mInputHeight, mInputFormat, mInputRate, mInputLength, mInputPixelAspect);
+		} catch(const MyError&) {
+			// eat error
+		}
+	}
+
+	if(preview)
+		preview->AsIVDXFilterPreview2()->RedoSystem();
+}
+
+void FiltersEditor::EvalAllViews() {
+	if(preview) return;
+	if(extra_view.empty()) return;
+
+	ReadyFilters();
+
+	for(VDFilterChainDesc::Entries::const_iterator it(filter_desc.mEntries.begin()), itEnd(filter_desc.mEntries.end());
+		it != itEnd;
+		++it)
+	{
+		if((*it)->mpView) {
+			EvalView((*it)->mpInstance, (*it)->mpView);
+		}
+	}
+}
+
+void FiltersEditor::ReadyFilters() {
+	try {
+		IVDStreamSource *pVSS = inputVideo->asStream();
+		const VDPixmap& px = inputVideo->getTargetFormat();
+		VDFraction srcRate = pVSS->getRate();
+
+		if (g_dubOpts.video.mFrameRateAdjustLo > 0)
+			srcRate.Assign(g_dubOpts.video.mFrameRateAdjustHi, g_dubOpts.video.mFrameRateAdjustLo);
+
+		sint64 len = pVSS->getLength();
+		const VDPixmap& pxsrc = inputVideo->getTargetFormat();
+		const VDFraction& srcPAR = inputVideo->getPixelAspectRatio();
+
+		mFiltSys.prepareLinearChain(
+				&filter_desc,
+				px.w,
+				px.h,
+				pxsrc.format,
+				srcRate,
+				pVSS->getLength(),
+				srcPAR);
+
+		mpVideoFrameSource = new VDFilterFrameVideoSource;
+		mpVideoFrameSource->Init(inputVideo, mFiltSys.GetInputLayout());
+
+		mFiltSys.initLinearChain(
+				NULL,
+				VDXFilterStateInfo::kStatePreview,
+				&filter_desc,
+				mpVideoFrameSource,
+				px.w,
+				px.h,
+				pxsrc.format,
+				pxsrc.palette,
+				srcRate,
+				len,
+				srcPAR);
+
+		mFiltSys.ReadyFilters();
+
+	} catch(const MyError&) {
+	}
+}
+
+void FiltersEditor::EvalView(FilterInstance* fa, IVDPixmapViewDialog* view) {
+	if (!fa->IsEnabled()) return;
+
+	vdrefptr<IVDFilterFrameClientRequest> req;
+	VDPosition frame = 0;
+	if (mInitialTimeUS >= 0) {
+		const VDFraction outputRate(mFiltSys.GetOutputFrameRate());
+		frame = VDRoundToInt64(outputRate.asDouble() * (double)mInitialTimeUS * (1.0 / 1000000.0));
+	}
+
+	if (fa->CreateRequest(frame, false, 0, ~req)) {
+		while(!req->IsCompleted()) {
+			if (mFiltSys.Run(NULL, false) == FilterSystem::kRunResult_Running)
+				continue;
+
+			switch(mpVideoFrameSource->RunRequests(NULL)) {
+				case IVDFilterFrameSource::kRunResult_Running:
+				case IVDFilterFrameSource::kRunResult_IdleWasActive:
+				case IVDFilterFrameSource::kRunResult_BlockedWasActive:
+					continue;
+			}
+
+			mFiltSys.Block();
+		}
+
+		if (req->IsSuccessful()) {
+			vdrefptr<VDFilterFrameBuffer>	buf;
+			buf = req->GetResultBuffer();
+			if (buf) {
+				const void *p = buf->LockRead();
+				const VDPixmapLayout& layout = fa->GetOutputLayout();
+				VDPixmap px = VDPixmapFromLayout(layout, (void *)p);
+				px.info = buf->info;
+				view->SetImage(px);
+			}
+		}
+	}
+}
+
+void FiltersEditor::UndoSystem() {
+	mFiltSys.DeinitFilters();
+	mFiltSys.DeallocateBuffers();
+	mpVideoFrameSource = NULL;
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 class VDXFilterPreviewThunk: public IVDXFilterPreview2{
 public:
-  IVDXFilterPreview2* preview;
+  FiltersEditor* editor;
+  FilterInstance* pFiltInst;
 
-  VDXFilterPreviewThunk(){ preview=0; }
+  VDXFilterPreviewThunk(){ editor=0; pFiltInst=0; }
   virtual void SetButtonCallback(VDXFilterPreviewButtonCallback, void *){}
   virtual void SetSampleCallback(VDXFilterPreviewSampleCallback, void *){}
 
   virtual bool isPreviewEnabled(){ return true; }
   virtual void Toggle(VDXHWND){}
   virtual void Display(VDXHWND, bool){}
-  virtual void RedoFrame(){ preview->RedoFrame(); }
+  virtual void RedoFrame(){
+    editor->mFiltSys.InvalidateCachedFrames(pFiltInst);
+    editor->preview->RedoFrame2(); 
+  }
   virtual void RedoSystem(){}
   virtual void UndoSystem(){}
   virtual void InitButton(VDXHWND w){ 
@@ -168,19 +459,9 @@ class VDVideoFiltersDialog : public VDDialogFrameW32 {
 public:
 	VDVideoFiltersDialog();
 	
-	void Init(IVDVideoSource *pVS, VDPosition initialTime);
-	void Init(int w, int h, int format, const VDFraction& rate, sint64 length, VDPosition initialTime);
-
-	VDVideoFiltersDialogResult GetResult() const { return mResult; }
-
 public:
-	int mEditInstance;
-	HWND* owner_ref;
-	VDVideoFiltersDialog* first_dlg;
-	VDVideoFiltersDialog* second_dlg;
-	vdrefptr<FilterInstance> config_filter;
-	VDFilterChainDesc config_desc;
-	vdrefptr<IVDVideoFilterPreviewDialog> config_preview;
+	FiltersEditor* editor;
+	bool is_first;
 
 protected:
 	bool OnLoaded();
@@ -199,24 +480,15 @@ protected:
 
 	void LoadGlobalChainCopy();
 	void LoadSharedChain(VDFilterChainDesc& desc);
-	void MakeFilterChainDesc(VDFilterChainDesc& desc, bool clone=false);
+	typedef enum {makeChain_local=0, makeChain_copy=1, makeChain_finish=2} MakeChainType;
+	void MakeFilterChainDesc(VDFilterChainDesc& desc, MakeChainType type=makeChain_local);
 	void EnableConfigureBox(int index = -1);
 	void RedoFilters();
 	void RelayoutFilterList();
 	void CloneDialog();
 	void SaveFilters();
 	bool ConfigureFilter(FilterInstance *fa);
-
-	VDFraction	mOldFrameRate;
-	sint64		mOldFrameCount;
-	int			mInputWidth;
-	int			mInputHeight;
-	int			mInputFormat;
-	VDFraction	mInputRate;
-	VDFraction	mInputPixelAspect;
-	sint64		mInputLength;
-	VDTime		mInitialTimeUS;
-	IVDVideoSource	*mpVS;
+	void CreateView(VDFilterChainEntry *ent);
 
 	bool		mbShowFormats;
 	bool		mbShowAspectRatios;
@@ -227,7 +499,6 @@ protected:
 	HMENU		mhContextMenus;
 
 	VDUIProxyListView mListView;
-	VDVideoFiltersDialogResult mResult;
 
 	VDDelegate mDelItemCheckedChanging;
 	VDDelegate mDelItemCheckedChanged;
@@ -267,57 +538,18 @@ protected:
 
 VDVideoFiltersDialog::VDVideoFiltersDialog()
 	: VDDialogFrameW32(IDD_FILTERS)
-	, mInputWidth(320)
-	, mInputHeight(240)
-	, mInputFormat(nsVDPixmap::kPixFormat_XRGB8888)
-	, mInputRate(30, 1)
-	, mInputPixelAspect(1, 1)
-	, mInputLength(100)
-	, mInitialTimeUS(-1)
-	, mpVS(NULL)
-	, mEditInstance(-1)
 	, mbShowFormats(false)
 	, mbShowAspectRatios(false)
 	, mbShowFrameRates(false)
 	, mFilterEnablesUpdateLock(0)
 	, mhContextMenus(NULL)
-	, owner_ref(0)
 {
-	mResult.mbDialogAccepted = false;
-	mResult.mbChangeDetected = false;
-	mResult.mbRescaleRequested = false;
-
-	first_dlg = 0;
-	second_dlg = 0;
+	is_first = true;
 
 	mListView.OnItemCheckedChanged() += mDelItemCheckedChanged.Bind(this, &VDVideoFiltersDialog::OnItemCheckedChanged);
 	mListView.OnItemCheckedChanging() += mDelItemCheckedChanging.Bind(this, &VDVideoFiltersDialog::OnItemCheckedChanging);
 	mListView.OnItemDoubleClicked() += mDelItemDoubleClicked.Bind(this, &VDVideoFiltersDialog::OnItemDoubleClicked);
 	mListView.OnItemSelectionChanged() += mDelItemSelectionChanged.Bind(this, &VDVideoFiltersDialog::OnItemSelectionChanged);
-}
-
-void VDVideoFiltersDialog::Init(IVDVideoSource *pVS, VDPosition initialTime) {
-	IVDStreamSource *pSS = pVS->asStream();
-	const VDPixmap& px = pVS->getTargetFormat();
-
-	mpVS			= pVS;
-	mInputWidth		= px.w;
-	mInputHeight	= px.h;
-	mInputFormat	= px.format;
-	mInputRate		= pSS->getRate();
-	mInputPixelAspect = pVS->getPixelAspectRatio();
-	mInputLength	= pSS->getLength();
-	mInitialTimeUS	= initialTime;
-}
-
-void VDVideoFiltersDialog::Init(int w, int h, int format, const VDFraction& rate, sint64 length, VDPosition initialTime) {
-	mpVS			= NULL;
-	mInputWidth		= w;
-	mInputHeight	= h;
-	mInputFormat	= format;
-	mInputRate		= rate;
-	mInputLength	= length;
-	mInitialTimeUS	= initialTime;
 }
 
 bool VDVideoFiltersDialog::OnLoaded() {
@@ -340,7 +572,7 @@ bool VDVideoFiltersDialog::OnLoaded() {
 	mResizer.Add(IDC_SHOWFRAMERATES, VDDialogResizerW32::kBL);
 	mResizer.Add(IDC_SHOWASPECTRATIOS, VDDialogResizerW32::kBL);
 
-	if (first_dlg) {
+	if (!is_first) {
 		ShowWindow(GetDlgItem(mhdlg,IDCANCEL),SW_HIDE);
 	}
 
@@ -367,9 +599,9 @@ bool VDVideoFiltersDialog::OnLoaded() {
 	mListView.InsertColumn(2, L"Output", 50);
 	mListView.InsertColumn(3, L"Filter", 200);
 
-	if (first_dlg) {
+	if (!is_first) {
 		VDFilterChainDesc desc;
-		first_dlg->MakeFilterChainDesc(desc);
+		editor->dlg_first->MakeFilterChainDesc(desc);
 		LoadSharedChain(desc);
 	} else {
 		LoadGlobalChainCopy();
@@ -377,18 +609,16 @@ bool VDVideoFiltersDialog::OnLoaded() {
 
 	mhContextMenus = LoadMenu(NULL, MAKEINTRESOURCE(IDR_FILTER_LIST_CONTEXT));
 
-	mOldFrameRate	= filters.GetOutputFrameRate();
-	mOldFrameCount	= filters.GetOutputFrameCount();
-
 	SetFocusToControl(IDC_FILTER_LIST);
 	VDUIRestoreWindowPlacementW32(mhdlg, "VideoFilters", SW_SHOW);
 
-	if(owner_ref) *owner_ref = mhdlg;
-
-	if(mEditInstance!=-1){
-		mListView.SetSelectedIndex(mEditInstance);
-		OnCommand(IDC_CONFIGURE, 0);
-		mEditInstance = -1;
+	if (is_first) {
+		if(editor->owner_ref) *editor->owner_ref = mhdlg;
+		if(editor->mEditInstance!=-1){
+			mListView.SetSelectedIndex(editor->mEditInstance);
+			OnCommand(IDC_CONFIGURE, 0);
+			editor->mEditInstance = -1;
+		}
 	}
 
 	return true;
@@ -478,41 +708,33 @@ bool VDVideoFiltersDialog::OnOK() {
 	filters.DeinitFilters();
 	filters.DeallocateBuffers();
 
-	if(first_dlg){
+	if (!is_first) {
 		VDFilterChainDesc desc;
 		MakeFilterChainDesc(desc);
-		first_dlg->LoadSharedChain(desc);
+		editor->dlg_first->LoadSharedChain(desc);
+		editor->RedoFilters();
 	} else {
-		MakeFilterChainDesc(g_filterChain);
+		editor->DestroyAllViews();
+		MakeFilterChainDesc(g_filterChain,makeChain_finish);
+		editor->SetResult();
+		editor->mResult.mbDialogAccepted = true;
 	}
 
-	mResult.mOldFrameRate		= mOldFrameRate;
-	mResult.mOldFrameCount		= mOldFrameCount;
-	mResult.mNewFrameRate		= filters.GetOutputFrameRate();
-	mResult.mNewFrameCount		= filters.GetOutputFrameCount();
-
-	mResult.mbRescaleRequested = false;
-	mResult.mbChangeDetected = false;
-
-	if (mResult.mOldFrameRate != mResult.mNewFrameRate || mResult.mOldFrameCount != mResult.mNewFrameCount) {
-		mResult.mbChangeDetected = true;
-		mResult.mbRescaleRequested = true;
-	}
-
-	mResult.mbDialogAccepted = true;
 	End(true);
 	return true;
 }
 
 bool VDVideoFiltersDialog::OnCancel() {
-	if(first_dlg) return OnOK();
-	
+	if(!is_first) return OnOK();
+
+	editor->DestroyAllViews();
+
 	// We must force filters to stop before we muck with the global list... in case
 	// the pane refresh restarted them.
 	filters.DeinitFilters();
 	filters.DeallocateBuffers();
 
-	mResult.mbDialogAccepted = true;
+	editor->mResult.mbDialogAccepted = true;
 	End(false);
 	return true;
 }
@@ -595,10 +817,7 @@ bool VDVideoFiltersDialog::OnCommand(uint32 id, uint32 extcode) {
 
 				if (fli) {
 					FilterInstance *fa = fli->mpEntry->mpInstance;
-					bool skip = false;
-					if(first_dlg && first_dlg->config_filter==fa) skip=true;
-
-					if (fa && fa->IsConfigurable() && !skip) {
+					if (fa && fa->IsConfigurable() && fa!=editor->config_first) {
 						RedoFilters();
 						ConfigureFilter(fa);
 						RedoFilters();
@@ -616,13 +835,10 @@ bool VDVideoFiltersDialog::OnCommand(uint32 id, uint32 extcode) {
 					FilterInstance *fa = fli->mpEntry->mpInstance;
 
 					if (fa && fa->IsEnabled()) {
-						filters.DeinitFilters();
-						filters.DeallocateBuffers();
-
 						VDFilterChainDesc desc;
 						MakeFilterChainDesc(desc);
 
-						VDShowFilterClippingDialog((VDGUIHandle)mhdlg, fa, &desc, mInitialTimeUS);
+						VDShowFilterClippingDialog((VDGUIHandle)mhdlg, fa, &desc, editor->mInitialTimeUS);
 
 						RedoFilters();
 					}
@@ -899,6 +1115,17 @@ bool VDVideoFiltersDialog::OnCommand(uint32 id, uint32 extcode) {
 			}
 			return true;
 
+		case ID_FILTERLIST_EXTRAVIEW:
+			{
+				int index = mListView.GetSelectedIndex();
+				FilterListItem *fli = vdpoly_cast<FilterListItem *>(static_cast<FilterListItemBase *>(mListView.GetVirtualItem(index))); 
+				if (fli->mpEntry->mpView)
+					fli->mpEntry->mpView->Destroy();
+				else
+					CreateView(fli->mpEntry);
+			}
+			return true;
+
 		case IDC_FILTERS_SAVE:
 			SaveFilters();
 			return true;
@@ -917,77 +1144,87 @@ bool VDVideoFiltersDialog::OnCommand(uint32 id, uint32 extcode) {
 
 bool VDVideoFiltersDialog::ConfigureFilter(FilterInstance *fa) {
 	bool fRemove = false;
-	config_filter = fa;
 
-	if (first_dlg) {
+	if (!is_first) {
+		editor->config_second = fa;
+
 		VDXFilterPreviewThunk thunk;
-		thunk.preview = first_dlg->config_preview->AsIVDXFilterPreview2();
+		thunk.editor = editor;
+		thunk.pFiltInst = fa;
 		PostMessage(mhdlg,WM_COMMAND,ID_VIDEO_FILTERS_HIDE,0);
 		fRemove = !fa->Configure((VDXHWND)mhdlg, &thunk, 0);
 		ShowWindow(mhdlg,SW_SHOW);
 
+		editor->config_second = 0;
+
 	} else {
 
-		if (mpVS)
-			MakeFilterChainDesc(config_desc);
+		editor->config_first = fa;
 
-		if (VDCreateVideoFilterPreviewDialog(mpVS ? &config_desc : NULL, fa, ~config_preview)) {
-			config_preview->SetFilterList(mhdlg);
-			if (mInitialTimeUS >= 0)
-				config_preview->SetInitialTime(mInitialTimeUS);
+		if (editor->mpVS)
+			MakeFilterChainDesc(editor->filter_desc);
 
-			fRemove = !fa->Configure((VDXHWND)mhdlg, config_preview->AsIVDXFilterPreview2(), config_preview->AsIFilterModPreview());
+		if (VDCreateVideoFilterPreviewDialog(&editor->mFiltSys, editor->mpVS ? &editor->filter_desc : NULL, fa, ~editor->preview)) {
+			editor->preview->SetFilterList(mhdlg);
+			if (editor->mInitialTimeUS >= 0)
+				editor->preview->SetInitialTime(editor->mInitialTimeUS);
+
+			fRemove = !fa->Configure((VDXHWND)mhdlg, editor->preview->AsIVDXFilterPreview2(), editor->preview->AsIFilterModPreview());
 		}
 
-		config_preview = 0;
-		config_desc.Clear();
+		editor->preview = 0;
+		//!editor->filter_desc.Clear();
+
+		editor->config_first = 0;
 	}
 
-	config_filter = 0;
 	return fRemove;
+}
+
+void VDVideoFiltersDialog::CreateView(VDFilterChainEntry *ent) {
+	IVDPixmapViewDialog *view;
+	VDCreatePixmapViewDialog(&view);
+	view->SetDestroyCallback(editor->DestroyView,editor);
+	view->AddRef();
+	editor->extra_view.push_back(view);
+
+	editor->UndoSystem();
+	editor->ReadyFilters();
+	editor->EvalView(ent->mpInstance,view);
+	editor->UndoSystem();
+	editor->RedoFilters();
+
+	HWND parent = g_projectui->GetHwnd();
+	VDStringW title(L"Filter view: ");
+	title += VDTextAToW(ent->mpInstance->GetName());
+	view->Display((VDXHWND)parent,title.c_str());
+
+	ent->mpView = view;
 }
 
 void VDVideoFiltersDialog::CloneDialog() {
 	VDVideoFiltersDialog dlg2;
-	second_dlg = &dlg2;
-	dlg2.first_dlg = this;
-	dlg2.Init(mpVS, mInitialTimeUS);
-	HWND parent = config_preview->GetHwnd();//GetActiveWindow();
-	//HWND parent = GetParent(mhdlg);
+
+	editor->dlg_second = &dlg2;
+	dlg2.editor = editor;
+	dlg2.is_first = false;
+
+	HWND parent = editor->preview->GetHwnd();
 	dlg2.ShowDialog((VDGUIHandle)parent);
-	second_dlg = 0;
+
+	editor->dlg_second = 0;
 }
 
 void VDVideoFiltersDialog::SaveFilters() {
- if (config_filter) {
-		FilterInstance* fa = config_filter;
-		VDStringA scriptStr;
-		if (fa->GetScriptString(scriptStr)) {
-			fa->mConfigString = scriptStr;
-		} else {
-			fa->mConfigString.clear();
-		}
-	}
-	if (first_dlg && first_dlg->config_filter) {
-		FilterInstance* fa = first_dlg->config_filter;
-		VDStringA scriptStr;
-		if (fa->GetScriptString(scriptStr)) {
-			fa->mConfigString = scriptStr;
-		} else {
-			fa->mConfigString.clear();
-		}
-	}
+	editor->SaveScript(editor->config_first);
+	editor->SaveScript(editor->config_second);
+
 	// cloning inited filter is not allowed
-	IVDVideoFilterPreviewDialog* preview = first_dlg ? first_dlg->config_preview : config_preview;
-	if (preview) {
-		FilterSystem* flt = preview->GetFilterSystem();
-		flt->DeinitFilters();
-		flt->DeallocateBuffers();
-	}
-	MakeFilterChainDesc(g_filterChain,true);
+	editor->UndoSystem();
+	MakeFilterChainDesc(g_filterChain,makeChain_copy);
 	SaveProject(0,false);
-	if (preview) {
-		preview->AsIVDXFilterPreview2()->RedoSystem();
+	if (editor->preview) {
+		editor->preview->AsIVDXFilterPreview2()->RedoSystem();
 	}
 }
 
@@ -1098,11 +1335,10 @@ void VDVideoFiltersDialog::OnItemSelectionChanged(VDUIProxyListView *sender, int
 	EnableConfigureBox(item);
 }
 
-void VDVideoFiltersDialog::MakeFilterChainDesc(VDFilterChainDesc& desc, bool clone) {
+void VDVideoFiltersDialog::MakeFilterChainDesc(VDFilterChainDesc& desc, MakeChainType type) {
 	// have to do this since the filter list is intrusive
-	filters.DeinitFilters();
-	filters.DeallocateBuffers();
-  
+	editor->UndoSystem();
+	
 	desc.Clear();
 
 	int n = mListView.GetItemCount();
@@ -1114,7 +1350,8 @@ void VDVideoFiltersDialog::MakeFilterChainDesc(VDFilterChainDesc& desc, bool clo
 
 		if (fli) {
 			VDFilterChainEntry *pEnt = fli->mpEntry;
-			if (clone) {
+			if (type==makeChain_finish) pEnt->mpView = 0;
+			if (type==makeChain_copy) {
 				VDFilterChainEntry *pEnt2 = new VDFilterChainEntry;
 				pEnt2->mOutputName = pEnt->mOutputName;
 				if (pEnt->mpInstance)
@@ -1139,8 +1376,7 @@ void VDVideoFiltersDialog::EnableConfigureBox(int index) {
 		fa = fli->mpEntry->mpInstance;
 
 	if (fa) {
-		bool skip = false;
-		if(first_dlg && first_dlg->config_filter==fa) skip=true;
+		bool skip = fa==editor->config_first;
 		EnableControl(IDC_CONFIGURE, fa->IsConfigurable() && !skip);
 		EnableControl(IDC_CLIPPING, fa->IsEnabled() && !skip);
 		EnableControl(IDC_DELETE, !skip);
@@ -1156,26 +1392,12 @@ void VDVideoFiltersDialog::EnableConfigureBox(int index) {
 }
 
 void VDVideoFiltersDialog::RedoFilters() {
-	VDFilterChainDesc desc;
-
-	MakeFilterChainDesc(desc);
-
-	if (mInputFormat) {
-		try {
-			filters.prepareLinearChain(&desc, mInputWidth, mInputHeight, mInputFormat, mInputRate, mInputLength, mInputPixelAspect);
-		} catch(const MyError&) {
-			// eat error
-		}
-	}
+	MakeFilterChainDesc(editor->filter_desc);
+	editor->RedoFilters();
+	editor->EvalAllViews();
 
 	mListView.RefreshAllItems();
-
 	RelayoutFilterList();
-
-	if(first_dlg){
-		MakeFilterChainDesc(first_dlg->config_desc);
-		first_dlg->config_preview->AsIVDXFilterPreview2()->RedoSystem();
-	}
 }
 
 void VDVideoFiltersDialog::RelayoutFilterList() {
@@ -1367,29 +1589,60 @@ void VDVideoFiltersDialog::FilterInputListItem::GetText(int subItem, VDStringW& 
 	}
 }
 
+void FiltersEditor::ActivateNextWindow() {
+	if (dlg_second) {
+		HWND wnd = dlg_second->GetWindowHandle();
+		HWND wnd2 = GetWindow(wnd,GW_ENABLEDPOPUP);
+		if (wnd2) wnd = wnd2;
+
+		SetActiveWindow(wnd);
+		return;
+	}
+
+	if (dlg_first) {
+		HWND wnd = dlg_first->GetWindowHandle();
+		HWND wnd2 = GetWindow(wnd,GW_ENABLEDPOPUP);
+		if (wnd2) wnd = wnd2;
+		if (preview) {
+			wnd2 = preview->GetHwnd(); 
+			if (wnd2) wnd = wnd2;
+		}
+
+		SetActiveWindow(wnd);
+		return;
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////
 
 VDVideoFiltersDialogResult VDShowDialogVideoFilters(VDGUIHandle h, IVDVideoSource *pVS, VDPosition initialTime, int edit_instance, HWND* owner_ref) {
 	VDVideoFiltersDialog dlg;
 
-	if (pVS)
-		dlg.Init(pVS, initialTime);
+	FiltersEditor editor;
+	editor.dlg_first = &dlg;
+	dlg.editor = &editor;
+	editor.mEditInstance = edit_instance;
+	editor.owner_ref = owner_ref;
 
-	dlg.mEditInstance = edit_instance;
-	dlg.owner_ref = owner_ref;
+	if (pVS)
+		editor.Init(pVS, initialTime);
 
 	dlg.ShowDialog(h);
 
 	if(owner_ref) *owner_ref = 0;
 
-	return dlg.GetResult();
+	return editor.GetResult();
 }
 
 VDVideoFiltersDialogResult VDShowDialogVideoFilters(VDGUIHandle hParent, int w, int h, int format, const VDFraction& rate, sint64 length, VDPosition initialTime) {
 	VDVideoFiltersDialog dlg;
 
-	dlg.Init(w, h, format, rate, length, initialTime);
+	FiltersEditor editor;
+	editor.dlg_first = &dlg;
+	dlg.editor = &editor;
+
+	editor.Init(w, h, format, rate, length, initialTime);
 	dlg.ShowDialog(hParent);
 
-	return dlg.GetResult();
+	return editor.GetResult();
 }

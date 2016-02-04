@@ -1699,6 +1699,10 @@ bool FilterInstance::CreateRequest(sint64 outputFrame, bool writable, uint32 bat
 	return true;
 }
 
+bool FilterInstance::CacheLookup(VDPosition frame, VDFilterFrameBuffer** buf) {
+  return mFrameCache.Lookup(frame,buf);
+}
+
 int FilterInstance::GetSamplingRequestResult(IVDFilterFrameClientRequest *req) {
 	VDFilterFrameClientRequest *vdreq = (VDFilterFrameClientRequest*)req;
 	SamplingInfo *sampInfo = (SamplingInfo *)vdreq->GetExtraInfo();
@@ -1729,7 +1733,9 @@ bool FilterInstance::CreateSamplingRequest(sint64 outputFrame, VDXFilterPreviewS
 	timing.mOutputFrame = outputFrame;
 	r->SetTiming(timing);
 	r->SetCacheable(false);
-	r->SetExtraInfo(sampInfo);
+
+  if (sampleCB || sampleHandler)
+	  r->SetExtraInfo(sampInfo);
 
 	vdrefptr<VDFilterFrameBuffer> buf;
 
@@ -2293,6 +2299,8 @@ void FilterInstance::RunFilterInner() {
 					// Deliberately ignore the return code. It was supposed to be an error value,
 					// but earlier versions didn't check it and logoaway returns true in some cases.
 					filter->runProc(AsVDXFilterActivation(), &g_VDFilterCallbacks);
+          if (view) view->SetImage(mRealDst.mPixmap);
+          view = 0;
 				}
 			}
 		}

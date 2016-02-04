@@ -22,6 +22,7 @@
 #include "FilterInstance.h"
 
 class FilterInstance;
+class IVDPixmapViewDialog;
 
 struct VDFilterChainEntry : public vdrefcount {
 	VDFilterChainEntry();
@@ -29,6 +30,7 @@ struct VDFilterChainEntry : public vdrefcount {
 	vdrefptr<FilterInstance> mpInstance;
 	vdvector<VDStringA> mSources;
 	VDStringA	mOutputName;
+	vdrefptr<IVDPixmapViewDialog> mpView;
 };
 
 class VDFilterChainDesc {

@@ -33,6 +33,17 @@ class FilterInstance;
 class IVDPositionControl;
 class IVDVideoDisplay;
 class VDTimeline;
+class IVDPixmapViewDialog;
+
+typedef void (__cdecl *PixmapViewDestroyCallback)(IVDPixmapViewDialog* view, void *pData);
+
+class IVDPixmapViewDialog : public IVDRefCount {
+public:
+	virtual void Display(VDXHWND hwndParent, const wchar_t* title) = 0;
+	virtual void Destroy() = 0;
+	virtual void SetImage(VDPixmap& px) = 0;
+	virtual void SetDestroyCallback(PixmapViewDestroyCallback cb, void* cbData) = 0;
+};
 
 class IVDVideoFilterPreviewDialog : public IVDRefCount {
 public:
@@ -41,9 +52,10 @@ public:
 	virtual void SetInitialTime(VDTime t) = 0;
 	virtual void SetFilterList(HWND w) = 0;
 	virtual HWND GetHwnd() = 0;
-	virtual FilterSystem *GetFilterSystem() = 0;
+	virtual void RedoFrame2() = 0;
 };
 
-bool VDCreateVideoFilterPreviewDialog(VDFilterChainDesc *, FilterInstance *, IVDVideoFilterPreviewDialog **);
+bool VDCreatePixmapViewDialog(IVDPixmapViewDialog **);
+bool VDCreateVideoFilterPreviewDialog(FilterSystem *, VDFilterChainDesc *, FilterInstance *, IVDVideoFilterPreviewDialog **);
 
 #endif

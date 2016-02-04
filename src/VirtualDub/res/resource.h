@@ -120,7 +120,6 @@
 #define IDR_SCRIPTED_MENU               173
 #define IDR_SCRIPTED_AUXMENU            175
 #define IDD_AVIOUTPUTIMAGES_FORMAT      176
-#define IDD_SAVEIMAGE_FORMAT            307
 #define IDD_CAPTURE_HITOK               177
 #define IDI_POS_SCENEFWD                178
 #define IDI_POS_SCENEREV                179
@@ -232,6 +231,7 @@
 #define IDD_FILTER_OUTPUT_NAME          304
 #define IDD_PLUGINS                     305
 #define IDD_EXTENC_EDIT_VIDEO           306
+#define IDD_SAVEIMAGE_FORMAT            307
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -1390,6 +1390,7 @@
 #define ID_FILE_SAVEPROJECTAS           40557
 #define ID_FILE_SAVEIMAGE               40559
 #define ID_VIDEO_FILTERS_HIDE           40560
+#define ID_FILTERLIST_EXTRAVIEW         40561
 #define ID_AUDIOMODE_11KHZ_8MONO        41000
 #define ID_AUDIOMODE_11KHZ_8STEREO      41001
 #define ID_AUDIOMODE_11KHZ_16MONO       41002
@@ -1445,7 +1446,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        308
-#define _APS_NEXT_COMMAND_VALUE         40561
+#define _APS_NEXT_COMMAND_VALUE         40562
 #define _APS_NEXT_CONTROL_VALUE         1531
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

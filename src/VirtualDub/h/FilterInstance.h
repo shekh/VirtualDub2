@@ -40,6 +40,7 @@
 #include "FilterFrameAllocatorProxy.h"
 #include "FilterFrameCache.h"
 #include "FilterFrameSharingPredictor.h"
+#include "FilterPreview.h"
 
 //////////////////
 
@@ -481,9 +482,12 @@ public:
 	bool	IsAltFormatCheckRequired() const { return mAPIVersion < 16; }
 
 	VFBitmapInternal&	GetOutputStream() { return mRealDst; }
+	bool  CacheLookup(VDPosition frame, VDFilterFrameBuffer** buf);
+	VDPosition LastResultFrame(){ return mLastResultFrame; }
 
 	VDFilterPrepareInfo		mPrepareInfo;
 	VDFilterPrepareInfo2	mPrepareInfo2;
+	vdrefptr<IVDPixmapViewDialog> view;
 
 protected:
 	VDFileMappingW32	mFileMapping;
