@@ -871,8 +871,10 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 					rParent.top,
 					r.right-r.left, r.bottom-r.top,
 					uiFlags);
-		} else
-			SetWindowPos(mhdlg, NULL, 0, 0, r.right-r.left, r.bottom-r.top, SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+		} else {
+			mpVideoWindow->Resize();
+			//SetWindowPos(mhdlg, NULL, 0, 0, r.right-r.left, r.bottom-r.top, SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+		}
 	}
 
 	OnVideoRedraw();
