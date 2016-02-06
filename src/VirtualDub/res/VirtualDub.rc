@@ -698,6 +698,11 @@ BEGIN
         MENUITEM "Name Output",                 ID_FILTERLIST_NAMEOUTPUT
         MENUITEM "Add Input",                   ID_FILTERLIST_ADDINPUT
         MENUITEM "Filter View",                 ID_FILTERLIST_EXTRAVIEW
+        MENUITEM SEPARATOR
+        MENUITEM "Add Filter before...",        ID_FILTERLIST_ADDFILTERBEFORE
+        MENUITEM "Add Filter after...",         ID_FILTERLIST_ADDFILTERAFTER
+        MENUITEM SEPARATOR
+        MENUITEM "Delete",                      ID_FILTERLIST_DELETE
     END
 END
 
