@@ -57,6 +57,8 @@ VDDialogFrameW32::VDDialogFrameW32(uint32 dlgid)
 	, mhdlg(NULL)
 	, mMinWidth(0)
 	, mMinHeight(0)
+	, mMaxWidth(0)
+	, mMaxHeight(0)
 {
 }
 
@@ -844,6 +846,12 @@ VDZINT_PTR VDDialogFrameW32::DlgProc(VDZUINT msg, VDZWPARAM wParam, VDZLPARAM lP
 
 				if (mmi.ptMinTrackSize.y < mMinHeight)
 					mmi.ptMinTrackSize.y = mMinHeight;
+
+				if (mMaxWidth && mmi.ptMaxTrackSize.x > mMaxWidth)
+					mmi.ptMaxTrackSize.x = mMaxWidth;
+
+				if (mMaxHeight && mmi.ptMaxTrackSize.y > mMaxHeight)
+					mmi.ptMaxTrackSize.y = mMaxHeight;
 			}
 			return 0;
 

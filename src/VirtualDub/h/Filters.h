@@ -93,6 +93,7 @@ struct FilterBlurb {
 	VDStringA					name;
 	VDStringA					author;
 	VDStringA					description;
+	bool						hide;
 };
 
 void				FilterEnumerateFilters(std::list<FilterBlurb>& blurbs);

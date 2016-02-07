@@ -146,6 +146,8 @@ protected:
 	VDZHWND	mhdlg;
 	int		mMinWidth;
 	int		mMinHeight;
+	int		mMaxWidth;
+	int		mMaxHeight;
 
 private:
 	static VDZINT_PTR VDZCALLBACK StaticDlgProc(VDZHWND hwnd, VDZUINT msg, VDZWPARAM wParam, VDZLPARAM lParam);

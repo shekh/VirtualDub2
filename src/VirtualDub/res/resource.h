@@ -29,6 +29,7 @@
 #define IDC_RENAMEFILES                 4
 #define IDCANCEL2                       4
 #define IDCANCEL4                       4
+#define IDC_ONOFF                       4
 #define IDC_MOVEUP                      5
 #define IDS_TITLE_DUBBING_MINIMIZED     5
 #define IDC_SAMPLE_MULTIPLE             5
