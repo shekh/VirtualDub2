@@ -1004,7 +1004,10 @@ void SaveImage(HWND hwnd, VDPosition frame, VDPixmap* px) {
 	fn.nMaxFile		= MAX_PATH;
 
 	VDStringW title;
-	title.sprintf(L"Save Image: frame %lld", frame);
+	if (frame==-1)
+		title = L"Save Image";
+	else
+		title.sprintf(L"Save Image: frame %lld", frame);
 	fn.lpstrTitle = title.c_str();
 
 	BOOL result = GetSaveFileNameW(&fn);

@@ -1524,6 +1524,8 @@ private:
 	void OnPaint();
 	void OnVideoRedraw();
 	bool OnCommand(UINT);
+	void CopyOutputFrameToClipboard();
+	void SaveImageAsk();
 
 	HWND		mhdlg;
 	HWND		mhwndParent;
@@ -1725,6 +1727,14 @@ bool PixmapView::OnCommand(UINT cmd) {
 		DestroyWindow(mhdlg);
 		mhdlg = NULL;
 		return true;
+
+	case ID_VIDEO_COPYOUTPUTFRAME:
+		CopyOutputFrameToClipboard();
+		return true;
+
+	case ID_FILE_SAVEIMAGE:
+		SaveImageAsk();
+		return true;
 	}
 
 	return false;
@@ -1744,3 +1754,12 @@ void PixmapView::SetImage(VDPixmap& px) {
 	}
 }
 
+void PixmapView::CopyOutputFrameToClipboard() {
+	if (image.w==0 || image.h==0) return;
+	g_project->CopyFrameToClipboard(image);
+}
+
+void PixmapView::SaveImageAsk() {
+	if (image.w==0 || image.h==0) return;
+	SaveImage(mhdlg, -1, &image);
+}
