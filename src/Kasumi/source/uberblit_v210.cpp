@@ -64,18 +64,18 @@ void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 		if (b1 < 0.0f) b1 = 0.0f; else if (b1 > 1.0f) b1 = 1.0f;
 		if (b2 < 0.0f) b2 = 0.0f; else if (b2 > 1.0f) b2 = 1.0f;
 
-		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * 1024.0f);
-		uint32 ir1 = (uint32)VDRoundToIntFast(r1 * 1024.0f);
-		uint32 ir2 = (uint32)VDRoundToIntFast(r2 * 1024.0f);
-		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * 1024.0f);
-		uint32 ib1 = (uint32)VDRoundToIntFast(b1 * 1024.0f);
-		uint32 ib2 = (uint32)VDRoundToIntFast(b2 * 1024.0f);
-		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * 1024.0f);
-		uint32 ig1 = (uint32)VDRoundToIntFast(g1 * 1024.0f);
-		uint32 ig2 = (uint32)VDRoundToIntFast(g2 * 1024.0f);
-		uint32 ig3 = (uint32)VDRoundToIntFast(g3 * 1024.0f);
-		uint32 ig4 = (uint32)VDRoundToIntFast(g4 * 1024.0f);
-		uint32 ig5 = (uint32)VDRoundToIntFast(g5 * 1024.0f);
+		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * 1023.0f);
+		uint32 ir1 = (uint32)VDRoundToIntFast(r1 * 1023.0f);
+		uint32 ir2 = (uint32)VDRoundToIntFast(r2 * 1023.0f);
+		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * 1023.0f);
+		uint32 ib1 = (uint32)VDRoundToIntFast(b1 * 1023.0f);
+		uint32 ib2 = (uint32)VDRoundToIntFast(b2 * 1023.0f);
+		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * 1023.0f);
+		uint32 ig1 = (uint32)VDRoundToIntFast(g1 * 1023.0f);
+		uint32 ig2 = (uint32)VDRoundToIntFast(g2 * 1023.0f);
+		uint32 ig3 = (uint32)VDRoundToIntFast(g3 * 1023.0f);
+		uint32 ig4 = (uint32)VDRoundToIntFast(g4 * 1023.0f);
+		uint32 ig5 = (uint32)VDRoundToIntFast(g5 * 1023.0f);
 
 		// dword 0: XX Cr0 Y0 Cb0
 		// dword 1: XX Y2 Cb1 Y1
@@ -129,17 +129,17 @@ void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 		if (b1 < 0.0f) b1 = 0.0f; else if (b1 > 1.0f) b1 = 1.0f;
 		if (b2 < 0.0f) b2 = 0.0f; else if (b2 > 1.0f) b2 = 1.0f;
 
-		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * 1024.0f);
-		uint32 ir1 = (uint32)VDRoundToIntFast(r1 * 1024.0f);
-		uint32 ir2 = (uint32)VDRoundToIntFast(r2 * 1024.0f);
-		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * 1024.0f);
-		uint32 ib1 = (uint32)VDRoundToIntFast(b1 * 1024.0f);
-		uint32 ib2 = (uint32)VDRoundToIntFast(b2 * 1024.0f);
-		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * 1024.0f);
-		uint32 ig1 = (uint32)VDRoundToIntFast(g1 * 1024.0f);
-		uint32 ig2 = (uint32)VDRoundToIntFast(g2 * 1024.0f);
-		uint32 ig3 = (uint32)VDRoundToIntFast(g3 * 1024.0f);
-		uint32 ig4 = (uint32)VDRoundToIntFast(g4 * 1024.0f);
+		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * 1023.0f);
+		uint32 ir1 = (uint32)VDRoundToIntFast(r1 * 1023.0f);
+		uint32 ir2 = (uint32)VDRoundToIntFast(r2 * 1023.0f);
+		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * 1023.0f);
+		uint32 ib1 = (uint32)VDRoundToIntFast(b1 * 1023.0f);
+		uint32 ib2 = (uint32)VDRoundToIntFast(b2 * 1023.0f);
+		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * 1023.0f);
+		uint32 ig1 = (uint32)VDRoundToIntFast(g1 * 1023.0f);
+		uint32 ig2 = (uint32)VDRoundToIntFast(g2 * 1023.0f);
+		uint32 ig3 = (uint32)VDRoundToIntFast(g3 * 1023.0f);
+		uint32 ig4 = (uint32)VDRoundToIntFast(g4 * 1023.0f);
 
 		// dword 0: XX Cr0 Y0 Cb0
 		// dword 1: XX Y2 Cb1 Y1

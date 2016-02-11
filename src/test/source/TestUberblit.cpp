@@ -44,9 +44,8 @@ DEFINE_TEST(Uberblit) {
 	using namespace nsVDPixmap;
 
 	// test primary color conversion
-	const int size = 8;
 
-	static const uint32 kColors[8]={
+	static const uint32 kColors[]={
 		0xff000000,
 		0xffffffff,
 		0xff0000ff,
@@ -55,9 +54,12 @@ DEFINE_TEST(Uberblit) {
 		0xffff0000,
 		0xffff00ff,
 		0xffffff00,
+		0xffF49BC1,
+		0xffED008C,
 	};
 
 	const int kColorCount = sizeof(kColors)/sizeof(kColors[0]);
+	const int size = 8;
 
 	VDPixmapBuffer src[kColorCount];
 	for(int i=0; i<kColorCount; ++i) {

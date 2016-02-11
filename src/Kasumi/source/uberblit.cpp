@@ -687,6 +687,18 @@ namespace {
 					}
 					break;
 
+				case kVDPixType_32Fx4_LE:
+					switch(srcType) {
+						case kVDPixType_8888:
+							gen.conv_8888_to_X32F();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_32Fx4_LE;
+							break;
+						default:
+							targetType = kVDPixType_8888;
+							goto type_reconvert;
+					}
+					break;
+
 				case kVDPixType_16x4_LE:
 					switch(srcType) {
 						case kVDPixType_8888:
@@ -930,6 +942,12 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 				break;
 		}
 #endif
+
+		// When target is high bit depth we need to upconvert as soon as possible
+		if ((dstToken & kVDPixType_Mask)==kVDPixType_V210) {
+			if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_BGR)
+				srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32Fx4_LE, w, h);
+		}
 
 		// change color spaces
 		uint32 dstSpace = dstToken & kVDPixSpace_Mask;
@@ -1184,9 +1202,14 @@ space_reconvert:
 				case kVDPixSpace_YCC_601:
 					switch(srcSpace) {
 					case kVDPixSpace_BGR:
-						srcToken = BlitterConvertType(gen, srcToken, kVDPixType_8888, w, h);
-						gen.rgb32_to_ycbcr601();
-						srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_YCC_601 | kVDPixType_8_8_8;
+						if ((srcToken & kVDPixType_Mask)==kVDPixType_32Fx4_LE) {
+							gen.rgb32_to_ycbcr601_32f();
+							srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_YCC_601 | kVDPixType_32F_32F_32F_LE;
+						} else {
+							srcToken = BlitterConvertType(gen, srcToken, kVDPixType_8888, w, h);
+							gen.rgb32_to_ycbcr601();
+							srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_YCC_601 | kVDPixType_8_8_8;
+						}
 						break;
 					case kVDPixSpace_Y_601:
 					case kVDPixSpace_Y_709:

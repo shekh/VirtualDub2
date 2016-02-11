@@ -221,23 +221,23 @@ public:
 
 protected:
 	void Compute(void *dst0, sint32 y) {
-		float *dstCb = (float *)dst0;
-		float *dstY  = dstCb + mWindowPitch;
-		float *dstCr = dstY + mWindowPitch;
+		float *dstCr = (float *)dst0;
+		float *dstY  = vdptroffset(dstCr, mWindowPitch);
+		float *dstCb = vdptroffset(dstY, mWindowPitch);
 
 		const float *srcRGB = (const float *)mpSrc->GetRow(y, mSrcIndex);
 
 		VDCPUCleanupExtensions();
 
 		for(sint32 i=0; i<mWidth; ++i) {
-			float r = srcRGB[2];
+			float r = srcRGB[0];
 			float g = srcRGB[1];
-			float b = srcRGB[0];
+			float b = srcRGB[2];
 			srcRGB += 4;			
 
-			*dstCb++ = -0.1482229f*r - 0.2909928f*g + 0.4392157f*b + (128.0f / 255.0f);
-			*dstY++  =  0.2567882f*r + 0.5041294f*g + 0.0979059f*b + ( 16.0f / 255.0f);
 			*dstCr++ =  0.4392157f*r - 0.3677883f*g - 0.0714274f*b + (128.0f / 255.0f);
+			*dstY++  =  0.2567882f*r + 0.5041294f*g + 0.0979059f*b + ( 16.0f / 255.0f);
+			*dstCb++ = -0.1482229f*r - 0.2909928f*g + 0.4392157f*b + (128.0f / 255.0f);
 		}
 	}
 };
@@ -401,17 +401,17 @@ public:
 protected:
 	void Compute(void *dst0, sint32 y) {
 		float *dstCr = (float *)dst0;
-		float *dstY  = dstCr + mWindowPitch;
-		float *dstCb = dstY + mWindowPitch;
+		float *dstY  = vdptroffset(dstCr, mWindowPitch);
+		float *dstCb = vdptroffset(dstY, mWindowPitch);
 
 		const float *srcRGB = (const float *)mpSrc->GetRow(y, mSrcIndex);
 
 		VDCPUCleanupExtensions();
 
 		for(sint32 i=0; i<mWidth; ++i) {
-			float r = srcRGB[2];
+			float r = srcRGB[0];
 			float g = srcRGB[1];
-			float b = srcRGB[0];
+			float b = srcRGB[2];
 			srcRGB += 4;			
 
 			*dstCr++ = -0.1006437f*r - 0.3385720f*g + 0.4392157f*b + (128.0f / 255.0f);
