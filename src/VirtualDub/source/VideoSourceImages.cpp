@@ -179,6 +179,7 @@ int VideoSourceImages::_read(VDPosition lStart, uint32 lCount, void *lpBuffer, u
 }
 
 bool VideoSourceImages::setTargetFormat(int format) {
+	bool retry_default = format!=0;
 	if (!format) {
 		format = nsVDPixmap::kPixFormat_XRGB8888;
 		if (mInitFormat==nsVDPixmap::kPixFormat_XRGB64)
@@ -221,6 +222,9 @@ bool VideoSourceImages::setTargetFormat(int format) {
 		
 		return true;
 	}
+
+	if (retry_default)
+		return setTargetFormat(0);
 
 	return false;
 }
