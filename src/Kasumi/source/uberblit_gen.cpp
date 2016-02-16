@@ -1593,10 +1593,10 @@ void VDPixmapUberBlitterGenerator::ycbcr_to_rgb32_generic(const VDPixmapGenYCbCr
 	mStack.pop_back();
 }
 
-void VDPixmapUberBlitterGenerator::ycbcr_to_rgb32f_generic(const VDPixmapGenYCbCrBasis& basis) {
+void VDPixmapUberBlitterGenerator::ycbcr_to_rgb32f_generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB) {
 	StackEntry *args = &mStack.back() - 2;
 
-	VDPixmapGenYCbCrToRGB32FGeneric *src = new VDPixmapGenYCbCrToRGB32FGeneric(basis);
+	VDPixmapGenYCbCrToRGB32FGeneric *src = new VDPixmapGenYCbCrToRGB32FGeneric(basis, studioRGB);
 
 	src->Init(args[0].mpSrc, args[0].mSrcIndex, args[1].mpSrc, args[1].mSrcIndex, args[2].mpSrc, args[2].mSrcIndex);
 
@@ -1622,10 +1622,10 @@ void VDPixmapUberBlitterGenerator::rgb32_to_ycbcr_generic(const VDPixmapGenYCbCr
 	mStack.push_back(StackEntry(src, 2));
 }
 
-void VDPixmapUberBlitterGenerator::rgb32f_to_ycbcr_generic(const VDPixmapGenYCbCrBasis& basis, uint32 colorSpace) {
+void VDPixmapUberBlitterGenerator::rgb32f_to_ycbcr_generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB, uint32 colorSpace) {
 	StackEntry *args = &mStack.back();
 
-	VDPixmapGenRGB32FToYCbCrGeneric *src = new VDPixmapGenRGB32FToYCbCrGeneric(basis, colorSpace);
+	VDPixmapGenRGB32FToYCbCrGeneric *src = new VDPixmapGenRGB32FToYCbCrGeneric(basis, studioRGB, colorSpace);
 	src->Init(args[0].mpSrc, args[0].mSrcIndex);
 
 	mGenerators.push_back(src);

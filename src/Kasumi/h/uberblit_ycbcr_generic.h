@@ -37,17 +37,21 @@ protected:
 
 class VDPixmapGenYCbCrToRGB32FGeneric : public VDPixmapGenYCbCrToRGB32FBase {
 public:
-	VDPixmapGenYCbCrToRGB32FGeneric(const VDPixmapGenYCbCrBasis& basis);
+	VDPixmapGenYCbCrToRGB32FGeneric(const VDPixmapGenYCbCrBasis& basis, bool studioRGB);
 
 	uint32 GetType(uint32 output) const;
 
 protected:
 	void Compute(void *dst0, sint32 y);
 
+	float mCoY;
 	float mCoRCr;
 	float mCoGCr;
 	float mCoGCb;
 	float mCoBCb;
+	float mBiasR;
+	float mBiasG;
+	float mBiasB;
 };
 
 ////////////////////////////////////////////////////////////////////////////
@@ -81,18 +85,25 @@ protected:
 
 class VDPixmapGenRGB32FToYCbCrGeneric : public VDPixmapGenRGB32FToYCbCrBase {
 public:
-	VDPixmapGenRGB32FToYCbCrGeneric(const VDPixmapGenYCbCrBasis& basis, uint32 colorSpace);
+	VDPixmapGenRGB32FToYCbCrGeneric(const VDPixmapGenYCbCrBasis& basis, bool studioRGB, uint32 colorSpace);
 
 	uint32 GetType(uint32 output) const;
 
 protected:
 	void Compute(void *dst0, sint32 y);
 
-	float mCoYR;
+ 	float mCoYR;
 	float mCoYG;
 	float mCoYB;
-	float mCoCb;
-	float mCoCr;
+	float mCoYA;
+	float mCoCbR;
+	float mCoCbG;
+	float mCoCbB;
+	float mCoCbA;
+	float mCoCrR;
+	float mCoCrG;
+	float mCoCrB;
+	float mCoCrA;
 
 	const uint32 mColorSpace;
 };

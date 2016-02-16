@@ -48,6 +48,7 @@ DEFINE_TEST(Uberblit) {
 	static const uint32 kColors[]={
 		0xff000000,
 		0xffffffff,
+
 		0xff0000ff,
 		0xff00ff00,
 		0xff00ffff,

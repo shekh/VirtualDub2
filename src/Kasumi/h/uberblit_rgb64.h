@@ -50,9 +50,11 @@ public:
 		ref_r = buf.ref_r;
 		ref_g = buf.ref_g;
 		ref_b = buf.ref_b;
+		ref_a = buf.ref_a;
 		mr = float(1.0/buf.ref_r);
 		mg = float(1.0/buf.ref_g);
 		mb = float(1.0/buf.ref_b);
+		ma = float(1.0/buf.ref_a);
 	}
 
 	void Start() {
@@ -67,9 +69,11 @@ protected:
 	int ref_r;
 	int ref_g;
 	int ref_b;
+	int ref_a;
 	float mr;
 	float mg;
 	float mb;
+	float ma;
 	
 	void Compute(void *dst0, sint32 y);
 };
@@ -83,9 +87,11 @@ public:
 		dst.ref_r = 0xFFFF;
 		dst.ref_g = 0xFFFF;
 		dst.ref_b = 0xFFFF;
+		dst.ref_a = 0xFFFF;
 		mr = float(dst.ref_r);
 		mg = float(dst.ref_g);
 		mb = float(dst.ref_b);
+		ma = float(dst.ref_a);
 	}
 
 	void Start() {
@@ -100,6 +106,7 @@ protected:
 	float mr;
 	float mg;
 	float mb;
+	float ma;
 	
 	void Compute(void *dst0, sint32 y);
 };

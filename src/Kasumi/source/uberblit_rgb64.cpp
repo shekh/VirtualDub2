@@ -1,4 +1,5 @@
 #include <stdafx.h>
+#include <vd2/system/math.h>
 #include "uberblit_rgb64.h"
 #include <emmintrin.h>
 
@@ -32,14 +33,22 @@ void VDPixmapGen_X16R16G16B16_To_X32B32G32R32F::Compute(void *dst0, sint32 y) {
 		uint16 r = src[2];
 		uint16 g = src[1];
 		uint16 b = src[0];
+		uint16 a = src[3];
 		src += 4;
 
 		dst[0] = r*mr;
 		dst[1] = g*mg;
 		dst[2] = b*mb;
-		dst[3] = 1.0f;
+		dst[3] = a*ma;
 		dst += 4;
 	}
+}
+
+inline uint16 ClampedRoundToUInt16(float x) {
+	int v = VDRoundToIntFast(x);
+	if(v<0) v = 0;
+	if(v>0xFFFF) v = 0xFFFF;
+	return v;
 }
 
 void VDPixmapGen_X32B32G32R32F_To_X16R16G16B16::Compute(void *dst0, sint32 y) {
@@ -55,12 +64,13 @@ void VDPixmapGen_X32B32G32R32F_To_X16R16G16B16::Compute(void *dst0, sint32 y) {
 		float r = src[0];
 		float g = src[1];
 		float b = src[2];
+		float a = src[3];
 		src += 4;
 
-		dst[2] = uint16(r*mr);
-		dst[1] = uint16(g*mg);
-		dst[0] = uint16(b*mb);
-		dst[3] = 0;
+		dst[2] = ClampedRoundToUInt16(r*mr);
+		dst[1] = ClampedRoundToUInt16(g*mg);
+		dst[0] = ClampedRoundToUInt16(b*mb);
+		dst[3] = ClampedRoundToUInt16(a*ma);
 		dst += 4;
 	}
 }

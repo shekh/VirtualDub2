@@ -129,9 +129,9 @@ public:
 	void ycbcr709_to_ycbcr601();
 
 	void ycbcr_to_rgb32_generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB);
-	void ycbcr_to_rgb32f_generic(const VDPixmapGenYCbCrBasis& basis);
+	void ycbcr_to_rgb32f_generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB);
 	void rgb32_to_ycbcr_generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB, uint32 colorSpace);
-	void rgb32f_to_ycbcr_generic(const VDPixmapGenYCbCrBasis& basis, uint32 colorSpace);
+	void rgb32f_to_ycbcr_generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB, uint32 colorSpace);
 	void ycbcr_to_ycbcr_generic(const VDPixmapGenYCbCrBasis& basisDst, bool dstLimitedRange, const VDPixmapGenYCbCrBasis& basisSrc, bool srcLimitedRange, uint32 colorSpace);
 
 	void pointh(float xoffset, float xfactor, uint32 w);

@@ -42,26 +42,28 @@ extern const VDPixmapGenYCbCrBasis g_VDPixmapGenYCbCrBasis_709 = {
 
 VDPixmapGenYCbCrToRGB32Generic::VDPixmapGenYCbCrToRGB32Generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB) {
 	float scale;
+	float scale2;
 	float bias;
 
 	if (studioRGB) {
-		scale = 65536.0f * (219.0f / 255.0f);
-		bias = 65536.0f * (16.0f / 255.0f + 0.5f);
+		// warning: this path is not used / not tested
+		scale = 65536.0f * (255.0f / 219.0f);
+		scale2 = 65536.0f * (255.0f / 224.0f);
+		bias = -16.0f / 255.0f + 0.5f;
 	} else {
 		scale = 65536.0f;
-		bias = 32768.0f;
+		scale2 = 65536.0f;
+		bias = 0.5f;
 	}
 
-	float scale255 = scale * 255.0f;
-
 	mCoY = VDRoundToInt32(scale);
-	mCoRCr = VDRoundToInt32(basis.mToRGB[1][0] * scale);
-	mCoGCr = VDRoundToInt32(basis.mToRGB[1][1] * scale);
-	mCoGCb = VDRoundToInt32(basis.mToRGB[0][1] * scale);
-	mCoBCb = VDRoundToInt32(basis.mToRGB[0][2] * scale);
-	mBiasR = VDRoundToInt32(bias) - 128*mCoRCr;
-	mBiasG = VDRoundToInt32(bias) - 128*(mCoGCr + mCoGCb);
-	mBiasB = VDRoundToInt32(bias) - 128*mCoBCb;
+	mCoRCr = VDRoundToInt32(basis.mToRGB[1][0] * scale2);
+	mCoGCr = VDRoundToInt32(basis.mToRGB[1][1] * scale2);
+	mCoGCb = VDRoundToInt32(basis.mToRGB[0][1] * scale2);
+	mCoBCb = VDRoundToInt32(basis.mToRGB[0][2] * scale2);
+	mBiasR = VDRoundToInt32(bias*scale) - 128*mCoRCr;
+	mBiasG = VDRoundToInt32(bias*scale) - 128*(mCoGCr + mCoGCb);
+	mBiasB = VDRoundToInt32(bias*scale) - 128*mCoBCb;
 }
 
 uint32 VDPixmapGenYCbCrToRGB32Generic::GetType(uint32 output) const {
@@ -119,11 +121,29 @@ void VDPixmapGenYCbCrToRGB32Generic::Compute(void *dst0, sint32 y) {
 
 ////////////////////////////////////////////////////////////////////////////
 
-VDPixmapGenYCbCrToRGB32FGeneric::VDPixmapGenYCbCrToRGB32FGeneric(const VDPixmapGenYCbCrBasis& basis) {
-	mCoRCr = basis.mToRGB[1][0];
-	mCoGCr = basis.mToRGB[1][1];
-	mCoGCb = basis.mToRGB[0][1];
-	mCoBCb = basis.mToRGB[0][2];
+VDPixmapGenYCbCrToRGB32FGeneric::VDPixmapGenYCbCrToRGB32FGeneric(const VDPixmapGenYCbCrBasis& basis, bool studioRGB) {
+	float scale;
+	float scale2;
+	float bias;
+
+	if (studioRGB) {
+		scale = 255.0f / 219.0f;
+		scale2 = 255.0f / 224.0f;
+		bias = -16.0f / 255.0f;
+	} else {
+		scale = 1.0f;
+		scale2 = 1.0f;
+		bias = 0.0f;
+	}
+
+	mCoY = scale;
+	mCoRCr = basis.mToRGB[1][0] * scale2;
+	mCoGCr = basis.mToRGB[1][1] * scale2;
+	mCoGCb = basis.mToRGB[0][1] * scale2;
+	mCoBCb = basis.mToRGB[0][2] * scale2;
+	mBiasR = bias*scale - (128.0f / 255.0f)*mCoRCr;
+	mBiasG = bias*scale - (128.0f / 255.0f)*(mCoGCr + mCoGCb);
+	mBiasB = bias*scale - (128.0f / 255.0f)*mCoBCb;
 }
 
 uint32 VDPixmapGenYCbCrToRGB32FGeneric::GetType(uint32 output) const {
@@ -142,15 +162,20 @@ void VDPixmapGenYCbCrToRGB32FGeneric::Compute(void *dst0, sint32 y) {
 	const float coGCr = mCoGCr;
 	const float coGCb = mCoGCb;
 	const float coBCb = mCoBCb;
+	const float biasR = mBiasR;
+	const float biasG = mBiasG;
+	const float biasB = mBiasB;
 
 	for(sint32 i=0; i<mWidth; ++i) {
 		float y = srcY[i];
-		float cb = srcCb[i] - (128.0f / 255.0f);
-		float cr = srcCr[i] - (128.0f / 255.0f);
+		float cb = srcCb[i];
+		float cr = srcCr[i];
 
-		dst[0] = y + coRCr * cr;
-		dst[1] = y + coGCr * cr + coGCb * cb;
-		dst[2] = y + coBCb * cb;
+		y *= mCoY;
+
+		dst[0] = biasR + y + coRCr * cr;
+		dst[1] = biasG + y + coGCr * cr + coGCb * cb;
+		dst[2] = biasB + y + coBCb * cb;
 		dst[3] = 1.0f;
 		dst += 4;
 	}
@@ -162,13 +187,17 @@ VDPixmapGenRGB32ToYCbCrGeneric::VDPixmapGenRGB32ToYCbCrGeneric(const VDPixmapGen
 	: mColorSpace(colorSpace)
 {
 	float scale;
+	float scale2;
 	float bias;
 
 	if (studioRGB) {
+		// warning: this path is not used / not tested
 		scale = 255.0f / 219.0f;
+		scale2 = 112.0f / 255.0f;
 		bias = -16.0f;
 	} else {
 		scale = 1.0f;
+		scale2 = 0.5f;
 		bias = 0.0f;
 	}
 
@@ -184,14 +213,14 @@ VDPixmapGenRGB32ToYCbCrGeneric::VDPixmapGenRGB32ToYCbCrGeneric(const VDPixmapGen
 	mCoYA  = 0x8000;
 
 	// Cb = 0.5 * (B-Y) / (1-Kb)
-	const float coCb = 0.5f / (1.0f - basis.mKb);
+	const float coCb = scale2 / (1.0f - basis.mKb);
 	float coCbR = (0.0f - coYR) * coCb;
 	float coCbG = (0.0f - coYG) * coCb;
 	float coCbB = (1.0f - coYB) * coCb;
 	float coCbA = (coCbR + coCbG + coCbB) * bias;
 
 	// Cr = 0.5 * (R-Y) / (1-Kr)
-	const float coCr = 0.5f / (1.0f - basis.mKr);
+	const float coCr = scale2 / (1.0f - basis.mKr);
 	float coCrR = (1.0f - coYR) * coCr;
 	float coCrG = (0.0f - coYG) * coCr;
 	float coCrB = (0.0f - coYB) * coCr;
@@ -264,18 +293,53 @@ void VDPixmapGenRGB32ToYCbCrGeneric::Compute(void *dst0, sint32 y) {
 
 ////////////////////////////////////////////////////////////////////////////
 
-VDPixmapGenRGB32FToYCbCrGeneric::VDPixmapGenRGB32FToYCbCrGeneric(const VDPixmapGenYCbCrBasis& basis, uint32 colorSpace)
+VDPixmapGenRGB32FToYCbCrGeneric::VDPixmapGenRGB32FToYCbCrGeneric(const VDPixmapGenYCbCrBasis& basis, bool studioRGB, uint32 colorSpace)
 	: mColorSpace(colorSpace)
 {
-	mCoYR = basis.mKr;
-	mCoYG = 1.0f - basis.mKr - basis.mKb;
-	mCoYB = basis.mKb;
+	float scale;
+	float scale2;
+	float bias;
+
+	if (studioRGB) {
+		scale = 219.0f / 255.0f;
+		scale2 = 112.0f / 255.0f;
+		bias = 16.0f / 255.0f;
+	} else {
+		scale = 1.0f;
+		scale2 = 0.5f;
+		bias = 0.0f;
+	}
+
+	// compute Y coefficients
+	float coYR  = basis.mKr;
+	float coYG  = (1.0f - basis.mKr - basis.mKb);
+	float coYB  = basis.mKb;
+	mCoYR = coYR*scale;
+	mCoYG = coYG*scale;
+	mCoYB = coYB*scale;
+	mCoYA = bias;
 
 	// Cb = 0.5 * (B-Y) / (1-Kb)
-	mCoCb = 0.5f / (1.0f - basis.mKb);
+	const float coCb = scale2 / (1.0f - basis.mKb);
+	float coCbR = (0.0f - coYR) * coCb;
+	float coCbG = (0.0f - coYG) * coCb;
+	float coCbB = (1.0f - coYB) * coCb;
+	float coCbA = (coCbR + coCbG + coCbB) * bias;
+	mCoCbR = coCbR;
+	mCoCbG = coCbG;
+	mCoCbB = coCbB;
+	mCoCbA = coCbA + (128.0f / 255.0f);
 
 	// Cr = 0.5 * (R-Y) / (1-Kr)
-	mCoCr = 0.5f / (1.0f - basis.mKr);
+	const float coCr = scale2 / (1.0f - basis.mKr);
+	float coCrR = (1.0f - coYR) * coCr;
+	float coCrG = (0.0f - coYG) * coCr;
+	float coCrB = (0.0f - coYB) * coCr;
+	float coCrA = (coCrR + coCrG + coCrB) * bias;
+	mCoCrR = coCrR;
+	mCoCrG = coCrG;
+	mCoCrB = coCrB;
+	mCoCrA = coCrA + (128.0f / 255.0f);
 }
 
 uint32 VDPixmapGenRGB32FToYCbCrGeneric::GetType(uint32 output) const {
@@ -284,8 +348,8 @@ uint32 VDPixmapGenRGB32FToYCbCrGeneric::GetType(uint32 output) const {
 
 void VDPixmapGenRGB32FToYCbCrGeneric::Compute(void *dst0, sint32 y) {
 	float *dstCr = (float *)dst0;
-	float *dstY  = dstCr + mWindowPitch;
-	float *dstCb = dstY + mWindowPitch;
+	float *dstY  = vdptroffset(dstCr, mWindowPitch);
+	float *dstCb = vdptroffset(dstY, mWindowPitch);
 
 	const float *srcRGB = (const float *)mpSrc->GetRow(y, mSrcIndex);
 
@@ -294,21 +358,26 @@ void VDPixmapGenRGB32FToYCbCrGeneric::Compute(void *dst0, sint32 y) {
 	const float coYR = mCoYR;
 	const float coYG = mCoYG;
 	const float coYB = mCoYB;
-	const float coCb = mCoCb;
-	const float coCr = mCoCr;
+	const float coYA = mCoYA;
+	const float coCbR = mCoCbR;
+	const float coCbG = mCoCbG;
+	const float coCbB = mCoCbB;
+	const float coCbA = mCoCbA;
+	const float coCrR = mCoCrR;
+	const float coCrG = mCoCrG;
+	const float coCrB = mCoCrB;
+	const float coCrA = mCoCrA;
 
 	const sint32 w = mWidth;
 	for(sint32 i=0; i<w; ++i) {
-		float r = srcRGB[2];
+		float r = srcRGB[0];
 		float g = srcRGB[1];
-		float b = srcRGB[0];
+		float b = srcRGB[2];
 		srcRGB += 4;
 
-		float y = coYR * r + coYG * g + coYB * b;
-
-		*dstY++  = y;
-		*dstCb++ = coCb * (b - y) + (128.0f / 255.0f);
-		*dstCr++ = coCr * (r - y) + (128.0f / 255.0f);
+		*dstY++  = coYR  * r + coYG  * g + coYB  * b + coYA;
+		*dstCb++ = coCbR * r + coCbG * g + coCbB * b + coCbA;
+		*dstCr++ = coCrR * r + coCrG * g + coCrB * b + coCrA;
 	}
 }
 
