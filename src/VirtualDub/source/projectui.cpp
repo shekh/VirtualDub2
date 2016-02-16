@@ -161,7 +161,7 @@ int VDPreferencesGetMRUSize();
 int VDPreferencesGetHistoryClearCounter();
 bool VDPreferencesGetConfirmExit();
 
-int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, int format);
+int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx format);
 
 void VDUIDisplayDialogConfigureExternalEncoders(VDGUIHandle h);
 void VDUIShowDialogPlugins(VDGUIHandle h);
@@ -1339,12 +1339,15 @@ void VDProjectUI::SetVideoFramerateOptionsAsk() {
 void VDProjectUI::SetVideoDepthOptionsAsk() {
 	extern bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts);
 
-	int inputFormatOld = g_dubOpts.video.mInputFormat;
+	VDPixmapFormatEx inputFormatOld = g_dubOpts.video.mInputFormat;
 	VDDisplayVideoDepthDialog(mhwnd, g_dubOpts);
+	bool changed = !inputFormatOld.fullEqual(g_dubOpts.video.mInputFormat);
 
-	if (inputFormatOld != g_dubOpts.video.mInputFormat && inputVideo) {
+	if (changed && inputVideo) {
 		StopFilters();
 		VDRenderSetVideoSourceInputFormat(inputVideo, g_dubOpts.video.mInputFormat);
+		mLastDisplayedInputFrame = -1;
+		mLastDisplayedTimelineFrame = -1;
 		DisplayFrame();
 	}
 }
@@ -2996,7 +2999,9 @@ void VDProjectUI::UpdateVideoFrameLayout() {
 			if (!g_filterChain.IsEmpty()) {
 				if (!filters.isRunning()) {
 					IVDStreamSource *pVSS = inputVideo->asStream();
-					filters.prepareLinearChain(&g_filterChain, w0, h0, px.format ? px.format : nsVDPixmap::kPixFormat_XRGB8888, pVSS->getRate(), pVSS->getLength(), inputVideo->getPixelAspectRatio());
+					VDPixmapFormatEx format = px;
+					if (!px.format)	format = nsVDPixmap::kPixFormat_XRGB8888;
+					filters.prepareLinearChain(&g_filterChain, w0, h0, format, pVSS->getRate(), pVSS->getLength(), inputVideo->getPixelAspectRatio());
 				}
 
 				const VDPixmapLayout& output = filters.GetOutputLayout();

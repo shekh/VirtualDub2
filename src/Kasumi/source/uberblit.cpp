@@ -945,8 +945,35 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 
 		// When target is high bit depth we need to upconvert as soon as possible
 		if ((dstToken & kVDPixType_Mask)==kVDPixType_V210) {
-			if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_BGR)
+			if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_BGR) {
 				srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32Fx4_LE, w, h);
+				//gen.rgb32_to_ycbcr601_32f();
+				//srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_YCC_601 | kVDPixType_32F_32F_32F_LE;
+				uint32 dstSpace = dstToken & kVDPixSpace_Mask;
+				bool studioRGB = true;
+				const VDPixmapGenYCbCrBasis* basis = &g_VDPixmapGenYCbCrBasis_601;
+				if (dst.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
+					basis = &g_VDPixmapGenYCbCrBasis_709;
+				if (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full)
+					studioRGB = false;
+				gen.rgb32f_to_ycbcr_generic(*basis, studioRGB, dstSpace);
+				srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | dstSpace | kVDPixType_32F_32F_32F_LE;
+			}
+		}
+
+		// Do this here before range/space mode is fully established
+		if ((VDPixmapGetFormatTokenFromFormat(src.format) & kVDPixType_Mask)==kVDPixType_V210) {
+			if ((dstToken & kVDPixSpace_Mask)==kVDPixSpace_BGR) {
+				srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
+				bool studioRGB = true;
+				const VDPixmapGenYCbCrBasis* basis = &g_VDPixmapGenYCbCrBasis_601;
+				if (src.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
+					basis = &g_VDPixmapGenYCbCrBasis_709;
+				if (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full)
+					studioRGB = false;
+				gen.ycbcr_to_rgb32f_generic(*basis, studioRGB);
+				srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_BGR | kVDPixType_32Fx4_LE;
+			}
 		}
 
 		// change color spaces

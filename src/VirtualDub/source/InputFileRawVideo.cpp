@@ -302,7 +302,7 @@ public:
 
 	int _read(VDPosition lStart, uint32 lCount, void *lpBuffer, uint32 cbBuffer, uint32 *lBytesRead, uint32 *lSamplesRead);
 
-	bool setTargetFormat(int format);
+	bool setTargetFormat(VDPixmapFormatEx format);
 
 	void invalidateFrameBuffer()				{ mCachedFrame = -1; }
 	bool isFrameBufferValid()					{ return mCachedFrame >= 0; }
@@ -438,7 +438,7 @@ const void *VDVideoSourceRawVideo::streamGetFrame(const void *inputBuffer, uint3
 	return getFrameBuffer();
 }
 
-bool VDVideoSourceRawVideo::setTargetFormat(int format) {
+bool VDVideoSourceRawVideo::setTargetFormat(VDPixmapFormatEx format) {
 	if (!format)
 		format = mLayout.format;
 

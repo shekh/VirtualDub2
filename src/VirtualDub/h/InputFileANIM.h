@@ -85,7 +85,7 @@ public:
 	VDPosition prevKey(VDPosition lSample);
 	VDPosition nextKey(VDPosition lSample);
 
-	bool setTargetFormat(int format);
+	bool setTargetFormat(VDPixmapFormatEx format);
 
 	void invalidateFrameBuffer()				{ mCachedFrame = -1; }
 	bool isFrameBufferValid()					{ return mCachedFrame >= 0; }

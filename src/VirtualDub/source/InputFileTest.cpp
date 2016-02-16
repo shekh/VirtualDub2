@@ -43,7 +43,7 @@ public:
 	VDPosition prevKey(VDPosition lSample)				{ return lSample>0 ? lSample-1 : -1; }
 	VDPosition nextKey(VDPosition lSample)				{ return lSample<mSampleLast ? lSample+1 : -1; }
 
-	bool setTargetFormat(int depth);
+	bool setTargetFormat(VDPixmapFormatEx format);
 
 	void invalidateFrameBuffer()			{ mCachedFrame = -1; }
 	bool isFrameBufferValid()				{ return mCachedFrame >= 0; }
@@ -237,7 +237,7 @@ int VDVideoSourceTest::_read(VDPosition lStart, uint32 lCount, void *lpBuffer, u
 	return 0;
 }
 
-bool VDVideoSourceTest::setTargetFormat(int format) {
+bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 	mbUseTempBuffer = true;
 
 	if (!format)

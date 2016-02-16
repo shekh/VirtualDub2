@@ -35,6 +35,7 @@ class FilterSystemBitmap;
 class VFBitmapInternal;
 struct VDPixmap;
 struct VDPixmapLayout;
+struct VDPixmapFormatEx;
 class IVDFilterFrameSource;
 class IVDFilterFrameClientRequest;
 class VDFilterFrameRequest;
@@ -62,8 +63,8 @@ public:
 	void SetAsyncThreadCount(sint32 threadsToUse);
 	void SetAsyncThreadPriority(int priority);
 
-	void prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width, uint32 src_height, int src_format, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect);
-	void initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 filterStateFlags, VDFilterChainDesc *desc, IVDFilterFrameSource *src, uint32 src_width, uint32 src_height, int src_format, const uint32 *palette, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect);
+	void prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width, uint32 src_height, VDPixmapFormatEx src_format, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect);
+	void initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 filterStateFlags, VDFilterChainDesc *desc, IVDFilterFrameSource *src, uint32 src_width, uint32 src_height, VDPixmapFormatEx src_format, const uint32 *palette, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect);
 	void ReadyFilters();
 
 	bool RequestFrame(sint64 outputFrame, uint32 batchNumber, IVDFilterFrameClientRequest **creq);

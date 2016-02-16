@@ -828,9 +828,11 @@ protected:
 	bool OnCommand(uint32 id, uint32 extcode);
 	void OnDataExchange(bool write);
 	void SyncControls();
+	void SyncInputColor();
+	void SyncOutputColor();
 
-	int mInputFormat;
-	int mOutputFormat;
+	VDPixmapFormatEx mInputFormat;
+	VDPixmapFormatEx mOutputFormat;
 	DubOptions& mOpts;
 	bool mbInputBrowsePending;
 	bool mbOutputBrowsePending;
@@ -931,15 +933,67 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 				mbOutputBrowsePending = true;
 				PostMessage(mhdlg, WM_USER + 200, 0, 0);
 				return TRUE;
+
+			case IDC_CS_NONE:
+				mInputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
+				return TRUE;
+
+			case IDC_CS_601:
+				mInputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+				return TRUE;
+
+			case IDC_CS_709:
+				mInputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+				return TRUE;
+
+			case IDC_CR_NONE:
+				mInputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+				return TRUE;
+
+			case IDC_CR_LIMITED:
+				mInputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+				return TRUE;
+
+			case IDC_CR_FULL:
+				mInputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+				return TRUE;
+
+			case IDC_CS2_NONE:
+				mOutputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
+				return TRUE;
+
+			case IDC_CS2_601:
+				mOutputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+				return TRUE;
+
+			case IDC_CS2_709:
+				mOutputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+				return TRUE;
+
+			case IDC_CR2_NONE:
+				mOutputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+				return TRUE;
+
+			case IDC_CR2_LIMITED:
+				mOutputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+				return TRUE;
+
+			case IDC_CR2_FULL:
+				mOutputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+				return TRUE;
 		}
 
 		for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
 			const FormatButtonMapping& fbm = kFormatButtonMappings[i];
-			if (fbm.mInputButton == id)
+			if (fbm.mInputButton == id) {
 				mInputFormat = fbm.mFormat;
+				SyncInputColor();
+			}
 
-			if (fbm.mOutputButton == id)
+			if (fbm.mOutputButton == id) {
 				mOutputFormat = fbm.mFormat;
+				SyncOutputColor();
+			}
 		}
 	}
 
@@ -978,6 +1032,66 @@ void VDDialogVideoDepthW32::SyncControls() {
 
 	CheckButton(inputButton, true);
 	CheckButton(outputButton, true);
+	SyncInputColor();
+	SyncOutputColor();
+}
+
+void VDDialogVideoDepthW32::SyncInputColor() {
+	bool enable = false;
+	if (mInputFormat==nsVDPixmap::kPixFormat_YUV422_V210) enable = true;
+	EnableControl(IDC_STATIC_COLORSPACE, enable);
+	EnableControl(IDC_STATIC_COLORRANGE, enable);
+	EnableControl(IDC_CS_NONE,   enable);
+	EnableControl(IDC_CS_601,    enable);
+	EnableControl(IDC_CS_709,    enable);
+	EnableControl(IDC_CR_NONE,   enable);
+	EnableControl(IDC_CR_LIMITED,enable);
+	EnableControl(IDC_CR_FULL,   enable);
+	if (enable) {
+		VDPixmapFormatEx& format = mInputFormat;
+		CheckButton(IDC_CS_NONE, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_None);
+		CheckButton(IDC_CS_601, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_601);
+		CheckButton(IDC_CS_709, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_709);
+		CheckButton(IDC_CR_NONE, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_None);
+		CheckButton(IDC_CR_LIMITED, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_Limited);
+		CheckButton(IDC_CR_FULL, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_Full);
+	} else {
+		CheckButton(IDC_CS_NONE,    true);
+		CheckButton(IDC_CS_601,     false);
+		CheckButton(IDC_CS_709,     false);
+		CheckButton(IDC_CR_NONE,    true);
+		CheckButton(IDC_CR_LIMITED, false);
+		CheckButton(IDC_CR_FULL,    false);
+	}
+}
+
+void VDDialogVideoDepthW32::SyncOutputColor() {
+	bool enable = false;
+	if (mOutputFormat==nsVDPixmap::kPixFormat_YUV422_V210) enable = true;
+	EnableControl(IDC_STATIC_COLORSPACE2, enable);
+	EnableControl(IDC_STATIC_COLORRANGE2, enable);
+	EnableControl(IDC_CS2_NONE,   enable);
+	EnableControl(IDC_CS2_601,    enable);
+	EnableControl(IDC_CS2_709,    enable);
+	EnableControl(IDC_CR2_NONE,   enable);
+	EnableControl(IDC_CR2_LIMITED,enable);
+	EnableControl(IDC_CR2_FULL,   enable);
+	if (enable) {
+		VDPixmapFormatEx& format = mOutputFormat;
+		CheckButton(IDC_CS2_NONE, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_None);
+		CheckButton(IDC_CS2_601, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_601);
+		CheckButton(IDC_CS2_709, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_709);
+		CheckButton(IDC_CR2_NONE, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_None);
+		CheckButton(IDC_CR2_LIMITED, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_Limited);
+		CheckButton(IDC_CR2_FULL, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_Full);
+	} else {
+		CheckButton(IDC_CS2_NONE,    true);
+		CheckButton(IDC_CS2_601,     false);
+		CheckButton(IDC_CS2_709,     false);
+		CheckButton(IDC_CR2_NONE,    true);
+		CheckButton(IDC_CR2_LIMITED, false);
+		CheckButton(IDC_CR2_FULL,    false);
+	}
 }
 
 bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts) {

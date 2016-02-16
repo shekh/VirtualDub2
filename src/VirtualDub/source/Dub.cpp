@@ -323,7 +323,7 @@ namespace {
 	}
 }
 
-int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, int format) {
+int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx format) {
 	uint32 rgbTrackMask = 0;
 
 	do {
@@ -1344,7 +1344,7 @@ void Dubber::InitSelectInputFormat() {
 
 	// Negotiate RGB format.
 
-	int format = mOptions.video.mInputFormat;
+	VDPixmapFormatEx format = mOptions.video.mInputFormat;
 
 	format = VDRenderSetVideoSourceInputFormat(vSrc, format);
 	if (!format)
@@ -1435,7 +1435,7 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 	// Initialize filter system.
 	const VDPixmap& px = vSrc->getTargetFormat();
 	const sint64 srcFrames = vSrc->asStream()->getLength();
-	filters.prepareLinearChain(&g_filterChain, px.w, px.h, px.format, vInfo.mFrameRatePreFilter, srcFrames, vSrc->getPixelAspectRatio());
+	filters.prepareLinearChain(&g_filterChain, px.w, px.h, px, vInfo.mFrameRatePreFilter, srcFrames, vSrc->getPixelAspectRatio());
 
 	mpVideoFrameSource = new VDFilterFrameVideoSource;
 	mpVideoFrameSource->Init(vSrc, filters.GetInputLayout());
@@ -1445,7 +1445,7 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 
 	if (mbDoVideo && mOptions.video.mode >= DubVideoOptions::M_FULL) {
 		filters.SetAsyncThreadCount(VDPreferencesGetFilterThreadCount());
-		filters.initLinearChain(mProcessThread.GetVideoFilterScheduler(), fPreview ? VDXFilterStateInfo::kStateRealTime | VDXFilterStateInfo::kStatePreview : 0, &g_filterChain, mpVideoFrameSource, px.w, px.h, px.format, px.palette, vInfo.mFrameRatePreFilter, srcFrames, vSrc->getPixelAspectRatio());
+		filters.initLinearChain(mProcessThread.GetVideoFilterScheduler(), fPreview ? VDXFilterStateInfo::kStateRealTime | VDXFilterStateInfo::kStatePreview : 0, &g_filterChain, mpVideoFrameSource, px.w, px.h, px, px.palette, vInfo.mFrameRatePreFilter, srcFrames, vSrc->getPixelAspectRatio());
 
 		InitVideoStreamValuesStatic2(vInfo, &mOptions, &filters, frameRateTimeline);
 		
@@ -1473,7 +1473,7 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 	} else {
 		// We need this to correctly create the video frame map.
 		filters.SetAsyncThreadCount(-1);
-		filters.initLinearChain(mProcessThread.GetVideoFilterScheduler(), fPreview ? VDXFilterStateInfo::kStateRealTime | VDXFilterStateInfo::kStatePreview : 0, &g_filterChain, mpVideoFrameSource, px.w, px.h, px.format, px.palette, vInfo.mFrameRatePreFilter, srcFrames, vSrc->getPixelAspectRatio());
+		filters.initLinearChain(mProcessThread.GetVideoFilterScheduler(), fPreview ? VDXFilterStateInfo::kStateRealTime | VDXFilterStateInfo::kStatePreview : 0, &g_filterChain, mpVideoFrameSource, px.w, px.h, px, px.palette, vInfo.mFrameRatePreFilter, srcFrames, vSrc->getPixelAspectRatio());
 		filters.ReadyFilters();
 		InitVideoStreamValuesStatic2(vInfo, &mOptions, NULL, frameRateTimeline);
 	}

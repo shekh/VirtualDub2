@@ -46,7 +46,7 @@ namespace {
 
 	void StructCheck() {
 		VDASSERTCT(sizeof(VDPixmap)-sizeof(FilterModPixmapInfo) == sizeof(VDXPixmap));
-		VDASSERTCT(sizeof(VDPixmapLayout) == sizeof(VDXPixmapLayout));
+		VDASSERTCT(sizeof(VDPixmapLayout)-sizeof(VDPixmapFormatEx) == sizeof(VDXPixmapLayout));
 				
 		VDASSERTCT(offsetof(VDPixmap, data) == offsetof(VDXPixmap, data));
 		VDASSERTCT(offsetof(VDPixmap, pitch) == offsetof(VDXPixmap, pitch));

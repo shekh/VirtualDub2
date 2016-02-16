@@ -238,13 +238,14 @@ void FilterSystem::SetAsyncThreadPriority(int priority) {
 }
 
 // prepareLinearChain(): init bitmaps in a linear filtering system
-void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width, uint32 src_height, int src_format, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect) {
+void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width, uint32 src_height, VDPixmapFormatEx src_format, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect) {
 	if (mbFiltersInited)
 		return;
 
 	DeallocateBuffers();
 
 	VDPixmapCreateLinearLayout(mpBitmaps->mInitialBitmap.mPixmapLayout, src_format, src_width, src_height, 16);
+	mpBitmaps->mInitialBitmap.mPixmapLayout.formatEx = src_format;
 
 	if (VDPixmapGetInfo(src_format).palsize > 0)
 		mpBitmaps->mInitialBitmap.mPixmapLayout.palette = mPalette;
@@ -713,7 +714,7 @@ void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width,
 }
 
 // initLinearChain(): prepare for a linear filtering system
-void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 filterStateFlags, VDFilterChainDesc *desc, IVDFilterFrameSource *src0, uint32 src_width, uint32 src_height, int src_format, const uint32 *palette, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect) {
+void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 filterStateFlags, VDFilterChainDesc *desc, IVDFilterFrameSource *src0, uint32 src_width, uint32 src_height, VDPixmapFormatEx src_format, const uint32 *palette, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect) {
 	DeinitFilters();
 	DeallocateBuffers();
 

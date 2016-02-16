@@ -396,7 +396,7 @@ public:
 	const VDFraction getPixelAspectRatio() const;
 
 	const VDPixmap& getTargetFormat();
-	bool setTargetFormat(int format);
+	bool setTargetFormat(VDPixmapFormatEx format);
 	bool setDecompressedFormat(int depth);
 	bool setDecompressedFormat(const VDAVIBitmapInfoHeader *pbih);
 
@@ -619,15 +619,18 @@ const VDPixmap& VDVideoSourcePlugin::getTargetFormat() {
 
 		mTargetFormat.info.clear();
 		if (mpFMVDec) {
-			const FilterModPixmapInfo *info = &mpFMVDec->GetFrameBufferInfo();
-			memcpy(&mTargetFormat.info,info,sizeof(FilterModPixmapInfo));
+			const FilterModPixmapInfo& info = mpFMVDec->GetFrameBufferInfo();
+			mTargetFormat.info.clear();
+			mTargetFormat.info.copy_ref(info);
+			mTargetFormat.info.copy_alpha(info);
+			//! todo: return struct size to grab further fields
 		}
 	}
 
 	return mTargetFormat;
 }
 
-bool VDVideoSourcePlugin::setTargetFormat(int format) {
+bool VDVideoSourcePlugin::setTargetFormat(VDPixmapFormatEx format) {
 	vdwithinputplugin(mpContext) {
 		if (!mpXVDec->SetTargetFormat(format, true))
 			return false;

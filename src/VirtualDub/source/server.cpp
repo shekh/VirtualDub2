@@ -216,7 +216,7 @@ void Frameserver::Go(IVDubServerLink *ivdsl, char *name) {
 	const VDPixmap& px = vSrc->getTargetFormat();
 
 	const VDFraction& srcFAR = vSrc->getPixelAspectRatio();
-	filters.prepareLinearChain(&g_filterChain, px.w, px.h, px.format, vInfo.mFrameRatePreFilter, -1, srcFAR);
+	filters.prepareLinearChain(&g_filterChain, px.w, px.h, px, vInfo.mFrameRatePreFilter, -1, srcFAR);
 
 	mpVideoFrameSource = new VDFilterFrameVideoSource;
 	mpVideoFrameSource->Init(vSrc, filters.GetInputLayout());
@@ -224,7 +224,7 @@ void Frameserver::Go(IVDubServerLink *ivdsl, char *name) {
 	filters.SetVisualAccelDebugEnabled(false);
 	filters.SetAccelEnabled(VDPreferencesGetFilterAccelEnabled());
 	filters.SetAsyncThreadCount(VDPreferencesGetFilterThreadCount());
-	filters.initLinearChain(NULL, 0, &g_filterChain, mpVideoFrameSource, px.w, px.h, px.format, px.palette, vInfo.mFrameRatePreFilter, -1, srcFAR);
+	filters.initLinearChain(NULL, 0, &g_filterChain, mpVideoFrameSource, px.w, px.h, px, px.palette, vInfo.mFrameRatePreFilter, -1, srcFAR);
 
 	filters.ReadyFilters();
 

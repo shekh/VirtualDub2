@@ -45,7 +45,7 @@ extern vdrefptr<VDProjectUI> g_projectui;
 extern IVDPositionControlCallback *VDGetPositionControlCallbackTEMP();
 extern void SaveImage(HWND, VDPosition frame, VDPixmap* px);
 
-int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, int format);
+int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx format);
 
 namespace {
 	static const UINT IDC_FILTDLG_POSITION = 500;
@@ -778,17 +778,16 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 			srcRate.Assign(g_dubOpts.video.mFrameRateAdjustHi, g_dubOpts.video.mFrameRateAdjustLo);
 
 		sint64 len = pVSS->getLength();
-		const VDPixmap& pxsrc = inputVideo->getTargetFormat();
 		const VDFraction& srcPAR = inputVideo->getPixelAspectRatio();
 
-		mpFiltSys->prepareLinearChain(
+		/*mpFiltSys->prepareLinearChain(
 				mpFilterChainDesc,
 				px.w,
 				px.h,
-				pxsrc.format,
+				pxsrc,
 				srcRate,
 				pVSS->getLength(),
-				srcPAR);
+				srcPAR);*/
 
 		mpVideoFrameSource = new VDFilterFrameVideoSource;
 		mpVideoFrameSource->Init(inputVideo, mpFiltSys->GetInputLayout());
@@ -800,8 +799,8 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 				mpVideoFrameSource,
 				px.w,
 				px.h,
-				pxsrc.format,
-				pxsrc.palette,
+				px,
+				px.palette,
 				srcRate,
 				len,
 				srcPAR);

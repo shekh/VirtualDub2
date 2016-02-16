@@ -884,8 +884,23 @@
 #define IDC_PLANEORDER_CRCB             1487
 #define IDC_PADDING_FRAME               1489
 #define IDC_INPUT_FORMAT                1490
+#define IDC_CS_NONE                     1492
+#define IDC_CS_601                      1493
+#define IDC_CS_709                      1494
+#define IDC_CR_NONE                     1495
+#define IDC_CR_LIMITED                  1496
+#define IDC_CR_FULL                     1497
+#define IDC_STATIC_COLORSPACE           1498
+#define IDC_STATIC_COLORSPACE2          1499
+#define IDC_CS2_NONE                    1500
+#define IDC_CS2_601                     1501
+#define IDC_CS2_709                     1502
+#define IDC_CR2_NONE                    1503
 #define IDC_INPUT_RAW                   1504
+#define IDC_CR2_LIMITED                 1504
 #define IDC_LOG_STDOUT                  1505
+#define IDC_CR_FULL2                    1505
+#define IDC_CR2_FULL                    1505
 #define IDC_LOG_STDERR                  1506
 #define IDC_TYPE                        1507
 #define IDC_CMDLINE                     1508
@@ -906,6 +921,8 @@
 #define IDC_CMDLINE_ARG                 1528
 #define IDC_PIXEL_FORMAT                1529
 #define IDC_FILTERS_SAVE                1530
+#define IDC_STATIC_COLORRANGE           1531
+#define IDC_STATIC_COLORRANGE2          1532
 #define IDS_HELP_CONTENTS               1536
 #define IDS_HELP_CHANGELOG              1537
 #define IDS_HELP_RELEASENOTES           1538
@@ -1451,7 +1468,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        308
 #define _APS_NEXT_COMMAND_VALUE         40565
-#define _APS_NEXT_CONTROL_VALUE         1531
+#define _APS_NEXT_CONTROL_VALUE         1532
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

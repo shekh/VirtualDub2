@@ -36,9 +36,12 @@
 #include "filters.h"
 #include "FilterInstance.h"
 #include "FilterFrameVideoSource.h"
+#include "dub.h"
 
 extern const char g_szError[];
 extern vdrefptr<VDProjectUI> g_projectui;
+extern vdrefptr<IVDVideoSource> inputVideo;
+extern DubOptions	g_dubOpts;
 
 //////////////////////////////
 
@@ -66,7 +69,7 @@ public:
 	sint64		mOldFrameCount;
 	int			mInputWidth;
 	int			mInputHeight;
-	int			mInputFormat;
+	VDPixmapFormatEx	mInputFormat;
 	VDFraction	mInputRate;
 	VDFraction	mInputPixelAspect;
 	sint64		mInputLength;
@@ -133,7 +136,7 @@ void FiltersEditor::Init(IVDVideoSource *pVS, VDPosition initialTime) {
 	mpVS			= pVS;
 	mInputWidth		= px.w;
 	mInputHeight	= px.h;
-	mInputFormat	= px.format;
+	mInputFormat	= px;
 	mInputRate		= pSS->getRate();
 	mInputPixelAspect = pVS->getPixelAspectRatio();
 	mInputLength	= pSS->getLength();
@@ -253,17 +256,16 @@ void FiltersEditor::ReadyFilters() {
 			srcRate.Assign(g_dubOpts.video.mFrameRateAdjustHi, g_dubOpts.video.mFrameRateAdjustLo);
 
 		sint64 len = pVSS->getLength();
-		const VDPixmap& pxsrc = inputVideo->getTargetFormat();
 		const VDFraction& srcPAR = inputVideo->getPixelAspectRatio();
 
-		mFiltSys.prepareLinearChain(
+		/*mFiltSys.prepareLinearChain(
 				&filter_desc,
 				px.w,
 				px.h,
-				pxsrc.format,
+				px,
 				srcRate,
 				pVSS->getLength(),
-				srcPAR);
+				srcPAR);*/
 
 		mpVideoFrameSource = new VDFilterFrameVideoSource;
 		mpVideoFrameSource->Init(inputVideo, mFiltSys.GetInputLayout());
@@ -275,8 +277,8 @@ void FiltersEditor::ReadyFilters() {
 				mpVideoFrameSource,
 				px.w,
 				px.h,
-				pxsrc.format,
-				pxsrc.palette,
+				px,
+				px.palette,
 				srcRate,
 				len,
 				srcPAR);

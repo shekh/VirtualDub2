@@ -575,7 +575,7 @@ public:
 	virtual VDPosition nearestKey(VDPosition lSample);
 	virtual VDPosition prevKey(VDPosition lSample);
 	virtual VDPosition nextKey(VDPosition lSample);
-	bool setTargetFormat(int depth);
+	bool setTargetFormat(VDPixmapFormatEx format);
 	void invalidateFrameBuffer();
 	bool isFrameBufferValid();
 	void streamBegin(bool fRealTime, bool bForceReset);
@@ -679,7 +679,7 @@ void VideoSourceMPEG::init() {
 VideoSourceMPEG::~VideoSourceMPEG() {
 }
 
-bool VideoSourceMPEG::setTargetFormat(int format) {
+bool VideoSourceMPEG::setTargetFormat(VDPixmapFormatEx format) {
 	using namespace nsVDPixmap;
 
 	if (!format)

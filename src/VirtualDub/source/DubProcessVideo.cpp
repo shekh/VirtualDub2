@@ -1168,6 +1168,8 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	VDFilterFrameBuffer *buf = pOutputReq->GetResultBuffer();
 	VDPixmap pxsrc = VDPixmapFromLayout(layout, (void *)buf->LockRead());
 	pxsrc.info = buf->info;
+	pBuffer->mPixmap.info.colorSpaceMode = mpOptions->video.mOutputFormat.colorSpaceMode;
+	pBuffer->mPixmap.info.colorRangeMode = mpOptions->video.mOutputFormat.colorRangeMode;
 	if (!mpOutputBlitter)
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc);
 

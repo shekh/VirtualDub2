@@ -222,7 +222,7 @@ VDPosition VDVideoSourceANIM::nextKey(VDPosition lSample) {
 	return -1;
 }
 
-bool VDVideoSourceANIM::setTargetFormat(int format) {
+bool VDVideoSourceANIM::setTargetFormat(VDPixmapFormatEx format) {
 	if (!format)
 		format = nsVDPixmap::kPixFormat_XRGB8888;
 

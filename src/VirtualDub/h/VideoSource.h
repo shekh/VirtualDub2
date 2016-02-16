@@ -43,7 +43,7 @@ public:
 	virtual const VDFraction getPixelAspectRatio() const = 0;
 
 	virtual const VDPixmap& getTargetFormat() = 0;
-	virtual bool		setTargetFormat(int format) = 0;
+	virtual bool		setTargetFormat(VDPixmapFormatEx format) = 0;
 	virtual bool		setDecompressedFormat(int depth) = 0;
 	virtual bool		setDecompressedFormat(const VDAVIBitmapInfoHeader *pbih) = 0;
 
@@ -113,7 +113,7 @@ protected:
 	void *AllocFrameBuffer(long size);
 	void FreeFrameBuffer();
 
-	bool setTargetFormatVariant(int format, int variant);
+	bool setTargetFormatVariant(VDPixmapFormatEx format, int variant);
 	virtual bool _isKey(VDPosition lSample);
 
 	VideoSource();
@@ -146,7 +146,7 @@ public:
 	}
 
 	virtual const VDPixmap& getTargetFormat() { return mTargetFormat; }
-	virtual bool setTargetFormat(int format);
+	virtual bool setTargetFormat(VDPixmapFormatEx format);
 	virtual bool setDecompressedFormat(int depth);
 	virtual bool setDecompressedFormat(const VDAVIBitmapInfoHeader *pbih);
 

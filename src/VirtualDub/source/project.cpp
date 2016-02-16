@@ -115,7 +115,7 @@ extern bool VDPreferencesGetRenderBackgroundPriority();
 extern bool VDPreferencesGetAutoRecoverEnabled();
 extern bool VDPreferencesGetTimelineWarnReloadTruncation();
 
-int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, int format);
+int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx format);
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -2495,7 +2495,7 @@ void VDProject::PrepareFilters() {
 	const VDPixmap& px = inputVideo->getTargetFormat();
 	const VDFraction& srcPAR = inputVideo->getPixelAspectRatio();
 
-	filters.prepareLinearChain(&g_filterChain, px.w, px.h, px.format, framerate, pVSS->getLength(), srcPAR);
+	filters.prepareLinearChain(&g_filterChain, px.w, px.h, px, framerate, pVSS->getLength(), srcPAR);
 }
 
 void VDProject::StartFilters() {
@@ -2511,7 +2511,7 @@ void VDProject::StartFilters() {
 
 	if (px.format) {
 		const VDFraction& srcPAR = inputVideo->getPixelAspectRatio();
-		filters.prepareLinearChain(&g_filterChain, px.w, px.h, px.format, framerate, pVSS->getLength(), srcPAR);
+		filters.prepareLinearChain(&g_filterChain, px.w, px.h, px, framerate, pVSS->getLength(), srcPAR);
 
 		mpVideoFrameSource = new VDFilterFrameVideoSource;
 		mpVideoFrameSource->Init(inputVideo, filters.GetInputLayout());
@@ -2523,7 +2523,7 @@ void VDProject::StartFilters() {
 		// We explicitly use the stream length here as we're interested in the *uncut* filtered length.
 		vdrefptr<IVDFilterSystemScheduler> fss(new VDFilterSystemMessageLoopScheduler);
 
-		filters.initLinearChain(fss, VDXFilterStateInfo::kStatePreview, &g_filterChain, mpVideoFrameSource, px.w, px.h, px.format, px.palette, framerate, pVSS->getLength(), srcPAR);
+		filters.initLinearChain(fss, VDXFilterStateInfo::kStatePreview, &g_filterChain, mpVideoFrameSource, px.w, px.h, px, px.palette, framerate, pVSS->getLength(), srcPAR);
 
 		filters.ReadyFilters();
 	}

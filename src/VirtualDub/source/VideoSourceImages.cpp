@@ -39,7 +39,7 @@ public:
 	VDPosition prevKey(VDPosition lSample)				{ return lSample>0 ? lSample-1 : -1; }
 	VDPosition nextKey(VDPosition lSample)				{ return lSample<mSampleLast ? lSample+1 : -1; }
 
-	bool setTargetFormat(int depth);
+	bool setTargetFormat(VDPixmapFormatEx format);
 
 	void invalidateFrameBuffer()			{ mCachedFrame = -1; }
 	bool isFrameBufferValid()				{ return mCachedFrame >= 0; }
@@ -178,7 +178,7 @@ int VideoSourceImages::_read(VDPosition lStart, uint32 lCount, void *lpBuffer, u
 	return 0;
 }
 
-bool VideoSourceImages::setTargetFormat(int format) {
+bool VideoSourceImages::setTargetFormat(VDPixmapFormatEx format) {
 	bool retry_default = format!=0;
 	if (!format) {
 		format = nsVDPixmap::kPixFormat_XRGB8888;

@@ -2,6 +2,7 @@
 #define f_VD2_KASUMI_BLITTER_H
 
 #include <vd2/system/vectors.h>
+#include <vd2/kasumi/pixmap.h>
 
 struct VDPixmap;
 struct VDPixmapLayout;
@@ -29,10 +30,10 @@ public:
 protected:
 	sint32 mSrcWidth;
 	sint32 mSrcHeight;
-	int mSrcFormat;
+	VDPixmapFormatEx mSrcFormat;
 	sint32 mDstWidth;
 	sint32 mDstHeight;
-	int mDstFormat;
+	VDPixmapFormatEx mDstFormat;
 	IVDPixmapBlitter *mpCachedBlitter;
 };
 

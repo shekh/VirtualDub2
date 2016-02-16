@@ -81,7 +81,7 @@ public:
 	VDPosition prevKey(VDPosition lSample);
 	VDPosition nextKey(VDPosition lSample);
 
-	bool setTargetFormat(int format);
+	bool setTargetFormat(VDPixmapFormatEx format);
 	bool setDecompressedFormat(int depth) { return VideoSource::setDecompressedFormat(depth); }
 	bool setDecompressedFormat(const VDAVIBitmapInfoHeader *pbih);
 	void invalidateFrameBuffer();

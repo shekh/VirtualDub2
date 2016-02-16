@@ -156,6 +156,22 @@ struct VDXRect {
 	sint32	bottom;
 };
 
+namespace nsVDXPixmap {
+	enum ColorSpaceMode {
+		kColorSpaceMode_None,
+		kColorSpaceMode_601,
+		kColorSpaceMode_709,
+		kColorSpaceModeCount
+	};
+
+	enum ColorRangeMode {
+		kColorRangeMode_None,
+		kColorRangeMode_Limited,
+		kColorRangeMode_Full,
+		kColorRangeModeCount
+	};
+};
+
 struct FilterModPixmapInfo {
 	enum MappingType {
 		kTransferUnknown = 0,
@@ -177,6 +193,10 @@ struct FilterModPixmapInfo {
 	uint32 alpha_type;
 	int64 frame_num;
 
+	// FilterModVersion>=5
+	nsVDXPixmap::ColorSpaceMode colorSpaceMode;
+	nsVDXPixmap::ColorRangeMode colorRangeMode;
+
 	FilterModPixmapInfo() {
 		clear();
 	}
@@ -189,12 +209,20 @@ struct FilterModPixmapInfo {
 		transfer_type = kTransferUnknown;
 		alpha_type = kAlphaInvalid;
 		frame_num = -1;
+		colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
+		colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
 	}
 
-	void copy_frame(FilterModPixmapInfo& a) {
+	void copy_ref(const FilterModPixmapInfo& a) {
+		ref_r = a.ref_r;
+		ref_g = a.ref_g;
+		ref_b = a.ref_b;
+		ref_a = a.ref_a;
+	}
+	void copy_frame(const FilterModPixmapInfo& a) {
 		frame_num = a.frame_num;
 	}
-	void copy_alpha(FilterModPixmapInfo& a) {
+	void copy_alpha(const FilterModPixmapInfo& a) {
 		alpha_type = a.alpha_type;
 	}
 };

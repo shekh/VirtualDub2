@@ -27,6 +27,7 @@
 #include <vd2/system/VDString.h>
 #include <vd2/system/fraction.h>
 #include <vd2/system/event.h>
+#include <vd2/kasumi/pixmap.h>
 #include <vd2/Riza/videocodec.h>
 #include "audio.h"
 #include "fixes.h"
@@ -112,8 +113,8 @@ public:
 		kPreviewFieldsNonIntBFF
 	};
 	
-	int		mInputFormat;
-	int		mOutputFormat;
+	VDPixmapFormatEx		mInputFormat;
+	VDPixmapFormatEx		mOutputFormat;
 	char	mode;
 	bool	mbUseSmartRendering;
 	bool	mbPreserveEmptyFrames;

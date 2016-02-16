@@ -912,11 +912,11 @@ const VDFraction VideoSource::getPixelAspectRatio() const {
 	return VDFraction(0, 0);
 }
 
-bool VideoSource::setTargetFormat(int format) {
-	return setTargetFormatVariant(format, 0);
+bool VideoSource::setTargetFormat(VDPixmapFormatEx format) {
+	return setTargetFormatVariant(format,0);
 }
 
-bool VideoSource::setTargetFormatVariant(int format, int variant) {
+bool VideoSource::setTargetFormatVariant(VDPixmapFormatEx format, int variant) {
 	using namespace nsVDPixmap;
 
 	if (!format)
@@ -931,6 +931,8 @@ bool VideoSource::setTargetFormatVariant(int format, int variant) {
 
 	mTargetFormat = VDPixmapFromLayout(layout, mpFrameBuffer);
 	mTargetFormatVariant = variant;
+	mTargetFormat.info.colorRangeMode = format.colorRangeMode;
+	mTargetFormat.info.colorSpaceMode = format.colorSpaceMode;
 
 	if(format == nsVDPixmap::kPixFormat_Pal8) {
 		int maxBytes = getFormatLen();
@@ -1930,7 +1932,7 @@ VDPosition VideoSourceAVI::nextKey(VDPosition lSample) {
 	}
 }
 
-bool VideoSourceAVI::setTargetFormat(int format) {
+bool VideoSourceAVI::setTargetFormat(VDPixmapFormatEx format) {
 	using namespace nsVDPixmap;
 
 	streamEnd();
@@ -1984,7 +1986,10 @@ bool VideoSourceAVI::setTargetFormat(int format) {
 	}
 
 	if (mpDecompressor->SetTargetFormat(format)) {
-		VDVERIFY(VideoSource::setTargetFormatVariant(mpDecompressor->GetTargetFormat(), mpDecompressor->GetTargetFormatVariant()));
+		VDPixmapFormatEx format2 = mpDecompressor->GetTargetFormat();
+		int variant2 = mpDecompressor->GetTargetFormatVariant();
+		if (format2.format==format.format) format2 = format;
+		VDVERIFY(VideoSource::setTargetFormatVariant(format2, variant2));
 		return true;
 	}
 	return false;
