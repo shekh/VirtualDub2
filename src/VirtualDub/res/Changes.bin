@@ -1,6 +1,10 @@
 VirtualDub change log
 
-Build %build% (1.10.5, experimental): [%date%]
+Build %build% (FilterMod project): [%date%]
+   [changes are described here:] 
+   https://sourceforge.net/p/vdfiltermod/wiki/Home
+
+Build 35576 (1.10.5, experimental): [October 13, 2014]
    [features added]
    * Cmdline: /portablealt:<file> can be used to use a specified INI file for settings.
    * ExtEnc: Existing profiles/sets can now overwritten when loading profiles.

@@ -3751,7 +3751,7 @@ IDC_MODIFYPOINT         CURSOR                  "modifypoint.cur"
 
 STRINGTABLE 
 BEGIN
-    IDS_TITLE_INITIAL       "$n $v$s (build $b/$c) by Avery Lee"
+    IDS_TITLE_INITIAL       "$n $v$s (build $b/$c)"
     IDS_TITLE_NOFILE        "$n $v"
     IDS_TITLE_DUBBING       "$n $v - [%s] (dub in progress)"
     IDS_TITLE_DUBBING_MINIMIZED "%d%% [%s] - $n $v"
