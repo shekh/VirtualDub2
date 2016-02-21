@@ -1576,6 +1576,8 @@ void VDProject::Reopen() {
 	// redisplay current frame
 	DisplayFrame();
 
+	mpCB->UICurrentPositionUpdated();
+
 	guiSetStatus("Reloaded \"%ls\" (%I64d frames).", 255, filename.c_str(), newFrameCount);
 }
 
@@ -2099,11 +2101,12 @@ void VDProject::MoveToFrame(VDPosition frame) {
 
 		mposCurrentFrame = frame;
 		mbPositionCallbackEnabled = false;
-		if (mpCB)
-			mpCB->UICurrentPositionUpdated();
 
 		if (!g_dubber && !mProjectLoading)
 			DisplayFrame();
+
+		if (mpCB)
+			mpCB->UICurrentPositionUpdated();
 	}
 }
 

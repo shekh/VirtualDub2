@@ -351,13 +351,14 @@ void VDPositionControlW32::InternalSetPosition(VDPosition pos, VDPositionControl
 	if (pos != mPosition) {
 		mPosition = pos;
 		RecalcThumbRect(pos, true);
-		UpdateString();
 
 		VDPositionControlEventData eventData;
 		eventData.mPosition = mPosition;
 		eventData.mEventType = eventType;
 		mPositionUpdatedEvent.Raise(this, eventData);
 	}
+
+	UpdateString();
 }
 
 void VDPositionControlW32::SetDisplayedPosition(VDPosition pos) {
