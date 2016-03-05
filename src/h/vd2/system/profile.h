@@ -167,8 +167,8 @@ protected:
 
 class IVDEventProfiler {
 public:
-	virtual void BeginScope(const char *name, uintptr *cache, uint32 data) = 0;
-	virtual void BeginDynamicScope(const char *name, uintptr *cache, uint32 data) = 0;
+	virtual void BeginScope(const char *name, uintptr *cache, uint32 data, uint32 flags) = 0;
+	virtual void BeginDynamicScope(const char *name, uintptr *cache, uint32 data, uint32 flags) = 0;
 	virtual void EndScope() = 0;
 	virtual void ExitThread() = 0;
 };
@@ -185,12 +185,17 @@ public:
 
 struct VDProfileCachedEvent;
 
+enum {
+	vdprofiler_flag_wait=1,
+};
+
 typedef uintptr VDProfileEventCache;
 
-#define VDPROFILEBEGINDYNAMIC(cache, dynLabel) if (true) { if (g_pVDEventProfiler) g_pVDEventProfiler->BeginDynamicScope((dynLabel), &(cache), 0); } else ((void)0)
-#define VDPROFILEBEGINDYNAMICEX(cache, dynLabel, data) if (true) { if (g_pVDEventProfiler) g_pVDEventProfiler->BeginDynamicScope((dynLabel), &(cache), data); } else ((void)0)
-#define VDPROFILEBEGIN(label) if (true) { static uintptr sCache = NULL; if (g_pVDEventProfiler) g_pVDEventProfiler->BeginScope((label), &sCache, 0); } else ((void)0)
-#define VDPROFILEBEGINEX(label, data) if (true) { static uintptr sCache = NULL; if (g_pVDEventProfiler) g_pVDEventProfiler->BeginScope((label), &sCache, data); } else ((void)0)
+#define VDPROFILEBEGINDYNAMIC(cache, dynLabel) if (true) { if (g_pVDEventProfiler) g_pVDEventProfiler->BeginDynamicScope((dynLabel), &(cache), 0, 0); } else ((void)0)
+#define VDPROFILEBEGINDYNAMICEX(cache, dynLabel, data) if (true) { if (g_pVDEventProfiler) g_pVDEventProfiler->BeginDynamicScope((dynLabel), &(cache), data, 0); } else ((void)0)
+#define VDPROFILEBEGIN(label) if (true) { static uintptr sCache = NULL; if (g_pVDEventProfiler) g_pVDEventProfiler->BeginScope((label), &sCache, 0, 0); } else ((void)0)
+#define VDPROFILEBEGINEX(label, data) if (true) { static uintptr sCache = NULL; if (g_pVDEventProfiler) g_pVDEventProfiler->BeginScope((label), &sCache, data, 0); } else ((void)0)
+#define VDPROFILEBEGINEX2(label, data, flags) if (true) { static uintptr sCache = NULL; if (g_pVDEventProfiler) g_pVDEventProfiler->BeginScope((label), &sCache, data, flags); } else ((void)0)
 #define VDPROFILEEND() if (g_pVDEventProfiler) g_pVDEventProfiler->EndScope(); else ((void)0)
 #define VDPROFILEAUTOEND() VDProfileEventAutoEndScope _autoEndScope
 #define VDPROFILESCOPE(label) VDPROFILEBEGIN(label); VDPROFILEAUTOEND()

@@ -1090,7 +1090,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ReadVideoFrame(const 
 VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::GetVideoOutputBuffer(VDRenderOutputBuffer **ppBuffer) {
 	vdrefptr<VDRenderOutputBuffer> pBuffer;
 
-	VDPROFILEBEGIN("V-Lock2");
+	VDPROFILEBEGINEX2("V-Lock2",0,vdprofiler_flag_wait);
 	mpLoopThrottle->BeginWait();
 	for(;;) {
 		if (mpProcDisplay->TryRevokeOutputBuffer(~pBuffer))
@@ -1261,7 +1261,7 @@ void VDDubVideoProcessor::WriteFinishedVideoFrame(const void *data, uint32 size,
 	////// RENDERING
 
 	if (renderEnabled) {
-		VDPROFILEBEGIN("V-Lock3");
+		VDPROFILEBEGINEX2("V-Lock3",0,vdprofiler_flag_wait);
 		bool bLockSuccessful;
 
 		mpLoopThrottle->BeginWait();
@@ -1298,7 +1298,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::DecodeVideoFrame(cons
 
 	IVDVideoSource *vsrc = mVideoSources[srcIndex];
 
-	VDPROFILEBEGIN("V-Lock1");
+	VDPROFILEBEGINEX2("V-Lock1",0,vdprofiler_flag_wait);
 	bool bLockSuccessful;
 
 	mpLoopThrottle->BeginWait();

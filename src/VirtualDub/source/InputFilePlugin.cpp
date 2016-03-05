@@ -585,7 +585,9 @@ int VDVideoSourcePlugin::_read(VDPosition lStart, uint32 lCount, void *lpBuffer,
 	bool result;
 	
 	vdwithinputplugin(mpContext) {
+		if(lpBuffer) VDPROFILEBEGINEX("V-Read", (uint32)lStart);
 		result = mpXS->Read(lStart, lCount, lpBuffer, cbBuffer, &actualBytes, &actualSamples);
+		if(lpBuffer) VDPROFILEEND();
 	}
 
 	if (actualBytes == 0xBAADF00D || actualSamples == 0xBAADF00D)
@@ -818,7 +820,9 @@ const void *VDVideoSourcePlugin::getFrame(VDPosition frameNum) {
 				
 				if (buffer.size() > padding) {
 					vdwithinputplugin(mpContext) {
+						VDPROFILEBEGINEX("V-Read", (uint32)pos);
 						result = mpXS->Read(pos, 1, buffer.data(), buffer.size() - padding, &actualBytes, &actualSamples);
+						VDPROFILEEND();
 					}
 
 					if (result && !buffer.empty())

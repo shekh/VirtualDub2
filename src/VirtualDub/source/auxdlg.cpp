@@ -117,35 +117,66 @@ public:
 	static INT_PTR CALLBACK ProfileDlgProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam) {
 		switch(msg) {
 		case WM_INITDIALOG:
-			g_hwndProfileWindow = hdlg;
-			VDSetDialogDefaultIcons(hdlg);
+			{
+				g_hwndProfileWindow = hdlg;
+				VDSetDialogDefaultIcons(hdlg);
+				HWND w1 = GetDlgItem(hdlg, IDC_PROFILE);
+				HWND w2 = GetDlgItem(hdlg, IDC_PROFILE_LIST);
+				SendMessage(w2,LB_SETCOLUMNWIDTH,400,0);
+				SendMessage(w1,WM_USER+600,0,(LPARAM)w2);
+			}
 		case WM_SIZE:
 			{
 				RECT r;
-
 				GetClientRect(hdlg, &r);
-				SetWindowPos(GetDlgItem(hdlg, IDC_PROFILE), NULL, 0, 0, r.right, r.bottom, SWP_NOZORDER|SWP_NOACTIVATE);
+				HWND w1 = GetDlgItem(hdlg, IDC_PROFILE);
+				HWND w2 = GetDlgItem(hdlg, IDC_PROFILE_LIST);
+				MINMAXINFO mmi;
+				SendMessage(w1,WM_GETMINMAXINFO,0,(LPARAM)&mmi);
+				int h1 = mmi.ptMaxTrackSize.y;
+				if(r.bottom<h1) h1 = r.bottom;
+				SetWindowPos(w1, NULL, 0, 0, r.right, h1, SWP_NOZORDER|SWP_NOACTIVATE);
+				if(r.bottom<=h1){
+					ShowWindow(w2,SW_HIDE);
+				} else {
+					ShowWindow(w2,SW_SHOW);
+					SetWindowPos(w2, NULL, 0, h1+4, r.right, r.bottom-h1-4, SWP_NOZORDER|SWP_NOACTIVATE);
+				}
 			}
 			return TRUE;
 		case WM_COMMAND:
 			if (LOWORD(wParam) == IDCANCEL)
 				EndDialog(hdlg, 0);
+
+			if (LOWORD(wParam) == IDC_PROFILE_LIST){
+				if(HIWORD(wParam) == LBN_SELCHANGE){
+					HWND w1 = GetDlgItem(hdlg, IDC_PROFILE);
+					SendMessage(w1,WM_USER+601,0,0);
+				}
+				if(HIWORD(wParam) == LBN_DBLCLK){
+					HWND w1 = GetDlgItem(hdlg, IDC_PROFILE);
+					SendMessage(w1,WM_USER+602,0,0);
+				}
+			}
 			return TRUE;
 		}
 		return FALSE;
 	}
 };
 
-extern void VDOpenProfileWindow() {
-	VDProfileWindowThread profwin;
+static VDProfileWindowThread profwin;
 
+extern void VDOpenProfileWindow() {
+	profwin.ThreadDetach();
 	profwin.ThreadStart();
-	if (profwin.isThreadAttached()) {
-		profwin.mReady.wait();
-		profwin.ThreadDetach();
-	}
 }
 
+extern void VDCloseProfileWindow() {
+	if(profwin.isThreadAttached()){
+		PostThreadMessage(profwin.getThreadID(),WM_QUIT,0,0);
+		profwin.ThreadWait();
+	}
+}
 
 INT_PTR CALLBACK ShowTextDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 	HRSRC hRSRC;

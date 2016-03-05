@@ -6,6 +6,7 @@
 #include <vd2/system/time.h>
 #include <vd2/system/math.h>
 #include <vd2/system/w32assist.h>
+#include <vd2/system/profile.h>
 #include <vd2/Kasumi/blitter.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmapops.h>
@@ -1634,10 +1635,14 @@ bool VDVideoDisplayMinidriverDirectDraw::Update(UpdateMode mode) {
 		}
 	}
 
+	VDPROFILEBEGIN("V-BlitDisplay");
+
 	if (dither)
 		VDDitherImage(dstbm, source, mpLogicalPalette);
 	else
 		mCachedBlitter.Blit(dstbm, source);
+
+	VDPROFILEEND();
 	
 	hr = pTarget->Unlock(0);
 

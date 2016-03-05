@@ -923,6 +923,7 @@
 #define IDC_FILTERS_SAVE                1530
 #define IDC_STATIC_COLORRANGE           1531
 #define IDC_STATIC_COLORRANGE2          1532
+#define IDC_PROFILE_LIST                1532
 #define IDS_HELP_CONTENTS               1536
 #define IDS_HELP_CHANGELOG              1537
 #define IDS_HELP_RELEASENOTES           1538
@@ -1468,7 +1469,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        308
 #define _APS_NEXT_COMMAND_VALUE         40565
-#define _APS_NEXT_CONTROL_VALUE         1532
+#define _APS_NEXT_CONTROL_VALUE         1533
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

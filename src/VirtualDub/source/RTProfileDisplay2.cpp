@@ -34,6 +34,7 @@ extern HINSTANCE g_hInst;
 const char g_szRTProfileDisplayControl2Name[]="VDRTProfileDisplay2";
 
 bool RegisterRTProfileDisplayControl2();
+extern sint32 VDPreferencesGetFilterThreadCount();
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -42,6 +43,11 @@ struct VDThreadEvent {
 	uint32	mScopeId;
 	unsigned	mbOpen : 1;
 	unsigned	mAncillaryData : 31;
+};
+
+struct VDThreadEventScope {
+	const char* name;
+	uint32 flags;
 };
 
 struct VDThreadEventBlock {
@@ -65,8 +71,8 @@ public:
 	void Attach();
 	void Detach();
 
-	void BeginScope(const char *name, uintptr *cache, uint32 data);
-	void BeginDynamicScope(const char *name, uintptr *cache, uint32 data);
+	void BeginScope(const char *name, uintptr *cache, uint32 data, uint32 flags=0);
+	void BeginDynamicScope(const char *name, uintptr *cache, uint32 data, uint32 flags=0);
 	void EndScope();
 	void ExitThread();
 
@@ -75,7 +81,7 @@ public:
 	uint32 GetThreadCount() const;
 	void UpdateThreadInfo(uint32 threadIndex, VDThreadEventInfo& info) const;
 
-	void UpdateScopes(vdfastvector<const char *>& scopes) const;
+	void UpdateScopes(vdfastvector<VDThreadEventScope>& scopes) const;
 
 protected:
 	typedef VDThreadEvent Event;
@@ -97,8 +103,8 @@ protected:
 		}
 	};
 
-	uintptr InitScope(const char *name, uintptr *cache);
-	uintptr InitDynamicScope(const char *name, uintptr *cache);
+	uintptr InitScope(const char *name, uint32 flags, uintptr *cache);
+	uintptr InitDynamicScope(const char *name, uint32 flags, uintptr *cache);
 
 	PerThreadInfo *AllocPerThreadInfo();
 	bool AllocBlock(PerThreadInfo *pti);
@@ -107,7 +113,7 @@ protected:
 	VDAtomicInt	mEnableCount;
 
 	mutable VDCriticalSection mMutex;
-	vdfastvector<const char *> mScopes;
+	vdfastvector<VDThreadEventScope> mScopes;
 	vdfastvector<char *> mDynScopeStrings;
 
 	typedef vdfastvector<PerThreadInfo *> Threads; 
@@ -118,7 +124,10 @@ VDEventProfilerW32::VDEventProfilerW32()
 	: mTlsIndex(::TlsAlloc())
 	, mEnableCount(0)
 {
-	mScopes.push_back("");
+	VDThreadEventScope scope;
+	scope.name = "";
+	scope.flags = 0;
+	mScopes.push_back(scope);
 }
 
 VDEventProfilerW32::~VDEventProfilerW32() {
@@ -150,14 +159,14 @@ void VDEventProfilerW32::Detach() {
 	--mEnableCount;
 }
 
-void VDEventProfilerW32::BeginScope(const char *name, uintptr *cache, uint32 data) {
+void VDEventProfilerW32::BeginScope(const char *name, uintptr *cache, uint32 data, uint32 flags) {
 	if (!mEnableCount)
 		return;
 
 	uintptr scopeId = *cache;
 
 	if (!scopeId)
-		scopeId = InitScope(name, cache);
+		scopeId = InitScope(name, flags, cache);
 
 	PerThreadInfo *pti = (PerThreadInfo *)::TlsGetValue(mTlsIndex);
 	if (!pti)
@@ -181,14 +190,14 @@ void VDEventProfilerW32::BeginScope(const char *name, uintptr *cache, uint32 dat
 	pti->mCurrentIndex = idx;
 }
 
-void VDEventProfilerW32::BeginDynamicScope(const char *name, uintptr *cache, uint32 data) {
+void VDEventProfilerW32::BeginDynamicScope(const char *name, uintptr *cache, uint32 data, uint32 flags) {
 	if (!mEnableCount)
 		return;
 
 	uintptr scopeId = *cache;
 
 	if (!scopeId)
-		scopeId = InitDynamicScope(name, cache);
+		scopeId = InitDynamicScope(name, flags, cache);
 
 	PerThreadInfo *pti = (PerThreadInfo *)::TlsGetValue(mTlsIndex);
 	if (!pti)
@@ -292,7 +301,7 @@ void VDEventProfilerW32::UpdateThreadInfo(uint32 threadIndex, VDThreadEventInfo&
 
 }
 
-void VDEventProfilerW32::UpdateScopes(vdfastvector<const char *>& scopes) const {
+void VDEventProfilerW32::UpdateScopes(vdfastvector<VDThreadEventScope>& scopes) const {
 	mMutex.Lock();
 	size_t n1 = scopes.size();
 	size_t n2 = mScopes.size();
@@ -302,14 +311,17 @@ void VDEventProfilerW32::UpdateScopes(vdfastvector<const char *>& scopes) const 
 	mMutex.Unlock();
 }
 
-uintptr VDEventProfilerW32::InitScope(const char *name, uintptr *cache) {
+uintptr VDEventProfilerW32::InitScope(const char *name, uint32 flags, uintptr *cache) {
 	uintptr h;
 
 	vdsynchronized(mMutex) {
 		h = *(volatile uintptr *)cache;
 		if (!h) {
 			h = mScopes.size();
-			mScopes.push_back(name);
+			VDThreadEventScope scope;
+			scope.name = name;
+			scope.flags = flags;
+			mScopes.push_back(scope);
 			*cache = h;
 		}
 	}
@@ -317,7 +329,7 @@ uintptr VDEventProfilerW32::InitScope(const char *name, uintptr *cache) {
 	return h;
 }
 
-uintptr VDEventProfilerW32::InitDynamicScope(const char *name, uintptr *cache) {
+uintptr VDEventProfilerW32::InitDynamicScope(const char *name, uint32 flags, uintptr *cache) {
 	uintptr h;
 
 	vdsynchronized(mMutex) {
@@ -329,7 +341,10 @@ uintptr VDEventProfilerW32::InitDynamicScope(const char *name, uintptr *cache) {
 			char *dynName = _strdup(name);
 			mDynScopeStrings.back() = dynName;
 
-			mScopes.push_back(dynName);
+			VDThreadEventScope scope;
+			scope.name = dynName;
+			scope.flags = flags;
+			mScopes.push_back(scope);
 			*cache = h;
 		}
 	}
@@ -484,6 +499,7 @@ protected:
 	void OnSetFont(HFONT hfont, bool bRedraw);
 	bool OnKey(INT wParam);
 	void OnTimer();
+	void UpdateList();
 
 protected:
 	void Clear();
@@ -492,13 +508,25 @@ protected:
 	void UpdateScale();
 	void SetDisplayResolution(int res);
 	void ScrollByPixels(int dx, int dy);
+	void InvalidateEventRect(const VDProfileTrackedEvent& ev);
+	void GoToEvent(const VDProfileTrackedEvent& ev);
+	void GoToEvent(int px, int py);
 
 	typedef VDRTProfiler::Event	Event;
 	typedef VDRTProfiler::Channel	Channel;
 
 	const HWND mhwnd;
+	HWND    mhwndList;
 	HFONT		mhfont;
+	HPEN    pen1;
+	HPEN    pen2;
+	HBRUSH  br1;
+	HBRUSH  br2;
+	HBRUSH  br3;
 	VDRTProfiler	*mpProfiler;
+	int     event_count;
+	int     display_event_count;
+	int     list_event_count;
 
 	int			mDisplayResolution;
 	int			mWidth;
@@ -521,7 +549,9 @@ protected:
 	VDStringA	mTempStr;
 
 	vdfastvector<VDEventProfileThreadTracker *> mThreadProfiles;
-	vdfastvector<const char *> mScopes;
+	vdfastvector<VDThreadEventScope> mScopes;
+	vdfastvector<const VDProfileTrackedEvent *>	mSortedList;
+	const VDProfileTrackedEvent* selection;
 
 	friend bool VDRegisterRTProfileDisplayControl2();
 	static ATOM sWndClass;
@@ -545,10 +575,32 @@ VDRTProfileDisplay2::VDRTProfileDisplay2(HWND hwnd)
 	, mMajorScaleInterval(1)
 {
 	SetDisplayResolution(-10);
+	event_count = 0;
+	display_event_count = 0;
+	list_event_count = 0;
+	mhwndList = 0;
+	selection = 0;
+	pen1 = 0;
+	pen2 = 0;
+	br1 = 0;
+	br2 = 0;
+	br3 = 0;
 }
 
 VDRTProfileDisplay2::~VDRTProfileDisplay2() {
 	DeleteThreadProfiles();
+	if(mhfont)
+		DeleteObject(mhfont);
+	if(pen1)
+		DeleteObject(pen1);
+	if(pen2)
+		DeleteObject(pen2);
+	if(br1)
+		DeleteObject(br1);
+	if(br2)
+		DeleteObject(br2);
+	if(br3)
+		DeleteObject(br3);
 }
 
 VDRTProfileDisplay2 *VDRTProfileDisplay2::Create(HWND hwndParent, int x, int y, int cx, int cy, UINT id) {
@@ -617,6 +669,29 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 			return 0;
 
+		case WM_USER+600:
+			mhwndList = (HWND)lParam;
+			return 0;
+
+		case WM_USER+601:
+			{
+				int x = SendMessage(mhwndList, LB_GETCURSEL, 0, 0);
+				if(selection)
+					InvalidateEventRect(*selection);
+				if(x<mSortedList.size())
+					selection = mSortedList[x];
+				else
+					selection = 0;
+				if(selection)
+					InvalidateEventRect(*selection);
+				return 0;
+			}
+		case WM_USER+602:
+			{
+				if(selection) GoToEvent(*selection);
+				return 0;
+			}
+
 		case WM_DESTROY:
 			{
 				VDEventProfilerW32 *p = static_cast<VDEventProfilerW32 *>(g_pVDEventProfiler);
@@ -627,6 +702,24 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 
 		case WM_SIZE:
 			OnSize(LOWORD(lParam), HIWORD(lParam));
+			return 0;
+
+		case WM_GETMINMAXINFO:
+			{
+				MINMAXINFO& mmi = *(MINMAXINFO *)lParam;
+
+				int tc = 0;
+				for(size_t i=0; i<mThreadProfiles.size(); ++i) {
+					VDEventProfileThreadTracker *tracker = mThreadProfiles[i];
+					if(!tracker) continue;
+					if(!tracker->GetEvents().size()) continue;
+					tc++;
+				}
+				int tc2 = VDPreferencesGetFilterThreadCount()+2;
+				if(tc2>tc) tc = tc2;
+				int maxH = tc*20+50;
+				mmi.ptMaxTrackSize.y = maxH;
+			}
 			return 0;
 
 		case WM_PAINT:
@@ -673,6 +766,7 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 		case WM_LBUTTONDOWN:
 			if (::GetKeyState(VK_MENU) >= 0) {
 				::SetFocus(mhwnd);
+				GoToEvent(LOWORD(lParam),HIWORD(lParam));
 				break;
 			}
 			// fall through
@@ -737,6 +831,130 @@ void VDRTProfileDisplay2::OnSize(int w, int h) {
 	}
 }
 
+void VDRTProfileDisplay2::GoToEvent(int px, int py) {
+	size_t threadCount = mThreadProfiles.size();
+	uint64 baseTime = 0;
+	bool baseTimeSet = false;
+	double pixelsPerMicrosec = pow(2.0, (double)mDisplayResolution);
+	double pixelsPerTick = VDGetPreciseSecondsPerTick() * 1000000.0 * pixelsPerMicrosec;
+
+	for(size_t i=0; i<threadCount; ++i) {
+		VDEventProfileThreadTracker *tracker = mThreadProfiles[i];
+
+		if (!tracker)
+			continue;
+
+		const vdspan<VDProfileTrackedEvent>& events = tracker->GetEvents();
+		
+		if (!events.empty()) {
+			uint64 firstTime = events.front().mStartTime;
+
+			if (!baseTimeSet || (sint64)(firstTime - baseTime) < 0) {
+				baseTimeSet = true;
+				baseTime = firstTime;
+			}
+		}
+	}
+
+	int next = -1;
+	for(size_t i=0; i<mSortedList.size(); ++i) {
+		const VDProfileTrackedEvent& ev = *mSortedList[i];
+		double xf1 = (double)(sint64)(ev.mStartTime - baseTime) * pixelsPerTick;
+		sint64 x1 = VDCeilToInt64(xf1 - 0.5) - mBasePixelOffset;
+		if (x1<=px) next = i; else break;
+	}
+
+	if (next!=-1) {
+		if(selection)
+			InvalidateEventRect(*selection);
+		selection = mSortedList[next];
+		InvalidateEventRect(*selection);
+		SendMessage(mhwndList,LB_SETCURSEL,next,0);
+	}
+}
+
+void VDRTProfileDisplay2::GoToEvent(const VDProfileTrackedEvent& ev) {
+	RECT r0;
+	GetClientRect(mhwnd,&r0);
+
+	size_t threadCount = mThreadProfiles.size();
+	uint64 baseTime = 0;
+	bool baseTimeSet = false;
+	double pixelsPerMicrosec = pow(2.0, (double)mDisplayResolution);
+	double pixelsPerTick = VDGetPreciseSecondsPerTick() * 1000000.0 * pixelsPerMicrosec;
+
+	for(size_t i=0; i<threadCount; ++i) {
+		VDEventProfileThreadTracker *tracker = mThreadProfiles[i];
+
+		if (!tracker)
+			continue;
+
+		const vdspan<VDProfileTrackedEvent>& events = tracker->GetEvents();
+		
+		if (!events.empty()) {
+			uint64 firstTime = events.front().mStartTime;
+
+			if (!baseTimeSet || (sint64)(firstTime - baseTime) < 0) {
+				baseTimeSet = true;
+				baseTime = firstTime;
+			}
+		}
+	}
+
+	double xf1 = (double)(sint64)(ev.mStartTime - baseTime) * pixelsPerTick;
+	sint64 offset = VDCeilToInt64(xf1 - 0.5) - r0.right/2;
+	SetFocus(mhwnd);
+	ScrollByPixels(int(offset-mBasePixelOffset),0);
+}
+
+void VDRTProfileDisplay2::InvalidateEventRect(const VDProfileTrackedEvent& ev) {
+	RECT r0;
+	GetClientRect(mhwnd,&r0);
+
+	size_t threadCount = mThreadProfiles.size();
+	uint64 baseTime = 0;
+	bool baseTimeSet = false;
+	double pixelsPerMicrosec = pow(2.0, (double)mDisplayResolution);
+	double pixelsPerTick = VDGetPreciseSecondsPerTick() * 1000000.0 * pixelsPerMicrosec;
+
+	for(size_t i=0; i<threadCount; ++i) {
+		VDEventProfileThreadTracker *tracker = mThreadProfiles[i];
+
+		if (!tracker)
+			continue;
+
+		const vdspan<VDProfileTrackedEvent>& events = tracker->GetEvents();
+		
+		if (!events.empty()) {
+			uint64 firstTime = events.front().mStartTime;
+
+			if (!baseTimeSet || (sint64)(firstTime - baseTime) < 0) {
+				baseTimeSet = true;
+				baseTime = firstTime;
+			}
+		}
+	}
+
+	double xf1 = (double)(sint64)(ev.mStartTime - baseTime) * pixelsPerTick;
+	double xf2 = (double)(sint64)(ev.mEndTime - baseTime) * pixelsPerTick;
+
+	sint64 x1 = VDCeilToInt64(xf1 - 0.5) - mBasePixelOffset;
+	sint64 x2 = VDCeilToInt64(xf2 - 0.5) - mBasePixelOffset;
+
+	if (x1 >= r0.right)
+		return;
+
+	if (x2 <= 0)
+		return;
+
+	int ix1 = VDClampToSint32(x1);
+	int ix2 = VDClampToSint32(x2);
+
+	r0.left = ix1-3;
+	r0.right = ix2+3;
+	InvalidateRect(mhwnd,&r0,false);
+}
+
 void VDRTProfileDisplay2::OnPaint() {
 	PAINTSTRUCT ps;
 	if (HDC hdc = BeginPaint(mhwnd, &ps)) {
@@ -784,6 +1002,9 @@ void VDRTProfileDisplay2::OnPaint() {
 
 		::SetTextAlign(hdc, TA_LEFT | TA_BOTTOM);
 		::SetTextColor(hdc, 0);
+		SetBkMode(hdc,TRANSPARENT);
+		HPEN pen0 = (HPEN)SelectObject(hdc,pen1);
+		HBRUSH br0 = (HBRUSH)SelectObject(hdc,br1);
 		for(;;) {
 			int x = VDFloorToInt(majorTick * pixelsPerMicrosec) - (int)mBasePixelOffset;
 
@@ -803,7 +1024,21 @@ void VDRTProfileDisplay2::OnPaint() {
 			::TextOut(hdc, x + 2, mHeight - 2, buf, strlen(buf));
 		}
 
+		if(selection){
+			double xf1 = (double)(sint64)(selection->mStartTime - baseTime) * pixelsPerTick;
+			sint64 x1 = VDCeilToInt64(xf1 - 0.5) - mBasePixelOffset;
+
+			if (x1 < ps.rcPaint.right && x1>ps.rcPaint.left){
+				int x = VDClampToSint32(x1);
+				RECT r = ps.rcPaint;
+				r.left = x-1;
+				r.right = x+2;
+				FillRect(hdc, &r, br2);
+			}
+		}
+
 		::SetTextAlign(hdc, TA_LEFT | TA_TOP);
+		int y2 = 0;
 		for(size_t i=0; i<threadCount; ++i) {
 			VDEventProfileThreadTracker *tracker = mThreadProfiles[i];
 
@@ -812,9 +1047,10 @@ void VDRTProfileDisplay2::OnPaint() {
 
 			const vdspan<VDProfileTrackedEvent>& events = tracker->GetEvents();
 			size_t n = events.size();
+			if(!n) continue;
 
-			int y1 = i * 20;
-			int y2 = y1 + 20;
+			int y1 = y2;
+			y2 = y1 + 20;
 
 			for(uint32 j=0; j<n; ++j) {
 				const VDProfileTrackedEvent& ev = events[j];
@@ -837,9 +1073,21 @@ void VDRTProfileDisplay2::OnPaint() {
 				int ix2 = VDClampToSint32(x2);
 
 				if (ix2 > ix1) {
-					Rectangle(hdc, ix1, y1, ix2, y2);
+					if(&ev==selection){
+						SelectObject(hdc,pen2);
+						SelectObject(hdc,br2);
+						Rectangle(hdc, ix1, y1, ix2, y2);
+						SelectObject(hdc,pen1);
+					} else {
+						uint32 flags = mScopes[ev.mScopeId].flags;
+						if(flags & vdprofiler_flag_wait)
+							SelectObject(hdc,br3);
+						else
+							SelectObject(hdc,br1);
+						Rectangle(hdc, ix1, y1, ix2, y2);
+					}
 
-					const char *s = mScopes[ev.mScopeId];
+					const char *s = mScopes[ev.mScopeId].name;
 
 					if (ix2 - ix1 > 4 && y2 - y1 > 4) {
 						RECT inside;
@@ -862,15 +1110,92 @@ void VDRTProfileDisplay2::OnPaint() {
 		if (hOldFont)
 			SelectObject(hdc, mhfont);
 
+		SelectObject(hdc,pen0);
+		SelectObject(hdc,br0);
+
 		EndPaint(mhwnd, &ps);
+
+		display_event_count = event_count;
 	}
+}
+
+struct EventSort {
+	bool operator()(const VDProfileTrackedEvent *x, const VDProfileTrackedEvent *y) {
+		return x->mStartTime<y->mStartTime;
+	}
+};
+
+void VDRTProfileDisplay2::UpdateList() {
+	SendMessage(mhwndList, LB_RESETCONTENT, 0, 0);
+	int tabs[] = {50,90,130,200};
+	SendMessage(mhwndList, LB_SETTABSTOPS, 4, (LPARAM)tabs);
+
+	size_t threadCount = mThreadProfiles.size();
+	double msPerTick = VDGetPreciseSecondsPerTick()*1000;
+
+	uint64 baseTime = 0;
+	bool baseTimeSet = false;
+	mSortedList.clear();
+
+	for(size_t i=0; i<threadCount; ++i) {
+		VDEventProfileThreadTracker *tracker = mThreadProfiles[i];
+
+		if (!tracker)
+			continue;
+
+		const vdspan<VDProfileTrackedEvent>& events = tracker->GetEvents();
+		
+		if (!events.empty()) {
+			uint64 firstTime = events.front().mStartTime;
+
+			if (!baseTimeSet || (sint64)(firstTime - baseTime) < 0) {
+				baseTimeSet = true;
+				baseTime = firstTime;
+			}
+
+			for(uint32 j=0; j<events.size(); ++j) {
+				const VDProfileTrackedEvent& ev = events[j];
+				if (ev.mChildScopes == 0xFFFFFFFF)
+					continue;
+				if (ev.mChildScopes != 0)
+					continue;
+
+				mSortedList.push_back(&ev);
+			}
+		}
+	}
+
+	std::sort(mSortedList.begin(), mSortedList.end(), EventSort());
+
+	for(size_t i=0; i<mSortedList.size(); ++i) {
+		const VDProfileTrackedEvent& ev = *mSortedList[i];
+		const char *s = mScopes[ev.mScopeId].name;
+		double t = (double)(ev.mStartTime-baseTime) * msPerTick;
+		double d = (double)(ev.mEndTime-ev.mStartTime) * msPerTick;
+
+		if (ev.mAncillaryData) {
+			mTempStr.sprintf("%5.1fms \t %5.1fms \t (%u) \t %s", t, d, ev.mAncillaryData, s);
+		} else {
+			mTempStr.sprintf("%5.1fms \t %5.1fms \t \t %s", t, d, s);
+		}
+
+		SendMessage(mhwndList, LB_ADDSTRING, 0, (LPARAM)mTempStr.c_str());
+	}
+
+	list_event_count = event_count;
 }
 
 void VDRTProfileDisplay2::OnTimer() {
 	UpdateThreadProfiles();
 
-	InvalidateRect(mhwnd, NULL, TRUE);
-	UpdateWindow(mhwnd);
+	if (event_count!=display_event_count){
+		InvalidateRect(mhwnd, NULL, TRUE);
+		UpdateWindow(mhwnd);
+	}
+
+	if (event_count!=list_event_count){
+		UpdateList();
+	}
 }
 
 void VDRTProfileDisplay2::OnSetFont(HFONT hfont, bool bRedraw) {
@@ -903,6 +1228,12 @@ void VDRTProfileDisplay2::OnSetFont(HFONT hfont, bool bRedraw) {
 		if (hOldFont)
 			SelectObject(hdc, mhfont);
 	}
+
+	pen1 = CreatePen(PS_SOLID,1,RGB(0,0,0));
+	pen2 = CreatePen(PS_SOLID,1,RGB(0,100,255));
+	br1 = CreateSolidBrush(RGB(240,240,240));
+	br2 = CreateSolidBrush(RGB(0,100,255));
+	br3 = CreateSolidBrush(RGB(255,200,200));
 }
 
 bool VDRTProfileDisplay2::OnKey(INT wParam) {
@@ -930,6 +1261,8 @@ void VDRTProfileDisplay2::Clear() {
 	mBaseTimeOffset = 0;
 	mBasePixelOffset = 0;
 	InvalidateRect(mhwnd, NULL, TRUE);
+	SendMessage(mhwndList, LB_RESETCONTENT, 0, 0);
+	selection = 0;
 }
 
 void VDRTProfileDisplay2::DeleteThreadProfiles() {
@@ -947,6 +1280,8 @@ void VDRTProfileDisplay2::UpdateThreadProfiles() {
 	if (!p)
 		return;
 
+	event_count = 0;
+
 	uint32 n = p->GetThreadCount();
 
 	if (n > mThreadProfiles.size())
@@ -962,6 +1297,7 @@ void VDRTProfileDisplay2::UpdateThreadProfiles() {
 		}
 
 		tracker->Update();
+		event_count += tracker->GetEvents().size();
 	}
 
 	p->UpdateScopes(mScopes);

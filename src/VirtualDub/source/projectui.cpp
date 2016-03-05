@@ -753,6 +753,9 @@ void VDProjectUI::Detach() {
 		pFrame->Detach();
 	}
 
+	extern void VDCloseProfileWindow();
+	VDCloseProfileWindow();
+
 	VDProject::Detach();
 }
 
