@@ -23,13 +23,15 @@
 #include <vd2/Kasumi/blitter.h>
 
 class VDFilterFrameConverter : public VDFilterFrameManualSource {
+	friend class VDFilterFrameConverterNode;
+
 	VDFilterFrameConverter(const VDFilterFrameConverter&);
 	VDFilterFrameConverter& operator=(const VDFilterFrameConverter&);
 public:
 	VDFilterFrameConverter();
 	~VDFilterFrameConverter();
 
-	void Init(IVDFilterFrameSource *source, const VDPixmapLayout& outputLayout, const VDPixmapLayout *sourceLayoutOverride);
+	void Init(IVDFilterFrameSource *source, const VDPixmapLayout& outputLayout, const VDPixmapLayout *sourceLayoutOverride, int threads);
 	void Start(IVDFilterFrameEngine *frameEngine);
 	void Stop();
 
@@ -38,25 +40,18 @@ public:
 	sint64 GetSymbolicFrame(sint64 outputFrame, IVDFilterFrameSource *source);
 	sint64 GetNearestUniqueFrame(sint64 outputFrame);
 
-	RunResult RunRequests(const uint32 *batchNumberLimit);
-	RunResult RunProcess();
+	RunResult RunRequests(const uint32 *batchNumberLimit, int index);
+	RunResult RunProcess(int index);
 
 protected:
 	bool InitNewRequest(VDFilterFrameRequest *req, sint64 outputFrame, bool writable, uint32 batchNumber);
-	void EndFrame(bool success);
 
 	IVDFilterFrameEngine *mpEngine;
 	IVDFilterFrameSource *mpSource;
 	VDPixmapLayout		mSourceLayout;
 
-	vdautoptr<IVDPixmapBlitter> mpBlitter;
-	vdrefptr<VDFilterFrameRequest> mpRequest;
-
-	VDPixmap	mPixmapSrc;
-	VDPixmap	mPixmapDst;
-
-	VDAtomicInt	mbRequestPending;
-	VDAtomicInt	mbRequestSuccess;
+	VDFilterFrameConverterNode* node;
+	int node_count;
 };
 
 #endif

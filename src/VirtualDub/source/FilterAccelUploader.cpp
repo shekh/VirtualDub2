@@ -142,7 +142,7 @@ VDFilterAccelUploader::RunResult VDFilterAccelUploader::RunRequests(const uint32
 	mpLockedDst = dstbuf;
 	mProcessStatus = kProcess_Pending;
 
-	mpFrameEngine->ScheduleProcess();
+	mpFrameEngine->ScheduleProcess(0);
 	mpRequest.swap(req);
 	return kRunResult_Blocked;
 }

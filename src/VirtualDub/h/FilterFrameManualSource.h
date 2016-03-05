@@ -60,8 +60,8 @@ public:
 
 	void Start(IVDFilterFrameEngine *frameEngine) {}
 	void Stop() {}
-	RunResult RunRequests(const uint32 *batchNumberLimit) { return kRunResult_Idle; }
-	RunResult RunProcess() { return kRunResult_Idle; }
+	RunResult RunRequests(const uint32 *batchNumberLimit, int index) { return kRunResult_Idle; }
+	RunResult RunProcess(int index) { return kRunResult_Idle; }
 
 	bool PeekNextRequestFrame(VDPosition& pos);
 	bool GetNextRequest(const uint32 *batchLimit, VDFilterFrameRequest **ppReq);

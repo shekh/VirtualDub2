@@ -46,7 +46,8 @@ namespace {
 
 	void StructCheck() {
 		VDASSERTCT(sizeof(VDPixmap)-sizeof(FilterModPixmapInfo) == sizeof(VDXPixmap));
-		VDASSERTCT(sizeof(VDPixmapLayout)-sizeof(VDPixmapFormatEx) == sizeof(VDXPixmapLayout));
+		//VDASSERTCT(sizeof(VDPixmapLayout)-sizeof(VDPixmapFormatEx) == sizeof(VDXPixmapLayout));
+		VDASSERTCT(offsetof(VDPixmapLayout, pitch3)+sizeof(((VDPixmapLayout*)0)->pitch3) == sizeof(VDXPixmapLayout));
 				
 		VDASSERTCT(offsetof(VDPixmap, data) == offsetof(VDXPixmap, data));
 		VDASSERTCT(offsetof(VDPixmap, pitch) == offsetof(VDXPixmap, pitch));
@@ -1769,7 +1770,9 @@ bool FilterInstance::CreateSamplingRequest(sint64 outputFrame, VDXFilterPreviewS
 	return true;
 }
 
-FilterInstance::RunResult FilterInstance::RunRequests(const uint32 *batchNumberLimit) {
+FilterInstance::RunResult FilterInstance::RunRequests(const uint32 *batchNumberLimit, int index) {
+	if (index>0) return kRunResult_Idle;
+  
 	if (mbRequestFramePending)
 		return kRunResult_Blocked;
 
@@ -1791,7 +1794,9 @@ FilterInstance::RunResult FilterInstance::RunRequests(const uint32 *batchNumberL
 	return kRunResult_Running;
 }
 
-FilterInstance::RunResult FilterInstance::RunProcess() {
+FilterInstance::RunResult FilterInstance::RunProcess(int index) {
+	if (index>0) return kRunResult_Idle;
+
 	if (mbRequestFramePending) {
 		VDPROFILEBEGINDYNAMICEX(mProfileCacheFilterName, filter->name, (uint32)mRequestCurrentFrame);
 		RunFilter();
@@ -2120,7 +2125,7 @@ bool FilterInstance::BeginFrame(VDFilterFrameRequest& request, uint32 sourceOffs
 
 	mbRequestFrameCompleted = false;
 	mbRequestFramePending = true;
-	mpEngine->ScheduleProcess();
+	mpEngine->ScheduleProcess(0);
 	return true;
 }
 

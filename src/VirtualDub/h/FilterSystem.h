@@ -155,6 +155,9 @@ private:
 	ActiveFilters mActiveFilters;
 
 	uint32	mPalette[256];
+
+	struct RunState;
+	int RunNode(VDFilterSystemProcessNode* node, IVDFilterFrameSource* source, int index, RunState& state);
 };
 
 #endif

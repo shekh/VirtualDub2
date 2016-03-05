@@ -226,7 +226,7 @@ protected:
 class IVDFilterFrameEngine {
 public:
 	virtual void Schedule() = 0;
-	virtual void ScheduleProcess() = 0;
+	virtual void ScheduleProcess(int index) = 0;
 };
 
 class IVDFilterFrameSource : public IVDRefUnknown {
@@ -263,8 +263,8 @@ public:
 		kRunResult_BatchLimitedWasActive
 	};
 
-	virtual RunResult RunRequests(const uint32 *batchNumberLimit) = 0;
-	virtual RunResult RunProcess() = 0;
+	virtual RunResult RunRequests(const uint32 *batchNumberLimit, int index) = 0;
+	virtual RunResult RunProcess(int index) = 0;
 };
 
 class VDFilterConfiguration {
@@ -391,8 +391,8 @@ public:
 	bool	CreateRequest(sint64 outputFrame, bool writable, uint32 batchNumber, IVDFilterFrameClientRequest **req);
 	bool	CreateSamplingRequest(sint64 outputFrame, VDXFilterPreviewSampleCallback sampleCB, void *sampleCBData, IFilterModPreviewSample* sampleHandler, uint32 batchNumber, IVDFilterFrameClientRequest **req);
 	static int GetSamplingRequestResult(IVDFilterFrameClientRequest *req);
-	RunResult RunRequests(const uint32 *batchNumberLimit);
-	RunResult RunProcess();
+	RunResult RunRequests(const uint32 *batchNumberLimit, int index);
+	RunResult RunProcess(int index);
 
 	void	InvalidateAllCachedFrames();
 

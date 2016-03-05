@@ -78,51 +78,99 @@ bool VDFilterSystemDefaultScheduler::Block() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-class VDFilterSystemProcessNode : public VDSchedulerNode, public IVDFilterFrameEngine {
+class VDFilterSystemProcessProxy : public VDSchedulerNode {
 public:
-	VDFilterSystemProcessNode(IVDFilterFrameSource *src, IVDFilterSystemScheduler *rootScheduler);
+	VDFilterSystemProcessNode* engine;
+	int index;
 
+	virtual bool Service();
+};
+
+class VDFilterSystemProcessNode : public IVDFilterFrameEngine {
+public:
+	VDFilterSystemProcessNode(IVDFilterFrameSource *src, IVDFilterSystemScheduler *rootScheduler, int threads);
+	~VDFilterSystemProcessNode();
+
+	void AddToScheduler(VDScheduler* p);
+	void RemoveFromScheduler();
 	void Unblock();
 
-	bool Service();
+	bool Service(int index);
 	bool ServiceSync();
 
 	virtual void Schedule();
-	virtual void ScheduleProcess();
+	virtual void ScheduleProcess(int index);
 
 protected:
 	IVDFilterFrameSource *const mpSource;
 	IVDFilterSystemScheduler *const mpRootScheduler;
+	VDScheduler *mpScheduler;
 
 	VDAtomicInt mbActive;
 	VDAtomicInt mbBlocked;
-	VDAtomicInt mbBlockedPending;
+	//VDAtomicInt mbBlockedPending;
 	const bool mbAccelerated;
+
+	VDFilterSystemProcessProxy* proxy;
+	int proxy_count;
 };
 
-VDFilterSystemProcessNode::VDFilterSystemProcessNode(IVDFilterFrameSource *src, IVDFilterSystemScheduler *rootScheduler)
+VDFilterSystemProcessNode::VDFilterSystemProcessNode(IVDFilterFrameSource *src, IVDFilterSystemScheduler *rootScheduler, int threads)
 	: mpSource(src)
 	, mpRootScheduler(rootScheduler)
+	, mpScheduler(0)
 	, mbActive(false)
 	, mbBlocked(true)
 	, mbAccelerated(src->IsAccelerated())
 {
+	if (threads<=0) threads = 1;
+	if (src->IsAccelerated()) threads = 1;
+	proxy_count = threads;
+	proxy = new VDFilterSystemProcessProxy[threads];
+	{for(int i=0; i<threads; i++){
+		proxy[i].engine = this;
+		proxy[i].index = i;
+	}}
+}
+
+VDFilterSystemProcessNode::~VDFilterSystemProcessNode() {
+	delete[] proxy;
+}
+
+void VDFilterSystemProcessNode::AddToScheduler(VDScheduler* p) {
+	mpScheduler = p;
+	{for(int i=0; i<proxy_count; i++) p->Add(&proxy[i]); }
+}
+
+void VDFilterSystemProcessNode::RemoveFromScheduler() {
+	if(mpScheduler){
+		{for(int i=0; i<proxy_count; i++) mpScheduler->Remove(&proxy[i]); }
+		mpScheduler = 0;
+	}
 }
 
 void VDFilterSystemProcessNode::Unblock() {
 	mbBlocked = false;
 
-	if (mpScheduler)
-		Reschedule();
+	if (mpScheduler) {
+		{for(int i=0; i<proxy_count; i++) proxy[i].Reschedule(); }
+	}
 }
 
-bool VDFilterSystemProcessNode::Service() {
+bool VDFilterSystemProcessProxy::Service() {
+	return engine->Service(index); 
+}
+
+bool VDFilterSystemProcessNode::Service(int index) {
+	if (index>=proxy_count)
+		return false;
+
 	if (mbBlocked)
 		return false;
 
 	VDPROFILEBEGIN("Run filter");
 	bool activity = false;
-	switch(mpSource->RunProcess()) {
+	switch(mpSource->RunProcess(index)) {
 		case IVDFilterFrameSource::kRunResult_Running:
 		case IVDFilterFrameSource::kRunResult_IdleWasActive:
 		case IVDFilterFrameSource::kRunResult_BlockedWasActive:
@@ -139,7 +187,7 @@ bool VDFilterSystemProcessNode::ServiceSync() {
 		return false;
 
 	bool activity = false;
-	switch(mpSource->RunProcess()) {
+	switch(mpSource->RunProcess(0)) {
 		case IVDFilterFrameSource::kRunResult_Running:
 		case IVDFilterFrameSource::kRunResult_IdleWasActive:
 		case IVDFilterFrameSource::kRunResult_BlockedWasActive:
@@ -162,11 +210,15 @@ void VDFilterSystemProcessNode::Schedule() {
 	mpRootScheduler->Reschedule();
 }
 
-void VDFilterSystemProcessNode::ScheduleProcess() {
+void VDFilterSystemProcessNode::ScheduleProcess(int index) {
+	if (index>=proxy_count)
+		return;
+
 	VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Process rescheduling request.\n", mpSource->GetDebugDesc());
 	if (mpScheduler) {
-		if (!mbBlocked)
-			Reschedule();
+		if (!mbBlocked) {
+			proxy[index].Reschedule();
+		}
 	} else {
 		mbActive = true;
 		Schedule();
@@ -989,14 +1041,14 @@ void FilterSystem::ReadyFilters() {
 			ActiveFilterEntry& afe = mActiveFilters.push_back();
 
 			afe.mpFrameSource = src;
-			afe.mpProcessNode = new_nothrow VDFilterSystemProcessNode(src, mpBitmaps->mpScheduler);
+			afe.mpProcessNode = new_nothrow VDFilterSystemProcessNode(src, mpBitmaps->mpScheduler, mThreadsRequested);
 			if (!afe.mpProcessNode)
 				throw MyMemoryError();
 
 			if (src->IsAccelerated())
-				accelScheduler->Add(afe.mpProcessNode);
+				afe.mpProcessNode->AddToScheduler(accelScheduler);
 			else if (mpBitmaps->mpProcessScheduler)
-				mpBitmaps->mpProcessScheduler->Add(afe.mpProcessNode);
+				afe.mpProcessNode->AddToScheduler(mpBitmaps->mpProcessScheduler);
 
 			FilterInstance *fa = vdpoly_cast<FilterInstance *>(src);
 			if (fa)
@@ -1021,10 +1073,7 @@ void FilterSystem::ReadyFilters() {
 			// Remove the process node from the scheduler first so that we know RunProcess() isn't
 			// being called.
 			if (afe.mpProcessNode) {
-				if (afe.mpFrameSource->IsAccelerated())
-					accelScheduler->Remove(afe.mpProcessNode);
-				else if (mpBitmaps->mpProcessScheduler)
-					mpBitmaps->mpProcessScheduler->Remove(afe.mpProcessNode);
+				afe.mpProcessNode->RemoveFromScheduler();
 			}
 
 			// Stop the frame source.
@@ -1053,6 +1102,101 @@ bool FilterSystem::RequestFrame(sint64 outputFrame, uint32 batchNumber, IVDFilte
 	return mpBitmaps->mpTailSource->CreateRequest(outputFrame, false, batchNumber, creq);
 }
 
+void LogRunResultSync(IVDFilterFrameSource::RunResult rr, IVDFilterFrameSource* source) {
+	VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Sync processing occurred.\n", source->GetDebugDesc());
+}
+
+void LogRunResult(IVDFilterFrameSource::RunResult rr, IVDFilterFrameSource* source) {
+	switch(rr) {
+		case IVDFilterFrameSource::kRunResult_BatchLimited:
+			VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> BatchLimited.\n", source->GetDebugDesc());
+			break;
+
+		case IVDFilterFrameSource::kRunResult_BatchLimitedWasActive:
+			VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> BatchLimited+Activity.\n", source->GetDebugDesc());
+			break;
+
+		case IVDFilterFrameSource::kRunResult_Blocked:
+			VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> Blocked.\n", source->GetDebugDesc());
+			break;
+
+		case IVDFilterFrameSource::kRunResult_BlockedWasActive:
+			VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> Blocked+Activity.\n", source->GetDebugDesc());
+			break;
+
+		case IVDFilterFrameSource::kRunResult_Idle:
+			VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> Idle.\n", source->GetDebugDesc());
+			break;
+
+		case IVDFilterFrameSource::kRunResult_IdleWasActive:
+			VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> Idle+Activity.\n", source->GetDebugDesc());
+			break;
+
+		case IVDFilterFrameSource::kRunResult_Running:
+			VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> Running.\n", source->GetDebugDesc());
+			break;
+	}
+}
+
+struct FilterSystem::RunState {
+	const uint32 *batchNumberLimit;
+	bool runToCompletion;
+
+	bool didSomething;
+	bool blocked;
+	bool batchLimited;
+};
+
+int FilterSystem::RunNode(VDFilterSystemProcessNode* node, IVDFilterFrameSource* source, int index, RunState& state) {
+	IVDFilterFrameSource::RunResult rr;
+	int repeat = 0;
+	
+	if (!mpBitmaps->mpProcessScheduler && node->ServiceSync()) {
+		rr = IVDFilterFrameSource::kRunResult_Running;
+		LogRunResultSync(rr,source);
+	} else {
+		rr = source->RunRequests(state.batchNumberLimit,index);
+		LogRunResult(rr,source);
+
+		switch(rr) {
+			case IVDFilterFrameSource::kRunResult_BlockedWasActive:
+				rr = IVDFilterFrameSource::kRunResult_Blocked;
+				state.didSomething = true;
+				repeat = 1;
+				break;
+
+			case IVDFilterFrameSource::kRunResult_IdleWasActive:
+				rr = IVDFilterFrameSource::kRunResult_Idle;
+				state.didSomething = true;
+				repeat = 1;
+				break;
+		}
+
+		if (rr == IVDFilterFrameSource::kRunResult_Blocked) {
+			// If we are single threaded and we can run the processing node for this filter, do
+			// that now. This is *required* for the capture filter code to work correctly with
+			// converter stages.
+			if (!mpBitmaps->mpProcessScheduler && node->ServiceSync()) {
+				rr = IVDFilterFrameSource::kRunResult_Running;
+				LogRunResultSync(rr,source);
+			} else {
+				if (state.runToCompletion) state.blocked = true;
+			}
+		}
+	}
+
+	if (rr == IVDFilterFrameSource::kRunResult_Running) {
+		if (!state.runToCompletion)	return -1;
+		state.didSomething = true;
+		repeat = 1;
+	} else if (rr == IVDFilterFrameSource::kRunResult_BatchLimited) {
+		VDASSERT(state.batchNumberLimit);
+		state.batchLimited = true;
+	}
+
+	return repeat;
+}
+
 FilterSystem::RunResult FilterSystem::Run(const uint32 *batchNumberLimit, bool runToCompletion) {
 	if (runToCompletion)
 		batchNumberLimit = NULL;
@@ -1064,117 +1208,47 @@ FilterSystem::RunResult FilterSystem::Run(const uint32 *batchNumberLimit, bool r
 		return kRunResult_Idle;
 
 	bool activity = false;
-	bool batchLimited;
+	RunState state;
+	state.batchNumberLimit = batchNumberLimit;
+	state.runToCompletion = runToCompletion;
+	int threads = mpBitmaps->mpProcessScheduler ? mThreadsRequested : 1;
+
 	for(;;) {
-		bool didSomething = false;
-		bool blocked = false;
+		state.didSomething = false;
+		state.blocked = false;
+		state.batchLimited = false;
 
-		batchLimited = false;
+		{for(int index=0; index<threads; index++){
+			ActiveFilters::const_iterator it(mActiveFilters.end()), itEnd(mActiveFilters.begin());
+			while(it != itEnd) {
+				const ActiveFilterEntry& afe = *--it;
 
-		ActiveFilters::const_iterator it(mActiveFilters.end()), itEnd(mActiveFilters.begin());
-		while(it != itEnd) {
-			const ActiveFilterEntry& afe = *--it;
-
-			try {
-				IVDFilterFrameSource::RunResult rr;
-				bool processed = false;
-				
-				if (!mpBitmaps->mpProcessScheduler)
-					processed = afe.mpProcessNode->ServiceSync();
-
-				if (processed) {
-processed_sync:
-					rr = IVDFilterFrameSource::kRunResult_Running;
-					VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Sync processing occurred.\n", afe.mpFrameSource->GetDebugDesc());
-				} else {
-					rr = afe.mpFrameSource->RunRequests(batchNumberLimit);
-
-					switch(rr) {
-						case IVDFilterFrameSource::kRunResult_BatchLimited:
-							VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> BatchLimited.\n", afe.mpFrameSource->GetDebugDesc());
-							break;
-
-						case IVDFilterFrameSource::kRunResult_BatchLimitedWasActive:
-							VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> BatchLimited+Activity.\n", afe.mpFrameSource->GetDebugDesc());
-							break;
-
-						case IVDFilterFrameSource::kRunResult_Blocked:
-							VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> Blocked.\n", afe.mpFrameSource->GetDebugDesc());
-							break;
-
-						case IVDFilterFrameSource::kRunResult_BlockedWasActive:
-							VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> Blocked+Activity.\n", afe.mpFrameSource->GetDebugDesc());
-							break;
-
-						case IVDFilterFrameSource::kRunResult_Idle:
-							VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%d/%s]: Run -> Idle.\n", it - mActiveFilters.begin(), afe.mpFrameSource->GetDebugDesc());
-							break;
-
-						case IVDFilterFrameSource::kRunResult_IdleWasActive:
-							VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> Idle+Activity.\n", afe.mpFrameSource->GetDebugDesc());
-							break;
-
-						case IVDFilterFrameSource::kRunResult_Running:
-							VDDEBUG_FILTERSYS_DETAIL("FilterSystem[%s]: Run -> Running.\n", afe.mpFrameSource->GetDebugDesc());
-							break;
+				try {
+					while(1){
+						int r = RunNode(afe.mpProcessNode,afe.mpFrameSource,index,state);
+						if (r==-1) return kRunResult_Running;
+						if (r==0) break;
 					}
+				} catch(const MyError&) {
+					mbFiltersError = true;
+					throw;
 				}
-
-				switch(rr) {
-					case IVDFilterFrameSource::kRunResult_BlockedWasActive:
-						rr = IVDFilterFrameSource::kRunResult_Blocked;
-						++it;
-						didSomething = true;
-						break;
-
-					case IVDFilterFrameSource::kRunResult_IdleWasActive:
-						rr = IVDFilterFrameSource::kRunResult_Idle;
-						++it;
-						didSomething = true;
-						break;
-				}
-
-				if (rr == IVDFilterFrameSource::kRunResult_Blocked) {
-					// If we are single threaded and we can run the processing node for this filter, do
-					// that now. This is *required* for the capture filter code to work correctly with
-					// converter stages.
-					if (!mpBitmaps->mpProcessScheduler && afe.mpProcessNode->ServiceSync())
-						goto processed_sync;
-
-					if (runToCompletion) {
-						blocked = true;
-						continue;
-					}
-				} else if (rr == IVDFilterFrameSource::kRunResult_Running) {
-					++it;
-
-					if (!runToCompletion)
-						return kRunResult_Running;
-
-					didSomething = true;
-				} else if (rr == IVDFilterFrameSource::kRunResult_BatchLimited) {
-					VDASSERT(batchNumberLimit);
-					batchLimited = true;
-				}
-			} catch(const MyError&) {
-				mbFiltersError = true;
-				throw;
 			}
-		}
+		}}
 
-		if (blocked && !didSomething) {
+		if (state.blocked && !state.didSomething) {
 			mpBitmaps->mpScheduler->Block();
 			continue;
 		}
 
-		if (!didSomething)
+		if (!state.didSomething)
 			break;
 
 		activity = true;
 	}
 
-	VDDEBUG_FILTERSYS_DETAIL("FilterSystem: Exiting (%s)\n", activity ? "running" : batchLimited ? "batch limited" : "idle");
-	return activity ? kRunResult_Running : batchLimited ? kRunResult_BatchLimited : kRunResult_Idle;
+	VDDEBUG_FILTERSYS_DETAIL("FilterSystem: Exiting (%s)\n", activity ? "running" : state.batchLimited ? "batch limited" : "idle");
+	return activity ? kRunResult_Running : state.batchLimited ? kRunResult_BatchLimited : kRunResult_Idle;
 }
 
 void FilterSystem::Block() {
@@ -1215,11 +1289,7 @@ void FilterSystem::DeinitFilters() {
 		ActiveFilterEntry& afe = mActiveFilters.back();
 
 		IVDFilterFrameSource *fi = afe.mpFrameSource;
-		if (fi->IsAccelerated())
-			accelScheduler->Remove(afe.mpProcessNode);
-		else if (afe.mpProcessNode && mpBitmaps->mpProcessScheduler)
-			mpBitmaps->mpProcessScheduler->Remove(afe.mpProcessNode);
-
+		afe.mpProcessNode->RemoveFromScheduler();
 		fi->Stop();
 
 		if (afe.mpProcessNode) {
@@ -1357,7 +1427,7 @@ void FilterSystem::DeallocateBuffers() {
 void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout& dstLayout) {
 	vdrefptr<VDFilterFrameConverter> conv(new VDFilterFrameConverter);
 
-	conv->Init(tail.mpSrc, dstLayout, NULL);
+	conv->Init(tail.mpSrc, dstLayout, NULL, mThreadsRequested);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 	conv->RegisterSourceAllocReqs(0, tail.mpProxy);
 	tail.mpSrc = conv;
@@ -1370,7 +1440,7 @@ void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout
 void FilterSystem::AppendAlignmentFilter(StreamTail& tail, const VDPixmapLayout& dstLayout, const VDPixmapLayout& srcLayout) {
 	vdrefptr<VDFilterFrameConverter> conv(new VDFilterFrameConverter);
 
-	conv->Init(tail.mpSrc, dstLayout, &srcLayout);
+	conv->Init(tail.mpSrc, dstLayout, &srcLayout, mThreadsRequested);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 	conv->RegisterSourceAllocReqs(0, tail.mpProxy);
 	tail.mpSrc = conv;
