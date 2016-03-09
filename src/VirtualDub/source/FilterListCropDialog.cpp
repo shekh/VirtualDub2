@@ -93,14 +93,14 @@ bool VDFilterClippingDialog::OnLoaded()  {
 			filters.DeinitFilters();
 			filters.DeallocateBuffers();
 
-			/*mFilterSys.prepareLinearChain(
+			mFilterSys.prepareLinearChain(
 					mpFilterChainDesc,
 					px.w,
 					px.h,
-					pxsrc,
+					px,
 					pVSS->getRate(),
 					pVSS->getLength(),
-					inputVideo->getPixelAspectRatio());*/
+					inputVideo->getPixelAspectRatio());
 
 			mpFrameSource = new VDFilterFrameVideoSource;
 			mpFrameSource->Init(inputVideo, mFilterSys.GetInputLayout());
