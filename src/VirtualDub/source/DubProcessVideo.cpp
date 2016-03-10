@@ -1163,11 +1163,12 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	if (getOutputResult != kVideoWriteOK)
 		return getOutputResult;
 
-	VDPROFILEBEGIN("V-BltOut");
+	VDPROFILEBEGINEX("V-BltOut",(uint32)nextOutputFrame.mTimelineFrame);
 	const VDPixmapLayout& layout = (mpOptions->video.mode == DubVideoOptions::M_FULL) ? mpVideoFilters->GetOutputLayout() : mpVideoFilters->GetInputLayout();
 	VDFilterFrameBuffer *buf = pOutputReq->GetResultBuffer();
 	VDPixmap pxsrc = VDPixmapFromLayout(layout, (void *)buf->LockRead());
 	pxsrc.info = buf->info;
+	pxsrc.info.frame_num = nextOutputFrame.mTimelineFrame;
 	pBuffer->mPixmap.info.colorSpaceMode = mpOptions->video.mOutputFormat.colorSpaceMode;
 	pBuffer->mPixmap.info.colorRangeMode = mpOptions->video.mOutputFormat.colorRangeMode;
 	if (!mpOutputBlitter)

@@ -78,83 +78,72 @@ void VDPixmapGen_X32B32G32R32F_To_X16R16G16B16::Compute(void *dst0, sint32 y) {
 void VDPixmapGen_X16R16G16B16_To_X8R8G8B8::Compute(void *dst0, sint32 y) {
 	VDCPUCleanupExtensions();
 
-	const void* src0 = mpSrc->GetRow(y, mSrcIndex);
+	const uint8* src = (const uint8*)mpSrc->GetRow(y, mSrcIndex);
+	uint8 *dst = (uint8 *)dst0;
 
-	if((mWidth & 1)==0 && (size_t(dst0) & 0xF)==0) {
-		__m128i *dst = (__m128i *)dst0;
-		const __m128i *src = (const __m128i *)src0;
-		sint32 w = mWidth/4;
+	const int n2 = ((16-size_t(dst)) & 0xF)/4;
+	const int n0 = (mWidth-n2)/4;
+	const int n1 = mWidth-n2-n0*4;
 
-		if(unorm_mode){
-			__m128i mm = _mm_set_epi16(0,mr,mg,mb,0,mr,mg,mb);
+	for(sint32 i=0; i<n2; ++i) {
+		uint16 r = ((uint16*)src)[2];
+		uint16 g = ((uint16*)src)[1];
+		uint16 b = ((uint16*)src)[0];
+		uint16 a = ((uint16*)src)[3];
+		src += 8;
 
-			for(sint32 i=0; i<w; ++i) {
-				__m128i c0 = _mm_load_si128(src);
-				__m128i c1 = _mm_load_si128(src+1);
-				c0 = _mm_mulhi_epu16(c0,mm);
-				c1 = _mm_mulhi_epu16(c1,mm);
-				__m128i v = _mm_packus_epi16(c0,c1);
-				_mm_store_si128(dst,v);
-				src+=2;
-				dst++;
-			}
+		if(r>ref_r) r=255; else r=(r*mr+0x8000)>>16;
+		if(g>ref_g) g=255; else g=(g*mg+0x8000)>>16;
+		if(b>ref_b) b=255; else b=(b*mb+0x8000)>>16;
+		if(a>ref_a) a=255; else a=(a*ma+0x8000)>>16;
 
-		} else {
+		uint32 ir = r << 16;
+		uint32 ig = g << 8;
+		uint32 ib = b;
+		uint32 ia = a << 24;
 
-			for(sint32 i=0; i<w; ++i) {
-				__m128i c0 = _mm_load_si128(src);
-				__m128i c1 = _mm_load_si128(src+1);
-				c0 = _mm_srli_epi16(c0,8);
-				c1 = _mm_srli_epi16(c1,8);
-				__m128i v = _mm_packus_epi16(c0,c1);
-				_mm_store_si128(dst,v);
-				src+=2;
-				dst++;
-			}
-		}
+		*(uint32*)dst = ir + ig + ib + ia;
+		dst+=4;
+	}
 
-	} else {
+	__m128i mm = _mm_set_epi16(ma,mr,mg,mb,ma,mr,mg,mb);
 
-		uint32 *dst = (uint32 *)dst0;
-		const uint16 *src = (const uint16 *)src0;
-		sint32 w = mWidth;
+	for(sint32 i=0; i<n0; ++i) {
+		__m128i c0 = _mm_loadu_si128((const __m128i*)src);
+		__m128i c1 = _mm_loadu_si128((const __m128i*)(src+16));
+		__m128i a0 = _mm_mullo_epi16(c0,mm);
+		__m128i a1 = _mm_mullo_epi16(c1,mm);
+		a0 = _mm_srli_epi16(a0,15);
+		a1 = _mm_srli_epi16(a1,15);
+		c0 = _mm_mulhi_epu16(c0,mm);
+		c1 = _mm_mulhi_epu16(c1,mm);
+		c0 = _mm_adds_epu16(c0,a0);
+		c1 = _mm_adds_epu16(c1,a1);
+		__m128i v = _mm_packus_epi16(c0,c1);
+		_mm_store_si128((__m128i*)dst,v);
+		src+=32;
+		dst+=16;
+	}
 
-		if(unorm_mode){
-			for(sint32 i=0; i<w; ++i) {
-				uint16 r = src[2];
-				uint16 g = src[1];
-				uint16 b = src[0];
-				uint16 a = src[3];
-				src += 4;
+	for(sint32 i=0; i<n1; ++i) {
+		uint16 r = ((uint16*)src)[2];
+		uint16 g = ((uint16*)src)[1];
+		uint16 b = ((uint16*)src)[0];
+		uint16 a = ((uint16*)src)[3];
+		src += 8;
 
-				if(r>ref_r) r=255; else r=(r*mr)>>16;
-				if(g>ref_g) g=255; else g=(g*mg)>>16;
-				if(b>ref_b) b=255; else b=(b*mb)>>16;
-				if(a>ref_a) a=255; else a=(a*ma)>>16;
+		if(r>ref_r) r=255; else r=(r*mr+0x8000)>>16;
+		if(g>ref_g) g=255; else g=(g*mg+0x8000)>>16;
+		if(b>ref_b) b=255; else b=(b*mb+0x8000)>>16;
+		if(a>ref_a) a=255; else a=(a*ma+0x8000)>>16;
 
-				uint32 ir = r << 16;
-				uint32 ig = g << 8;
-				uint32 ib = b;
-				uint32 ia = a << 24;
+		uint32 ir = r << 16;
+		uint32 ig = g << 8;
+		uint32 ib = b;
+		uint32 ia = a << 24;
 
-				dst[i] = ir + ig + ib + ia;
-			}
-		} else {
-			for(sint32 i=0; i<w; ++i) {
-				uint16 r = src[2];
-				uint16 g = src[1];
-				uint16 b = src[0];
-				uint16 a = src[3];
-				src += 4;
-
-				uint32 ir = (r>>8) << 16;
-				uint32 ig = (g>>8) << 8;
-				uint32 ib = (b>>8);
-				uint32 ia = a << 24;
-
-				dst[i] = ir + ig + ib + ia;
-			}
-		}
+		*(uint32*)dst = ir + ig + ib + ia;
+		dst+=4;
 	}
 }
 

@@ -3,6 +3,7 @@
 #include <vd2/system/vectors.h>
 #include <vd2/system/VDString.h>
 #include <vd2/Kasumi/blitter.h>
+#include <vd2/system/profile.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmapops.h>
 #include <vd2/Kasumi/pixmaputils.h>
@@ -759,6 +760,8 @@ bool VDVideoDisplayMinidriverGDI::Update(UpdateMode mode) {
 			}
 		}
 
+		VDPROFILEBEGINEX("V-BlitDisplay",source.info.frame_num==-1 ? 0:(uint32)source.info.frame_num);
+
 		VDPixmap dstbm = { dst, NULL, source.w, source.h, dstpitch, source.format };
 
 		if (mbPaletted) {
@@ -771,6 +774,8 @@ bool VDVideoDisplayMinidriverGDI::Update(UpdateMode mode) {
 
 			mCachedBlitter.Blit(dstbm, source);
 		}
+
+		VDPROFILEEND();
 
 		if (mbDisplayDebugInfo) {
 			int saveIndex = SaveDC(mhdc);

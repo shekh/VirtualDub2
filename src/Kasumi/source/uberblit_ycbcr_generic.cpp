@@ -19,6 +19,7 @@
 #include <stdafx.h>
 #include <vd2/system/vectors.h>
 #include "uberblit_ycbcr_generic.h"
+#include <emmintrin.h>
 
 extern const VDPixmapGenYCbCrBasis g_VDPixmapGenYCbCrBasis_601 = {
 	0.299f,
@@ -47,13 +48,13 @@ VDPixmapGenYCbCrToRGB32Generic::VDPixmapGenYCbCrToRGB32Generic(const VDPixmapGen
 
 	if (studioRGB) {
 		// warning: this path is not used / not tested
-		scale = 65536.0f * (255.0f / 219.0f);
-		scale2 = 65536.0f * (255.0f / 224.0f);
-		bias = -16.0f / 255.0f + 0.5f;
+		scale = 4096.0f * (255.0f / 219.0f);
+		scale2 = 4096.0f * (255.0f / 224.0f);
+		bias = -16.0f / 255.0f;
 	} else {
-		scale = 65536.0f;
-		scale2 = 65536.0f;
-		bias = 0.5f;
+		scale = 4096.0f;
+		scale2 = 4096.0f;
+		bias = 0.0f;
 	}
 
 	mCoY = VDRoundToInt32(scale);
@@ -61,9 +62,9 @@ VDPixmapGenYCbCrToRGB32Generic::VDPixmapGenYCbCrToRGB32Generic(const VDPixmapGen
 	mCoGCr = VDRoundToInt32(basis.mToRGB[1][1] * scale2);
 	mCoGCb = VDRoundToInt32(basis.mToRGB[0][1] * scale2);
 	mCoBCb = VDRoundToInt32(basis.mToRGB[0][2] * scale2);
-	mBiasR = VDRoundToInt32(bias*scale) - 128*mCoRCr;
-	mBiasG = VDRoundToInt32(bias*scale) - 128*(mCoGCr + mCoGCb);
-	mBiasB = VDRoundToInt32(bias*scale) - 128*mCoBCb;
+	mBiasR = VDRoundToInt32(bias*scale/256) - 128*mCoRCr/256 + 8;
+	mBiasG = VDRoundToInt32(bias*scale/256) - 128*(mCoGCr + mCoGCb)/256 + 8;
+	mBiasB = VDRoundToInt32(bias*scale/256) - 128*mCoBCb/256 + 8;
 }
 
 uint32 VDPixmapGenYCbCrToRGB32Generic::GetType(uint32 output) const {
@@ -76,26 +77,129 @@ void VDPixmapGenYCbCrToRGB32Generic::Compute(void *dst0, sint32 y) {
 	const uint8 *srcCb = (const uint8 *)mpSrcCb->GetRow(y, mSrcIndexCb);
 	const uint8 *srcCr = (const uint8 *)mpSrcCr->GetRow(y, mSrcIndexCr);
 
+	const __m128i zero = _mm_setzero_si128();
+	const __m128i consty = _mm_set1_epi16(mCoY);
+	const __m128i constrr = _mm_set1_epi16(mCoRCr);
+	const __m128i constrg = _mm_set1_epi16(-mCoGCr);
+	const __m128i constbg = _mm_set1_epi16(-mCoGCb);
+	const __m128i constbb = _mm_set1_epi16(mCoBCb);
+	const __m128i constr0 = _mm_set1_epi16(-mBiasR);
+	const __m128i constg0 = _mm_set1_epi16(mBiasG);
+	const __m128i constb0 = _mm_set1_epi16(-mBiasB);
+
+	const int n0 = mWidth/16;
+	const int n1 = mWidth-n0*16;
+
+	{for(int i=0; i<n0; i++){
+		{
+			__m128i y = _mm_loadu_si128((__m128i*)srcY);
+			__m128i cb = _mm_loadu_si128((__m128i*)srcCb);
+			__m128i cr = _mm_loadu_si128((__m128i*)srcCr);
+
+			y = _mm_unpacklo_epi8(zero,y);
+			y = _mm_mulhi_epu16(y,consty);
+
+			__m128i r = _mm_unpacklo_epi8(zero,cr);
+			r = _mm_mulhi_epu16(r,constrr);
+			r = _mm_add_epi16(r,y);
+			r = _mm_subs_epu16(r,constr0);
+			r = _mm_srli_epi16(r,4);
+			r = _mm_packus_epi16(r,zero);
+
+			__m128i r1 = _mm_unpacklo_epi8(zero,cr);
+			r1 = _mm_mulhi_epu16(r1,constrg);
+			__m128i g = _mm_add_epi16(y,constg0);
+			g = _mm_subs_epu16(g,r1);
+			__m128i b1 = _mm_unpacklo_epi8(zero,cb);
+			b1 = _mm_mulhi_epu16(b1,constbg);
+			g = _mm_subs_epu16(g,b1);
+			g = _mm_srli_epi16(g,4);
+			g = _mm_packus_epi16(g,zero);
+
+			__m128i b = _mm_unpacklo_epi8(zero,cb);
+			b = _mm_mulhi_epu16(b,constbb);
+			b = _mm_add_epi16(b,y);
+			b = _mm_subs_epu16(b,constb0);
+			b = _mm_srli_epi16(b,4);
+			b = _mm_packus_epi16(b,zero);
+
+			__m128i bg = _mm_unpacklo_epi8(b,g);
+			__m128i ra = _mm_unpacklo_epi8(r,zero);
+			__m128i bgr0 = _mm_unpacklo_epi16(bg,ra);
+			__m128i bgr1 = _mm_unpackhi_epi16(bg,ra);
+			_mm_store_si128((__m128i*)dst,bgr0);
+			dst += 16;
+			_mm_store_si128((__m128i*)dst,bgr1);
+			dst += 16;
+		}
+
+		{
+			__m128i y = _mm_loadu_si128((__m128i*)srcY);
+			__m128i cb = _mm_loadu_si128((__m128i*)srcCb);
+			__m128i cr = _mm_loadu_si128((__m128i*)srcCr);
+
+			y = _mm_unpackhi_epi8(zero,y);
+			y = _mm_mulhi_epu16(y,consty);
+
+			__m128i r = _mm_unpackhi_epi8(zero,cr);
+			r = _mm_mulhi_epu16(r,constrr);
+			r = _mm_add_epi16(r,y);
+			r = _mm_subs_epu16(r,constr0);
+			r = _mm_srli_epi16(r,4);
+			r = _mm_packus_epi16(r,zero);
+
+			__m128i r1 = _mm_unpackhi_epi8(zero,cr);
+			r1 = _mm_mulhi_epu16(r1,constrg);
+			__m128i g = _mm_add_epi16(y,constg0);
+			g = _mm_subs_epu16(g,r1);
+			__m128i b1 = _mm_unpackhi_epi8(zero,cb);
+			b1 = _mm_mulhi_epu16(b1,constbg);
+			g = _mm_subs_epu16(g,b1);
+			g = _mm_srli_epi16(g,4);
+			g = _mm_packus_epi16(g,zero);
+
+			__m128i b = _mm_unpackhi_epi8(zero,cb);
+			b = _mm_mulhi_epu16(b,constbb);
+			b = _mm_add_epi16(b,y);
+			b = _mm_subs_epu16(b,constb0);
+			b = _mm_srli_epi16(b,4);
+			b = _mm_packus_epi16(b,zero);
+
+			__m128i bg = _mm_unpacklo_epi8(b,g);
+			__m128i ra = _mm_unpacklo_epi8(r,zero);
+			__m128i bgr0 = _mm_unpacklo_epi16(bg,ra);
+			__m128i bgr1 = _mm_unpackhi_epi16(bg,ra);
+			_mm_store_si128((__m128i*)dst,bgr0);
+			dst += 16;
+			_mm_store_si128((__m128i*)dst,bgr1);
+			dst += 16;
+		}
+
+		srcY += 16;
+		srcCb += 16;
+		srcCr += 16;
+	}}
+
 	const sint32 coY = mCoY;
 	const sint32 coRCr = mCoRCr;
-	const sint32 coGCr = mCoGCr;
-	const sint32 coGCb = mCoGCb;
+	const sint32 coGCr = -mCoGCr;
+	const sint32 coGCb = -mCoGCb;
 	const sint32 coBCb = mCoBCb;
 	const sint32 biasR = mBiasR;
 	const sint32 biasG = mBiasG;
 	const sint32 biasB = mBiasB;
 
-	const sint32 w = mWidth;
-	for(sint32 i=0; i<w; ++i) {
+	// intermediate shifts are necessary to make it equivalent to sse version
+	for(sint32 i=0; i<n1; ++i) {
 		sint32 y = srcY[i];
 		sint32 cb = srcCb[i];
 		sint32 cr = srcCr[i];
 
-		y *= coY;
+		y = (y*coY)>>8;
 
-		sint32 r = biasR + y + coRCr * cr;
-		sint32 g = biasG + y + coGCr * cr + coGCb * cb;
-		sint32 b = biasB + y + coBCb * cb;
+		sint32 r = biasR + y + ((coRCr * cr)>>8);
+		sint32 g = biasG + y - ((coGCr * cr)>>8) - ((coGCb * cb)>>8);
+		sint32 b = biasB + y + ((coBCb * cb)>>8);
 
 		// clip low
 		r &= ~r >> 31;
@@ -103,16 +207,16 @@ void VDPixmapGenYCbCrToRGB32Generic::Compute(void *dst0, sint32 y) {
 		b &= ~b >> 31;
 
 		// clip high
-		sint32 clipR = 0xffffff - r;
-		sint32 clipG = 0xffffff - g;
-		sint32 clipB = 0xffffff - b;
+		sint32 clipR = 0xfff - r;
+		sint32 clipG = 0xfff - g;
+		sint32 clipB = 0xfff - b;
 		r |= clipR >> 31;
 		g |= clipG >> 31;
 		b |= clipB >> 31;
 
-		dst[0] = (uint8)(b >> 16);
-		dst[1] = (uint8)(g >> 16);
-		dst[2] = (uint8)(r >> 16);
+		dst[0] = (uint8)(b >> 4);
+		dst[1] = (uint8)(g >> 4);
+		dst[2] = (uint8)(r >> 4);
 		dst[3] = 0xff;
 
 		dst += 4;

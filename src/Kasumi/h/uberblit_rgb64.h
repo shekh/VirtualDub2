@@ -124,15 +124,10 @@ public:
 		ref_g = buf.ref_g;
 		ref_b = buf.ref_b;
 		ref_a = buf.ref_a;
-		if (VDPixmap_X16R16G16B16_IsNormalized(buf)) {
-			unorm_mode = false;
-		} else {
-			unorm_mode = true;
-			mr = 0xFF0000/buf.ref_r;
-			mg = 0xFF0000/buf.ref_g;
-			mb = 0xFF0000/buf.ref_b;
-			ma = 0xFF0000/buf.ref_a;
-		}
+		mr = 0xFF0000/buf.ref_r;
+		mg = 0xFF0000/buf.ref_g;
+		mb = 0xFF0000/buf.ref_b;
+		ma = 0xFF0000/buf.ref_a;
 	}
 
 	void Start() {
@@ -152,7 +147,6 @@ protected:
 	uint32 mg;
 	uint32 mb;
 	uint32 ma;
-	bool unorm_mode;
 
 	void Compute(void *dst0, sint32 y);
 };

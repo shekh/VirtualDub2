@@ -1635,7 +1635,7 @@ bool VDVideoDisplayMinidriverDirectDraw::Update(UpdateMode mode) {
 		}
 	}
 
-	VDPROFILEBEGIN("V-BlitDisplay");
+	VDPROFILEBEGINEX("V-BlitDisplay",source.info.frame_num==-1 ? 0:(uint32)source.info.frame_num);
 
 	if (dither)
 		VDDitherImage(dstbm, source, mpLogicalPalette);

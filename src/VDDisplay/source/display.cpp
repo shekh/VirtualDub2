@@ -27,6 +27,7 @@
 #include <vd2/system/vdtypes.h>
 #include <vd2/system/VDString.h>
 #include <vd2/system/w32assist.h>
+#include <vd2/system/profile.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmaputils.h>
 
@@ -1193,7 +1194,9 @@ void VDVideoDisplayWindow::SyncUpdate(int mode) {
 		ReleaseActiveFrame();
 		if (success) {
 			if (!mInhibitRefresh) {
+				VDPROFILEBEGINEX2("V-Refresh",0,vdprofiler_flag_wait);
 				mpMiniDriver->Refresh((IVDVideoDisplayMinidriver::UpdateMode)mode);
+				VDPROFILEEND();
 				mSyncDelta = mpMiniDriver->GetSyncDelta();
 
 				if (!mpMiniDriver->IsFramePending())
