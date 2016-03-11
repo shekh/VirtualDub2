@@ -124,6 +124,7 @@ public:
 				HWND w2 = GetDlgItem(hdlg, IDC_PROFILE_LIST);
 				SendMessage(w2,LB_SETCOLUMNWIDTH,400,0);
 				SendMessage(w1,WM_USER+600,0,(LPARAM)w2);
+				VDUIRestoreWindowPlacementW32(hdlg, "ProfileDisplay2", SW_SHOW);
 			}
 		case WM_SIZE:
 			{
@@ -144,6 +145,9 @@ public:
 				}
 			}
 			return TRUE;
+		case WM_DESTROY:
+			VDUISaveWindowPlacementW32(hdlg, "ProfileDisplay2");
+			return FALSE;
 		case WM_COMMAND:
 			if (LOWORD(wParam) == IDCANCEL)
 				EndDialog(hdlg, 0);

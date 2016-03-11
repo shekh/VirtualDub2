@@ -491,6 +491,7 @@ public:
 	static VDRTProfileDisplay2 *Create(HWND hwndParent, int x, int y, int cx, int cy, UINT id);
 
 	static LRESULT CALLBACK StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static LRESULT CALLBACK StaticListWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 protected:
 	LRESULT WndProc(UINT msg, WPARAM wParam, LPARAM lParam);
@@ -500,6 +501,7 @@ protected:
 	bool OnKey(INT wParam);
 	void OnTimer();
 	void UpdateList();
+	void UpdateListTop(bool sync);
 
 protected:
 	void Clear();
@@ -517,6 +519,7 @@ protected:
 
 	const HWND mhwnd;
 	HWND    mhwndList;
+	void*   old_list_proc;
 	HFONT		mhfont;
 	HPEN    pen1;
 	HPEN    pen2;
@@ -527,6 +530,7 @@ protected:
 	int     event_count;
 	int     display_event_count;
 	int     list_event_count;
+	int     list_top;
 
 	int			mDisplayResolution;
 	int			mWidth;
@@ -578,6 +582,7 @@ VDRTProfileDisplay2::VDRTProfileDisplay2(HWND hwnd)
 	event_count = 0;
 	display_event_count = 0;
 	list_event_count = 0;
+	list_top = 0;
 	mhwndList = 0;
 	selection = 0;
 	pen1 = 0;
@@ -654,6 +659,18 @@ LRESULT CALLBACK VDRTProfileDisplay2::StaticWndProc(HWND hwnd, UINT msg, WPARAM 
 		return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
+LRESULT CALLBACK VDRTProfileDisplay2::StaticListWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	VDRTProfileDisplay2* pthis = (VDRTProfileDisplay2*)GetWindowLongPtr(hwnd,GWLP_USERDATA);
+	if (msg==WM_DESTROY) {
+		SetWindowLongPtr(hwnd,GWLP_WNDPROC,(LPARAM)pthis->old_list_proc);
+	}
+	if (msg==WM_HSCROLL) {
+		pthis->UpdateListTop(true);
+	}
+
+	return CallWindowProc((WNDPROC)pthis->old_list_proc, hwnd, msg, wParam, lParam);
+}
+
 LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
 		case WM_CREATE:
@@ -669,11 +686,13 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 			return 0;
 
-		case WM_USER+600:
+		case WM_USER+600: // set list
 			mhwndList = (HWND)lParam;
+			old_list_proc = (void*)SetWindowLongPtr(mhwndList,GWLP_WNDPROC,(LPARAM)StaticListWndProc);
+			SetWindowLongPtr(mhwndList,GWLP_USERDATA,(LPARAM)this);
 			return 0;
 
-		case WM_USER+601:
+		case WM_USER+601: // list selection change
 			{
 				int x = SendMessage(mhwndList, LB_GETCURSEL, 0, 0);
 				if(selection)
@@ -684,11 +703,15 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 					selection = 0;
 				if(selection)
 					InvalidateEventRect(*selection);
+				UpdateListTop(true);
 				return 0;
 			}
-		case WM_USER+602:
+		case WM_USER+602: // list double click
 			{
-				if(selection) GoToEvent(*selection);
+				if(selection){
+					SetFocus(mhwnd);
+					GoToEvent(*selection);
+				}
 				return 0;
 			}
 
@@ -697,6 +720,7 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 				VDEventProfilerW32 *p = static_cast<VDEventProfilerW32 *>(g_pVDEventProfiler);
 
 				p->Detach();
+				p->Clear();
 			}
 			return 0;
 
@@ -767,6 +791,7 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			if (::GetKeyState(VK_MENU) >= 0) {
 				::SetFocus(mhwnd);
 				GoToEvent(LOWORD(lParam),HIWORD(lParam));
+				UpdateListTop(false);
 				break;
 			}
 			// fall through
@@ -903,7 +928,6 @@ void VDRTProfileDisplay2::GoToEvent(const VDProfileTrackedEvent& ev) {
 
 	double xf1 = (double)(sint64)(ev.mStartTime - baseTime) * pixelsPerTick;
 	sint64 offset = VDCeilToInt64(xf1 - 0.5) - r0.right/2;
-	SetFocus(mhwnd);
 	ScrollByPixels(int(offset-mBasePixelOffset),0);
 }
 
@@ -1185,6 +1209,17 @@ void VDRTProfileDisplay2::UpdateList() {
 	list_event_count = event_count;
 }
 
+void VDRTProfileDisplay2::UpdateListTop(bool sync) {
+	int x = SendMessage(mhwndList,LB_GETTOPINDEX,0,0);
+	if (x!=list_top) {
+		list_top = x;
+
+		if (sync) {
+			GoToEvent(*mSortedList[x]);
+		}
+	}
+}
+
 void VDRTProfileDisplay2::OnTimer() {
 	UpdateThreadProfiles();
 
@@ -1263,6 +1298,7 @@ void VDRTProfileDisplay2::Clear() {
 	InvalidateRect(mhwnd, NULL, TRUE);
 	SendMessage(mhwndList, LB_RESETCONTENT, 0, 0);
 	selection = 0;
+	list_top = 0;
 }
 
 void VDRTProfileDisplay2::DeleteThreadProfiles() {

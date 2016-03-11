@@ -1027,6 +1027,11 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		EnableWindow(mhwndParent,true);
 		return true;
 
+	case ID_OPTIONS_SHOWPROFILER:
+		extern void VDOpenProfileWindow();
+		VDOpenProfileWindow();
+		return true;
+
 	default:
 		if (VDHandleTimelineCommand(mpPosition, mpTimeline, cmd)) {
 			OnVideoRedraw();
@@ -1733,6 +1738,11 @@ bool PixmapView::OnCommand(UINT cmd) {
 
 	case ID_FILE_SAVEIMAGE:
 		SaveImageAsk();
+		return true;
+
+	case ID_OPTIONS_SHOWPROFILER:
+		extern void VDOpenProfileWindow();
+		VDOpenProfileWindow();
 		return true;
 	}
 
