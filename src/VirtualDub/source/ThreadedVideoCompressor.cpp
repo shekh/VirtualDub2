@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include <vd2/system/profile.h>
 #include <vd2/Riza/videocodec.h>
+#include <../Kasumi/h/uberblit_rgb64.h>
 #include "ThreadedVideoCompressor.h"
 
 enum {
@@ -108,6 +109,7 @@ protected:
 
 	VDThreadedVideoCompressor *mpParent;
 	IVDVideoCompressor *mpCompressor;
+	VDPixmapBuffer repack_buffer;
 };
 
 /////////
@@ -316,7 +318,7 @@ bool VDThreadedVideoCompressor::ExchangeBuffer(VDRenderOutputBuffer *buffer, VDR
 			if (!mbFlushInProgress)
 				++mFramesSubmitted;
 
-			if (!ProcessFrame(buffer, mpBaseCompressor, NULL, 0, NULL)) {
+			if (!ProcessFrame(buffer, mpBaseCompressor, NULL, 0, NULL, NULL)) {
 				if (mbInErrorState)
 					throw mError;
 
@@ -336,7 +338,7 @@ bool VDThreadedVideoCompressor::ExchangeBuffer(VDRenderOutputBuffer *buffer, VDR
 	return success;
 }
 
-void VDThreadedVideoCompressor::RunSlave(IVDVideoCompressor *compressor) {
+void VDThreadedVideoCompressor::RunSlave(IVDVideoCompressor *compressor, VDPixmapBuffer& repack_buffer) {
 	VDRTProfileChannel	profchan("VideoCompressor");
 
 	FrameTrackingQueue frameTrackingQueue;
@@ -430,12 +432,12 @@ void VDThreadedVideoCompressor::RunSlave(IVDVideoCompressor *compressor) {
 		while(framesToSkip--)
 			compressor->SkipFrame();
 
-		if (!ProcessFrame(buffer, compressor, &profchan, frameNumber, &frameTrackingQueue))
+		if (!ProcessFrame(buffer, compressor, &profchan, frameNumber, &frameTrackingQueue, &repack_buffer))
 			break;
 	}
 }
 
-bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDVideoCompressor *pCompressor, VDRTProfileChannel *pProfileChannel, sint32 frameNumber, FrameTrackingQueue *frameTrackingQueue) {
+bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDVideoCompressor *pCompressor, VDRTProfileChannel *pProfileChannel, sint32 frameNumber, FrameTrackingQueue *frameTrackingQueue, VDPixmapBuffer* repack_buffer) {
 	vdrefptr<VDRenderPostCompressionBuffer> pOutputBuffer;
 
 	if (frameTrackingQueue) {
@@ -469,7 +471,16 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 		if (frameTrackingQueue && frameNumber >= 0)
 			frameTrackingQueue->push_back(frameNumber);
 
-		valid = pCompressor->CompressFrame(pOutputBuffer->mOutputBuffer.data(), pBuffer->mpBase, isKey, packedSize);
+		VDPixmap& src = pBuffer->mPixmap;
+		void* dst = pBuffer->mpBase;
+		if (src.format==nsVDPixmap::kPixFormat_XRGB64) {
+			// need another buffer for this
+			if (!repack_buffer->data) repack_buffer->init(src.w,src.h,src.format);
+			dst = repack_buffer->data;
+			VDPixmap_X16R16G16B16_to_b64a(*repack_buffer,src);
+		}
+
+		valid = pCompressor->CompressFrame(pOutputBuffer->mOutputBuffer.data(), dst, isKey, packedSize);
 
 		if (!valid) {
 			vdsynchronized(mMutex) {
@@ -574,5 +585,5 @@ void VDThreadedVideoCompressorSlave::Init(VDThreadedVideoCompressor *parent, IVD
 }
 
 void VDThreadedVideoCompressorSlave::ThreadRun() {
-	mpParent->RunSlave(mpCompressor);
+	mpParent->RunSlave(mpCompressor,repack_buffer);
 }

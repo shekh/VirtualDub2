@@ -272,6 +272,11 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biBitCount		= 32;
 		dst->biSizeImage	= w*4 * h;
 		break;
+	case kPixFormat_XRGB64:
+		dst->biCompression	= VDMAKEFOURCC('b', '6', '4', 'a');
+		dst->biBitCount		= 64;
+		dst->biSizeImage	= w*8 * h;
+		break;
 	case kPixFormat_YUV422_UYVY:
 		dst->biCompression	= VDMAKEFOURCC('U', 'Y', 'V', 'Y');
 		dst->biBitCount		= 16;

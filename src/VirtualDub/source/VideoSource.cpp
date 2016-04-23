@@ -37,6 +37,7 @@
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmapops.h>
 #include <vd2/Kasumi/pixmaputils.h>
+#include <../Kasumi/h/uberblit_rgb64.h>
 #include <vd2/Riza/bitmap.h>
 #include "misc.h"
 #include "oshelper.h"
@@ -1385,7 +1386,9 @@ bool VideoSourceAVI::_construct(int streamIndex) {
 	// Note that we have to accommodate V210 here, which has an average of 22 bits per pixel
 	// but has a scanline alignment of 128 bytes (!).
 
-	uint32 rgbapitch = bmih->biWidth * 4;
+  //! max decode is b64a / 64 bit
+
+	uint32 rgbapitch = bmih->biWidth * 8;
 	uint32 v210pitch = ((bmih->biWidth + 5) / 6 * 16 + 127) & ~127;
 
 	if (!AllocFrameBuffer(std::max(rgbapitch, v210pitch) * abs((int)bmih->biHeight) + 4))
@@ -2159,6 +2162,17 @@ const void *VideoSourceAVI::streamGetFrame(const void *inputBuffer, uint32 data_
 					vdprotected2("using input buffer at "VDPROT_PTR"-"VDPROT_PTR, const void *, inputBuffer, const void *, (const char *)inputBuffer + data_len - 1) {
 						vdprotected1("decompressing video frame %lu", unsigned long, (unsigned long)frame_num) {
 							mpDecompressor->DecompressFrame(mpFrameBuffer, inputBuffer, data_len, _isKey(frame_num), is_preroll);
+
+							mTargetFormat.info.frame_num = frame_num;
+							if(mpDecompressor->GetAlpha()) mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaMask;
+							if(mTargetFormat.format==nsVDPixmap::kPixFormat_XRGB64) {
+								VDPixmap_X16R16G16B16_to_b64a(mTargetFormat,mTargetFormat);
+
+								mTargetFormat.info.ref_r = 0xFFFF;
+								mTargetFormat.info.ref_g = 0xFFFF;
+								mTargetFormat.info.ref_b = 0xFFFF;
+								mTargetFormat.info.ref_a = 0xFFFF;
+							}
 						}
 					}
 				}

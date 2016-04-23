@@ -71,6 +71,7 @@ public:
 	virtual void DecompressFrame(void *dst, const void *src, uint32 srcSize, bool keyframe, bool preroll) = 0;
 	virtual const void *GetRawCodecHandlePtr() = 0;		// (HIC *) on Win32
 	virtual const wchar_t *GetName() = 0;
+	virtual bool GetAlpha(){ return 0; }
 };
 
 IVDVideoDecompressor *VDCreateVideoDecompressorVCM(const void *srcFormat, uint32 srcFormatSize, const void *pHIC);

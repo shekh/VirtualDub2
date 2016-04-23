@@ -26,6 +26,7 @@
 #include <vd2/system/filesys.h>
 #include <vd2/system/protscope.h>
 #include <vd2/system/text.h>
+#include <vd2/system/binary.h>
 #include <vd2/VDLib/Dialog.h>
 #include <vd2/VDLib/UIProxies.h>
 
@@ -486,12 +487,31 @@ static int g_yres[]={
 };
 
 static int g_depths[]={
-	16, 24, 32
+	16, 24, 32,
+	48,
+	64
 };
+
+static int g_depths_fcc[]={
+	0, 0, 0,
+	VDMAKEFOURCC('b', '4', '8', 'r'),
+	VDMAKEFOURCC('b', '6', '4', 'a')
+};
+
 
 #define		NWIDTHS		(sizeof g_xres / sizeof g_xres[0])
 #define		NHEIGHTS	(sizeof g_yres / sizeof g_yres[0])
 #define		NDEPTHS		(sizeof g_depths / sizeof g_depths[0])
+
+void set_depth(BITMAPINFO& bi, int k) {
+	int d = g_depths[k];
+	int w = bi.bmiHeader.biWidth;
+	int h = bi.bmiHeader.biHeight;
+
+	bi.bmiHeader.biBitCount = (WORD)d;
+	bi.bmiHeader.biSizeImage = ((w*d+31)/32)*4*h;
+	bi.bmiHeader.biCompression = g_depths_fcc[k];
+}
 
 void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 	// Clear restrictions box.
@@ -576,7 +596,7 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 
 	int w;
 	int h;
-	int d;
+	int kd;
 
 	for(int i=0; i<NWIDTHS; i++) {
 		w = g_xres[i];
@@ -587,9 +607,8 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 			bi.bmiHeader.biHeight = h;
 
 			for(int k=0; k<NDEPTHS; k++) {
-				d = g_depths[k];
-				bi.bmiHeader.biBitCount = (WORD)d;
-				bi.bmiHeader.biSizeImage = ((w*d+31)/32)*4*h;
+				set_depth(bi,k);
+				kd = k;
 
 				if (ICERR_OK == ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
 					goto pass;
@@ -611,8 +630,7 @@ pass:
 	// Check all the depths; see if they work
 
 	for(int k=0; k<NDEPTHS; k++) {
-		bi.bmiHeader.biBitCount		= (WORD)g_depths[k];
-		bi.bmiHeader.biSizeImage	= ((w*g_depths[k]+31)/32)*4*h;
+		set_depth(bi,k);
 
 		if (ICERR_OK == ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
 			depth_bits |= (1<<k);
@@ -622,11 +640,10 @@ pass:
 	int i, j, k;
 
 	// Look for X alignment
-	bi.bmiHeader.biBitCount = (WORD)d;
 
 	for(i=3; i>=0; i--) {
 		bi.bmiHeader.biWidth	 = w + (1<<i);
-		bi.bmiHeader.biSizeImage = ((bi.bmiHeader.biWidth*d+31)/32)*4*h;
+		set_depth(bi,kd);
 
 		if (ICERR_OK != ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
 			break;
@@ -634,7 +651,7 @@ pass:
 	}
 
 	bi.bmiHeader.biWidth	 = w + (1<<(i+2));
-	bi.bmiHeader.biSizeImage = ((bi.bmiHeader.biWidth*d+31)/32)*4*h;
+	set_depth(bi,kd);
 
 	if (ICERR_OK != ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
 		i = -2;
@@ -653,14 +670,14 @@ pass:
 
 	for(j=3; j>=0; j--) {
 		bi.bmiHeader.biHeight	 = h + (1<<j);
-		bi.bmiHeader.biSizeImage = ((w*d+31)/32)*4*bi.bmiHeader.biHeight;
+		set_depth(bi,kd);
 
 		if (ICERR_OK != ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
 			break;
 	}
 
 	bi.bmiHeader.biHeight	 = h + (1<<(j+2));
-	bi.bmiHeader.biSizeImage = ((w*d+31)/32)*4*bi.bmiHeader.biHeight;
+	set_depth(bi,kd);
 
 	if (ICERR_OK != ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
 		j = -2;
@@ -677,7 +694,7 @@ pass:
 	if (depth_bits != 7) {
 		s = L"Valid depths:";
 
-		for(k=0; k<3; k++)
+		for(k=0; k<NDEPTHS; k++)
 			if (depth_bits & (1<<k))
 				s.append_sprintf(L" %d", g_depths[k]);
 

@@ -51,6 +51,7 @@ public:
 	void DecompressFrame(void *dst, const void *src, uint32 srcSize, bool keyframe, bool preroll);
 	const void *GetRawCodecHandlePtr();
 	const wchar_t *GetName();
+	bool GetAlpha(){ return mbUseAlpha; }
 
 protected:
 	HIC			mhic;
@@ -58,6 +59,7 @@ protected:
 	int			mFormatVariant;
 	bool		mbActive;
 	bool		mbUseEx;
+	bool		mbUseAlpha;
 	VDStringW	mName;
 	VDStringW	mDriverName;
 	vdstructex<VDAVIBitmapInfoHeader>	mSrcFormat;
@@ -76,6 +78,7 @@ IVDVideoDecompressor *VDCreateVideoDecompressorVCM(const void *srcFormat, uint32
 VDVideoDecompressorVCM::VDVideoDecompressorVCM()
 	: mhic(NULL)
 	, mbActive(false)
+	, mbUseAlpha(false)
 	, mFormat(0)
 	, mFormatVariant(0)
 {
@@ -112,6 +115,9 @@ void VDVideoDecompressorVCM::Init(const void *srcFormat, uint32 srcFormatSize, H
 		const wchar_t *pName = info.szDescription;
 		mDriverName = VDswprintf(L"Video codec \"%ls\"", 1, &pName);
 	}
+
+	if (bih->biCompression==VDMAKEFOURCC('U', 'L', 'R', 'A')) mbUseAlpha = true;
+	if (bih->biCompression==VDMAKEFOURCC('U', 'Q', 'R', 'A')) mbUseAlpha = true;
 }
 
 bool VDVideoDecompressorVCM::QueryTargetFormat(int format) {
@@ -144,6 +150,7 @@ bool VDVideoDecompressorVCM::SetTargetFormat(int format) {
 	if (!format) {
 		if (SetTargetFormat(kPixFormat_RGB888)
 			|| SetTargetFormat(kPixFormat_XRGB8888)
+			|| SetTargetFormat(kPixFormat_XRGB64)
 			|| SetTargetFormat(kPixFormat_XRGB1555)
 			|| SetTargetFormat(kPixFormat_YUV422_YUYV)
 			|| SetTargetFormat(kPixFormat_YUV422_UYVY)
