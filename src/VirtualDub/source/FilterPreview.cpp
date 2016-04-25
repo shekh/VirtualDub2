@@ -62,7 +62,7 @@ public:
 	VDVideoFilterPreviewZoomPopup();
 	~VDVideoFilterPreviewZoomPopup();
 
-	void Update(int x, int y, const uint32 pixels[7][7]);
+	void Update(int x, int y, const uint32 pixels[7][7], const VDSample& ps);
 	void UpdateText();
 
 	VDZINT_PTR DlgProc(VDZUINT msg, VDZWPARAM wParam, VDZLPARAM lParam);
@@ -75,6 +75,7 @@ protected:
 	RECT mBitmapRect;
 
 	int x,y;
+	VDSample ps;
 	uint32	mBitmap[7][7];
 	BITMAPINFO mBitmapInfo;
 	HPEN black_pen;
@@ -105,10 +106,11 @@ VDVideoFilterPreviewZoomPopup::~VDVideoFilterPreviewZoomPopup() {
 	DeleteObject(white_pen);
 }
 
-void VDVideoFilterPreviewZoomPopup::Update(int x, int y, const uint32 pixels[7][7]) {
+void VDVideoFilterPreviewZoomPopup::Update(int x, int y, const uint32 pixels[7][7], const VDSample& ps) {
 	memcpy(mBitmap, pixels, sizeof mBitmap);
 	this->x = x;
 	this->y = y;
+	this->ps = ps;
 	if(!draw_delayed) {
 		SetTimer(mhdlg,1,20,0);
 		draw_delayed = true;
@@ -116,11 +118,48 @@ void VDVideoFilterPreviewZoomPopup::Update(int x, int y, const uint32 pixels[7][
 }
 
 void VDVideoFilterPreviewZoomPopup::UpdateText() {
-	uint32 px = mBitmap[3][3] & 0xffffff;
-	SetControlTextF(IDC_POSITION, L"(%d,%d) = #%06X", x, y, px);
-	SetControlTextF(IDC_RED, L"R: %d", px >> 16);
-	SetControlTextF(IDC_GREEN, L"G: %d", (px >> 8) & 0xff);
-	SetControlTextF(IDC_BLUE, L"B: %d", px & 0xff);
+	uint32 rgb = mBitmap[3][3] & 0xffffff;
+	SetControlTextF(IDC_POSITION, L"%d,%d", x, y);
+	SetControlTextF(IDC_COLOR, L"#%06X", rgb);
+	SetControlTextF(IDC_RED,   L"R: %1.3g", ps.r);
+	SetControlTextF(IDC_GREEN, L"G: %1.3g", ps.g);
+	SetControlTextF(IDC_BLUE,  L"B: %1.3g", ps.b);
+	if(ps.sa!=-1) {
+		ShowControl(IDC_ALPHA, true);
+		SetControlTextF(IDC_ALPHA,  L"A: %1.3g", ps.a);
+		ShowControl(IDC_ALPHA2, true);
+		SetControlTextF(IDC_ALPHA2,  L"A: %X", ps.sa);
+	} else {
+		ShowControl(IDC_ALPHA, false);
+		ShowControl(IDC_ALPHA2, false);
+	}
+	if(ps.sr!=-1) {
+		ShowControl(IDC_RED2, true);
+		SetControlTextF(IDC_RED2,  L"R: %X", ps.sr);
+	} else if(ps.sy!=-1) {
+		ShowControl(IDC_RED2, true);
+		SetControlTextF(IDC_RED2,  L"Y: %X", ps.sy);
+	} else {
+		ShowControl(IDC_RED2, false);
+	}
+	if(ps.sg!=-1) {
+		ShowControl(IDC_GREEN2, true);
+		SetControlTextF(IDC_GREEN2,  L"G: %X", ps.sg);
+	} else if(ps.scb!=-1) {
+		ShowControl(IDC_GREEN2, true);
+		SetControlTextF(IDC_GREEN2,  L"Cb: %X", ps.scb);
+	} else {
+		ShowControl(IDC_GREEN2, false);
+	}
+	if (ps.sb!=-1) {
+		ShowControl(IDC_BLUE2, true);
+		SetControlTextF(IDC_BLUE2,  L"B: %X", ps.sb);
+	} else if(ps.scr!=-1) {
+		ShowControl(IDC_BLUE2, true);
+		SetControlTextF(IDC_BLUE2,  L"Cr: %X", ps.scr);
+	} else {
+		ShowControl(IDC_BLUE2, false);
+	}
 }
 
 VDZINT_PTR VDVideoFilterPreviewZoomPopup::DlgProc(VDZUINT msg, VDZWPARAM wParam, VDZLPARAM lParam) {
@@ -476,18 +515,17 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 					}
 				}
 
+				VDSample ps;
+				VDPixmapSample(output,x,y,ps);
+
 				mpVideoFrameBuffer->Unlock();
 
 				zoom_info.x = x;
 				zoom_info.y = y;
-				uint32 px = pixels[3][3] & 0xffffff;
-				int pr = px >> 16;
-				int pg = (px >> 8) & 0xff;
-				int pb = px & 0xff;
-				zoom_info.r = float(pr)/255;
-				zoom_info.g = float(pg)/255;
-				zoom_info.b = float(pb)/255;
-				zoom_info.a = 0;
+				zoom_info.r = ps.r/255;
+				zoom_info.g = ps.g/255;
+				zoom_info.b = ps.b/255;
+				zoom_info.a = ps.a/255;
 
 				POINT pts = pt;
 				ClientToScreen(mhdlg, &pts);
@@ -509,7 +547,7 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 					pts.y += 32;
 
 				SetWindowPos(mZoomPopup.GetWindowHandle(), NULL, pts.x, pts.y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
-				mZoomPopup.Update(x, y, pixels);
+				mZoomPopup.Update(x, y, pixels, ps);
 				ShowWindow(mZoomPopup.GetWindowHandle(), SW_SHOWNOACTIVATE);
 
 				TRACKMOUSEEVENT tme={sizeof(TRACKMOUSEEVENT), TME_LEAVE, mhdlg, 0};

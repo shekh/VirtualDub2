@@ -25,6 +25,14 @@
 
 struct VDPixmap;
 
+struct VDSample{
+	int format;
+	float r,g,b,a;
+	int sr,sg,sb,sa;
+	int sy,scb,scr;
+};
+
+void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& s);
 uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y);
 uint32 VDPixmapInterpolateSampleRGB24(const VDPixmap& px, sint32 x, sint32 y);
 

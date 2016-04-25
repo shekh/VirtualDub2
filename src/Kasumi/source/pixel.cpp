@@ -22,6 +22,136 @@
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixel.h>
 
+void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
+	ps.format = px.format;
+	uint32 m = VDPixmapSample(px,x,y);
+	ps.sr = (m >> 16) & 0xff;
+	ps.sg = (m >> 8) & 0xff;
+	ps.sb = m & 0xff;
+	ps.sa = m >> 24;
+	ps.r = float(ps.sr);
+	ps.g = float(ps.sg);
+	ps.b = float(ps.sb);
+	ps.a = float(ps.sa);
+
+	bool valid_rgb = false;
+	bool valid_yuv = false;
+
+	switch(px.format) {
+	case nsVDPixmap::kPixFormat_Pal1:
+	case nsVDPixmap::kPixFormat_Pal2:
+	case nsVDPixmap::kPixFormat_Pal4:
+	case nsVDPixmap::kPixFormat_Pal8:
+	case nsVDPixmap::kPixFormat_RGB888:
+	case nsVDPixmap::kPixFormat_XRGB8888:
+		valid_rgb = true;
+		break;
+
+	case nsVDPixmap::kPixFormat_XRGB64:
+		{
+			const uint16* s = (const uint16*)(size_t(px.data) + px.pitch*y + x*8);
+			uint32 r = s[2];
+			uint32 g = s[1];
+			uint32 b = s[0];
+			uint32 a = s[3];
+			ps.sr = r;
+			ps.sg = g;
+			ps.sb = b;
+			ps.sa = a;
+			if(r>=px.info.ref_r) ps.r=255; else ps.r=float(r*255.0/px.info.ref_r);
+			if(g>=px.info.ref_g) ps.g=255; else ps.g=float(g*255.0/px.info.ref_g);
+			if(b>=px.info.ref_b) ps.b=255; else ps.b=float(b*255.0/px.info.ref_b);
+			if(a>=px.info.ref_a) ps.a=255; else ps.a=float(a*255.0/px.info.ref_a);
+			valid_rgb = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV444_Planar:
+	case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
+	case nsVDPixmap::kPixFormat_YUV444_Planar_709:
+	case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
+		{
+			ps.sy = VDPixmapSample8(px.data, px.pitch, x, y);
+			ps.scb = VDPixmapSample8(px.data2, px.pitch2, x, y);
+			ps.scr = VDPixmapSample8(px.data3, px.pitch3, x, y);
+			valid_yuv = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV422_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
+	case nsVDPixmap::kPixFormat_YUV422_Planar_709:
+	case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
+		{
+			sint32 u = (x << 7) + 128;
+			sint32 v = (y << 8);
+			uint32 w2 = px.w >> 1;
+			uint32 h2 = px.h;
+
+			ps.sy =	VDPixmapSample8(px.data, px.pitch, x, y);
+			ps.scb = VDPixmapInterpolateSample8(px.data2, px.pitch2, w2, h2, u, v);
+			ps.scr = VDPixmapInterpolateSample8(px.data3, px.pitch3, w2, h2, u, v);
+			valid_yuv = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV420_Planar:
+	case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
+	case nsVDPixmap::kPixFormat_YUV420_Planar_709:
+	case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
+		{
+			sint32 u = (x << 7) + 128;
+			sint32 v = (y << 7);
+			uint32 w2 = px.w >> 1;
+			uint32 h2 = px.h >> 1;
+
+			ps.sy = VDPixmapSample8(px.data, px.pitch, x, y);
+			ps.scb = VDPixmapInterpolateSample8(px.data2, px.pitch2, w2, h2, u, v);
+			ps.scr = VDPixmapInterpolateSample8(px.data3, px.pitch3, w2, h2, u, v);
+			valid_yuv = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV411_Planar:
+	case nsVDPixmap::kPixFormat_YUV411_Planar_FR:
+	case nsVDPixmap::kPixFormat_YUV411_Planar_709:
+	case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
+		{
+			sint32 u = (x << 6) + 128;
+			sint32 v = (y << 8);
+			uint32 w2 = px.w >> 2;
+			uint32 h2 = px.h;
+
+			ps.sy = VDPixmapSample8(px.data, px.pitch, x, y);
+			ps.scb = VDPixmapInterpolateSample8(px.data2, px.pitch2, w2, h2, u, v);
+			ps.scr = VDPixmapInterpolateSample8(px.data3, px.pitch3, w2, h2, u, v);
+			valid_yuv = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV410_Planar:
+	case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
+	case nsVDPixmap::kPixFormat_YUV410_Planar_709:
+	case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
+		{
+			sint32 u = (x << 6) + 128;
+			sint32 v = (y << 6);
+			uint32 w2 = px.w >> 2;
+			uint32 h2 = px.h >> 2;
+
+			ps.sy = VDPixmapSample8(px.data, px.pitch, x, y);
+			ps.scb = VDPixmapInterpolateSample8(px.data2, px.pitch2, w2, h2, u, v);
+			ps.scr = VDPixmapInterpolateSample8(px.data3, px.pitch3, w2, h2, u, v);
+			valid_yuv = true;
+		}
+		break;
+	}
+
+	if(!px.info.alpha_type){ ps.sa=-1; ps.a=0; }
+	if(!valid_rgb){ ps.sr=-1; ps.sg=-1; ps.sb=-1; }
+	if(!valid_yuv){ ps.sy=-1; ps.scb=-1; ps.scr=-1; }
+}
+
 uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 	if (x >= px.w)
 		x = px.w - 1;
