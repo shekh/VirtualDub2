@@ -304,22 +304,25 @@ VDStringW VDMakeInputDriverFileFilter(const tVDInputDrivers& l, std::vector<int>
 }
 
 IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) {
-	char buf[64];
+	char buf[1024];
 	char endbuf[64];
-	DWORD dwActual;
+	int dwBegin;
+	int dwEnd;
 
 	memset(buf, 0, sizeof buf);
 	memset(endbuf, 0, sizeof endbuf);
 
 	VDFile file(fn);
 
-	dwActual = file.readData(buf, 64);
+	dwBegin = file.readData(buf, sizeof buf);
 
-	if (dwActual < 64)
-		memcpy(endbuf, buf, dwActual);
-	else {
-		file.seek(-64, nsVDFile::kSeekEnd);
-		file.read(endbuf, 64);
+	if (dwBegin < sizeof endbuf) {
+		dwEnd = dwBegin;
+		memcpy(endbuf, buf, dwEnd);
+	} else {
+		dwEnd = sizeof endbuf;
+		file.seek(-dwEnd, nsVDFile::kSeekEnd);
+		file.read(endbuf, dwEnd);
 	}
 
 	sint64 fileSize = file.size();
@@ -330,7 +333,7 @@ IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) 
 	//
 	// is only 9 bytes...
 
-	if (!dwActual)
+	if (!dwBegin)
 		throw MyError("Can't open \"%ls\": The file is empty.", fn);
 
 	file.closeNT();
@@ -348,7 +351,7 @@ IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) 
 	for(; it!=itEnd; ++it) {
 		IVDInputDriver *pDriver = *it;
 
-		IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature(buf, dwActual, endbuf, dwActual, fileSize);
+		IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature(buf, dwBegin, endbuf, dwEnd, fileSize);
 
 		if (result == IVDInputDriver::kDC_None && pDriver->DetectByFilename(fn))
 			result = IVDInputDriver::kDC_Low;
