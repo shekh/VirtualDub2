@@ -106,6 +106,7 @@ void VDImageDecoderTIFF::Decode(const void *src, uint32 srclen)
   pkt.data = (uint8_t*)src;
   pkt.size = srclen;
   AVCodecContext ctx = {0};
+  if(frame) av_frame_free(&frame);
   frame = av_frame_alloc();
   tiff_init(&ctx);
   int got_frame;
