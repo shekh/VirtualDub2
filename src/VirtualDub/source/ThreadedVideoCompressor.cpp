@@ -465,20 +465,27 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 	uint32 packedSize;
 	bool valid;
 
+	VDPROFILEBEGIN("V-Format");
+	VDPixmap& src = pBuffer->mPixmap;
+	void* dst = pBuffer->mpBase;
+	if (src.format==nsVDPixmap::kPixFormat_XRGB64) {
+		// need another buffer for this
+		if (!repack_buffer->data) repack_buffer->init(src.w,src.h,src.format);
+		dst = repack_buffer->data;
+		if (VDPixmap_X16R16G16B16_IsNormalized(src.info)) {
+			VDPixmap_X16R16G16B16_to_b64a(*repack_buffer,src);
+		} else {
+			VDPixmap_X16R16G16B16_Normalize(*repack_buffer,src);
+			VDPixmap_X16R16G16B16_to_b64a(*repack_buffer,*repack_buffer);
+		}
+	}
+	VDPROFILEEND();
+
 	VDPROFILEBEGIN("V-Compress");
 
 	try {
 		if (frameTrackingQueue && frameNumber >= 0)
 			frameTrackingQueue->push_back(frameNumber);
-
-		VDPixmap& src = pBuffer->mPixmap;
-		void* dst = pBuffer->mpBase;
-		if (src.format==nsVDPixmap::kPixFormat_XRGB64) {
-			// need another buffer for this
-			if (!repack_buffer->data) repack_buffer->init(src.w,src.h,src.format);
-			dst = repack_buffer->data;
-			VDPixmap_X16R16G16B16_to_b64a(*repack_buffer,src);
-		}
 
 		valid = pCompressor->CompressFrame(pOutputBuffer->mOutputBuffer.data(), dst, isKey, packedSize);
 

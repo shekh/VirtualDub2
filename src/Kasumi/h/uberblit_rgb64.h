@@ -15,6 +15,7 @@ bool inline VDPixmap_X16R16G16B16_IsNormalized(const FilterModPixmapInfo& info) 
 
 void VDPixmap_X16R16G16B16_Normalize(VDPixmap& dst, const VDPixmap& src);
 void VDPixmap_X16R16G16B16_to_b64a(VDPixmap& dst, const VDPixmap& src);
+void VDPixmap_b64a_to_X16R16G16B16(VDPixmap& dst, const VDPixmap& src);
 
 class VDPixmapGen_X8R8G8B8_To_X16R16G16B16 : public VDPixmapGenWindowBasedOneSourceSimple {
 public:

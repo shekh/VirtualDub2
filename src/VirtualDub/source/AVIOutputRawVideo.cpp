@@ -120,7 +120,7 @@ void AVIVideoOutputStreamRaw::WriteVideoImage(const VDPixmap *px) {
 		}
 	}
 
-	if (wipe_alpha && mOutputPixmap.format==nsVDPixmap::kPixFormat_XRGB64) {
+	if (mOutputPixmap.format==nsVDPixmap::kPixFormat_XRGB64) {
 		if (!VDPixmap_X16R16G16B16_IsNormalized(mOutputPixmap.info)) 
 			VDPixmap_X16R16G16B16_Normalize(mOutputPixmap,mOutputPixmap);
 
