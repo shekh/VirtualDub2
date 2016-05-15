@@ -61,6 +61,7 @@ public:
 
 	virtual void Init(const wchar_t *szFile) = 0;
 	virtual bool Append(const wchar_t *szFile);
+	virtual void getAppendFilters(wchar_t *filters, int filters_max);
 
 	virtual void setOptions(InputFileOptions *);
 	virtual InputFileOptions *promptForOptions(VDGUIHandle hwndParent);

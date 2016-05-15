@@ -65,7 +65,7 @@ BEGIN
     BEGIN
         MENUITEM "&Open video file...\tCtrl+O", ID_FILE_OPENAVI
         MENUITEM "&Reopen video file\tF2",      ID_FILE_REOPEN
-        MENUITEM "Append AVI segment...",       ID_FILE_APPENDSEGMENT
+        MENUITEM "Append video segment...",     ID_FILE_APPENDSEGMENT
         MENUITEM "Preview input...\tSpace",     ID_FILE_PREVIEWINPUT
         MENUITEM "Preview filtered...\tEnter",  ID_FILE_PREVIEWOUTPUT
         MENUITEM "Pre&view output from start...\tF5", ID_FILE_PREVIEWAVI

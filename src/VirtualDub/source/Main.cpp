@@ -244,8 +244,12 @@ extern const wchar_t fileFilters0[]=
 		L"All files (*.*)\0"						L"*.*\0"
 		;
 
-extern const wchar_t fileFiltersAppend[]=
+extern const wchar_t fileFiltersAppendAVI[]=
 		L"VirtualDub/AVI_IO video segment (*.avi)\0"	L"*.avi\0"
+		L"All files (*.*)\0"							L"*.*\0"
+		;
+
+extern const wchar_t fileFiltersAppendAll[]=
 		L"All files (*.*)\0"							L"*.*\0"
 		;
 
@@ -344,7 +348,7 @@ void SaveSegmentedAVI(HWND hWnd, bool queueAsJob) {
 		key.getInt(g_szRegKeySegmentDigitCount, 2),
 	};
 
-	VDStringW fname(VDGetSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (VDGUIHandle)hWnd, L"Save segmented AVI", fileFiltersAppend, L"avi", sOptions, optVals));
+	VDStringW fname(VDGetSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (VDGUIHandle)hWnd, L"Save segmented AVI", fileFiltersAppendAVI, L"avi", sOptions, optVals));
 
 	if (!fname.empty()) {
 		key.setBool(g_szRegKeyUseSegmentFrameCount, !!optVals[1]);

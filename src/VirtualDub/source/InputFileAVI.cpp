@@ -48,7 +48,7 @@
 #include "resource.h"
 
 extern HINSTANCE g_hInst;
-extern const wchar_t fileFiltersAppend[];
+extern const wchar_t fileFiltersAppendAVI[];
 extern HWND g_hWnd;
 
 bool VDPreferencesIsPreferInternalVideoDecodersEnabled();
@@ -501,7 +501,7 @@ void InputFileAVI::Init(const wchar_t *szFile) {
 
 						strcpy(szPath, VDTextWToA(sPath).c_str());
 
-						const VDStringW fname(VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, (VDGUIHandle)g_hWnd, szTitle, fileFiltersAppend, L"avi", 0, 0));
+						const VDStringW fname(VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, (VDGUIHandle)g_hWnd, szTitle, fileFiltersAppendAVI, L"avi", 0, 0));
 
 						if (fname.empty())
 							throw MyUserAbortError();
@@ -555,6 +555,17 @@ bool InputFileAVI::Append(const wchar_t *szFile) {
 	}
 
 	return false;
+}
+
+void InputFileAVI::getAppendFilters(wchar_t *filters, int filters_max) {
+	const wchar_t* s = fileFiltersAppendAVI;
+	const wchar_t* p = s;
+	while(1){
+		p += wcslen(p);
+		p++;
+		if(!*p) break;
+	}
+	memcpy(filters,s,(p-s+1)*2);
 }
 
 void InputFileAVI::GetTextInfo(tFileTextInfo& info) {

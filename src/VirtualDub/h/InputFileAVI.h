@@ -66,6 +66,7 @@ public:
 
 	void Init(const wchar_t *szFile);
 	bool Append(const wchar_t *szFile);
+	void getAppendFilters(wchar_t *filters, int filters_max);
 
 	void GetTextInfo(tFileTextInfo& info);
 

@@ -125,8 +125,6 @@ extern bool g_fJobMode;
 extern wchar_t g_szInputAVIFile[MAX_PATH];
 extern wchar_t g_szInputWAVFile[MAX_PATH];
 
-extern const wchar_t fileFiltersAppend[];
-
 extern void VDCPUTest();
 
 // need to do this directly in Dita....
@@ -864,7 +862,9 @@ void VDProjectUI::AppendAsk() {
 		key.getBool(g_szRegKeyAutoAppendByName, true)
 	};
 
-	VDStringW fname(VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, mhwnd, L"Append AVI segment", fileFiltersAppend, NULL, sOptions, optVals));
+	wchar_t filters[1024];
+	inputAVI->getAppendFilters(filters,1024);
+	VDStringW fname(VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, mhwnd, L"Append video segment", filters, NULL, sOptions, optVals));
 
 	if (fname.empty())
 		return;

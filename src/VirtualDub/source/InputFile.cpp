@@ -26,6 +26,7 @@
 #include <vd2/system/file.h>
 
 extern const char g_szError[];
+extern const wchar_t fileFiltersAppendAll[];
 
 /////////////////////////////////////////////////////////////////////
 
@@ -61,6 +62,17 @@ void InputFile::AddFilename(const wchar_t *lpszFile) {
 
 bool InputFile::Append(const wchar_t *szFile) {
 	return false;
+}
+
+void InputFile::getAppendFilters(wchar_t *filters, int filters_max) {
+	const wchar_t* s = fileFiltersAppendAll;
+	const wchar_t* p = s;
+	while(1){
+		p += wcslen(p);
+		p++;
+		if(!*p) break;
+	}
+	memcpy(filters,s,(p-s+1)*2);
 }
 
 void InputFile::setOptions(InputFileOptions *) {
