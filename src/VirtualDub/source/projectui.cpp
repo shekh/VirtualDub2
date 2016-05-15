@@ -33,6 +33,7 @@
 #include <vd2/Dita/resources.h>
 #include <vd2/Dita/w32control.h>
 #include <vd2/Dita/w32accel.h>
+#include <vd2/plugin/vdinputdriver.h>
 #include <vd2/VDDisplay/display.h>
 #include <vd2/VDLib/Dialog.h>
 #include "projectui.h"
@@ -429,6 +430,7 @@ VDProjectUI::VDProjectUI()
 	, mhMenuSourceList(NULL)
 	, mhMenuDub(NULL)
 	, mhMenuDisplay(NULL)
+	, mhMenuExport(NULL)
 	, mhAccelDub(NULL)
 	, mhAccelMain(NULL)
 	, mhAccelPreview(NULL)
@@ -468,6 +470,12 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	
 	// Load menus.
 	if (!(mhMenuNormal	= LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_MAIN_MENU    )))) {
+		Detach();
+		return false;
+	}
+
+	mhMenuExport = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_FILE_EXPORTMENU));
+	if (!mhMenuExport) {
 		Detach();
 		return false;
 	}
@@ -734,6 +742,11 @@ void VDProjectUI::Detach() {
 		mhMenuDisplay = NULL;
 	}
 
+	if (mhMenuExport) {
+		DestroyMenu(mhMenuExport);
+		mhMenuExport = NULL;
+	}
+
 	mhMenuSourceList = NULL;	// already destroyed via main menu
 
 	if (mhMenuDub) {
@@ -932,6 +945,25 @@ void VDProjectUI::SaveFilmstripAsk() {
 	const VDStringW filename(VDGetSaveFileName(kFileDialog_FLMOut, mhwnd, L"Save Filmstrip file", L"Adobe Filmstrip (*.flm)\0*.flm\0", g_prefs.main.fAttachExtension ? L"flm" : NULL));
 	if (!filename.empty()) {
 		SaveFilmstrip(filename.c_str(), false);
+	}
+}
+
+class ProjectState: public IProjectState {
+	virtual bool GetSelection(sint64& start, sint64& end) {
+		start = g_project->GetSelectionStartFrame();
+		end = g_project->GetSelectionEndFrame();
+		if(end==-1) return false;
+		return true;
+	}
+};
+
+void VDProjectUI::ExportViaDriverTool(int id) {
+	IFilterModFileTool* tool;
+	inputAVI->GetFileTool(&tool);
+	if (tool) {
+		ProjectState state;
+		tool->ExecuteExport(id,(VDXHWND)mhwnd,&state);
+		tool->Release();
 	}
 }
 
@@ -1738,6 +1770,12 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_FILE_SAVERAWVIDEO:				SaveRawVideoAsk(false);			break;
 		case ID_FILE_SAVEWAV:					SaveWAVAsk(false);				break;
 		case ID_FILE_EXPORTEXTERNALENCODER:		ExportViaEncoderAsk(false);		break;
+		case ID_EXPORT_DRIVERTOOL0:
+		case ID_EXPORT_DRIVERTOOL1:
+		case ID_EXPORT_DRIVERTOOL2:
+		case ID_EXPORT_DRIVERTOOL3:
+			ExportViaDriverTool(id-ID_EXPORT_DRIVERTOOL0);
+			break;
 		case ID_FILE_CLOSEAVI:					Close();						break;
 		case ID_FILE_STARTSERVER:				StartServer();					break;
 		case ID_FILE_CAPTUREAVI:
@@ -2270,6 +2308,57 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_FILE_AVIINFO				, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SETTEXTINFO			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_EXPORTEXTERNALENCODER, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_FILE_EXPORT, bSourceFileExists);
+
+	HMENU hmenuFile = GetSubMenu(hMenu, 0);
+	if (bSourceFileExists) {
+		HMENU hmenuExport = GetSubMenu(mhMenuExport, 0);
+		MENUITEMINFOA info = {0};
+		info.cbSize = sizeof(info);
+		info.fMask = MIIM_SUBMENU;
+		info.hSubMenu = hmenuExport;
+		SetMenuItemInfo(hmenuFile,ID_FILE_EXPORT,false,&info);
+
+		RemoveMenu(hmenuExport, ID_EXPORT_DRIVERTOOL0, MF_BYCOMMAND);
+		RemoveMenu(hmenuExport, ID_EXPORT_DRIVERTOOL1, MF_BYCOMMAND);
+		RemoveMenu(hmenuExport, ID_EXPORT_DRIVERTOOL2, MF_BYCOMMAND);
+		RemoveMenu(hmenuExport, ID_EXPORT_DRIVERTOOL3, MF_BYCOMMAND);
+
+		int pos = 0;
+		while (1) {
+			info.fMask = MIIM_ID;
+			if (!GetMenuItemInfo(hmenuExport, pos, TRUE, &info)) break;
+			pos++;
+		}
+
+		IFilterModFileTool* tool;
+		inputAVI->GetFileTool(&tool);
+		if (tool) {
+			{for(int i=0; i<3; i++){
+				char name[256];
+				bool enabled = true;
+				if (!tool->GetExportMenuInfo(i,name,sizeof(name),&enabled)) continue;
+
+				MENUITEMINFOA mii = {0};
+				mii.cbSize = sizeof(info);
+				mii.fMask = MIIM_TYPE | MIIM_STATE | MIIM_ID;
+				mii.fType = MFT_STRING;
+				mii.fState = enabled ? 0 : MFS_DISABLED;
+				mii.wID	= ID_EXPORT_DRIVERTOOL0;
+				mii.dwTypeData	= name;
+				InsertMenuItemA(hmenuExport, pos, TRUE, &mii);
+				pos++;
+			}}
+
+			tool->Release();
+		}
+
+	} else {
+		MENUITEMINFOA info = {0};
+		info.cbSize = sizeof(info);
+		info.fMask = MIIM_SUBMENU;
+		SetMenuItemInfo(hmenuFile,ID_FILE_EXPORT,false,&info);
+	}
 
 	VDEnableMenuItemW32(hMenu, ID_QUEUEBATCHOPERATION_SAVEASAVI				, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_QUEUEBATCHOPERATION_SAVECOMPATIBLEAVI		, bSourceFileExists);

@@ -34,6 +34,7 @@ class IAVIReadHandler;
 class IAVIReadStream;
 class AudioSource;
 class IVDVideoSource;
+class IFilterModFileTool;
 
 class VDStringA;
 
@@ -74,6 +75,8 @@ public:
 
 	virtual bool GetVideoSource(int index, IVDVideoSource **ppSrc);
 	virtual bool GetAudioSource(int index, AudioSource **ppSrc);
+
+	virtual void GetFileTool(IFilterModFileTool **pp){ *pp=0; } 
 
 protected:
 	void AddFilename(const wchar_t *lpszFile);

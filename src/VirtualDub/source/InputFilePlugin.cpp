@@ -1197,6 +1197,16 @@ public:
 
 	bool GetVideoSource(int index, IVDVideoSource **ppSrc);
 	bool GetAudioSource(int index, AudioSource **ppSrc);
+	void GetFileTool(IFilterModFileTool **pp){
+		*pp=0;
+		if (mpXObject) {
+			IFilterModFileTool* p = (IFilterModFileTool*)mpXObject->AsInterface(IFilterModFileTool::kIID);
+			if (p) {
+				p->AddRef();
+				*pp = p;
+			}
+		}
+	}
 
 protected:
 	vdrefptr<IVDXInputFile> mpXObject;

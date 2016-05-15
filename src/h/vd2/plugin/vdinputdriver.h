@@ -146,6 +146,18 @@ public:
 	virtual const FilterModPixmapInfo&	VDXAPIENTRY GetFrameBufferInfo() = 0;
 };
 
+class IProjectState {
+public:
+	virtual bool GetSelection(sint64& start, sint64& end) = 0;
+};
+
+class IFilterModFileTool : public IVDXUnknown {
+public:
+	enum { kIID = VDXMAKEFOURCC('F', 'M', 'f', 't') };
+	virtual bool VDXAPIENTRY GetExportMenuInfo(int id, char* name, int name_size, bool* enabled) = 0;
+	virtual bool VDXAPIENTRY ExecuteExport(int id, VDXHWND hwndParent, IProjectState* state) = 0;
+};
+
 enum VDXVideoFrameType {
 	kVDXVFT_Independent,
 	kVDXVFT_Predicted,

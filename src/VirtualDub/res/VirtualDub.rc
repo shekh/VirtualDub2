@@ -75,16 +75,7 @@ BEGIN
         MENUITEM "Save segmented AVI...",       ID_FILE_SAVESEGMENTEDAVI
         MENUITEM "&Close video file\tCtrl+W",   ID_FILE_CLOSEAVI
         MENUITEM SEPARATOR
-        POPUP "E&xport"
-        BEGIN
-            MENUITEM "Image sequence...",           ID_FILE_SAVEIMAGESEQ
-            MENUITEM "Single image...",             ID_FILE_SAVEIMAGE
-            MENUITEM "Adobe Filmstrip (*.flm)...",  ID_FILE_SAVEFILMSTRIP
-            MENUITEM "Raw audio...",                ID_FILE_SAVERAWAUDIO
-            MENUITEM "Raw video...",                ID_FILE_SAVERAWVIDEO
-            MENUITEM "Animated GIF...",             ID_FILE_SAVEANIMATEDGIF
-            MENUITEM "Using external encoder...",   ID_FILE_EXPORTEXTERNALENCODER
-        END
+        MENUITEM "E&xport",                     ID_FILE_EXPORT
         POPUP "Queue &batch operation"
         BEGIN
             MENUITEM "Run video analysis pass",     ID_QUEUEBATCHOPERATION_RUNVIDEOANALYSISPASS
@@ -703,6 +694,21 @@ BEGIN
         MENUITEM "Add Filter after...",         ID_FILTERLIST_ADDFILTERAFTER
         MENUITEM SEPARATOR
         MENUITEM "Delete",                      ID_FILTERLIST_DELETE
+    END
+END
+
+IDR_FILE_EXPORTMENU MENU 
+BEGIN
+    POPUP "E&xport"
+    BEGIN
+        MENUITEM "Image sequence...",           ID_FILE_SAVEIMAGESEQ
+        MENUITEM "Single image...",             ID_FILE_SAVEIMAGE
+        MENUITEM "Adobe Filmstrip (*.flm)...",  ID_FILE_SAVEFILMSTRIP
+        MENUITEM "Raw audio...",                ID_FILE_SAVERAWAUDIO
+        MENUITEM "Raw video...",                ID_FILE_SAVERAWVIDEO
+        MENUITEM "Animated GIF...",             ID_FILE_SAVEANIMATEDGIF
+        MENUITEM "Using external encoder...",   ID_FILE_EXPORTEXTERNALENCODER
+        MENUITEM "Driver Tool 0...",            ID_EXPORT_DRIVERTOOL0
     END
 END
 

@@ -70,6 +70,7 @@ public:
 	void SaveRawAudioAsk(bool batchMode);
 	void SaveRawVideoAsk(bool batchMode);
 	void ExportViaEncoderAsk(bool batchMode);
+	void ExportViaDriverTool(int id);
 	void SaveConfigurationAsk();
 	void LoadConfigurationAsk();
 	void LoadProjectAsk();
@@ -197,6 +198,7 @@ protected:
 	HMENU		mhMenuSourceList;
 	HMENU		mhMenuDub;
 	HMENU		mhMenuDisplay;
+	HMENU		mhMenuExport;
 	int			mMRUListPosition;
 	HACCEL		mhAccelDub;
 	HACCEL		mhAccelMain;
