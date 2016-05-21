@@ -539,10 +539,8 @@ bool VDProject::Tick() {
 	bool active = false;
 
 	if (inputVideo && mSceneShuttleMode) {
-		if (!mpSceneDetector) {
-			const VDPixmap& px = inputVideo->getTargetFormat();
-			mpSceneDetector = new_nothrow SceneDetector(px.w, px.h);
-		}
+		if (!mpSceneDetector)
+			mpSceneDetector = new_nothrow SceneDetector();
 
 		if (mpSceneDetector) {
 			mpSceneDetector->SetThresholds(g_prefs.scene.iCutThreshold, g_prefs.scene.iFadeThreshold);
@@ -2624,16 +2622,22 @@ void VDProject::AdjustTimelineForFilterChanges(const VDFraction& oldRate, sint64
 }
 
 void VDProject::SceneShuttleStep() {
-	if (!inputVideo)
-		SceneShuttleStop();
+	bool input_mode = IsInputPaneUsed();
 
 	VDPosition sample = GetCurrentFrame() + mSceneShuttleMode;
-	VDPosition ls2 = mTimeline.TimelineToSourceFrame(sample);
 
-	IVDStreamSource *pVSS = inputVideo->asStream();
-	if (!inputVideo || ls2 < pVSS->getStart() || ls2 >= pVSS->getEnd()) {
-		SceneShuttleStop();
-		return;
+	if (input_mode) {
+		VDPosition ls2 = mTimeline.TimelineToSourceFrame(sample);
+		IVDStreamSource *pVSS = inputVideo->asStream();
+		if (!inputVideo || ls2 < pVSS->getStart() || ls2 >= pVSS->getEnd()) {
+			SceneShuttleStop();
+			return;
+		}
+	} else {
+		if (sample<0 || sample>=mTimeline.GetLength()) {
+			SceneShuttleStop();
+			return;
+		}
 	}
 
 	if (mSceneShuttleAdvance < 1280)
@@ -2643,7 +2647,10 @@ void VDProject::SceneShuttleStep() {
 
 	mposCurrentFrame = sample;
 
-	DisplayFrame(true, false, true, false);
+	if (input_mode)
+		DisplayFrame(true, false, true, false);
+	else
+		DisplayFrame(false, true, false, true);
 
 	bool updateInputFrame = false;
 	if (mSceneShuttleCounter >= mSceneShuttleAdvance) {
@@ -2651,34 +2658,44 @@ void VDProject::SceneShuttleStep() {
 		updateInputFrame = true;
 	}
 
-	while(UpdateFrame(updateInputFrame))
-		;
+	while(UpdateFrame(updateInputFrame));
 
 	if (mpCB)
 		mpCB->UICurrentPositionUpdated();
 
-	if (!mpCurrentInputFrame) {
-		SceneShuttleStop();
+	if (!mpSceneDetector->Enabled())
 		return;
+
+	bool sceneBreak = false;
+	if (input_mode) {
+		VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
+		if (!buf) {
+			SceneShuttleStop();
+			return;
+		}
+
+		VDPixmap px = VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)buf->LockRead());
+		px.info = buf->info;
+		sceneBreak = mpSceneDetector->Submit(px);
+		buf->Unlock();
+	} else {
+		if (!filters.isRunning()) {
+			SceneShuttleStop();
+			return;
+		}
+
+		VDFilterFrameBuffer *buf = mpCurrentOutputFrame->GetResultBuffer();
+		if (!buf) {
+			SceneShuttleStop();
+			return;
+		}
+
+		VDPixmap px = VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead());
+		px.info = buf->info;
+		sceneBreak = mpSceneDetector->Submit(px);
+		buf->Unlock();
 	}
 
-	VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
-	if (!buf) {
-		SceneShuttleStop();
-		return;
-	}
-
-	const void *p = buf->LockRead();
-	if (!p) {
-		SceneShuttleStop();
-		return;
-	}
-
-	VDPixmap px(VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)p));
-	px.info = buf->info;
-	const bool sceneBreak = mpSceneDetector->Submit(px);
-
-	buf->Unlock();
 	if (sceneBreak)
 		SceneShuttleStop();
 }

@@ -141,6 +141,7 @@ public:
 
 	bool IsClipboardEmpty();
 	bool IsSceneShuttleRunning();
+	virtual bool IsInputPaneUsed(){ return false; }
 
 	void SetPositionCallbackEnabled(bool enable);
 

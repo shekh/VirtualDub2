@@ -53,6 +53,7 @@ namespace {
 	static const UINT MYWM_REDRAW = WM_USER+100;
 	static const UINT MYWM_RESTART = WM_USER+101;
 	static const UINT MYWM_INVALIDATE = WM_USER+102;
+	static const UINT TIMER_SHUTTLE = 2;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -296,6 +297,10 @@ public:
 	int FMTranslateAccelerator(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
 	HWND GetHwnd(){ return mhdlg; }
 	int TranslateAcceleratorMessage(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
+	void StartSceneShuttleReverse();
+	void StartSceneShuttleForward();
+	void SceneShuttleStop();
+	void SceneShuttleStep();
 
 private:
 	static INT_PTR CALLBACK StaticDlgProc(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam);
@@ -338,6 +343,7 @@ private:
 	sint64		mLastOutputFrame;
 	sint64		mLastTimelineFrame;
 	sint64		mLastTimelineTimeMS;
+	int		mSceneShuttleMode;
 
 	IVDPositionControl	*mpPosition;
 	IVDVideoDisplay *mpDisplay;
@@ -400,6 +406,7 @@ FilterPreview::FilterPreview(FilterSystem *pFiltSys, VDFilterChainDesc *pFilterC
 	, mLastOutputFrame(0)
 	, mLastTimelineFrame(0)
 	, mLastTimelineTimeMS(0)
+	, mSceneShuttleMode(0)
 	, mpPosition(NULL)
 	, mpDisplay(NULL)
 	, mpVideoWindow(NULL)
@@ -638,6 +645,10 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		OnVideoRedraw();
 		return TRUE;
 
+	case WM_TIMER:
+		if (wParam==TIMER_SHUTTLE && mSceneShuttleMode)
+			SceneShuttleStep();
+		return TRUE;
 	}
 
 	return FALSE;
@@ -1013,6 +1024,8 @@ void FilterPreview::OnVideoRedraw() {
 			}
 
 			mpDisplay->Update(IVDVideoDisplay::kAllFields);
+			mpPosition->SetPosition(mpPosition->GetPosition());
+			RedrawWindow(mhwndPosition,0,0,RDW_UPDATENOW);
 		}
 	} catch(const MyError& e) {
 		mpDisplay->Reset();
@@ -1038,12 +1051,48 @@ bool FilterPreview::OnCommand(UINT cmd) {
 
 	case ID_EDIT_JUMPTO:
 		{
+			SceneShuttleStop();
 			extern VDPosition VDDisplayJumpToPositionDialog(VDGUIHandle hParent, VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate);
 
 			VDPosition pos = VDDisplayJumpToPositionDialog((VDGUIHandle)mhdlg, mpPosition->GetPosition(), inputVideo, g_project->GetInputFrameRate());
+			if (pos!=-1) {
+				mpPosition->SetPosition(pos);
+				OnVideoRedraw();
+			}
+		}
+		return true;
 
-			mpPosition->SetPosition(pos);
-			OnVideoRedraw();
+	case ID_VIDEO_SEEK_NEXTSCENE:
+		StartSceneShuttleForward();
+		return true;
+
+	case ID_VIDEO_SEEK_PREVSCENE:
+		StartSceneShuttleReverse();
+		return true;
+
+	case ID_VIDEO_SEEK_STOP:
+		SceneShuttleStop();
+		return true;
+
+	case ID_VIDEO_SEEK_SELSTART:
+		{
+			VDPosition sel_start, sel_end;
+			if (mpPosition->GetSelection(sel_start, sel_end)) {
+				SceneShuttleStop();
+				mpPosition->SetPosition(sel_start);
+				OnVideoRedraw();
+			}
+		}
+		return true;
+
+	case ID_VIDEO_SEEK_SELEND:
+		{
+			VDPosition sel_start, sel_end;
+			if (mpPosition->GetSelection(sel_start, sel_end)) {
+				SceneShuttleStop();
+				mpPosition->SetPosition(sel_end);
+				OnVideoRedraw();
+			}
 		}
 		return true;
 
@@ -1052,6 +1101,7 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		return true;
 
 	case ID_FILE_SAVEIMAGE:
+		SceneShuttleStop();
 		SaveImageAsk();
 		return true;
 
@@ -1060,6 +1110,7 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		return true;
 
 	case ID_VIDEO_FILTERS:
+		SceneShuttleStop();
 		EnableWindow(mhwndParent,false);
 		SendMessage(mhwndFilterList,WM_COMMAND,ID_VIDEO_FILTERS,0);
 		EnableWindow(mhwndParent,true);
@@ -1072,12 +1123,38 @@ bool FilterPreview::OnCommand(UINT cmd) {
 
 	default:
 		if (VDHandleTimelineCommand(mpPosition, mpTimeline, cmd)) {
+			SceneShuttleStop();
 			OnVideoRedraw();
 			return true;
 		}
 	}
 
 	return false;
+}
+
+void FilterPreview::StartSceneShuttleForward() {
+	mSceneShuttleMode = 1;
+	SetTimer(mhdlg,TIMER_SHUTTLE,0,0);
+}
+
+void FilterPreview::StartSceneShuttleReverse() {
+	mSceneShuttleMode = -1;
+	SetTimer(mhdlg,TIMER_SHUTTLE,0,0);
+}
+
+void FilterPreview::SceneShuttleStop() {
+	mSceneShuttleMode = 0;
+	KillTimer(mhdlg,TIMER_SHUTTLE);
+}
+
+void FilterPreview::SceneShuttleStep() {
+	VDPosition pos = mpPosition->GetPosition() + mSceneShuttleMode;
+	if (pos<0 || pos>=mpTimeline->GetLength()) {
+		SceneShuttleStop();
+		return;
+	}
+	mpPosition->SetPosition(pos);
+	OnVideoRedraw();
 }
 
 VDPosition FilterPreview::FetchFrame() {
@@ -1117,6 +1194,7 @@ VDPosition FilterPreview::FetchFrame(VDPosition pos) {
 
 int64 FilterPreview::FMSetPosition(int64 pos) { 
 	if(mhdlg){
+		SceneShuttleStop();
 		mpPosition->SetPosition(pos);
 		OnVideoRedraw();
 	} else {

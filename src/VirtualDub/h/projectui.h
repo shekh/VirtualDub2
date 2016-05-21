@@ -56,6 +56,7 @@ public:
 	};
 
 	void SetPaneLayout(PaneLayoutMode layout);
+	bool IsInputPaneUsed();
 
 	void OpenAsk();
 	void AppendAsk();
@@ -125,6 +126,7 @@ protected:
 	void RepositionPanes();
 	void UpdateVideoFrameLayout();
 	void UpdateAccelPreview();
+	void UpdateAccelDub();
 
 	void OpenAudioDisplay();
 	void CloseAudioDisplay();

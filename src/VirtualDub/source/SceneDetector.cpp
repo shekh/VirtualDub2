@@ -24,7 +24,12 @@
 
 #include "SceneDetector.h"
 
-SceneDetector::SceneDetector(uint32 width, uint32 height) {
+SceneDetector::SceneDetector() {
+	tile_w = 0;
+	tile_h = 0;
+}
+
+void SceneDetector::Resize(uint32 width, uint32 height) {
 	last_valid = false;
 	first_diff = true;
 
@@ -50,14 +55,27 @@ void SceneDetector::SetThresholds(int cut_threshold, int fade_threshold) {
 	this->fade_threshold	= (fade_threshold * tile_w * tile_h)/16.0f;
 }
 
+bool SceneDetector::Enabled() {
+	return cut_threshold || fade_threshold;
+}
+
 bool SceneDetector::Submit(const VDPixmap& src) {
+	if (!Enabled())
+		return false;
+
+	if (!src.format)
+		return false;
+
+	if (!tile_w || !tile_h)
+		Resize(src.w,src.h);
+
+	if (src.w > tile_w*8 || src.h > tile_h*8)
+		return false;
+
 	long last_frame_diffs = 0;
 	long lum_total = 0;
 	double lum_sq_total = 0.0;
 	long len = tile_w * tile_h;
-
-	if (src.w > tile_w*8 || src.h > tile_h*8 || (!cut_threshold && !fade_threshold) || !src.format)
-		return false;
 
 	FlipBuffers();
 	BitmapToLummap(mCurrentLummap.data(), src);

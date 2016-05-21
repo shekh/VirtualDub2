@@ -24,12 +24,14 @@ struct VDPixmap;
 
 class SceneDetector {
 public:
-	SceneDetector(uint32 width, uint32 height);
+	SceneDetector();
 	~SceneDetector();
 
+	void Resize(uint32 width, uint32 height);
 	void SetThresholds(int cut_threshold, int fade_threshold);
 	bool Submit(const VDPixmap& src);
 	void Reset();
+	bool Enabled();
 
 private:
 	vdfastvector<uint32>	mCurrentLummap;

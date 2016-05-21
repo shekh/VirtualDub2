@@ -315,6 +315,7 @@ namespace {
 		{ ID_VIDEO_SEEK_NEXTDROP,		"Edit.GoToNextDrop" },
 		{ ID_VIDEO_SEEK_PREVSCENE,		"Edit.GoToPrevScene" },
 		{ ID_VIDEO_SEEK_NEXTSCENE,		"Edit.GoToNextScene" },
+		{ ID_VIDEO_SEEK_STOP,			"Edit.SeekStop" },
 		{ ID_EDIT_MASK,					"Edit.MaskSelection" },
 		{ ID_EDIT_UNMASK,				"Edit.UnmaskSelection" },
 		{ ID_EDIT_SETSELSTART,			"Edit.SetSelectionStart" },
@@ -392,7 +393,7 @@ namespace {
 		{ ID_HELP_ONLINE_HOME,			"Help.ShowOnlineHome" },
 		{ ID_HELP_ONLINE_FAQ,			"Help.ShowOnlineFAQ" },
 		{ ID_HELP_ONLINE_KB,			"Help.ShowOnlineKB" },
-		{ ID_DUBINPROGRESS_ABORTFAST,	"Render.AbortWithoutDialog" },
+		//{ ID_DUBINPROGRESS_ABORTFAST,	"Render.AbortWithoutDialog" },
 		{ ID_DUBINPROGRESS_ABORT,		"Render.Abort" },
 	};
 }
@@ -537,11 +538,7 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 
 	pFrame->SetAccelTable(mhAccelMain);
 
-	if (!(mhAccelDub	= LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_DUB_KEYS)))) {
-		Detach();
-		return false;
-	}
-
+	UpdateAccelDub();
 	UpdateAccelPreview();
 
 	mhwndStatus = CreateStatusWindow(WS_CHILD|WS_VISIBLE, "", (HWND)mhwnd, IDC_STATUS_WINDOW);
@@ -662,13 +659,60 @@ void VDProjectUI::UpdateAccelPreview() {
 		ID_VIDEO_COPYOUTPUTFRAME,
 		ID_FILE_SAVEPROJECT,
 		ID_VIDEO_FILTERS,
-		ID_OPTIONS_SHOWPROFILER
+		ID_OPTIONS_SHOWPROFILER,
+
+		ID_EDIT_JUMPTO,
+		ID_VIDEO_SEEK_NEXTSCENE,
+		ID_VIDEO_SEEK_PREVSCENE,
+		ID_VIDEO_SEEK_STOP,
+		ID_VIDEO_SEEK_START,
+		ID_VIDEO_SEEK_END,
+		ID_VIDEO_SEEK_KEYNEXT,
+		ID_VIDEO_SEEK_KEYPREV,
+		ID_VIDEO_SEEK_NEXT,
+		ID_VIDEO_SEEK_PREV,
+		ID_VIDEO_SEEK_NEXTONESEC,
+		ID_VIDEO_SEEK_PREVONESEC,
+		ID_VIDEO_SEEK_SELSTART,
+		ID_VIDEO_SEEK_SELEND,
 	};
 
 	HACCEL haccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_PREVIEW_KEYS));
 	VDAccelTableDefinition def;
 	VDUIMergeAcceleratorTableW32(def, haccel, merge_list, sizeof(merge_list)/sizeof(merge_list[0]), mAccelTableDef);
 	mhAccelPreview = VDUIBuildAcceleratorTableW32(def);
+}
+
+void VDProjectUI::UpdateAccelDub() {
+	if (mhAccelDub)
+		DestroyAcceleratorTable(mhAccelDub);
+
+	int merge_list[] = {
+		ID_FILE_PREVIEWINPUT,
+		ID_FILE_PREVIEWOUTPUT,
+
+		ID_VIDEO_SEEK_NEXTSCENE,
+		ID_VIDEO_SEEK_PREVSCENE,
+		ID_VIDEO_SEEK_STOP,
+		ID_VIDEO_SEEK_START,
+		ID_VIDEO_SEEK_END,
+		ID_VIDEO_SEEK_KEYNEXT,
+		ID_VIDEO_SEEK_KEYPREV,
+		ID_VIDEO_SEEK_NEXT,
+		ID_VIDEO_SEEK_PREV,
+		ID_VIDEO_SEEK_NEXTONESEC,
+		ID_VIDEO_SEEK_PREVONESEC,
+		ID_VIDEO_SEEK_SELSTART,
+		ID_VIDEO_SEEK_SELEND,
+
+		ID_EDIT_SETSELEND,
+		ID_EDIT_SETSELSTART,
+	};
+
+	HACCEL haccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_DUB_KEYS));
+	VDAccelTableDefinition def;
+	VDUIMergeAcceleratorTableW32(def, haccel, merge_list, sizeof(merge_list)/sizeof(merge_list[0]), mAccelTableDef);
+	mhAccelDub = VDUIBuildAcceleratorTableW32(def);
 }
 
 void VDProjectUI::Detach() {
@@ -842,6 +886,14 @@ void VDProjectUI::SetPaneLayout(PaneLayoutMode layout) {
 
 	RefreshInputPane();
 	RefreshOutputPane();
+}
+
+bool VDProjectUI::IsInputPaneUsed() {
+	if (!g_dubOpts.video.fShowInputFrame)
+		return false;
+	if (mPaneLayoutMode == kPaneLayoutOutput)
+		return false;
+	return true;
 }
 
 void VDProjectUI::OpenAsk() {
@@ -1656,9 +1708,11 @@ void VDProjectUI::ExecuteCommand(int cmd) {
 			break;
 		case kVDProjectCmd_GoToPrevFrame:
 			MoveToPrevious();
+			RedrawWindow(mhwndPosition,0,0,RDW_UPDATENOW);
 			break;
 		case kVDProjectCmd_GoToNextFrame:
 			MoveToNext();
+			RedrawWindow(mhwndPosition,0,0,RDW_UPDATENOW);
 			break;
 		case kVDProjectCmd_GoToPrevUnit:
 			MoveBackSome();
@@ -1755,8 +1809,24 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_FILE_OPENAVI:					OpenAsk();						break;
 		case ID_FILE_REOPEN:					Reopen();					break;
 		case ID_FILE_APPENDSEGMENT:				AppendAsk();					break;
-		case ID_FILE_PREVIEWINPUT:				PreviewInput();				break;
-		case ID_FILE_PREVIEWOUTPUT:				PreviewOutput();				break;
+		case ID_FILE_PREVIEWINPUT:
+			if (g_dubber) {
+				if (g_dubber->IsPreviewing())
+					AbortOperation();
+			} else {
+				SceneShuttleStop();
+				PreviewInput();
+			}
+			break;
+		case ID_FILE_PREVIEWOUTPUT:
+			if (g_dubber) {
+				if (g_dubber->IsPreviewing())
+					AbortOperation();
+			} else {
+				SceneShuttleStop();
+				PreviewOutput();
+			}
+			break;
 		case ID_FILE_PREVIEWAVI:				PreviewAll();					break;
 		case ID_FILE_RUNVIDEOANALYSISPASS:		RunNullVideoPass();			break;
 		case ID_FILE_SAVEAVI:					SaveAVIAsk(false);			break;
@@ -1940,17 +2010,28 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_VIDEO_SEEK_SELEND:				QueueCommand(kVDProjectCmd_GoToSelectionEnd);	break;
 		case ID_VIDEO_SEEK_PREVDROP:			QueueCommand(kVDProjectCmd_GoToPrevDrop);		break;
 		case ID_VIDEO_SEEK_NEXTDROP:			QueueCommand(kVDProjectCmd_GoToNextDrop);		break;
+		case ID_VIDEO_SEEK_STOP:
+			SceneShuttleStop();
+			if (g_dubber && g_dubber->IsPreviewing())
+				AbortOperation();
+			break;
 		case ID_VIDEO_SEEK_PREVSCENE:
 			if (IsSceneShuttleRunning())
 				SceneShuttleStop();
-			else
+			else {
+				if (g_dubber && g_dubber->IsPreviewing())
+					AbortOperation();
 				StartSceneShuttleReverse();
+			}
 			break;
 		case ID_VIDEO_SEEK_NEXTSCENE:
 			if (IsSceneShuttleRunning())
 				SceneShuttleStop();
-			else
+			else {
+				if (g_dubber && g_dubber->IsPreviewing())
+					AbortOperation();
 				StartSceneShuttleForward();
+			}
 			break;
 		case ID_VIDEO_SCANFORERRORS:			ScanForErrors();			break;
 		case ID_EDIT_JUMPTO:					JumpToFrameAsk();			break;
@@ -2175,10 +2256,6 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_HELP_ONLINE_FAQ:	LaunchURL("http://www.virtualdub.org/virtualdub_faq"); break;
 		case ID_HELP_ONLINE_KB:		LaunchURL("http://www.virtualdub.org/virtualdub_kb"); break;
 
-		case ID_DUBINPROGRESS_ABORTFAST:
-			if (g_dubber && !g_dubber->IsPreviewing())
-				break;
-			// fall through
 		case ID_DUBINPROGRESS_ABORT:			AbortOperation();			break;
 
 		default:
@@ -2430,6 +2507,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_SELEND			, bSelectionExists);
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_PREVSCENE		, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_NEXTSCENE		, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_STOP			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_JUMPTO				, bSourceFileExists);
 
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_CLIPPING			, inputVideo != 0);
