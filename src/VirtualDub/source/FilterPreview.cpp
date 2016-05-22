@@ -1045,6 +1045,7 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		SetActiveWindow(mhwndParent);
 		DestroyWindow(mhdlg);
 		mhdlg = NULL;
+		UndoSystem();
 
 		UpdateButton();
 		return true;
