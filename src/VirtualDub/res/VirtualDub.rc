@@ -128,6 +128,9 @@ BEGIN
         MENUITEM "Mask selected frames",        ID_EDIT_MASK
         MENUITEM "Unmask selected frames",      ID_EDIT_UNMASK
         MENUITEM "Revert all edits",            ID_EDIT_RESET
+        MENUITEM SEPARATOR
+        MENUITEM "Toggle marker",               ID_EDIT_SETMARKER
+        MENUITEM "Clear markers",               ID_EDIT_CLEARMARKERS
     END
     POPUP "V&iew"
     BEGIN
@@ -173,7 +176,7 @@ BEGIN
         MENUITEM "Selection end\t]",            ID_VIDEO_SEEK_SELEND
         MENUITEM "Prev scene\tCtrl+Shift+Left", ID_VIDEO_SEEK_PREVSCENE
         MENUITEM "Next scene\tCtrl+Shift+Right", ID_VIDEO_SEEK_NEXTSCENE
-        MENUITEM "Stop", 	                    ID_VIDEO_SEEK_STOP
+        MENUITEM "Stop",                        ID_VIDEO_SEEK_STOP
         MENUITEM SEPARATOR
         MENUITEM "Go To Frame...\tCtrl+G",      ID_EDIT_JUMPTO
     END
@@ -794,7 +797,7 @@ BEGIN
     CONTROL         "4:2:2 YCbCr HD (HDYC)",IDC_INPUT_YUV422_UYVY_709,"Button",BS_AUTORADIOBUTTON,14,166,92,10
     CONTROL         "4:2:0 YCbCr (NV12)",IDC_INPUT_YUV420_NV12,"Button",BS_AUTORADIOBUTTON,14,176,79,10
     CONTROL         "Other...",IDC_INPUT_OTHER,"Button",BS_AUTORADIOBUTTON,14,186,43,10
-    GROUPBOX        "Output format to compressor/display ",IDC_STATIC,179,7,168,269
+    GROUPBOX        "Output format to compressor",IDC_STATIC,179,7,168,269
     CONTROL         "Same as decompression format",IDC_OUTPUT_AUTOSELECT,
                     "Button",BS_AUTORADIOBUTTON | WS_GROUP,185,16,114,10
     CONTROL         "16 bit RGB (555)",IDC_OUTPUT_XRGB1555,"Button",BS_AUTORADIOBUTTON,185,26,69,10
@@ -3608,10 +3611,8 @@ END
 
 IDR_PREVIEW_KEYS ACCELERATORS 
 BEGIN
-    "{",            ID_VIDEO_SEEK_PREVDROP, ASCII,  NOINVERT
     "}",            ID_VIDEO_SEEK_NEXTDROP, ASCII,  NOINVERT
-    "<",            ID_EDIT_PREVRANGE,      ASCII,  NOINVERT
-    ">",            ID_EDIT_NEXTRANGE,      ASCII,  NOINVERT
+    "{",            ID_VIDEO_SEEK_PREVDROP, ASCII,  NOINVERT
 END
 
 

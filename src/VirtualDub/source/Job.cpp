@@ -510,6 +510,11 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 				} else {
 					output.addf("VirtualDub.video.SetRange();");
 				}
+
+				const vdfastvector<sint64>& marker = g_project->GetTimeline().GetMarker();
+				{for(int i=0; i<marker.size(); i++){
+					output.addf("VirtualDub.video.AddMarker(%I64d);", marker[i]);
+				}}
 			}
 			break;
 

@@ -301,6 +301,8 @@ public:
 	void StartSceneShuttleForward();
 	void SceneShuttleStop();
 	void SceneShuttleStep();
+	void MoveToPreviousRange();
+	void MoveToNextRange();
 
 private:
 	static INT_PTR CALLBACK StaticDlgProc(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam);
@@ -872,13 +874,8 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 
 		VDPosition sel_start = g_project->GetSelectionStartFrame();
 		VDPosition sel_end = g_project->GetSelectionEndFrame();
-		if(sel_start!=0 && sel_end!=-1){
-			if(srcRate!=mpFiltSys->GetOutputFrameRate()){
-				sel_start = 0;
-				sel_end = -1;
-			}
-		}
 		mpPosition->SetSelection(sel_start, sel_end);
+		mpPosition->SetTimeline(*mpTimeline);
 
 		if (mInitialTimeUS >= 0) {
 			const VDFraction outputRate(mpFiltSys->GetOutputFrameRate());
@@ -1097,6 +1094,23 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		}
 		return true;
 
+	case ID_EDIT_SETMARKER:
+		mpTimeline->ToggleMarker(mpPosition->GetPosition());
+		mpPosition->SetTimeline(*mpTimeline);
+		return true;
+
+	case ID_EDIT_PREVRANGE:
+		SceneShuttleStop();
+		MoveToPreviousRange();
+		OnVideoRedraw();
+		return true;
+
+	case ID_EDIT_NEXTRANGE:
+		SceneShuttleStop();
+		MoveToNextRange();
+		OnVideoRedraw();
+		return true;
+
 	case ID_VIDEO_COPYOUTPUTFRAME:
 		CopyOutputFrameToClipboard();
 		return true;
@@ -1131,6 +1145,42 @@ bool FilterPreview::OnCommand(UINT cmd) {
 	}
 
 	return false;
+}
+
+void FilterPreview::MoveToPreviousRange() {
+	VDPosition p0 = mpPosition->GetPosition();
+	VDPosition pos = mpTimeline->GetPrevEdit(p0);
+	VDPosition mpos = mpTimeline->GetPrevMarker(p0);
+
+	if (mpos >=0 && (mpos>pos || pos==-1)) {
+		mpPosition->SetPosition(mpos);
+		return;
+	}
+
+	if (pos >= 0) {
+		mpPosition->SetPosition(pos);
+		return;
+	}
+
+	mpPosition->SetPosition(0);
+}
+
+void FilterPreview::MoveToNextRange() {
+	VDPosition p0 = mpPosition->GetPosition();
+	VDPosition pos = mpTimeline->GetNextEdit(p0);
+	VDPosition mpos = mpTimeline->GetNextMarker(p0);
+
+	if (mpos >=0 && (mpos<pos || pos==-1)) {
+		mpPosition->SetPosition(mpos);
+		return;
+	}
+
+	if (pos >= 0) {
+		mpPosition->SetPosition(pos);
+		return;
+	}
+
+	mpPosition->SetPosition(mpTimeline->GetLength());
 }
 
 void FilterPreview::StartSceneShuttleForward() {

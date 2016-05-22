@@ -1425,6 +1425,7 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 		pTS = new VDProjectTimelineTimingSource(pTS, this);
 		mTimeline.SetTimingSource(pTS);
 		mTimeline.SetFromSource();
+		mTimeline.ClearMarker();
 
 		// invalidate currently displayed frames
 		mLastDisplayedInputFrame = -1;
@@ -1659,6 +1660,8 @@ void VDProject::PreviewInput() {
 	dubOpt.audio.interval				= 1;
 	dubOpt.audio.is_ms					= FALSE;
 	dubOpt.video.mSelectionStart.mOffset = start;
+	if (start>=dubOpt.video.mSelectionEnd.mOffset)
+		dubOpt.video.mSelectionEnd.mOffset = mTimeline.GetLength();
 
 	dubOpt.audio.fStartAudio			= TRUE;
 	dubOpt.audio.new_rate				= 0;
@@ -1667,6 +1670,8 @@ void VDProject::PreviewInput() {
 	dubOpt.audio.mVolume				= -1.0f;
 	dubOpt.audio.bUseAudioFilterGraph	= false;
 
+	/*
+	// deprecated: this option caused pointless trouble
 	switch(g_prefs.main.iPreviewDepth) {
 	case PreferencesMain::DEPTH_DISPLAY:
 		{
@@ -1700,6 +1705,7 @@ void VDProject::PreviewInput() {
 	// Ignore: PreferencesMain::DEPTH_OUTPUT
 
 	};
+	*/
 
 	dubOpt.video.mOutputFormat			= dubOpt.video.mInputFormat;
 
@@ -1727,6 +1733,9 @@ void VDProject::PreviewOutput() {
 	VDPosition start = GetCurrentFrame();
 	DubOptions dubOpt(g_dubOpts);
 
+	const VDPixmapLayout& layout = (dubOpt.video.mode == DubVideoOptions::M_FULL) ? filters.GetOutputLayout() : filters.GetInputLayout();
+	dubOpt.video.mOutputFormat = layout.format;
+
 	long preload = inputAudio && inputAudio->getWaveFormat()->mTag != WAVE_FORMAT_PCM ? 1000 : 500;
 
 	if (dubOpt.audio.preload > preload)
@@ -1736,6 +1745,8 @@ void VDProject::PreviewOutput() {
 	dubOpt.audio.interval				= 1;
 	dubOpt.audio.is_ms					= FALSE;
 	dubOpt.video.mSelectionStart.mOffset = start;
+	if (start>=dubOpt.video.mSelectionEnd.mOffset)
+		dubOpt.video.mSelectionEnd.mOffset = mTimeline.GetLength();
 	dubOpt.video.mbUseSmartRendering	= false;
 
 	dubOpt.fShowStatus = false;
@@ -2093,6 +2104,20 @@ void VDProject::SetSelection(VDPosition start, VDPosition end, bool notifyUser) 
 	}
 }
 
+void VDProject::SetMarker() {
+	if (inputAVI)
+		SetMarker(GetCurrentFrame());
+}
+
+void VDProject::SetMarker(VDPosition pos) {
+	if (inputAVI) {
+		mTimeline.ToggleMarker(pos);
+
+		if (mpCB)
+			mpCB->UITimelineUpdated();
+	}
+}
+
 void VDProject::MoveToFrame(VDPosition frame) {
 	if (inputVideo) {
 		frame = std::max<VDPosition>(0, std::min<VDPosition>(frame, mTimeline.GetLength()));
@@ -2215,6 +2240,13 @@ void VDProject::StartSceneShuttleForward() {
 void VDProject::MoveToPreviousRange() {
 	if (inputAVI) {
 		VDPosition pos = mTimeline.GetPrevEdit(GetCurrentFrame());
+		VDPosition mpos = mTimeline.GetPrevMarker(GetCurrentFrame());
+
+		if (mpos >=0 && (mpos>pos || pos==-1)) {
+			MoveToFrame(mpos);
+			guiSetStatus("Marker", 255);
+			return;
+		}
 
 		if (pos >= 0) {
 			MoveToFrame(pos);
@@ -2234,6 +2266,13 @@ void VDProject::MoveToPreviousRange() {
 void VDProject::MoveToNextRange() {
 	if (inputAVI) {
 		VDPosition pos = mTimeline.GetNextEdit(GetCurrentFrame());
+		VDPosition mpos = mTimeline.GetNextMarker(GetCurrentFrame());
+
+		if (mpos >=0 && (mpos<pos || pos==-1)) {
+			MoveToFrame(mpos);
+			guiSetStatus("Marker", 255);
+			return;
+		}
 
 		if (pos >= 0) {
 			MoveToFrame(pos);
@@ -2349,8 +2388,16 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 
 		mpDubStatus = CreateDubStatusHandler();
 
-		if (opts->fMoveSlider)
-			mpDubStatus->SetPositionCallback(g_fJobMode ? JobPositionCallback : StaticPositionCallback, this);
+		if (opts->fMoveSlider) {
+			if (g_fJobMode) {
+				mpDubStatus->SetPositionCallback(JobPositionCallback, this);
+			} else {
+				if (pOutputSystem->IsRealTime())
+					mpDubStatus->SetPositionCallback(StaticFastPositionCallback, this);
+				else
+					mpDubStatus->SetPositionCallback(StaticPositionCallback, this);
+			}
+		}
 
 		// Initialize the dubber.
 
@@ -2700,7 +2747,19 @@ void VDProject::SceneShuttleStep() {
 		SceneShuttleStop();
 }
 
-void VDProject::StaticPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, void *cookie) {
+void VDProject::StaticPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie) {
+	VDProject *pthis = (VDProject *)cookie;
+
+	if (pthis->mbPositionCallbackEnabled && !fast_update) {
+		VDPosition frame = std::max<VDPosition>(0, std::min<VDPosition>(cur, pthis->GetFrameCount()));
+
+		pthis->mposCurrentFrame = frame;
+		if (pthis->mpCB)
+			pthis->mpCB->UICurrentPositionUpdated(false);
+	}
+}
+
+void VDProject::StaticFastPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie) {
 	VDProject *pthis = (VDProject *)cookie;
 
 	if (pthis->mbPositionCallbackEnabled) {
@@ -2708,7 +2767,7 @@ void VDProject::StaticPositionCallback(VDPosition start, VDPosition cur, VDPosit
 
 		pthis->mposCurrentFrame = frame;
 		if (pthis->mpCB)
-			pthis->mpCB->UICurrentPositionUpdated();
+			pthis->mpCB->UICurrentPositionUpdated(fast_update);
 	}
 }
 

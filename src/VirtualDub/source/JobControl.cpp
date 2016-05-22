@@ -32,8 +32,8 @@ static const char g_szRegKeyShutdownMode[] = "Shutdown mode";
 
 IVDJobQueueStatusCallback *g_pVDJobQueueStatusCallback;
 
-void JobPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, void *cookie) {
-	if (g_pVDJobQueueStatusCallback)
+void JobPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie) {
+	if (g_pVDJobQueueStatusCallback && !fast_update)
 		g_pVDJobQueueStatusCallback->OnJobProgressUpdate(*g_VDJobQueue.GetCurrentlyRunningJob(), (float)progress / 8192.0f);
 }
 

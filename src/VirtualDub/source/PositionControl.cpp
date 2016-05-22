@@ -28,6 +28,7 @@
 
 #include "resource.h"
 #include "oshelper.h"
+#include "timeline.h"
 
 #include "PositionControl.h"
 
@@ -126,6 +127,7 @@ protected:
 
 	bool		GetSelection(VDPosition& start, VDPosition& end);
 	void		SetSelection(VDPosition start, VDPosition end, bool updateNow);
+	void		SetTimeline(VDTimeline& t);
 
 	void		SetFrameRate(const VDFraction& frameRate);
 
@@ -178,6 +180,8 @@ protected:
 	VDPosition			mRangeEnd;
 	VDPosition			mSelectionStart;
 	VDPosition			mSelectionEnd;
+	vdfastvector<sint64> marker;
+	vdfastvector<sint64> edit;
 
 	RECT				mPositionArea;			// track, ticks, bar, and numbers
 	RECT				mTrackArea;				// track, ticks, and bar
@@ -416,6 +420,28 @@ void VDPositionControlW32::SetSelection(VDPosition start, VDPosition end, bool u
 
 		InvalidateRect(mhwnd, &rNew, TRUE);
 	}
+}
+
+void VDPositionControlW32::SetTimeline(VDTimeline& t) {
+	edit.clear();
+	VDPosition p0 = 0;
+	while(1){
+		p0 = t.GetNextEdit(p0);
+		if(p0==-1) break;
+		edit.push_back(p0);
+	}
+
+	marker.clear();
+	sint64 prev = -1;
+	{for(int i=0; i<t.GetMarkerCount(); i++){
+		sint64 p = t.GetMarker(i);
+		if(p!=-1 && p!=prev){
+			marker.push_back(p);
+			prev = p;
+		}
+	}}
+
+	InvalidateRect(mhwnd, &mTrack, FALSE);
 }
 
 void VDPositionControlW32::SetFrameRate(const VDFraction& frameRate) {
@@ -1058,6 +1084,63 @@ void VDPositionControlW32::OnPaint() {
 			}
 			DeleteObject(hNullPen);
 		}
+	}
+
+	if(!edit.empty()){
+		HPEN hNullPen = CreatePen(PS_NULL, 0, 0);
+		HBRUSH br = CreateSolidBrush(RGB(255,255,255));
+		HGDIOBJ hLastPen = SelectObject(hdc, hNullPen);
+		HGDIOBJ hOldBrush = SelectObject(hdc, br);
+
+		{for(int i=0; i<edit.size(); i++){
+			sint64 p = edit[i];
+			int x1 = FrameToPixel(p);
+
+			const POINT pts[4]={
+				{ x1, mTrack.top },
+				{ x1, mTrack.bottom },
+				{ x1+1, mTrack.bottom },
+				{ x1+1, mTrack.top },
+			};
+
+			Polygon(hdc, pts, 4);
+		}}
+
+		SelectObject(hdc, hOldBrush);
+		SelectObject(hdc, hLastPen);
+		DeleteObject(hNullPen);
+		DeleteObject(br);
+	}
+
+	if(!marker.empty()){
+		HPEN hNullPen = CreatePen(PS_NULL, 0, 0);
+		HBRUSH br1 = CreateSolidBrush(RGB(0,255,0));
+		HBRUSH br2 = CreateSolidBrush(RGB(0,100,0));
+		HGDIOBJ hLastPen = SelectObject(hdc, hNullPen);
+		HGDIOBJ hOldBrush = SelectObject(hdc, br1);
+		const int tickHeight = mTrack.bottom - mTrack.top - 4;
+
+		{for(int i=0; i<marker.size(); i++){
+			sint64 p = marker[i];
+			int x1 = FrameToPixel(p);
+
+			if(p>=mSelectionStart) SelectObject(hdc, br2);
+			if(p>mSelectionEnd) SelectObject(hdc, br1);
+
+			const POINT pts[3]={
+				{ x1-tickHeight, mTrack.top+2 },
+				{ x1, mTrack.bottom-2 },
+				{ x1+tickHeight, mTrack.top+2 },
+			};
+
+			Polygon(hdc, pts, 3);
+		}}
+
+		SelectObject(hdc, hOldBrush);
+		SelectObject(hdc, hLastPen);
+		DeleteObject(hNullPen);
+		DeleteObject(br1);
+		DeleteObject(br2);
 	}
 
 	// Draw track border.

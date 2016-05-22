@@ -43,7 +43,7 @@ void JobWriteProjectScript(VDFile& f, const VDProject* project, bool project_rel
 void JobWriteConfiguration(const wchar_t *filename, DubOptions *, bool bIncludeEditList = true, bool bIncludeTextInfo = true);
 void JobLockDubber();
 void JobUnlockDubber();
-void JobPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, void *cookie);
+void JobPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie);
 void JobClearList();
 bool JobRunList();
 void JobAddBatchFile(const wchar_t *srcDir, const wchar_t *dstDir);

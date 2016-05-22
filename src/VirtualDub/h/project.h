@@ -41,7 +41,7 @@ public:
 	virtual void UISetDubbingMode(bool bActive, bool bIsPreview) = 0;
 	virtual bool UIRunDubMessageLoop() = 0;
 	virtual void UIAbortDubMessageLoop() = 0;		// Note: multithreaded
-	virtual void UICurrentPositionUpdated() = 0;
+	virtual void UICurrentPositionUpdated(bool fast_update=false) = 0;
 	virtual void UISelectionUpdated(bool notifyUser) = 0;
 	virtual void UITimelineUpdated() = 0;
 	virtual void UIShuttleModeUpdated() = 0;
@@ -138,6 +138,8 @@ public:
 	void SetSelection(VDPosition start, VDPosition end, bool notifyUser = true);
 	VDPosition GetSelectionStartFrame();
 	VDPosition GetSelectionEndFrame();
+	void SetMarker();
+	void SetMarker(VDPosition pos);
 
 	bool IsClipboardEmpty();
 	bool IsSceneShuttleRunning();
@@ -268,7 +270,8 @@ protected:
 	bool RefilterFrame(VDPosition timelinePos);
 	void LockFilterChain(bool enableLock);
 
-	static void StaticPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, void *cookie);
+	static void StaticPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie);
+	static void StaticFastPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie);
 
 	void UpdateDubParameters(bool forceUpdate = false);
 	void SetAudioSource();

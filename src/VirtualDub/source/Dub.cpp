@@ -1787,7 +1787,7 @@ void Dubber::Stop() {
 	filters.SetAsyncThreadCount(-1);
 
 	if (pStatusHandler && vInfo.cur_proc_src >= 0)
-		pStatusHandler->SetLastPosition(vInfo.cur_proc_src);
+		pStatusHandler->SetLastPosition(vInfo.cur_proc_src, false);
 
 	if (VDIsAtLeastVistaW32())
 		SetPriorityClass(GetCurrentProcess(), PROCESS_MODE_BACKGROUND_END);

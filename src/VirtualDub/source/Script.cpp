@@ -823,6 +823,14 @@ static void func_VDVideo_SetRangeFrames(IVDScriptInterpreter *, VDScriptValue *a
 	g_project->SetSelectionEnd(endOffset);
 }
 
+static void func_VDVideo_AddMarker(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	if (!inputVideo)
+		return;
+
+	VDPosition p = arglist[0].asLong();
+	g_project->GetTimeline().SetMarkerSrc(p);
+}
+
 static void func_VDVideo_GetCompression(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 	if (g_Vcompression.dwFlags & ICMF_COMPVARS_VALID) {
 		switch(arglist[0].asInt()) {
@@ -1089,6 +1097,7 @@ static const VDScriptFunctionDef obj_VDVideo_functbl[]={
 	{ func_VDVideo_GetRange			, "GetRange",		"ii" },
 	{ func_VDVideo_SetRangeEmpty	, "SetRange",		"0" },
 	{ func_VDVideo_SetRange			, NULL,				"0ii" },
+	{ func_VDVideo_AddMarker		, "AddMarker",		"0l" },
 	{ func_VDVideo_SetRangeFrames	, "SetRangeFrames",	"0ll" },
 	{ func_VDVideo_GetCompression	, "GetCompression",	"ii" },
 	{ func_VDVideo_SetCompression	, "SetCompression",	"0siii" },

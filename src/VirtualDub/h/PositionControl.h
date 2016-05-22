@@ -32,6 +32,7 @@ extern const char szPositionControlName[];
 typedef char (*PosCtlFTCallback)(HWND hwnd, void *data, long pos);
 
 class VDFraction;
+class VDTimeline;
 
 class IVDPositionControlCallback {
 public:
@@ -71,6 +72,7 @@ public:
 	virtual void		SetDisplayedPosition(VDPosition pos) = 0;
 	virtual bool		GetSelection(VDPosition& start, VDPosition& end) = 0;
 	virtual void		SetSelection(VDPosition start, VDPosition end, bool updateNow = true) = 0;
+	virtual void		SetTimeline(VDTimeline& t) = 0;
 	virtual void		SetFrameRate(const VDFraction& frameRate) = 0;
 	virtual void		SetAutoPositionUpdate(bool autoUpdate) = 0;
 	virtual void		SetAutoStep(bool autoStep) = 0;

@@ -320,6 +320,8 @@ namespace {
 		{ ID_EDIT_UNMASK,				"Edit.UnmaskSelection" },
 		{ ID_EDIT_SETSELSTART,			"Edit.SetSelectionStart" },
 		{ ID_EDIT_SETSELEND,			"Edit.SetSelectionEnd" },
+		{ ID_EDIT_SETMARKER,			"Edit.ToggleMarker" },
+		{ ID_EDIT_CLEARMARKERS,			"Edit.ClearMarkers" },
 		{ ID_VIEW_POSITIONCONTROL,		"View.TogglePositionControl" },
 		{ ID_VIEW_STATUSBAR,			"View.ToggleStatusBar" },
 		{ ID_VIEW_CURVEEDITOR,			"View.ToggleCurveEditor" },
@@ -675,7 +677,11 @@ void VDProjectUI::UpdateAccelPreview() {
 		ID_VIDEO_SEEK_PREVONESEC,
 		ID_VIDEO_SEEK_SELSTART,
 		ID_VIDEO_SEEK_SELEND,
-	};
+
+		ID_EDIT_PREVRANGE,
+		ID_EDIT_NEXTRANGE,
+		ID_EDIT_SETMARKER,
+  };
 
 	HACCEL haccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_PREVIEW_KEYS));
 	VDAccelTableDefinition def;
@@ -707,6 +713,7 @@ void VDProjectUI::UpdateAccelDub() {
 
 		ID_EDIT_SETSELEND,
 		ID_EDIT_SETSELSTART,
+		ID_EDIT_SETMARKER,
 	};
 
 	HACCEL haccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_DUB_KEYS));
@@ -2058,10 +2065,24 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_EDIT_MASK:						MaskSelection(true);							break;
 		case ID_EDIT_UNMASK:					MaskSelection(false);						break;
 		case ID_EDIT_SETSELSTART:
-			QueueCommand(kVDProjectCmd_SetSelectionStart);
+			if (!g_dubber || g_dubber->IsPreviewing())
+				SetSelectionStart();
+			else
+				QueueCommand(kVDProjectCmd_SetSelectionStart);
 			break;
 		case ID_EDIT_SETSELEND:
-			QueueCommand(kVDProjectCmd_SetSelectionEnd);
+			if (!g_dubber || g_dubber->IsPreviewing())
+				SetSelectionEnd();
+			else
+				QueueCommand(kVDProjectCmd_SetSelectionEnd);
+			break;
+		case ID_EDIT_SETMARKER:
+			if (!g_dubber || g_dubber->IsPreviewing())
+				SetMarker();
+			break;
+		case ID_EDIT_CLEARMARKERS:
+			mTimeline.ClearMarker();
+			mpPosition->SetTimeline(mTimeline);
 			break;
 
 		case ID_AUDIO_ADVANCEDFILTERING:
@@ -2460,6 +2481,8 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_EDIT_UNMASK				, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_RESET				, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_CROPTOSELECTION		, bSelectionExists);
+	VDEnableMenuItemW32(hMenu, ID_EDIT_SETMARKER			, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_EDIT_CLEARMARKERS			, bSourceFileExists);
 
 	const wchar_t *undoAction = GetCurrentUndoAction();
 	const wchar_t *redoAction = GetCurrentRedoAction();
@@ -3759,15 +3782,18 @@ void VDProjectUI::UIAbortDubMessageLoop() {
 	PostThreadMessage(mThreadId, WM_NULL, 0, 0);
 }
 
-void VDProjectUI::UICurrentPositionUpdated() {
+void VDProjectUI::UICurrentPositionUpdated(bool fast_update) {
 	VDPosition pos(GetCurrentFrame());
 
 	mpPosition->SetPosition(pos);
-	if (mhwndCurveEditor)
-		UpdateCurveEditorPosition();
 
-	if (mpAudioDisplay && !mbDubActive)
-		UpdateAudioDisplayPosition();
+	if (!fast_update) {
+		if (mhwndCurveEditor)
+			UpdateCurveEditorPosition();
+
+		if (mpAudioDisplay && !mbDubActive)
+			UpdateAudioDisplayPosition();
+	}
 }
 
 void VDProjectUI::UITimelineUpdated() {
@@ -3778,6 +3804,7 @@ void VDProjectUI::UITimelineUpdated() {
 	VDPosition start(GetSelectionStartFrame());
 	VDPosition end(GetSelectionEndFrame());
 	mpPosition->SetSelection(start, end);
+	mpPosition->SetTimeline(mTimeline);
 
 	if (mpAudioDisplay) {
 		UpdateAudioDisplay();
@@ -4365,6 +4392,7 @@ void VDProjectUI::DisplayPreview(bool v)
 	if (v) {
 		ShowWindow(mhwndPosition, SW_HIDE);
 	} else {
+		UITimelineUpdated();
 		ShowWindow(mhwndPosition, mbPositionControlVisible ? SW_SHOWNA : SW_HIDE);
 	}
 	if (mhwndFilters) ShowWindow(mhwndFilters, v ? SW_HIDE:SW_SHOWNOACTIVATE);

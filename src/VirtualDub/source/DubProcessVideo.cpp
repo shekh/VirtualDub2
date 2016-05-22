@@ -1179,6 +1179,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	VDPROFILEEND();
 
 	mpVInfo->cur_proc_src = nextOutputFrame.mTimelineFrame;
+	mpStatusHandler->NotifyPositionChange();
 
 	pOutputReq->Release();
 

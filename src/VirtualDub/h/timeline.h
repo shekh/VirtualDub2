@@ -67,13 +67,23 @@ public:
 	VDPosition		GetNextDrop(VDPosition pos);
 	VDPosition		GetPrevEdit(VDPosition pos);
 	VDPosition		GetNextEdit(VDPosition pos);
+	VDPosition		GetPrevMarker(VDPosition pos);
+	VDPosition		GetNextMarker(VDPosition pos);
 
 	VDPosition		TimelineToSourceFrame(VDPosition pos);
 
 	void	Rescale(const VDFraction& oldRate, sint64 oldLength, const VDFraction& newRate, sint64 newLength);
 
+	int GetMarkerCount(){ return marker.size(); }
+	VDPosition GetMarker(int i);
+	void ToggleMarker(VDPosition pos);
+	void SetMarkerSrc(VDPosition p);
+	void ClearMarker(){ marker.clear(); }
+	const vdfastvector<sint64>& GetMarker(){ return marker; }
+
 protected:
 	FrameSubset	mSubset;
+	vdfastvector<sint64> marker;
 
 	vdrefptr<IVDTimelineTimingSource> mpTiming;
 };

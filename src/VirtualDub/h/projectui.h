@@ -144,7 +144,7 @@ protected:
 	void UISetDubbingMode(bool bActive, bool bIsPreview);
 	bool UIRunDubMessageLoop();
 	void UIAbortDubMessageLoop();
-	void UICurrentPositionUpdated();
+	void UICurrentPositionUpdated(bool fast_update=false);
 	void UISelectionUpdated(bool notifyUser);
 	void UITimelineUpdated();
 	void UIShuttleModeUpdated();

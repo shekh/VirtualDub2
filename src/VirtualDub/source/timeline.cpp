@@ -285,6 +285,82 @@ void VDTimeline::Rescale(const VDFraction& oldRate, sint64 oldLength, const VDFr
 	mSubset.rescale(oldRate, oldLength, newRate, newLength);
 }
 
+VDPosition VDTimeline::GetMarker(int i) {
+	VDPosition p = marker[i];
+	bool masked;
+	return mSubset.revLookupFrame(p,masked);
+}
+
+void VDTimeline::ToggleMarker(VDPosition pos) {
+	VDPosition p = mSubset.lookupFrame(pos);
+	{for(int i=0; i<marker.size(); i++){
+		if(marker[i]==p){
+			marker.erase(&marker[i]);
+			return;
+		}
+		if(marker[i]>p){
+			marker.insert(&marker[i],p);
+			return;
+		}
+	}}
+
+	marker.push_back(p);
+}
+
+void VDTimeline::SetMarkerSrc(VDPosition p) {
+	{for(int i=0; i<marker.size(); i++){
+		if(marker[i]==p){
+			return;
+		}
+		if(marker[i]>p){
+			marker.insert(&marker[i],p);
+			return;
+		}
+	}}
+
+	marker.push_back(p);
+}
+
+VDPosition VDTimeline::GetPrevMarker(VDPosition pos) {
+	VDPosition p = mSubset.lookupFrame(pos);
+	if(p==-1){
+		if(!marker.empty()){
+			VDPosition r = marker[marker.size()-1];
+			bool masked;
+			r = mSubset.revLookupFrame(r,masked);
+			return r;
+		}
+		return -1;
+	}
+
+	VDPosition r = -1;
+	{for(int i=0; i<marker.size(); i++){
+		sint64 m = marker[i];
+		if(m>=p) break;
+		r = m;
+	}}
+	bool masked;
+	if(r!=-1) r = mSubset.revLookupFrame(r,masked);
+	return r;
+}
+
+VDPosition VDTimeline::GetNextMarker(VDPosition pos) {
+	VDPosition p = mSubset.lookupFrame(pos);
+	if(p==-1) return -1;
+
+	VDPosition r = -1;
+	{for(int i=0; i<marker.size(); i++){
+		sint64 m = marker[i];
+		if(m>p){
+			r = m;
+			break;
+		}
+	}}
+	bool masked;
+	if(r!=-1) r = mSubset.revLookupFrame(r,masked);
+	return r;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class VDTimelineTimingSourceVS : public vdrefcounted<IVDTimelineTimingSource> {

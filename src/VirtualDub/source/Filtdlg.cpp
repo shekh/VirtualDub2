@@ -162,8 +162,8 @@ void FiltersEditor::Init(int w, int h, int format, const VDFraction& rate, sint6
 void FiltersEditor::SetResult() {
 	mResult.mOldFrameRate		= mOldFrameRate;
 	mResult.mOldFrameCount		= mOldFrameCount;
-	mResult.mNewFrameRate		= filters.GetOutputFrameRate();
-	mResult.mNewFrameCount		= filters.GetOutputFrameCount();
+	mResult.mNewFrameRate		= mFiltSys.GetOutputFrameRate();
+	mResult.mNewFrameCount		= mFiltSys.GetOutputFrameCount();
 
 	mResult.mbRescaleRequested = false;
 	mResult.mbChangeDetected = false;

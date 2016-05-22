@@ -64,7 +64,8 @@ private:
 	};
 
 	enum {
-		MYWM_UPDATE_BACKGROUND_STATE = WM_USER + 100
+		MYWM_UPDATE_BACKGROUND_STATE = WM_USER + 100,
+		MYWM_NOTIFY_POSITION_CHANGE = WM_USER + 101
 	};
 
 	SamplePoint		mSamplePoints[kSamplePoints];
@@ -121,7 +122,8 @@ public:
 	bool ToggleStatus();
 	void SetPositionCallback(DubPositionCallback dpc, void *cookie);
 	void NotifyNewFrame(uint32 size, bool isKey);
-	void SetLastPosition(VDPosition pos);
+	void SetLastPosition(VDPosition pos, bool fast_update);
+	void NotifyPositionChange(){ PostMessage(hwndStatus, MYWM_NOTIFY_POSITION_CHANGE,0,0); }
 	void Freeze();
 	bool isVisible();
 	bool isFrameVisible(bool fOutput);
@@ -845,12 +847,17 @@ INT_PTR CALLBACK DubStatus::StatusDlgProc( HWND hdlg, UINT message, WPARAM wPara
 			PostMessage(GetParent(hdlg), MYWM_NULL, 0, 0);
 			return TRUE;
 
+		case MYWM_NOTIFY_POSITION_CHANGE:
+			if (thisPtr->pvinfo->cur_proc_src >= 0)
+				thisPtr->SetLastPosition(thisPtr->pvinfo->cur_proc_src, true);
+			return TRUE;
+
 		case WM_TIMER:
 			if (thisPtr->fFrozen)
 				return TRUE;
 
 			if (thisPtr->pvinfo->cur_proc_src >= 0)
-				thisPtr->SetLastPosition(thisPtr->pvinfo->cur_proc_src);
+				thisPtr->SetLastPosition(thisPtr->pvinfo->cur_proc_src, false);
 
 			if (thisPtr->hwndStatusChild)
 				SendMessage(thisPtr->hwndStatusChild, WM_TIMER, 0, 0);
@@ -1096,7 +1103,7 @@ void DubStatus::NotifyNewFrame(uint32 size, bool isKey) {
 	mFrameSizes[(lFrameLastIndex++)&(MAX_FRAME_SIZES-1)] = size | (isKey ? 0 : 0x80000000);
 }
 
-void DubStatus::SetLastPosition(VDPosition pos) {
+void DubStatus::SetLastPosition(VDPosition pos, bool fast_update) {
 		if (mpPositionCallback)
 			mpPositionCallback(
 					pvinfo->start_src,
@@ -1105,7 +1112,7 @@ void DubStatus::SetLastPosition(VDPosition pos) {
 							: pos > pvinfo->end_src
 									? pvinfo->end_src
 									: pos,
-					pvinfo->end_src, mProgress, mpPositionCallbackCookie);
+					pvinfo->end_src, mProgress, fast_update, mpPositionCallbackCookie);
 }
 
 void DubStatus::Freeze() {
