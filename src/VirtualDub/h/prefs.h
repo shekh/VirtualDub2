@@ -79,6 +79,10 @@ public:
 	char fNoCorrectLayer3;
 };
 
+enum {
+	PREFERENCES_DISPLAY = 1,
+};
+
 ///////////////////////////////////////////////////////////////////////////
 
 #ifndef f_PREFS_CPP

@@ -803,7 +803,7 @@ void VDProjectUI::Detach() {
 		mhMenuDub = NULL;
 	}
 
-	if (mhMenuDisplay) {
+	if (mhMenuNormal) {
 		DestroyMenu(mhMenuNormal);
 		mhMenuNormal = NULL;
 	}
@@ -2129,11 +2129,11 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 
 		case ID_OPTIONS_PREFERENCES:
-			extern void VDShowPreferencesDialog(VDGUIHandle h);
+			extern int VDShowPreferencesDialog(VDGUIHandle h);
 			{
 				int clearCount = VDPreferencesGetHistoryClearCounter();
 
-				VDShowPreferencesDialog((VDGUIHandle)mhwnd);
+				int result = VDShowPreferencesDialog((VDGUIHandle)mhwnd);
 				VDCPUTest();
 				mMRUList.set_capacity(VDPreferencesGetMRUSize());
 
@@ -2142,6 +2142,9 @@ bool VDProjectUI::MenuHit(UINT id) {
 				}
 
 				UpdateMRUList();
+
+				if (result & PREFERENCES_DISPLAY)
+					UiDisplayPreferencesUpdated();
 			}
 			break;
 
@@ -3883,6 +3886,12 @@ void VDProjectUI::UIVideoFiltersUpdated() {
 
 void VDProjectUI::UIDubParametersUpdated() {
 	mpPosition->SetFrameRate(mVideoInputFrameRate);
+}
+
+void VDProjectUI::UiDisplayPreferencesUpdated() {
+	mpInputDisplay->Reset();
+	mpOutputDisplay->Reset();
+	DisplayFrame();
 }
 
 void VDProjectUI::UpdateMRUList() {

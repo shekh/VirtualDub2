@@ -153,6 +153,7 @@ protected:
 	void UIVideoSourceUpdated();
 	void UIVideoFiltersUpdated();
 	void UIDubParametersUpdated();
+	void UiDisplayPreferencesUpdated();
 
 	void UpdateMRUList();
 	void SetStatus(const wchar_t *s);

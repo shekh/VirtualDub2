@@ -3930,6 +3930,7 @@ bool VDVideoDisplayMinidriverDX9::IsValid() {
 
 void VDVideoDisplayMinidriverDX9::SetFilterMode(FilterMode mode) {
 	mPreferredFilter = mode;
+	mbSwapChainImageValid = false;
 
 	if (mode != kFilterBicubic && mode != kFilterAnySuitable) {
 		ShutdownBicubicPS2Filters();

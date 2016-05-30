@@ -110,6 +110,25 @@ namespace {
 			: mMRUSize(4)
 		{
 		}
+
+		bool displayChanged(VDPreferences2& old) {
+			if (old.mOldPrefs.fDisplay!=mOldPrefs.fDisplay)
+				return true;
+			if (old.mbDisplayAllowDirectXOverlays!=mbDisplayAllowDirectXOverlays)
+				return true;
+			if (old.mbDisplayEnableHighPrecision!=mbDisplayEnableHighPrecision)
+				return true;
+			if (old.mbDisplayEnableBackgroundFallback!=mbDisplayEnableBackgroundFallback)
+				return true;
+			if (old.mbDisplayEnable3D!=mbDisplayEnable3D)
+				return true;
+			if (old.mDisplaySecondaryMode!=mDisplaySecondaryMode)
+				return true;
+			if (old.mD3DFXFile!=mD3DFXFile)
+				return true;
+			return false;
+		}
+
 	} g_prefs2;
 }
 
@@ -845,7 +864,7 @@ public:
 	}
 };
 
-void VDShowPreferencesDialog(VDGUIHandle h) {
+int VDShowPreferencesDialog(VDGUIHandle h) {
 	vdrefptr<IVDUIWindow> peer(VDUICreatePeer(h));
 
 	vdrefptr<IVDUIWindow> pWin(VDCreateDialogFromResource(1000, peer));
@@ -860,11 +879,18 @@ void VDShowPreferencesDialog(VDGUIHandle h) {
 	peer->Shutdown();
 	pWin->Shutdown();
 
+	int part_mask = 0;
+
 	if (result) {
+		if (g_prefs2.displayChanged(temp))
+			part_mask |= PREFERENCES_DISPLAY;
+
 		g_prefs2 = temp;
 		g_prefs = g_prefs2.mOldPrefs;
 		VDPreferencesUpdated();
 	}
+
+	return part_mask;
 }
 
 void LoadPreferences() {
