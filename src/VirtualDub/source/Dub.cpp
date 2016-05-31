@@ -1169,8 +1169,10 @@ void Dubber::InitOutputFile() {
 		if (outputLayout.format && mpOutputSystem->IsVideoImageOutputEnabled()) {
 			mpOutputSystem->SetVideoImageLayout(hdr, outputLayout);
 		} else {
-			if (mpOutputSystem->IsVideoImageOutputRequired() || outputFormat.empty())
-				throw MyError("The current output video format is not supported by the selected output path.");
+			if (!fPreview) {
+				if (mpOutputSystem->IsVideoImageOutputRequired() || outputFormat.empty())
+					throw MyError("The current output video format is not supported by the selected output path.");
+			}
 
 			mpOutputSystem->SetVideo(hdr, &*outputFormat, outputFormat.size());
 		}

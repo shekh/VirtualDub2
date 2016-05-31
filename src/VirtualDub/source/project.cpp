@@ -2344,7 +2344,7 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 
 	VDProjectAutoSave autoSave(this);
 
-	if (!g_fJobMode && VDPreferencesGetAutoRecoverEnabled()) {
+	if (!g_fJobMode && VDPreferencesGetAutoRecoverEnabled() && !pOutputSystem->IsRealTime()) {
 		autoSave.Save();
 	}
 
