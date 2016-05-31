@@ -27,6 +27,9 @@ public:
 	virtual void SetZoom(double zoom) = 0;
 	virtual double GetMaxZoomForArea(int w, int h) = 0;
 	virtual void SetBorderless(bool) = 0;
+	virtual bool GetAutoSize() = 0;
+	virtual void SetAutoSize(bool) = 0;
+	virtual void InitSourcePAR() = 0;
 };
 
 IVDVideoWindow *VDGetIVideoWindow(HWND hwnd);

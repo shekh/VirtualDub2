@@ -596,6 +596,10 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	pInputWindow->SetDisplay(mpInputDisplay);
 	pOutputWindow->SetChild(mhwndOutputDisplay);
 	pOutputWindow->SetDisplay(mpOutputDisplay);
+	pInputWindow->SetAutoSize(mbAutoSizePanes);
+	pOutputWindow->SetAutoSize(mbAutoSizePanes);
+	pInputWindow->InitSourcePAR();
+	pOutputWindow->InitSourcePAR();
 
 	// Create window layout.
 	VDUIParameters parms;
@@ -1996,7 +2000,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 
 		case ID_PANELAYOUT_AUTOSIZE:
 			mbAutoSizePanes = !mbAutoSizePanes;
-			RepositionPanes();
+			RepositionPanes(true);
 			break;
 
 		case ID_VIDEO_SEEK_START:
@@ -3066,7 +3070,7 @@ void VDProjectUI::OnPositionNotify(int code) {
 	}
 }
 
-void VDProjectUI::RepositionPanes() {
+void VDProjectUI::RepositionPanes(bool reset) {
 	VDASSERT(!mbPaneLayoutBusy);
 	mbPaneLayoutBusy = true;
 
@@ -3098,8 +3102,16 @@ void VDProjectUI::RepositionPanes() {
 
 	for(int i=0; i<n2; ++i) {
 		HWND h = panes[i];
-		if (h)
+		if (h) {
 			panes[n++] = h;
+			IVDVideoWindow *w = VDGetIVideoWindow(h);
+			if (reset) {
+				w->SetAutoSize(mbAutoSizePanes);
+			} else {
+				if (!w->GetAutoSize())
+					mbAutoSizePanes = false;
+			}
+		}
 	}
 
 	if (mbAutoSizePanes) {

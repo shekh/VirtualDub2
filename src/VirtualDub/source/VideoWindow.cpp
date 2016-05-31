@@ -65,6 +65,9 @@ public:
 	void SetResizeParentEnabled(bool enabled);
 	double GetMaxZoomForArea(int w, int h);
 	void SetBorderless(bool v){ mbBorderless=v; }
+	bool GetAutoSize(){ return mbAutoSize; }
+	void SetAutoSize(bool v){ mbAutoSize = v; }
+	void InitSourcePAR();
 
 private:
 	HWND mhwnd;
@@ -84,6 +87,7 @@ private:
 	bool mbResizing;
 	bool mbMouseTransparent;
 	bool mbBorderless;
+	bool mbAutoSize;
 
 	IVDVideoDisplay *mpDisplay;
 	VDStringW	mSourcePARTextPattern;
@@ -134,6 +138,7 @@ VDVideoWindow::VDVideoWindow(HWND hwnd)
 	, mbResizing(false)
 	, mbMouseTransparent(false)
 	, mbBorderless(false)
+	, mbAutoSize(false)
 	, mpDisplay(NULL)
 {
 	SetWindowLongPtr(mhwnd, 0, (LONG_PTR)this);
@@ -214,6 +219,15 @@ void VDVideoWindow::SetAspectRatioSourcePAR() {
 	mFreeAspectRatio = mSourcePAR > 0 ? mSourcePAR : 1.0;
 
 	Resize();
+}
+
+void VDVideoWindow::InitSourcePAR() {
+	mAspectRatio = -1;
+	mbAspectIsFrameBased = false;
+	mbUseSourcePAR = true;
+
+	mSourcePAR = 1.0;
+	mFreeAspectRatio = 1.0;
 }
 
 void VDVideoWindow::SetZoom(double zoom) {
@@ -380,6 +394,7 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	case WM_ENTERSIZEMOVE:
 		mbResizing = true;
+		mbAutoSize = false;
 		break;
 	case WM_EXITSIZEMOVE:
 		mbResizing = false;
@@ -571,19 +586,20 @@ LRESULT VDVideoWindow::HitTest(int x, int y) {
 
 void VDVideoWindow::OnCommand(int cmd) {
 	switch(cmd) {
-	case ID_DISPLAY_ZOOM_6:			SetZoom(0.0625); break;
-	case ID_DISPLAY_ZOOM_12:		SetZoom(0.125); break;
-	case ID_DISPLAY_ZOOM_25:		SetZoom(0.25); break;
-	case ID_DISPLAY_ZOOM_33:		SetZoom(1.0/3.0); break;
-	case ID_DISPLAY_ZOOM_50:		SetZoom(0.5); break;
-	case ID_DISPLAY_ZOOM_66:		SetZoom(2.0/3.0); break;
-	case ID_DISPLAY_ZOOM_75:		SetZoom(3.0/4.0); break;
-	case ID_DISPLAY_ZOOM_100:		SetZoom(1.0); break;
-	case ID_DISPLAY_ZOOM_150:		SetZoom(1.5); break;
-	case ID_DISPLAY_ZOOM_200:		SetZoom(2.0); break;
-	case ID_DISPLAY_ZOOM_300:		SetZoom(3.0); break;
-	case ID_DISPLAY_ZOOM_400:		SetZoom(4.0); break;
+	case ID_DISPLAY_ZOOM_6:			mbAutoSize = false; SetZoom(0.0625); break;
+	case ID_DISPLAY_ZOOM_12:		mbAutoSize = false; SetZoom(0.125); break;
+	case ID_DISPLAY_ZOOM_25:		mbAutoSize = false; SetZoom(0.25); break;
+	case ID_DISPLAY_ZOOM_33:		mbAutoSize = false; SetZoom(1.0/3.0); break;
+	case ID_DISPLAY_ZOOM_50:		mbAutoSize = false; SetZoom(0.5); break;
+	case ID_DISPLAY_ZOOM_66:		mbAutoSize = false; SetZoom(2.0/3.0); break;
+	case ID_DISPLAY_ZOOM_75:		mbAutoSize = false; SetZoom(3.0/4.0); break;
+	case ID_DISPLAY_ZOOM_100:		mbAutoSize = false; SetZoom(1.0); break;
+	case ID_DISPLAY_ZOOM_150:		mbAutoSize = false; SetZoom(1.5); break;
+	case ID_DISPLAY_ZOOM_200:		mbAutoSize = false; SetZoom(2.0); break;
+	case ID_DISPLAY_ZOOM_300:		mbAutoSize = false; SetZoom(3.0); break;
+	case ID_DISPLAY_ZOOM_400:		mbAutoSize = false; SetZoom(4.0); break;
 	case ID_DISPLAY_ZOOM_EXACT:
+		mbAutoSize = false;
 		mZoom = 1.0;
 		SetAspectRatio(1.0, false);
 		break;

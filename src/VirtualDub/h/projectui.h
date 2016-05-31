@@ -123,7 +123,7 @@ protected:
 	void UpdateMainMenu(HMENU hMenu);
 	void UpdateAudioSourceMenu();
 	void UpdateDubMenu(HMENU hMenu);
-	void RepositionPanes();
+	void RepositionPanes(bool reset=false);
 	void UpdateVideoFrameLayout();
 	void UpdateAccelPreview();
 	void UpdateAccelDub();
