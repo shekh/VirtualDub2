@@ -98,6 +98,7 @@ public:
 	void DisplayPreview(bool v);
 	HWND GetHwnd(){ return (HWND)mhwnd; }
 	HACCEL GetAccelPreview(){ return mhAccelPreview; }
+	void RepositionPanes(bool reset=false);
 
 public:
 	const wchar_t *edit_token;
@@ -123,7 +124,6 @@ protected:
 	void UpdateMainMenu(HMENU hMenu);
 	void UpdateAudioSourceMenu();
 	void UpdateDubMenu(HMENU hMenu);
-	void RepositionPanes(bool reset=false);
 	void UpdateVideoFrameLayout();
 	void UpdateAccelPreview();
 	void UpdateAccelDub();

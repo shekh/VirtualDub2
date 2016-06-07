@@ -1545,9 +1545,13 @@ bool VDVideoDisplayDX9Manager::RunEffect(const EffectContext& ctx, const Techniq
 		ctx.mpInterpFilterV
 	};
 
-	const D3DDISPLAYMODE& dmode = mpManager->GetDisplayMode();
-	int clippedWidth = std::min<int>(ctx.mOutputW, dmode.Width);
-	int clippedHeight = std::min<int>(ctx.mOutputH, dmode.Height);
+	//const D3DDISPLAYMODE& dmode = mpManager->GetDisplayMode();
+	//int rtw = dmode.Width;
+	//int rth = dmode.Height;
+	int rtw = mpManager->GetCaps().MaxTextureWidth;
+	int rth = mpManager->GetCaps().MaxTextureHeight;
+	int clippedWidth = std::min<int>(ctx.mOutputW, rtw);
+	int clippedHeight = std::min<int>(ctx.mOutputH, rth);
 
 	if (clippedWidth <= 0 || clippedHeight <= 0)
 		return true;
@@ -4012,9 +4016,11 @@ void VDVideoDisplayMinidriverDX9::SetLogicalPalette(const uint8 *pLogicalPalette
 }
 
 bool VDVideoDisplayMinidriverDX9::UpdateBackbuffer(const RECT& rClient0, UpdateMode updateMode) {
-	const D3DDISPLAYMODE& displayMode = mpManager->GetDisplayMode();
-	int rtw = displayMode.Width;
-	int rth = displayMode.Height;
+	//const D3DDISPLAYMODE& displayMode = mpManager->GetDisplayMode();
+	//int rtw = displayMode.Width;
+	//int rth = displayMode.Height;
+	int rtw = mpManager->GetCaps().MaxTextureWidth;
+	int rth = mpManager->GetCaps().MaxTextureHeight;
 	RECT rClient = rClient0;
 	if (mbFullScreen) {
 		rClient.right = rtw;

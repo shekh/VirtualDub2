@@ -410,6 +410,14 @@ static void VDEnableMenuItemW32(HMENU hMenu, UINT opt, bool en) {
 	EnableMenuItem(hMenu, opt, en ? (MF_BYCOMMAND|MF_ENABLED) : (MF_BYCOMMAND|MF_GRAYED));
 }
 
+class VDUIPaneSetWindow: public VDUIWindow {
+public:
+	VDProjectUI* projectUI;
+
+	VDUIPaneSetWindow(VDProjectUI* ui){ projectUI = ui; }
+	virtual void OnResize() { projectUI->RepositionPanes(); }
+};
+
 ///////////////////////////////////////////////////////////////////////////
 
 VDProjectUI::VDProjectUI()
@@ -625,7 +633,7 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	mpUISplitSet->SetAlignment(nsVDUI::kFill, nsVDUI::kFill);
 	mpUISplitSet->Create(&parms);
 
-	mpUIPaneSet = new VDUIWindow();
+	mpUIPaneSet = new VDUIPaneSetWindow(this);
 	mpUISplitSet->AddChild(mpUIPaneSet);
 	parms.Clear();
 	parms.SetB(nsVDUI::kUIParam_IsVertical, false);
@@ -3077,6 +3085,13 @@ void VDProjectUI::RepositionPanes(bool reset) {
 	HWND panes[2];
 	int n = 0;
 
+	RECT rWork;
+	rWork.left = 0;
+	rWork.top = 0;
+	vdsize32 size = mpUIPaneSet->GetArea().size();
+	rWork.right = size.w;
+	rWork.bottom = size.h;
+
 	switch(mPaneLayoutMode) {
 		case kPaneLayoutInput:
 			panes[n++] = mhwndInputFrame;
@@ -3105,6 +3120,7 @@ void VDProjectUI::RepositionPanes(bool reset) {
 		if (h) {
 			panes[n++] = h;
 			IVDVideoWindow *w = VDGetIVideoWindow(h);
+			w->SetWorkArea(rWork);
 			if (reset) {
 				w->SetAutoSize(mbAutoSizePanes);
 			} else {
@@ -3146,15 +3162,13 @@ void VDProjectUI::RepositionPanes(bool reset) {
 			if (weightTotal > 0) {
 				for(int i=0; i<n; ++i) {
 					IVDVideoWindow *w = VDGetIVideoWindow(panes[i]);
-
+					vdsize32 s1 = size;
 					if (g_vertical)
-						w->SetZoom(w->GetMaxZoomForArea(size.w, VDFloorToInt((double)size.h * weights[i] / weightTotal)));
+						s1.h = VDFloorToInt((double)size.h * weights[i] / weightTotal);
 					else
-						w->SetZoom(w->GetMaxZoomForArea(VDFloorToInt((double)size.w * weights[i] / weightTotal), size.h));
+						s1.w = VDFloorToInt((double)size.w * weights[i] / weightTotal);
 
-					int frameW;
-					int frameH;
-					w->GetFrameSize(frameW, frameH);
+					w->SetZoom(w->GetMaxZoomForArea(s1.w, s1.h), false);
 				}
 			}
 		}

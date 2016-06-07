@@ -339,6 +339,7 @@ private:
 	int			mDisplayY;
 	int			mDisplayW;
 	int			mDisplayH;
+	RECT		mWorkArea;
 
 	VDTime		mInitialTimeUS;
 	sint64		mInitialFrame;
@@ -423,6 +424,10 @@ FilterPreview::FilterPreview(FilterSystem *pFiltSys, VDFilterChainDesc *pFilterC
 {
 	mode_cursor = 0;
 	cross_cursor = LoadCursor(0,IDC_CROSS);
+	mWorkArea.left = 0;
+	mWorkArea.top = 0;
+	mWorkArea.right = 0;
+	mWorkArea.bottom = 0;
 }
 
 FilterPreview::~FilterPreview() {
@@ -474,6 +479,7 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		}
 
 		mhwndVideoWindow = NULL;
+		mpVideoWindow = 0;
 
 		mDlgNode.Remove();
 
@@ -482,6 +488,65 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 
 		g_projectui->DisplayPreview(false);
 		return TRUE;
+
+	case WM_GETMINMAXINFO:
+		{
+			MINMAXINFO& mmi = *(MINMAXINFO *)lParam;
+			DefWindowProc(mhdlg, message, wParam, lParam);
+
+			if (mWorkArea.right) {
+				RECT rParent;
+				GetWindowRect(mhwndParent, &rParent);
+				int init_x = rParent.right + 16;
+				mmi.ptMaxPosition.x = init_x;
+				mmi.ptMaxPosition.y = mWorkArea.top;
+				mmi.ptMaxSize.x = mWorkArea.right - init_x;
+				mmi.ptMaxSize.y = mWorkArea.bottom - mWorkArea.top;
+			}
+		}
+		return 0;
+
+	case WM_WINDOWPOSCHANGING:
+		{
+			if (mWorkArea.right && mpVideoWindow) {
+				WINDOWPOS *pwp = ((WINDOWPOS *)lParam);
+				if ((pwp->flags & SWP_NOMOVE) && (pwp->flags & SWP_NOSIZE))
+					break;
+				POINT p0 = {0, 0};
+				if (pwp->flags & SWP_NOMOVE) {
+					RECT r;
+					GetWindowRect(mhdlg,&r);
+					p0.x = r.left;
+					p0.y = r.top;
+				} else {
+					p0.x = pwp->x;
+					p0.y = pwp->y;
+				}
+				if (pwp->flags & SWP_NOSIZE) {
+					RECT r;
+					GetWindowRect(mhdlg,&r);
+					pwp->cx = r.right-r.left;
+					pwp->cy = r.bottom-r.top;
+				}
+				int maxw = mWorkArea.right - p0.x;
+				int maxh = mWorkArea.bottom - p0.y;
+				if (pwp->cx>maxw) {
+					pwp->cx = maxw;
+					pwp->flags &= ~SWP_NOSIZE;
+				}
+				if (pwp->cy>maxh) {
+					pwp->cy = maxh;
+					pwp->flags &= ~SWP_NOSIZE;
+				}
+
+				RECT r1 = {0,0,maxw,maxh};
+				AdjustWindowRectEx(&r1, GetWindowLong(mhdlg, GWL_STYLE), FALSE, GetWindowLong(mhdlg, GWL_EXSTYLE));
+				RECT r2 = {0,0,maxw*2-r1.right+r1.left,maxh*2-r1.bottom+r1.top};
+				mpVideoWindow->SetWorkArea(r2);
+				return TRUE;
+			}
+		}
+		break;
 
 	case WM_SIZE:
 		OnResize();
@@ -498,6 +563,8 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 				mpZoomCallback(zoom_info,mpvZoomCBData);
 			}
 			return TRUE;
+		} else {
+			return SendMessage(mhwndVideoWindow,message,wParam,lParam);
 		}
 		break;
 
@@ -508,8 +575,11 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 			int xoffset = pt.x - mDisplayX;
 			int yoffset = pt.y - mDisplayY;
 
+			int DisplayX,DisplayY;
 			int DisplayW,DisplayH;
-			mpVideoWindow->GetFrameSize(DisplayW,DisplayH);
+			mpVideoWindow->GetDisplayRect(DisplayX,DisplayY,DisplayW,DisplayH);
+			xoffset -= DisplayX;
+			yoffset -= DisplayY;
 
 			if ((wParam & MK_SHIFT) && mpFiltSys->isRunning() && mpVideoFrameBuffer && xoffset < DisplayW && yoffset < DisplayH) {
 				VDPixmap output = VDPixmapFromLayout(mpFiltSys->GetOutputLayout(), (void *)mpVideoFrameBuffer->LockRead());
@@ -708,12 +778,12 @@ void FilterPreview::OnInit() {
 	WNDCLASSW cls={CS_OWNDC,NULL,0,0,GetModuleHandleW(0),0,0,0,0,L"preview_pos_host"};
 	cls.lpfnWndProc=preview_pos_host_proc;
 	RegisterClassW(&cls);
-	mhwndPosHost = CreateWindowExW(host_style_ex,cls.lpszClassName,0,host_style,0,0,0,0,mhdlg,0,cls.hInstance,this);
+	mhwndPosHost = CreateWindowExW(host_style_ex,cls.lpszClassName,0,host_style,0,0,0,0,mhwndParent,0,cls.hInstance,this);
 	RECT r1;
 	GetClientRect(g_projectui->GetHwnd(),&r1);
 	POINT p1 = {0,r1.bottom-64};
 	MapWindowPoints(g_projectui->GetHwnd(),0,&p1,1);
-	SetWindowPos(mhwndPosHost,mhdlg,p1.x,p1.y,r1.right,64,SWP_NOACTIVATE);
+	SetWindowPos(mhwndPosHost,0,p1.x,p1.y,r1.right,64,SWP_NOACTIVATE);
 	EnableWindow(mhwndPosHost,true);
 
 	mhwndPosition = CreateWindow(POSITIONCONTROLCLASS, NULL, WS_CHILD|WS_VISIBLE, 0, 0, 0, 64, mhwndPosHost, (HMENU)IDC_FILTDLG_POSITION, g_hInst, NULL);
@@ -737,6 +807,7 @@ void FilterPreview::OnInit() {
 	mpVideoWindow->SetDisplay(mpDisplay);
 	mpVideoWindow->SetMouseTransparent(true);
 	mpVideoWindow->SetBorderless(true);
+	mpVideoWindow->InitSourcePAR();
 
 	mDlgNode.hdlg = mhdlg;
 	mDlgNode.mhAccel = g_projectui->GetAccelPreview();
@@ -809,10 +880,51 @@ void FilterPreview::OnPaint() {
 }
 
 void FilterPreview::OnVideoResize(bool bInitial) {
-	RECT r;
+	if (bInitial) {
+		RECT rParent;
+		GetWindowRect(mhwndParent, &rParent);
+
+		int init_x = rParent.right + 16;
+		int init_y = mWorkArea.top;
+
+		SetWindowPos(mhdlg, 0, init_x, init_y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
+
+		RECT rMain;
+		GetWindowRect(g_projectui->GetHwnd(), &rMain);
+		POINT pp = {0,0};
+		MapWindowPoints(mhwndPosHost,0,&pp,1);
+
+		int x0 = rMain.left;
+		int y0 = rMain.top;
+		int x1 = rMain.right;
+		int y1 = pp.y;
+
+		MONITORINFO info = {sizeof(info)};
+		GetMonitorInfo(MonitorFromWindow(mhwndParent,MONITOR_DEFAULTTONEAREST), &info);
+		if (x0<info.rcMonitor.left) x0 = info.rcMonitor.left;
+		if(y0<info.rcMonitor.top) y0 = info.rcMonitor.top;
+		if (x1>info.rcMonitor.right) x1 = info.rcMonitor.right;
+		if(y1>info.rcMonitor.bottom) y1 = info.rcMonitor.bottom;
+		mWorkArea.left = x0;
+		mWorkArea.top = y0;
+		mWorkArea.right = x1;
+		mWorkArea.bottom = y1;
+
+		SetWindowPos(mhwndVideoWindow, NULL, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
+
+		WINDOWPLACEMENT wpos = {sizeof(wpos)};
+		GetWindowPlacement(mhdlg,&wpos);
+		RECT r1 = {0,0,0,0};
+		AdjustWindowRectEx(&r1, GetWindowLong(mhdlg, GWL_STYLE), FALSE, GetWindowLong(mhdlg, GWL_EXSTYLE));
+
+		wpos.ptMinPosition.x = mWorkArea.left + 16;
+		wpos.ptMinPosition.y = mWorkArea.bottom-(r1.bottom-r1.top);
+		wpos.flags |= WPF_SETMINPOSITION;
+		SetWindowPlacement(mhdlg,&wpos);
+	}
+
 	int w = 320;
 	int h = 240;
-	bool fResize;
 
 	int oldw = mWidth;
 	int oldh = mHeight;
@@ -891,36 +1003,9 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 		InvalidateRect(mhdlg, NULL, TRUE);
 	}
 
-	fResize = oldw != w || oldh != h;
-
-	// if necessary, resize window
-
-	if (fResize) {
-		r.left = r.top = 0;
-		r.right = w;
-		r.bottom = h;
-
-		AdjustWindowRect(&r, GetWindowLong(mhdlg, GWL_STYLE), FALSE);
-
-		if (bInitial) {
-			RECT rParent;
-			UINT uiFlags = SWP_NOZORDER|SWP_NOACTIVATE;
-
-			GetWindowRect(mhwndParent, &rParent);
-
-			if (rParent.right + 32 >= GetSystemMetrics(SM_CXSCREEN))
-				uiFlags |= SWP_NOMOVE;
-
-			SetWindowPos(mhdlg, NULL,
-					rParent.right + 16,
-					rParent.top,
-					r.right-r.left, r.bottom-r.top,
-					uiFlags);
-		} else {
-			mpVideoWindow->Resize();
-			//SetWindowPos(mhdlg, NULL, 0, 0, r.right-r.left, r.bottom-r.top, SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
-		}
-	}
+	bool fResize = oldw != w || oldh != h;
+	if (fResize)
+		mpVideoWindow->Resize();
 
 	OnVideoRedraw();
 }
@@ -1848,6 +1933,7 @@ void PixmapView::OnInit() {
 	mpVideoWindow->SetDisplay(mpDisplay);
 	mpVideoWindow->SetMouseTransparent(true);
 	mpVideoWindow->SetBorderless(true);
+	mpVideoWindow->InitSourcePAR();
 
 	mDlgNode.hdlg = mhdlg;
 	mDlgNode.mhAccel = g_projectui->GetAccelPreview();

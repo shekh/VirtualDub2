@@ -55,16 +55,18 @@ public:
 	void SetMouseTransparent(bool);
 	void GetSourceSize(int& w, int& h);
 	void SetSourceSize(int w, int h);
-	void GetFrameSize(int& w, int& h);
+	void GetDisplayRect(int& x0, int& y0, int& w, int& h);
 	void Move(int x, int y);
-	void Resize();
+	void Resize(bool useWorkArea=true);
+	void SetChildPos(float dx=0, float dy=0);
+	void ClipPan(float& x, float& y);
 	void SetChild(HWND hwnd);
 	void SetDisplay(IVDVideoDisplay *pDisplay);
 	const VDFraction GetSourcePAR();
 	void SetSourcePAR(const VDFraction& fr);
 	void SetResizeParentEnabled(bool enabled);
 	double GetMaxZoomForArea(int w, int h);
-	void SetBorderless(bool v){ mbBorderless=v; }
+	void SetBorderless(bool v){ mbBorderless=v; mBorder = v?0:4; }
 	bool GetAutoSize(){ return mbAutoSize; }
 	void SetAutoSize(bool v){ mbAutoSize = v; }
 	void InitSourcePAR();
@@ -74,8 +76,17 @@ private:
 	HWND mhwndChild;
 	HMENU mhmenu;
 	int	mInhibitParamUpdateLocks;
+	int	mInhibitWorkArea;
 	int mSourceWidth;
 	int mSourceHeight;
+	int mPanWidth;
+	int mPanHeight;
+	float mPanX;
+	float mPanY;
+	POINT mPanStart;
+	bool mPanMode;
+	int mBorder;
+	RECT mWorkArea;
 	VDFraction mSourcePARFrac;
 	double mSourcePAR;
 	double mSourceAspectRatio;
@@ -106,7 +117,9 @@ private:
 
 	void SetAspectRatio(double ar, bool bFrame);
 	void SetAspectRatioSourcePAR();
-	void SetZoom(double zoom);
+	void SetZoom(double zoom, bool useWorkArea=true);
+	double EvalWidth();
+	void SetWorkArea(RECT& r){ mWorkArea = r; }
 
 	void UpdateSourcePARMenuItem();
 };
@@ -126,8 +139,14 @@ VDVideoWindow::VDVideoWindow(HWND hwnd)
 	, mhwndChild(NULL)
 	, mhmenu(LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_DISPLAY_MENU)))
 	, mInhibitParamUpdateLocks(0)
+	, mInhibitWorkArea(0)
 	, mSourceWidth(0)
 	, mSourceHeight(0)
+	, mPanWidth(0)
+	, mPanHeight(0)
+	, mPanX(0.5)
+	, mPanY(0.5)
+	, mPanMode(false)
 	, mSourcePAR(0.0)
 	, mSourceAspectRatio(1.0)
 	, mZoom(1.0f)
@@ -138,6 +157,7 @@ VDVideoWindow::VDVideoWindow(HWND hwnd)
 	, mbResizing(false)
 	, mbMouseTransparent(false)
 	, mbBorderless(false)
+	, mBorder(4)
 	, mbAutoSize(false)
 	, mpDisplay(NULL)
 {
@@ -145,6 +165,11 @@ VDVideoWindow::VDVideoWindow(HWND hwnd)
 
 	mSourcePARTextPattern = VDGetMenuItemTextByCommandW32(mhmenu, ID_DISPLAY_AR_PIXEL_SOURCE);
 	UpdateSourcePARMenuItem();
+
+	mWorkArea.left = 0;
+	mWorkArea.top = 0;
+	mWorkArea.right = 0;
+	mWorkArea.bottom = 0;
 }
 
 VDVideoWindow::~VDVideoWindow() {
@@ -189,11 +214,13 @@ void VDVideoWindow::SetSourceSize(int w, int h) {
 	Resize();
 }
 
-void VDVideoWindow::GetFrameSize(int& w, int& h) {
-	RECT r;
-	GetClientRect(mhwnd, &r);
-	w = r.right;
-	h = r.bottom;
+void VDVideoWindow::GetDisplayRect(int& x0, int& y0, int& w, int& h) {
+	POINT p = {0,0};
+	MapWindowPoints(mhwndChild,mhwnd,&p,1);
+	x0 = p.x;
+	y0 = p.y;
+	w = mPanWidth;
+	h = mPanHeight;
 }
 
 void VDVideoWindow::SetAspectRatio(double ar, bool bFrame) {
@@ -230,21 +257,19 @@ void VDVideoWindow::InitSourcePAR() {
 	mFreeAspectRatio = 1.0;
 }
 
-void VDVideoWindow::SetZoom(double zoom) {
+void VDVideoWindow::SetZoom(double zoom, bool useWorkArea) {
 	mZoom = zoom;
-	Resize();
+	Resize(useWorkArea);
 }
 
 double VDVideoWindow::GetMaxZoomForArea(int w, int h) {
 	double frameAspect;
 
-	if (!mbBorderless)
-		w -= 8;
+	w -= mBorder*2;
 	if (w <= 0)
 		return 0;
 
-	if (!mbBorderless)
-		h -= 8;
+	h -= mBorder*2;
 	if (h <= 0)
 		return 0;
 
@@ -275,24 +300,27 @@ void VDVideoWindow::Move(int x, int y) {
 	--mInhibitParamUpdateLocks;
 }
 
-void VDVideoWindow::Resize() {
+double VDVideoWindow::EvalWidth() {
+	if (mbUseSourcePAR) {
+		double ratio = 1.0;
+		if (mSourcePAR > 0)
+			ratio = mSourcePAR;
+
+		return mSourceHeight * mSourceAspectRatio * ratio * mZoom;
+	} else if (mAspectRatio < 0) {
+		return mSourceHeight * mSourceAspectRatio * mFreeAspectRatio * mZoom;
+	} else {
+		if (mbAspectIsFrameBased)
+			return mSourceHeight * mAspectRatio * mZoom;
+		else
+			return mSourceWidth * mAspectRatio * mZoom;
+	}
+}
+
+void VDVideoWindow::Resize(bool useWorkArea) {
 	if (mSourceWidth > 0 && mSourceHeight > 0) {
 		int w, h;
-
-		if (mbUseSourcePAR) {
-			double ratio = 1.0;
-			if (mSourcePAR > 0)
-				ratio = mSourcePAR;
-
-			w = VDRoundToInt(mSourceHeight * mSourceAspectRatio * ratio * mZoom);
-		} else if (mAspectRatio < 0) {
-			w = VDRoundToInt(mSourceHeight * mSourceAspectRatio * mFreeAspectRatio * mZoom);
-		} else {
-			if (mbAspectIsFrameBased)
-				w = VDRoundToInt(mSourceHeight * mAspectRatio * mZoom);
-			else
-				w = VDRoundToInt(mSourceWidth * mAspectRatio * mZoom);
-		}
+		w = VDRoundToInt(EvalWidth());
 		h = VDRoundToInt(mSourceHeight * mZoom);
 
 		if (w < 1)
@@ -300,14 +328,52 @@ void VDVideoWindow::Resize() {
 		if (h < 1)
 			h = 1;
 
-		if (!mbBorderless) {
-			w += 8;
-			h += 8;
-		}
+		mPanWidth = w;
+		mPanHeight = h;
+
+		w += mBorder*2;
+		h += mBorder*2;
 
 		++mInhibitParamUpdateLocks;
+		if (!useWorkArea)
+			++mInhibitWorkArea;
 		SetWindowPos(mhwnd, NULL, 0, 0, w, h, SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
 		--mInhibitParamUpdateLocks;
+		if (!useWorkArea)
+			--mInhibitWorkArea;
+
+		ClipPan(mPanX,mPanY);
+		SetChildPos();
+	}
+}
+
+void VDVideoWindow::ClipPan(float& px, float& py) {
+	RECT r;
+	GetClientRect(mhwnd,&r);
+	int x1 = r.right-r.left-mPanWidth;
+	int y1 = r.bottom-r.top-mPanHeight;
+	if (x1>0) x1 = 0;
+	if (y1>0) y1 = 0;
+	int w2 = (r.right-r.left)/2;
+	int h2 = (r.bottom-r.top)/2;
+	int x = w2 - VDRoundToInt(mPanWidth*px);
+	int y = h2 - VDRoundToInt(mPanHeight*py);
+	if (x>0) px = float(w2)/mPanWidth;
+	if (y>0) py = float(h2)/mPanHeight;
+	if (x<x1) px = float(w2-x1)/mPanWidth;
+	if (y<y1) py = float(h2-y1)/mPanHeight;
+}
+
+void VDVideoWindow::SetChildPos(float dx, float dy) {
+	if (mhwndChild) {
+		float px = mPanX+dx;
+		float py = mPanY+dy;
+		ClipPan(px,py);
+		RECT r;
+		GetClientRect(mhwnd,&r);
+		int x = (r.right-r.left)/2 - VDRoundToInt(mPanWidth*px);
+		int y = (r.bottom-r.top)/2 - VDRoundToInt(mPanHeight*py);
+		SetWindowPos(mhwndChild, NULL, x, y, mPanWidth, mPanHeight, SWP_NOZORDER|SWP_NOCOPYBITS);
 	}
 }
 
@@ -401,7 +467,7 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 		break;
 
 	case WM_WINDOWPOSCHANGING:
-		if (mbResizing) {
+		if (mbResizing && !mInhibitParamUpdateLocks) {
 			WINDOWPOS *pwp = ((WINDOWPOS *)lParam);
 			pwp->flags |= SWP_NOZORDER;
 
@@ -411,7 +477,7 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 				if (!mbAspectIsFrameBased)
 					ar *= (double)mSourceWidth / (double)mSourceHeight;
 
-				bool bXMajor = pwp->cx > pwp->cy * ar;
+				bool bXMajor = (pwp->cx-mBorder*2) > (pwp->cy-mBorder*2) * ar;
 
 				if (mLastHitTest == HTBOTTOM)
 					bXMajor = false;
@@ -419,33 +485,71 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 					bXMajor = true;
 
 				if (bXMajor)
-					pwp->cy = VDRoundToInt(pwp->cx / ar);
+					pwp->cy = VDRoundToInt((pwp->cx-mBorder*2) / ar) + mBorder*2;
 				else
-					pwp->cx = VDRoundToInt(pwp->cy * ar);
+					pwp->cx = VDRoundToInt((pwp->cy-mBorder*2) * ar) + mBorder*2;
+			}
+		}
+
+		if (!mInhibitWorkArea && mWorkArea.right) {
+			WINDOWPOS *pwp = ((WINDOWPOS *)lParam);
+			POINT p0 = {0, 0};
+			if (pwp->flags & SWP_NOMOVE) {
+				MapWindowPoints(mhwnd,GetParent(mhwnd),&p0,1);
+				p0.x -= mBorder;
+				p0.y -= mBorder;
+			} else {
+				p0.x = pwp->x;
+				p0.y = pwp->y;
+			}
+			if (pwp->flags & SWP_NOSIZE) {
+				RECT r;
+				GetWindowRect(mhwnd,&r);
+				pwp->cx = r.right-r.left;
+				pwp->cy = r.bottom-r.top;
+			}
+			int maxw = mWorkArea.right - p0.x;
+			int maxh = mWorkArea.bottom - p0.y;
+			if (pwp->cx>maxw) {
+				pwp->cx = maxw;
+				pwp->flags &= ~SWP_NOSIZE;
+			}
+			if (pwp->cy>maxh) {
+				pwp->cy = maxh;
+				pwp->flags &= ~SWP_NOSIZE;
 			}
 		}
 		break;
 	case WM_WINDOWPOSCHANGED:
 		{
-			NMHDR hdr;
 			RECT r;
-
 			GetClientRect(mhwnd, &r);
 
 			const WINDOWPOS& wp = *(const WINDOWPOS *)lParam;
 			if (mSourceHeight > 0 && !mInhibitParamUpdateLocks && !(wp.flags & SWP_NOSIZE)) {
 				mZoom = (double)r.bottom / mSourceHeight;
 
+				int w = VDRoundToInt(EvalWidth());
+				if (w<r.right) {
+					mZoom *= double(r.right) / w;
+					mPanWidth = r.right;
+					mPanHeight = VDRoundToInt(mSourceHeight * mZoom);
+				} else {
+					mPanWidth = w;
+					mPanHeight = r.bottom;
+				}
+
 				if (mAspectRatio < 0 && !mbUseSourcePAR && r.right && r.bottom)
 					mFreeAspectRatio = r.right / (r.bottom * mSourceAspectRatio);
 			}
 
+			ClipPan(mPanX,mPanY);
+			SetChildPos();
+
+			NMHDR hdr;
 			hdr.hwndFrom = mhwnd;
 			hdr.idFrom = GetWindowLong(mhwnd, GWL_ID);
 			hdr.code = VWN_RESIZED;
-
-			if (mhwndChild)
-				SetWindowPos(mhwndChild, NULL, 0, 0, r.right, r.bottom, SWP_NOZORDER);
 			SendMessage(GetParent(mhwnd), WM_NOTIFY, (WPARAM)hdr.idFrom, (LPARAM)&hdr);
 		}
 		break;		// explicitly pass this through to DefWindowProc for WM_SIZE and WM_MOVE
@@ -468,8 +572,56 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 
 			if (mmi.ptMinTrackSize.y < 9)
 				mmi.ptMinTrackSize.y = 9;
+
+			if (mWorkArea.right) {
+				POINT p0 = {0, 0};
+				MapWindowPoints(mhwnd,GetParent(mhwnd),&p0,1);
+				p0.x -= mBorder;
+				p0.y -= mBorder;
+				int maxw = mWorkArea.right - p0.x;
+				int maxh = mWorkArea.bottom - p0.y;
+				mmi.ptMaxTrackSize.x = maxw;
+				mmi.ptMaxTrackSize.y = maxh;
+			}
 		}
 		return 0;
+
+	case WM_LBUTTONDOWN:
+		{
+			mPanMode = true;
+			GetCursorPos(&mPanStart);
+			SetCapture(mhwnd);
+		}
+		return TRUE;
+
+	case WM_LBUTTONUP:
+		{
+			if (mPanMode) {
+				POINT p1;
+				GetCursorPos(&p1);
+				float dx = float(p1.x-mPanStart.x)/mPanWidth;
+				float dy = float(p1.y-mPanStart.y)/mPanHeight;
+				mPanX -= dx;
+				mPanY -= dy;
+				ClipPan(mPanX,mPanY);
+				mPanMode = false;
+				ReleaseCapture();
+				SetChildPos();
+			}
+		}
+		return TRUE;
+
+	case WM_MOUSEMOVE:
+		{
+			if (mPanMode) {
+				POINT p1;
+				GetCursorPos(&p1);
+				float dx = float(p1.x-mPanStart.x)/mPanWidth;
+				float dy = float(p1.y-mPanStart.y)/mPanHeight;
+				SetChildPos(-dx,-dy);
+			}
+		}
+		return TRUE;
 	}
 
 	return DefWindowProc(mhwnd, msg, wParam, lParam);
@@ -521,23 +673,19 @@ void VDVideoWindow::NCPaint(HRGN hrgn) {
 }
 
 void VDVideoWindow::RecalcClientArea(RECT& rc) {
-	if (!mbBorderless) {
-		rc.left += 4;
-		rc.right -= 4;
-		rc.top += 4;
-		rc.bottom -= 4;
-	}
+	rc.left += mBorder;
+	rc.right -= mBorder;
+	rc.top += mBorder;
+	rc.bottom -= mBorder;
 }
 
 LRESULT VDVideoWindow::RecalcClientArea(NCCALCSIZE_PARAMS& params) {
 	// Win32 docs don't say you need to do this, but you do.
 
-	if (!mbBorderless) {
-		params.rgrc[0].left += 4;
-		params.rgrc[0].right -= 4;
-		params.rgrc[0].top += 4;
-		params.rgrc[0].bottom -= 4;
-	}
+	params.rgrc[0].left += mBorder;
+	params.rgrc[0].right -= mBorder;
+	params.rgrc[0].top += mBorder;
+	params.rgrc[0].bottom -= mBorder;
 
 	return 0;//WVR_ALIGNTOP|WVR_ALIGNLEFT;
 }
@@ -549,7 +697,7 @@ LRESULT VDVideoWindow::HitTest(int x, int y) {
 	GetClientRect(mhwnd, &rc);
 	ScreenToClient(mhwnd, &pt);
 
-	if (mbBorderless || (pt.x >= 4 && pt.y >= 4 && pt.x < rc.right-4 && pt.y < rc.bottom-4))
+	if (mbBorderless || (pt.x >= mBorder && pt.y >= mBorder && pt.x < rc.right-mBorder && pt.y < rc.bottom-mBorder))
 		return mbMouseTransparent ? HTTRANSPARENT : HTCLIENT; //HTCAPTION;
 	else {
 		int xseg = std::min<int>(16, rc.right/3);
