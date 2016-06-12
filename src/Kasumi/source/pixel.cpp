@@ -22,6 +22,10 @@
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixel.h>
 
+uint32 VDPixmapInterpolateSample8x2To24(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256);
+uint32 VDPixmapInterpolateSample8x4To24(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256);
+uint32 VDPixmapInterpolateSample8To24(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256);
+
 void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 	ps.format = px.format;
 	uint32 m = VDPixmapSample(px,x,y);
@@ -142,6 +146,56 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 			ps.sy = VDPixmapSample8(px.data, px.pitch, x, y);
 			ps.scb = VDPixmapInterpolateSample8(px.data2, px.pitch2, w2, h2, u, v);
 			ps.scr = VDPixmapInterpolateSample8(px.data3, px.pitch3, w2, h2, u, v);
+			valid_yuv = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV422_UYVY:
+	case nsVDPixmap::kPixFormat_YUV422_UYVY_FR:
+	case nsVDPixmap::kPixFormat_YUV422_UYVY_709:
+	case nsVDPixmap::kPixFormat_YUV422_UYVY_709_FR:
+		{
+			sint32 x_256 = (x << 8) + 128;
+			sint32 y_256 = (y << 8) + 128;
+			ps.sy = VDPixmapInterpolateSample8x2To24((const char *)px.data + 1, px.pitch, px.w, px.h, x_256, y_256) >> 16;
+			ps.scb = VDPixmapInterpolateSample8x4To24((const char *)px.data + 0, px.pitch, (px.w + 1) >> 1, px.h, (x_256 >> 1) + 128, y_256) >> 16;
+			ps.scr = VDPixmapInterpolateSample8x4To24((const char *)px.data + 2, px.pitch, (px.w + 1) >> 1, px.h, (x_256 >> 1) + 128, y_256) >> 16;
+			valid_yuv = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV422_YUYV:
+	case nsVDPixmap::kPixFormat_YUV422_YUYV_FR:
+	case nsVDPixmap::kPixFormat_YUV422_YUYV_709:
+	case nsVDPixmap::kPixFormat_YUV422_YUYV_709_FR:
+		{
+			sint32 x_256 = (x << 8) + 128;
+			sint32 y_256 = (y << 8) + 128;
+			ps.sy = VDPixmapInterpolateSample8x2To24((const char *)px.data + 0, px.pitch, px.w, px.h, x_256, y_256) >> 16;
+			ps.scb = VDPixmapInterpolateSample8x4To24((const char *)px.data + 1, px.pitch, (px.w + 1) >> 1, px.h, (x_256 >> 1) + 128, y_256) >> 16;
+			ps.scr = VDPixmapInterpolateSample8x4To24((const char *)px.data + 3, px.pitch, (px.w + 1) >> 1, px.h, (x_256 >> 1) + 128, y_256) >> 16;
+			valid_yuv = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV444_XVYU:
+		{
+			sint32 x_256 = (x << 8) + 128;
+			sint32 y_256 = (y << 8) + 128;
+			ps.sy = VDPixmapInterpolateSample8x4To24((const char *)px.data + 1, px.pitch, px.w, px.h, x_256, y_256) >> 16;
+			ps.scb = VDPixmapInterpolateSample8x4To24((const char *)px.data + 0, px.pitch, px.w, px.h, x_256, y_256) >> 16;
+			ps.scr = VDPixmapInterpolateSample8x4To24((const char *)px.data + 2, px.pitch, px.w, px.h, x_256, y_256) >> 16;
+			valid_yuv = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV420_NV12:
+		{
+			sint32 x_256 = (x << 8) + 128;
+			sint32 y_256 = (y << 8) + 128;
+			ps.sy = VDPixmapInterpolateSample8To24(px.data, px.pitch, px.w, px.h, x_256, y_256) >> 16;
+			ps.scb = VDPixmapInterpolateSample8x2To24((const char *)px.data2 + 0, px.pitch2, (px.w + 1) >> 1, (px.h + 1) >> 1, (x_256 >> 1) + 128, y_256 >> 1) >> 16;
+			ps.scr = VDPixmapInterpolateSample8x2To24((const char *)px.data2 + 1, px.pitch2, (px.w + 1) >> 1, (px.h + 1) >> 1, (x_256 >> 1) + 128, y_256 >> 1) >> 16;
 			valid_yuv = true;
 		}
 		break;
@@ -347,7 +401,7 @@ uint8 VDPixmapInterpolateSample8(const void *data, ptrdiff_t pitch, uint32 w, ui
 	x_256 ^= (x_256 ^ w_256) & ((x_256 - w_256) >> 31);
 	y_256 ^= (y_256 ^ h_256) & ((y_256 - h_256) >> 31);
 
-	const uint8 *row0 = (const uint8 *)data + pitch * (y_256 >> 8);
+	const uint8 *row0 = (const uint8 *)data + pitch * (y_256 >> 8) + (x_256 >> 8);
 	const uint8 *row1 = row0;
 
 	if ((uint32)y_256 < h_256)
