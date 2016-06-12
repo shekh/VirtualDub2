@@ -16,6 +16,7 @@
 //	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #include "stdafx.h"
+#include "resource.h"
 
 #include <vd2/VDXFrame/VideoFilter.h>
 
@@ -23,6 +24,7 @@ class VDVFNull : public VDXVideoFilter {
 public:
 	uint32 GetParams();
 	void Run();
+	bool Configure(VDXHWND hwnd);
 };
 
 uint32 VDVFNull::GetParams() {
@@ -85,6 +87,46 @@ uint32 VDVFNull::GetParams() {
 }
 
 void VDVFNull::Run() {
+}
+
+class VDVFNullDialog: public VDDialogFrameW32 {
+public:
+	IVDXFilterPreview2 *mifp2;
+
+	VDVFNullDialog(IVDXFilterPreview2 *ifp2)
+		: VDDialogFrameW32(IDD_FILTER_NULL)
+		, mifp2(ifp2)
+	{
+	}
+
+	bool OnLoaded() {
+		if (mifp2)
+			mifp2->InitButton((VDXHWND)GetControl(IDC_PREVIEW));
+		return false;
+	}
+	void OnDestroy() {
+		if (mifp2)
+			mifp2->Close();
+	}
+	bool OnCommand(uint32 id, uint32 extcode) {
+		switch(id) {
+			case IDC_PREVIEW:
+				if (mifp2)
+					mifp2->Toggle((VDXHWND)mhdlg);
+				return true;
+		}
+
+		return false;
+	}
+};
+
+bool VDVFNull::Configure(VDXHWND hwnd) {
+	VDVFNullDialog dlg(fa->ifp2);
+
+	if (!dlg.ShowDialog((VDGUIHandle)hwnd))
+		return false;
+
+	return true;
 }
 
 extern const VDXFilterDefinition g_VDVFNull = VDXVideoFilterDefinition<VDVFNull>(

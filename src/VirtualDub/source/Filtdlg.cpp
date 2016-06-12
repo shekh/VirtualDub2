@@ -611,6 +611,7 @@ bool VDVideoFiltersDialog::OnLoaded() {
 
 	if (!is_first) {
 		LoadSharedChain(editor->filter_desc);
+		RelayoutFilterList();
 	} else {
 		// cloning inited filter is not allowed
 		filters.DeinitFilters();
@@ -1151,7 +1152,8 @@ void VDVideoFiltersDialog::AddFilter(int pos) {
 
 		RedoFilters();
 
-		if (fa->IsConfigurable()) {
+		extern const VDXFilterDefinition g_VDVFNull;
+		if (fa->IsConfigurable() && fa->GetDefinition()->name!=g_VDVFNull.name) {
 			bool fRemove = ConfigureFilter(fa);
 			if (fRemove) {
 				mListView.DeleteItem(index);

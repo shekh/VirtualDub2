@@ -138,6 +138,7 @@
 #define IDD_FILTER_FIELDDELAY           2005
 #define IDD_FILTER_BLENDLAYERS          2006
 #define IDD_FILTER_MERGELAYERS          2007
+#define IDD_FILTER_NULL                 2008
 
 // Next default values for new objects
 // 

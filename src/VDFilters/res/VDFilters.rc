@@ -483,6 +483,15 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,181,122,50,14
 END
 
+IDD_FILTER_NULL DIALOGEX 0, 0, 124, 28
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: null transform"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    PUSHBUTTON      "Show &preview",IDC_PREVIEW,7,7,49,14
+    DEFPUSHBUTTON   "OK",IDOK,67,7,50,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -694,22 +703,12 @@ BEGIN
         BOTTOMMARGIN, 125
     END
 
-    IDD_FILTER_BLENDLAYERS2, DIALOG
+    IDD_FILTER_NULL, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 231
-        VERTGUIDE, 69
+        RIGHTMARGIN, 117
         TOPMARGIN, 7
-        BOTTOMMARGIN, 99
-    END
-
-    IDD_FILTER_MERGELAYERS2, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 231
-        VERTGUIDE, 69
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 136
+        BOTTOMMARGIN, 21
     END
 END
 #endif    // APSTUDIO_INVOKED
