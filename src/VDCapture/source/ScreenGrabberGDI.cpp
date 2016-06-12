@@ -250,8 +250,20 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 			srcy = 0;
 
 		BitBlt(mhdcOffscreen, 0, 0, w, h, hdc, srcx, srcy, sBitBltMode);
+		if (HDC hdcw = GetDC(mhwnd)) {
+			HRGN rgn0 = CreateRectRgn(0,0,0,0); 
+			GetRandomRgn(hdcw,rgn0,SYSRGN);
+			OffsetRgn(rgn0,-srcx,-srcy);
+			HBRUSH br = CreateSolidBrush(GetSysColor(COLOR_APPWORKSPACE));
+			FillRgn(mhdcOffscreen,rgn0,br);
+			DeleteObject(br);
+			DeleteObject(rgn0);
+			ReleaseDC(mhwnd, hdcw);
+		}
+
 		if (ci.hCursor)
 			DrawIcon(mhdcOffscreen, ci.ptScreenPos.x - srcx, ci.ptScreenPos.y - srcy, ci.hCursor);
+
 		ReleaseDC(NULL, hdc);
 	}
 	mProfileChannel.End();
@@ -293,9 +305,31 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 
 				if (srcy < 0)
 					srcy = 0;
+				
+				POINT p0 = {0,0};
+				MapWindowPoints(mhwnd,0,&p0,1);
 
+				HRGN rgn0 = CreateRectRgn(0,0,0,0); 
+				HRGN rgn1 = CreateRectRgn(0,0,0,0); 
+				GetRandomRgn(hdc,rgn0,SYSRGN);
+				CombineRgn(rgn1,rgn0,0,RGN_COPY);
+				OffsetRgn(rgn0,-p0.x,-p0.y);
+				OffsetRgn(rgn1,-srcx,-srcy);
+				CombineRgn(rgn0,rgn0,rgn1,RGN_DIFF);
+
+				SelectClipRgn(hdc, rgn0);
 				BitBlt(hdc, 0, 0, w, h, hdcScreen, srcx, srcy, SRCCOPY);
+
+				SelectClipRgn(hdc, rgn1);
+				RECT r;
+				GetClientRect(mhwnd,&r);
+				FillRect(hdc,&r,(HBRUSH)(COLOR_APPWORKSPACE+1));
+
+				DeleteObject(rgn0);
+				DeleteObject(rgn1);
+				
 				ReleaseDC(mhwnd, hdc);
+				ValidateRect(mhwnd,0);
 			}
 			ReleaseDC(NULL, hdcScreen);
 		}
@@ -378,7 +412,7 @@ LRESULT CALLBACK VDScreenGrabberGDI::StaticWndProc(HWND hwnd, UINT msg, WPARAM w
 				PAINTSTRUCT ps;
 				HDC hdc = BeginPaint(hwnd, &ps);
 				if (hdc) {
-					FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+					FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_ACTIVECAPTION + 1));
 					EndPaint(hwnd, &ps);
 				}
 			}
