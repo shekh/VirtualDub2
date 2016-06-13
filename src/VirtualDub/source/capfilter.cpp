@@ -779,6 +779,7 @@ void VDCaptureFilterChainAdapter::SetFrameRate(const VDFraction& frameRate) {
 }
 
 void VDCaptureFilterChainAdapter::Init(VDPixmapLayout& layout) {
+	filters.DeinitFilters();
 	filters.prepareLinearChain(&g_filterChain, layout.w, layout.h, layout.format, mFrameRate, -1, VDFraction(0, 0));
 
 	mpFrameSource = new VDCaptureFilterChainFrameSource;
