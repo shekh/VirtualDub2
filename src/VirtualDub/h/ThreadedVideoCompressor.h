@@ -274,6 +274,8 @@ protected:
 	VDEvent<VDThreadedVideoCompressor, bool> mEventFrameComplete;
 
 	vdfastvector<IVDVideoCompressor *> mClonedCodecs;
+	VDPixmapBuffer base_repack_buffer;
+	VDPixmapBuffer* cloned_repack_buffer;
 };
 
 #endif

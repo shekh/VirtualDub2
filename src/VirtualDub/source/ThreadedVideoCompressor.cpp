@@ -101,7 +101,7 @@ public:
 	VDThreadedVideoCompressorSlave();
 	~VDThreadedVideoCompressorSlave();
 
-	void Init(VDThreadedVideoCompressor *parent, IVDVideoCompressor *compressor);
+	void Init(VDThreadedVideoCompressor *parent, IVDVideoCompressor *compressor, VDPixmapBuffer* repack_buffer);
 	void Shutdown();
 
 protected:
@@ -109,7 +109,7 @@ protected:
 
 	VDThreadedVideoCompressor *mpParent;
 	IVDVideoCompressor *mpCompressor;
-	VDPixmapBuffer repack_buffer;
+	VDPixmapBuffer* repack_buffer;
 };
 
 /////////
@@ -128,10 +128,12 @@ VDThreadedVideoCompressor::VDThreadedVideoCompressor()
 	, mbLoopDetectedDuringFlush(false)
 	, mInputBufferCount(0)
 	, mPriority(VDThread::kPriorityDefault)
+	, cloned_repack_buffer(0)
 {
 }
 
 VDThreadedVideoCompressor::~VDThreadedVideoCompressor() {
+	delete[] cloned_repack_buffer;
 }
 
 VDThreadedVideoCompressor::FlushStatus VDThreadedVideoCompressor::GetFlushStatus() {
@@ -176,7 +178,10 @@ void VDThreadedVideoCompressor::Init(int threads, IVDVideoCompressor *pBaseCompr
 		for(int i=0; i<threads; ++i)
 			mpThreads[i].ThreadSetPriority(mPriority);
 
-		mpThreads[0].Init(this, pBaseCompressor);
+		mpThreads[0].Init(this, pBaseCompressor, &base_repack_buffer);
+
+		if (threads>1)
+			cloned_repack_buffer = new VDPixmapBuffer[threads-1];
 
 		for(int i=1; i<threads; ++i) {
 			IVDVideoCompressor *vc;
@@ -185,7 +190,7 @@ void VDThreadedVideoCompressor::Init(int threads, IVDVideoCompressor *pBaseCompr
 
 			mClonedCodecs.push_back(vc);
 
-			mpThreads[i].Init(this, vc);
+			mpThreads[i].Init(this, vc, &cloned_repack_buffer[i-1]);
 		}
 	}
 }
@@ -318,7 +323,7 @@ bool VDThreadedVideoCompressor::ExchangeBuffer(VDRenderOutputBuffer *buffer, VDR
 			if (!mbFlushInProgress)
 				++mFramesSubmitted;
 
-			if (!ProcessFrame(buffer, mpBaseCompressor, NULL, 0, NULL, NULL)) {
+			if (!ProcessFrame(buffer, mpBaseCompressor, NULL, 0, NULL, &base_repack_buffer)) {
 				if (mbInErrorState)
 					throw mError;
 
@@ -584,13 +589,14 @@ VDThreadedVideoCompressorSlave::VDThreadedVideoCompressorSlave()
 VDThreadedVideoCompressorSlave::~VDThreadedVideoCompressorSlave() {
 }
 
-void VDThreadedVideoCompressorSlave::Init(VDThreadedVideoCompressor *parent, IVDVideoCompressor *compressor) {
+void VDThreadedVideoCompressorSlave::Init(VDThreadedVideoCompressor *parent, IVDVideoCompressor *compressor, VDPixmapBuffer* buffer) {
 	mpParent = parent;
 	mpCompressor = compressor;
+	repack_buffer = buffer;
 
 	ThreadStart();
 }
 
 void VDThreadedVideoCompressorSlave::ThreadRun() {
-	mpParent->RunSlave(mpCompressor,repack_buffer);
+	mpParent->RunSlave(mpCompressor,*repack_buffer);
 }
