@@ -57,6 +57,7 @@ public:
 
 	virtual void	flush() = 0;
 	virtual void	finish() = 0;
+	virtual bool	isAVIFile(){ return false; }
 };
 
 class IVDVideoImageOutputStream : public IVDUnknown {

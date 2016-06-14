@@ -293,6 +293,7 @@ public:
 	void partialWriteBegin(uint32 flags, uint32 bytes, uint32 samples);
 	void partialWrite(const void *pBuffer, uint32 cbBuffer);
 	void partialWriteEnd();
+	bool isAVIFile(){ return true; }
 
 protected:
 	AVIOutputFile *const mpParent;

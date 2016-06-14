@@ -198,6 +198,7 @@ protected:
 
 	// video output conversion
 	vdautoptr<IVDPixmapBlitter>	mpOutputBlitter;
+	VDPixmapBuffer repack_buffer;
 
 	// video compression
 	vdrefptr<VDRenderOutputBuffer> mpHeldCompressionInputBuffer;

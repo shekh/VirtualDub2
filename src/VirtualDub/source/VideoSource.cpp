@@ -722,6 +722,9 @@ bool VDVideoDecompressorDIB::SetTargetFormat(int format) {
 	if (!format)
 		format = mSrcLayout.format;
 
+	if (mSrcLayout.format==nsVDPixmap::kPixFormat_XRGB64)
+		format = mSrcLayout.format;
+
 	VDMakeBitmapCompatiblePixmapLayout(mDstLayout, mWidth, mHeight, format, 0);
 	mDstFormat = format;
 	mDstFormatVariant = 1;

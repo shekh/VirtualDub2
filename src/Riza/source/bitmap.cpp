@@ -118,6 +118,9 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 
 	case VDMAKEFOURCC('N', 'V', '1', '2'):
 		return kPixFormat_YUV420_NV12;
+
+	case VDMAKEFOURCC('b', '6', '4', 'a'):
+		return kPixFormat_XRGB64;
 	}
 	return 0;
 }
