@@ -51,6 +51,7 @@ static List2<ModelessDlgNode> g_listModelessDlgs;
 int g_debugVal, g_debugVal2;
 
 extern "C" void ycblit(void *, void *);
+bool VDCheckToolsDialogs(LPMSG pMsg);
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -181,6 +182,8 @@ bool guiCheckDialogs(LPMSG pMsg) {
 
 		pmdn = pmdn_next;
 	}
+
+  if (VDCheckToolsDialogs(pMsg)) return true;
 
 	return false;
 }

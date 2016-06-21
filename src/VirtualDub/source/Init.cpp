@@ -88,6 +88,8 @@ extern void VDShutdownInputDrivers();
 extern void VDInitExternalCallTrap();
 extern void VDInitVideoCodecBugTrap();
 extern void VDInitProtectedScopeHook();
+extern void VDInitTools();
+extern void VDShutdownTools();
 
 extern uint32 VDPreferencesGetEnabledCPUFeatures();
 extern void VDPreferencesSetFilterAccelVisualDebugEnabled(bool);
@@ -525,6 +527,7 @@ bool Init(HINSTANCE hInstance, int nCmdShow, VDCommandLine& cmdLine) {
 	VDInitBuiltinAudioFilters();
 	VDInitBuiltinInputDrivers();
 	VDInitInputDrivers();
+	VDInitTools();
 	VDLoadExternalEncoderProfiles();
 
 	if (!InitJobSystem())
@@ -604,6 +607,7 @@ void Deinit() {
 	CloseJobWindow();
 	DeinitJobSystem();
 
+	VDShutdownTools();
 	VDShutdownInputDrivers();			// must be before plugin system
 	VDDeinitPluginSystem();
 
@@ -1008,6 +1012,7 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 
 					VDAddPluginModule(token);
 					VDInitInputDrivers();
+					VDInitTools();
 
 					guiSetStatus("Loaded external filter module: %s", 255, VDTextWToA(token).c_str());
 				}

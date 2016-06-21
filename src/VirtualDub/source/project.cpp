@@ -53,6 +53,7 @@
 #include "filters.h"
 #include "FilterFrameRequest.h"
 #include "gui.h"
+#include "tool.h"
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -1446,6 +1447,8 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 		Close();
 		throw;
 	}
+
+	VDToolsHandleFileOpen(g_szInputAVIFile, pSelectedDriver);
 }
 
 void VDProject::Reopen() {

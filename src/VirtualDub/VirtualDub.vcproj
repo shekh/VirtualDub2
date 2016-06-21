@@ -2398,6 +2398,14 @@
         </FileConfiguration>
       </File>
       <File
+        RelativePath="source\tool.cpp"
+        >
+      </File>
+      <File
+        RelativePath="source\tool.h"
+        >
+      </File>
+      <File
         RelativePath="source\SceneDetector.cpp"
         >
         <FileConfiguration
@@ -6994,6 +7002,10 @@
         </File>
         <File
           RelativePath="..\h\vd2\plugin\vdplugin.h"
+          >
+        </File>
+        <File
+          RelativePath="..\h\vd2\plugin\vdtool.h"
           >
         </File>
         <File

@@ -61,6 +61,7 @@
 #include "VideoWindow.h"
 #include "AccelEditDialog.h"
 #include "ExternalEncoderProfile.h"
+#include "tool.h"
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -95,6 +96,7 @@ namespace {
 
 #define MYWM_DEFERRED_COMMAND (WM_USER + 101)
 #define MYWM_DEFERRED_PREVIEWRESTART (WM_USER + 102)
+#define MYWM_DEFERRED_FILECOMMAND (WM_USER + 103)
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -124,6 +126,8 @@ extern bool g_fJobMode;
 
 extern wchar_t g_szInputAVIFile[MAX_PATH];
 extern wchar_t g_szInputWAVFile[MAX_PATH];
+
+vdfastvector<VDAccelToCommandEntry> kCommandList;
 
 extern void VDCPUTest();
 
@@ -242,7 +246,7 @@ UINT iMainMenuHelpTranslator[]={
 };
 
 namespace {
-	static const VDAccelToCommandEntry kCommandList[]={
+	static const VDAccelToCommandEntry kCommandList_init[]={
 		{ ID_FILE_QUIT,					"File.Quit" },
 		{ ID_FILE_OPENAVI,				"File.Open" },
 		{ ID_FILE_REOPEN,				"File.ReOpen" },
@@ -400,6 +404,11 @@ namespace {
 	};
 }
 
+void ResetCommandList() {
+	kCommandList.clear();
+	kCommandList.insert(kCommandList.begin(),&kCommandList_init[0],&kCommandList_init[sizeof(kCommandList_init)/sizeof(kCommandList_init[0])]);
+}
+
 ///////////////////////////////////////////////////////////////////////////
 
 static void VDCheckMenuItemW32(HMENU hMenu, UINT opt, bool en) {
@@ -440,6 +449,7 @@ VDProjectUI::VDProjectUI()
 	, mhMenuDub(NULL)
 	, mhMenuDisplay(NULL)
 	, mhMenuExport(NULL)
+	, mhMenuTools(NULL)
 	, mhAccelDub(NULL)
 	, mhAccelMain(NULL)
 	, mhAccelPreview(NULL)
@@ -489,6 +499,12 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 		return false;
 	}
 
+	mhMenuTools = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_TOOLS_MENU));
+	if (!mhMenuTools) {
+		Detach();
+		return false;
+	}
+
 	mhMenuSourceList = CreatePopupMenu();
 	if (!mhMenuSourceList) {
 		Detach();
@@ -519,35 +535,8 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	mMRUListPosition = GetMenuItemCount(GetSubMenu(mhMenuNormal, 0)) - 2;
 
 	// Load accelerators.
-	{
-		HACCEL haccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_IDLE_KEYS));
 
-		if (haccel)
-			VDUIExtractAcceleratorTableW32(mAccelTableDefault, haccel, kCommandList, sizeof(kCommandList)/sizeof(kCommandList[0]));
-
-		VDRegistryAppKey accelKey("Accelerators\\Main", false);
-
-		bool success = false;
-
-		if (accelKey.isReady()) {
-			try {
-				mAccelTableDef.Load(accelKey, kCommandList, sizeof(kCommandList)/sizeof(kCommandList[0]));
-				success = true;
-			} catch(const MyError&) {
-				// eat the error
-			}
-		}
-
-		if (!success)
-			mAccelTableDef = mAccelTableDefault;
-
-		VDUIUpdateMenuAcceleratorsW32(mhMenuNormal, mAccelTableDef);
-	}
-
-	mhAccelMain = VDUIBuildAcceleratorTableW32(mAccelTableDef);
-
-	pFrame->SetAccelTable(mhAccelMain);
-
+	UpdateAccelMain();
 	UpdateAccelDub();
 	UpdateAccelPreview();
 
@@ -662,6 +651,36 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	DragAcceptFiles((HWND)mhwnd, TRUE);
 
 	return true;
+}
+
+void VDProjectUI::UpdateAccelMain() {
+	HACCEL haccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_IDLE_KEYS));
+
+	if (haccel)
+		VDUIExtractAcceleratorTableW32(mAccelTableDefault, haccel, kCommandList.begin(), kCommandList.size());
+
+	VDRegistryAppKey accelKey("Accelerators\\Main", false);
+
+	bool success = false;
+
+	if (accelKey.isReady()) {
+		try {
+			mAccelTableDef.Load(accelKey, kCommandList.begin(), kCommandList.size());
+			success = true;
+		} catch(const MyError&) {
+			// eat the error
+		}
+	}
+
+	if (!success)
+		mAccelTableDef = mAccelTableDefault;
+
+	VDUIUpdateMenuAcceleratorsW32(mhMenuNormal, mAccelTableDef);
+
+	mhAccelMain = VDUIBuildAcceleratorTableW32(mAccelTableDef);
+
+	VDUIFrame *pFrame = VDUIFrame::GetFrame((HWND)mhwnd);
+	pFrame->SetAccelTable(mhAccelMain);
 }
 
 void VDProjectUI::UpdateAccelPreview() {
@@ -806,6 +825,11 @@ void VDProjectUI::Detach() {
 	if (mhMenuExport) {
 		DestroyMenu(mhMenuExport);
 		mhMenuExport = NULL;
+	}
+
+	if (mhMenuTools) {
+		DestroyMenu(mhMenuTools);
+		mhMenuTools = NULL;
 	}
 
 	mhMenuSourceList = NULL;	// already destroyed via main menu
@@ -2161,7 +2185,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 
 		case ID_OPTIONS_KEYBOARDSHORTCUTS:
-			if (VDShowDialogEditAccelerators((VDGUIHandle)mhwnd, kCommandList, sizeof(kCommandList)/sizeof(kCommandList[0]), mAccelTableDef, mAccelTableDefault)) {
+			if (VDShowDialogEditAccelerators((VDGUIHandle)mhwnd, kCommandList.begin(), kCommandList.size(), mAccelTableDef, mAccelTableDefault)) {
 				HACCEL acc = VDUIBuildAcceleratorTableW32(mAccelTableDef);
 				VDUIFrame *pFrame = VDUIFrame::GetFrame((HWND)mhwnd);
 				pFrame->SetAccelTable(acc);
@@ -2309,6 +2333,8 @@ bool VDProjectUI::MenuHit(UINT id) {
 					logDisp.Post(mhwnd);
 				}
 				break;
+			} else if (id >= ID_PLUGIN_TOOL && id <= ID_PLUGIN_TOOL+99) {
+				VDToolExecuteCommand(id,(HWND)mhwnd);
 			}
 			break;
 		}
@@ -2453,7 +2479,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 				if (!tool->GetExportMenuInfo(i,name,sizeof(name),&enabled)) continue;
 
 				MENUITEMINFOA mii = {0};
-				mii.cbSize = sizeof(info);
+				mii.cbSize = sizeof(mii);
 				mii.fMask = MIIM_TYPE | MIIM_STATE | MIIM_ID;
 				mii.fType = MFT_STRING;
 				mii.fState = enabled ? 0 : MFS_DISABLED;
@@ -2466,11 +2492,36 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 			tool->Release();
 		}
 
+		VDUIUpdateMenuAcceleratorsW32(hmenuExport, mAccelTableDef);
+
 	} else {
 		MENUITEMINFOA info = {0};
 		info.cbSize = sizeof(info);
 		info.fMask = MIIM_SUBMENU;
 		SetMenuItemInfo(hmenuFile,ID_FILE_EXPORT,false,&info);
+	}
+
+	{
+		if (mhMenuTools)
+			DestroyMenu(mhMenuTools);
+		mhMenuTools = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_TOOLS_MENU));
+		HMENU hmenuTools = GetSubMenu(mhMenuTools, 0);
+		{for(int i=0; i<GetMenuItemCount(hmenuTools); i++){
+			if (GetMenuItemID(hmenuTools,i)==ID_TOOLS_PLUGIN) {
+				int pos = i;
+				RemoveMenu(hmenuTools, pos, MF_BYPOSITION);
+				VDToolInsertMenu(hmenuTools, pos);
+				break;
+			}
+		}}
+
+		VDUIUpdateMenuAcceleratorsW32(mhMenuTools, mAccelTableDef);
+
+		MENUITEMINFOA info = {0};
+		info.cbSize = sizeof(info);
+		info.fMask = MIIM_SUBMENU;
+		info.hSubMenu = hmenuTools;
+		SetMenuItemInfo(hMenu,ID_TOOLS,false,&info);
 	}
 
 	VDEnableMenuItemW32(hMenu, ID_QUEUEBATCHOPERATION_SAVEASAVI				, bSourceFileExists);
@@ -2762,6 +2813,25 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 			e.post((HWND)mhwnd, g_szError);
 		}
 		return 0;
+
+	case MYWM_DEFERRED_FILECOMMAND:
+		{
+			FileNameCommand* cmd = (FileNameCommand*)lParam;
+			try {
+				if (cmd->reopen) {
+					StopFilters();
+					g_project->Reopen();
+				} else {
+					IVDInputDriver *pDriver = VDGetInputDriverByName(cmd->driverName.c_str());
+					g_project->Open(cmd->fileName.c_str(), pDriver);
+				}
+			} catch(const MyError& e) {
+				if (!VDToolCatchError(cmd,e))
+					e.post((HWND)mhwnd, g_szError);
+			}
+			delete cmd;
+		}
+		return 0;
 	}
 
 	return VDUIFrame::GetFrame((HWND)mhwnd)->DefProc((HWND)mhwnd, msg, wParam, lParam);
@@ -2882,6 +2952,13 @@ LRESULT VDProjectUI::DubWndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		// running because the panes are disabled, then they won't update properly
 		// when re-enabled since the rendering engine calls Update().
 		break;
+
+	case MYWM_DEFERRED_FILECOMMAND:
+		{
+			FileNameCommand* cmd = (FileNameCommand*)lParam;
+			delete cmd;
+  		}
+		return 0;
 
 	default:
 		return VDUIFrame::GetFrame((HWND)mhwnd)->DefProc((HWND)mhwnd, msg, wParam, lParam);

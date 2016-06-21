@@ -234,6 +234,7 @@
 #define IDD_EXTENC_EDIT_VIDEO           306
 #define IDD_SAVEIMAGE_FORMAT            307
 #define IDR_FILE_EXPORTMENU             308
+#define IDR_TOOLS_MENU                  309
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -1426,6 +1427,8 @@
 #define ID_VIDEO_SEEK_STOP              40569
 #define ID_EDIT_SETMARKER               40570
 #define ID_EDIT_CLEARMARKERS            40571
+#define ID_TOOLS_PLUGIN                 40573
+#define ID_TOOLS                        40574
 #define ID_AUDIOMODE_11KHZ_8MONO        41000
 #define ID_AUDIOMODE_11KHZ_8STEREO      41001
 #define ID_AUDIOMODE_11KHZ_16MONO       41002
@@ -1474,14 +1477,15 @@
 #define ID_MRU_FILE2                    50002
 #define ID_MRU_FILE3                    50003
 #define ID_AUDIO_SOURCE_AVI_0           50100
+#define ID_PLUGIN_TOOL                  50200
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        309
-#define _APS_NEXT_COMMAND_VALUE         40572
+#define _APS_NEXT_RESOURCE_VALUE        310
+#define _APS_NEXT_COMMAND_VALUE         40575
 #define _APS_NEXT_CONTROL_VALUE         1533
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

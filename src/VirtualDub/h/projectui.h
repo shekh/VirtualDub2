@@ -102,6 +102,7 @@ public:
 
 public:
 	const wchar_t *edit_token;
+	void UpdateAccelMain();
 
 protected:
 	void OpenPreviousNext(bool next);
@@ -202,6 +203,7 @@ protected:
 	HMENU		mhMenuDub;
 	HMENU		mhMenuDisplay;
 	HMENU		mhMenuExport;
+	HMENU		mhMenuTools;
 	int			mMRUListPosition;
 	HACCEL		mhAccelDub;
 	HACCEL		mhAccelMain;

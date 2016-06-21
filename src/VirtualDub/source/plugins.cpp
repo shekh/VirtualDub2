@@ -12,6 +12,7 @@
 #include <vd2/plugin/vdaudiofilt.h>
 #include <vd2/plugin/vdvideofilt.h>
 #include <vd2/plugin/vdinputdriver.h>
+#include <vd2/plugin/vdtool.h>
 
 #include "plugins.h"
 #include "filters.h"
@@ -109,6 +110,21 @@ namespace {
 		VDStringW				mFilenamePattern;
 		VDStringW				mDriverTagName;
 	};
+
+	class VDShadowedToolDescription : public VDShadowedPluginDescription {
+	public:
+		virtual void Init(const VDPluginInfo *pInfo, VDExternalModule *pModule) {
+			VDShadowedPluginDescription::Init(pInfo, pModule);
+
+			const VDXToolDefinition *def = static_cast<const VDXToolDefinition *>(pInfo->mpTypeSpecificInfo);
+			memset(&mDefinition, 0, sizeof mDefinition);
+			memcpy(&mDefinition, def, std::min<uint32>(def->mSize, sizeof mDefinition));
+			mShadowedInfo.mpTypeSpecificInfo = &mDefinition;
+		}
+
+	protected:
+		VDXToolDefinition	mDefinition;
+	};
 }
 
 
@@ -157,6 +173,16 @@ void VDConnectPluginDescription(const VDPluginInfo *pInfo, VDExternalModule *pMo
 					throw MyError("Plugin uses too old of an API version (v%u < v%u)", pInfo->mAPIVersionUsed, 1);
 
 				pDesc = new VDShadowedInputDriverDescription;
+				break;
+
+			case kVDXPluginType_Tool:
+				if (pInfo->mTypeAPIVersionRequired > kVDXPlugin_ToolAPIVersion)
+					throw MyError("Plugin requires a newer input API version (v%u > v%u)", pInfo->mTypeAPIVersionRequired, kVDXPlugin_ToolAPIVersion);
+
+				if (pInfo->mTypeAPIVersionUsed < 1)
+					throw MyError("Plugin uses too old of an API version (v%u < v%u)", pInfo->mAPIVersionUsed, 1);
+
+				pDesc = new VDShadowedToolDescription;
 				break;
 		}
 

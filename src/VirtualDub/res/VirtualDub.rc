@@ -245,23 +245,7 @@ BEGIN
             MENUITEM "Non-interlaced (BFF)",        ID_OPTIONS_PREVIEWNONBFF
         END
     END
-    POPUP "&Tools"
-    BEGIN
-        MENUITEM "&Hex editor...",              ID_TOOLS_HEXVIEWER
-        MENUITEM "&Create sparse AVI...",       ID_TOOLS_CREATESPARSEAVI
-        MENUITEM "&Expand sparse AVI...",       ID_TOOLS_EXPANDSPARSEAVI
-        MENUITEM "Benchmark resampler",         ID_TOOLS_BENCHMARKRESAMPLER
-        MENUITEM "Create palettized AVI...",    ID_TOOLS_CREATEPALETTIZEDAVI
-        MENUITEM "Create test video...",        ID_TOOLS_CREATETESTVIDEO
-        MENUITEM SEPARATOR
-        MENUITEM "Open new program instance",   ID_FILE_NEWINSTANCE
-        POPUP "Triage"
-        BEGIN
-            MENUITEM "Close and delete",            ID_FILE_CLOSEANDDELETE
-            MENUITEM "Open previous file",          ID_FILE_OPENPREVIOUS
-            MENUITEM "Open next file",              ID_FILE_OPENNEXT
-        END
-    END
+    MENUITEM "&Tools",                      ID_TOOLS
     POPUP "&Help"
     BEGIN
         MENUITEM "Contents\tF1",                ID_HELP_CONTENTS
@@ -716,6 +700,28 @@ BEGIN
     END
 END
 
+IDR_TOOLS_MENU MENU 
+BEGIN
+    POPUP "&Tools"
+    BEGIN
+        MENUITEM "&Hex editor...",              ID_TOOLS_HEXVIEWER
+        MENUITEM "&Create sparse AVI...",       ID_TOOLS_CREATESPARSEAVI
+        MENUITEM "&Expand sparse AVI...",       ID_TOOLS_EXPANDSPARSEAVI
+        MENUITEM "Benchmark resampler",         ID_TOOLS_BENCHMARKRESAMPLER
+        MENUITEM "Create palettized AVI...",    ID_TOOLS_CREATEPALETTIZEDAVI
+        MENUITEM "Create test video...",        ID_TOOLS_CREATETESTVIDEO
+        MENUITEM "Plugin 0...",                 40573
+        MENUITEM SEPARATOR
+        MENUITEM "Open new program instance",   ID_FILE_NEWINSTANCE
+        POPUP "Triage"
+        BEGIN
+            MENUITEM "Close and delete",            ID_FILE_CLOSEANDDELETE
+            MENUITEM "Open previous file",          ID_FILE_OPENPREVIOUS
+            MENUITEM "Open next file",              ID_FILE_OPENNEXT
+        END
+    END
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -730,7 +736,7 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     CONTROL         "Tab1",IDC_TABS,"SysTabControl32",WS_TABSTOP,7,7,172,85
     LTEXT           "Progress:",IDC_STATIC_PROGRESS,7,95,86,8
-    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",WS_BORDER | 0x1,93,95,86,10
+    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",PBS_SMOOTH | WS_BORDER,93,95,86,10
     LTEXT           "Processing thread &priority:",IDC_STATIC_PRIORITY,7,107,86,8
     COMBOBOX        IDC_PRIORITY,93,105,86,40,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Speed &limit:",IDC_STATIC_LIMIT,7,120,86,10
@@ -1266,7 +1272,7 @@ FONT 8, "MS Shell Dlg"
 BEGIN
     PUSHBUTTON      "Abort",IDCANCEL,130,37,50,14
     LTEXT           "Calibrating delay loop.... 577 BogoMIPS",IDC_STATIC_MESSAGE,7,7,173,8
-    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",0x1,7,20,173,11
+    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",PBS_SMOOTH,7,20,173,11
     LTEXT           "",IDC_CURRENT_VALUE,7,40,114,8
 END
 
@@ -1438,7 +1444,7 @@ BEGIN
     PUSHBUTTON      "Start",IDC_START,294,146,50,14
     PUSHBUTTON      "Abort",IDC_ABORT,294,162,50,14
     LTEXT           "Current job",IDC_CURRENTJOB,7,184,35,8
-    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",WS_BORDER | 0x1,49,181,268,12
+    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",PBS_SMOOTH | WS_BORDER,49,181,268,12
     RTEXT           "0%",IDC_PERCENT,319,182,20,11,SS_CENTERIMAGE | WS_DISABLED
 END
 
@@ -2024,7 +2030,7 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,41,50,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,94,50,50,14
     LTEXT           "VirtualDub has finished processing the job queue and is about to shutdown your computer.",IDC_STATIC,7,7,172,20
-    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",WS_BORDER | 0x1,7,30,172,9
+    CONTROL         "Progress1",IDC_PROGRESS,"msctls_progress32",PBS_SMOOTH | WS_BORDER,7,30,172,9
 END
 
 IDD_CRASH DIALOGEX 0, 0, 371, 159

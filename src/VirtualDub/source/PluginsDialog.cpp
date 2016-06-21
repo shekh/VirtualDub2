@@ -220,6 +220,7 @@ bool VDUIDialogPlugins::OnLoaded() {
 	std::vector<VDPluginDescription *> descs;
 	VDEnumeratePluginDescriptions(descs, kVDXPluginType_Input);
 	VDEnumeratePluginDescriptions(descs, kVDXPluginType_Audio);
+	VDEnumeratePluginDescriptions(descs, kVDXPluginType_Tool);
 
 	while(!descs.empty()) {
 		VDPluginDescription *desc = descs.back();
