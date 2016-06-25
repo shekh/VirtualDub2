@@ -188,10 +188,9 @@ void VDConnectPluginDescription(const VDPluginInfo *pInfo, VDExternalModule *pMo
 
 		pDesc->AddRef();
 		g_plugins.push_back(pDesc);
-
-		pDesc->Init(pInfo, pModule);
 	}
 
+	pDesc->Init(pInfo, pModule);
 	pDesc->mpInfo = pInfo;
 	pDesc->mpShadowedInfo = &pDesc->mShadowedInfo;
 }
