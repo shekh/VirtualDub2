@@ -40,7 +40,6 @@
 
 extern const char g_szError[];
 extern vdrefptr<VDProjectUI> g_projectui;
-extern vdrefptr<IVDVideoSource> inputVideo;
 extern DubOptions	g_dubOpts;
 
 //////////////////////////////
@@ -74,7 +73,7 @@ public:
 	VDFraction	mInputPixelAspect;
 	sint64		mInputLength;
 	VDTime		mInitialTimeUS;
-	IVDVideoSource	*mpVS;
+	vdrefptr<IVDVideoSource>	mpVS;
 	VDVideoFiltersDialogResult mResult;
 
 	FiltersEditor()
@@ -85,7 +84,6 @@ public:
 	, mInputPixelAspect(1, 1)
 	, mInputLength(100)
 	, mInitialTimeUS(-1)
-	, mpVS(NULL)
 	{
 		dlg_first = 0;
 		dlg_second = 0;
@@ -105,6 +103,7 @@ public:
 	void ReadyFilters();
 	void EvalView(FilterInstance* fa, IVDPixmapViewDialog* view);
 	void EvalAllViews();
+	bool DisplayFrame(IVDVideoSource* pVS);
 	void UndoSystem();
 
 	void ActivateNextWindow();
@@ -128,6 +127,8 @@ public:
 		}
 	}
 };
+
+FiltersEditor* g_filtersEditor;
 
 void FiltersEditor::Init(IVDVideoSource *pVS, VDPosition initialTime) {
 	IVDStreamSource *pSS = pVS->asStream();
@@ -236,6 +237,21 @@ void FiltersEditor::EvalAllViews() {
 	UndoSystem();
 }
 
+bool FiltersEditor::DisplayFrame(IVDVideoSource* pVS) {
+  vdrefptr<IVDVideoSource> prev_vs = mpVS;
+	Init(pVS, 0);
+
+  UndoSystem();
+  PrepareChain();
+
+	if(preview && preview->GetHwnd()) {
+    EvalAllViews();
+    return true;
+  }
+
+  return false;
+}
+
 void FiltersEditor::PrepareChain() {
 	if (mInputFormat) {
 		try {
@@ -248,15 +264,15 @@ void FiltersEditor::PrepareChain() {
 
 void FiltersEditor::ReadyFilters() {
 	try {
-		IVDStreamSource *pVSS = inputVideo->asStream();
-		const VDPixmap& px = inputVideo->getTargetFormat();
+		IVDStreamSource *pVSS = mpVS->asStream();
+		const VDPixmap& px = mpVS->getTargetFormat();
 		VDFraction srcRate = pVSS->getRate();
 
 		if (g_dubOpts.video.mFrameRateAdjustLo > 0)
 			srcRate.Assign(g_dubOpts.video.mFrameRateAdjustHi, g_dubOpts.video.mFrameRateAdjustLo);
 
 		sint64 len = pVSS->getLength();
-		const VDFraction& srcPAR = inputVideo->getPixelAspectRatio();
+		const VDFraction& srcPAR = mpVS->getPixelAspectRatio();
 
 		/*mFiltSys.prepareLinearChain(
 				&filter_desc,
@@ -268,7 +284,7 @@ void FiltersEditor::ReadyFilters() {
 				srcPAR);*/
 
 		mpVideoFrameSource = new VDFilterFrameVideoSource;
-		mpVideoFrameSource->Init(inputVideo, mFiltSys.GetInputLayout());
+		mpVideoFrameSource->Init(mpVS, mFiltSys.GetInputLayout());
 
 		mFiltSys.initLinearChain(
 				NULL,
@@ -1642,6 +1658,11 @@ void FiltersEditor::ActivateNextWindow() {
 	}
 }
 
+bool FiltersEditorDisplayFrame(IVDVideoSource *pVS) {
+	if (!g_filtersEditor) return false;
+	return g_filtersEditor->DisplayFrame(pVS);
+}
+
 ////////////////////////////////////////////////////////////////////////////
 
 VDVideoFiltersDialogResult VDShowDialogVideoFilters(VDGUIHandle h, IVDVideoSource *pVS, VDPosition initialTime, int edit_instance, HWND* owner_ref) {
@@ -1652,6 +1673,7 @@ VDVideoFiltersDialogResult VDShowDialogVideoFilters(VDGUIHandle h, IVDVideoSourc
 	dlg.editor = &editor;
 	editor.mEditInstance = edit_instance;
 	editor.owner_ref = owner_ref;
+	g_filtersEditor = &editor;
 
 	if (pVS)
 		editor.Init(pVS, initialTime);
@@ -1659,6 +1681,7 @@ VDVideoFiltersDialogResult VDShowDialogVideoFilters(VDGUIHandle h, IVDVideoSourc
 	dlg.ShowDialog(h);
 
 	if(owner_ref) *owner_ref = 0;
+	g_filtersEditor = 0;
 
 	return editor.GetResult();
 }

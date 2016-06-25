@@ -218,6 +218,7 @@ protected:
 	bool		mbDubActive;
 	bool		mbPositionControlVisible;
 	bool		mbStatusBarVisible;
+	bool		mbFiltersPreview;
 
 	bool		mbLockPreviewRestart;
 

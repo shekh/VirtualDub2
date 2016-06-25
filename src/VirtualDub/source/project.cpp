@@ -118,6 +118,8 @@ extern bool VDPreferencesGetTimelineWarnReloadTruncation();
 
 int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx format);
 
+extern bool FiltersEditorDisplayFrame(IVDVideoSource *pVS);
+
 ///////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -1442,6 +1444,7 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 		mpCB->UISourceFileUpdated();
 		mpCB->UIVideoSourceUpdated();
 		mpCB->UIAudioSourceUpdated();
+		FiltersEditorDisplayFrame(inputVideo);
 		MoveToFrame(0);
 	} catch(const MyError&) {
 		Close();
@@ -1562,6 +1565,7 @@ void VDProject::Reopen() {
 	mpCB->UISourceFileUpdated();
 	mpCB->UIAudioSourceUpdated();
 	mpCB->UIVideoSourceUpdated();
+	FiltersEditorDisplayFrame(inputVideo);
 
 	// Invalidate currently displayed frames.
 	mLastDisplayedInputFrame = -1;

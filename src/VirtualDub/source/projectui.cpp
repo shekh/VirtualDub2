@@ -465,6 +465,7 @@ VDProjectUI::VDProjectUI()
 	edit_token = 0;
 	mMRUList.set_capacity(VDPreferencesGetMRUSize());
 	mMRUList.load();
+	mbFiltersPreview = false;
 }
 
 VDProjectUI::~VDProjectUI() {
@@ -3316,12 +3317,12 @@ void VDProjectUI::UpdateVideoFrameLayout() {
 		}
 	}
 
-	if (inputVisible)
+	if (inputVisible && !mbFiltersPreview)
 		ShowWindow(mhwndInputFrame, SW_SHOWNOACTIVATE);
 	else
 		ShowWindow(mhwndInputFrame, SW_HIDE);
 
-	if (outputVisible)
+	if (outputVisible && !mbFiltersPreview)
 		ShowWindow(mhwndOutputFrame, SW_SHOWNOACTIVATE);
 	else
 		ShowWindow(mhwndOutputFrame, SW_HIDE);
@@ -4501,6 +4502,8 @@ void VDProjectUI::OnAudioDisplaySetAudioOffset(IVDUIAudioDisplayControl *source,
 
 void VDProjectUI::DisplayPreview(bool v)
 {
+	mbFiltersPreview = v;
+
 	if (v) {
 		ShowWindow(mhwndPosition, SW_HIDE);
 	} else {
