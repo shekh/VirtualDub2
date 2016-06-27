@@ -1985,6 +1985,14 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 				CheckDlgButton(mhdlg, IDC_JUMPTOTIME, BST_CHECKED);
 			}
 			break;
+		case IDC_JUMPTOFRAME:
+			SetFocus(GetDlgItem(mhdlg, IDC_FRAMENUMBER));
+			SendDlgItemMessage(mhdlg, IDC_FRAMENUMBER, EM_SETSEL, 0, -1);
+			break;
+		case IDC_JUMPTOTIME:
+			SetFocus(GetDlgItem(mhdlg, IDC_FRAMETIME));
+			SendDlgItemMessage(mhdlg, IDC_FRAMETIME, EM_SETSEL, 0, -1);
+			break;
 		}
 		return TRUE;
 	}
@@ -1996,7 +2004,6 @@ void VDDialogJumpToPositionW32::ReinitDialog() {
 	long ms, sec, min;
 	char buf[64];
 
-	CheckDlgButton(mhdlg, IDC_JUMPTOFRAME, BST_CHECKED);
 	SendDlgItemMessage(mhdlg, IDC_FRAMETIME, EM_LIMITTEXT, 30, 0);
 	SetDlgItemInt(mhdlg, IDC_FRAMENUMBER, (UINT)mFrame, FALSE);
 	SetFocus(GetDlgItem(mhdlg, IDC_FRAMENUMBER));
@@ -2012,6 +2019,9 @@ void VDDialogJumpToPositionW32::ReinitDialog() {
 		wsprintf(buf, "%d:%02d.%03d", min, sec, ms);
 
 	SetDlgItemText(mhdlg, IDC_FRAMETIME, buf);
+
+	CheckDlgButton(mhdlg, IDC_JUMPTOFRAME, BST_CHECKED);
+	CheckDlgButton(mhdlg, IDC_JUMPTOTIME, BST_UNCHECKED);
 }
 
 VDPosition VDDisplayJumpToPositionDialog(VDGUIHandle hParent, VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate) {
