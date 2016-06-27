@@ -48,6 +48,10 @@ public:
 			count++;
 		}
 	}
+
+	void SetTimelinePos(int64 pos) {
+		g_project->MoveToFrame(pos);
+	}
 };
 
 class VDToolCallbacks: public IVDToolCallbacks {

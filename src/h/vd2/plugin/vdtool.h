@@ -21,6 +21,7 @@ public:
 	virtual void GetSelection(int64& start, int64& end)=0;
 	virtual int GetSubsetCount()=0;
 	virtual void GetSubsetRange(int i, int64& start, int64& end)=0;
+	virtual void SetTimelinePos(int64 pos)=0;
 };
 
 class IVDToolCallbacks {

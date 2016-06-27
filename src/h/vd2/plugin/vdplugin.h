@@ -80,7 +80,7 @@ enum VDXCPUFeatureFlags {
 };
 
 enum {
-	kVDXPlugin_APIVersion		= 10
+	kVDXPlugin_APIVersion		= 11
 };
 
 
