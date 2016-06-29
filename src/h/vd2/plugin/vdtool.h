@@ -13,6 +13,8 @@ public:
 	virtual bool VDXAPIENTRY TranslateMessage(MSG& msg) = 0;
 	virtual bool VDXAPIENTRY HandleError(const char* s, int source, void* userData) = 0;
 	virtual bool VDXAPIENTRY HandleFileOpen(const wchar_t* fileName, const wchar_t* driverName, VDXHWND hwndParent) = 0;
+	virtual void VDXAPIENTRY Attach(VDXHWND hwndParent) = 0;
+	virtual void VDXAPIENTRY Detach(VDXHWND hwndParent) = 0;
 };
 
 class IVDTimeline {

@@ -651,6 +651,8 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 
 	DragAcceptFiles((HWND)mhwnd, TRUE);
 
+	VDToolsAttach((HWND)mhwnd);
+
 	return true;
 }
 
@@ -755,6 +757,8 @@ void VDProjectUI::UpdateAccelDub() {
 }
 
 void VDProjectUI::Detach() {
+	VDToolsDetach((HWND)mhwnd);
+
 	DragAcceptFiles((HWND)mhwnd, FALSE);
 
 	SetUICallback(NULL);

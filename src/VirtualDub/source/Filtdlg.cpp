@@ -104,6 +104,7 @@ public:
 	void EvalView(FilterInstance* fa, IVDPixmapViewDialog* view);
 	void EvalAllViews();
 	bool DisplayFrame(IVDVideoSource* pVS);
+	bool GotoFrame(VDPosition pos, VDPosition time);
 	void UndoSystem();
 
 	void ActivateNextWindow();
@@ -238,18 +239,28 @@ void FiltersEditor::EvalAllViews() {
 }
 
 bool FiltersEditor::DisplayFrame(IVDVideoSource* pVS) {
-  vdrefptr<IVDVideoSource> prev_vs = mpVS;
+	vdrefptr<IVDVideoSource> prev_vs = mpVS;
 	Init(pVS, 0);
 
-  UndoSystem();
-  PrepareChain();
+	UndoSystem();
+	PrepareChain();
 
 	if(preview && preview->GetHwnd()) {
-    EvalAllViews();
-    return true;
-  }
+		EvalAllViews();
+		return true;
+	}
 
-  return false;
+	return false;
+}
+
+bool FiltersEditor::GotoFrame(VDPosition pos, VDPosition time) {
+	mInitialTimeUS = time;
+	if(preview) {
+		preview->AsIFilterModPreview()->FMSetPosition(pos);
+		if(preview->GetHwnd()) return true;
+	}
+
+	return false;
 }
 
 void FiltersEditor::PrepareChain() {
@@ -1661,6 +1672,11 @@ void FiltersEditor::ActivateNextWindow() {
 bool FiltersEditorDisplayFrame(IVDVideoSource *pVS) {
 	if (!g_filtersEditor) return false;
 	return g_filtersEditor->DisplayFrame(pVS);
+}
+
+bool FiltersEditorGotoFrame(VDPosition pos, VDPosition time) {
+	if (!g_filtersEditor) return false;
+	return g_filtersEditor->GotoFrame(pos, time);
 }
 
 ////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,7 @@ extern vdfastvector<VDAccelToCommandEntry> kCommandList;
 #define MYWM_DEFERRED_FILECOMMAND (WM_USER + 103)
 
 void ResetCommandList();
+bool FiltersEditorGotoFrame(VDPosition pos, VDPosition time);
 
 class VDToolTimeline: public IVDTimeline {
 public:
@@ -50,6 +51,13 @@ public:
 	}
 
 	void SetTimelinePos(int64 pos) {
+		VDFraction fr = g_projectui->GetTimelineFrameRate();
+		VDPosition time = -1;
+		if (fr.getLo() && fr.getHi())
+			time = fr.scale64ir(pos*1000000);
+		
+		if (FiltersEditorGotoFrame(pos,time))
+			return;
 		g_project->MoveToFrame(pos);
 	}
 };
@@ -215,5 +223,19 @@ void VDToolsHandleFileOpen(const wchar_t* fname, IVDInputDriver *pDriver) {
 	for(std::vector<VDTool*>::const_iterator it(g_VDTools.begin()), itEnd(g_VDTools.end()); it!=itEnd; ++it) {
 		VDTool *p = *it;
 		p->object->HandleFileOpen(fname, driver_name, (VDXHWND)parent);
+	}
+}
+
+void VDToolsAttach(HWND hwnd) {
+	for(std::vector<VDTool*>::const_iterator it(g_VDTools.begin()), itEnd(g_VDTools.end()); it!=itEnd; ++it) {
+		VDTool *p = *it;
+		p->object->Attach((VDXHWND)hwnd);
+	}
+}
+
+void VDToolsDetach(HWND hwnd) {
+	for(std::vector<VDTool*>::const_iterator it(g_VDTools.begin()), itEnd(g_VDTools.end()); it!=itEnd; ++it) {
+		VDTool *p = *it;
+		p->object->Detach((VDXHWND)hwnd);
 	}
 }

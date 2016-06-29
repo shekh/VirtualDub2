@@ -18,5 +18,7 @@ void VDToolExecuteCommand(int id, HWND parent);
 void VDToolInsertMenu(HMENU menu, int pos);
 bool VDToolCatchError(FileNameCommand* cmd, const MyError& e);
 void VDToolsHandleFileOpen(const wchar_t* fname, IVDInputDriver *pDriver);
+void VDToolsAttach(HWND hwnd);
+void VDToolsDetach(HWND hwnd);
 
 #endif
