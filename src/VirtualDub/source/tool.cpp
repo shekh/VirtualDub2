@@ -3,6 +3,9 @@
 #include <vd2/system/filesys.h>
 #include "projectui.h"
 #include "JobControl.h"
+#include "plugins.h"
+#include "inputfile.h"
+#include "resource.h"
 #include "tool.h"
 
 extern VDProject *g_project;
