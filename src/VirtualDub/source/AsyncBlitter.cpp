@@ -455,6 +455,9 @@ bool VDAsyncBlitter::ServiceRequests(bool fWait) {
 				if (req->type == AsyncBlitRequest::REQTYPE_AFC) {
 					DoRequest(req);
 					fRequestServiced = true;
+					release(req->bufferID);
+					req->bufferID = 0;
+
 				} else if (!fWait || !waitPulse(req->framenum)) {
 					if ((uint32)dwPulseFrame < req->framenum) {
 						continue;
@@ -471,12 +474,19 @@ bool VDAsyncBlitter::ServiceRequests(bool fWait) {
 						++req->framenum;
 						continue;
 					}
+
+					release(req->bufferID);
+					req->bufferID = 0;
+
+				} else {
+					// unreachable?
 				}
 			}
 
-			fRequestServiced = true;
-			release(req->bufferID);
-			req->bufferID = 0;
+			fRequestServiced = true; // do not wait new input after flush?
+			//! leaked here: APC must do cleanup
+			//release(req->bufferID);
+			//req->bufferID = 0;
 		}
 	}
 
