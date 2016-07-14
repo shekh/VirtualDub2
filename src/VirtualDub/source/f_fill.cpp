@@ -114,7 +114,7 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 			{
 				LONG hspace;
 				RECT rw, rc, rcok, rccancel, rcpickcolor, rccolor, rcalpha;
-				HWND hWnd, hWndCancel, hWndPickColor, hWndColor, hWndAlpha;
+				HWND hWnd, hWndOk, hWndCancel, hWndPickColor, hWndColor, hWndAlpha;
 				long x,y;
 
 				mfd = (MyFilterData *)lParam;
@@ -132,6 +132,7 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 
 				GetWindowRect(hDlg, &rw);
 				GetWindowRect(hWnd, &rc);
+				int origW = (rw.right - rw.left);
 				int origH = (rw.bottom - rw.top);
 				int padW = (rw.right - rw.left) - (rc.right - rc.left);
 				int padH = origH - (rc.bottom - rc.top);
@@ -143,16 +144,18 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 				GetWindowRect(hWnd, &rc);
 				MapWindowPoints(NULL, hDlg, (LPPOINT)&rc, 2);
 
-				const int newH = (rc.bottom - rc.top) + padH;
-				SetWindowPos(hDlg, NULL, 0, 0, (rc.right - rc.left) + padW, newH, SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE);
+				int newW = (rc.right - rc.left) + padW;
+				int newH = (rc.bottom - rc.top) + padH;
+				if (newW<origW) newW = origW;
+				SetWindowPos(hDlg, NULL, 0, 0, newW, newH, SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE);
 				SendMessage(hDlg, DM_REPOSITION, 0, 0);
 
 				hWndCancel = GetDlgItem(hDlg, IDCANCEL);
-				hWnd = GetDlgItem(hDlg, IDOK);
+				hWndOk = GetDlgItem(hDlg, IDOK);
 				hWndPickColor = GetDlgItem(hDlg, IDC_PICK_COLOR);
 				hWndColor = GetDlgItem(hDlg, IDC_COLOR);
 				hWndAlpha = GetDlgItem(hDlg, IDC_USE_ALPHA);
-				GetWindowRect(hWnd, &rcok);
+				GetWindowRect(hWndOk, &rcok);
 				GetWindowRect(hWndCancel, &rccancel);
 				GetWindowRect(hWndPickColor, &rcpickcolor);
 				GetWindowRect(hWndColor, &rccolor);
@@ -164,14 +167,13 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 				MapWindowPoints(NULL, hDlg, (LPPOINT)&rccolor, 2);
 				MapWindowPoints(NULL, hDlg, (LPPOINT)&rcalpha, 2);
 
-				x = rc.right;
+				x = newW - origW + rccancel.left;
 				y = newH - origH;
 
-				x -= (rccancel.right - rccancel.left);
 				SetWindowPos(hWndCancel	, NULL, x           ,    rccancel.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
 
 				x -= (rcok.right - rcok.left);
-				SetWindowPos(hWnd		, NULL, x - hspace  ,        rcok.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
+				SetWindowPos(hWndOk		, NULL, x - hspace  ,        rcok.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
 
 				SetWindowPos(hWndPickColor, NULL, rcpickcolor.left, rcpickcolor.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
 
