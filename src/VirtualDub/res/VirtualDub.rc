@@ -586,6 +586,15 @@ BEGIN
         MENUITEM "Bilinear",                    ID_DISPLAY_FILTER_BILINEAR
         MENUITEM "Bicubic",                     ID_DISPLAY_FILTER_BICUBIC
         MENUITEM "Any available",               ID_DISPLAY_FILTER_ANY
+        MENUITEM SEPARATOR
+        MENUITEM "Display mode",                ID_DISPLAY_MODE, INACTIVE
+        MENUITEM SEPARATOR
+        MENUITEM "Default",                     ID_DISPLAY_DEFAULT
+        MENUITEM "Color only",                  ID_DISPLAY_COLOR
+        MENUITEM "Alpha only",                  ID_DISPLAY_ALPHA
+        MENUITEM "Transparency (checker)",      ID_DISPLAY_BLENDCHECKER
+        MENUITEM "Transparency (black)",        ID_DISPLAY_BLEND0
+        MENUITEM "Transparency (gray)",         ID_DISPLAY_BLEND1
     END
 END
 

@@ -269,7 +269,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 	mTargetFormat.info.clear();
 	mTargetFormat.info.frame_num = frame_num;
 	if (bHasAlpha)
-		mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaMask;
+		mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaOpacity;
 
 	if (bIsJPG) {
 		if (!mpJPEGDecoder)

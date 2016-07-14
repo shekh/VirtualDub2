@@ -68,6 +68,15 @@ public:
 		kFilterModeCount
 	};
 
+	enum DisplayMode {
+		kDisplayDefault,
+		kDisplayColor,
+		kDisplayAlpha,
+		kDisplayBlendChecker,
+		kDisplayBlend0,
+		kDisplayBlend1,
+	};
+
 	virtual ~IVDVideoDisplayMinidriver() {}
 
 	virtual bool Init(HWND hwnd, HMONITOR hmonitor, const VDVideoDisplaySourceInfo& info) = 0;
@@ -78,6 +87,7 @@ public:
 	virtual bool IsValid() = 0;
 	virtual bool IsFramePending() = 0;
 	virtual void SetFilterMode(FilterMode mode) = 0;
+	virtual void SetDisplayMode(DisplayMode mode){}
 	virtual void SetFullScreen(bool fullscreen, uint32 w, uint32 h, uint32 refresh) = 0;
 	virtual void SetDisplayDebugInfo(bool enable) = 0;
 	virtual void SetColorOverride(uint32 color) = 0;

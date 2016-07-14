@@ -180,9 +180,10 @@ struct FilterModPixmapInfo {
 		kTransferLinear = 2,
 	};
 	enum AlphaType {
-		kAlphaInvalid = 0,
-		kAlphaMask = 1,
-		kAlphaMask_pm = 2,
+		kAlphaInvalid = 0,      // not present or garbage
+		kAlphaMask = 1,         // arbitrary data, no default display
+		kAlphaOpacity_pm = 2,   // display with transparency
+		kAlphaOpacity = 3,      // display with transparency
 	};
 
 	uint32 ref_r;

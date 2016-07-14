@@ -71,6 +71,15 @@ public:
 		kFilterBicubic
 	};
 
+	enum DisplayMode {
+		kDisplayDefault,
+		kDisplayColor,
+		kDisplayAlpha,
+		kDisplayBlendChecker,
+		kDisplayBlend0,
+		kDisplayBlend1,
+	};
+
 	virtual void Destroy() = 0;
 	virtual void Reset() = 0;
 	virtual void SetSourceMessage(const wchar_t *msg) = 0;
@@ -104,6 +113,8 @@ public:
 	virtual FilterMode GetFilterMode() = 0;
 	virtual void SetFilterMode(FilterMode) = 0;
 	virtual float GetSyncDelta() const = 0;
+	virtual DisplayMode GetDisplayMode() = 0;
+	virtual void SetDisplayMode(DisplayMode) = 0;
 };
 
 void VDVideoDisplaySetFeatures(bool enableDirectX, bool enableOverlays, bool enableTermServ, bool enableOpenGL, bool enableDirect3D, bool enableD3DFX, bool enableHighPrecision);

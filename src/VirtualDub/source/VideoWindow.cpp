@@ -781,6 +781,30 @@ void VDVideoWindow::OnCommand(int cmd) {
 		if (mpDisplay)
 			mpDisplay->SetFilterMode(IVDVideoDisplay::kFilterAnySuitable);
 		break;
+	case ID_DISPLAY_DEFAULT:
+		if (mpDisplay)
+			mpDisplay->SetDisplayMode(IVDVideoDisplay::kDisplayDefault);
+		break;
+	case ID_DISPLAY_COLOR:
+		if (mpDisplay)
+			mpDisplay->SetDisplayMode(IVDVideoDisplay::kDisplayColor);
+		break;
+	case ID_DISPLAY_ALPHA:
+		if (mpDisplay)
+			mpDisplay->SetDisplayMode(IVDVideoDisplay::kDisplayAlpha);
+		break;
+	case ID_DISPLAY_BLENDCHECKER:
+		if (mpDisplay)
+			mpDisplay->SetDisplayMode(IVDVideoDisplay::kDisplayBlendChecker);
+		break;
+	case ID_DISPLAY_BLEND0:
+		if (mpDisplay)
+			mpDisplay->SetDisplayMode(IVDVideoDisplay::kDisplayBlend0);
+		break;
+	case ID_DISPLAY_BLEND1:
+		if (mpDisplay)
+			mpDisplay->SetDisplayMode(IVDVideoDisplay::kDisplayBlend1);
+		break;
 	}
 }
 
@@ -840,6 +864,30 @@ void VDVideoWindow::OnContextMenu(int x, int y) {
 		CheckMenuItem(hmenu, ID_DISPLAY_FILTER_BILINEAR, mode == IVDVideoDisplay::kFilterBilinear ? MF_BYCOMMAND|MF_CHECKED : MF_BYCOMMAND|MF_UNCHECKED);
 		CheckMenuItem(hmenu, ID_DISPLAY_FILTER_BICUBIC, mode == IVDVideoDisplay::kFilterBicubic ? MF_BYCOMMAND|MF_CHECKED : MF_BYCOMMAND|MF_UNCHECKED);
 		CheckMenuItem(hmenu, ID_DISPLAY_FILTER_ANY, mode == IVDVideoDisplay::kFilterAnySuitable ? MF_BYCOMMAND|MF_CHECKED : MF_BYCOMMAND|MF_UNCHECKED);
+	}
+
+	DWORD dwEnabled2 = MF_BYCOMMAND | MF_GRAYED;
+	if (mpDisplay && !(g_prefs.fDisplay & Preferences::kDisplayDisableDX)) {
+		if ((g_prefs.fDisplay & (Preferences::kDisplayEnableD3D))
+			|| VDPreferencesIsDisplay3DEnabled())
+			dwEnabled2 = MF_BYCOMMAND | MF_ENABLED;
+	}
+	EnableMenuItem(hmenu, ID_DISPLAY_DEFAULT, dwEnabled2);
+	EnableMenuItem(hmenu, ID_DISPLAY_COLOR, dwEnabled2);
+	EnableMenuItem(hmenu, ID_DISPLAY_ALPHA, dwEnabled2);
+	EnableMenuItem(hmenu, ID_DISPLAY_BLENDCHECKER, dwEnabled2);
+	EnableMenuItem(hmenu, ID_DISPLAY_BLEND0, dwEnabled2);
+	EnableMenuItem(hmenu, ID_DISPLAY_BLEND1, dwEnabled2);
+
+	if (mpDisplay) {
+		IVDVideoDisplay::DisplayMode mode = mpDisplay->GetDisplayMode();
+
+		CheckMenuItem(hmenu, ID_DISPLAY_DEFAULT, mode == IVDVideoDisplay::kDisplayDefault ? MF_BYCOMMAND|MF_CHECKED : MF_BYCOMMAND|MF_UNCHECKED);
+		CheckMenuItem(hmenu, ID_DISPLAY_COLOR, mode == IVDVideoDisplay::kDisplayColor ? MF_BYCOMMAND|MF_CHECKED : MF_BYCOMMAND|MF_UNCHECKED);
+		CheckMenuItem(hmenu, ID_DISPLAY_ALPHA, mode == IVDVideoDisplay::kDisplayAlpha ? MF_BYCOMMAND|MF_CHECKED : MF_BYCOMMAND|MF_UNCHECKED);
+		CheckMenuItem(hmenu, ID_DISPLAY_BLENDCHECKER, mode == IVDVideoDisplay::kDisplayBlendChecker ? MF_BYCOMMAND|MF_CHECKED : MF_BYCOMMAND|MF_UNCHECKED);
+		CheckMenuItem(hmenu, ID_DISPLAY_BLEND0, mode == IVDVideoDisplay::kDisplayBlend0 ? MF_BYCOMMAND|MF_CHECKED : MF_BYCOMMAND|MF_UNCHECKED);
+		CheckMenuItem(hmenu, ID_DISPLAY_BLEND1, mode == IVDVideoDisplay::kDisplayBlend1 ? MF_BYCOMMAND|MF_CHECKED : MF_BYCOMMAND|MF_UNCHECKED);
 	}
 
 	TrackPopupMenu(hmenu, TPM_LEFTALIGN|TPM_TOPALIGN|TPM_LEFTBUTTON, x, y, 0, mhwnd, NULL);

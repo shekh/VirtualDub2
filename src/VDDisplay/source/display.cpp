@@ -116,6 +116,8 @@ protected:
 	void SetAccelerationMode(AccelerationMode mode);
 	FilterMode GetFilterMode();
 	void SetFilterMode(FilterMode mode);
+	DisplayMode GetDisplayMode();
+	void SetDisplayMode(DisplayMode mode);
 	float GetSyncDelta() const { return mSyncDelta; }
 
 	void OnTick() {
@@ -146,6 +148,7 @@ protected:
 	void SyncUpdate(int);
 	void SyncCache();
 	void SyncSetFilterMode(FilterMode mode);
+	void SyncSetDisplayMode(DisplayMode mode);
 	void SyncSetSolidColor(uint32 color);
 	void OnDisplayChange();
 	void OnForegroundChange(bool bForeground);
@@ -193,6 +196,7 @@ protected:
 	VDAtomicFloat	mSyncDelta;
 
 	FilterMode	mFilterMode;
+	DisplayMode	mDisplayMode;
 	AccelerationMode	mAccelMode;
 
 	bool		mbIgnoreMouse;
@@ -361,6 +365,7 @@ VDVideoDisplayWindow::VDVideoDisplayWindow(HWND hwnd, const CREATESTRUCT& create
 	, mInhibitPaint(0)
 	, mSyncDelta(0.0f)
 	, mFilterMode(kFilterAnySuitable)
+	, mDisplayMode(kDisplayDefault)
 	, mAccelMode(VDVideoDisplayWindow::sbEnableBackgroundFallback ? kAccelOnlyInForeground : kAccelAlways)
 	, mbIgnoreMouse(false)
 	, mbUseSubrect(false)
@@ -407,6 +412,7 @@ VDVideoDisplayWindow::~VDVideoDisplayWindow() {
 #define MYWM_DESTROY		(WM_USER + 0x106)
 #define MYWM_SETFILTERMODE	(WM_USER + 0x107)
 #define MYWM_SETSOLIDCOLOR	(WM_USER + 0x108)
+#define MYWM_SETDISPLAYMODE	(WM_USER + 0x109)
 
 void VDVideoDisplayWindow::SetSourceMessage(const wchar_t *msg) {
 	SendMessage(mhwnd, MYWM_SETSOURCEMSG, 0, (LPARAM)msg);
@@ -632,6 +638,14 @@ IVDVideoDisplay::FilterMode VDVideoDisplayWindow::GetFilterMode() {
 
 void VDVideoDisplayWindow::SetFilterMode(FilterMode mode) {
 	SendMessage(mhwnd, MYWM_SETFILTERMODE, 0, (LPARAM)mode);
+}
+
+IVDVideoDisplay::DisplayMode VDVideoDisplayWindow::GetDisplayMode() {
+	return mDisplayMode;
+}
+
+void VDVideoDisplayWindow::SetDisplayMode(DisplayMode mode) {
+	SendMessage(mhwnd, MYWM_SETDISPLAYMODE, 0, (LPARAM)mode);
 }
 
 void VDVideoDisplayWindow::ReleaseActiveFrame() {
@@ -935,6 +949,9 @@ LRESULT VDVideoDisplayWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	case MYWM_SETFILTERMODE:
 		SyncSetFilterMode((FilterMode)lParam);
 		return 0;
+	case MYWM_SETDISPLAYMODE:
+		SyncSetDisplayMode((DisplayMode)lParam);
+		return 0;
 	case MYWM_SETSOLIDCOLOR:
 		SyncSetSolidColor((uint32)lParam);
 		return 0;
@@ -1224,6 +1241,18 @@ void VDVideoDisplayWindow::SyncSetFilterMode(FilterMode mode) {
 
 		if (mpMiniDriver) {
 			mpMiniDriver->SetFilterMode((IVDVideoDisplayMinidriver::FilterMode)mode);
+			InvalidateRect(mhwnd, NULL, FALSE);
+			InvalidateRect(mhwndChild, NULL, FALSE);
+		}
+	}
+}
+
+void VDVideoDisplayWindow::SyncSetDisplayMode(DisplayMode mode) {
+	if (mDisplayMode != mode) {
+		mDisplayMode = mode;
+
+		if (mpMiniDriver) {
+			mpMiniDriver->SetDisplayMode((IVDVideoDisplayMinidriver::DisplayMode)mode);
 			InvalidateRect(mhwnd, NULL, FALSE);
 			InvalidateRect(mhwndChild, NULL, FALSE);
 		}
