@@ -292,13 +292,30 @@ VDStringW VDMakeInputDriverFileFilter(const tVDInputDrivers& l, std::vector<int>
 	}
 
 	xlat.push_back(-1);
-	VDStringW finalfilter(L"All types (");
+	VDStringW finalfilter(L"All media types (");
 
-	for(VDStringW::const_iterator it2(allspecs.begin()), it2end(allspecs.end()); it2!=it2end; ++it2)
-		if (*it2 == L';')
-			finalfilter += L',';
-		else
-			finalfilter += *it2;
+	int p = 0;
+	int n = 0;
+	while(p<allspecs.length()){
+		int p1 = allspecs.length();
+		int p2 = allspecs.find(';',p);
+		if (p2!=-1 && p2<p1) p1 = p2;
+		VDStringW pat = allspecs.subspan(p,p1-p);
+		const wchar_t* x = wcsstr(allspecs.c_str(),pat.c_str());
+		if (x-allspecs.c_str()==p) {
+			if (n<15) {
+				if (n>0) finalfilter += ',';
+				finalfilter += pat;
+			}
+			n++;
+		}
+		p = p1+1;
+	}
+
+	if (n>15) {
+		int d = n-15;
+		finalfilter += VDswprintf(L", ... more %d",1,&d);
+	}
 
 	finalfilter += L')';
 	finalfilter += L'\0';
@@ -365,8 +382,11 @@ IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) 
 
 		IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature(buf, dwBegin, endbuf, dwEnd, fileSize);
 
-		if (result == IVDInputDriver::kDC_None && pDriver->DetectByFilename(fn))
+		if (result == IVDInputDriver::kDC_None && pDriver->DetectByFilename(fn)) {
 			result = IVDInputDriver::kDC_Low;
+			if (pDriver->GetFlags() & IVDInputDriver::kF_ForceByName)
+				result = IVDInputDriver::kDC_High;
+		}
 
 		if (result > fitquality) {
 			pSelectedDriver = pDriver;

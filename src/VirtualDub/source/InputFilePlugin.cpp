@@ -1407,6 +1407,9 @@ uint32 VDInputDriverPlugin::GetFlags() {
 	if (!(xflags & VDXInputDriverDefinition::kFlagNoOptions))
 		flags |= kF_SupportsOpts;
 
+	if (xflags & VDXInputDriverDefinition::kFlagForceByName)
+		flags |= kF_ForceByName;
+
 	return flags;
 }
 

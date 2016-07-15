@@ -271,6 +271,7 @@ struct VDXInputDriverDefinition {
 		kFlagSupportsAudio		= 0x00000002,
 		kFlagNoOptions			= 0x00000004,	// (V4+)
 		kFlagCustomSignature	= 0x00010000,
+		kFlagForceByName		= 0x00020000,
 		kFlagAll				= 0xFFFFFFFF
 	};
 	uint32		mSize;				// size of this structure in bytes
@@ -293,6 +294,7 @@ enum {
 	//         You must declare your input driver as V2 API compatible to work
 	//         on 1.8.x and 1.9.x releases.
 	// V4 (1.10.1): Added NoOptions definition flag.
+	// V4 (FilterMod): Added ForceByName definition flag.
 	kVDXPlugin_InputDriverAPIVersion = 4
 };
 

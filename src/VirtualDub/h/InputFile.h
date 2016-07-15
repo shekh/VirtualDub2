@@ -91,6 +91,7 @@ public:
 		kF_Audio			= 2,
 		kF_PromptForOpts	= 4,
 		kF_SupportsOpts		= 8,
+		kF_ForceByName		= 16,
 		KF_Max				= 0xFFFFFFFFUL
 	};
 
