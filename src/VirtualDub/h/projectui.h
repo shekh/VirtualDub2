@@ -66,6 +66,7 @@ public:
 	void SaveWAVAsk(bool batchMode);
 	void SaveFilmstripAsk();
 	void SaveAnimatedGIFAsk();
+	void SaveAnimatedPNGAsk();
 	void SaveRawAudioAsk(bool batchMode);
 	void SaveRawVideoAsk(bool batchMode);
 	void ExportViaEncoderAsk(bool batchMode);

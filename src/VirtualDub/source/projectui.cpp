@@ -71,6 +71,7 @@ namespace {
 		kFileDialog_RawVideoOut		= 'rwvo',
 		kFileDialog_FLMOut			= 'flmo',
 		kFileDialog_GIFOut			= 'gifo',
+		kFileDialog_PNGOut			= 'pngo',
 		kFileDialog_ExtOut			= 'exto',
 	};
 
@@ -256,6 +257,7 @@ namespace {
 		{ ID_FILE_SAVESEGMENTEDAVI,		"File.SaveSegmentedAVI" },
 		{ ID_FILE_SAVEFILMSTRIP,		"File.SaveFilmstrip" },
 		{ ID_FILE_SAVEANIMATEDGIF,		"File.SaveAnimatedGIF" },
+		{ ID_FILE_SAVEANIMATEDPNG,		"File.SaveAnimatedPNG" },
 		{ ID_FILE_SAVERAWAUDIO,			"File.SaveRawAudio" },
 		{ ID_FILE_SAVERAWVIDEO,			"File.SaveRawVideo" },
 		{ ID_FILE_EXPORTEXTERNALENCODER,	"File.ExportViaEncoder" },
@@ -947,6 +949,84 @@ namespace {
 	};
 }
 
+namespace {
+	class VDOutputFileAnimatedPNGOptionsDialog : public VDDialogBase {
+	public:
+		VDStringW mFileName;
+		int mLoopCount;
+		int mAlpha;
+		int mGrayscale;
+
+	public:
+		VDOutputFileAnimatedPNGOptionsDialog() : mLoopCount(0), mAlpha(0) , mGrayscale(0) {}
+
+		bool HandleUIEvent(IVDUIBase *pBase, IVDUIWindow *pWin, uint32 id, eEventType type, int item) {
+			if (type == kEventAttach) {
+				mpBase = pBase;
+				SetCaption(100, VDGetLastLoadSavePath(kFileDialog_PNGOut).c_str());
+
+				VDRegistryAppKey appKey("Persistence");
+				int loopCount = appKey.getInt("AnimPNG: Loop count", 0);
+
+				SetValue(200, loopCount == 1 ? 0 : loopCount == 0 ? 1 : 2);
+
+				int loopCountValue = loopCount < 2 ? 2 : loopCount;
+				SetCaption(101, VDswprintf(L"%d", 1, &loopCountValue).c_str());
+
+				int alpha = appKey.getInt("AnimPNG: Alpha channel", 0);
+				SetValue(400, alpha);
+
+				int grayscale = appKey.getInt("AnimPNG: Grayscale", 0);
+				SetValue(500, grayscale);
+
+				pBase->ExecuteAllLinks();
+			} else if (type == kEventSelect) {
+				if (id == 10) {
+					mFileName = GetCaption(100);
+
+					int loopMode = GetValue(200);
+					if (loopMode == 0)
+						mLoopCount = 1;
+					else if (loopMode == 1)
+						mLoopCount = 0;
+					else {
+						const VDStringW caption(GetCaption(101));
+
+						unsigned loops;
+						if (1 != swscanf(caption.c_str(), L" %u", &loops)) {
+							mpBase->GetControl(101)->SetFocus();
+							::MessageBeep(MB_ICONEXCLAMATION);
+							return true;
+						}
+
+						mLoopCount = loops;
+					}
+
+					mAlpha = GetValue(400);
+					mGrayscale = GetValue(500);
+
+					VDRegistryAppKey appKey("Persistence");
+					appKey.setInt("AnimPNG: Loop count", mLoopCount);
+					appKey.setInt("AnimPNG: Alpha channel", mAlpha);
+					appKey.setInt("AnimPNG: Grayscale", mGrayscale);
+
+					pBase->EndModal(true);
+					return true;
+				} else if (id == 11) {
+					pBase->EndModal(false);
+					return true;
+				} else if (id == 300) {
+					const VDStringW filename(VDGetSaveFileName(kFileDialog_PNGOut, (VDGUIHandle)vdpoly_cast<IVDUIWindowW32 *>(pBase)->GetHandleW32(), L"Save animated PNG", L"Animated PNG (*.png)\0*.png\0", g_prefs.main.fAttachExtension ? L"png" : NULL));
+
+					if (!filename.empty())
+						SetCaption(100, filename.c_str());
+				}
+			}
+			return false;
+		}
+	};
+}
+
 void VDProjectUI::SaveAnimatedGIFAsk() {
 	if (!inputVideo)
 		throw MyError("No input video stream to process.");
@@ -965,6 +1045,27 @@ void VDProjectUI::SaveAnimatedGIFAsk() {
 
 	if (result) {
 		SaveAnimatedGIF(dlg.mFileName.c_str(), dlg.mLoopCount, false);
+	}
+}
+
+void VDProjectUI::SaveAnimatedPNGAsk() {
+	if (!inputVideo)
+		throw MyError("No input video stream to process.");
+
+	vdautoptr<IVDUIWindow> peer(VDUICreatePeer(mhwnd));
+
+	IVDUIWindow *pWin = VDCreateDialogFromResource(3002, peer);
+	VDOutputFileAnimatedPNGOptionsDialog dlg;
+
+	IVDUIBase *pBase = vdpoly_cast<IVDUIBase *>(pWin);
+
+	pBase->SetCallback(&dlg, false);
+	int result = pBase->DoModal();
+
+	peer->Shutdown();
+
+	if (result) {
+		SaveAnimatedPNG(dlg.mFileName.c_str(), dlg.mLoopCount, dlg.mAlpha, dlg.mGrayscale, false);
 	}
 }
 
@@ -1661,6 +1762,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_FILE_SAVESEGMENTEDAVI:			SaveSegmentedAVIAsk(false);		break;
 		case ID_FILE_SAVEFILMSTRIP:				SaveFilmstripAsk();				break;
 		case ID_FILE_SAVEANIMATEDGIF:			SaveAnimatedGIFAsk();			break;
+		case ID_FILE_SAVEANIMATEDPNG:			SaveAnimatedPNGAsk();			break;
 		case ID_FILE_SAVERAWAUDIO:				SaveRawAudioAsk(false);			break;
 		case ID_FILE_SAVERAWVIDEO:				SaveRawVideoAsk(false);			break;
 		case ID_FILE_SAVEWAV:					SaveWAVAsk(false);				break;
@@ -2182,6 +2284,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEWAV				, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEFILMSTRIP		, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEANIMATEDGIF		, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEANIMATEDPNG		, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVERAWAUDIO			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVERAWVIDEO			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_CLOSEAVI				, bSourceFileExists);
@@ -3529,6 +3632,7 @@ void VDProjectUI::UISourceFileUpdated() {
 		VDSetLastLoadSaveFileName(kFileDialog_RawAudioOut, (fileName + (isMP3 ? L".mp3" : L".bin")).c_str());
 
 		VDSetLastLoadSaveFileName(kFileDialog_GIFOut, (fileName + L".gif").c_str());
+		VDSetLastLoadSaveFileName(kFileDialog_GIFOut, (fileName + L".png").c_str());
 
 		const wchar_t *s = VDFileSplitPath(g_szInputAVIFile);
 

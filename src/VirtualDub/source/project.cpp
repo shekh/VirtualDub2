@@ -1543,6 +1543,25 @@ void VDProject::SaveAnimatedGIF(const wchar_t *pFilename, int loopCount, bool pr
 	RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
 }
 
+void VDProject::SaveAnimatedPNG(const wchar_t *pFilename, int loopCount, int alpha, int grayscale, bool propagateErrors, DubOptions *optsOverride) {
+	if (!inputVideo)
+		throw MyError("No input file to process.");
+
+	int mSaveVideoOutputFormat = g_dubOpts.video.mOutputFormat;
+
+	if (alpha)
+		g_dubOpts.video.mOutputFormat = nsVDPixmap::kPixFormat_XRGB8888;
+
+	VDAVIOutputAPNGSystem out(pFilename);
+	out.SetLoopCount(loopCount);
+	out.SetAlpha(alpha);
+	out.SetGrayscale(grayscale);
+	RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
+
+	if (alpha)
+		g_dubOpts.video.mOutputFormat = mSaveVideoOutputFormat;
+}
+
 void VDProject::SaveRawAudio(const wchar_t *pFilename, bool propagateErrors, DubOptions *optsOverride) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
