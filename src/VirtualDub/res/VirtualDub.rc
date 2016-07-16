@@ -704,6 +704,7 @@ BEGIN
         MENUITEM "Raw audio...",                ID_FILE_SAVERAWAUDIO
         MENUITEM "Raw video...",                ID_FILE_SAVERAWVIDEO
         MENUITEM "Animated GIF...",             ID_FILE_SAVEANIMATEDGIF
+        MENUITEM "Animated PNG...",             ID_FILE_SAVEANIMATEDPNG
         MENUITEM "Using external encoder...",   ID_FILE_EXPORTEXTERNALENCODER
         MENUITEM "Driver Tool 0...",            ID_EXPORT_DRIVERTOOL0
     END

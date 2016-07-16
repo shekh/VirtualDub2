@@ -5282,6 +5282,10 @@
         >
       </File>
       <File
+        RelativePath=".\source\AVIOutputAPNG.cpp"
+        >
+      </File>
+      <File
         RelativePath="source\AVIOutputImages.cpp"
         >
         <FileConfiguration
@@ -5887,6 +5891,14 @@
       </File>
       <File
         RelativePath=".\h\AVIOutputGIF.h"
+        >
+      </File>
+      <File
+        RelativePath=".\h\APNG.h"
+        >
+      </File>
+      <File
+        RelativePath=".\h\AVIOutputAPNG.h"
         >
       </File>
       <File

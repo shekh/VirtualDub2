@@ -189,6 +189,7 @@ public:
 	void SaveAVI(const wchar_t *filename, bool compat, bool addAsJob);
 	void SaveFilmstrip(const wchar_t *pFilename, bool propagateErrors);
 	void SaveAnimatedGIF(const wchar_t *pFilename, int loopCount, bool propagateErrors, DubOptions *optsOverride = NULL);
+	void SaveAnimatedPNG(const wchar_t *pFilename, int loopCount, int alpha, int grayscale, bool propagateErrors, DubOptions *optsOverride = NULL);
 	void SaveRawAudio(const wchar_t *pFilename, bool propagateErrors, DubOptions *optsOverride = NULL);
 	void SaveRawVideo(const wchar_t *pFilename, const VDAVIOutputRawVideoFormat& format, bool propagateErrors, DubOptions *optsOverride = NULL);
 	void ExportViaEncoder(const wchar_t *filename, const wchar_t *encSetName, bool propagateErrors, DubOptions *optsOverride = NULL);

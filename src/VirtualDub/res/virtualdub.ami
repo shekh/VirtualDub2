@@ -847,6 +847,40 @@ dialog 3001, "Create animated GIF" : aspect=140, maxw=350, align=fill {
 	}
 }
 
+dialog 3002, "Create animated PNG" : aspect=140, maxw=350, align=fill {
+	set 0: vertical {
+		group 0, "Filename" {
+			set 0 {
+				textedit 100, "" : minw=181, sunken, align=fill, valign=fill;
+				button 300, "&..." : valign=fill;
+			}
+		}
+		group 1, "Color options" {
+				set 0: marginl=15, minw=180, align=fill, vertical {
+					checkbox 400, "&Alpha channel";
+					checkbox 500, "&Grayscale";
+			}
+		}
+		group 2, "Looping" {
+			set 0: vertical {
+				grid 0 : spacing=0, marginl=15, minw=180, align=left {
+					column 0: minw=80;
+					column 1: affinity=1;
+					now align=left;
+					option 200, "Play &once" : colspan=2;
+					nextrow;
+					option 201, "&Infinite loop" : colspan=2;
+					nextrow;
+					option 202, "Loop &count:" : marginr=5;
+					textedit 101 : minw=50, sunken, enable={@200==2};
+				}
+			}
+		}
+
+		include template kTemplateOKCancel;
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // output window for resampler benchmark

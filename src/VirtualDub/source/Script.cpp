@@ -2043,6 +2043,14 @@ static void func_VirtualDub_SaveAnimatedGIF(IVDScriptInterpreter *, VDScriptValu
 	g_project->SaveAnimatedGIF(filename.c_str(), arglist[1].asInt(), true, &opts);
 }
 
+static void func_VirtualDub_SaveAnimatedPNG(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	const VDStringW filename(VDTextU8ToW(VDStringA(*arglist[0].asString())));
+	DubOptions opts(g_dubOpts);
+	InitBatchOptions(opts);
+
+	g_project->SaveAnimatedPNG(filename.c_str(), arglist[1].asInt(), arglist[2].asInt(), arglist[3].asInt(), true, &opts);
+}
+
 static void func_VirtualDub_ExportViaEncoderSet(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 	const VDStringW filename(VDTextU8ToW(VDStringA(*arglist[0].asString())));
 	const VDStringW encSetName(VDTextU8ToW(VDStringA(*arglist[1].asString())));
@@ -2110,6 +2118,7 @@ static const VDScriptFunctionDef obj_VirtualDub_functbl[]={
 	{ func_VirtualDub_SaveRawAudio,		"SaveRawAudio",			"0s" },
 	{ func_VirtualDub_SaveRawVideo,		"SaveRawVideo",			"0siiii" },
 	{ func_VirtualDub_SaveAnimatedGIF,	"SaveAnimatedGIF",		"0si" },
+	{ func_VirtualDub_SaveAnimatedPNG,	"SaveAnimatedPNG",		"0siii" },
 	{ func_VirtualDub_ExportViaEncoderSet,	"ExportViaEncoderSet",	"0ss" },
 	{ func_VirtualDub_Log,				"Log",					"0s" },
 	{ func_VirtualDub_Exit,				"Exit",					"0i" },

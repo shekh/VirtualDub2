@@ -274,6 +274,26 @@ private:
 	int			mLoopCount;
 };
 
+class VDAVIOutputAPNGSystem : public VDDubberOutputSystem {
+public:
+	VDAVIOutputAPNGSystem(const wchar_t *filename);
+	~VDAVIOutputAPNGSystem();
+
+	IVDMediaOutput *CreateSegment();
+	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
+	bool AcceptsVideo();
+
+	void SetLoopCount(int loopCount) { mLoopCount = loopCount; }
+	void SetAlpha(int alpha) { mAlpha = alpha; }
+	void SetGrayscale(int grayscale) { mGrayscale = grayscale; }
+
+private:
+	VDStringW	mFilename;
+	int			mLoopCount;
+	int			mAlpha;
+	int			mGrayscale;
+};
+
 class VDAVIOutputPreviewSystem : public VDDubberOutputSystem {
 public:
 	VDAVIOutputPreviewSystem();

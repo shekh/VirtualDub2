@@ -1298,6 +1298,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="source\AVIOutputAPNG.cpp" />
     <ClCompile Include="source\AVIOutputCLI.cpp" />
     <ClCompile Include="source\AVIOutputFile.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1679,6 +1680,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="h\afiltdlg.h" />
+    <ClInclude Include="h\APNG.h" />
     <ClInclude Include="h\AsyncBlitter.h" />
     <ClInclude Include="h\Audio.h" />
     <ClInclude Include="h\AudioFilterSystem.h" />
@@ -1803,6 +1805,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
     <ClInclude Include="h\AudioSource.h" />
     <ClInclude Include="h\AudioSourceAVI.h" />
     <ClInclude Include="h\AVIOutput.h" />
+    <ClInclude Include="h\AVIOutputAPNG.h" />
     <ClInclude Include="h\AVIOutputCLI.h" />
     <ClInclude Include="h\AVIOutputFile.h" />
     <ClInclude Include="h\AVIOutputFLM.h" />

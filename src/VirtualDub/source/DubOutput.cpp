@@ -23,6 +23,7 @@
 #include "AVIOutputFile.h"
 #include "AVIOutputFLM.h"
 #include "AVIOutputGIF.h"
+#include "AVIOutputAPNG.h"
 #include "AVIOutputWAV.h"
 #include "AVIOutputRawAudio.h"
 #include "AVIOutputRawVideo.h"
@@ -675,6 +676,65 @@ void VDAVIOutputGIFSystem::CloseSegment(IVDMediaOutput *pSegment, bool bLast, bo
 }
 
 bool VDAVIOutputGIFSystem::AcceptsVideo() {
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//
+//	VDAVIOutputAPNGSystem
+//
+///////////////////////////////////////////////////////////////////////////
+
+VDAVIOutputAPNGSystem::VDAVIOutputAPNGSystem(const wchar_t *filename)
+	: mFilename(filename)
+	, mLoopCount(0)
+{
+}
+
+VDAVIOutputAPNGSystem::~VDAVIOutputAPNGSystem() {
+}
+
+IVDMediaOutput *VDAVIOutputAPNGSystem::CreateSegment() {
+	vdautoptr<IVDAVIOutputAPNG> pOutput(VDCreateAVIOutputAPNG());
+
+    pOutput->SetFramesCount(mVideoStreamInfo.dwLength);
+	pOutput->SetLoopCount(mLoopCount);
+	pOutput->SetAlpha(mAlpha);
+	pOutput->SetGrayscale(mGrayscale);
+
+    uint32 dwRate  = mVideoStreamInfo.dwRate;
+    uint32 dwScale = mVideoStreamInfo.dwScale;
+
+    while ((dwRate>30000) || (dwScale>30000))
+    {
+        dwRate = dwRate/10;
+        dwScale = dwScale/10;
+    }
+
+    pOutput->SetRate(dwRate);
+	pOutput->SetScale(dwScale);
+
+	AVIOutput *pAVIOut = pOutput->AsAVIOutput();
+	if (!mVideoFormat.empty()) {
+		IVDMediaOutputStream *pOutputStream = pAVIOut->createVideoStream();
+
+		pOutputStream->setFormat(&mVideoFormat[0], mVideoFormat.size());
+		pOutputStream->setStreamInfo(mVideoStreamInfo);
+	}
+
+	pAVIOut->init(mFilename.c_str());
+
+	pOutput.release();
+
+	return pAVIOut;
+}
+
+void VDAVIOutputAPNGSystem::CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize) {
+	vdautoptr<AVIOutputFLM> pFile(static_cast<AVIOutputFLM *>(pSegment));
+	pFile->finalize();
+}
+
+bool VDAVIOutputAPNGSystem::AcceptsVideo() {
 	return true;
 }
 
