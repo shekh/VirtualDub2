@@ -74,6 +74,7 @@
 #define IDD_ABOUT                       110
 #define IDD_FILTER_CONVOLUTE            111
 #define IDD_AUDIO_CONVERSION            112
+#define IDD_APNG_INFO                   113
 #define IDD_AVI_INFO                    114
 #define IDD_FILTER_EMBOSS               117
 #define IDD_FILTER_CLIPPING             120

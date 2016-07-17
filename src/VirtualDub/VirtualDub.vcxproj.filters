@@ -515,6 +515,9 @@
     <ClCompile Include="source\AVIOutput.cpp">
       <Filter>Source - I/O drivers</Filter>
     </ClCompile>
+    <ClCompile Include="source\AVIOutputAPNG.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
     <ClCompile Include="source\AVIOutputCLI.cpp">
       <Filter>Source - I/O drivers</Filter>
     </ClCompile>
@@ -567,6 +570,9 @@
       <Filter>Source - I/O drivers</Filter>
     </ClCompile>
     <ClCompile Include="source\InputFileANIM.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
+    <ClCompile Include="source\InputFileAPNG.cpp">
       <Filter>Source - I/O drivers</Filter>
     </ClCompile>
     <ClCompile Include="source\InputFileASF.cpp">
@@ -1072,6 +1078,9 @@
     <ClInclude Include="h\stdafx.h">
       <Filter>Precompiled Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="h\APNG.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
     <ClInclude Include="h\AudioSource.h">
       <Filter>Headers - I/O drivers</Filter>
     </ClInclude>
@@ -1079,6 +1088,9 @@
       <Filter>Headers - I/O drivers</Filter>
     </ClInclude>
     <ClInclude Include="h\AVIOutput.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputAPNG.h">
       <Filter>Headers - I/O drivers</Filter>
     </ClInclude>
     <ClInclude Include="h\AVIOutputCLI.h">

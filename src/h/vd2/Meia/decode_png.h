@@ -50,6 +50,6 @@ public:
 
 IVDImageDecoderPNG *VDCreateImageDecoderPNG();
 
-bool VDDecodePNGHeader(const void *src, uint32 len, int& w, int& h, bool& hasalpha);
+bool VDDecodePNGHeader(const void *src, uint32 len, int& w, int& h, bool& hasalpha, int& frames);
 
 #endif

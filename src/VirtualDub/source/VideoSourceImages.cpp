@@ -52,6 +52,7 @@ public:
 	bool isKeyframeOnly()					{ return true; }
 	bool isType1()							{ return false; }
 	bool isDecodable(VDPosition sample_num)		{ return true; }
+	bool getAlpha()							{ return mbHasAlpha; }
 
 private:
 	vdrefptr<VDInputFileImages> mpParent;
@@ -66,6 +67,7 @@ private:
 	vdautoptr<IVDJPEGDecoder> mpJPEGDecoder;
 	vdautoptr<IVDImageDecoderIFF> mpIFFDecoder;
 	vdautoptr<IVDImageDecoderPNG> mpPNGDecoder;
+	bool mbHasAlpha;
 };
 
 IVDVideoSource *VDCreateVideoSourceImages(VDInputFileImages *parent) {
@@ -202,24 +204,24 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 	if (!data_len)
 		return getFrameBuffer();
 
-	int w, h;
-	bool bHasAlpha;
+	int w, h, frames;
 
 	bool bIsPNG = false;
 	bool bIsJPG = false;
 	bool bIsBMP = false;
 	bool bIsIFF = false;
 	bool bIsTGA = false;
+	mbHasAlpha = false;
 
-	bIsPNG = VDDecodePNGHeader(inputBuffer, data_len, w, h, bHasAlpha);
+	bIsPNG = VDDecodePNGHeader(inputBuffer, data_len, w, h, mbHasAlpha, frames);
 	if (!bIsPNG) {
 		bIsJPG = VDIsJPEGHeader(inputBuffer, data_len);
 		if (!bIsJPG) {
-			bIsBMP = DecodeBMPHeader(inputBuffer, data_len, w, h, bHasAlpha);
+			bIsBMP = DecodeBMPHeader(inputBuffer, data_len, w, h, mbHasAlpha);
 			if (!bIsBMP) {
 				bIsIFF = VDIsMayaIFFHeader(inputBuffer, data_len);
 				if (!bIsIFF)
-					bIsTGA = DecodeTGAHeader(inputBuffer, data_len, w, h, bHasAlpha);
+					bIsTGA = DecodeTGAHeader(inputBuffer, data_len, w, h, mbHasAlpha);
 			}
 		}
 	}

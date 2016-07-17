@@ -402,15 +402,16 @@ bool VDIsMayaIFFHeader(const void *pv, uint32 len) {
 	return false;
 }
 
-void DecodeImage(const void *pBuffer, long cbBuffer, VDPixmapBuffer& vb, int desired_format, bool& bHasAlpha) {
+void DecodeImage(const void *pBuffer, long cbBuffer, VDPixmapBuffer& vb, int desired_format, bool& bHasAlpha, int& frames) {
 	int w, h;
 
 	bool bIsPNG = false;
 	bool bIsJPG = false;
 	bool bIsBMP = false;
 	bool bIsTGA = false;
+	frames = 1;
 
-	bIsPNG = VDDecodePNGHeader(pBuffer, cbBuffer, w, h, bHasAlpha);
+	bIsPNG = VDDecodePNGHeader(pBuffer, cbBuffer, w, h, bHasAlpha, frames);
 	if (!bIsPNG) {
 		bIsJPG = VDIsJPEGHeader(pBuffer, cbBuffer);
 		if (!bIsJPG) {
@@ -470,7 +471,7 @@ void DecodeImage(const void *pBuffer, long cbBuffer, VDPixmapBuffer& vb, int des
 	}
 }
 
-void DecodeImage(const char *pszFile, VDPixmapBuffer& buf, int desired_format, bool& bHasAlpha) {
+void DecodeImage(const char *pszFile, VDPixmapBuffer& buf, int desired_format, bool& bHasAlpha, int& frames) {
 	VDFile f;
 
 	f.open(pszFile);
@@ -485,5 +486,5 @@ void DecodeImage(const char *pszFile, VDPixmapBuffer& buf, int desired_format, b
 	f.read(buffer.data(), buffer.size());
 	f.close();
 
-	DecodeImage(buffer.data(), buffer.size(), buf, desired_format, bHasAlpha);
+	DecodeImage(buffer.data(), buffer.size(), buf, desired_format, bHasAlpha, frames);
 }
