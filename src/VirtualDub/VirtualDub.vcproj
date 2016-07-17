@@ -5718,6 +5718,10 @@
         >
       </File>
       <File
+        RelativePath=".\source\InputFileAPNG.cpp"
+        >
+      </File>
+      <File
         RelativePath="source\InputFileImages.cpp"
         >
         <FileConfiguration

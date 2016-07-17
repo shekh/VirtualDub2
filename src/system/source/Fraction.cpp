@@ -156,12 +156,28 @@ bool VDFraction::operator>=(VDFraction b) const {
 	return (uint64)hi * b.lo >= (uint64)lo * b.hi;
 }
 
+VDFraction VDFraction::operator+(VDFraction b) const {
+	return reduce((uint64)hi * b.lo + (uint64)lo * b.hi, (uint64)lo * b.lo);
+}
+
+VDFraction VDFraction::operator-(VDFraction b) const {
+	return reduce((uint64)hi * b.lo - (uint64)lo * b.hi, (uint64)lo * b.lo);
+}
+
 VDFraction VDFraction::operator*(VDFraction b) const {
 	return reduce((uint64)hi * b.hi, (uint64)lo * b.lo);
 }
 
 VDFraction VDFraction::operator/(VDFraction b) const {
 	return reduce((uint64)hi * b.lo, (uint64)lo * b.hi);
+}
+
+VDFraction VDFraction::operator+(unsigned long b) const {
+	return reduce((uint64)hi + (uint64)lo * b, lo);
+}
+
+VDFraction VDFraction::operator-(unsigned long b) const {
+	return reduce((uint64)hi - (uint64)lo * b, lo);
 }
 
 VDFraction VDFraction::operator*(unsigned long b) const {
@@ -172,12 +188,28 @@ VDFraction VDFraction::operator/(unsigned long b) const {
 	return reduce(hi, (uint64)lo * b);
 }
 
+VDFraction& VDFraction::operator+=(VDFraction b) {
+	return *this = reduce((uint64)hi * b.lo + (uint64)lo * b.hi, (uint64)lo * b.lo);
+}
+
+VDFraction& VDFraction::operator-=(VDFraction b) {
+	return *this = reduce((uint64)hi * b.lo - (uint64)lo * b.hi, (uint64)lo * b.lo);
+}
+
 VDFraction& VDFraction::operator*=(VDFraction b) {
 	return *this = reduce((uint64)hi * b.hi, (uint64)lo * b.lo);
 }
 
 VDFraction& VDFraction::operator/=(VDFraction b) {
 	return *this = reduce((uint64)hi * b.lo, (uint64)lo * b.hi);
+}
+
+VDFraction& VDFraction::operator+=(unsigned long b) {
+	return *this = reduce((uint64)hi + (uint64)lo * b, lo);
+}
+
+VDFraction& VDFraction::operator-=(unsigned long b) {
+	return *this = reduce((uint64)hi - (uint64)lo * b, lo);
 }
 
 VDFraction& VDFraction::operator*=(unsigned long b) {
@@ -252,6 +284,10 @@ double VDFraction::asDouble() const {
 
 double VDFraction::AsInverseDouble() const {
 	return (double)lo / (double)hi;
+}
+
+unsigned long VDFraction::asInt() const {
+	return (hi + hi + lo) / (lo + lo);
 }
 
 unsigned long VDFraction::roundup32ul() const {

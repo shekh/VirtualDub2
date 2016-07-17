@@ -33,6 +33,6 @@ bool VDIsJPEGHeader(const void *pv, uint32 len);
 bool VDIsMayaIFFHeader(const void *pv, uint32 len);
 
 void DecodeImage(const void *pBuffer, long cbBuffer, VDPixmapBuffer& vb, int desired_format, bool& bHasAlpha);
-void DecodeImage(const char *pszFile, VDPixmapBuffer& vb, int desired_format, bool& bHasAlpha);
+void DecodeImage(const char *pszFile, VDPixmapBuffer& vb, int desired_format, bool& bHasAlpha, int& frames);
 
 #endif

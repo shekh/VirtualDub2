@@ -123,6 +123,7 @@ extern IVDInputDriver *VDCreateInputDriverASF();
 extern IVDInputDriver *VDCreateInputDriverANIM();
 extern IVDInputDriver *VDCreateInputDriverFLM();
 extern IVDInputDriver *VDCreateInputDriverGIF();
+extern IVDInputDriver *VDCreateInputDriverAPNG();
 extern IVDInputDriver *VDCreateInputDriverWAV();
 extern IVDInputDriver *VDCreateInputDriverMP3();
 extern IVDInputDriver *VDCreateInputDriverRawVideo();
@@ -152,6 +153,7 @@ void VDInitInputDrivers() {
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverANIM()));
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverFLM()));
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverGIF()));
+	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverAPNG()));
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverWAV()));
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverMP3()));
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverRawVideo()));

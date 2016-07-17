@@ -48,7 +48,7 @@ struct VDVFLogoConfig {
 
 	int		pos_x, pos_y;
 	int		justify_x, justify_y;
-	int		opacity;
+	int		opacity, frames;
 
 	bool	bEnableAlphaBlending;
 	bool	bNonPremultAlpha;
@@ -60,6 +60,7 @@ struct VDVFLogoConfig {
 		, justify_x(0)
 		, justify_y(0)
 		, opacity(0x10000)
+		, frames(1)
 		, bEnableAlphaBlending(false)
 		, bNonPremultAlpha(false)
 		, bEnableSecondaryAlpha(false)
@@ -654,14 +655,14 @@ void VDVFLogo::Run() {
 void VDVFLogo::Start() {
 	bool bHasAlpha;
 
-	DecodeImage(mConfig.szLogoPath, mLogoBuffer, nsVDPixmap::kPixFormat_XRGB8888, bHasAlpha);
+	DecodeImage(mConfig.szLogoPath, mLogoBuffer, nsVDPixmap::kPixFormat_XRGB8888, bHasAlpha, mConfig.frames);
 
 	if (mConfig.bEnableAlphaBlending) {
 		if (mConfig.bEnableSecondaryAlpha) {
 			VDPixmapBuffer vbAlphaLogo;
 			bool bSecondHasAlpha;
 
-			DecodeImage(mConfig.szAlphaPath, vbAlphaLogo, nsVDPixmap::kPixFormat_XRGB8888, bSecondHasAlpha);
+			DecodeImage(mConfig.szAlphaPath, vbAlphaLogo, nsVDPixmap::kPixFormat_XRGB8888, bSecondHasAlpha, mConfig.frames);
 
 			if (vbAlphaLogo.w != mLogoBuffer.w || vbAlphaLogo.h != mLogoBuffer.h)
 				throw MyError("Alpha image has different size than logo image (%dx%d vs. %dx%d)", vbAlphaLogo.w, vbAlphaLogo.h, mLogoBuffer.w, mLogoBuffer.h);

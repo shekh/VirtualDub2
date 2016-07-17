@@ -39,6 +39,7 @@ private:
 public:
 	VDFraction() {}
 	explicit VDFraction(int i) : hi(i), lo(1) {}
+	explicit VDFraction(unsigned int i) : hi(i), lo(1) {}
 	explicit VDFraction(unsigned long i) : hi(i), lo(1) { }
 	explicit VDFraction(unsigned long i, unsigned long j) : hi(i), lo(j) {}
 	explicit VDFraction(double d);
@@ -50,14 +51,22 @@ public:
 	bool	operator==(VDFraction b) const;
 	bool	operator!=(VDFraction b) const;
 
+	VDFraction operator+(VDFraction b) const;
+	VDFraction operator-(VDFraction b) const;
 	VDFraction operator*(VDFraction b) const;
 	VDFraction operator/(VDFraction b) const;
 
+	VDFraction operator+(unsigned long b) const;
+	VDFraction operator-(unsigned long b) const;
 	VDFraction operator*(unsigned long b) const;
 	VDFraction operator/(unsigned long b) const;
 
+	VDFraction& operator+=(VDFraction b);
+	VDFraction& operator-=(VDFraction b);
 	VDFraction& operator*=(VDFraction b);
 	VDFraction& operator/=(VDFraction b);
+	VDFraction& operator+=(unsigned long b);
+	VDFraction& operator-=(unsigned long b);
 	VDFraction& operator*=(unsigned long b);
 	VDFraction& operator/=(unsigned long b);
 
@@ -75,7 +84,7 @@ public:
 
 	double asDouble() const;
 	double AsInverseDouble() const;
-
+	unsigned long asInt() const;
 	unsigned long roundup32ul() const;
 
 	unsigned long getHi() const { return hi; }
