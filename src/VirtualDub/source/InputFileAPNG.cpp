@@ -20,6 +20,13 @@
 #include "stdafx.h"
 
 #include <vd2/system/file.h>
+#include <vd2/system/fraction.h>
+#include <vd2/system/binary.h>
+#include <vd2/system/log.h>
+#include <vd2/kasumi/pixmapops.h>
+#include "InputFile.h"
+#include "VideoSource.h"
+#include "gui.h"
 #include "APNG.h"
 #include "resource.h"
 
@@ -775,8 +782,11 @@ const void *VDVideoSourceAPNG::streamGetFrame(const void *inputBuffer, uint32 da
 	png_src = mpSharedData->mImage.data();
 	png_pos = imageinfo.mOffsetAndKey & 0x7FFFFFFF;
 
-	if (!data_len || !png_pos)
+	if (!data_len || !png_pos) {
+		if (mpSharedData->mColorType >= 4)
+			mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaOpacity;
 		return getFrameBuffer();
+	}
 
 	if (imageinfo.mOffsetAndKey & 0x80000000)
 		VDMemset32Rect(mFrameBuffer.data(), mWidth * sizeof(uint32), 0, mWidth, mHeight);
