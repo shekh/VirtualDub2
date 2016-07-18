@@ -54,7 +54,6 @@ public:
 	bool isKeyframeOnly()					{ return true; }
 	bool isType1()							{ return false; }
 	bool isDecodable(VDPosition sample_num)		{ return true; }
-	bool getAlpha()							{ return mInitAlpha; }
 
 private:
 	vdrefptr<VDInputFileImages> mpParent;
@@ -67,7 +66,6 @@ private:
 	VDFile	mCachedFile;
 
 	nsVDPixmap::VDPixmapFormat mInitFormat;
-	bool mInitAlpha;
 
 	vdautoptr<IVDJPEGDecoder> mpJPEGDecoder;
 	vdautoptr<IVDImageDecoderIFF> mpIFFDecoder;
@@ -239,7 +237,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 	if (!data_len)
 		return getFrameBuffer();
 
-	int w, h, frames;
+	int w, h;
 	int format = 0;
 	bool bHasAlpha = false;
 
@@ -250,7 +248,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 	bool bIsTGA = false;
 	bool bIsTIFF = false;
 
-	bIsPNG = VDDecodePNGHeader(inputBuffer, data_len, w, h, bHasAlpha, frames);
+	bIsPNG = VDDecodePNGHeader(inputBuffer, data_len, w, h, bHasAlpha);
 	if (!bIsPNG) {
 		bIsJPG = VDIsJPEGHeader(inputBuffer, data_len);
 		if (!bIsJPG) {
@@ -311,7 +309,6 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 
 	} else {
 		mInitFormat = (nsVDPixmap::VDPixmapFormat)format;
-		mInitAlpha = bHasAlpha;
 
 		pFormat->biSize				= sizeof(BITMAPINFOHEADER);
 		pFormat->biWidth			= w;

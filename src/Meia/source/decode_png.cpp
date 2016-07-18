@@ -32,12 +32,36 @@ using namespace nsVDPNG;
 ///////////////////////////////////////////////////////////////////////////
 
 namespace {
+	struct PNGHeader {
+		uint32	width;
+		uint32	height;
+		uint8	depth;
+		uint8	colortype;
+		uint8	compression;
+		uint8	filter;
+		uint8	interlacing;
+	};
+
 	unsigned long PNGDecodeNetwork32(const uint8 *src) {
 		return (src[0]<<24) + (src[1]<<16) + (src[2]<<8) + src[3];
 	}
 
-	void PNGPredictSub(uint8 *row, int rowbytes, int bpp) {
-		for(int i=bpp; i<rowbytes; ++i)
+	int PNGPaethPredictor(int a, int b, int c) {
+		int p  = a + b - c;
+		int pa = abs(p - a);
+		int pb = abs(p - b);
+		int pc = abs(p - c);
+
+		if (pa <= pb && pa <= pc)
+			return a;
+		else if (pb <= pc)
+			return b;
+		else
+			return c;
+	}
+
+	void PNGPredictSub(uint8 *row, const uint8 *prevrow, int rowuint8s, int bpp) {
+		for(int i=bpp; i<rowuint8s; ++i)
 			row[i] += row[i-bpp];
 	}
 
@@ -60,35 +84,85 @@ namespace {
 	}
 
 	void PNGPredictPaeth(uint8 *row, const uint8 *prevrow, int rowbytes, int bpp) {
-		int a, b, c, pa, pb, pc, p;
 		if (prevrow) {
 			for(int i=0; i<bpp; ++i)
-				row[i] += prevrow[i];
+				row[i] += PNGPaethPredictor(0, prevrow[i], 0);
 			for(int j=bpp; j<rowbytes; ++j)
-			{
-				a = row[j-bpp];
-				b = prevrow[j];
-				c = prevrow[j-bpp];
-				p = b - c;
-				pc = a - c;
-				pa = abs(p);
-				pb = abs(pc);
-				pc = abs(p + pc);
-				row[j] += ((pa <= pb && pa <= pc) ? a : (pb <= pc) ? b : c);
-			}
+				row[j] += PNGPaethPredictor(row[j-bpp], prevrow[j], prevrow[j-bpp]);
 		} else {
 			for(int j=bpp; j<rowbytes; ++j)
-				row[j] += row[j-bpp];
+				row[j] += PNGPaethPredictor(row[j-bpp], 0, 0);
+		}
+	}
+
+	void PNGUnpackIndices1Bit(uint8 *dst, const uint8 *src, int w) {
+		uint8 v;
+
+		dst += (w-1) & ~7;
+		src += (w+7)>>3;
+
+		v = *--src;
+
+		switch(w & 7) {
+				while(w > 0) {
+					v = *--src;
+		case 0:		dst[7] = (v   )&1;
+		case 7:		dst[6] = (v>>1)&1;
+		case 6:		dst[5] = (v>>2)&1;
+		case 5:		dst[4] = (v>>3)&1;
+		case 4:		dst[3] = (v>>4)&1;
+		case 3:		dst[2] = (v>>5)&1;
+		case 2:		dst[1] = (v>>6)&1;
+		case 1:		dst[0] = (v>>7)&1;
+					dst -= 8;
+					w -= 8;
+				}
+		}
+	}
+
+	void PNGUnpackIndices2Bit(uint8 *dst, const uint8 *src, int w) {
+		uint8 v;
+
+		dst += (w-1) & ~3;
+		src += (w+3)>>2;
+
+		v = *--src;
+
+		switch(w & 3) {
+				while(w > 0) {
+					v = *--src;
+		case 0:		dst[3] = (v   )&3;
+		case 3:		dst[2] = (v>>2)&3;
+		case 2:		dst[1] = (v>>4)&3;
+		case 1:		dst[0] = (v>>6)&3;
+					dst -= 4;
+					w -= 4;
+				}
+		}
+	}
+
+	void PNGUnpackIndices4Bit(uint8 *dst, const uint8 *src, int w) {
+		int x = w>>1;
+
+		if (x)
+			do {
+				dst[0] = (src[0]>>4)&15;
+				dst[1] = (src[0]   )&15;
+				dst += 2;
+				++src;
+			} while(--x);
+
+		if (w & 1)
+			*dst = (*src >> 4) & 15;
+	}
+
+	void PNGUnpackIndices16Bit(uint8 *dst, const uint8 *src, int w) {
+		while(w--) {
+			*dst++ = *src;
+			src += 2;
 		}
 	}
 }
-
-#define notabc(c) ((c) < 65 || (c) > 122 || ((c) > 90 && (c) < 97))
-
-#define ROWBYTES(pixel_bits, width) \
-    ((pixel_bits) >= 8 ? \
-    ((width) * (((uint32)(pixel_bits)) >> 3)) : \
-    (( ((width) * ((uint32)(pixel_bits))) + 7) >> 3) )
 
 class VDImageDecoderPNG : public IVDImageDecoderPNG {
 public:
@@ -99,295 +173,15 @@ public:
 protected:
 	VDPixmapBuffer	mFrameBuffer;
 	bool mbAlphaPresent;
-
-private:
-	void Compose(uint8 * dst, uint8 * src, uint32 dstbytes, uint32 w, uint32 h, uint32 bop);
-
-	uint8  pal[256][4];
-	uint32 hasTRNS;
-	uint16 trns1, trns2, trns3;
-	uint8  coltype, depth, bpp;
-	uint32 rowbytes;
 };
 
 IVDImageDecoderPNG *VDCreateImageDecoderPNG() {
 	return new VDImageDecoderPNG;
 }
 
-void VDImageDecoderPNG::Compose(uint8 * dst, uint8 * src, uint32 dstbytes, uint32 w, uint32 h, uint32 bop) {
-	uint32   i, j;
-	uint32   r, g, b, a;
-	uint32   r2, g2, b2, a2;
-	uint8    col;
-	uint8  * sp;
-	uint32 * dp;
-	uint8  * row = src;
-	uint8  * out = dst;
-	uint8  * prev_row = NULL;
-	uint32   u, v, al;
-	uint32   step = (depth+7)/8;
-
-	const uint32 mask4[2]={240,15};
-	const uint32 shift4[2]={4,0};
-
-	const uint32 mask2[4]={192,48,12,3};
-	const uint32 shift2[4]={6,4,2,0};
-
-	const uint32 mask1[8]={128,64,32,16,8,4,2,1};
-	const uint32 shift1[8]={7,6,5,4,3,2,1,0};
-
-	for (j=0; j<h; j++)
-	{
-		switch (*row++)
-		{
-			case 0: break;
-			case 1: PNGPredictSub(row, rowbytes, bpp); break;
-			case 2: PNGPredictUp(row, prev_row, rowbytes, bpp); break;
-			case 3: PNGPredictAverage(row, prev_row, rowbytes, bpp); break;
-			case 4: PNGPredictPaeth(row, prev_row, rowbytes, bpp); break;
-		}
-		sp = row;
-		dp = (uint32*)out;
-
-		if (coltype == 6) // RGBA
-		{
-			if (bop == 0) // SOURCE
-			{
-				for (i=0; i<w; i++)
-				{
-					r = *sp; sp += step;
-					g = *sp; sp += step;
-					b = *sp; sp += step;
-					a = *sp; sp += step;
-					*dp++ = (a != 0) ? (a << 24) + (r << 16) + (g << 8) + b : 0;
-				}
-			}
-			else // OVER
-			{
-				for (i=0; i<w; i++)
-				{
-					r = *sp; sp += step;
-					g = *sp; sp += step;
-					b = *sp; sp += step;
-					a = *sp; sp += step;
-					if (a == 255)
-						*dp++ = (a << 24) + (r << 16) + (g << 8) + b;
-					else
-					if (a != 0)
-					{
-						if (a2 = (*dp)>>24)
-						{
-							u = a*255;
-							v = (255-a)*a2;
-							al = u + v;
-							r2 = (((*dp)>>16)&255);
-							g2 = (((*dp)>>8)&255);
-							b2 = ((*dp)&255);
-							r = (r*u + r2*v)/al;
-							g = (g*u + g2*v)/al;
-							b = (b*u + b2*v)/al;
-							a = al/255;
-						}
-						*dp++ = (a << 24) + (r << 16) + (g << 8) + b;
-					}
-					else
-						dp++;
-				}
-			}
-		}
-		else
-		if (coltype == 4) // GA
-		{
-			if (bop == 0) // SOURCE
-			{
-				for (i=0; i<w; i++)
-				{
-					g = *sp; sp += step;
-					a = *sp; sp += step;
-					*dp++ = (a != 0) ? (a << 24) + (g << 16) + (g << 8) + g : 0;
-				}
-			}
-			else // OVER
-			{
-				for (i=0; i<w; i++)
-				{
-					g = *sp; sp += step;
-					a = *sp; sp += step;
-					if (a == 255)
-					{
-						*dp++ = (a << 24) + (g << 16) + (g << 8) + g;
-					}
-					else
-					if (a != 0)
-					{
-						if (a2 = (*dp)>>24)
-						{
-							u = a*255;
-							v = (255-a)*a2;
-							al = u + v;
-							g2 = ((*dp)&255);
-							g = (g*u + g2*v)/al;
-							a = al/255;
-						}
-						*dp++ = (a << 24) + (g << 16) + (g << 8) + g;
-					}
-					else
-						dp++;
-				}
-			}
-		}
-		else
-		if (coltype == 3) // INDEXED
-		{
-			for (i=0; i<w; i++)
-			{
-				switch (depth)
-				{
-					case 8: col = sp[i]; break;
-					case 4: col = (sp[i>>1] & mask4[i&1]) >> shift4[i&1]; break;
-					case 2: col = (sp[i>>2] & mask2[i&3]) >> shift2[i&3]; break;
-					case 1: col = (sp[i>>3] & mask1[i&7]) >> shift1[i&7]; break;
-				}
-
-				r = pal[col][0];
-				g = pal[col][1];
-				b = pal[col][2];
-				a = pal[col][3];
-
-				if (bop == 0) // SOURCE
-				{
-					*dp++ = (a << 24) + (r << 16) + (g << 8) + b;
-				}
-				else // OVER
-				{
-					if (a == 255)
-						*dp++ = (a << 24) + (r << 16) + (g << 8) + b;
-					else
-					if (a != 0)
-					{
-						if (a2 = (*dp)>>24)
-						{
-							u = a*255;
-							v = (255-a)*a2;
-							al = u + v;
-							r2 = (((*dp)>>16)&255);
-							g2 = (((*dp)>>8)&255);
-							b2 = ((*dp)&255);
-							r = (r*u + r2*v)/al;
-							g = (g*u + g2*v)/al;
-							b = (b*u + b2*v)/al;
-							a = al/255;
-						}
-						*dp++ = (a << 24) + (r << 16) + (g << 8) + b;
-					}
-					else
-						dp++;
-				}
-			}
-		}
-		else
-		if (coltype == 2) // RGB
-		{
-			if (bop == 0) // SOURCE
-			{
-				if (depth == 8)
-				{
-					for (i=0; i<w; i++)
-					{
-						r = *sp++;
-						g = *sp++;
-						b = *sp++;
-						if (hasTRNS && r==trns1 && g==trns2 && b==trns3)
-							*dp++ = 0;
-						else
-							*dp++ = 0xFF000000 + (r << 16) + (g << 8) + b;
-					}
-				}
-				else
-				{
-					for (i=0; i<w; i++, sp+=6)
-					{
-						r = *sp;
-						g = *(sp+2);
-						b = *(sp+4);
-						if (hasTRNS && VDReadUnalignedBEU16(sp)==trns1 && VDReadUnalignedBEU16(sp+2)==trns2 && VDReadUnalignedBEU16(sp+4)==trns3)
-							*dp++ = 0;
-						else
-							*dp++ = 0xFF000000 + (r << 16) + (g << 8) + b;
-					}
-				}
-			}
-			else // OVER
-			{
-				if (depth == 8)
-				{
-					for (i=0; i<w; i++, sp+=3, dp++)
-						if ((*sp != trns1) || (*(sp+1) != trns2) || (*(sp+2) != trns3))
-							*dp = 0xFF000000 + (*sp << 16) + (*(sp+1) << 8) + *(sp+2);
-				}
-				else
-				{
-					for (i=0; i<w; i++, sp+=6, dp++)
-						if ((VDReadUnalignedBEU16(sp) != trns1) || (VDReadUnalignedBEU16(sp+2) != trns2) || (VDReadUnalignedBEU16(sp+4) != trns3))
-							*dp = 0xFF000000 + (*sp << 16) + (*(sp+2) << 8) + *(sp+4);
-				}
-			}
-		}
-		else
-		if (coltype == 0) // Gray
-		{
-			if (bop == 0) // SOURCE
-			{
-				switch (depth)
-				{
-					case 16: for (i=0; i<w; i++) { if (hasTRNS && VDReadUnalignedBEU16(sp)==trns1) *dp++ = 0; else *dp++ = 0xFF000000 + (*sp << 16) + (*sp << 8) + *sp; sp+=2; }  break;
-					case 8:  for (i=0; i<w; i++) { if (hasTRNS && *sp==trns1)                      *dp++ = 0; else *dp++ = 0xFF000000 + (*sp << 16) + (*sp << 8) + *sp; sp++;  }  break;
-					case 4:  for (i=0; i<w; i++) { g = (sp[i>>1] & mask4[i&1]) >> shift4[i&1]; if (hasTRNS && g==trns1) *dp++ = 0; else *dp++ = 0xFF000000 + g*0x111111; } break;
-					case 2:  for (i=0; i<w; i++) { g = (sp[i>>2] & mask2[i&3]) >> shift2[i&3]; if (hasTRNS && g==trns1) *dp++ = 0; else *dp++ = 0xFF000000 + g*0x555555; } break;
-					case 1:  for (i=0; i<w; i++) { g = (sp[i>>3] & mask1[i&7]) >> shift1[i&7]; if (hasTRNS && g==trns1) *dp++ = 0; else *dp++ = 0xFF000000 + g*0xFFFFFF; } break;
-				}
-			}
-			else // OVER
-			{
-				switch (depth)
-				{
-					case 16: for (i=0; i<w; i++, dp++) { if (VDReadUnalignedBEU16(sp) != trns1) { *dp = 0xFF000000 + (*sp << 16) + (*sp << 8) + *sp; } sp+=2; } break;
-					case 8:  for (i=0; i<w; i++, dp++) { if (*sp != trns1)                      { *dp = 0xFF000000 + (*sp << 16) + (*sp << 8) + *sp; } sp++;  } break;
-					case 4:  for (i=0; i<w; i++, dp++) { g = (sp[i>>1] & mask4[i&1]) >> shift4[i&1]; if (g != trns1) *dp = 0xFF000000 + g*0x111111; } break;
-					case 2:  for (i=0; i<w; i++, dp++) { g = (sp[i>>2] & mask2[i&3]) >> shift2[i&3]; if (g != trns1) *dp = 0xFF000000 + g*0x555555; } break;
-					case 1:  for (i=0; i<w; i++, dp++) { g = (sp[i>>3] & mask1[i&7]) >> shift1[i&7]; if (g != trns1) *dp = 0xFF000000 + g*0xFFFFFF; } break;
-				}
-			}
-		}
-
-		prev_row = row;
-		row += rowbytes;
-		out += dstbytes;
-	}
-}
-
 PNGDecodeError VDImageDecoderPNG::Decode(const void *src0, uint32 size) {
 	const uint8 *src = (const uint8 *)src0;
 	const uint8 *const src_end = src+size;
-	uint32 i, w, h, w0, h0, x0, y0;
-	uint32 len, chunk, crc, frames, num_fctl, num_idat;
-	uint8  compr, filter, interl, pixeldepth, dop, bop;
-
-	frames = 1;
-	num_fctl = 0;
-	num_idat = 0;
-	hasTRNS = 0;
-	x0 = 0;
-	y0 = 0;
-	bop = 0;
-
-	for (i=0; (i<256); i++)
-	{
-		pal[i][0] = i;
-		pal[i][1] = i;
-		pal[i][2] = i;
-		pal[i][3] = 0xFF;
-	}
 
 	if (size < 8)
 		return kPNGDecodeNotPNG;
@@ -397,218 +191,226 @@ PNGDecodeError VDImageDecoderPNG::Decode(const void *src0, uint32 size) {
 
 	src += 8;
 
+	PNGHeader hdr;
+
+	bool header_found = false;
+
+	vdfastvector<uint8> packeddata;
+	unsigned char pal[768];
+
 	// decode chunks
 	VDCRCChecker checker;
 
-	if (src + 25 > src_end)
-		return kPNGDecodeBadHeader;
+	while(src < src_end) {
+		if (src_end-src < 12)
+			break;
 
-	len		= PNGDecodeNetwork32(src);
-	chunk	= PNGDecodeNetwork32(src + 4);
+		uint32 length = PNGDecodeNetwork32(src);
 
-	if ((len != 13) || (chunk != 'IHDR'))
-		return kPNGDecodeBadHeader;
-
-	w = w0  = PNGDecodeNetwork32(src+8);
-	h = h0  = PNGDecodeNetwork32(src+12);
-	depth   = src[16];
-	coltype = src[17];
-	compr   = src[18];
-	filter  = src[19];
-	interl  = src[20];
-	crc = PNGDecodeNetwork32(src + 21);
-
-	checker.Init(VDCRCChecker::kCRC32);
-	checker.Process(src + 4, len + 4);
-	if (checker.CRC() != crc)
-		return kPNGDecodeChecksumFailed;
-
-	if (depth != 1 && depth != 2 && depth != 4 && depth != 8 && depth != 16)
-		return kPNGDecodeUnsupported;
-	if (coltype != 0 && coltype != 2 && coltype != 3 && coltype != 4 && coltype != 6)
-		return kPNGDecodeUnsupported;
-	if (coltype == 3 && depth > 8)
-		return kPNGDecodeUnsupported;
-	if (coltype != 0 && coltype != 3 && depth < 8)
-		return kPNGDecodeUnsupported;
-	if (compr != 0)
-		return kPNGDecodeUnsupportedCompressionAlgorithm;
-	if (filter != 0)
-		return kPNGDecodeUnsupportedFilterAlgorithm;
-	if (interl > 1)
-		return kPNGDecodeUnsupportedInterlacingAlgorithm;
-
-	pixeldepth = depth;
-	if (coltype == 2)
-		pixeldepth = depth*3;
-	else
-	if (coltype == 4)
-		pixeldepth = depth*2;
-	else
-	if (coltype == 6)
-		pixeldepth = depth*4;
-
-	bpp = (pixeldepth + 7) >> 3;
-	rowbytes = ROWBYTES(pixeldepth, w);
-
-	mbAlphaPresent = (coltype >= 4);
-
-	mFrameBuffer.init(w, h, nsVDPixmap::kPixFormat_XRGB8888);
-	vdblock<uint8> dstbuf((rowbytes + 1) * h);
-	vdfastvector<uint8> packeddata;
-
-	src += 25;
-
-	while (src + 8 <= src_end) {
-		len   = PNGDecodeNetwork32(src);
-		chunk = PNGDecodeNetwork32(src + 4);
-
-		if (src_end < src + len + 12)
+		if ((uint32)(src_end-src) < length+12)
 			return kPNGDecodeTruncatedChunk;
 
-		crc   = PNGDecodeNetwork32(src + len + 8);
+		uint32 crc = PNGDecodeNetwork32(src + length + 8);
 
 		// verify the crc
 		checker.Init(VDCRCChecker::kCRC32);
-		checker.Process(src + 4, len + 4);
+		checker.Process(src + 4, length + 4);
 		if (checker.CRC() != crc)
 			return kPNGDecodeChecksumFailed;
 
-		if (chunk == 'PLTE') {
-			if (len%3)
+		uint32 type = PNGDecodeNetwork32(src + 4);
+
+		if (type == 'IHDR') {
+			if (length < 13)
+				return kPNGDecodeBadHeader;
+
+			hdr.width		= PNGDecodeNetwork32(src+8);
+			hdr.height		= PNGDecodeNetwork32(src+12);
+			hdr.depth		= src[16];
+			hdr.colortype	= src[17];
+			hdr.compression	= src[18];
+			hdr.filter		= src[19];
+			hdr.interlacing	= src[20];
+
+			if (hdr.compression != 0)
+				return kPNGDecodeUnsupportedCompressionAlgorithm;
+			if (hdr.filter != 0)
+				return kPNGDecodeUnsupportedFilterAlgorithm;
+			if (hdr.interlacing > 1)
+				return kPNGDecodeUnsupportedInterlacingAlgorithm;
+
+			header_found = true;
+		} else if (type == 'IDAT') {
+			packeddata.resize(packeddata.size()+length);
+			memcpy(&packeddata[packeddata.size()-length], src+8, length);
+		} else if (type == 'PLTE') {
+			if (length%3)
 				return kPNGDecodeBadPalette;
 
-			for (i=0; (i<len/3 && i<256); i++)
-			{
-				pal[i][0] = src[8+i*3];
-				pal[i][1] = src[8+i*3+1];
-				pal[i][2] = src[8+i*3+2];
-				pal[i][3] = 0xFF;
-			}
-		} else if (chunk == 'tRNS') {
-			if (coltype == 0)
-			{
-				trns1 = VDReadUnalignedBEU16(&src[8]);
-			}
-			else
-			if (coltype == 2)
-			{
-				trns1 = VDReadUnalignedBEU16(&src[8]);
-				trns2 = VDReadUnalignedBEU16(&src[10]);
-				trns3 = VDReadUnalignedBEU16(&src[12]);
-			}
-			else
-			if (coltype == 3)
-			{
-				for (i=0; (i<len && i<256); i++)
-					pal[i][3] = src[8+i];
-			}
-			hasTRNS = 1;
-			mbAlphaPresent = true;
-		} else if (chunk == 'acTL') {
-			frames = PNGDecodeNetwork32(src + 8);
-			mFrameBuffer.init(w, h*frames, nsVDPixmap::kPixFormat_XRGB8888);
-		} else if (chunk == 'fcTL') {
-			if ((num_fctl == num_idat) && (num_idat > 0))
-			{
-				if (dop == 2) // PREV
-					VDMemcpyRect((char *)mFrameBuffer.data + num_idat*h*mFrameBuffer.pitch, mFrameBuffer.pitch,
-					             (char *)mFrameBuffer.data + (num_idat-1)*h*mFrameBuffer.pitch, mFrameBuffer.pitch, w*4, h);
-
-				VDMemoryStream packedStream(&packeddata[2], packeddata.size() - 6);
-				VDZipStream unpackedStream(&packedStream, packeddata.size() - 6, false);
-
-				try {
-					unpackedStream.Read(dstbuf.data(), (rowbytes + 1) * h0);
-				} catch(const MyError&) {
-					return kPNGDecodeDecompressionFailed;
-				}
-
-				// check image data
-				uint32 adler32 = VDReadUnalignedBEU32(packeddata.data() + packeddata.size() - 4);
-				if (adler32 != VDAdler32Checker::Adler32(dstbuf.data(), (rowbytes + 1) * h0))
-					return kPNGDecodeChecksumFailed;
-
-				Compose((uint8 *)mFrameBuffer.data + (y0+(num_idat-1)*h)*mFrameBuffer.pitch + x0*4, dstbuf.data(), mFrameBuffer.pitch, w0, h0, bop);
-
-				if (dop != 2) // PREV
-				{
-					VDMemcpyRect((char *)mFrameBuffer.data + num_idat*h*mFrameBuffer.pitch, mFrameBuffer.pitch, (char *)mFrameBuffer.data + (num_idat-1)*h*mFrameBuffer.pitch, mFrameBuffer.pitch, w*4, h);
-
-					if (dop == 1) // BACK
-						VDMemset32Rect((char *)mFrameBuffer.data + (y0+num_idat*h)*mFrameBuffer.pitch + x0*4, mFrameBuffer.pitch, 0, w0, h0);
-				}
-			}
-
-			w0 = PNGDecodeNetwork32(src + 12);
-			h0 = PNGDecodeNetwork32(src + 16);
-			x0 = PNGDecodeNetwork32(src + 20);
-			y0 = PNGDecodeNetwork32(src + 24);
-			dop = src[32];
-			bop = src[33];
-
-			if (num_fctl == 0)
-			{
-				bop = 0;
-				if (dop == 2) // PREV
-					dop = 1;  // BACK
-			}
-
-			if (!(coltype & 4) && !(hasTRNS))
-				bop = 0;
-
-			rowbytes = ROWBYTES(pixeldepth, w0);
-			num_fctl++;
-		} else if (chunk == 'IDAT') {
-			if (num_fctl > num_idat)
-			{
-				packeddata.clear();
-				num_idat++;
-			}
-			packeddata.resize(packeddata.size()+len);
-			memcpy(&packeddata[packeddata.size()-len], src+8, len);
-		} else if (chunk == 'fdAT') {
-			if (num_fctl > num_idat)
-			{
-				packeddata.clear();
-				num_idat++;
-			}
-			packeddata.resize(packeddata.size()+len-4);
-			memcpy(&packeddata[packeddata.size()-len+4], src+12, len-4);
-		} else if (chunk == 'IEND') {
+			memcpy(pal, src+8, length<768?length:768);
+		} else if (type == 'IEND') {
 			break;
-		} else {
-			if (notabc(src[4]))
-				return kPNGDecodeTruncatedChunk;
-			if (notabc(src[5]))
-				return kPNGDecodeTruncatedChunk;
-			if (notabc(src[6]))
-				return kPNGDecodeTruncatedChunk;
-			if (notabc(src[7]))
-				return kPNGDecodeTruncatedChunk;
+		} else if (src[0] & 0x20) {
+			return kPNGDecodeUnknownRequiredChunk;
 		}
 
-		src += len+12;
+		src += length+12;
 	}
 
-	if (num_idat == 0)
-		num_idat++;
+	if (!header_found)
+		return kPNGDecodeBadHeader;
+
+	if (packeddata.size() < 6)
+		return kPNGDecodeDecompressionFailed;
+
+	// if grayscale, initialize palette and make it paletted
+	if (hdr.colortype == 0) {
+		for(int i=0; i<256; ++i) {
+			pal[i*3+0] = pal[i*3+1] = pal[i*3+2] = i;
+		}
+
+		hdr.colortype = 3;
+	}
+
+	unsigned bitsperpixel = hdr.depth;
+	bool hasAlpha = false;
+
+	switch(hdr.colortype) {
+	case 2:		// RGB
+		bitsperpixel *= 3;
+		break;
+	case 3:		// Paletted
+		break;
+	case 4:		// IA
+		bitsperpixel *= 2;
+		hasAlpha = true;
+		break;
+	case 6:		// RGBA
+		bitsperpixel *= 4;
+		hasAlpha = true;
+		break;
+	}
+
+	mbAlphaPresent = hasAlpha;
+
+	unsigned pitch = (hdr.width*3+3)&~3;
+	unsigned pngrowbytes	= (hdr.width * bitsperpixel + 7) >> 3;
+	unsigned pngbpp			= (bitsperpixel+7) >> 3;
+
+	// decompress here
+	vdblock<uint8> dstbuf((pngrowbytes + 1) * hdr.height);
 
 	VDMemoryStream packedStream(&packeddata[2], packeddata.size() - 6);
 	VDZipStream unpackedStream(&packedStream, packeddata.size() - 6, false);
 
 	try {
-		unpackedStream.Read(dstbuf.data(), (rowbytes + 1) * h0);
+		unpackedStream.Read(dstbuf.data(), dstbuf.size());
 	} catch(const MyError&) {
 		return kPNGDecodeDecompressionFailed;
 	}
 
 	// check image data
 	uint32 adler32 = VDReadUnalignedBEU32(packeddata.data() + packeddata.size() - 4);
-	if (adler32 != VDAdler32Checker::Adler32(dstbuf.data(), (rowbytes + 1) * h0))
+	if (adler32 != VDAdler32Checker::Adler32(dstbuf.data(), dstbuf.size()))
 		return kPNGDecodeChecksumFailed;
 
-	Compose((uint8 *)mFrameBuffer.data + (y0+(num_idat-1)*h)*mFrameBuffer.pitch + x0*4, dstbuf.data(), mFrameBuffer.pitch, w0, h0, bop);
+	mFrameBuffer.init(hdr.width, hdr.height, hasAlpha ? nsVDPixmap::kPixFormat_XRGB8888 : nsVDPixmap::kPixFormat_RGB888);
+
+	uint8 *srcp = &dstbuf[0];
+	int x, y;
+
+	vdblock<uint8> tempindices;
+
+	if (hdr.colortype == 3 && hdr.depth != 8)	// If paletted and not 8bpp....
+		tempindices.resize(hdr.width);
+
+	const uint8 *srcprv = NULL;
+	for(y=0; (uint32)y<hdr.height; ++y) {
+		switch(*srcp++) {
+		case 0:			break;
+		case 1:			PNGPredictSub(srcp, srcprv, pngrowbytes, pngbpp);		break;
+		case 2:			PNGPredictUp(srcp, srcprv, pngrowbytes, pngbpp);		break;
+		case 3:			PNGPredictAverage(srcp, srcprv, pngrowbytes, pngbpp);	break;
+		case 4:			PNGPredictPaeth(srcp, srcprv, pngrowbytes, pngbpp);		break;
+		default:		return kPNGDecodeBadFilterMode;
+		}
+
+		const uint8 *rowsrc = srcp;
+		      uint8 *rowdst = (uint8 *)vdptroffset(mFrameBuffer.data, mFrameBuffer.pitch * y);
+
+		if (hdr.colortype == 2) {					// RGB: depths 8, 16
+			if (hdr.depth == 8) {
+				for(x=0; (uint32)x<hdr.width; ++x) {
+					rowdst[x*3+0] = rowsrc[x*3+2];
+					rowdst[x*3+1] = rowsrc[x*3+1];
+					rowdst[x*3+2] = rowsrc[x*3+0];
+				}
+			} else if (hdr.depth == 16) {
+				for(x=0; (uint32)x<hdr.width; ++x) {
+					rowdst[x*3+0] = rowsrc[x*6+4];
+					rowdst[x*3+1] = rowsrc[x*6+2];
+					rowdst[x*3+2] = rowsrc[x*6+0];
+				}
+			} else {
+				return kPNGDecodeUnsupported;
+			}
+		} else if (hdr.colortype == 6) {			// RGBA: depths 8, 16
+			if (hdr.depth == 8) {
+				for(x=0; (uint32)x<hdr.width; ++x) {
+					rowdst[x*4+0] = rowsrc[x*4+2];
+					rowdst[x*4+1] = rowsrc[x*4+1];
+					rowdst[x*4+2] = rowsrc[x*4+0];
+					rowdst[x*4+3] = rowsrc[x*4+3];
+				}
+			} else if (hdr.depth == 16) {
+				for(x=0; (uint32)x<hdr.width; ++x) {
+					rowdst[x*4+0] = rowsrc[x*8+4];
+					rowdst[x*4+1] = rowsrc[x*8+2];
+					rowdst[x*4+2] = rowsrc[x*8+0];
+					rowdst[x*4+3] = rowsrc[x*8+6];
+				}
+			} else {
+				return kPNGDecodeUnsupported;
+			}
+		} else if (hdr.colortype == 4) {			// grayscale with alpha: depths 8, 16
+			if (hdr.depth == 8) {
+				for(x=0; (uint32)x<hdr.width; ++x) {
+					rowdst[x*4+0] = rowdst[x*4+1] = rowdst[x*4+2] = rowsrc[x*2];
+					rowdst[x*4+3] = rowsrc[x*2+1];
+				}
+			} else if (hdr.depth == 16) {
+				for(x=0; (uint32)x<hdr.width; ++x) {
+					rowdst[x*4+0] =	rowdst[x*4+1] =	rowdst[x*4+2] = rowsrc[x*4];
+					rowdst[x*4+3] = rowsrc[x*4+2];
+				}
+			} else {
+				return kPNGDecodeUnsupported;
+			}
+		} else if (hdr.colortype == 3) {			// paletted: depths 1, 2, 4, 8
+			if (hdr.depth != 8) {
+				switch(hdr.depth) {
+				case 1:		PNGUnpackIndices1Bit(tempindices.data(), rowsrc, hdr.width);	break;
+				case 2:		PNGUnpackIndices2Bit(tempindices.data(), rowsrc, hdr.width);	break;
+				case 4:		PNGUnpackIndices4Bit(tempindices.data(), rowsrc, hdr.width);	break;
+				case 16:	PNGUnpackIndices16Bit(tempindices.data(), rowsrc, hdr.width);	break;
+				default:
+					return kPNGDecodeUnsupported;
+				}
+
+				rowsrc = tempindices.data();
+			}
+
+			for(x=0; (uint32)x<hdr.width; ++x) {
+				unsigned idx = rowsrc[x];
+				rowdst[x*3+0] = pal[idx*3+2];
+				rowdst[x*3+1] = pal[idx*3+1];
+				rowdst[x*3+2] = pal[idx*3+0];
+			}
+		}
+
+		srcprv = srcp;
+		srcp += pngrowbytes;
+	}
 
 	return kPNGDecodeOK;
 }
@@ -632,63 +434,50 @@ const char *PNGGetErrorString(PNGDecodeError err) {
 	}
 }
 
-bool VDDecodePNGHeader(const void *src0, uint32 size, int& w, int& h, bool& hasalpha, int& frames) {
+bool VDDecodePNGHeader(const void *src0, uint32 len, int& w, int& h, bool& hasalpha) {
 	const uint8 *src = (const uint8 *)src0;
-	const uint8 *const src_end = src+size;
 
-	if (size < 45)
+	if (len < 29)
 		return false;
 
 	if (memcmp(src, kPNGSignature, 8))
 		return false;
 
-	src += 8;
+	// Next four bytes must be IHDR and length >= 13
+	const uint32 hlen = PNGDecodeNetwork32(src + 8);
+	const uint32 ckid = PNGDecodeNetwork32(src + 12);
 
-	uint32 len   = PNGDecodeNetwork32(src);
-	uint32 chunk = PNGDecodeNetwork32(src+4);
-
-	if ((len != 13) || (chunk != 'IHDR'))
+	if (ckid != 'IHDR')
 		return false;
 
-	w = PNGDecodeNetwork32(src+8);
-	h = PNGDecodeNetwork32(src+12);
-	uint8  coltype = src[17];
-	uint8  hastrns = 0;
-	frames  = 1;
+	if (hlen < 13)
+		return false;
 
-	src += 25;
+	PNGHeader hdr;
 
-	while(src < src_end) {
-		if (notabc(src[4])) break;
-		if (notabc(src[5])) break;
-		if (notabc(src[6])) break;
-		if (notabc(src[7])) break;
-		len   = PNGDecodeNetwork32(src);
-		chunk = PNGDecodeNetwork32(src + 4);
-		src += 8;
-		if (src_end < src+len+4)
+	hdr.width		= PNGDecodeNetwork32(src+16);
+	hdr.height		= PNGDecodeNetwork32(src+20);
+	hdr.depth		= src[24];
+	hdr.colortype	= src[25];
+	hdr.compression	= src[26];
+	hdr.filter		= src[27];
+	hdr.interlacing	= src[28];
+
+	switch(hdr.colortype) {
+		case 2:		// RGB
+		case 3:		// Paletted
+		default:
+			hasalpha = false;
 			break;
 
-		if (chunk == 'tRNS') {
-			hastrns = 1;
-		} else if (chunk == 'acTL') {
-			frames = PNGDecodeNetwork32(src);
-		} else if (chunk == 'IDAT') {
-			break;
-		} else if (chunk == 'fDAT') {
-			break;
-		} else if (chunk == 'IEND') {
-			break;
-		}
-		src += len+4;
-		if (src_end < src+8)
+		case 4:		// IA
+		case 6:		// RGBA
+			hasalpha = true;
 			break;
 	}
 
-	if (frames > 1)
-		h *= frames;
-
-	hasalpha = (coltype >= 4) || (hastrns);
+	w = hdr.width;
+	h = hdr.height;
 
 	return true;
 }
