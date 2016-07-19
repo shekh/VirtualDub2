@@ -25,9 +25,11 @@
  * @author Bartlomiej Wolowiec
  */
 
+#define CONFIG_ZLIB 1
+
 #include "config.h"
 #if CONFIG_ZLIB
-#include <zlib.h>
+#include "../../src/zlib/zlib.h"
 #endif
 
 /*

@@ -590,7 +590,7 @@ bool VDAVIOutputImagesSystem::AcceptsVideo() {
 }
 
 bool VDAVIOutputImagesSystem::IsVideoImageOutputEnabled() {
-	return mFormat==AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW;
+	return mFormat==AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW || mFormat == AVIOutputImages::kFormatTIFF_ZIP;
 }
 
 bool VDAVIOutputImagesSystem::IsVideoImageOutputRequired() { 

@@ -469,6 +469,7 @@ public:
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 	void UpdateFilenames();
 	void UpdateEnables();
+	void UpdateChecks();
 	void UpdateSlider();
 	void ChangeExtension(const wchar_t *newExtension);
 
@@ -506,10 +507,21 @@ void VDSaveImageSeqDialogW32::UpdateFilenames() {
 void VDSaveImageSeqDialogW32::UpdateEnables() {
 	bool bIsJPEG = 0!=IsDlgButtonChecked(mhdlg, IDC_FORMAT_JPEG);
 	bool bIsPNG = 0!=IsDlgButtonChecked(mhdlg, IDC_FORMAT_PNG);
+	bool bIsTGA = 0!=IsDlgButtonChecked(mhdlg, IDC_FORMAT_TGA);
+	bool bIsTIFF = 0!=IsDlgButtonChecked(mhdlg, IDC_FORMAT_TIFF);
 
 	EnableWindow(GetDlgItem(mhdlg, IDC_QUALITY), bIsJPEG);
 	EnableWindow(GetDlgItem(mhdlg, IDC_STATIC_QUALITY), bIsJPEG);
 	EnableWindow(GetDlgItem(mhdlg, IDC_QUICK), bIsPNG);
+	EnableWindow(GetDlgItem(mhdlg, IDC_TARGA_RLE), bIsTGA);
+	EnableWindow(GetDlgItem(mhdlg, IDC_TIFF_ZIP), bIsTIFF);
+	EnableWindow(GetDlgItem(mhdlg, IDC_TIFF_LZW), bIsTIFF);
+}
+
+void VDSaveImageSeqDialogW32::UpdateChecks() {
+	CheckDlgButton(mhdlg, IDC_TARGA_RLE, mFormat == AVIOutputImages::kFormatTGA ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_TIFF_LZW, mFormat == AVIOutputImages::kFormatTIFF_LZW ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_TIFF_ZIP, mFormat == AVIOutputImages::kFormatTIFF_ZIP ? BST_CHECKED : BST_UNCHECKED);
 }
 
 void VDSaveImageSeqDialogW32::UpdateSlider() {
@@ -542,17 +554,16 @@ INT_PTR VDSaveImageSeqDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 		VDSetWindowTextW32(GetDlgItem(mhdlg, IDC_FILENAME_SUFFIX), mPostfix.c_str());
 		SetDlgItemInt(mhdlg, IDC_FILENAME_DIGITS, digits, FALSE);
 		VDSetWindowTextW32(GetDlgItem(mhdlg, IDC_DIRECTORY), mDirectory.c_str());
-		CheckDlgButton(mhdlg, mFormat == AVIOutputImages::kFormatTGA ? IDC_FORMAT_TGA
-							: mFormat == AVIOutputImages::kFormatTGAUncompressed ? IDC_FORMAT_TGAUNCOMPRESSED
+		CheckDlgButton(mhdlg, (mFormat == AVIOutputImages::kFormatTGA || mFormat == AVIOutputImages::kFormatTGAUncompressed) ? IDC_FORMAT_TGA
 							: mFormat == AVIOutputImages::kFormatBMP ? IDC_FORMAT_BMP
 							: mFormat == AVIOutputImages::kFormatJPEG ? IDC_FORMAT_JPEG
-							: mFormat == AVIOutputImages::kFormatTIFF_LZW ? IDC_FORMAT_TIFF_LZW
-							: mFormat == AVIOutputImages::kFormatTIFF_RAW ? IDC_FORMAT_TIFF_RAW
+							: (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW || mFormat == AVIOutputImages::kFormatTIFF_ZIP) ? IDC_FORMAT_TIFF
 							: IDC_FORMAT_PNG
 							, BST_CHECKED);
 		CheckDlgButton(mhdlg, IDC_QUICK, mbQuickCompress ? BST_CHECKED : BST_UNCHECKED);
 		UpdateFilenames();
 		UpdateEnables();
+		UpdateChecks();
 		UpdateSlider();
 
 		return TRUE;
@@ -611,14 +622,7 @@ INT_PTR VDSaveImageSeqDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
 				UpdateEnables();
 				mFormat = AVIOutputImages::kFormatTGA;
-				ChangeExtension(L".tga");
-			}
-			return TRUE;
-
-		case IDC_FORMAT_TGAUNCOMPRESSED:
-			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
-				UpdateEnables();
-				mFormat = AVIOutputImages::kFormatTGAUncompressed;
+				UpdateChecks();
 				ChangeExtension(L".tga");
 			}
 			return TRUE;
@@ -647,24 +651,49 @@ INT_PTR VDSaveImageSeqDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 			}
 			return TRUE;
 
-		case IDC_FORMAT_TIFF_LZW:
+		case IDC_FORMAT_TIFF:
 			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
 				UpdateEnables();
-				mFormat = AVIOutputImages::kFormatTIFF_LZW;
-				ChangeExtension(L".tiff");
-			}
-			return TRUE;
-
-		case IDC_FORMAT_TIFF_RAW:
-			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
-				UpdateEnables();
-				mFormat = AVIOutputImages::kFormatTIFF_RAW;
+				mFormat = AVIOutputImages::kFormatTIFF_ZIP;
+				UpdateChecks();
 				ChangeExtension(L".tiff");
 			}
 			return TRUE;
 
 		case IDC_QUICK:
 			mbQuickCompress = !!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+			return TRUE;
+
+		case IDC_TARGA_RLE:
+			{
+				bool check = !!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+				if (check)
+					mFormat = AVIOutputImages::kFormatTGA;
+				else
+					mFormat = AVIOutputImages::kFormatTGAUncompressed;
+			}
+			return TRUE;
+
+		case IDC_TIFF_LZW:
+			{
+				bool check = !!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+				if (check) {
+					mFormat = AVIOutputImages::kFormatTIFF_LZW;
+					CheckDlgButton(mhdlg, IDC_TIFF_ZIP, BST_UNCHECKED);
+				} else
+					mFormat = AVIOutputImages::kFormatTIFF_RAW;
+			}
+			return TRUE;
+
+		case IDC_TIFF_ZIP:
+			{
+				bool check = !!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+				if (check) {
+					mFormat = AVIOutputImages::kFormatTIFF_ZIP;
+					CheckDlgButton(mhdlg, IDC_TIFF_LZW, BST_UNCHECKED);
+				} else
+					mFormat = AVIOutputImages::kFormatTIFF_RAW;
+			}
 			return TRUE;
 
 		case IDOK:
@@ -746,6 +775,7 @@ public:
 
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 	void UpdateEnables();
+	void UpdateChecks();
 	void UpdateSlider();
 	void ChangeExtension(const wchar_t *newExtension);
 	void ChangeFilename(const wchar_t *newName);
@@ -765,10 +795,21 @@ VDSaveImageDialogW32::VDSaveImageDialogW32()
 void VDSaveImageDialogW32::UpdateEnables() {
 	bool bIsJPEG = 0!=IsDlgButtonChecked(mhdlg, IDC_FORMAT_JPEG);
 	bool bIsPNG = 0!=IsDlgButtonChecked(mhdlg, IDC_FORMAT_PNG);
+	bool bIsTGA = 0!=IsDlgButtonChecked(mhdlg, IDC_FORMAT_TGA);
+	bool bIsTIFF = 0!=IsDlgButtonChecked(mhdlg, IDC_FORMAT_TIFF);
 
 	EnableWindow(GetDlgItem(mhdlg, IDC_QUALITY), bIsJPEG);
 	EnableWindow(GetDlgItem(mhdlg, IDC_STATIC_QUALITY), bIsJPEG);
 	EnableWindow(GetDlgItem(mhdlg, IDC_QUICK), bIsPNG);
+	EnableWindow(GetDlgItem(mhdlg, IDC_TARGA_RLE), bIsTGA);
+	EnableWindow(GetDlgItem(mhdlg, IDC_TIFF_ZIP), bIsTIFF);
+	EnableWindow(GetDlgItem(mhdlg, IDC_TIFF_LZW), bIsTIFF);
+}
+
+void VDSaveImageDialogW32::UpdateChecks() {
+	CheckDlgButton(mhdlg, IDC_TARGA_RLE, mFormat == AVIOutputImages::kFormatTGA ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_TIFF_LZW, mFormat == AVIOutputImages::kFormatTIFF_LZW ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_TIFF_ZIP, mFormat == AVIOutputImages::kFormatTIFF_ZIP ? BST_CHECKED : BST_UNCHECKED);
 }
 
 void VDSaveImageDialogW32::UpdateSlider() {
@@ -807,6 +848,7 @@ const wchar_t* ExtFromFormat(int format) {
 	if (format==AVIOutputImages::kFormatJPEG) return L".jpeg";
 	if (format==AVIOutputImages::kFormatTIFF_LZW) return L".tiff";
 	if (format==AVIOutputImages::kFormatTIFF_RAW) return L".tiff";
+	if (format==AVIOutputImages::kFormatTIFF_ZIP) return L".tiff";
 	return 0;
 }
 
@@ -820,19 +862,15 @@ void VDSaveImageDialogW32::ChangeFilename(const wchar_t *newName) {
 
 void VDSaveImageDialogW32::InitFormat() {
 	CheckDlgButton(mhdlg, IDC_FORMAT_TGA, BST_UNCHECKED);
-	CheckDlgButton(mhdlg, IDC_FORMAT_TGAUNCOMPRESSED, BST_UNCHECKED);
 	CheckDlgButton(mhdlg, IDC_FORMAT_BMP, BST_UNCHECKED);
 	CheckDlgButton(mhdlg, IDC_FORMAT_JPEG, BST_UNCHECKED);
 	CheckDlgButton(mhdlg, IDC_FORMAT_PNG, BST_UNCHECKED);
-	CheckDlgButton(mhdlg, IDC_FORMAT_TIFF_LZW, BST_UNCHECKED);
-	CheckDlgButton(mhdlg, IDC_FORMAT_TIFF_RAW, BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_FORMAT_TIFF, BST_UNCHECKED);
 
-	CheckDlgButton(mhdlg, mFormat == AVIOutputImages::kFormatTGA ? IDC_FORMAT_TGA
-						: mFormat == AVIOutputImages::kFormatTGAUncompressed ? IDC_FORMAT_TGAUNCOMPRESSED
+	CheckDlgButton(mhdlg, (mFormat == AVIOutputImages::kFormatTGA || mFormat == AVIOutputImages::kFormatTGAUncompressed) ? IDC_FORMAT_TGA
 						: mFormat == AVIOutputImages::kFormatBMP ? IDC_FORMAT_BMP
 						: mFormat == AVIOutputImages::kFormatJPEG ? IDC_FORMAT_JPEG
-						: mFormat == AVIOutputImages::kFormatTIFF_LZW ? IDC_FORMAT_TIFF_LZW
-						: mFormat == AVIOutputImages::kFormatTIFF_RAW ? IDC_FORMAT_TIFF_RAW
+						: (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW || mFormat == AVIOutputImages::kFormatTIFF_ZIP) ? IDC_FORMAT_TIFF
 						: IDC_FORMAT_PNG
 						, BST_CHECKED);
 }
@@ -845,6 +883,7 @@ INT_PTR VDSaveImageDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 		CheckDlgButton(mhdlg, IDC_QUICK, mbQuickCompress ? BST_CHECKED : BST_UNCHECKED);
 		InitFormat();
 		UpdateEnables();
+		UpdateChecks();
 		UpdateSlider();
 
 		return TRUE;
@@ -862,14 +901,7 @@ INT_PTR VDSaveImageDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
 				UpdateEnables();
 				mFormat = AVIOutputImages::kFormatTGA;
-				ChangeExtension(L".tga");
-			}
-			return TRUE;
-
-		case IDC_FORMAT_TGAUNCOMPRESSED:
-			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
-				UpdateEnables();
-				mFormat = AVIOutputImages::kFormatTGAUncompressed;
+				UpdateChecks();
 				ChangeExtension(L".tga");
 			}
 			return TRUE;
@@ -898,24 +930,49 @@ INT_PTR VDSaveImageDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 			}
 			return TRUE;
 
-		case IDC_FORMAT_TIFF_LZW:
+		case IDC_FORMAT_TIFF:
 			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
 				UpdateEnables();
-				mFormat = AVIOutputImages::kFormatTIFF_LZW;
-				ChangeExtension(L".tiff");
-			}
-			return TRUE;
-
-		case IDC_FORMAT_TIFF_RAW:
-			if (SendMessage((HWND)lParam, BM_GETCHECK, 0, 0)) {
-				UpdateEnables();
-				mFormat = AVIOutputImages::kFormatTIFF_RAW;
+				mFormat = AVIOutputImages::kFormatTIFF_ZIP;
+				UpdateChecks();
 				ChangeExtension(L".tiff");
 			}
 			return TRUE;
 
 		case IDC_QUICK:
 			mbQuickCompress = !!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+			return TRUE;
+
+		case IDC_TARGA_RLE:
+			{
+				bool check = !!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+				if (check)
+					mFormat = AVIOutputImages::kFormatTGA;
+				else
+					mFormat = AVIOutputImages::kFormatTGAUncompressed;
+			}
+			return TRUE;
+
+		case IDC_TIFF_LZW:
+			{
+				bool check = !!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+				if (check) {
+					mFormat = AVIOutputImages::kFormatTIFF_LZW;
+					CheckDlgButton(mhdlg, IDC_TIFF_ZIP, BST_UNCHECKED);
+				} else
+					mFormat = AVIOutputImages::kFormatTIFF_RAW;
+			}
+			return TRUE;
+
+		case IDC_TIFF_ZIP:
+			{
+				bool check = !!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+				if (check) {
+					mFormat = AVIOutputImages::kFormatTIFF_ZIP;
+					CheckDlgButton(mhdlg, IDC_TIFF_LZW, BST_UNCHECKED);
+				} else
+					mFormat = AVIOutputImages::kFormatTIFF_RAW;
+			}
 			return TRUE;
 		}
 		break;

@@ -40,6 +40,7 @@ public:
 		kFormatTGAUncompressed,
 		kFormatTIFF_LZW,
 		kFormatTIFF_RAW,
+		kFormatTIFF_ZIP,
 		kFormatCount
 	};
 

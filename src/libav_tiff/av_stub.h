@@ -42,6 +42,7 @@ static char* av_strdup(const char* p){
 
 #define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
+#define AVERROR_UNKNOWN -1
 #define AVERROR_INVALIDDATA -1
 #define ENOMEM -2
 #define ENOSYS -3
@@ -70,7 +71,7 @@ static int ff_fast_malloc(void *ptr, unsigned int *size, size_t min_size, int ze
   *p = zero_realloc ? av_mallocz(min_size) : av_malloc(min_size);
   if (!*p)
     min_size = 0;
-  *size = min_size;
+  *size = (unsigned int)min_size;
   return 1;
 }
 
@@ -184,7 +185,7 @@ static int ff_thread_get_buffer(AVCodecContext* s, ThreadFrame* frame, int x)
   linesize = (bpp*s->width + 15) & ~15;
   buffer = (uint8_t*)av_malloc(linesize*s->height+15);
   frame->f->buffer = buffer;
-  frame->f->linesize[0] = linesize;
+  frame->f->linesize[0] = (int)linesize;
   frame->f->linesize[1] = 0;
   frame->f->linesize[2] = 0;
   frame->f->linesize[3] = 0;

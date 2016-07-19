@@ -47,7 +47,7 @@ protected:
 };
 
 class VDImageEncoderTIFF : public IVDImageEncoderTIFF {
-	void Encode(const VDPixmap& px, void *&p, uint32& len, bool lzw_compress, bool alpha);
+	void Encode(const VDPixmap& px, void *&p, uint32& len, int compress, bool alpha);
 };
 
 IVDImageDecoderTIFF *VDCreateImageDecoderTIFF() {
@@ -239,7 +239,7 @@ void VDImageDecoderTIFF::GetImage(void *p, int pitch, int format)
   av_frame_free(&frame);
 }
 
-void VDImageEncoderTIFF::Encode(const VDPixmap& px, void *&p, uint32& len, bool lzw_compress, bool alpha)
+void VDImageEncoderTIFF::Encode(const VDPixmap& px, void *&p, uint32& len, int compress, bool alpha)
 {
   int temp_format;
   switch(px.format){
@@ -331,7 +331,10 @@ void VDImageEncoderTIFF::Encode(const VDPixmap& px, void *&p, uint32& len, bool 
   ctx.pix_fmt = frame.pix_fmt;
   ctx.width = frame.width;
   ctx.height = frame.height;
-  tiff_encode_init(&ctx, lzw_compress ? TIFF_LZW:TIFF_RAW);
+  int compr = TIFF_RAW;
+  if (compress==tiffenc_lzw) compr = TIFF_LZW;
+  if (compress==tiffenc_zip) compr = TIFF_DEFLATE;
+  tiff_encode_init(&ctx, compr);
   AVPacket pkt = {0};
   int got_packet = 0;
   tiff_encode_frame(&ctx,&pkt,&frame,&got_packet);

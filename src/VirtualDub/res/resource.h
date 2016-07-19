@@ -573,9 +573,12 @@
 #define IDC_SHOWASPECTRATIOS            1185
 #define IDC_MUXPARTIAL2                 1185
 #define IDC_USEOUTPUTASTEMP             1185
+#define IDC_TARGA_RLE                   1185
 #define IDC_CHROMAAGCENEVEN             1186
 #define IDC_SHOWFRAMERATES              1186
+#define IDC_TIFF_LZW                    1186
 #define IDC_CHROMAAGCENODD              1187
+#define IDC_TIFF_ZIP                    1187
 #define IDC_LUMACOMBEVEN                1188
 #define IDC_CURRENT_VALUE               1189
 #define IDC_LUMACOMBODD                 1189
@@ -777,9 +780,6 @@
 #define IDC_FORMAT_JPEG                 1384
 #define IDC_SLIDER_WHITEUP              1385
 #define IDC_FORMAT_PNG                  1385
-#define IDC_FORMAT_TGAUNCOMPRESSED      1386
-#define IDC_FORMAT_TIFF_LZW             1387
-#define IDC_FORMAT_TIFF_RAW             1388
 #define IDC_SPIN_XOFFSET                1389
 #define IDC_SPIN_YOFFSET                1390
 #define IDC_OPACITY                     1391
@@ -932,6 +932,7 @@
 #define IDC_STATIC_COLORRANGE           1531
 #define IDC_STATIC_COLORRANGE2          1532
 #define IDC_PROFILE_LIST                1532
+#define IDC_FORMAT_TIFF                 1533
 #define IDS_HELP_CONTENTS               1536
 #define IDS_HELP_CHANGELOG              1537
 #define IDS_HELP_RELEASENOTES           1538
@@ -1495,7 +1496,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        310
 #define _APS_NEXT_COMMAND_VALUE         40587
-#define _APS_NEXT_CONTROL_VALUE         1533
+#define _APS_NEXT_CONTROL_VALUE         1534
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

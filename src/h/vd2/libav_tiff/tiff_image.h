@@ -19,10 +19,16 @@ public:
 	virtual void GetPixmapInfo(FilterModPixmapInfo& info) = 0;
 };
 
+enum {
+  tiffenc_default,
+  tiffenc_lzw,
+  tiffenc_zip
+};
+
 class VDINTERFACE IVDImageEncoderTIFF {
 public:
 	virtual ~IVDImageEncoderTIFF() {}
-	virtual void Encode(const VDPixmap& px, void *&p, uint32& len, bool lzw_compress, bool alpha) = 0;
+	virtual void Encode(const VDPixmap& px, void *&p, uint32& len, int compress, bool alpha) = 0;
 };
 
 IVDImageDecoderTIFF *VDCreateImageDecoderTIFF();

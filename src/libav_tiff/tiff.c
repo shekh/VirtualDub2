@@ -24,9 +24,11 @@
  * @author Konstantin Shishkov
  */
 
+#define CONFIG_ZLIB 1
+
 #include "config.h"
 #if CONFIG_ZLIB
-#include <zlib.h>
+#include "../../src/zlib/zlib.h"
 #endif
 #if CONFIG_LZMA
 #include <lzma.h>
@@ -406,10 +408,12 @@ static int tiff_unpack_zlib(TiffContext *s, AVFrame *p, uint8_t *dst, int stride
         } else {
             memcpy(dst, src, width);
         }
+        /*
         if (is_yuv) {
             unpack_yuv(s, p, dst, strip_start + line);
             line += s->subsampling[1] - 1;
         }
+        */
         dst += stride;
         src += width;
     }
@@ -528,6 +532,7 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
     int c, line, pixels, code, ret;
     const uint8_t *ssrc = src;
     int width = ((s->width * s->bpp) + 7) >> 3;
+    int is_yuv = 0;
     /*
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(p->format);
     int is_yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) &&

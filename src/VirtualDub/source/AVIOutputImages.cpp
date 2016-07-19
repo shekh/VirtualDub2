@@ -111,7 +111,7 @@ AVIVideoImageOutputStream::AVIVideoImageOutputStream(const wchar_t *pszPrefix, c
 		mpJPEGEncoder = VDCreateJPEGEncoder();
 	else if (mFormat == AVIOutputImages::kFormatPNG)
 		mpPNGEncoder = VDCreateImageEncoderPNG();
-	else if (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW)
+	else if (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW || mFormat == AVIOutputImages::kFormatTIFF_ZIP)
 		mpTIFFEncoder = VDCreateImageEncoderTIFF();
 }
 
@@ -120,7 +120,7 @@ AVIVideoImageOutputStream::~AVIVideoImageOutputStream() {
 }
 
 void AVIVideoImageOutputStream::WriteVideoImage(const VDPixmap *px) {
-	if (mFormat != AVIOutputImages::kFormatTIFF_LZW && mFormat != AVIOutputImages::kFormatTIFF_RAW) {
+	if (mFormat != AVIOutputImages::kFormatTIFF_LZW && mFormat != AVIOutputImages::kFormatTIFF_RAW && mFormat != AVIOutputImages::kFormatTIFF_ZIP) {
 		throw MyError("The current output video format is not supported by the selected output path.");
 	}
 
@@ -133,13 +133,15 @@ void AVIVideoImageOutputStream::WriteVideoImage(const VDPixmap *px) {
 	using namespace nsVDFile;
 	VDFile mFile(szFileName, kWrite | kDenyNone | kCreateAlways | kSequential);
 
-	if (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW) {
-		bool pack_lzw = mFormat == AVIOutputImages::kFormatTIFF_LZW;
+	if (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW || mFormat == AVIOutputImages::kFormatTIFF_ZIP) {
+		int enc = tiffenc_default;
+		if (mFormat == AVIOutputImages::kFormatTIFF_LZW) enc = tiffenc_lzw;
+		if (mFormat == AVIOutputImages::kFormatTIFF_ZIP) enc = tiffenc_zip;
 		bool alpha = px->info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid;
 
 		void *p;
 		uint32 len;
-		mpTIFFEncoder->Encode(*px, p, len, pack_lzw, alpha);
+		mpTIFFEncoder->Encode(*px, p, len, enc, alpha);
 
 		mFile.write(p, len);
 		free(p);
@@ -450,7 +452,7 @@ AVIOutputImages::AVIOutputImages(const wchar_t *szFilePrefix, const wchar_t *szF
 	, mFormat(format)
 	, mQuality(quality)
 {
-	VDASSERT(format == kFormatBMP || format == kFormatTGA || format == kFormatTGAUncompressed || format == kFormatJPEG || format == kFormatPNG || format == kFormatTIFF_LZW || format == kFormatTIFF_RAW);
+	VDASSERT(format == kFormatBMP || format == kFormatTGA || format == kFormatTGAUncompressed || format == kFormatJPEG || format == kFormatPNG || format == kFormatTIFF_LZW || format == kFormatTIFF_RAW || format == kFormatTIFF_ZIP);
 }
 
 AVIOutputImages::~AVIOutputImages() {
@@ -459,7 +461,7 @@ AVIOutputImages::~AVIOutputImages() {
 void AVIOutputImages::WriteSingleImage(const wchar_t *name, int format, int q, VDPixmap* px) {
 	AVIVideoImageOutputStream stream(name,L"",0,format,q);
 
-	if (format == AVIOutputImages::kFormatTIFF_LZW || format == AVIOutputImages::kFormatTIFF_RAW) {
+	if (format == AVIOutputImages::kFormatTIFF_LZW || format == AVIOutputImages::kFormatTIFF_RAW || format == AVIOutputImages::kFormatTIFF_ZIP) {
 		stream.WriteVideoImage(px);
 		return;
 	}
