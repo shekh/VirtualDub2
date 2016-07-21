@@ -121,7 +121,7 @@ void VDInputFileGIFSharedData::Parse(const wchar_t *filename) {
 
 		VDMemset32(mGlobalColorTable + globalColorTableSize, 0xFFFFFFFF, 256 - globalColorTableSize);
 
-		mBackgroundColor = mGlobalColorTable[backgroundColorIndex];
+		mBackgroundColor = mGlobalColorTable[backgroundColorIndex] & 0xFFFFFF;
 	} else {
 		for(int i=0; i<256; ++i)
 			mGlobalColorTable[i] = 0x010101*i + 0xFF000000;
@@ -499,8 +499,10 @@ const void *VDVideoSourceGIF::streamGetFrame(const void *inputBuffer, uint32 dat
 	uint32 pos = imageinfo.mOffsetAndKey & 0x7FFFFFFF;
 	sint16 transpColor = imageinfo.mTranspColor;
 
-	if (!data_len || !pos)
+	if (!data_len || !pos) {
+		mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaOpacity;
 		return getFrameBuffer();
+	}
 
 	if (imageinfo.mOffsetAndKey & 0x80000000)
 		VDMemset32Rect(mFrameBuffer.data(), mWidth * sizeof(uint32), mpSharedData->mBackgroundColor, mWidth, mHeight);
@@ -703,6 +705,7 @@ xit:
 		srcbm.w			= fw;
 		srcbm.h			= fh;
 		srcbm.format	= nsVDPixmap::kPixFormat_XRGB8888;
+		srcbm.info.alpha_type = FilterModPixmapInfo::kAlphaOpacity;
 
 		VDPixmapBlt(mTargetFormat, srcbm);
 	}
