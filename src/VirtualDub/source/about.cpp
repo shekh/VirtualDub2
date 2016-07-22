@@ -34,6 +34,7 @@ extern HINSTANCE g_hInst;
 
 ///////////////////////////////////////////////////////////////////////////
 
+/*
 static HDC g_hdcAboutDisplay;
 static HBITMAP g_hbmAboutDisplay;
 static HGDIOBJ g_hgoAboutDisplay;
@@ -210,11 +211,6 @@ void RenderTriangle(Pixel16 *dst, long dstpitch, Pixel16 *tex, TriPt *pt1, TriPt
 
 	s = (s>>3) + (s>>7);
 
-/*	if (y < 0)
-		y = 0;
-
-	if (y2 > 160)
-		y2 = 160;*/
 
 	dst += dstpitch * y;
 
@@ -284,6 +280,7 @@ static BOOL CALLBACK HideAllButOKCANCELProc(HWND hwnd, LPARAM lParam) {
 static void CALLBACK AboutTimerProc(UINT uID, UINT, DWORD_PTR dwUser, DWORD_PTR, DWORD_PTR) {
 	PostMessage((HWND)dwUser, WM_APP+0, 0, 0);
 }
+*/
 
 static void AboutSetCompilerBuild(HWND hwnd) {
 	VDStringW s(VDGetWindowTextW32(hwnd));
@@ -293,6 +290,7 @@ static void AboutSetCompilerBuild(HWND hwnd) {
 
 INT_PTR APIENTRY AboutDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
+/*
 	static bool bTimerSet;
 	static bool bRender;
 	static MMRESULT mmTimer;
@@ -310,6 +308,7 @@ INT_PTR APIENTRY AboutDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		{ 0, 2, 1, 3 },
 		{ 4, 5, 6, 7 },
 	};
+*/
 
     switch (message)
     {
@@ -365,7 +364,18 @@ INT_PTR APIENTRY AboutDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 						FreeResource(hGlobal);
 					}
 				}
+			}
+            return (TRUE);
 
+        case WM_COMMAND:                      
+            if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) 
+            {
+                EndDialog(hDlg, TRUE);  
+                return TRUE;
+            }
+            break;
+
+/*
 				// Showtime!  Invalidate the entire window, force an update, and show the window.
 
 				ShowWindow(hDlg, SW_SHOW);
@@ -653,6 +663,7 @@ INT_PTR APIENTRY AboutDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 				InvalidateRect(hDlg, &rDirty2, FALSE);
 			}
 			return TRUE;
+      */
     }
     return FALSE;
 }

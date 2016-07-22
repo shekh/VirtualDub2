@@ -955,17 +955,18 @@ BEGIN
     LTEXT           "Filter information",IDC_FILTER_INFO,7,151,258,40,0,WS_EX_STATICEDGE
 END
 
-IDD_ABOUT DIALOGEX 0, 0, 340, 238
+IDD_ABOUT DIALOGEX 0, 0, 340, 247
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About VirtualDub"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,283,218,50,14
-    LTEXT           "VirtualDub $v$s - Copyright (C) 1998-2012 by Avery Lee, All Rights Reserved.\n$m\nCompiled with $k\nThis program is free software and may be distributed according to the terms of the GNU General Public License.",IDC_STATIC_VERSION,7,7,326,45
+    DEFPUSHBUTTON   "OK",IDOK,283,227,50,14
+    LTEXT           "VirtualDub FilterMod - based on VirtualDub 1.10.5 by Avery Lee.\n$m\nCompiled with $k\nThis program is free software and may be distributed according to the terms of the GNU General Public License.",IDC_STATIC_VERSION,7,7,326,45
     LTEXT           "Build 0/release (baka baka baka)",IDC_FINALS_SUCK,7,54,238,8
-    GROUPBOX        "Special thanks",IDC_STATIC,7,71,326,142
-    LTEXT           "Please send all comments, criticism, etc. to <phaeron@virtualdub.org>.",IDC_STATIC,7,220,254,8
-    LISTBOX         IDC_CREDITS,14,84,312,120,LBS_SORT | LBS_USETABSTOPS | LBS_NOINTEGRALHEIGHT | LBS_NOSEL | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Original version special thanks",IDC_STATIC,7,80,326,142
+    LTEXT           "Please send all comments, criticism, etc. to <phaeron@virtualdub.org>.",IDC_STATIC,7,220,254,8,NOT WS_VISIBLE
+    LISTBOX         IDC_CREDITS,14,93,312,120,LBS_SORT | LBS_USETABSTOPS | LBS_NOINTEGRALHEIGHT | LBS_NOSEL | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Original version copyright (C) 1998-2012 by Avery Lee, All Rights Reserved.",IDC_STATIC,7,67,326,10
 END
 
 IDD_FILTER_CONVOLUTE DIALOGEX 0, 0, 231, 135
@@ -2723,7 +2724,7 @@ BEGIN
         VERTGUIDE, 14
         VERTGUIDE, 326
         TOPMARGIN, 7
-        BOTTOMMARGIN, 231
+        BOTTOMMARGIN, 240
     END
 
     IDD_FILTER_CONVOLUTE, DIALOG

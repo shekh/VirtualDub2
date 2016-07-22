@@ -543,7 +543,7 @@ bool Init(HINSTANCE hInstance, int nCmdShow, VDCommandLine& cmdLine) {
 	VDInstallModelessDialogHookW32();
 
 	// display welcome requester
-	Welcome();
+	//Welcome();
 	VDDisplayLicense(NULL, true);
 
 	// Announce experimentality.
