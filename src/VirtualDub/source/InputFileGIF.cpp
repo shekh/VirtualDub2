@@ -17,9 +17,6 @@
 
 #include "stdafx.h"
 
-#include <windows.h>
-
-#include <vd2/system/error.h>
 #include <vd2/system/file.h>
 #include <vd2/system/fraction.h>
 #include <vd2/system/binary.h>
@@ -27,8 +24,10 @@
 #include <vd2/Kasumi/pixmapops.h>
 #include "InputFile.h"
 #include "VideoSource.h"
+#include "resource.h"
+#include "gui.h"
 
-extern const char g_szError[];
+extern HINSTANCE g_hInst;
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -42,6 +41,8 @@ public:
 	vdblock<uint8>	mImage;
 	uint32		mWidth;
 	uint32		mHeight;
+	uint32		mPixelDepth;
+	uint32		mColors;
 	uint32		mBackgroundColor;
 	bool		mbKeyframeOnly;
 	VDFraction	mFrameRate;
@@ -103,26 +104,29 @@ void VDInputFileGIFSharedData::Parse(const wchar_t *filename) {
 
 	bool hasGlobalColorTable = (src[pos + 4] & 0x80) != 0;
 	uint32 globalColorTableBits = (src[pos + 4] & 7) + 1;
+	mPixelDepth = ((src[pos + 4] & 0x70)>>4) + 1;
 
 	pos += 7;
 
 	// parse global color table
 	mBackgroundColor = 0;
 	if (hasGlobalColorTable) {
-		uint32 globalColorTableSize = 1 << globalColorTableBits;
+		mColors = 1 << globalColorTableBits;
 
-		if (len - pos < 3 * globalColorTableSize)
+		if (len - pos < 3 * mColors)
 			throw MyError("File \"%ls\" is an invalid GIF file. (Unable to read global color table at position %x)", filename, pos);
 
-		for(uint32 i=0; i < globalColorTableSize; ++i) {
+		for(uint32 i=0; i < mColors; ++i) {
 			mGlobalColorTable[i] = 0xFF000000 + ((uint32)src[pos+0] << 16) + ((uint32)src[pos+1] << 8) + (uint32)src[pos+2];
 			pos += 3;
 		}
 
-		VDMemset32(mGlobalColorTable + globalColorTableSize, 0xFFFFFFFF, 256 - globalColorTableSize);
+		VDMemset32(mGlobalColorTable + mColors, 0xFFFFFFFF, 256 - mColors);
 
-		mBackgroundColor = mGlobalColorTable[backgroundColorIndex] & 0xFFFFFF;
+		mBackgroundColor = mGlobalColorTable[backgroundColorIndex] & 0x00FFFFFF;
 	} else {
+		mColors = 0;
+
 		for(int i=0; i<256; ++i)
 			mGlobalColorTable[i] = 0x010101*i + 0xFF000000;
 	}
@@ -165,7 +169,10 @@ void VDInputFileGIFSharedData::Parse(const wchar_t *filename) {
 
 				imageinfo.mTranspColor = -1;
 				if (flags & 0x01)
+				{
 					imageinfo.mTranspColor = src[pos + 3];
+					mGlobalColorTable[imageinfo.mTranspColor] &= 0x00FFFFFF;
+				}
 
 				uint8 disposalMode = (flags >> 2) & 7;
 
@@ -263,6 +270,9 @@ void VDInputFileGIFSharedData::Parse(const wchar_t *filename) {
 		if (presentationTimes.size() > 2) {
 			spantotal += timebase - *(presentationTimes.end() - 3);
 			++spancount;
+		} else if (presentationTimes.size() == 2) {
+			spantotal += timebase;
+			++spancount;
 		}
 
 		mImages.push_back(imageinfo);
@@ -282,18 +292,15 @@ finish:
 	uint32 numFrames = mImages.size();
 
 	mFrameRate.Assign(10, 1);
-	if (numFrames < 3) {
-		if (numFrames == 2)
-			mFrameRate.Assign(100, presentationTimes.back() - presentationTimes.front());
-	} else if (!presentationTimes.empty()) {
+	if (numFrames > 1 && !presentationTimes.empty()) {
 		vdfastvector<ImageInfo> images;
 
-		uint32 startTime = presentationTimes.front();
-		float timeToFrameFactor = (float)spancount / (float)spantotal * 2.0f;
+		VDFraction timeToFrameFactor(spancount * 2);
+		timeToFrameFactor /= spantotal;
 
 		for(uint32 i=0; i<numFrames; ++i) {
-			int delta = presentationTimes[i] - startTime;
-			int frame = VDRoundToInt(timeToFrameFactor * delta);
+			uint32 delta = presentationTimes[i] - presentationTimes.front();
+			int frame = (timeToFrameFactor * delta).asInt();
 
 			if (frame > images.size()) {
 				ImageInfo dummy;
@@ -307,8 +314,7 @@ finish:
 
 		mImages.swap(images);
 
-		VDFraction frac(timeToFrameFactor * 100.0);
-		mFrameRate = frac;
+		mFrameRate = timeToFrameFactor * 100;
 	}
 
 	mbKeyframeOnly = true;
@@ -344,6 +350,8 @@ public:
 	bool isStreaming()							{ return false; }
 
 	const void *getFrame(VDPosition lFrameDesired);
+	uint32 getPixelDepth()						{ return mpSharedData->mPixelDepth; }
+	uint32 getColors()							{ return mpSharedData->mColors; }
 	void streamBegin(bool, bool bForceReset) {
 		if (bForceReset)
 			streamRestart();
@@ -552,6 +560,9 @@ const void *VDVideoSourceGIF::streamGetFrame(const void *inputBuffer, uint32 dat
 		}
 
 		VDMemset32(localColorTable + localColorTableSize, 0xFFFFFFFF, 256 - localColorTableSize);
+
+		if (transpColor >= 0)
+			localColorTable[transpColor] &= 0x00FFFFFF;
 	}
 
 	uint8 minimumCodeSize = src[pos++];
@@ -743,6 +754,8 @@ bool VDVideoSourceGIF::setTargetFormat(VDPixmapFormatEx format) {
 ///////////////////////////////////////////////////////////////////////////
 
 class VDInputFileGIF : public InputFile {
+private:
+	static INT_PTR APIENTRY _InfoDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 public:
 	VDInputFileGIF();
 	~VDInputFileGIF();
@@ -750,6 +763,7 @@ public:
 	void Init(const wchar_t *szFile);
 
 	void setAutomated(bool fAuto);
+	void InfoDialog(VDGUIHandle hwndParent);
 
 	bool GetVideoSource(int index, IVDVideoSource **ppSrc);
 	bool GetAudioSource(int index, AudioSource **ppSrc);
@@ -784,6 +798,77 @@ bool VDInputFileGIF::GetVideoSource(int index, IVDVideoSource **ppSrc) {
 
 bool VDInputFileGIF::GetAudioSource(int index, AudioSource **ppSrc) {
 	return false;
+}
+
+namespace {
+	struct MyFileInfo {
+		vdrefptr<IVDVideoSource> mpVideo;
+	};
+}
+
+INT_PTR APIENTRY VDInputFileGIF::_InfoDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
+{
+	MyFileInfo *pInfo = (MyFileInfo *)GetWindowLongPtr(hDlg, DWLP_USER);
+
+	switch (message)
+	{
+		case WM_INITDIALOG:
+			{
+				char buf[128];
+
+				SetWindowLongPtr(hDlg, DWLP_USER, lParam);
+				pInfo = (MyFileInfo *)lParam;
+
+				if (pInfo->mpVideo) 
+				{
+					char *s;
+					VDVideoSourceGIF *pvs = static_cast<VDVideoSourceGIF *>(&*pInfo->mpVideo);
+
+					sprintf(buf, "%dx%d, %.3f fps (%ld µs)",
+								pvs->getImageFormat()->biWidth,
+								pvs->getImageFormat()->biHeight,
+								pvs->getRate().asDouble(),
+								VDRoundToLong(1000000.0 / pvs->getRate().asDouble()));
+					SetDlgItemText(hDlg, IDC_VIDEO_FORMAT, buf);
+
+					const sint64 length = pvs->getLength();
+					s = buf + sprintf(buf, "%I64d frames (", length);
+					DWORD ticks = VDRoundToInt(1000.0*length/pvs->getRate().asDouble());
+					ticks_to_str(s, (buf + sizeof(buf)/sizeof(buf[0])) - s, ticks);
+					sprintf(s+strlen(s),".%02d)", (ticks/10)%100);
+					SetDlgItemText(hDlg, IDC_VIDEO_NUMFRAMES, buf);
+
+					s = buf + sprintf(buf, "%d bpp", pvs->getPixelDepth());
+					uint32 col = pvs->getColors();
+					if (col > 0) s = s + sprintf(s, " (%d colors palette)", col);
+					SetDlgItemText(hDlg, IDC_VIDEO_COMPRESSION, buf);
+				}
+			}
+
+			return (TRUE);
+
+		case WM_COMMAND:
+			if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) 
+				EndDialog(hDlg, TRUE);
+			break;
+
+		case WM_DESTROY:
+			break;
+
+		case WM_USER+256:
+			EndDialog(hDlg, TRUE);
+			break;
+	}
+	return FALSE;
+}
+
+void VDInputFileGIF::InfoDialog(VDGUIHandle hwndParent) 
+{
+	MyFileInfo mai;
+	memset(&mai, 0, sizeof mai);
+	GetVideoSource(0, ~mai.mpVideo);
+
+	DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_GIF_INFO), (HWND)hwndParent, _InfoDlgProc, (LPARAM)&mai);
 }
 
 ///////////////////////////////////////////////////////////////////////////

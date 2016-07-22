@@ -19,6 +19,10 @@
 #include "imagejpegdec.h"
 #include "imageiff.h"
 #include "VBitmap.h"
+#include "resource.h"
+#include "gui.h"
+
+extern HINSTANCE g_hInst;
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -54,6 +58,8 @@ public:
 	bool isKeyframeOnly()					{ return true; }
 	bool isType1()							{ return false; }
 	bool isDecodable(VDPosition sample_num)		{ return true; }
+	bool getInitAlpha()							{ return mInitAlpha; }
+	nsVDPixmap::VDPixmapFormat getInitFormat(){ return mInitFormat; }
 
 private:
 	vdrefptr<VDInputFileImages> mpParent;
@@ -66,6 +72,7 @@ private:
 	VDFile	mCachedFile;
 
 	nsVDPixmap::VDPixmapFormat mInitFormat;
+  bool mInitAlpha;
 
 	vdautoptr<IVDJPEGDecoder> mpJPEGDecoder;
 	vdautoptr<IVDImageDecoderIFF> mpIFFDecoder;
@@ -75,6 +82,65 @@ private:
 
 IVDVideoSource *VDCreateVideoSourceImages(VDInputFileImages *parent) {
 	return new VideoSourceImages(parent);
+}
+
+INT_PTR APIENTRY VDInputFileImages::_InfoDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
+{
+	switch (message)
+	{
+		case WM_INITDIALOG:
+			{
+				char buf[128];
+
+				VideoSourceImages *pvs = (VideoSourceImages *)lParam;
+				char *s;
+
+				sprintf(buf, "%dx%d, %.3f fps (%ld µs)",
+							pvs->getImageFormat()->biWidth,
+							pvs->getImageFormat()->biHeight,
+							pvs->getRate().asDouble(),
+							VDRoundToLong(1000000.0 / pvs->getRate().asDouble()));
+				SetDlgItemText(hDlg, IDC_VIDEO_FORMAT, buf);
+
+				const sint64 length = pvs->getLength();
+				s = buf + sprintf(buf, "%I64d frames (", length);
+				DWORD ticks = VDRoundToInt(1000.0*length/pvs->getRate().asDouble());
+				ticks_to_str(s, (buf + sizeof(buf)/sizeof(buf[0])) - s, ticks);
+				sprintf(s+strlen(s),".%02d)", (ticks/10)%100);
+				SetDlgItemText(hDlg, IDC_VIDEO_NUMFRAMES, buf);
+				
+				const VDPixmapFormatInfo& info = VDPixmapGetInfo(pvs->getInitFormat());
+
+				s = buf + sprintf(buf, pvs->getInitAlpha() ? "%s with alpha" : "%s", info.name);
+				
+				SetDlgItemText(hDlg, IDC_VIDEO_COMPRESSION, buf);
+			}
+
+			return (TRUE);
+
+		case WM_COMMAND:
+			if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) 
+				EndDialog(hDlg, TRUE);
+			break;
+
+		case WM_DESTROY:
+			break;
+
+		case WM_USER+256:
+			EndDialog(hDlg, TRUE);
+			break;
+	}
+	return FALSE;
+}
+
+void VDInputFileImages::InfoDialog(VDGUIHandle hwndParent) 
+{
+	IVDVideoSource* vs;
+	GetVideoSource(0, &vs);
+	VideoSourceImages* images = static_cast<VideoSourceImages*>(vs);
+
+	DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_IMAGES_INFO), (HWND)hwndParent, _InfoDlgProc, (LPARAM)images);
+	vs->Release();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -293,6 +359,11 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 		mpTIFFDecoder->Decode(inputBuffer, data_len);
 		mpTIFFDecoder->GetSize(w, h);
 		format = mpTIFFDecoder->GetFormat();
+
+		// for info display
+		FilterModPixmapInfo info;
+		mpTIFFDecoder->GetPixmapInfo(info);
+		if(info.alpha_type) bHasAlpha = true;
 	}
 
 	// Check image header.
@@ -309,6 +380,10 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 
 	} else {
 		mInitFormat = (nsVDPixmap::VDPixmapFormat)format;
+		//! old decoders are not very informative
+		if (format==0)
+			mInitFormat = bHasAlpha ? nsVDPixmap::kPixFormat_XRGB8888 : nsVDPixmap::kPixFormat_RGB888;
+		mInitAlpha = bHasAlpha;
 
 		pFormat->biSize				= sizeof(BITMAPINFOHEADER);
 		pFormat->biWidth			= w;

@@ -4068,7 +4068,7 @@ void VDProjectUI::UISourceFileUpdated() {
 		VDSetLastLoadSaveFileName(kFileDialog_RawAudioOut, (fileName + (isMP3 ? L".mp3" : L".bin")).c_str());
 
 		VDSetLastLoadSaveFileName(kFileDialog_GIFOut, (fileName + L".gif").c_str());
-		VDSetLastLoadSaveFileName(kFileDialog_GIFOut, (fileName + L".png").c_str());
+		VDSetLastLoadSaveFileName(kFileDialog_PNGOut, (fileName + L".png").c_str());
 
 		const wchar_t *s = VDFileSplitPath(g_szInputAVIFile);
 

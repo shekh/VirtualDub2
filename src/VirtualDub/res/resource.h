@@ -78,6 +78,8 @@
 #define IDD_APNG_INFO                   113
 #define IDD_AVI_INFO                    114
 #define IDD_FILTER_EMBOSS               117
+#define IDD_GIF_INFO                    118
+#define IDD_IMAGES_INFO                 119
 #define IDD_FILTER_CLIPPING             120
 #define IDD_VIDEO_CLIPPING              121
 #define IDD_CHANGELOG                   124

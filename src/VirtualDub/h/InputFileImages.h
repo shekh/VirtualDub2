@@ -23,6 +23,8 @@
 #include "VideoSourceImages.h"
 
 class VDInputFileImages : public InputFile {
+private:
+	static INT_PTR APIENTRY _InfoDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 public:
 	VDInputFileImages();
 	~VDInputFileImages();
@@ -30,6 +32,7 @@ public:
 	void Init(const wchar_t *szFile);
 
 	void setAutomated(bool fAuto);
+	void InfoDialog(VDGUIHandle hwndParent);
 
 	bool GetVideoSource(int index, IVDVideoSource **ppSrc);
 	bool GetAudioSource(int index, AudioSource **ppSrc);
