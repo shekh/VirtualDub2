@@ -3125,6 +3125,7 @@ bool VDVideoUploadContextD3D9::Update(const VDPixmap& source, int fieldMask) {
 				ctx.mChromaOffsetU = 0.0f;
 				ctx.mChromaOffsetV = 0.0f;
 				ctx.mbHighPrecision = mbHighPrecision;
+				ctx.mDisplayMode = IVDVideoDisplayMinidriver::kDisplayColor;
 
 				switch(source.format) {
 					case nsVDPixmap::kPixFormat_YUV422_V210:
