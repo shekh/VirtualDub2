@@ -105,7 +105,10 @@ sint64 VDFilterAccelDownloader::GetNearestUniqueFrame(sint64 outputFrame) {
 	return mpSource->GetNearestUniqueFrame(outputFrame);
 }
 
-VDFilterAccelDownloader::RunResult VDFilterAccelDownloader::RunRequests(const uint32 *batchNumberLimit) {
+VDFilterAccelDownloader::RunResult VDFilterAccelDownloader::RunRequests(const uint32 *batchNumberLimit, int index) {
+	if (index>0)
+		return kRunResult_Idle;
+
 	if (mpRequest) {
 		if (!mDownloadMsg.mbCompleted)
 			return kRunResult_Blocked;

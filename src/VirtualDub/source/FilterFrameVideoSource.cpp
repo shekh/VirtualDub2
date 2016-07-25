@@ -45,7 +45,10 @@ void VDFilterFrameVideoSource::Init(IVDVideoSource *vs, const VDPixmapLayout& la
 	SetOutputLayout(layout);
 }
 
-VDFilterFrameVideoSource::RunResult VDFilterFrameVideoSource::RunRequests(const uint32 *batchNumberLimit) {
+VDFilterFrameVideoSource::RunResult VDFilterFrameVideoSource::RunRequests(const uint32 *batchNumberLimit, int index) {
+	if (index>0)
+		return kRunResult_Idle;
+
 	if (!mpVS->streamOwn(this)) {
 		mpVS->streamBegin(false, true);
 	}

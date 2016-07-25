@@ -945,7 +945,7 @@ bool VDProject::UpdateFrame(bool updateInputFrame) {
 			}
 
 			if (mpVideoFrameSource) {
-				switch(mpVideoFrameSource->RunRequests(NULL)) {
+				switch(mpVideoFrameSource->RunRequests(NULL,0)) {
 					case IVDFilterFrameSource::kRunResult_Running:
 					case IVDFilterFrameSource::kRunResult_IdleWasActive:
 					case IVDFilterFrameSource::kRunResult_BlockedWasActive:

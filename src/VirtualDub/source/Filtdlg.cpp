@@ -331,7 +331,7 @@ void FiltersEditor::EvalView(FilterInstance* fa, IVDPixmapViewDialog* view) {
 			if (mFiltSys.Run(NULL, false) == FilterSystem::kRunResult_Running)
 				continue;
 
-			switch(mpVideoFrameSource->RunRequests(NULL)) {
+			switch(mpVideoFrameSource->RunRequests(NULL,0)) {
 				case IVDFilterFrameSource::kRunResult_Running:
 				case IVDFilterFrameSource::kRunResult_IdleWasActive:
 				case IVDFilterFrameSource::kRunResult_BlockedWasActive:

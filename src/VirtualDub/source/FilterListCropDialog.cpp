@@ -323,7 +323,7 @@ void VDFilterClippingDialog::UpdateFrame(VDPosition pos) {
 				if (src->CreateRequest(pos, false, 0, ~req)) {
 					bool canBlock = false;
 					do {
-						if (IVDFilterFrameSource::kRunResult_Running == mpFrameSource->RunRequests(NULL)) {
+						if (IVDFilterFrameSource::kRunResult_Running == mpFrameSource->RunRequests(NULL,0)) {
 							canBlock = false;
 							continue;
 						}

@@ -43,7 +43,7 @@ public:
 	sint64 GetSymbolicFrame(sint64 outputFrame, IVDFilterFrameSource *source);
 	sint64 GetNearestUniqueFrame(sint64 outputFrame);
 
-	RunResult RunRequests(const uint32 *batchNumberLimit);
+	RunResult RunRequests(const uint32 *batchNumberLimit, int index);
 
 protected:
 	struct CallbackMsg;

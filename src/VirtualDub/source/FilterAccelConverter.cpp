@@ -75,7 +75,10 @@ sint64 VDFilterAccelConverter::GetNearestUniqueFrame(sint64 outputFrame) {
 	return mpSource->GetNearestUniqueFrame(outputFrame);
 }
 
-VDFilterAccelConverter::RunResult VDFilterAccelConverter::RunRequests(const uint32 *batchNumberLimit) {
+VDFilterAccelConverter::RunResult VDFilterAccelConverter::RunRequests(const uint32 *batchNumberLimit, int index) {
+	if (index>0)
+		return kRunResult_Idle;
+
 	if (mpRequest) {
 		if (mProcessStatus == kProcess_Pending)
 			return kRunResult_Blocked;
@@ -128,7 +131,10 @@ VDFilterAccelConverter::RunResult VDFilterAccelConverter::RunRequests(const uint
 	return kRunResult_Blocked;
 }
 
-VDFilterAccelConverter::RunResult VDFilterAccelConverter::RunProcess() {
+VDFilterAccelConverter::RunResult VDFilterAccelConverter::RunProcess(int index) {
+	if (index>0)
+		return kRunResult_Idle;
+
 	if (mProcessStatus != kProcess_Pending)
 		return kRunResult_Idle;
 
