@@ -813,11 +813,11 @@ bool VDDialogSelectVideoFormatW32::FormatItemSort::operator()(const FormatItem& 
 
 class VDDialogVideoDepthW32 : public VDDialogFrameW32 {
 public:
-	inline VDDialogVideoDepthW32(DubOptions& opts)
+	inline VDDialogVideoDepthW32(DubOptions& opts, bool input)
 		: VDDialogFrameW32(IDD_VIDEO_DEPTH)
 		, mOpts(opts)
 		, mbInputBrowsePending(false)
-		, mbOutputBrowsePending(false)
+		, mSelectInput(input)
 	{}
 
 	inline bool Activate(VDGUIHandle hParent) { return 0!=ShowDialog(hParent); }
@@ -829,13 +829,11 @@ protected:
 	void OnDataExchange(bool write);
 	void SyncControls();
 	void SyncInputColor();
-	void SyncOutputColor();
 
 	VDPixmapFormatEx mInputFormat;
-	VDPixmapFormatEx mOutputFormat;
 	DubOptions& mOpts;
 	bool mbInputBrowsePending;
-	bool mbOutputBrowsePending;
+	bool mSelectInput;
 
 	struct FormatButtonMapping {
 		int mFormat;
@@ -889,15 +887,6 @@ INT_PTR VDDialogVideoDepthW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPara
 				SyncControls();
 			}
 
-			if (mbOutputBrowsePending) {
-				mbOutputBrowsePending = false;
-
-				VDDialogSelectVideoFormatW32 dlg(mOutputFormat);
-				if (dlg.ShowDialog((VDGUIHandle)mhdlg))
-					mOutputFormat = dlg.GetSelectedFormat();
-
-				SyncControls();
-			}
 			return TRUE;
     }
 
@@ -907,6 +896,19 @@ INT_PTR VDDialogVideoDepthW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPara
 bool VDDialogVideoDepthW32::OnLoaded() {
 	SetFocusToControl(IDC_INPUT_AUTOSELECT);
 	OnDataExchange(false);
+	if (mSelectInput)
+		SetWindowText(mhdlg,"Decompression format");
+	else
+		SetWindowText(mhdlg,"Output format to compressor");
+	ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), mSelectInput && inputVideo ? SW_SHOW:SW_HIDE);
+	if (mSelectInput && inputVideo) {
+		VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
+		const VDPixmapFormatInfo& info = VDPixmapGetInfo(inputFormat);
+		VDString s;
+		s += "Current format: ";
+		s += info.name;
+		SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
+	}
 	return true;
 }
 
@@ -917,8 +919,10 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 				{
 					VDRegistryAppKey key("Preferences");
 
-					key.setInt("Input format", mInputFormat);
-					key.setInt("Output format", mOutputFormat);
+					if (mSelectInput)
+						key.setInt("Input format", mInputFormat);
+					else
+						key.setInt("Output format", mInputFormat);
 				}
 				break;
 
@@ -926,11 +930,6 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 				// There are some weird issues with BN_CLICKED being sent multiple times with
 				// keyboard selection (mouse selection is OK).
 				mbInputBrowsePending = true;
-				PostMessage(mhdlg, WM_USER + 200, 0, 0);
-				return TRUE;
-
-			case IDC_OUTPUT_OTHER:
-				mbOutputBrowsePending = true;
 				PostMessage(mhdlg, WM_USER + 200, 0, 0);
 				return TRUE;
 
@@ -957,30 +956,6 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 			case IDC_CR_FULL:
 				mInputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
 				return TRUE;
-
-			case IDC_CS2_NONE:
-				mOutputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
-				return TRUE;
-
-			case IDC_CS2_601:
-				mOutputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
-				return TRUE;
-
-			case IDC_CS2_709:
-				mOutputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
-				return TRUE;
-
-			case IDC_CR2_NONE:
-				mOutputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
-				return TRUE;
-
-			case IDC_CR2_LIMITED:
-				mOutputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-				return TRUE;
-
-			case IDC_CR2_FULL:
-				mOutputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-				return TRUE;
 		}
 
 		for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
@@ -988,11 +963,6 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 			if (fbm.mInputButton == id) {
 				mInputFormat = fbm.mFormat;
 				SyncInputColor();
-			}
-
-			if (fbm.mOutputButton == id) {
-				mOutputFormat = fbm.mFormat;
-				SyncOutputColor();
 			}
 		}
 	}
@@ -1002,38 +972,35 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 
 void VDDialogVideoDepthW32::OnDataExchange(bool write) {
 	if (write) {
-		mOpts.video.mInputFormat = mInputFormat;
-		mOpts.video.mOutputFormat = mOutputFormat;
+		if (mSelectInput)
+			mOpts.video.mInputFormat = mInputFormat;
+		else
+			mOpts.video.mOutputFormat = mInputFormat;
 	} else {
-		mInputFormat = mOpts.video.mInputFormat;
-		mOutputFormat = mOpts.video.mOutputFormat;
+		if (mSelectInput)
+			mInputFormat = mOpts.video.mInputFormat;
+		else
+			mInputFormat = mOpts.video.mOutputFormat;
 		SyncControls();
 	}
 }
 
 void VDDialogVideoDepthW32::SyncControls() {
 	uint32 inputButton = IDC_INPUT_OTHER;
-	uint32 outputButton = IDC_OUTPUT_OTHER;
 
 	// We have to force the 'other' buttons off in case we're being called from
 	// a BN_CHECKED handler.
 	CheckButton(inputButton, false);
-	CheckButton(outputButton, false);
 
 	for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
 		const FormatButtonMapping& fbm = kFormatButtonMappings[i];
 
 		if (fbm.mFormat == mInputFormat)
 			inputButton = fbm.mInputButton;
-
-		if (fbm.mFormat == mOutputFormat)
-			outputButton = fbm.mOutputButton;
 	}
 
 	CheckButton(inputButton, true);
-	CheckButton(outputButton, true);
 	SyncInputColor();
-	SyncOutputColor();
 }
 
 void VDDialogVideoDepthW32::SyncInputColor() {
@@ -1065,37 +1032,8 @@ void VDDialogVideoDepthW32::SyncInputColor() {
 	}
 }
 
-void VDDialogVideoDepthW32::SyncOutputColor() {
-	bool enable = false;
-	if (mOutputFormat==nsVDPixmap::kPixFormat_YUV422_V210) enable = true;
-	EnableControl(IDC_STATIC_COLORSPACE2, enable);
-	EnableControl(IDC_STATIC_COLORRANGE2, enable);
-	EnableControl(IDC_CS2_NONE,   enable);
-	EnableControl(IDC_CS2_601,    enable);
-	EnableControl(IDC_CS2_709,    enable);
-	EnableControl(IDC_CR2_NONE,   enable);
-	EnableControl(IDC_CR2_LIMITED,enable);
-	EnableControl(IDC_CR2_FULL,   enable);
-	if (enable) {
-		VDPixmapFormatEx& format = mOutputFormat;
-		CheckButton(IDC_CS2_NONE, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_None);
-		CheckButton(IDC_CS2_601, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_601);
-		CheckButton(IDC_CS2_709, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_709);
-		CheckButton(IDC_CR2_NONE, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_None);
-		CheckButton(IDC_CR2_LIMITED, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_Limited);
-		CheckButton(IDC_CR2_FULL, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_Full);
-	} else {
-		CheckButton(IDC_CS2_NONE,    true);
-		CheckButton(IDC_CS2_601,     false);
-		CheckButton(IDC_CS2_709,     false);
-		CheckButton(IDC_CR2_NONE,    true);
-		CheckButton(IDC_CR2_LIMITED, false);
-		CheckButton(IDC_CR2_FULL,    false);
-	}
-}
-
-bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts) {
-	VDDialogVideoDepthW32 dlg(opts);
+bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts, bool input) {
+	VDDialogVideoDepthW32 dlg(opts,input);
 
 	return dlg.Activate(hParent);
 }

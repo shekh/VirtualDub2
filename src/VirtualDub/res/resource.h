@@ -49,6 +49,7 @@
 #define IDC_ABOUT                       8
 #define IDS_TITLE_FRAMESERVER           9
 #define IDC_BLENDING                    9
+#define IDC_PIXELFORMAT                 9
 #define IDS_TITLE_CAPTURE2              10
 #define IDC_OPTIONS                     10
 #define IDC_DELETE                      11
@@ -935,6 +936,7 @@
 #define IDC_STATIC_COLORRANGE2          1532
 #define IDC_PROFILE_LIST                1532
 #define IDC_FORMAT_TIFF                 1533
+#define IDC_ACTIVEFORMAT                1534
 #define IDS_HELP_CONTENTS               1536
 #define IDS_HELP_CHANGELOG              1537
 #define IDS_HELP_RELEASENOTES           1538
@@ -1498,7 +1500,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        310
 #define _APS_NEXT_COMMAND_VALUE         40587
-#define _APS_NEXT_CONTROL_VALUE         1534
+#define _APS_NEXT_CONTROL_VALUE         1535
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

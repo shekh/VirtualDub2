@@ -113,9 +113,11 @@ protected:
 	void EnumeratePluginCodecs();
 	void RebuildCodecList();
 	void UpdateEnables();
+	void UpdateFormat();
 	void SelectCompressor(CodecInfo *pii);
 
 	void OnCodecSelectionChanged(VDUIProxyListBoxControl *sender, int index);
+	void SetVideoDepthOptionsAsk();
 
 	COMPVARS2 *mpCompVars;
 	BITMAPINFOHEADER *mpSrcFormat;
@@ -242,12 +244,19 @@ bool VDUIDialogChooseVideoCompressorW32::OnCommand(uint32 id, uint32 extcode) {
 
 				if (mpCurrent)
 					UpdateEnables();
+
+				SelectCompressor(mpCurrent);
+				UpdateFormat();
 			}
 			return TRUE;
 
 		case IDC_ABOUT:
 			if (mhCodec)
 				mhCodec->about(mhdlg);
+			return TRUE;
+
+		case IDC_PIXELFORMAT:
+			SetVideoDepthOptionsAsk();
 			return TRUE;
 
 		case IDC_EDIT_QUALITY:
@@ -466,12 +475,14 @@ void VDUIDialogChooseVideoCompressorW32::RebuildCodecList() {
 			mCodecList.SetSelection(ind);
 
 			SelectCompressor(&ici);
+			UpdateFormat();
 		}
 	}
 
 	if (mSelect==-1) {
 		mCodecList.SetSelection(0);
 		SelectCompressor(NULL);
+		UpdateFormat();
 	} else {
 		// force selection to be visible with sorting
 		mCodecList.MakeSelectionVisible();
@@ -542,13 +553,31 @@ static int g_yres[]={
 static int g_depths[]={
 	16, 24, 32,
 	48,
-	64
+	64,
+	12,
+	16,
+	24,
+	30
 };
 
 static int g_depths_fcc[]={
 	0, 0, 0,
 	VDMAKEFOURCC('b', '4', '8', 'r'),
-	VDMAKEFOURCC('b', '6', '4', 'a')
+	VDMAKEFOURCC('b', '6', '4', 'a'),
+	VDMAKEFOURCC('Y', 'V', '1', '2'),
+	VDMAKEFOURCC('Y', 'U', 'Y', '2'),
+	VDMAKEFOURCC('Y', 'V', '2', '4'),
+	VDMAKEFOURCC('v', '2', '1', '0')
+};
+
+static const wchar_t* g_depths_id[]={
+  L"rgb16", L"rgb", L"rgba",
+  L"b48r",
+  L"b64a",
+  L"YV12",
+  L"YUY2",
+  L"YV24",
+  L"v210"
 };
 
 
@@ -752,11 +781,11 @@ pass:
 
 	// Print out results
 	if (depth_bits != 7) {
-		s = L"Valid depths:";
+		s = L"Valid pixel formats:";
 
 		for(k=0; k<NDEPTHS; k++)
 			if (depth_bits & (1<<k))
-				s.append_sprintf(L" %d", g_depths[k]);
+				s.append_sprintf(L" %s", g_depths_id[k]);
 
 		LBAddString(IDC_SIZE_RESTRICTIONS, s.c_str());
 	}
@@ -774,6 +803,41 @@ void VDUIDialogChooseVideoCompressorW32::OnCodecSelectionChanged(VDUIProxyListBo
 	CodecInfo *pii = data >= 0 ? mCodecs[data] : NULL;
 
 	SelectCompressor(pii);
+	UpdateFormat();
+}
+
+void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
+	VDPixmapFormatEx format = g_dubOpts.video.mOutputFormat;
+	const VDPixmapFormatInfo& info = VDPixmapGetInfo(format);
+	VDString s;
+
+	if(format==0) {
+		if (g_dubOpts.video.mode >= DubVideoOptions::M_FULL && inputVideo) {
+			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
+			const VDPixmapFormatInfo& info = VDPixmapGetInfo(inputFormat);
+			s += "auto (";
+			s += info.name;
+			s += ")";
+		} else {
+			s += "auto";
+		}
+	} else {
+		s += info.name;
+	}
+
+	SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
+}
+
+void VDUIDialogChooseVideoCompressorW32::SetVideoDepthOptionsAsk() {
+	extern bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts, bool input);
+
+	VDPixmapFormatEx outputFormatOld = g_dubOpts.video.mOutputFormat;
+	VDDisplayVideoDepthDialog((VDGUIHandle)mhdlg, g_dubOpts, false);
+	bool changed = !outputFormatOld.fullEqual(g_dubOpts.video.mOutputFormat);
+	if (changed) {
+		SelectCompressor(mpCurrent);
+		UpdateFormat();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
