@@ -70,11 +70,10 @@ extern HINSTANCE g_hInst;
 
 extern vdrefptr<IVDVideoSource>	inputVideo;
 extern vdrefptr<AudioSource> inputAudio;
-extern COMPVARS g_Vcompression;
+extern COMPVARS2 g_Vcompression;
 
 extern const char *VDGetStartupArgument(int index);
 
-extern void FreeCompressor(COMPVARS *pCompVars);
 static VDScriptValue RootHandler(IVDScriptInterpreter *isi, char *szName, void *lpData);
 
 extern bool VDPreferencesGetBatchShowStatusWindow();
@@ -848,7 +847,7 @@ static void func_VDVideo_SetCompression(IVDScriptInterpreter *, VDScriptValue *a
 //	ICCompressorFree(&g_Vcompression);
 	FreeCompressor(&g_Vcompression);
 
-	memset(&g_Vcompression, 0, sizeof(COMPVARS));
+	g_Vcompression.clear();
 
 	if (!arg_count) return;
 
@@ -866,7 +865,7 @@ static void func_VDVideo_SetCompression(IVDScriptInterpreter *, VDScriptValue *a
 	g_Vcompression.lKey			= arglist[1].asInt();
 	g_Vcompression.lQ			= arglist[2].asInt();
 	g_Vcompression.lDataRate	= arglist[3].asInt();
-	g_Vcompression.hic			= ICOpen(g_Vcompression.fccType, g_Vcompression.fccHandler, ICMODE_COMPRESS);
+	g_Vcompression.driver		= EncoderHIC::open(g_Vcompression.fccType, g_Vcompression.fccHandler, ICMODE_COMPRESS);
 }
 
 static void func_VDVideo_SetCompData(IVDScriptInterpreter *isi, VDScriptValue *arglist, int arg_count) {
@@ -887,7 +886,7 @@ static void func_VDVideo_SetCompData(IVDScriptInterpreter *isi, VDScriptValue *a
 	memunbase64((char *)mem, *arglist[1].asString(), l);
 	_CrtCheckMemory();
 
-	ICSetState(g_Vcompression.hic, mem, l);
+	g_Vcompression.driver->setState(mem, l);
 
 	freemem(mem);
 }
@@ -909,7 +908,7 @@ static void func_VDVideo_EnableIndeoQC(IVDScriptInterpreter *, VDScriptValue *ar
 	r4enc.dwFlags			= ENCSEQ_VALID | ENCSEQ_QUICK_COMPRESS;
 	r4enc.fQuickCompress	= !!arglist[0].asInt();
 
-	ICSetState(g_Vcompression.hic, &r4enc, sizeof r4enc);
+	g_Vcompression.driver->setState(&r4enc, sizeof r4enc);
 }
 
 static void func_VDVideo_SetIVTC(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {

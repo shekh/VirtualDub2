@@ -360,7 +360,7 @@ private:
 	vdrefptr<VDFilterFrameVideoSource>	mpVideoFrameSource;
 
 	IVDDubberOutputSystem	*mpOutputSystem;
-	COMPVARS			*compVars;
+	COMPVARS2			*compVars;
 
 	DubAudioStreamInfo	aInfo;
 	DubVideoStreamInfo	vInfo;
@@ -1388,10 +1388,10 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 	fPreview			= mpOutputSystem->IsRealTime();
 
 	inputSubsetActive	= pfs;
-	compVars			= (COMPVARS *)videoCompVars;
+	compVars			= (COMPVARS2 *)videoCompVars;
 
-	if (pOutputSystem->IsVideoCompressionEnabled() && pOutputSystem->AcceptsVideo() && mOptions.video.mode>DubVideoOptions::M_NONE && compVars && (compVars->dwFlags & ICMF_COMPVARS_VALID) && compVars->hic)
-		mpVideoCompressor = VDCreateVideoCompressorVCM(compVars->hic, compVars->lDataRate*1024, compVars->lQ, compVars->lKey, false);
+	if (pOutputSystem->IsVideoCompressionEnabled() && pOutputSystem->AcceptsVideo() && mOptions.video.mode>DubVideoOptions::M_NONE && compVars && (compVars->dwFlags & ICMF_COMPVARS_VALID) && compVars->driver)
+		mpVideoCompressor = VDCreateVideoCompressorVCM(compVars->driver, compVars->lDataRate*1024, compVars->lQ, compVars->lKey, false);
 
 	if (!(inputSubsetActive = inputSubsetAlloc = new_nothrow FrameSubset(*pfs)))
 		throw MyMemoryError();

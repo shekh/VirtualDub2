@@ -22,12 +22,14 @@
 #include <vfw.h>
 #include <vd2/system/VDString.h>
 
+struct EncoderHIC;
+
 class VideoSequenceCompressor {
 public:
 	VideoSequenceCompressor();
 	~VideoSequenceCompressor();
 
-	void init(HIC hic, BITMAPINFO *pbiInput, BITMAPINFO *pbiOutput, long lQ, long lKeyRate);
+	void init(EncoderHIC* driver, BITMAPINFO *pbiInput, BITMAPINFO *pbiOutput, long lQ, long lKeyRate);
 	void setDataRate(long lDataRate, long lUsPerFrame, long lFrameCount);
 	void start();
 	void dropFrame();
@@ -41,7 +43,7 @@ public:
 private:
 	void PackFrameInternal(DWORD frameSize, DWORD q, void *pBits, DWORD dwFlagsIn, DWORD& dwFlagsOut, sint32& bytes);
 
-	HIC			hic;
+	EncoderHIC	*driver;
 	DWORD		dwFlags;
 	DWORD		mVFWExtensionMessageID;
 	BITMAPINFO	*pbiInput, *pbiOutput;

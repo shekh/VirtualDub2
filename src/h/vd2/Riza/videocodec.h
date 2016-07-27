@@ -23,6 +23,8 @@
 #include <vd2/system/vdtypes.h>
 #include <vd2/system/fraction.h>
 #include <vd2/system/vdstl.h>
+#include <windows.h>
+#include <vfw.h>
 
 struct tagBITMAPINFOHEADER;
 
@@ -54,7 +56,7 @@ public:
 	virtual void Clone(IVDVideoCompressor **vc) = 0;
 };
 
-IVDVideoCompressor *VDCreateVideoCompressorVCM(const void *pHIC, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle);
+IVDVideoCompressor *VDCreateVideoCompressorVCM(struct EncoderHIC *pHIC, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle);
 
 class VDINTERFACE IVDVideoDecompressor {
 public:
@@ -88,5 +90,83 @@ public:
 };
 
 void VDSetVideoCodecBugTrap(IVDVideoCodecBugTrap *);
+
+typedef LRESULT (WINAPI DriverProc)(DWORD_PTR dwDriverId, HDRVR hDriver, UINT uMsg, LPARAM lParam1, LPARAM lParam2);
+
+struct EncoderHIC{
+	HMODULE module;
+	DriverProc* proc;
+	DWORD_PTR obj;
+	HIC hic;
+
+	EncoderHIC(){
+		module = 0;
+		obj = 0;
+		proc = 0;
+		hic = 0;
+	}
+
+	~EncoderHIC(){
+		close();
+		if(module) FreeLibrary(module);
+	}
+
+	static EncoderHIC* load(const wchar_t* path, DWORD type, DWORD handler, DWORD flags);
+	static EncoderHIC* open(DWORD type, DWORD handler, DWORD flags);
+
+	bool getInfo(ICINFO& info);
+	int compressQuery(void* src, void* dst);
+	int sendMessage(int msg, LPARAM p1, LPARAM p2);
+	void close();
+	void configure(HWND hwnd);
+	void about(HWND hwnd);
+	bool queryConfigure();
+	bool queryAbout();
+	void setState(void* data, int size);
+	int getState(void* data, int size);
+	int getStateSize(){ return getState(0,0); }
+	int compressGetFormat(BITMAPINFO* b1, BITMAPINFO* b2){ return sendMessage(ICM_COMPRESS_GET_FORMAT,(LPARAM)b1,(LPARAM)b2); }
+	int compressGetFormatSize(BITMAPINFO* b1){ return compressGetFormat(b1,0); }
+	int compressGetSize(BITMAPINFO* b1, BITMAPINFO* b2){ return sendMessage(ICM_COMPRESS_GET_SIZE,(LPARAM)b1,(LPARAM)b2); }
+	int compressBegin(BITMAPINFO* b1, BITMAPINFO* b2){ return sendMessage(ICM_COMPRESS_BEGIN,(LPARAM)b1,(LPARAM)b2); }
+	int compressEnd(){ return sendMessage(ICM_COMPRESS_END,0,0); }
+	int decompressBegin(BITMAPINFO* b1, BITMAPINFO* b2){ return sendMessage(ICM_DECOMPRESS_BEGIN,(LPARAM)b1,(LPARAM)b2); }
+	int decompressEnd(){ return sendMessage(ICM_DECOMPRESS_END,0,0); }
+
+	DWORD compress(
+		DWORD               dwFlags,
+		LPBITMAPINFOHEADER  lpbiOutput,
+		LPVOID              lpData,
+		LPBITMAPINFOHEADER  lpbiInput,
+		LPVOID              lpBits,
+		LPDWORD             lpckid,
+		LPDWORD             lpdwFlags,
+		LONG                lFrameNum,
+		DWORD               dwFrameSize,
+		DWORD               dwQuality,
+		LPBITMAPINFOHEADER  lpbiPrev,
+		LPVOID              lpPrev
+	);
+
+	DWORD decompress(
+		DWORD               dwFlags, 
+		LPBITMAPINFOHEADER  lpbiFormat, 
+		LPVOID              lpData, 
+		LPBITMAPINFOHEADER  lpbi, 
+		LPVOID              lpBits
+	);
+};
+
+struct COMPVARS2: public COMPVARS{
+	EncoderHIC* driver;
+
+	COMPVARS2(){ driver=0; }
+	~COMPVARS2(){ delete driver; }
+	void clear() {
+		memset(this, 0, sizeof COMPVARS);
+	}
+};
+
+void FreeCompressor(COMPVARS2 *pCompVars);
 
 #endif

@@ -112,7 +112,7 @@ extern VDProject *g_project;
 extern vdrefptr<VDProjectUI> g_projectui;
 
 extern vdrefptr<AudioSource>	inputAudio;
-extern COMPVARS g_Vcompression;
+extern COMPVARS2 g_Vcompression;
 
 static bool				g_vertical				= FALSE;
 
@@ -144,8 +144,7 @@ extern IVDPositionControlCallback *VDGetPositionControlCallbackTEMP() {
 
 extern char PositionFrameTypeCallback(HWND hwnd, void *pvData, long pos);
 
-extern void ChooseCompressor(HWND hwndParent, COMPVARS *lpCompVars, BITMAPINFOHEADER *bihInput);
-extern void FreeCompressor(COMPVARS *pCompVars);
+extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
 extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *, WAVEFORMATEX *, VDString& shortNameHint);
 extern void VDDisplayLicense(HWND hwndParent, bool conditional);
 
@@ -1612,7 +1611,7 @@ void VDProjectUI::SetVideoRangeOptionsAsk() {
 
 void VDProjectUI::SetVideoCompressionAsk() {
 	if (!(g_Vcompression.dwFlags & ICMF_COMPVARS_VALID)) {
-		memset(&g_Vcompression, 0, sizeof g_Vcompression);
+		g_Vcompression.clear();
 		g_Vcompression.dwFlags |= ICMF_COMPVARS_VALID;
 		g_Vcompression.lQ = 10000;
 	}

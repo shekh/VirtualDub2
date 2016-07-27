@@ -88,7 +88,6 @@ extern long g_lSpillMaxSize;
 extern HWND			g_hWnd;
 
 extern void CaptureBT848Reassert();
-extern void FreeCompressor(COMPVARS *pCompVars);
 
 IVDCaptureSystem *VDCreateCaptureSystemEmulation();
 
@@ -405,7 +404,7 @@ static const char g_szWarnTiming1			[]="Warn Timing1";
 //
 ///////////////////////////////////////////////////////////////////////////
 
-COMPVARS g_compression;
+COMPVARS2 g_compression;
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -1872,16 +1871,16 @@ unknown_PCM_format:
 		// initialize video compression
 		vdstructex<BITMAPINFOHEADER> bmiOutput;
 
-		if (g_compression.hic) {
+		if (g_compression.driver) {
 			LONG formatSize;
 			DWORD icErr;
 
-			icErr = ICCompressQuery(g_compression.hic, bmiToFile, NULL);
+			icErr = g_compression.driver->compressQuery(bmiToFile, NULL);
 
 			if (ICERR_OK != icErr)
 				throw MyICError("Video compressor", icErr);
 
-			formatSize = ICCompressGetFormatSize(g_compression.hic, bmiToFile);
+			formatSize = g_compression.driver->compressGetFormatSize((BITMAPINFO*)bmiToFile);
 			if (formatSize < ICERR_OK)
 				throw MyError("Error getting compressor output format size.");
 
@@ -1890,13 +1889,13 @@ unknown_PCM_format:
 			// pre-clear format memory to work around Huffyuv 2.1.1 bug
 			memset(&*bmiOutput, 0, formatSize);
 
-			if (ICERR_OK != (icErr = ICCompressGetFormat(g_compression.hic, bmiToFile, (BITMAPINFO *)bmiOutput.data())))
+			if (ICERR_OK != (icErr = g_compression.driver->compressGetFormat((BITMAPINFO *)bmiToFile, (BITMAPINFO *)bmiOutput.data())))
 				throw MyICError("Video compressor",icErr);
 
 			if (!(icd.mpVideoCompressor = new VideoSequenceCompressor()))
 				throw MyMemoryError();
 
-			icd.mpVideoCompressor->init(g_compression.hic, (BITMAPINFO *)bmiToFile, (BITMAPINFO *)bmiOutput.data(), g_compression.lQ, g_compression.lKey);
+			icd.mpVideoCompressor->init(g_compression.driver, (BITMAPINFO *)bmiToFile, (BITMAPINFO *)bmiOutput.data(), g_compression.lQ, g_compression.lKey);
 			icd.mpVideoCompressor->setDataRate(g_compression.lDataRate*1024, VDClampToSint32(outputFrameRate.scale64ir(1000000)), 0x0FFFFFFF);
 			icd.mpVideoCompressor->start();
 
@@ -1926,7 +1925,7 @@ unknown_PCM_format:
 			}
 
 			vstrhdr.dwSuggestedBufferSize	= 0;
-			vstrhdr.dwQuality				= g_compression.hic ? g_compression.lQ : (unsigned long)-1;
+			vstrhdr.dwQuality				= g_compression.driver ? g_compression.lQ : (unsigned long)-1;
 			vstrhdr.rcFrame.left			= 0;
 			vstrhdr.rcFrame.top				= 0;
 			vstrhdr.rcFrame.right			= (short)bmiToFile->biWidth;

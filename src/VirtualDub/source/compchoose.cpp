@@ -29,6 +29,7 @@
 #include <vd2/system/binary.h>
 #include <vd2/VDLib/Dialog.h>
 #include <vd2/VDLib/UIProxies.h>
+#include <vd2/Riza/videocodec.h>
 
 #include "resource.h"
 
@@ -43,20 +44,6 @@ const wchar_t g_szYes[]=L"Yes";
 ///////////////////////////////////////////////////////////////////////////
 
 INT_PTR CALLBACK ChooseCompressorDlgProc(HWND hdlg, UINT uiMsg, WPARAM wParam, LPARAM lParam);
-
-///////////////////////////////////////////////////////////////////////////
-
-void FreeCompressor(COMPVARS *pCompVars) {
-	if (!(pCompVars->dwFlags & ICMF_COMPVARS_VALID))
-		return;
-
-	if (pCompVars->hic) {
-		ICClose(pCompVars->hic);
-		pCompVars->hic = NULL;
-	}
-
-	pCompVars->dwFlags &= ~ICMF_COMPVARS_VALID;
-}
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -98,11 +85,13 @@ HIC ICOpenASV1(DWORD fccType, DWORD fccHandler, DWORD dwMode) {
 
 class VDUIDialogChooseVideoCompressorW32 : public VDDialogFrameW32 {
 public:
-	VDUIDialogChooseVideoCompressorW32(COMPVARS *cv, BITMAPINFOHEADER *src);
+	VDUIDialogChooseVideoCompressorW32(COMPVARS2 *cv, BITMAPINFOHEADER *src);
 
 protected:
 	struct CodecInfo : public ICINFO {
 		bool mbFormatSupported;
+		VDStringW path;
+		int select;
 	};
 
 	bool OnLoaded();
@@ -118,10 +107,10 @@ protected:
 
 	void OnCodecSelectionChanged(VDUIProxyListBoxControl *sender, int index);
 
-	COMPVARS *mpCompVars;
+	COMPVARS2 *mpCompVars;
 	BITMAPINFOHEADER *mpSrcFormat;
-	HIC		mhCodec;
-	FOURCC	mfccSelect;
+	EncoderHIC*	mhCodec;
+	int	mSelect;
 	vdblock<char>	mCodecState;
 	CodecInfo *mpCurrent;
 
@@ -134,10 +123,10 @@ protected:
 	VDDelegate mdelSelChanged;
 };
 
-VDUIDialogChooseVideoCompressorW32::VDUIDialogChooseVideoCompressorW32(COMPVARS *cv, BITMAPINFOHEADER *src)
+VDUIDialogChooseVideoCompressorW32::VDUIDialogChooseVideoCompressorW32(COMPVARS2 *cv, BITMAPINFOHEADER *src)
 	: VDDialogFrameW32(IDD_VIDEOCOMPRESSION)
 	, mhCodec(NULL)
-	, mfccSelect(0)
+	, mSelect(-1)
 	, mpCurrent(NULL)
 	, mpCompVars(cv)
 	, mpSrcFormat(src)
@@ -181,12 +170,12 @@ bool VDUIDialogChooseVideoCompressorW32::OnLoaded() {
 
 void VDUIDialogChooseVideoCompressorW32::OnDestroy() {
 	if (mhCodec) {
-		ICClose(mhCodec);
+		delete mhCodec;
 		mhCodec = NULL;
 	}
 
 	while(!mCodecs.empty()) {
-		ICINFO *ici = mCodecs.back();
+		CodecInfo *ici = mCodecs.back();
 		delete ici;
 
 		mCodecs.pop_back();
@@ -196,7 +185,7 @@ void VDUIDialogChooseVideoCompressorW32::OnDestroy() {
 void VDUIDialogChooseVideoCompressorW32::OnDataExchange(bool write) {
 	if (write) {
 		if (!(mpCompVars->dwFlags & ICMF_COMPVARS_VALID)) {
-			memset(mpCompVars, 0, sizeof(COMPVARS));
+			mpCompVars->clear();
 
 			mpCompVars->dwFlags = ICMF_COMPVARS_VALID;
 		}
@@ -223,11 +212,10 @@ void VDUIDialogChooseVideoCompressorW32::OnDataExchange(bool write) {
 		mpCompVars->lQ = TBGetValue(IDC_QUALITY_SLIDER)*100;
 
 		if (mhCodec)
-			ICSendMessage(mhCodec, ICM_SETQUALITY, (DWORD_PTR)&mpCompVars->lQ, 0);
+			mhCodec->sendMessage(ICM_SETQUALITY, (DWORD_PTR)&mpCompVars->lQ, 0);
 
-		if (mpCompVars->hic)
-			ICClose(mpCompVars->hic);
-		mpCompVars->hic = mhCodec;
+		delete mpCompVars->driver;
+		mpCompVars->driver = mhCodec;
 		mhCodec = NULL;
 	}
 }
@@ -236,7 +224,7 @@ bool VDUIDialogChooseVideoCompressorW32::OnCommand(uint32 id, uint32 extcode) {
 	switch(id) {
 		case IDC_CONFIGURE:
 			if (mhCodec) {
-				ICConfigure(mhCodec, mhdlg);
+				mhCodec->configure(mhdlg);
 				mCodecState.clear();
 
 				if (mpCurrent)
@@ -246,7 +234,7 @@ bool VDUIDialogChooseVideoCompressorW32::OnCommand(uint32 id, uint32 extcode) {
 
 		case IDC_ABOUT:
 			if (mhCodec)
-				ICAbout(mhCodec, mhdlg);
+				mhCodec->about(mhdlg);
 			return TRUE;
 
 		case IDC_EDIT_QUALITY:
@@ -302,15 +290,13 @@ void VDUIDialogChooseVideoCompressorW32::EnumerateCodecs() {
 	int nComp;
 
 	if (mpCompVars->dwFlags & ICMF_COMPVARS_VALID) {
-		mfccSelect	= mpCompVars->fccHandler;
-
-		if (mpCompVars->hic) {
-			int len = ICGetStateSize(mpCompVars->hic);
+		if (mpCompVars->driver) {
+			int len = mpCompVars->driver->getStateSize();
 
 			if (len > 0) {
 				mCodecState.resize(len);
 
-				ICGetState(mpCompVars->hic, mCodecState.data(), len);
+				mpCompVars->driver->getState(mCodecState.data(), len);
 			}
 		}
 	}
@@ -375,9 +361,15 @@ void VDUIDialogChooseVideoCompressorW32::EnumerateCodecs() {
 
 					CodecInfo *pii = new CodecInfo;
 					static_cast<ICINFO&>(*pii) = ici;
+					pii->select = mCodecs.size();
 					pii->fccHandler = info.fccHandler;
 					pii->mbFormatSupported = formatSupported;
 					mCodecs.push_back(pii);
+
+					if (mpCompVars->dwFlags & ICMF_COMPVARS_VALID) {
+						if(pii->fccHandler==mpCompVars->fccHandler)
+							mSelect = pii->select;
+					}
 
 					ICClose(hic);
 				}
@@ -398,7 +390,7 @@ void VDUIDialogChooseVideoCompressorW32::RebuildCodecList() {
 	for(size_t i=0; i<n; ++i) {
 		CodecInfo& ici = *mCodecs[i];
 
-		bool isSelected = isEqualFOURCC(ici.fccHandler, mfccSelect);
+		bool isSelected = ici.select==mSelect;
 
 		if (!isSelected && !ici.mbFormatSupported && !showAll)
 			continue;
@@ -416,7 +408,7 @@ void VDUIDialogChooseVideoCompressorW32::RebuildCodecList() {
 		}
 	}
 
-	if (!mfccSelect) {
+	if (mSelect==-1) {
 		mCodecList.SetSelection(0);
 		SelectCompressor(NULL);
 	} else {
@@ -437,7 +429,7 @@ void VDUIDialogChooseVideoCompressorW32::UpdateEnables() {
 		// overloaded codecs (i.e. 'MJPG' for miroVideo DRX, 'mjpx' for
 		// PICVideo, 'mjpy' for MainConcept, etc.)
 
-		if (ICGetInfo(mhCodec, &info, sizeof info)) {
+		if (mhCodec->getInfo(info)) {
 			FOURCC fccHandler = mpCurrent->fccHandler;
 
 			static_cast<ICINFO&>(*mpCurrent) = info;
@@ -446,8 +438,8 @@ void VDUIDialogChooseVideoCompressorW32::UpdateEnables() {
 
 		// Query compressor for caps and enable buttons as appropriate.
 
-		EnableControl(IDC_ABOUT, ICQueryAbout(mhCodec));
-		EnableControl(IDC_CONFIGURE, ICQueryConfigure(mhCodec));
+		EnableControl(IDC_ABOUT, mhCodec->queryAbout());
+		EnableControl(IDC_CONFIGURE, mhCodec->queryConfigure());
 
 	} else {
 		EnableControl(IDC_ABOUT, FALSE);
@@ -518,9 +510,9 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 
 	LBClear(IDC_SIZE_RESTRICTIONS);
 
-	if (!pii || !pii->fccHandler) {
+	if (!pii || (!pii->fccHandler && pii->path.empty())) {
 		if (mhCodec) {
-			ICClose(mhCodec);
+			delete mhCodec;
 			mhCodec = NULL;
 		}
 
@@ -553,12 +545,15 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 	fccbuf[6] = 0;
 	SetControlText(IDC_STATIC_FOURCC, fccbuf);
 
-	SetControlText(IDC_STATIC_DRIVER, VDFileSplitPath(pii->szDriver));
+	if(pii->path.empty())
+		SetControlText(IDC_STATIC_DRIVER, VDFileSplitPath(pii->szDriver));
+	else
+		SetControlText(IDC_STATIC_DRIVER, VDFileSplitPath(pii->path.c_str()));
 
 	// Attempt to open the compressor.
 
 	if (mhCodec) {
-		ICClose(mhCodec);
+		delete mhCodec;
 		mhCodec = NULL;
 	}
 
@@ -567,7 +562,11 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 		swprintf(buf, 64, L"A video codec with FOURCC '%.4S'", (const char *)&pii->fccHandler);
 		VDExternalCodeBracket bracket(buf, __FILE__, __LINE__);
 
-		mhCodec = ICOpen(pii->fccType, pii->fccHandler, ICMODE_COMPRESS);
+		if(pii->path.empty())
+			mhCodec = EncoderHIC::open(pii->fccType, pii->fccHandler, ICMODE_COMPRESS);
+		else {
+			mhCodec = EncoderHIC::load(pii->path.c_str(), pii->fccType, pii->fccHandler, ICMODE_COMPRESS);
+		}
 	}
 
 	if (!mhCodec) {
@@ -575,8 +574,8 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 		return;
 	}
 
-	if (pii->fccHandler == mfccSelect && !mCodecState.empty())
-		ICSetState(mhCodec, mCodecState.data(), mCodecState.size());
+	if (pii->select == mSelect && !mCodecState.empty())
+		mhCodec->setState(mCodecState.data(), mCodecState.size());
 
 	mpCurrent = pii;
 	UpdateEnables();
@@ -610,7 +609,7 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 				set_depth(bi,k);
 				kd = k;
 
-				if (ICERR_OK == ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
+				if (ICERR_OK==mhCodec->compressQuery(&bi.bmiHeader, NULL))
 					goto pass;
 			}
 		}
@@ -632,7 +631,7 @@ pass:
 	for(int k=0; k<NDEPTHS; k++) {
 		set_depth(bi,k);
 
-		if (ICERR_OK == ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
+		if (ICERR_OK==mhCodec->compressQuery(&bi.bmiHeader, NULL))
 			depth_bits |= (1<<k);
 	}
 
@@ -645,7 +644,7 @@ pass:
 		bi.bmiHeader.biWidth	 = w + (1<<i);
 		set_depth(bi,kd);
 
-		if (ICERR_OK != ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
+		if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL))
 			break;
 
 	}
@@ -653,7 +652,7 @@ pass:
 	bi.bmiHeader.biWidth	 = w + (1<<(i+2));
 	set_depth(bi,kd);
 
-	if (ICERR_OK != ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
+	if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL))
 		i = -2;
 
 	if (i>=0) {
@@ -672,14 +671,14 @@ pass:
 		bi.bmiHeader.biHeight	 = h + (1<<j);
 		set_depth(bi,kd);
 
-		if (ICERR_OK != ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
+		if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL))
 			break;
 	}
 
 	bi.bmiHeader.biHeight	 = h + (1<<(j+2));
 	set_depth(bi,kd);
 
-	if (ICERR_OK != ICCompressQuery(mhCodec, &bi.bmiHeader, NULL))
+	if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL))
 		j = -2;
 
 	if (j>=0) {
@@ -718,7 +717,7 @@ void VDUIDialogChooseVideoCompressorW32::OnCodecSelectionChanged(VDUIProxyListBo
 
 ///////////////////////////////////////////////////////////////////////////
 
-void ChooseCompressor(HWND hwndParent, COMPVARS *lpCompVars, BITMAPINFOHEADER *bihInput) {
+void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput) {
 	VDUIDialogChooseVideoCompressorW32 dlg(lpCompVars, bihInput);
 
 	dlg.ShowDialog((VDGUIHandle)hwndParent);

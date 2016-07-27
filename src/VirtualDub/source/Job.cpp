@@ -65,7 +65,7 @@ extern wchar_t g_szInputAVIFile[];
 extern wchar_t g_szInputWAVFile[];
 extern InputFileOptions *g_pInputOpts;
 extern VDProject *g_project;
-extern COMPVARS g_Vcompression;
+extern COMPVARS2 g_Vcompression;
 extern VDJobQueue g_VDJobQueue;
 extern vdrefptr<VDProjectUI> g_projectui;
 
@@ -332,13 +332,13 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 				g_Vcompression.lQ,
 				g_Vcompression.lDataRate);
 
-		l = ICGetStateSize(g_Vcompression.hic);
+		l = g_Vcompression.driver->getStateSize();
 
 		if (l>0) {
 			mem = (char *)allocmem(l + ((l+2)/3)*4 + 1);
 			if (!mem) throw MyMemoryError();
 
-			if (ICGetState(g_Vcompression.hic, mem, l)<0) {
+			if (g_Vcompression.driver->getState(mem, l)<0) {
 				freemem(mem);
 //				throw MyError("Bad state data returned from compressor");
 

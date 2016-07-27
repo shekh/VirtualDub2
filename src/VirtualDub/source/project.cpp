@@ -91,7 +91,7 @@ extern HINSTANCE g_hInst;
 
 extern VDProject *g_project;
 extern InputFileOptions	*g_pInputOpts;
-extern COMPVARS g_Vcompression;
+extern COMPVARS2 g_Vcompression;
 
 DubSource::ErrorMode	g_videoErrorMode			= DubSource::kErrorModeReportAll;
 DubSource::ErrorMode	g_audioErrorMode			= DubSource::kErrorModeReportAll;
@@ -2442,7 +2442,7 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 
 		IVDVideoSource *vsrc = inputVideo;
 		AudioSource *asrc = inputAudio;
-		COMPVARS *comp = &g_Vcompression;
+		COMPVARS2 *comp = &g_Vcompression;
 		if(filters.isTrimmedChain() && pOutputSystem->IsNull()) comp = 0;
 
 		if (lSpillThreshold) {

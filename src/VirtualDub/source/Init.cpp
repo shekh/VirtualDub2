@@ -105,7 +105,6 @@ extern void VDDisplayLicense(HWND hwndParent, bool conditional);
 
 extern LONG __stdcall CrashHandlerHook(EXCEPTION_POINTERS *pExc);
 extern LONG __stdcall CrashHandler(struct _EXCEPTION_POINTERS *ExceptionInfo, bool allowForcedExit);
-extern void FreeCompressor(COMPVARS *pCompVars);
 extern LONG APIENTRY MainWndProc( HWND hWnd, UINT message, UINT wParam, LONG lParam);
 extern void DetectDivX();
 
@@ -119,7 +118,7 @@ void ParseCommandLine(const wchar_t *lpCmdLine);
 
 static BOOL compInstalled;	// yuck
 
-extern COMPVARS		g_Vcompression;
+extern COMPVARS2		g_Vcompression;
 
 extern HINSTANCE	g_hInst;
 extern HWND			g_hWnd;

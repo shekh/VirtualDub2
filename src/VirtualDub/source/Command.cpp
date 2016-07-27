@@ -65,7 +65,7 @@ extern vdrefptr<AudioSource>	inputAudio;
 
 IDubber				*g_dubber				= NULL;
 
-COMPVARS			g_Vcompression;
+COMPVARS2			g_Vcompression;
 VDWaveFormat		*g_ACompressionFormat		= NULL;
 uint32				g_ACompressionFormatSize	= 0;
 VDStringA			g_ACompressionFormatHint;

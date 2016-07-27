@@ -171,11 +171,10 @@ extern const char g_szWarning[];
 
 static char g_szStripeFile[MAX_PATH];
 
-extern COMPVARS g_compression;
+extern COMPVARS2 g_compression;
 
 extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *pwfexOld, WAVEFORMATEX *pwfexSrc, VDStringA& shortNameHint);
-extern void ChooseCompressor(HWND hwndParent, COMPVARS *lpCompVars, BITMAPINFOHEADER *bihInput);
-extern void FreeCompressor(COMPVARS *pCompVars);
+extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
 
 static INT_PTR CALLBACK CaptureCustomVidSizeDlgProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam);
 static INT_PTR CALLBACK CaptureStopConditionsDlgProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -1210,7 +1209,7 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 	if (devkey.getBinary(g_szVideoCompFormat, (char *)&cs, sizeof cs)) {
 		FreeCompressor(&g_compression);
 
-		memset(&g_compression, 0, sizeof g_compression);
+		g_compression.clear();
 
 		if (cs.fccType != 'CDIV' || !cs.fccHandler) {
 			// err... bad config data.
@@ -1220,14 +1219,14 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 		} else {
 			g_compression.cbSize		= sizeof(COMPVARS);
 			g_compression.dwFlags		= ICMF_COMPVARS_VALID;
-			g_compression.hic			= ICOpen(cs.fccType, cs.fccHandler, ICMODE_COMPRESS);
+			g_compression.driver			= EncoderHIC::open(cs.fccType, cs.fccHandler, ICMODE_COMPRESS);
 			g_compression.fccType		= cs.fccType;
 			g_compression.fccHandler	= cs.fccHandler;
 			g_compression.lKey			= cs.lKey;
 			g_compression.lDataRate		= cs.lDataRate;
 			g_compression.lQ			= cs.lQ;
 
-			if (g_compression.hic) {
+			if (g_compression.driver) {
 				int len = devkey.getBinaryLength(g_szVideoCompFormatData);
 
 				if (len >= 0) {
@@ -1236,7 +1235,7 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 						memset(lpData, 0, len);
 
 						if (devkey.getBinary(g_szVideoCompFormatData, (char *)lpData, len))
-							ICSetState(g_compression.hic, lpData, len);
+							g_compression.driver->setState(lpData, len);
 
 						free(lpData);
 					}
@@ -1406,12 +1405,12 @@ void VDCaptureProjectUI::SaveDeviceSettings(uint32 mask) {
 
 			devkey.setBinary(g_szVideoCompFormat, (char *)&cs, sizeof cs);
 
-			if (g_compression.hic
-					&& ((dwSize = ICGetStateSize(g_compression.hic))>0)
+			if (g_compression.driver
+					&& ((dwSize = g_compression.driver->getStateSize())>0)
 					&& (mem = malloc(dwSize))
 					) {
 
-				ICGetState(g_compression.hic, mem, dwSize);
+				g_compression.driver->getState(mem, dwSize);
 				devkey.setBinary(g_szVideoCompFormatData, (char *)mem, dwSize);
 				free(mem);
 
@@ -3247,7 +3246,7 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 			SuspendDisplay();
 			{
 				if (!(g_compression.dwFlags & ICMF_COMPVARS_VALID)) {
-					memset(&g_compression, 0, sizeof g_compression);
+					g_compression.clear();
 					g_compression.dwFlags |= ICMF_COMPVARS_VALID;
 					g_compression.lQ = 10000;
 				}

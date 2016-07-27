@@ -45,14 +45,14 @@ public:
 };
 
 void VDVideoCompressorDescVCM::CreateInstance(IVDVideoCompressor **comp) {
-	HIC hic = ICOpen(mfccType, mfccHandler, ICMODE_COMPRESS);
+	EncoderHIC* hic = EncoderHIC::open(mfccType, mfccHandler, ICMODE_COMPRESS);
 	if (!hic)
 		throw MyError("Unable to create video compressor.");
 
 	try {
 		*comp = VDCreateVideoCompressorVCM(hic, mKilobytesPerSecond, mQuality, mKeyFrameInterval, true);
 	} catch(...) {
-		ICClose(hic);
+		delete hic;
 		throw;
 	}
 }
@@ -106,7 +106,7 @@ void VDVideoCompressorDescVCM::CreateInstance(IVDVideoCompressor **comp) {
 
 class VDVideoCompressorVCM : public IVDVideoCompressor {
 public:
-	VDVideoCompressorVCM(HIC hic, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle);
+	VDVideoCompressorVCM(EncoderHIC* driver, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle);
 	~VDVideoCompressorVCM();
 
 	bool IsKeyFrameOnly();
@@ -133,7 +133,7 @@ private:
 	void PackFrameInternal(void *dst, DWORD frameSize, DWORD q, const void *pBits, DWORD dwFlagsIn, DWORD& dwFlagsOut, sint32& bytes);
 	void GetState(vdfastvector<uint8>& data);
 
-	HIC			hic;
+	EncoderHIC*	driver;
 	DWORD		dwFlags;
 	DWORD		mVFWExtensionMessageID;
 	vdstructex<BITMAPINFOHEADER>	mInputFormat;
@@ -168,17 +168,17 @@ private:
 	VDStringW	mDriverName;
 };
 
-IVDVideoCompressor *VDCreateVideoCompressorVCM(const void *pHIC, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle) {
-	return new VDVideoCompressorVCM((HIC)pHIC, kilobytesPerSecond, quality, keyrate, ownHandle);
+IVDVideoCompressor *VDCreateVideoCompressorVCM(EncoderHIC *pHIC, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle) {
+	return new VDVideoCompressorVCM(pHIC, kilobytesPerSecond, quality, keyrate, ownHandle);
 }
 
-VDVideoCompressorVCM::VDVideoCompressorVCM(HIC hic, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle)
+VDVideoCompressorVCM::VDVideoCompressorVCM(EncoderHIC* driver, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle)
 	: mbOwnHandle(ownHandle)
 {
 	pPrevBuffer		= NULL;
 	pConfigData		= NULL;
 
-	this->hic = (HIC)hic;
+	this->driver = driver;
 	lDataRate = kilobytesPerSecond;
 	lKeyRate = keyrate;
 	lQuality = quality;
@@ -188,7 +188,7 @@ VDVideoCompressorVCM::VDVideoCompressorVCM(HIC hic, uint32 kilobytesPerSecond, l
 
 	{
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-		rv = ICGetInfo(hic, &info, sizeof info);
+		rv = driver->getInfo(info);
 	}
 
 	mbKeyframeOnly = true;
@@ -202,7 +202,7 @@ VDVideoCompressorVCM::~VDVideoCompressorVCM() {
 	Stop();
 
 	if (mbOwnHandle)
-		ICClose(hic);
+		delete driver;
 
 	delete[] (char *)pConfigData;
 	delete pPrevBuffer;
@@ -216,7 +216,7 @@ bool VDVideoCompressorVCM::Query(const void *inputFormat, const void *outputForm
 	DWORD res;
 	vdprotected("asking video compressor if conversion is possible") {
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-		res = ICCompressQuery(hic, (LPBITMAPINFO)inputFormat, (LPBITMAPINFO)outputFormat);
+		res = driver->compressQuery((LPBITMAPINFO)inputFormat, (LPBITMAPINFO)outputFormat);
 	}
 	return res == ICERR_OK;
 }
@@ -224,7 +224,7 @@ bool VDVideoCompressorVCM::Query(const void *inputFormat, const void *outputForm
 void VDVideoCompressorVCM::GetOutputFormat(const void *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat) {
 	vdprotected("querying video compressor for output format") {
 		DWORD icErr;
-		LONG formatSize = ICCompressGetFormatSize(hic, (LPBITMAPINFO)inputFormat);
+		LONG formatSize = driver->compressGetFormatSize((LPBITMAPINFO)inputFormat);
 		if (formatSize < ICERR_OK)
 			throw MyICError("Output compressor", formatSize);
 
@@ -234,9 +234,7 @@ void VDVideoCompressorVCM::GetOutputFormat(const void *inputFormat, vdstructex<t
 		// struct, so we clear them here.
 		memset(&*outputFormat, 0, outputFormat.size());
 
-		if (ICERR_OK != (icErr = ICCompressGetFormat(hic,
-							(LPBITMAPINFO)inputFormat,
-							&*outputFormat)))
+		if (ICERR_OK != (icErr = driver->compressGetFormat((LPBITMAPINFO)inputFormat, (LPBITMAPINFO)&*outputFormat)))
 			throw MyICError("Output compressor", icErr);
 	}
 }
@@ -250,8 +248,6 @@ uint32 VDVideoCompressorVCM::GetOutputFormatSize() {
 }
 
 void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) {
-	this->hic		= hic;
-
 	const BITMAPINFOHEADER *pbihInput = (const BITMAPINFOHEADER *)inputFormat;
 	const BITMAPINFOHEADER *pbihOutput = (const BITMAPINFOHEADER *)outputFormat;
 	mInputFormat.assign(pbihInput, inputFormatSize);
@@ -264,7 +260,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 	// Retrieve compressor information.
 	ICINFO	info;
 	LRESULT	res;
-	res = ICGetInfo(hic, &info, sizeof info);
+	res = driver->getInfo(info);
 
 	if (!res)
 		throw MyError("Unable to retrieve video compressor information.");
@@ -293,7 +289,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 
 	{
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-		lMaxPackedSize = ICCompressGetSize(hic, (LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat);
+		lMaxPackedSize = driver->compressGetSize((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat);
 	}
 
 	// Work around a bug in Huffyuv.  Ben tried to save some memory
@@ -331,7 +327,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 
 	{
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-		cbConfigData = ICGetStateSize(hic);
+		cbConfigData = driver->getStateSize();
 	}
 
 	if (cbConfigData > 0) {
@@ -340,7 +336,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 
 		{
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-			cbConfigData = ICGetState(hic, pConfigData, cbConfigData);
+			cbConfigData = driver->getState(pConfigData, cbConfigData);
 		}
 
 		// As odd as this may seem, if this isn't done, then the Indeo5
@@ -349,7 +345,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 
 		if (cbConfigData) {
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-			ICSetState(hic, pConfigData, cbConfigData);
+			driver->setState(pConfigData, cbConfigData);
 		}
 	}
 
@@ -372,7 +368,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 
 	ICINFO ici;
 
-	ICGetInfo(hic, &ici, sizeof ici);
+	driver->getInfo(ici);
 
 	vdprotected("passing operation parameters to the video codec") {
 		ICCOMPRESSFRAMES icf;
@@ -390,7 +386,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 
 		{
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-			ICSendMessage(hic, ICM_COMPRESS_FRAMES_INFO, (WPARAM)&icf, sizeof(ICCOMPRESSFRAMES));
+			driver->sendMessage(ICM_COMPRESS_FRAMES_INFO, (LPARAM)&icf, sizeof(ICCOMPRESSFRAMES));
 		}
 	}
 
@@ -399,7 +395,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 
 		{
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-			res = ICCompressBegin(hic, (LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat);
+			res = driver->compressBegin((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat);
 		}
 
 		if (res != ICERR_OK)
@@ -410,13 +406,13 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 		if (pPrevBuffer) {
 			{
 				VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-				res = ICDecompressBegin(hic, (LPBITMAPINFO)&*mOutputFormat, (LPBITMAPINFO)&*mInputFormat);
+				res = driver->decompressBegin((LPBITMAPINFO)&*mOutputFormat, (LPBITMAPINFO)&*mInputFormat);
 			}
 
 			if (res != ICERR_OK) {
 				{
 					VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-					ICCompressEnd(hic);
+					driver->compressEnd();
 				}
 
 				throw MyICError(res, "Cannot start video compression:\n\n%%s\n(error code %d)", (int)res);
@@ -442,9 +438,9 @@ void VDVideoCompressorVCM::Stop() {
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
 
 		if (pPrevBuffer)
-			ICDecompressEnd(hic);
+			driver->decompressEnd();
 
-		ICCompressEnd(hic);
+		driver->compressEnd();
 	}
 
 	fCompressionStarted = false;
@@ -453,7 +449,7 @@ void VDVideoCompressorVCM::Stop() {
 
 	if (cbConfigData && pConfigData) {
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-		ICSetState(hic, pConfigData, cbConfigData);
+		driver->setState(pConfigData, cbConfigData);
 	}
 }
 
@@ -461,7 +457,7 @@ void VDVideoCompressorVCM::GetDesc(IVDVideoCompressorDesc **descRet) {
 	vdrefptr<VDVideoCompressorDescVCM> desc(new VDVideoCompressorDescVCM);
 
 	ICINFO info = {0};
-	if (!ICGetInfo(hic, &info, sizeof info))
+	if (!driver->getInfo(info))
 		throw MyError("Unable to retrieve base video codec information.");
 
 	desc->mfccType = info.fccType;
@@ -514,8 +510,8 @@ void VDVideoCompressorVCM::Restart() {
 	{
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
 
-		ICCompressEnd(hic);
-		res = ICCompressBegin(hic, (LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat);
+		driver->compressEnd();
+		res = driver->compressBegin((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat);
 	}
 
 	if (res != ICERR_OK)
@@ -732,7 +728,7 @@ crunch_complete:
 		{
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
 			vdprotected4("decompressing frame %u from %08x to %08x using codec \"%ls\"", unsigned, lFrameNum, unsigned, (unsigned)dst, unsigned, (unsigned)pPrevBuffer, const wchar_t *, mCodecName.c_str()) {
-				res = ICDecompress(hic, dwFlagsOut & AVIIF_KEYFRAME ? 0 : ICDECOMPRESS_NOTKEYFRAME,
+				res = driver->decompress(dwFlagsOut & AVIIF_KEYFRAME ? 0 : ICDECOMPRESS_NOTKEYFRAME,
 						&*mOutputFormat,
 						dst,
 						&*mInputFormat,
@@ -785,7 +781,7 @@ void VDVideoCompressorVCM::PackFrameInternal(void *dst, DWORD frameSize, DWORD q
 
 	VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
 	vdprotected4("compressing frame %u from %08x to %08x using codec \"%ls\"", unsigned, lFrameNum, unsigned, (unsigned)src, unsigned, (unsigned)dst, const wchar_t *, mCodecName.c_str()) {
-		res = ICCompress(hic, dwFlagsIn,
+		res = driver->compress(dwFlagsIn,
 				mOutputFormat.data(), dst,
 				mInputFormat.data(), (LPVOID)src,
 				&dwChunkId,
@@ -810,7 +806,7 @@ void VDVideoCompressorVCM::GetState(vdfastvector<uint8>& data) {
 
 	{
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-		size = ICGetStateSize(hic);
+		size = driver->getStateSize();
 	}
 
 	if (size <= 0) {
@@ -822,9 +818,173 @@ void VDVideoCompressorVCM::GetState(vdfastvector<uint8>& data) {
 
 	{
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-		res = ICGetState(hic, data.data(), size);
+		res = driver->getState(data.data(), size);
 	}
 
 	if (res < 0)
 		throw MyICError("Video compression", res);
 }
+
+//------------------------------------------------------------------------------------------------------
+
+EncoderHIC* EncoderHIC::load(const wchar_t* path, DWORD type, DWORD handler, DWORD flags) {
+	HMODULE module = LoadLibraryW(path);
+	if(!module) return 0;
+
+	DriverProc* proc = (DriverProc*)GetProcAddress(module,"DriverProc");
+	if(!proc){
+		FreeLibrary(module);
+		return 0;
+	}
+	proc(0,0,DRV_LOAD,0,0);
+
+	ICOPEN open = {sizeof(ICOPEN)};
+	open.fccType = type;
+	open.fccHandler = handler;
+	open.dwFlags = flags;
+	DWORD_PTR obj = (DWORD_PTR)proc(0,0,DRV_OPEN,0,(LPARAM)&open);
+	if(!obj){
+		FreeLibrary(module);
+		return 0;
+	}
+
+	EncoderHIC* plugin = new EncoderHIC;
+	plugin->module = module;
+	plugin->proc = proc;
+	plugin->obj = obj;
+
+	return plugin;
+}
+
+EncoderHIC* EncoderHIC::open(DWORD type, DWORD handler, DWORD flags) {
+	HIC hic = ICOpen(type,handler,flags);
+	if(!hic) return 0;
+	EncoderHIC* plugin = new EncoderHIC;
+	plugin->hic = hic;
+	return plugin;
+}
+
+bool EncoderHIC::getInfo(ICINFO& info) {
+	int r=0;
+	if(obj) r = proc(obj,0,ICM_GETINFO,(LPARAM)&info,sizeof(info));
+	if(hic) r = ICGetInfo(hic,&info,sizeof(info));
+	return r!=0;
+}
+
+int EncoderHIC::compressQuery(void* src, void* dst) {
+	if(obj) return proc(obj,0,ICM_COMPRESS_QUERY,(LPARAM)src,(LPARAM)dst);
+	if(hic) return ICCompressQuery(hic,src,dst);
+	return -1;
+}
+
+int EncoderHIC::sendMessage(int msg, LPARAM p1, LPARAM p2) {
+	if(obj) return proc(obj,0,msg,p1,p2);
+	if(hic) return ICSendMessage(hic,msg,p1,p2);
+	return -1;
+}
+
+void EncoderHIC::close() {
+	if(obj){ proc(obj,0,DRV_CLOSE,0,0); obj=0; }
+	if(hic){ ICClose(hic); hic=0; }
+}
+
+void EncoderHIC::configure(HWND hwnd) {
+	if(obj) proc(obj,0,ICM_CONFIGURE,(LPARAM)hwnd,0);
+	if(hic) ICConfigure(hic,hwnd);
+}
+
+void EncoderHIC::about(HWND hwnd) {
+	if(obj) proc(obj,0,ICM_ABOUT,(LPARAM)hwnd,0);
+	if(hic) ICAbout(hic,hwnd);
+}
+
+bool EncoderHIC::queryConfigure() {
+	if(obj) return sendMessage(ICM_CONFIGURE,-1,ICMF_CONFIGURE_QUERY)==ICERR_OK;
+	if(hic) return ICQueryConfigure(hic);
+	return false;
+}
+
+bool EncoderHIC::queryAbout() {
+	if(obj) return sendMessage(ICM_ABOUT,-1,ICMF_ABOUT_QUERY)==ICERR_OK;
+	if(hic) return ICQueryAbout(hic);
+	return false;
+}
+
+void EncoderHIC::setState(void* data, int size) {
+	if(obj) proc(obj,0,ICM_SETSTATE,(LPARAM)data,size);
+	if(hic) ICSetState(hic,data,size);
+}
+
+int EncoderHIC::getState(void* data, int size) {
+	if(obj) return proc(obj,0,ICM_GETSTATE,(LPARAM)data,size);
+	if(hic) return ICGetState(hic,data,size);
+	return 0;
+}
+
+DWORD EncoderHIC::compress(
+	DWORD               dwFlags,
+	LPBITMAPINFOHEADER  lpbiOutput,
+	LPVOID              lpData,
+	LPBITMAPINFOHEADER  lpbiInput,
+	LPVOID              lpBits,
+	LPDWORD             lpckid,
+	LPDWORD             lpdwFlags,
+	LONG                lFrameNum,
+	DWORD               dwFrameSize,
+	DWORD               dwQuality,
+	LPBITMAPINFOHEADER  lpbiPrev,
+	LPVOID              lpPrev
+)
+{
+	if(obj){
+		ICCOMPRESS c;
+		c.dwFlags = dwFlags;
+		c.lpbiOutput = lpbiOutput;
+		c.lpOutput = lpData;
+		c.lpbiInput = lpbiInput;
+		c.lpInput = lpBits;
+		c.lpckid = lpckid;
+		c.lpdwFlags = lpdwFlags;
+		c.lFrameNum = lFrameNum;
+		c.dwFrameSize = dwFrameSize;
+		c.dwQuality = dwQuality;
+		c.lpbiPrev = lpbiPrev;
+		c.lpPrev = lpPrev;
+		return proc(obj,0,ICM_COMPRESS,(LPARAM)&c,0);
+	}
+	if(hic) return ICCompress(hic,dwFlags,lpbiOutput,lpData,lpbiInput,lpBits,lpckid,lpdwFlags,lFrameNum,dwFrameSize,dwQuality,lpbiPrev,lpPrev);
+	return -1;
+}
+
+DWORD EncoderHIC::decompress(
+	DWORD               dwFlags, 
+	LPBITMAPINFOHEADER  lpbiFormat, 
+	LPVOID              lpData, 
+	LPBITMAPINFOHEADER  lpbi, 
+	LPVOID              lpBits
+)
+{
+	if(obj){
+		ICDECOMPRESS c;
+		c.dwFlags = dwFlags;
+		c.lpbiInput = lpbiFormat;
+		c.lpInput = lpData;
+		c.lpbiOutput = lpbi;
+		c.lpOutput = lpBits;
+		c.ckid = 0;
+		return proc(obj,0,ICM_DECOMPRESS,(LPARAM)&c,0);
+	}
+	if(hic) return ICDecompress(hic,dwFlags,lpbiFormat,lpData,lpbi,lpBits);
+	return -1;
+}
+
+void FreeCompressor(COMPVARS2 *pCompVars) {
+	if (!(pCompVars->dwFlags & ICMF_COMPVARS_VALID))
+		return;
+
+	delete pCompVars->driver;
+	pCompVars->driver = 0;
+	pCompVars->hic = NULL;
+	pCompVars->dwFlags &= ~ICMF_COMPVARS_VALID;
+}
+
