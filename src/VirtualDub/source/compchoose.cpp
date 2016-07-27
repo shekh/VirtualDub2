@@ -37,6 +37,7 @@
 #include "misc.h"
 
 extern HINSTANCE g_hInst;
+extern std::list<class VDExternalModule *>		g_pluginModules;
 
 const wchar_t g_szNo[]=L"No";
 const wchar_t g_szYes[]=L"Yes";
@@ -94,6 +95,14 @@ protected:
 		int select;
 	};
 
+	struct CodecSort {
+		bool operator()(CodecInfo *x, CodecInfo *y) const {
+			if (x->path.empty() && !y->path.empty()) return false;
+			if (!x->path.empty() && y->path.empty()) return true;
+			return wcscmp(x->szDescription,y->szDescription)<0;
+		}
+	};
+
 	bool OnLoaded();
 	void OnDestroy();
 	void OnDataExchange(bool write);
@@ -101,6 +110,7 @@ protected:
 	void OnHScroll(uint32 id, int code);
 	void OnHelp();
 	void EnumerateCodecs();
+	void EnumeratePluginCodecs();
 	void RebuildCodecList();
 	void UpdateEnables();
 	void SelectCompressor(CodecInfo *pii);
@@ -143,6 +153,9 @@ bool VDUIDialogChooseVideoCompressorW32::OnLoaded() {
 	AddProxy(&mCodecList, IDC_COMP_LIST);
 
 	EnumerateCodecs();
+	EnumeratePluginCodecs();
+	std::sort(mCodecs.begin(), mCodecs.end(), CodecSort());
+
 	RebuildCodecList();
 
 	TBSetRange(IDC_QUALITY_SLIDER, 0, 100);
@@ -373,6 +386,54 @@ void VDUIDialogChooseVideoCompressorW32::EnumerateCodecs() {
 
 					ICClose(hic);
 				}
+			}
+		}
+	}
+}
+
+void VDUIDialogChooseVideoCompressorW32::EnumeratePluginCodecs() {
+	std::list<class VDExternalModule *>::const_iterator it(g_pluginModules.begin()),
+			itEnd(g_pluginModules.end());
+
+	vdprotected("enumerating video codec plugins") {
+		for(; it!=itEnd; ++it) {
+			VDExternalModule *pModule = *it;
+			const VDStringW& path = pModule->GetFilename();
+
+			EncoderHIC* plugin = EncoderHIC::load(path.c_str(), ICTYPE_VIDEO, 0, ICMODE_COMPRESS);
+			if(plugin){
+				ICINFO ici = { sizeof(ICINFO) };
+				char namebuf[64];
+
+				namebuf[0] = 0;
+
+				if (plugin->getInfo(ici))
+					VDTextWToA(namebuf, sizeof namebuf, ici.szDescription, -1);
+
+				bool formatSupported = false;
+
+				if (mpSrcFormat) {
+					vdprotected1("querying video codec \"%.64s\"", const char *, namebuf) {
+						if (plugin->compressQuery(mpSrcFormat, NULL)==ICERR_OK)
+							formatSupported = true;
+					}
+				} else
+					formatSupported = true;
+
+				CodecInfo *pii = new CodecInfo;
+				static_cast<ICINFO&>(*pii) = ici;
+				pii->select = mCodecs.size();
+				pii->fccHandler = ici.fccHandler;
+				pii->mbFormatSupported = formatSupported;
+				pii->path = path;
+				mCodecs.push_back(pii);
+
+				if (mpCompVars->driver) {
+					if(plugin->module==mpCompVars->driver->module)
+						mSelect = pii->select;
+				}
+
+				delete plugin;
 			}
 		}
 	}

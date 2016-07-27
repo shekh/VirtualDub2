@@ -1013,7 +1013,7 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 					VDInitInputDrivers();
 					VDInitTools();
 
-					guiSetStatus("Loaded external filter module: %s", 255, VDTextWToA(token).c_str());
+					guiSetStatus("Loaded external module: %s", 255, VDTextWToA(token).c_str());
 				}
 				else if (!wcscmp(token, L"edit")) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))

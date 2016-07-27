@@ -323,6 +323,11 @@ void VDExternalModule::ReconnectOldPlugins() {
 					mModuleInfo.hInstModule = NULL;
 					return;
 				}
+
+				if (GetProcAddress((HINSTANCE)mModuleInfo.hInstModule, "DriverProc")) {
+					mModuleInfo.hInstModule = NULL;
+					return;
+				}
 			}
 
 			if (!mModuleInfo.initProc || !mModuleInfo.deinitProc)
