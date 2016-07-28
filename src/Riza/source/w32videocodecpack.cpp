@@ -28,6 +28,7 @@
 #include <vd2/system/vdstl.h>
 #include <vd2/system/w32assist.h>
 #include <vd2/Riza/videocodec.h>
+#include <vd2/plugin/vdplugin.h>
 
 extern IVDVideoCodecBugTrap *g_pVDVideoCodecBugTrap;
 
@@ -110,6 +111,9 @@ public:
 	~VDVideoCompressorVCM();
 
 	bool IsKeyFrameOnly();
+	virtual int GetInputFormat() {
+		return driver->getInputFormat(); 
+	}
 	bool Query(const void *inputFormat, const void *outputFormat);
 	void GetOutputFormat(const void *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat);
 	const void *GetOutputFormat();
@@ -852,6 +856,7 @@ EncoderHIC* EncoderHIC::load(const wchar_t* path, DWORD type, DWORD handler, DWO
 	plugin->module = module;
 	plugin->proc = proc;
 	plugin->obj = obj;
+	plugin->vdproc = (DriverProc*)GetProcAddress(module,"VDDriverProc");
 
 	return plugin;
 }
@@ -976,6 +981,11 @@ DWORD EncoderHIC::decompress(
 	}
 	if(hic) return ICDecompress(hic,dwFlags,lpbiFormat,lpData,lpbi,lpBits);
 	return -1;
+}
+
+int EncoderHIC::getInputFormat() {
+	if (vdproc) return vdproc(obj,0,VDICM_COMPRESS_INPUT_FORMAT,0,0);
+	return 0;
 }
 
 void FreeCompressor(COMPVARS2 *pCompVars) {

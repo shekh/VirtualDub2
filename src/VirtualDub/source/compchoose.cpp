@@ -556,6 +556,7 @@ static int g_depths[]={
 	64,
 	12,
 	16,
+	16,
 	24,
 	30
 };
@@ -565,6 +566,7 @@ static int g_depths_fcc[]={
 	VDMAKEFOURCC('b', '4', '8', 'r'),
 	VDMAKEFOURCC('b', '6', '4', 'a'),
 	VDMAKEFOURCC('Y', 'V', '1', '2'),
+	VDMAKEFOURCC('Y', 'V', '1', '6'),
 	VDMAKEFOURCC('Y', 'U', 'Y', '2'),
 	VDMAKEFOURCC('Y', 'V', '2', '4'),
 	VDMAKEFOURCC('v', '2', '1', '0')
@@ -575,6 +577,7 @@ static const wchar_t* g_depths_id[]={
   L"b48r",
   L"b64a",
   L"YV12",
+  L"YV16",
   L"YUY2",
   L"YV24",
   L"v210"
@@ -808,6 +811,11 @@ void VDUIDialogChooseVideoCompressorW32::OnCodecSelectionChanged(VDUIProxyListBo
 
 void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	VDPixmapFormatEx format = g_dubOpts.video.mOutputFormat;
+	if (mhCodec) {
+		int codec_format = mhCodec->getInputFormat();
+		if (codec_format) format = codec_format;
+	}
+
 	const VDPixmapFormatInfo& info = VDPixmapGetInfo(format);
 	VDString s;
 
@@ -829,10 +837,16 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 }
 
 void VDUIDialogChooseVideoCompressorW32::SetVideoDepthOptionsAsk() {
-	extern bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts, bool input);
+	extern bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts, bool input, int lockFormat);
+
+	int lockFormat = -1;
+	if (mhCodec) {
+		int codec_format = mhCodec->getInputFormat();
+		if (codec_format) lockFormat = codec_format;
+	}
 
 	VDPixmapFormatEx outputFormatOld = g_dubOpts.video.mOutputFormat;
-	VDDisplayVideoDepthDialog((VDGUIHandle)mhdlg, g_dubOpts, false);
+	VDDisplayVideoDepthDialog((VDGUIHandle)mhdlg, g_dubOpts, false, lockFormat);
 	bool changed = !outputFormatOld.fullEqual(g_dubOpts.video.mOutputFormat);
 	if (changed) {
 		SelectCompressor(mpCurrent);

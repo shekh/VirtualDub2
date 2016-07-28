@@ -330,4 +330,8 @@ public:
 	virtual void *VDXAPIENTRY AsInterface(uint32 iid) = 0;
 };
 
+enum {
+	VDICM_COMPRESS_INPUT_FORMAT = 1,  // query which format to use as input
+};
+
 #endif

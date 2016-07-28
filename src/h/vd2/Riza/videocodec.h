@@ -41,6 +41,7 @@ public:
 
 	virtual bool IsKeyFrameOnly() = 0;
 
+	virtual int GetInputFormat() = 0;
 	virtual bool Query(const void *inputFormat, const void *outputFormat = NULL) = 0;
 	virtual void GetOutputFormat(const void *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat) = 0;
 	virtual const void *GetOutputFormat() = 0;
@@ -96,6 +97,7 @@ typedef LRESULT (WINAPI DriverProc)(DWORD_PTR dwDriverId, HDRVR hDriver, UINT uM
 struct EncoderHIC{
 	HMODULE module;
 	DriverProc* proc;
+	DriverProc* vdproc;
 	DWORD_PTR obj;
 	HIC hic;
 
@@ -103,6 +105,7 @@ struct EncoderHIC{
 		module = 0;
 		obj = 0;
 		proc = 0;
+		vdproc = 0;
 		hic = 0;
 	}
 
@@ -116,6 +119,7 @@ struct EncoderHIC{
 
 	bool getInfo(ICINFO& info);
 	int compressQuery(void* src, void* dst);
+	int getInputFormat();
 	int sendMessage(int msg, LPARAM p1, LPARAM p2);
 	void close();
 	void configure(HWND hwnd);

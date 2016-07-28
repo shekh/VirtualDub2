@@ -813,11 +813,12 @@ bool VDDialogSelectVideoFormatW32::FormatItemSort::operator()(const FormatItem& 
 
 class VDDialogVideoDepthW32 : public VDDialogFrameW32 {
 public:
-	inline VDDialogVideoDepthW32(DubOptions& opts, bool input)
+	inline VDDialogVideoDepthW32(DubOptions& opts, bool input, int lockFormat)
 		: VDDialogFrameW32(IDD_VIDEO_DEPTH)
 		, mOpts(opts)
 		, mbInputBrowsePending(false)
 		, mSelectInput(input)
+		, mLockFormat(lockFormat)
 	{}
 
 	inline bool Activate(VDGUIHandle hParent) { return 0!=ShowDialog(hParent); }
@@ -834,6 +835,7 @@ protected:
 	DubOptions& mOpts;
 	bool mbInputBrowsePending;
 	bool mSelectInput;
+	int mLockFormat;
 
 	struct FormatButtonMapping {
 		int mFormat;
@@ -909,6 +911,14 @@ bool VDDialogVideoDepthW32::OnLoaded() {
 		s += info.name;
 		SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
 	}
+	if (mLockFormat!=-1) {
+		EnableControl(IDC_INPUT_OTHER,false);
+		for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
+			const FormatButtonMapping& fbm = kFormatButtonMappings[i];
+			if (fbm.mFormat != mLockFormat)
+				EnableControl(fbm.mInputButton,false);
+		}
+	}
 	return true;
 }
 
@@ -919,10 +929,11 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 				{
 					VDRegistryAppKey key("Preferences");
 
+					int format = mLockFormat!=-1 ? mLockFormat : mInputFormat;
 					if (mSelectInput)
-						key.setInt("Input format", mInputFormat);
+						key.setInt("Input format", format);
 					else
-						key.setInt("Output format", mInputFormat);
+						key.setInt("Output format", format);
 				}
 				break;
 
@@ -987,6 +998,7 @@ void VDDialogVideoDepthW32::OnDataExchange(bool write) {
 
 void VDDialogVideoDepthW32::SyncControls() {
 	uint32 inputButton = IDC_INPUT_OTHER;
+	int format = mLockFormat!=-1 ? mLockFormat : mInputFormat;
 
 	// We have to force the 'other' buttons off in case we're being called from
 	// a BN_CHECKED handler.
@@ -995,7 +1007,7 @@ void VDDialogVideoDepthW32::SyncControls() {
 	for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
 		const FormatButtonMapping& fbm = kFormatButtonMappings[i];
 
-		if (fbm.mFormat == mInputFormat)
+		if (fbm.mFormat == format)
 			inputButton = fbm.mInputButton;
 	}
 
@@ -1032,8 +1044,8 @@ void VDDialogVideoDepthW32::SyncInputColor() {
 	}
 }
 
-bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts, bool input) {
-	VDDialogVideoDepthW32 dlg(opts,input);
+bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts, bool input, int lockFormat) {
+	VDDialogVideoDepthW32 dlg(opts,input,lockFormat);
 
 	return dlg.Activate(hParent);
 }
