@@ -124,8 +124,9 @@ private:
 	bool	mbFiltersUseAcceleration;
 	bool	mbAccelDebugVisual;
 	bool	mbAccelEnabled;
-	bool  mbTrimmedChain;
+	bool	mbTrimmedChain;
 	sint32	mThreadsRequested;
+	sint32	mProcessNodes;
 	int		mThreadPriority;
 
 	VDFraction	mOutputFrameRate;

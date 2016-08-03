@@ -123,7 +123,6 @@ VDFilterSystemProcessNode::VDFilterSystemProcessNode(IVDFilterFrameSource *src, 
 	, mbBlocked(true)
 	, mbAccelerated(src->IsAccelerated())
 {
-	if (threads<=0) threads = 1;
 	if (src->IsAccelerated()) threads = 1;
 	proxy_count = threads;
 	proxy = new VDFilterSystemProcessProxy[threads];
@@ -253,6 +252,7 @@ FilterSystem::FilterSystem()
 	, mbAccelDebugVisual(false)
 	, mbTrimmedChain(false)
 	, mThreadsRequested(-1)
+	, mProcessNodes(1)
 	, mThreadPriority(VDThread::kPriorityDefault)
 	, mOutputFrameRate(0, 0)
 	, mOutputFrameCount(0)
@@ -1001,6 +1001,7 @@ void FilterSystem::ReadyFilters() {
 
 	mbFiltersError = false;
 	mbTrimmedChain = false;
+	mProcessNodes = 1;
 
 	if (mThreadsRequested >= 0) {
 		mpBitmaps->mpProcessScheduler = new VDScheduler;
@@ -1018,9 +1019,10 @@ void FilterSystem::ReadyFilters() {
 				threadsToUse = 4;
 		}
 
+		mProcessNodes = threadsToUse;
 		mpBitmaps->mpProcessSchedulerThreadPool = new VDSchedulerThreadPool;
 		mpBitmaps->mpProcessSchedulerThreadPool->SetPriority(mThreadPriority);
-		mpBitmaps->mpProcessSchedulerThreadPool->Start(mpBitmaps->mpProcessScheduler, threadsToUse);
+		mpBitmaps->mpProcessSchedulerThreadPool->Start(mpBitmaps->mpProcessScheduler, mProcessNodes);
 	}
 
 	mpBitmaps->mAllocatorManager.AssignAllocators(mpBitmaps->mpAccelEngine);
@@ -1041,7 +1043,7 @@ void FilterSystem::ReadyFilters() {
 			ActiveFilterEntry& afe = mActiveFilters.push_back();
 
 			afe.mpFrameSource = src;
-			afe.mpProcessNode = new_nothrow VDFilterSystemProcessNode(src, mpBitmaps->mpScheduler, mThreadsRequested);
+			afe.mpProcessNode = new_nothrow VDFilterSystemProcessNode(src, mpBitmaps->mpScheduler, mProcessNodes);
 			if (!afe.mpProcessNode)
 				throw MyMemoryError();
 
@@ -1211,14 +1213,13 @@ FilterSystem::RunResult FilterSystem::Run(const uint32 *batchNumberLimit, bool r
 	RunState state;
 	state.batchNumberLimit = batchNumberLimit;
 	state.runToCompletion = runToCompletion;
-	int threads = mpBitmaps->mpProcessScheduler ? mThreadsRequested : 1;
 
 	for(;;) {
 		state.didSomething = false;
 		state.blocked = false;
 		state.batchLimited = false;
 
-		{for(int index=0; index<threads; index++){
+		{for(int index=0; index<mProcessNodes; index++){
 			ActiveFilters::const_iterator it(mActiveFilters.end()), itEnd(mActiveFilters.begin());
 			while(it != itEnd) {
 				const ActiveFilterEntry& afe = *--it;
@@ -1427,7 +1428,7 @@ void FilterSystem::DeallocateBuffers() {
 void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout& dstLayout) {
 	vdrefptr<VDFilterFrameConverter> conv(new VDFilterFrameConverter);
 
-	conv->Init(tail.mpSrc, dstLayout, NULL, mThreadsRequested);
+	conv->Init(tail.mpSrc, dstLayout, NULL, mProcessNodes);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 	conv->RegisterSourceAllocReqs(0, tail.mpProxy);
 	tail.mpSrc = conv;
@@ -1440,7 +1441,7 @@ void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout
 void FilterSystem::AppendAlignmentFilter(StreamTail& tail, const VDPixmapLayout& dstLayout, const VDPixmapLayout& srcLayout) {
 	vdrefptr<VDFilterFrameConverter> conv(new VDFilterFrameConverter);
 
-	conv->Init(tail.mpSrc, dstLayout, &srcLayout, mThreadsRequested);
+	conv->Init(tail.mpSrc, dstLayout, &srcLayout, mProcessNodes);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 	conv->RegisterSourceAllocReqs(0, tail.mpProxy);
 	tail.mpSrc = conv;
