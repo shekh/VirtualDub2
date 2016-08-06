@@ -5,15 +5,15 @@
 #include <vd2/plugin/vdplugin.h>
 #include "uberblit_base.h"
 
-bool inline VDPixmap_X16R16G16B16_IsNormalized(const FilterModPixmapInfo& info) {
-	if (info.ref_r!=0xFFFF || info.ref_g!=0xFFFF || info.ref_b!=0xFFFF)
+bool inline VDPixmap_X16R16G16B16_IsNormalized(const FilterModPixmapInfo& info, uint32 max_value=0xFFFF) {
+	if (info.ref_r!=max_value || info.ref_g!=max_value || info.ref_b!=max_value)
 		return false;
-	if (info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid && info.ref_a!=0xFFFF)
+	if (info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid && info.ref_a!=max_value)
 		return false;
 	return true;
 }
 
-void VDPixmap_X16R16G16B16_Normalize(VDPixmap& dst, const VDPixmap& src);
+void VDPixmap_X16R16G16B16_Normalize(VDPixmap& dst, const VDPixmap& src, uint32 max_value=0xFFFF);
 void VDPixmap_X16R16G16B16_to_b64a(VDPixmap& dst, const VDPixmap& src);
 void VDPixmap_b64a_to_X16R16G16B16(VDPixmap& dst, const VDPixmap& src);
 

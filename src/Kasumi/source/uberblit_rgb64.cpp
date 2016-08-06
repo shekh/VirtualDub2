@@ -147,20 +147,20 @@ void VDPixmapGen_X16R16G16B16_To_X8R8G8B8::Compute(void *dst0, sint32 y) {
 	}
 }
 
-void VDPixmap_X16R16G16B16_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc) {
+void VDPixmap_X16R16G16B16_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc, uint32 max_value) {
 	int ref_r = pxsrc.info.ref_r;
 	int ref_g = pxsrc.info.ref_g;
 	int ref_b = pxsrc.info.ref_b;
 	int ref_a = pxsrc.info.ref_a;
-	uint32 mr = 0xFFFF0000/ref_r;
-	uint32 mg = 0xFFFF0000/ref_g;
-	uint32 mb = 0xFFFF0000/ref_b;
-	uint32 ma = 0xFFFF0000/ref_a;
+	uint32 mr = max_value*0x10000/ref_r;
+	uint32 mg = max_value*0x10000/ref_g;
+	uint32 mb = max_value*0x10000/ref_b;
+	uint32 ma = max_value*0x10000/ref_a;
 	pxdst.info = pxsrc.info;
-	pxdst.info.ref_r = 0xFFFF;
-	pxdst.info.ref_g = 0xFFFF;
-	pxdst.info.ref_b = 0xFFFF;
-	pxdst.info.ref_a = 0xFFFF;
+	pxdst.info.ref_r = max_value;
+	pxdst.info.ref_g = max_value;
+	pxdst.info.ref_b = max_value;
+	pxdst.info.ref_a = max_value;
 
 	{for(sint32 y=0; y<pxsrc.h; y++) {
 		const uint16 *src = (const uint16 *)(size_t(pxsrc.data) + pxsrc.pitch*y);
@@ -173,10 +173,10 @@ void VDPixmap_X16R16G16B16_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc) {
 			uint16 a = src[3];
 			src += 4;
 
-			if(r>ref_r) r=0xFFFF; else r=(r*mr)>>16;
-			if(g>ref_g) g=0xFFFF; else g=(g*mg)>>16;
-			if(b>ref_b) b=0xFFFF; else b=(b*mb)>>16;
-			if(a>ref_a) a=0xFFFF; else a=(a*ma)>>16;
+			if(r>ref_r) r=max_value; else r=(r*mr)>>16;
+			if(g>ref_g) g=max_value; else g=(g*mg)>>16;
+			if(b>ref_b) b=max_value; else b=(b*mb)>>16;
+			if(a>ref_a) a=max_value; else a=(a*ma)>>16;
 
 			dst[2] = r;
 			dst[1] = g;

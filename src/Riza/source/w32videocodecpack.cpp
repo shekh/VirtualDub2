@@ -27,6 +27,7 @@
 #include <vd2/system/vdalloc.h>
 #include <vd2/system/vdstl.h>
 #include <vd2/system/w32assist.h>
+#include <vd2/kasumi/pixmap.h>
 #include <vd2/Riza/videocodec.h>
 #include <vd2/plugin/vdplugin.h>
 
@@ -111,14 +112,25 @@ public:
 	~VDVideoCompressorVCM();
 
 	bool IsKeyFrameOnly();
-	virtual int GetInputFormat() {
-		return driver->getInputFormat(); 
+	virtual int QueryInputFormat(FilterModPixmapInfo* info) {
+		return driver->queryInputFormat(info);
+	}
+	virtual int GetInputFormat(FilterModPixmapInfo* info) {
+		if (info) {
+			info->copy_ref(mInputInfo);
+			info->copy_alpha(mInputInfo);
+		}
+		return mInputLayout.format; 
 	}
 	bool Query(const void *inputFormat, const void *outputFormat);
+	bool Query(const VDPixmapLayout *inputFormat, const void *outputFormat = NULL);
 	void GetOutputFormat(const void *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat);
+	void GetOutputFormat(const VDPixmapLayout *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat);
 	const void *GetOutputFormat();
 	uint32 GetOutputFormatSize();
 	void Start(const void *inputFormat, uint32 inputFormatSize, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);
+	void Start(const VDPixmapLayout& layout, FilterModPixmapInfo& info, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);
+	void internalStart(const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);
 	void Restart();
 	void SkipFrame();
 	void DropFrame();
@@ -142,6 +154,8 @@ private:
 	DWORD		mVFWExtensionMessageID;
 	vdstructex<BITMAPINFOHEADER>	mInputFormat;
 	vdstructex<BITMAPINFOHEADER>	mOutputFormat;
+	VDPixmapLayout  	mInputLayout;
+	FilterModPixmapInfo mInputInfo;
 	VDFraction	mFrameRate;
 	VDPosition	mFrameCount;
 	char		*pPrevBuffer;
@@ -225,6 +239,15 @@ bool VDVideoCompressorVCM::Query(const void *inputFormat, const void *outputForm
 	return res == ICERR_OK;
 }
 
+bool VDVideoCompressorVCM::Query(const VDPixmapLayout *inputFormat, const void *outputFormat) { 
+	DWORD res;
+	vdprotected("asking video compressor if conversion is possible") {
+		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
+		res = driver->compressQuery(0, (LPBITMAPINFO)outputFormat, inputFormat);
+	}
+	return res == ICERR_OK;
+}
+
 void VDVideoCompressorVCM::GetOutputFormat(const void *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat) {
 	vdprotected("querying video compressor for output format") {
 		DWORD icErr;
@@ -243,6 +266,24 @@ void VDVideoCompressorVCM::GetOutputFormat(const void *inputFormat, vdstructex<t
 	}
 }
 
+void VDVideoCompressorVCM::GetOutputFormat(const VDPixmapLayout *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat) {
+	vdprotected("querying video compressor for output format") {
+		DWORD icErr;
+		LONG formatSize = driver->compressGetFormatSize(0,inputFormat);
+		if (formatSize < ICERR_OK)
+			throw MyICError("Output compressor", formatSize);
+
+		outputFormat.resize(formatSize);
+
+		// Huffyuv doesn't initialize a few padding bytes at the end of its format
+		// struct, so we clear them here.
+		memset(&*outputFormat, 0, outputFormat.size());
+
+		if (ICERR_OK != (icErr = driver->compressGetFormat(0, (LPBITMAPINFO)&*outputFormat, inputFormat)))
+			throw MyICError("Output compressor", icErr);
+	}
+}
+
 const void *VDVideoCompressorVCM::GetOutputFormat() {
 	return mOutputFormat.data();
 }
@@ -253,8 +294,19 @@ uint32 VDVideoCompressorVCM::GetOutputFormatSize() {
 
 void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) {
 	const BITMAPINFOHEADER *pbihInput = (const BITMAPINFOHEADER *)inputFormat;
-	const BITMAPINFOHEADER *pbihOutput = (const BITMAPINFOHEADER *)outputFormat;
 	mInputFormat.assign(pbihInput, inputFormatSize);
+	mInputLayout.format = 0;
+	internalStart(outputFormat, outputFormatSize, frameRate, frameCount);
+}
+
+void VDVideoCompressorVCM::Start(const VDPixmapLayout& layout, FilterModPixmapInfo& info, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) {
+	mInputLayout = layout;
+	mInputInfo = info;
+	internalStart(outputFormat, outputFormatSize, frameRate, frameCount);
+}
+
+void VDVideoCompressorVCM::internalStart(const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) {
+	const BITMAPINFOHEADER *pbihOutput = (const BITMAPINFOHEADER *)outputFormat;
 	mOutputFormat.assign(pbihOutput, outputFormatSize);
 	mFrameRate = frameRate;
 	mFrameCount = frameCount;
@@ -281,7 +333,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 		if (!(info.dwFlags & VIDCF_FASTTEMPORALC)) {
 			// Allocate backbuffer
 
-			if (!(pPrevBuffer = new char[pbihInput->biSizeImage]))
+			if (!(pPrevBuffer = new char[mInputFormat->biSizeImage]))
 				throw MyMemoryError();
 		}
 	}
@@ -293,7 +345,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 
 	{
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-		lMaxPackedSize = driver->compressGetSize((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat);
+		lMaxPackedSize = driver->compressGetSize((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat, &mInputLayout);
 	}
 
 	// Work around a bug in Huffyuv.  Ben tried to save some memory
@@ -309,9 +361,9 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 	// 43/51 value, and use the higher of the two.
 
 	if ((info.fccHandler & 0xdfdfdfdf) == 'UYFH') {
-		long lRealMaxPackedSize = pbihInput->biWidth * abs(pbihInput->biHeight);
+		long lRealMaxPackedSize = mInputFormat->biWidth * abs(mInputFormat->biHeight);
 
-		if (pbihInput->biCompression == BI_RGB)
+		if (mInputFormat->biCompression == BI_RGB)
 			lRealMaxPackedSize = (lRealMaxPackedSize * 51) >> 3;
 		else
 			lRealMaxPackedSize = (lRealMaxPackedSize * 43) >> 3;
@@ -399,7 +451,7 @@ void VDVideoCompressorVCM::Start(const void *inputFormat, uint32 inputFormatSize
 
 		{
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-			res = driver->compressBegin((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat);
+			res = driver->compressBegin((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat, &mInputLayout);
 		}
 
 		if (res != ICERR_OK)
@@ -482,8 +534,12 @@ void VDVideoCompressorVCM::Clone(IVDVideoCompressor **vcRet) {
 	vdautoptr<IVDVideoCompressor> vc;
 	desc->CreateInstance(~vc);
 
-	if (fCompressionStarted)
-		vc->Start(mInputFormat.data(), mInputFormat.size(), mOutputFormat.data(), mOutputFormat.size(), mFrameRate, mFrameCount);
+	if (fCompressionStarted) {
+		if (mInputLayout.format)
+			vc->Start(mInputLayout, mInputInfo, mOutputFormat.data(), mOutputFormat.size(), mFrameRate, mFrameCount);
+		else
+			vc->Start(mInputFormat.data(), mInputFormat.size(), mOutputFormat.data(), mOutputFormat.size(), mFrameRate, mFrameCount);
+	}
 
 	*vcRet = vc.release();
 }
@@ -794,7 +850,8 @@ void VDVideoCompressorVCM::PackFrameInternal(void *dst, DWORD frameSize, DWORD q
 				lFrameNum ? frameSize : 0xFFFFFF,
 				q,
 				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : mInputFormat.data(),
-				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : pPrevBuffer);
+				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : pPrevBuffer,
+				&mInputLayout);
 	}
 
 	bytes = mOutputFormat->biSizeImage;
@@ -876,10 +933,34 @@ bool EncoderHIC::getInfo(ICINFO& info) {
 	return r!=0;
 }
 
-int EncoderHIC::compressQuery(void* src, void* dst) {
+int EncoderHIC::compressQuery(void* src, void* dst, const VDPixmapLayout* pxsrc) {
+	if(vdproc && pxsrc && pxsrc->format) {
+		return vdproc(obj,0,VDICM_COMPRESS_QUERY,(LPARAM)pxsrc,(LPARAM)dst);
+	}
 	if(obj) return proc(obj,0,ICM_COMPRESS_QUERY,(LPARAM)src,(LPARAM)dst);
 	if(hic) return ICCompressQuery(hic,src,dst);
 	return -1;
+}
+
+int EncoderHIC::compressGetFormat(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc) { 
+	if(vdproc && pxsrc && pxsrc->format) {
+		return vdproc(obj,0,VDICM_COMPRESS_GET_FORMAT,(LPARAM)pxsrc,(LPARAM)b2);
+	}
+	return sendMessage(ICM_COMPRESS_GET_FORMAT,(LPARAM)b1,(LPARAM)b2); 
+}
+
+int EncoderHIC::compressGetSize(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc) {
+	if(vdproc && pxsrc && pxsrc->format) {
+		return vdproc(obj,0,VDICM_COMPRESS_GET_SIZE,(LPARAM)pxsrc,(LPARAM)b2);
+	}
+	return sendMessage(ICM_COMPRESS_GET_SIZE,(LPARAM)b1,(LPARAM)b2); 
+}
+
+int EncoderHIC::compressBegin(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc) {
+	if(vdproc && pxsrc && pxsrc->format) {
+		return vdproc(obj,0,VDICM_COMPRESS_BEGIN,(LPARAM)pxsrc,(LPARAM)b2);
+	}
+	return sendMessage(ICM_COMPRESS_BEGIN,(LPARAM)b1,(LPARAM)b2); 
 }
 
 int EncoderHIC::sendMessage(int msg, LPARAM p1, LPARAM p2) {
@@ -938,9 +1019,26 @@ DWORD EncoderHIC::compress(
 	DWORD               dwFrameSize,
 	DWORD               dwQuality,
 	LPBITMAPINFOHEADER  lpbiPrev,
-	LPVOID              lpPrev
+	LPVOID              lpPrev,
+	const VDPixmapLayout* pxsrc
 )
 {
+	if(vdproc && pxsrc && pxsrc->format) {
+		ICCOMPRESS c;
+		c.dwFlags = dwFlags;
+		c.lpbiOutput = lpbiOutput;
+		c.lpOutput = lpData;
+		c.lpbiInput = 0;
+		c.lpInput = lpBits;
+		c.lpckid = lpckid;
+		c.lpdwFlags = lpdwFlags;
+		c.lFrameNum = lFrameNum;
+		c.dwFrameSize = dwFrameSize;
+		c.dwQuality = dwQuality;
+		c.lpbiPrev = 0;
+		c.lpPrev = lpPrev;
+		return vdproc(obj,0,VDICM_COMPRESS,(LPARAM)&c,(LPARAM)pxsrc);
+	}
 	if(obj){
 		ICCOMPRESS c;
 		c.dwFlags = dwFlags;
@@ -983,8 +1081,17 @@ DWORD EncoderHIC::decompress(
 	return -1;
 }
 
-int EncoderHIC::getInputFormat() {
-	if (vdproc) return vdproc(obj,0,VDICM_COMPRESS_INPUT_FORMAT,0,0);
+int EncoderHIC::queryInputFormat(FilterModPixmapInfo* info) {
+	if(info) info->clear();
+	if (vdproc) {
+		FilterModPixmapInfo info2;
+		int format = vdproc(obj,0,VDICM_COMPRESS_INPUT_FORMAT,(LPARAM)&info2,0);
+		if (info) {
+			info->copy_ref(info2);
+			info->copy_alpha(info2);
+		}
+		return format;
+	}
 	return 0;
 }
 

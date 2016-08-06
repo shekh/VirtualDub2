@@ -27,6 +27,7 @@
 #include <vfw.h>
 
 struct tagBITMAPINFOHEADER;
+struct FilterModPixmapInfo;
 
 class IVDVideoCompressor;
 
@@ -41,13 +42,17 @@ public:
 
 	virtual bool IsKeyFrameOnly() = 0;
 
-	virtual int GetInputFormat() = 0;
+	virtual int QueryInputFormat(FilterModPixmapInfo* info) = 0;
+	virtual int GetInputFormat(FilterModPixmapInfo* info) = 0;
 	virtual bool Query(const void *inputFormat, const void *outputFormat = NULL) = 0;
+	virtual bool Query(const VDPixmapLayout *inputFormat, const void *outputFormat = NULL) { return false; }
 	virtual void GetOutputFormat(const void *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat) = 0;
+	virtual void GetOutputFormat(const VDPixmapLayout *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat){}
 	virtual const void *GetOutputFormat() = 0;
 	virtual uint32 GetOutputFormatSize() = 0;
 	virtual uint32 GetMaxOutputSize() = 0;
 	virtual void Start(const void *inputFormat, uint32 inputFormatSize, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) = 0;
+	virtual void Start(const VDPixmapLayout& inputFormat, FilterModPixmapInfo& info, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) = 0;
 	virtual void Restart() = 0;
 	virtual void SkipFrame() = 0;
 	virtual void DropFrame() = 0;
@@ -118,8 +123,8 @@ struct EncoderHIC{
 	static EncoderHIC* open(DWORD type, DWORD handler, DWORD flags);
 
 	bool getInfo(ICINFO& info);
-	int compressQuery(void* src, void* dst);
-	int getInputFormat();
+	int compressQuery(void* src, void* dst, const VDPixmapLayout* pxsrc=0);
+	int queryInputFormat(FilterModPixmapInfo* info);
 	int sendMessage(int msg, LPARAM p1, LPARAM p2);
 	void close();
 	void configure(HWND hwnd);
@@ -129,10 +134,10 @@ struct EncoderHIC{
 	void setState(void* data, int size);
 	int getState(void* data, int size);
 	int getStateSize(){ return getState(0,0); }
-	int compressGetFormat(BITMAPINFO* b1, BITMAPINFO* b2){ return sendMessage(ICM_COMPRESS_GET_FORMAT,(LPARAM)b1,(LPARAM)b2); }
-	int compressGetFormatSize(BITMAPINFO* b1){ return compressGetFormat(b1,0); }
-	int compressGetSize(BITMAPINFO* b1, BITMAPINFO* b2){ return sendMessage(ICM_COMPRESS_GET_SIZE,(LPARAM)b1,(LPARAM)b2); }
-	int compressBegin(BITMAPINFO* b1, BITMAPINFO* b2){ return sendMessage(ICM_COMPRESS_BEGIN,(LPARAM)b1,(LPARAM)b2); }
+	int compressGetFormat(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc=0);
+	int compressGetFormatSize(BITMAPINFO* b1, const VDPixmapLayout* pxsrc=0){ return compressGetFormat(b1,0,pxsrc); }
+	int compressGetSize(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc=0);
+	int compressBegin(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc=0);
 	int compressEnd(){ return sendMessage(ICM_COMPRESS_END,0,0); }
 	int decompressBegin(BITMAPINFO* b1, BITMAPINFO* b2){ return sendMessage(ICM_DECOMPRESS_BEGIN,(LPARAM)b1,(LPARAM)b2); }
 	int decompressEnd(){ return sendMessage(ICM_DECOMPRESS_END,0,0); }
@@ -149,7 +154,8 @@ struct EncoderHIC{
 		DWORD               dwFrameSize,
 		DWORD               dwQuality,
 		LPBITMAPINFOHEADER  lpbiPrev,
-		LPVOID              lpPrev
+		LPVOID              lpPrev,
+		const VDPixmapLayout* pxsrc=0
 	);
 
 	DWORD decompress(

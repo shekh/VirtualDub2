@@ -332,6 +332,11 @@ public:
 
 enum {
 	VDICM_COMPRESS_INPUT_FORMAT = 1,  // query which format to use as input
+	VDICM_COMPRESS_QUERY = 2,         // same as compress_query but src is PixmapLayout
+	VDICM_COMPRESS_GET_FORMAT = 3,
+	VDICM_COMPRESS_GET_SIZE = 4,
+	VDICM_COMPRESS_BEGIN = 5,
+	VDICM_COMPRESS = 6,
 };
 
 #endif

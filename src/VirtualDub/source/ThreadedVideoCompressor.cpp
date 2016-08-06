@@ -474,14 +474,22 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 	VDPixmap& src = pBuffer->mPixmap;
 	void* dst = pBuffer->mpBase;
 	if (src.format==nsVDPixmap::kPixFormat_XRGB64) {
-		// need another buffer for this
-		if (!repack_buffer->data) repack_buffer->init(src.w,src.h,src.format);
-		dst = repack_buffer->data;
-		if (VDPixmap_X16R16G16B16_IsNormalized(src.info)) {
-			VDPixmap_X16R16G16B16_to_b64a(*repack_buffer,src);
+		FilterModPixmapInfo out_info;
+		int out_format = pCompressor->GetInputFormat(&out_info);
+		if (out_format) {
+			if (!repack_buffer->data) repack_buffer->init(src.w,src.h,src.format);
+			dst = repack_buffer->data;
+			VDPixmap_X16R16G16B16_Normalize(*repack_buffer,src,out_info.ref_r);
 		} else {
-			VDPixmap_X16R16G16B16_Normalize(*repack_buffer,src);
-			VDPixmap_X16R16G16B16_to_b64a(*repack_buffer,*repack_buffer);
+			// need another buffer for this
+			if (!repack_buffer->data) repack_buffer->init(src.w,src.h,src.format);
+			dst = repack_buffer->data;
+			if (VDPixmap_X16R16G16B16_IsNormalized(src.info)) {
+				VDPixmap_X16R16G16B16_to_b64a(*repack_buffer,src);
+			} else {
+				VDPixmap_X16R16G16B16_Normalize(*repack_buffer,src);
+				VDPixmap_X16R16G16B16_to_b64a(*repack_buffer,*repack_buffer);
+			}
 		}
 	}
 	VDPROFILEEND();

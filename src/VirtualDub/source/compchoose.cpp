@@ -684,12 +684,16 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 	bi.bmiHeader.biClrUsed			= 0;
 	bi.bmiHeader.biClrImportant		= 0;
 
+	VDPixmapLayout layout = {0};
+
 	// Loop until we can find a width, height, and depth that works!
 
 	int w;
 	int h;
 	int kd;
 
+	int codec_format = mhCodec->queryInputFormat(0);
+	
 	for(int i=0; i<NWIDTHS; i++) {
 		w = g_xres[i];
 		bi.bmiHeader.biWidth = w;
@@ -697,12 +701,13 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 		for(int j=0; j<NHEIGHTS; j++) {
 			h = g_yres[j];
 			bi.bmiHeader.biHeight = h;
+			VDPixmapCreateLinearLayout(layout,codec_format,bi.bmiHeader.biWidth,bi.bmiHeader.biHeight,16);
 
 			for(int k=0; k<NDEPTHS; k++) {
 				set_depth(bi,k);
 				kd = k;
 
-				if (ICERR_OK==mhCodec->compressQuery(&bi.bmiHeader, NULL))
+				if (ICERR_OK==mhCodec->compressQuery(&bi.bmiHeader, NULL, &layout))
 					goto pass;
 			}
 		}
@@ -736,16 +741,18 @@ pass:
 	for(i=3; i>=0; i--) {
 		bi.bmiHeader.biWidth	 = w + (1<<i);
 		set_depth(bi,kd);
+		VDPixmapCreateLinearLayout(layout,codec_format,bi.bmiHeader.biWidth,bi.bmiHeader.biHeight,16);
 
-		if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL))
+		if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL, &layout))
 			break;
 
 	}
 
 	bi.bmiHeader.biWidth	 = w + (1<<(i+2));
 	set_depth(bi,kd);
+	VDPixmapCreateLinearLayout(layout,codec_format,bi.bmiHeader.biWidth,bi.bmiHeader.biHeight,16);
 
-	if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL))
+	if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL, &layout))
 		i = -2;
 
 	if (i>=0) {
@@ -763,15 +770,17 @@ pass:
 	for(j=3; j>=0; j--) {
 		bi.bmiHeader.biHeight	 = h + (1<<j);
 		set_depth(bi,kd);
+		VDPixmapCreateLinearLayout(layout,codec_format,bi.bmiHeader.biWidth,bi.bmiHeader.biHeight,16);
 
-		if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL))
+		if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL, &layout))
 			break;
 	}
 
 	bi.bmiHeader.biHeight	 = h + (1<<(j+2));
 	set_depth(bi,kd);
+	VDPixmapCreateLinearLayout(layout,codec_format,bi.bmiHeader.biWidth,bi.bmiHeader.biHeight,16);
 
-	if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL))
+	if (ICERR_OK!=mhCodec->compressQuery(&bi.bmiHeader, NULL, &layout))
 		j = -2;
 
 	if (j>=0) {
@@ -783,7 +792,7 @@ pass:
 	}
 
 	// Print out results
-	if (depth_bits != 7) {
+	if (depth_bits) {
 		s = L"Valid pixel formats:";
 
 		for(k=0; k<NDEPTHS; k++)
@@ -793,7 +802,11 @@ pass:
 		LBAddString(IDC_SIZE_RESTRICTIONS, s.c_str());
 	}
 
-	if (depth_bits==7 && i<0 && j<0)
+	if (codec_format) {
+		LBAddString(IDC_SIZE_RESTRICTIONS, L"Works with VD formats");
+	}
+
+	if ((depth_bits & 7)==7 && i<0 && j<0)
 		LBAddString(IDC_SIZE_RESTRICTIONS, L"No known restrictions.");
 }
 
@@ -812,7 +825,7 @@ void VDUIDialogChooseVideoCompressorW32::OnCodecSelectionChanged(VDUIProxyListBo
 void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	VDPixmapFormatEx format = g_dubOpts.video.mOutputFormat;
 	if (mhCodec) {
-		int codec_format = mhCodec->getInputFormat();
+		int codec_format = mhCodec->queryInputFormat(0);
 		if (codec_format) format = codec_format;
 	}
 
@@ -841,7 +854,7 @@ void VDUIDialogChooseVideoCompressorW32::SetVideoDepthOptionsAsk() {
 
 	int lockFormat = -1;
 	if (mhCodec) {
-		int codec_format = mhCodec->getInputFormat();
+		int codec_format = mhCodec->queryInputFormat(0);
 		if (codec_format) lockFormat = codec_format;
 	}
 

@@ -1014,12 +1014,15 @@ void Dubber::InitOutputFile() {
 
 		int outputFormatID = 0;
 		int outputVariantID = 0;
+		FilterModPixmapInfo outputFormatInfo;
+		outputFormatInfo.clear();
+		VDPixmapLayout layout = {0};
 
 		if (mpOutputSystem)
 			outputFormatID = mpOutputSystem->GetVideoOutputFormatOverride();
 
 		if (!outputFormatID && mpVideoCompressor)
-			outputFormatID = mpVideoCompressor->GetInputFormat();
+			outputFormatID = mpVideoCompressor->QueryInputFormat(&outputFormatInfo);
 
 		if (!outputFormatID) {
 			outputFormatID = mOptions.video.mOutputFormat;
@@ -1066,8 +1069,15 @@ void Dubber::InitOutputFile() {
 
 					bool result = true;
 					
-					if (mpVideoCompressor)
-						result = mpVideoCompressor->Query((LPBITMAPINFO)&*mpCompressorVideoFormat, NULL);
+					if (mpVideoCompressor) {
+						VDPixmapCreateLinearLayout(layout,outputFormatID,outputWidth,outputHeight,16);
+						if (mpVideoCompressor->Query(&layout, NULL)) {
+							result = true;
+						} else {
+							layout.format = 0;
+							result = mpVideoCompressor->Query((LPBITMAPINFO)&*mpCompressorVideoFormat, NULL);
+						}
+					}
 
 					if (result) {
 						outputVariantID = variant;
@@ -1094,21 +1104,32 @@ void Dubber::InitOutputFile() {
 
 		if (mpVideoCompressor) {
 			vdstructex<BITMAPINFOHEADER> outputFormatW32;
-			mpVideoCompressor->GetOutputFormat(&*mpCompressorVideoFormat, outputFormatW32);
+			if (layout.format)
+				mpVideoCompressor->GetOutputFormat(&layout, outputFormatW32);
+			else
+				mpVideoCompressor->GetOutputFormat(&*mpCompressorVideoFormat, outputFormatW32);
 			outputFormat.assign((const VDAVIBitmapInfoHeader *)outputFormatW32.data(), outputFormatW32.size());
 
 			// If we are using smart rendering, we have no choice but to match the source format.
 			if (mOptions.video.mbUseSmartRendering) {
 				IVDStreamSource *vsrcStream = vSrc->asStream();
 				const VDAVIBitmapInfoHeader *srcFormat = vSrc->getImageFormat();
+				bool qresult;
+				if (layout.format)
+					qresult = mpVideoCompressor->Query(&layout, srcFormat);
+				else
+					qresult = mpVideoCompressor->Query(&*mpCompressorVideoFormat, srcFormat);
 
-				if (!mpVideoCompressor->Query(&*mpCompressorVideoFormat, srcFormat))
+				if (!qresult)
 					throw MyError("Cannot initialize smart rendering: The selected video codec is able to compress the source video, but cannot match the same compressed format.");
 
 				outputFormat.assign(srcFormat, vsrcStream->getFormatLen());
 			}
 
-			mpVideoCompressor->Start(&*mpCompressorVideoFormat, mpCompressorVideoFormat.size(), &*outputFormat, outputFormat.size(), vInfo.mFrameRate, vInfo.end_proc_dst);
+			if (layout.format)
+				mpVideoCompressor->Start(layout, outputFormatInfo, &*outputFormat, outputFormat.size(), vInfo.mFrameRate, vInfo.end_proc_dst);
+			else
+				mpVideoCompressor->Start(&*mpCompressorVideoFormat, mpCompressorVideoFormat.size(), &*outputFormat, outputFormat.size(), vInfo.mFrameRate, vInfo.end_proc_dst);
 
 			lVideoSizeEstimate = mpVideoCompressor->GetMaxOutputSize();
 		} else {
@@ -1462,7 +1483,7 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 			outputFormat = pOutputSystem->GetVideoOutputFormatOverride();
 
 		if (!outputFormat && mpVideoCompressor)
-			outputFormat = mpVideoCompressor->GetInputFormat();
+			outputFormat = mpVideoCompressor->QueryInputFormat(0);
 
 		if (!outputFormat) {
 			outputFormat = mOptions.video.mOutputFormat;
