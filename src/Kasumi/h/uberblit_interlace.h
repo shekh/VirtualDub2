@@ -28,6 +28,7 @@ public:
 	}
 
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		mpSrc->TransformPixmapInfo(src,dst);
 	}
 
 	void Start() {
@@ -80,6 +81,8 @@ public:
 	}
 
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		mpSrc[0]->TransformPixmapInfo(src,dst);
+		mpSrc[1]->TransformPixmapInfo(src,dst);
 	}
 
 	void Start() {

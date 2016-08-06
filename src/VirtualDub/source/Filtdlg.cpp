@@ -1574,6 +1574,9 @@ void VDVideoFiltersDialog::FilterListItem::GetText(int subItem, VDStringW& s) co
 						"YUV420ib-709",
 						"YUV420ib-709-FR",
 						"RGB64",
+						"YUV444P16",
+						"YUV422P16",
+						"YUV420P16",
 					};
 
 					VDASSERTCT(sizeof(kFormatNames)/sizeof(kFormatNames[0]) == nsVDPixmap::kPixFormat_Max_Standard);

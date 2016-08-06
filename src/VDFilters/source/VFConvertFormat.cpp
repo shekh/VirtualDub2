@@ -57,6 +57,10 @@ namespace {
 		nsVDXPixmap::kPixFormat_YUV410_Planar_709_FR,
 		nsVDXPixmap::kPixFormat_YUV422_UYVY_709_FR,
 		nsVDXPixmap::kPixFormat_YUV422_YUYV_709_FR,
+
+		nsVDXPixmap::kPixFormat_YUV444_Planar16,
+		nsVDXPixmap::kPixFormat_YUV422_Planar16,
+		nsVDXPixmap::kPixFormat_YUV420_Planar16,
 	};
 
 	const wchar_t *const kYUVFormats[]={
@@ -68,6 +72,12 @@ namespace {
 		L"4:2:2 interleaved YCbCr (UYVY)",
 		L"4:2:2 interleaved YCbCr (YUY2)",
 	};
+
+	const wchar_t *const kYUVFormats16[]={
+		L"4:4:4 planar YCbCr 16 bit",
+		L"4:2:2 planar YCbCr 16 bit",
+		L"4:2:0 planar YCbCr 16 bit",
+  };
 }
 
 class VDVFilterConvertFormatConfigDialog : public VDDialogFrameW32 {
@@ -106,6 +116,10 @@ bool VDVFilterConvertFormatConfigDialog::OnLoaded() {
 
 			LBAddString(IDC_FORMATS, s.c_str());
 		}
+	}
+
+	for(size_t j=0; j<sizeof(kYUVFormats16)/sizeof(kYUVFormats16[0]); ++j) {
+		LBAddString(IDC_FORMATS, kYUVFormats16[j]);
 	}
 
 	SetFocusToControl(IDC_FORMATS);
@@ -242,6 +256,18 @@ void VDVFilterConvertFormat::GetSettingString(char *buf, int maxlen) {
 		case nsVDXPixmap::kPixFormat_YUV422_YUYV_709:
 		case nsVDXPixmap::kPixFormat_YUV422_YUYV_709_FR:
 			s = "YUY2";
+			break;
+
+		case nsVDXPixmap::kPixFormat_YUV444_Planar16:
+			s = "YUV444P16";
+			break;
+
+		case nsVDXPixmap::kPixFormat_YUV422_Planar16:
+			s = "YUV422P16";
+			break;
+
+		case nsVDXPixmap::kPixFormat_YUV420_Planar16:
+			s = "YUV420P16";
 			break;
 	}
 

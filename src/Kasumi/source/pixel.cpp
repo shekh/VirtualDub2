@@ -70,6 +70,47 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		{
+			ps.sy = VDPixmapSample16U(px.data, px.pitch, x, y);
+			ps.scb = VDPixmapSample16U(px.data2, px.pitch2, x, y);
+			ps.scr = VDPixmapSample16U(px.data3, px.pitch3, x, y);
+			valid_yuv = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		{
+			sint32 u = (x << 7) + 128;
+			sint32 v = (y << 8);
+			uint32 w2 = px.w >> 1;
+			uint32 h2 = px.h;
+
+			int ref = px.info.ref_r;
+
+			ps.sy = VDPixmapSample16U(px.data, px.pitch, x, y);
+			ps.scb = VDPixmapInterpolateSample16U(px.data2, px.pitch2, w2, h2, u, v, ref);
+			ps.scr = VDPixmapInterpolateSample16U(px.data3, px.pitch3, w2, h2, u, v, ref);
+			valid_yuv = true;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		{
+			sint32 u = (x << 7) + 128;
+			sint32 v = (y << 7);
+			uint32 w2 = px.w >> 1;
+			uint32 h2 = px.h >> 1;
+
+			int ref = px.info.ref_r;
+
+			ps.sy = VDPixmapSample16U(px.data, px.pitch, x, y);
+			ps.scb = VDPixmapInterpolateSample16U(px.data2, px.pitch2, w2, h2, u, v, ref);
+			ps.scr = VDPixmapInterpolateSample16U(px.data3, px.pitch3, w2, h2, u, v, ref);
+			valid_yuv = true;
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_YUV444_Planar:
 	case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
 	case nsVDPixmap::kPixFormat_YUV444_Planar_709:
@@ -307,6 +348,46 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		{
+			int ref = px.info.ref_r;
+			uint8 py = VDPixmapSample16(px.data, px.pitch, x, y, ref);
+			uint8 pcb = VDPixmapSample16(px.data2, px.pitch2, x, y, ref);
+			uint8 pcr = VDPixmapSample16(px.data3, px.pitch3, x, y, ref);
+			return VDConvertYCbCrToRGB(py,pcb,pcr,false,false);
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		{
+			sint32 u = (x << 7) + 128;
+			sint32 v = (y << 8);
+			uint32 w2 = px.w >> 1;
+			uint32 h2 = px.h;
+
+			int ref = px.info.ref_r;
+			uint8 py = VDPixmapSample16(px.data, px.pitch, x, y, ref);
+			uint8 pcb = VDPixmapInterpolateSample16(px.data2, px.pitch2, w2, h2, u, v, ref);
+			uint8 pcr = VDPixmapInterpolateSample16(px.data3, px.pitch3, w2, h2, u, v, ref);
+			return VDConvertYCbCrToRGB(py,pcb,pcr,false,false);
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		{
+			sint32 u = (x << 7) + 128;
+			sint32 v = (y << 7);
+			uint32 w2 = px.w >> 1;
+			uint32 h2 = px.h >> 1;
+
+			int ref = px.info.ref_r;
+			uint8 py = VDPixmapSample16(px.data, px.pitch, x, y, ref);
+			uint8 pcb = VDPixmapInterpolateSample16(px.data2, px.pitch2, w2, h2, u, v, ref);
+			uint8 pcr = VDPixmapInterpolateSample16(px.data3, px.pitch3, w2, h2, u, v, ref);
+			return VDConvertYCbCrToRGB(py,pcb,pcr,false,false);
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_Y8:
 		{
 			uint8 luma = ((const uint8 *)px.data + px.pitch*y)[x];
@@ -419,6 +500,46 @@ uint8 VDPixmapInterpolateSample8(const void *data, ptrdiff_t pitch, uint32 w, ui
 	sint32 p = ((p0 << 8) + (p1 - p0)*yoffset + 0x8000) >> 16;
 
 	return (uint8)p;
+}
+
+uint16 VDPixmapInterpolateSample16U(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256, uint32 ref) {
+	// bias coordinates to integer
+	x_256 -= 128;
+	y_256 -= 128;
+
+	// clamp coordinates
+	x_256 &= ~(x_256 >> 31);
+	y_256 &= ~(y_256 >> 31);
+
+	uint32 w_256 = (w - 1) << 8;
+	uint32 h_256 = (h - 1) << 8;
+	x_256 ^= (x_256 ^ w_256) & ((x_256 - w_256) >> 31);
+	y_256 ^= (y_256 ^ h_256) & ((y_256 - h_256) >> 31);
+
+	const uint16 *row0 = (const uint16 *)data + pitch/2 * (y_256 >> 8) + (x_256 >> 8);
+	const uint16 *row1 = row0;
+
+	if ((uint32)y_256 < h_256)
+		row1 += pitch/2;
+
+	ptrdiff_t xstep = (uint32)x_256 < w_256 ? 1 : 0;
+	sint32 xoffset = x_256 & 255;
+	sint32 yoffset = y_256 & 255;
+	sint32 p00 = row0[0];
+	sint32 p10 = row0[xstep];
+	sint32 p01 = row1[0];
+	sint32 p11 = row1[xstep];
+	sint32 p0 = ((p00 << 8) + (p10 - p00)*xoffset) >> 8;
+	sint32 p1 = ((p01 << 8) + (p11 - p01)*xoffset) >> 8;
+	sint32 p = ((p0 << 8) + (p1 - p0)*yoffset + (ref+1)/0x200) >> 8;
+
+	return p;
+}
+
+uint8 VDPixmapInterpolateSample16(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256, uint32 ref) {
+	sint32 v = VDPixmapInterpolateSample16U(data,pitch,w,h,x_256,y_256,ref);
+	if (v>ref) return 255;
+	return (uint8)((v*0xFF0/ref+8)>>4);
 }
 
 uint32 VDPixmapInterpolateSample8To24(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256) {

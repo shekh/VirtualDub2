@@ -2,6 +2,7 @@
 #include <vd2/system/profile.h>
 #include <vd2/Riza/videocodec.h>
 #include <../Kasumi/h/uberblit_rgb64.h>
+#include <../Kasumi/h/uberblit_16f.h>
 #include "ThreadedVideoCompressor.h"
 
 enum {
@@ -473,6 +474,15 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 	VDPROFILEBEGIN("V-Format");
 	VDPixmap& src = pBuffer->mPixmap;
 	void* dst = pBuffer->mpBase;
+	if (src.format==nsVDPixmap::kPixFormat_YUV420_Planar16 || src.format==nsVDPixmap::kPixFormat_YUV422_Planar16 || src.format==nsVDPixmap::kPixFormat_YUV444_Planar16) {
+		FilterModPixmapInfo out_info;
+		int out_format = pCompressor->GetInputFormat(&out_info);
+		if (out_format) {
+			if (!repack_buffer->data) repack_buffer->init(src.w,src.h,src.format);
+			dst = repack_buffer->data;
+			VDPixmap_YUV_Normalize(*repack_buffer,src,out_info.ref_r);
+		}
+	}
 	if (src.format==nsVDPixmap::kPixFormat_XRGB64) {
 		FilterModPixmapInfo out_info;
 		int out_format = pCompressor->GetInputFormat(&out_info);

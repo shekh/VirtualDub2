@@ -1031,6 +1031,14 @@ void Dubber::InitOutputFile() {
 				outputFormatID = vSrc->getTargetFormat().format;
 		}
 
+		VDPixmapCreateLinearLayout(layout,outputFormatID,outputWidth,outputHeight,16);
+		if (mpVideoCompressor && mpVideoCompressor->Query(&layout, NULL)) {
+			// use layout
+		} else {
+			layout.format = 0;
+		}
+
+		if (!layout.format)
 		if (mOptions.video.mode >= DubVideoOptions::M_FASTREPACK) {
 			const VDAVIBitmapInfoHeader *pSrcFormat = vSrc->getDecompressedFormat();
 			const uint32 srcFormatLen = vSrc->getDecompressedFormatLen();
@@ -1067,18 +1075,7 @@ void Dubber::InitOutputFile() {
 						foundDibCompatibleFormat = true;
 					}
 
-					bool result = true;
-					
-					if (mpVideoCompressor) {
-						VDPixmapCreateLinearLayout(layout,outputFormatID,outputWidth,outputHeight,16);
-						if (mpVideoCompressor->Query(&layout, NULL)) {
-							result = true;
-						} else {
-							layout.format = 0;
-							result = mpVideoCompressor->Query((LPBITMAPINFO)&*mpCompressorVideoFormat, NULL);
-						}
-					}
-
+					bool result = mpVideoCompressor->Query((LPBITMAPINFO)&*mpCompressorVideoFormat, NULL);
 					if (result) {
 						outputVariantID = variant;
 						break;

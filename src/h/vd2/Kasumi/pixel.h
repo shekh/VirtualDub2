@@ -40,7 +40,20 @@ inline uint8 VDPixmapSample8(const void *data, ptrdiff_t pitch, sint32 x, sint32
 	return ((const uint8 *)data)[pitch*y + x];
 }
 
+inline uint16 VDPixmapSample16U(const void *data, ptrdiff_t pitch, sint32 x, sint32 y) {
+	return ((const uint16 *)data)[pitch/2*y + x];
+}
+
+inline uint8 VDPixmapSample16(const void *data, ptrdiff_t pitch, sint32 x, sint32 y, uint32 ref) {
+	uint16 v = ((const uint16 *)data)[pitch/2*y + x];
+	if (v>ref) return 255;
+	return (uint8)((v*0xFF0/ref+8)>>4);
+}
+
 uint8 VDPixmapInterpolateSample8(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256);
+uint16 VDPixmapInterpolateSample16U(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256, uint32 ref);
+uint8 VDPixmapInterpolateSample16(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256, uint32 ref);
+
 uint32 VDConvertYCbCrToRGB(uint8 y, uint8 cb, uint8 cr, bool use709, bool useFullRange);
 uint32 VDConvertRGBToYCbCr(uint32 c);
 uint32 VDConvertRGBToYCbCr(uint8 r, uint8 g, uint8 b, bool use709, bool useFullRange);
