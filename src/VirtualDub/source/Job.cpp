@@ -326,11 +326,21 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 	output.addf("VirtualDub.video.SetIVTC(0, 0, 0, 0);");
 
 	if ((g_Vcompression.dwFlags & ICMF_COMPVARS_VALID) && g_Vcompression.fccHandler) {
-		output.addf("VirtualDub.video.SetCompression(0x%08lx,%d,%d,%d);",
-				g_Vcompression.fccHandler,
-				g_Vcompression.lKey,
-				g_Vcompression.lQ,
-				g_Vcompression.lDataRate);
+		if (!g_Vcompression.driver->path.empty()) {
+			VDStringW name = VDFileSplitPathRight(g_Vcompression.driver->path);
+			output.addf("VirtualDub.video.SetCompression(0x%08lx,%d,%d,%d,\"%s\");",
+					g_Vcompression.fccHandler,
+					g_Vcompression.lKey,
+					g_Vcompression.lQ,
+					g_Vcompression.lDataRate,
+					strCify(VDTextWToU8(name).c_str()));
+		} else {
+			output.addf("VirtualDub.video.SetCompression(0x%08lx,%d,%d,%d);",
+					g_Vcompression.fccHandler,
+					g_Vcompression.lKey,
+					g_Vcompression.lQ,
+					g_Vcompression.lDataRate);
+		}
 
 		l = g_Vcompression.driver->getStateSize();
 

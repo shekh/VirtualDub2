@@ -31,6 +31,7 @@
 #include <vd2/system/file.h>
 #include <vd2/system/log.h>
 #include <vd2/system/VDString.h>
+#include <vd2/system/filesys.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmapops.h>
 #include <vd2/Dita/services.h>
@@ -67,6 +68,7 @@ extern int g_returnCode;
 extern VDProject *g_project;
 
 extern HINSTANCE g_hInst;
+extern std::list<class VDExternalModule *>		g_pluginModules;
 
 extern vdrefptr<IVDVideoSource>	inputVideo;
 extern vdrefptr<AudioSource> inputAudio;
@@ -865,7 +867,23 @@ static void func_VDVideo_SetCompression(IVDScriptInterpreter *, VDScriptValue *a
 	g_Vcompression.lKey			= arglist[1].asInt();
 	g_Vcompression.lQ			= arglist[2].asInt();
 	g_Vcompression.lDataRate	= arglist[3].asInt();
-	g_Vcompression.driver		= EncoderHIC::open(g_Vcompression.fccType, g_Vcompression.fccHandler, ICMODE_COMPRESS);
+
+	if (arg_count==5) {
+		VDStringW fileName(VDTextU8ToW(VDStringA(*arglist[4].asString())));
+
+		std::list<class VDExternalModule *>::const_iterator it(g_pluginModules.begin()),
+				itEnd(g_pluginModules.end());
+
+		for(; it!=itEnd; ++it) {
+			VDExternalModule *pModule = *it;
+			const VDStringW& path = pModule->GetFilename();
+			const wchar_t* name = VDFileSplitPath(path.c_str());
+			if (_wcsicmp(name,fileName.c_str())!=0) continue;
+			g_Vcompression.driver = EncoderHIC::load(path, g_Vcompression.fccType, g_Vcompression.fccHandler, ICMODE_COMPRESS);
+		}
+	} else {
+		g_Vcompression.driver = EncoderHIC::open(g_Vcompression.fccType, g_Vcompression.fccHandler, ICMODE_COMPRESS);
+	}
 }
 
 static void func_VDVideo_SetCompData(IVDScriptInterpreter *isi, VDScriptValue *arglist, int arg_count) {
@@ -1101,6 +1119,8 @@ static const VDScriptFunctionDef obj_VDVideo_functbl[]={
 	{ func_VDVideo_GetCompression	, "GetCompression",	"ii" },
 	{ func_VDVideo_SetCompression	, "SetCompression",	"0siii" },
 	{ func_VDVideo_SetCompression	, NULL,				"0iiii" },
+	{ func_VDVideo_SetCompression	, NULL,				"0siiis" },
+	{ func_VDVideo_SetCompression	, NULL,				"0iiiis" },
 	{ func_VDVideo_SetCompression	, NULL,				"0" },
 	{ func_VDVideo_SetCompData		, "SetCompData",	"0is" },
 	{ func_VDVideo_EnableIndeoQC	, "EnableIndeoQC",	"0i" },

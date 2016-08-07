@@ -23,6 +23,7 @@
 #include <vd2/system/vdtypes.h>
 #include <vd2/system/fraction.h>
 #include <vd2/system/vdstl.h>
+#include <vd2/system/VDString.h>
 #include <windows.h>
 #include <vfw.h>
 
@@ -100,6 +101,7 @@ void VDSetVideoCodecBugTrap(IVDVideoCodecBugTrap *);
 typedef LRESULT (WINAPI DriverProc)(DWORD_PTR dwDriverId, HDRVR hDriver, UINT uMsg, LPARAM lParam1, LPARAM lParam2);
 
 struct EncoderHIC{
+	VDStringW path;
 	HMODULE module;
 	DriverProc* proc;
 	DriverProc* vdproc;
@@ -119,7 +121,7 @@ struct EncoderHIC{
 		if(module) FreeLibrary(module);
 	}
 
-	static EncoderHIC* load(const wchar_t* path, DWORD type, DWORD handler, DWORD flags);
+	static EncoderHIC* load(const VDStringW& path, DWORD type, DWORD handler, DWORD flags);
 	static EncoderHIC* open(DWORD type, DWORD handler, DWORD flags);
 
 	int getInfo(ICINFO& info);

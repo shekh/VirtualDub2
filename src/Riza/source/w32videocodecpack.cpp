@@ -892,8 +892,8 @@ void VDVideoCompressorVCM::GetState(vdfastvector<uint8>& data) {
 
 //------------------------------------------------------------------------------------------------------
 
-EncoderHIC* EncoderHIC::load(const wchar_t* path, DWORD type, DWORD handler, DWORD flags) {
-	HMODULE module = LoadLibraryW(path);
+EncoderHIC* EncoderHIC::load(const VDStringW& path, DWORD type, DWORD handler, DWORD flags) {
+	HMODULE module = LoadLibraryW(path.c_str());
 	if(!module) return 0;
 
 	DriverProc* proc = (DriverProc*)GetProcAddress(module,"DriverProc");
@@ -914,6 +914,7 @@ EncoderHIC* EncoderHIC::load(const wchar_t* path, DWORD type, DWORD handler, DWO
 	}
 
 	EncoderHIC* plugin = new EncoderHIC;
+	plugin->path = path;
 	plugin->module = module;
 	plugin->proc = proc;
 	plugin->obj = obj;
