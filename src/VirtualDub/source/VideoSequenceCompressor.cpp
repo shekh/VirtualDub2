@@ -26,6 +26,7 @@
 #include <vd2/system/protscope.h>
 #include <vd2/system/w32assist.h>
 #include <vd2/Dita/resources.h>
+#include <vd2/Riza/videocodec.h>
 #include "crash.h"
 #include "misc.h"
 

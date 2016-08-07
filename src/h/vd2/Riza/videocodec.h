@@ -29,6 +29,7 @@
 
 struct tagBITMAPINFOHEADER;
 struct FilterModPixmapInfo;
+struct VDPixmapLayout;
 
 class IVDVideoCompressor;
 

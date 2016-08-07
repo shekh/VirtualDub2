@@ -31,6 +31,7 @@
 #include <vd2/Dita/w32peer.h>
 #include <vd2/Dita/resources.h>
 #include <vd2/Riza/bitmap.h>
+#include <vd2/Riza/videocodec.h>
 #include <vd2/VDDisplay/display.h>
 #include "gui.h"
 #include "prefs.h"

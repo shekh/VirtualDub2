@@ -30,14 +30,20 @@
 #include <vd2/VDLib/Dialog.h>
 #include <vd2/VDLib/UIProxies.h>
 #include <vd2/Riza/videocodec.h>
+#include <vd2/Kasumi/pixmaputils.h>
 
 #include "resource.h"
 
 #include "oshelper.h"
 #include "misc.h"
+#include "plugins.h"
+#include "dub.h"
+#include "videoSource.h"
 
 extern HINSTANCE g_hInst;
 extern std::list<class VDExternalModule *>		g_pluginModules;
+extern DubOptions			g_dubOpts;
+extern vdrefptr<IVDVideoSource> inputVideo;
 
 const wchar_t g_szNo[]=L"No";
 const wchar_t g_szYes[]=L"Yes";

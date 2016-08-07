@@ -47,6 +47,7 @@
 #include <vd2/Kasumi/pixmapops.h>
 #include <vd2/Kasumi/pixmaputils.h>
 #include <vd2/Riza/bitmap.h>
+#include <vd2/Riza/videocodec.h>
 #include <vd2/VDCapture/capdriver.h>
 #include <vd2/VDCapture/capdrivers.h>
 #include <vd2/VDCapture/capresync.h>

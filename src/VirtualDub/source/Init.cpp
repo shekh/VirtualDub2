@@ -51,6 +51,7 @@
 #include <vd2/Dita/services.h>
 #include <vd2/VDDisplay/display.h>
 #include <vd2/Riza/direct3d.h>
+#include <vd2/Riza/videocodec.h>
 #include <vd2/VDLib/PortableRegistry.h>
 #include <vd2/VDLib/win32/DebugOutputFilter.h>
 #include "crash.h"

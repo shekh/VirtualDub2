@@ -22,6 +22,7 @@
 #include <vd2/system/registry.h>
 #include <vd2/system/math.h>
 #include <vd2/system/w32assist.h>
+#include <vd2/Kasumi/pixmaputils.h>
 #include <vd2/VDLib/Dialog.h>
 
 #include <list>
@@ -40,6 +41,7 @@
 #include "Dub.h"
 
 extern HINSTANCE g_hInst;
+extern vdrefptr<IVDVideoSource> inputVideo;
 
 #define VD_FOURCC(fcc) (((fcc&0xff000000)>>24)+((fcc&0xff0000)>>8)+((fcc&0xff00)<<8)+((fcc&0xff)<<24))
 
