@@ -159,7 +159,8 @@ private:
 	VDFraction	mFrameRate;
 	VDPosition	mFrameCount;
 	char		*pPrevBuffer;
-	long		lFrameNum;
+	long		lFrameSent;
+	long		lFrameDone;
 	long		lKeyRate;
 	long		lQuality;
 	long		lDataRate;
@@ -478,7 +479,8 @@ void VDVideoCompressorVCM::internalStart(const void *outputFormat, uint32 output
 
 	fCompressionStarted = true;
 	mbCompressionRestarted = true;
-	lFrameNum = 0;
+	lFrameSent = 0;
+	lFrameDone = 0;
 
 
 	mQualityLo = 0;
@@ -554,7 +556,7 @@ void VDVideoCompressorVCM::DropFrame() {
 		--lKeyRateCounter;
 
 	// Hmm, this seems to make Cinepak restart on a key frame.
-	++lFrameNum;
+	++lFrameDone;
 }
 
 void VDVideoCompressorVCM::Restart() {
@@ -562,7 +564,8 @@ void VDVideoCompressorVCM::Restart() {
 		return;
 
 	mbCompressionRestarted = true;
-	lFrameNum = 0;
+	lFrameSent = 0;
+	lFrameDone = 0;
 	lKeyRateCounter = 1;
 
 	DWORD res;
@@ -594,7 +597,7 @@ bool VDVideoCompressorVCM::CompressFrame(void *dst, const void *src, bool& keyfr
 
 	if (!mbKeyframeOnly) {
 		if (!lKeyRate) {
-			if (lFrameNum)
+			if (lFrameSent)
 				dwFlagsIn = 0;
 		} else {
 			if (--lKeyRateCounter)
@@ -752,7 +755,7 @@ crunch_complete:
 	}
 
 	// Flag a warning if the codec is improperly modifying its input buffer.
-	if (!lFrameNum && *(const uint8 *)src != firstInputByte) {
+	if (!lFrameSent && *(const uint8 *)src != firstInputByte) {
 		if (g_pVDVideoCodecBugTrap)
 			g_pVDVideoCodecBugTrap->OnCodecModifiedInput(mCodecName.c_str());
 	}
@@ -762,6 +765,7 @@ crunch_complete:
 	// A one-byte frame starting with 0x7f should be discarded
 	// (lag for B-frame).
 
+	++lFrameSent;
 	bool bNoOutputProduced = false;
 
 	if (mOutputFormat->biCompression == '05xd' ||
@@ -787,7 +791,7 @@ crunch_complete:
 
 		{
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-			vdprotected4("decompressing frame %u from %08x to %08x using codec \"%ls\"", unsigned, lFrameNum, unsigned, (unsigned)dst, unsigned, (unsigned)pPrevBuffer, const wchar_t *, mCodecName.c_str()) {
+			vdprotected4("decompressing frame %u from %08x to %08x using codec \"%ls\"", unsigned, lFrameDone, unsigned, (unsigned)dst, unsigned, (unsigned)pPrevBuffer, const wchar_t *, mCodecName.c_str()) {
 				res = driver->decompress(dwFlagsOut & AVIIF_KEYFRAME ? 0 : ICDECOMPRESS_NOTKEYFRAME,
 						&*mOutputFormat,
 						dst,
@@ -799,7 +803,7 @@ crunch_complete:
 			throw MyICError("Video compression", res);
 	}
 
-	++lFrameNum;
+	++lFrameDone;
 	size = bytes;
 
 	// Update quota.
@@ -840,14 +844,14 @@ void VDVideoCompressorVCM::PackFrameInternal(void *dst, DWORD frameSize, DWORD q
 	DWORD sizeImage = mOutputFormat->biSizeImage;
 
 	VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-	vdprotected4("compressing frame %u from %08x to %08x using codec \"%ls\"", unsigned, lFrameNum, unsigned, (unsigned)src, unsigned, (unsigned)dst, const wchar_t *, mCodecName.c_str()) {
+	vdprotected4("compressing frame %u from %08x to %08x using codec \"%ls\"", unsigned, lFrameSent, unsigned, (unsigned)src, unsigned, (unsigned)dst, const wchar_t *, mCodecName.c_str()) {
 		res = driver->compress(dwFlagsIn,
 				mOutputFormat.data(), dst,
 				mInputFormat.data(), (LPVOID)src,
 				&dwChunkId,
 				&dwFlagsOut,
-				lFrameNum,
-				lFrameNum ? frameSize : 0xFFFFFF,
+				lFrameSent,
+				lFrameSent ? frameSize : 0xFFFFFF,
 				q,
 				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : mInputFormat.data(),
 				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : pPrevBuffer,
@@ -926,19 +930,20 @@ EncoderHIC* EncoderHIC::open(DWORD type, DWORD handler, DWORD flags) {
 	return plugin;
 }
 
-bool EncoderHIC::getInfo(ICINFO& info) {
-	int r=0;
-	if(obj) r = proc(obj,0,ICM_GETINFO,(LPARAM)&info,sizeof(info));
-	if(hic) r = ICGetInfo(hic,&info,sizeof(info));
-	return r!=0;
+int EncoderHIC::getInfo(ICINFO& info) {
+	if(obj) return proc(obj,0,ICM_GETINFO,(LPARAM)&info,sizeof(info));
+	if(hic) return ICGetInfo(hic,&info,sizeof(info));
+	return 0;
 }
 
 int EncoderHIC::compressQuery(void* src, void* dst, const VDPixmapLayout* pxsrc) {
 	if(vdproc && pxsrc && pxsrc->format) {
 		return vdproc(obj,0,VDICM_COMPRESS_QUERY,(LPARAM)pxsrc,(LPARAM)dst);
 	}
-	if(obj) return proc(obj,0,ICM_COMPRESS_QUERY,(LPARAM)src,(LPARAM)dst);
-	if(hic) return ICCompressQuery(hic,src,dst);
+	if(src){
+		if(obj) return proc(obj,0,ICM_COMPRESS_QUERY,(LPARAM)src,(LPARAM)dst);
+		if(hic) return ICCompressQuery(hic,src,dst);
+	}
 	return -1;
 }
 
@@ -1055,7 +1060,16 @@ DWORD EncoderHIC::compress(
 		c.lpPrev = lpPrev;
 		return proc(obj,0,ICM_COMPRESS,(LPARAM)&c,0);
 	}
-	if(hic) return ICCompress(hic,dwFlags,lpbiOutput,lpData,lpbiInput,lpBits,lpckid,lpdwFlags,lFrameNum,dwFrameSize,dwQuality,lpbiPrev,lpPrev);
+	if(hic) return ICCompress(hic, dwFlags,
+		lpbiOutput, lpData,
+		lpbiInput, lpBits,
+		lpckid,
+		lpdwFlags,
+		lFrameNum,
+		dwFrameSize,
+		dwQuality,
+		lpbiPrev,
+		lpPrev);
 	return -1;
 }
 

@@ -122,7 +122,7 @@ struct EncoderHIC{
 	static EncoderHIC* load(const wchar_t* path, DWORD type, DWORD handler, DWORD flags);
 	static EncoderHIC* open(DWORD type, DWORD handler, DWORD flags);
 
-	bool getInfo(ICINFO& info);
+	int getInfo(ICINFO& info);
 	int compressQuery(void* src, void* dst, const VDPixmapLayout* pxsrc=0);
 	int queryInputFormat(FilterModPixmapInfo* info);
 	int sendMessage(int msg, LPARAM p1, LPARAM p2);
