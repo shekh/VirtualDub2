@@ -1012,11 +1012,11 @@ void Dubber::InitOutputFile() {
 
 		// initialize compression
 
-		int outputFormatID = 0;
+		VDPixmapFormatEx outputFormatID = 0;
 		int outputVariantID = 0;
 		FilterModPixmapInfo outputFormatInfo;
 		outputFormatInfo.clear();
-		VDPixmapLayout layout = {0};
+		VDPixmapLayout driverLayout = {0};
 
 		if (mpOutputSystem)
 			outputFormatID = mpOutputSystem->GetVideoOutputFormatOverride();
@@ -1025,20 +1025,23 @@ void Dubber::InitOutputFile() {
 			outputFormatID = mpVideoCompressor->QueryInputFormat(&outputFormatInfo);
 
 		if (!outputFormatID) {
-			outputFormatID = mOptions.video.mOutputFormat;
+			outputFormatID = mOptions.video.mOutputFormat.format;
 
 			if (!outputFormatID)
 				outputFormatID = vSrc->getTargetFormat().format;
 		}
 
-		VDPixmapCreateLinearLayout(layout,outputFormatID,outputWidth,outputHeight,16);
-		if (mpVideoCompressor && mpVideoCompressor->Query(&layout, NULL)) {
+		outputFormatID = VDPixmapFormatCombine(outputFormatID, mOptions.video.mOutputFormat);
+
+		VDPixmapCreateLinearLayout(driverLayout,VDPixmapFormatNormalize(outputFormatID),outputWidth,outputHeight,16);
+		if (mpVideoCompressor && mpVideoCompressor->Query(&driverLayout, NULL)) {
 			// use layout
+			driverLayout.formatEx = outputFormatID;
 		} else {
-			layout.format = 0;
+			driverLayout.format = 0;
 		}
 
-		if (!layout.format)
+		if (!driverLayout.format)
 		if (mOptions.video.mode >= DubVideoOptions::M_FASTREPACK) {
 			const VDAVIBitmapInfoHeader *pSrcFormat = vSrc->getDecompressedFormat();
 			const uint32 srcFormatLen = vSrc->getDecompressedFormatLen();
@@ -1101,8 +1104,8 @@ void Dubber::InitOutputFile() {
 
 		if (mpVideoCompressor) {
 			vdstructex<BITMAPINFOHEADER> outputFormatW32;
-			if (layout.format)
-				mpVideoCompressor->GetOutputFormat(&layout, outputFormatW32);
+			if (driverLayout.format)
+				mpVideoCompressor->GetOutputFormat(&driverLayout, outputFormatW32);
 			else
 				mpVideoCompressor->GetOutputFormat(&*mpCompressorVideoFormat, outputFormatW32);
 			outputFormat.assign((const VDAVIBitmapInfoHeader *)outputFormatW32.data(), outputFormatW32.size());
@@ -1112,8 +1115,8 @@ void Dubber::InitOutputFile() {
 				IVDStreamSource *vsrcStream = vSrc->asStream();
 				const VDAVIBitmapInfoHeader *srcFormat = vSrc->getImageFormat();
 				bool qresult;
-				if (layout.format)
-					qresult = mpVideoCompressor->Query(&layout, srcFormat);
+				if (driverLayout.format)
+					qresult = mpVideoCompressor->Query(&driverLayout, srcFormat);
 				else
 					qresult = mpVideoCompressor->Query(&*mpCompressorVideoFormat, srcFormat);
 
@@ -1123,8 +1126,8 @@ void Dubber::InitOutputFile() {
 				outputFormat.assign(srcFormat, vsrcStream->getFormatLen());
 			}
 
-			if (layout.format)
-				mpVideoCompressor->Start(layout, outputFormatInfo, &*outputFormat, outputFormat.size(), vInfo.mFrameRate, vInfo.end_proc_dst);
+			if (driverLayout.format)
+				mpVideoCompressor->Start(driverLayout, outputFormatInfo, &*outputFormat, outputFormat.size(), vInfo.mFrameRate, vInfo.end_proc_dst);
 			else
 				mpVideoCompressor->Start(&*mpCompressorVideoFormat, mpCompressorVideoFormat.size(), &*outputFormat, outputFormat.size(), vInfo.mFrameRate, vInfo.end_proc_dst);
 
@@ -1202,6 +1205,7 @@ void Dubber::InitOutputFile() {
 			const VDPixmapLayout& bmout = filters.GetOutputLayout();
 
 			VDMakeBitmapCompatiblePixmapLayout(mVideoFilterOutputPixmapLayout, bmout.w, bmout.h, outputFormatID, outputVariantID, bmout.palette);
+			mVideoFilterOutputPixmapLayout.formatEx = outputFormatID;
 
 			const char *s = VDPixmapGetInfo(mVideoFilterOutputPixmapLayout.format).name;
 

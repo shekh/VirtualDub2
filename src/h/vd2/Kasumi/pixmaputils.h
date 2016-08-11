@@ -6,6 +6,7 @@
 #endif
 
 #include <vd2/Kasumi/pixmap.h>
+#include <vd2/system/vdstring.h>
 
 struct VDPixmapFormatInfo {
 	const char *name;		// debugging name
@@ -84,6 +85,11 @@ inline VDPixmapLayout VDPixmapToLayout(const VDPixmap& px, void *&p) {
 	layout.pitch3	= px.pitch3;
 	return layout;
 }
+
+int VDPixmapFormatMatrixType(sint32 format);
+VDPixmapFormatEx VDPixmapFormatNormalize(sint32 format);
+VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format, VDPixmapFormatEx opt);
+VDStringA VDPixmapFormatPrintSpec(VDPixmapFormatEx format);
 
 uint32 VDPixmapCreateLinearLayout(VDPixmapLayout& layout, int format, vdpixsize w, vdpixsize h, int alignment);
 

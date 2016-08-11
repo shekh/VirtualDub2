@@ -140,6 +140,7 @@ struct EncoderHIC{
 	int compressGetFormat(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc=0);
 	int compressGetFormatSize(BITMAPINFO* b1, const VDPixmapLayout* pxsrc=0){ return compressGetFormat(b1,0,pxsrc); }
 	int compressGetSize(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc=0);
+	int compressMatrixInfo(const VDPixmapLayout* pxsrc);
 	int compressBegin(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc=0);
 	int compressEnd(){ return sendMessage(ICM_COMPRESS_END,0,0); }
 	int decompressBegin(BITMAPINFO* b1, BITMAPINFO* b2){ return sendMessage(ICM_DECOMPRESS_BEGIN,(LPARAM)b1,(LPARAM)b2); }

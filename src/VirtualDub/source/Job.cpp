@@ -306,7 +306,9 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 	output.addf("VirtualDub.audio.EnableFilterGraph(%d);", opt->audio.bUseAudioFilterGraph);
 
 	output.addf("VirtualDub.video.SetInputFormat(%d);", opt->video.mInputFormat);
+	output.addf("VirtualDub.video.SetInputMatrix(%d,%d);", opt->video.mInputFormat.colorSpaceMode, opt->video.mInputFormat.colorRangeMode);
 	output.addf("VirtualDub.video.SetOutputFormat(%d);", opt->video.mOutputFormat);
+	output.addf("VirtualDub.video.SetOutputMatrix(%d,%d);", opt->video.mOutputFormat.colorSpaceMode, opt->video.mOutputFormat.colorRangeMode);
 
 	output.addf("VirtualDub.video.SetMode(%d);", opt->video.mode);
 	output.addf("VirtualDub.video.SetSmartRendering(%d);", opt->video.mbUseSmartRendering);

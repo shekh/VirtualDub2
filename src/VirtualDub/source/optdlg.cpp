@@ -974,7 +974,7 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 		for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
 			const FormatButtonMapping& fbm = kFormatButtonMappings[i];
 			if (fbm.mInputButton == id) {
-				mInputFormat = fbm.mFormat;
+				mInputFormat.format = fbm.mFormat;
 				SyncInputColor();
 			}
 		}
@@ -1018,8 +1018,7 @@ void VDDialogVideoDepthW32::SyncControls() {
 }
 
 void VDDialogVideoDepthW32::SyncInputColor() {
-	bool enable = false;
-	if (mInputFormat==nsVDPixmap::kPixFormat_YUV422_V210) enable = true;
+	bool enable = VDPixmapFormatMatrixType(mInputFormat)!=0;
 	EnableControl(IDC_STATIC_COLORSPACE, enable);
 	EnableControl(IDC_STATIC_COLORRANGE, enable);
 	EnableControl(IDC_CS_NONE,   enable);

@@ -444,6 +444,7 @@ void VDVideoCompressorVCM::internalStart(const void *outputFormat, uint32 output
 		{
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
 			driver->sendMessage(ICM_COMPRESS_FRAMES_INFO, (LPARAM)&icf, sizeof(ICCOMPRESSFRAMES));
+			driver->compressMatrixInfo(&mInputLayout);
 		}
 	}
 
@@ -960,6 +961,13 @@ int EncoderHIC::compressGetSize(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLa
 		return vdproc(obj,0,VDICM_COMPRESS_GET_SIZE,(LPARAM)pxsrc,(LPARAM)b2);
 	}
 	return sendMessage(ICM_COMPRESS_GET_SIZE,(LPARAM)b1,(LPARAM)b2); 
+}
+
+int EncoderHIC::compressMatrixInfo(const VDPixmapLayout* pxsrc) {
+	if(vdproc && pxsrc && pxsrc->format) {
+		return vdproc(obj,0,VDICM_COMPRESS_MATRIX_INFO,pxsrc->formatEx.colorSpaceMode,pxsrc->formatEx.colorRangeMode);
+	}
+	return -1;
 }
 
 int EncoderHIC::compressBegin(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc) {

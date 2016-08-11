@@ -695,6 +695,26 @@ static void func_VDVideo_SetOutputFormat(IVDScriptInterpreter *, VDScriptValue *
 	g_project->MarkTimelineRateDirty();
 }
 
+static void func_VDVideo_SetInputMatrix(IVDScriptInterpreter *, VDScriptValue *argv, int argc) {
+	int colorSpace = argv[0].asInt();
+	int colorRange = argv[1].asInt();
+	if (colorSpace >= nsVDXPixmap::kColorSpaceModeCount)	colorSpace = nsVDXPixmap::kColorSpaceMode_None;
+	if (colorRange >= nsVDXPixmap::kColorRangeModeCount)	colorRange = nsVDXPixmap::kColorRangeMode_None;
+	g_dubOpts.video.mInputFormat.colorSpaceMode = (nsVDXPixmap::ColorSpaceMode)colorSpace;
+	g_dubOpts.video.mInputFormat.colorRangeMode = (nsVDXPixmap::ColorRangeMode)colorRange;
+	g_project->MarkTimelineRateDirty();
+}
+
+static void func_VDVideo_SetOutputMatrix(IVDScriptInterpreter *, VDScriptValue *argv, int argc) {
+	int colorSpace = argv[0].asInt();
+	int colorRange = argv[1].asInt();
+	if (colorSpace >= nsVDXPixmap::kColorSpaceModeCount)	colorSpace = nsVDXPixmap::kColorSpaceMode_None;
+	if (colorRange >= nsVDXPixmap::kColorRangeModeCount)	colorRange = nsVDXPixmap::kColorRangeMode_None;
+	g_dubOpts.video.mOutputFormat.colorSpaceMode = (nsVDXPixmap::ColorSpaceMode)colorSpace;
+	g_dubOpts.video.mOutputFormat.colorRangeMode = (nsVDXPixmap::ColorRangeMode)colorRange;
+	g_project->MarkTimelineRateDirty();
+}
+
 static void func_VDVideo_GetMode(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 	arglist[0] = VDScriptValue(g_dubOpts.video.mode);
 }
@@ -893,6 +913,9 @@ static void func_VDVideo_SetCompData(IVDScriptInterpreter *isi, VDScriptValue *a
 	if (!(g_Vcompression.dwFlags & ICMF_COMPVARS_VALID))
 		return;
 
+	if (!g_Vcompression.driver)
+		return;
+
 	if (arglist[0].asInt() > l) return;
 
 	l = arglist[0].asInt();
@@ -916,6 +939,9 @@ static void func_VDVideo_EnableIndeoQC(IVDScriptInterpreter *, VDScriptValue *ar
 		return;
 
 	if ((g_Vcompression.fccHandler & 0xFFFF) != 'VI')
+		return;
+
+	if (!g_Vcompression.driver)
 		return;
 
 	r4enc.dwSize			= sizeof(R4_ENC_SEQ_DATA);
@@ -1127,6 +1153,8 @@ static const VDScriptFunctionDef obj_VDVideo_functbl[]={
 	{ func_VDVideo_SetIVTC			, "SetIVTC",		"0iiii" },
 	{ func_VDVideo_SetInputFormat	, "SetInputFormat",	"0i" },
 	{ func_VDVideo_SetOutputFormat	, "SetOutputFormat", "0i" },
+	{ func_VDVideo_SetInputMatrix	, "SetInputMatrix", "0ii" },
+	{ func_VDVideo_SetOutputMatrix	, "SetOutputMatrix", "0ii" },
 	{ func_VDVideo_GetSmartRendering, "GetSmartRendering", "i" },
 	{ func_VDVideo_SetSmartRendering, "SetSmartRendering", "0i" },
 	{ func_VDVideo_GetPreserveEmptyFrames, "GetPreserveEmptyFrames", "i" },

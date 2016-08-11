@@ -832,24 +832,22 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	VDPixmapFormatEx format = g_dubOpts.video.mOutputFormat;
 	if (mhCodec) {
 		int codec_format = mhCodec->queryInputFormat(0);
-		if (codec_format) format = codec_format;
+		if (codec_format) format.format = codec_format;
 	}
 
-	const VDPixmapFormatInfo& info = VDPixmapGetInfo(format);
 	VDString s;
 
 	if(format==0) {
 		if (g_dubOpts.video.mode >= DubVideoOptions::M_FULL && inputVideo) {
 			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
-			const VDPixmapFormatInfo& info = VDPixmapGetInfo(inputFormat);
 			s += "auto (";
-			s += info.name;
+			s += VDPixmapFormatPrintSpec(inputFormat);
 			s += ")";
 		} else {
 			s += "auto";
 		}
 	} else {
-		s += info.name;
+		s += VDPixmapFormatPrintSpec(format);
 	}
 
 	SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());

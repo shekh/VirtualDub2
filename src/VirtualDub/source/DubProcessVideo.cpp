@@ -180,6 +180,7 @@ void VDDubVideoProcessor::SetVideoFilterOutput(const VDPixmapLayout& layout) {
 	mpDisplayBufferTracker->AddRef();
 
 	mpDisplayBufferTracker->Init(3 + mExtraOutputBuffersRequired, layout);
+	bufferFormatEx = layout.formatEx;
 }
 
 void VDDubVideoProcessor::SetBlitter(IVDAsyncBlitter *blitter) {
@@ -1170,8 +1171,8 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	VDPixmap pxsrc = VDPixmapFromLayout(layout, (void *)buf->LockRead());
 	pxsrc.info = buf->info;
 	pxsrc.info.frame_num = nextOutputFrame.mTimelineFrame;
-	pBuffer->mPixmap.info.colorSpaceMode = mpOptions->video.mOutputFormat.colorSpaceMode;
-	pBuffer->mPixmap.info.colorRangeMode = mpOptions->video.mOutputFormat.colorRangeMode;
+	pBuffer->mPixmap.info.colorSpaceMode = bufferFormatEx.colorSpaceMode;
+	pBuffer->mPixmap.info.colorRangeMode = bufferFormatEx.colorRangeMode;
 	if (!mpOutputBlitter)
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc);
 

@@ -237,6 +237,7 @@ protected:
 
 	VDRenderOutputBufferTracker *mpFrameBufferTracker;
 	VDRenderOutputBufferTracker *mpDisplayBufferTracker;
+	VDPixmapFormatEx bufferFormatEx;
 
 	uint32				mFramesToDrop;
 	VDDubVideoProcessorDisplay	*mpProcDisplay;
