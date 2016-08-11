@@ -273,6 +273,7 @@ bool VideoSourceImages::setTargetFormat(VDPixmapFormatEx format) {
 		return true;
 
 	case nsVDPixmap::kPixFormat_XRGB64:
+		if (!mpTIFFDecoder) break; // legacy code path does not use this format
 		if (!AllocFrameBuffer(((w+3)&~3) * h * 8))
 			throw MyMemoryError();
 
