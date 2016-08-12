@@ -925,12 +925,14 @@ bool VideoSource::setTargetFormatVariant(VDPixmapFormatEx format, int variant) {
 
 	if (!format)
 		format = kPixFormat_XRGB8888;
+	mSourceFormat = format.format;
 
 	const VDAVIBitmapInfoHeader *bih = getImageFormat();
 	const sint32 w = bih->biWidth;
 	const sint32 h = abs(bih->biHeight);			// we don't want inverted output....
 	VDPixmapLayout layout;
 
+	format = VDPixmapFormatCombine(format,0);
 	VDMakeBitmapCompatiblePixmapLayout(layout, w, h, format, variant);
 
 	mTargetFormat = VDPixmapFromLayout(layout, mpFrameBuffer);
@@ -1992,9 +1994,9 @@ bool VideoSourceAVI::setTargetFormat(VDPixmapFormatEx format) {
 	}
 
 	if (mpDecompressor->SetTargetFormat(format)) {
-		VDPixmapFormatEx format2 = mpDecompressor->GetTargetFormat();
+		VDPixmapFormatEx format2 = format;
+		format2.format = mpDecompressor->GetTargetFormat();
 		int variant2 = mpDecompressor->GetTargetFormatVariant();
-		if (format2.format==format.format) format2 = format;
 		VDVERIFY(VideoSource::setTargetFormatVariant(format2, variant2));
 		return true;
 	}

@@ -2818,6 +2818,8 @@ void VDProject::UpdateDubParameters(bool forceUpdate) {
 	DubVideoStreamInfo vInfo;
 
 	if (inputVideo) {
+		VDRenderSetVideoSourceInputFormat(inputVideo, g_dubOpts.video.mInputFormat);
+
 		try {
 			InitVideoStreamValuesStatic(vInfo, inputVideo, inputAudio, &g_dubOpts, &GetTimeline().GetSubset(), NULL, NULL);
 

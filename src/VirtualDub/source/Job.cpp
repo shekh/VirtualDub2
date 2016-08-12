@@ -328,7 +328,7 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 	output.addf("VirtualDub.video.SetIVTC(0, 0, 0, 0);");
 
 	if ((g_Vcompression.dwFlags & ICMF_COMPVARS_VALID) && g_Vcompression.fccHandler) {
-		if (!g_Vcompression.driver->path.empty()) {
+		if (g_Vcompression.driver && !g_Vcompression.driver->path.empty()) {
 			VDStringW name = VDFileSplitPathRight(g_Vcompression.driver->path);
 			output.addf("VirtualDub.video.SetCompression(0x%08lx,%d,%d,%d,\"%s\");",
 					g_Vcompression.fccHandler,

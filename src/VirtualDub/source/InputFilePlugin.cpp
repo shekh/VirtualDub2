@@ -447,6 +447,7 @@ protected:
 	VDXStreamSourceInfoV3	mSSInfo;
 	VDXVideoSourceInfo	mVSInfo;
 	VDPixmap mTargetFormat;
+	VDPixmapFormatEx formatEx;
 };
 
 VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverContextImpl *pContext, InputFile *pParent)
@@ -457,6 +458,7 @@ VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverCont
 {
 	memset(&mSSInfo, 0, sizeof mSSInfo);
 	memset(&mVSInfo, 0, sizeof mVSInfo);
+	formatEx = 0;
 
 	vdwithinputplugin(mpContext) {
 		IVDXStreamSourceV3 *xssv3 = (IVDXStreamSourceV3 *)mpXS->AsInterface(IVDXStreamSourceV3::kIID);
@@ -618,15 +620,19 @@ const VDPixmap& VDVideoSourcePlugin::getTargetFormat() {
 	vdwithinputplugin(mpContext) {
 		const VDXPixmap *px = &mpXVDec->GetFrameBuffer();
 		memcpy(&mTargetFormat,px,sizeof(VDXPixmap));
+		mSourceFormat = px->format;
 
 		mTargetFormat.info.clear();
 		if (mpFMVDec) {
 			const FilterModPixmapInfo& info = mpFMVDec->GetFrameBufferInfo();
-			mTargetFormat.info.clear();
 			mTargetFormat.info.copy_ref(info);
 			mTargetFormat.info.copy_alpha(info);
 			//! todo: return struct size to grab further fields
 		}
+		VDPixmapFormatEx format = VDPixmapFormatCombine(px->format,formatEx);
+		mTargetFormat.format = format;
+		mTargetFormat.info.colorRangeMode = format.colorRangeMode;
+		mTargetFormat.info.colorSpaceMode = format.colorSpaceMode;
 	}
 
 	return mTargetFormat;
@@ -647,6 +653,8 @@ bool VDVideoSourcePlugin::setTargetFormat(VDPixmapFormatEx format) {
 	}
 
 	VDMakeBitmapFormatFromPixmapFormat(mpTargetFormatHeader, px->format, 0, px->w, px->h);
+	if (format.format==0) format.format = px->format;
+	formatEx = VDPixmapFormatCombine(px->format,format);
 
 	return true;
 }

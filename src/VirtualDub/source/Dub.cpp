@@ -330,10 +330,10 @@ int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx for
 		if (vsrc->setTargetFormat(format))
 			return vsrc->getTargetFormat().format;
 
-		format = DegradeFormat(format, rgbTrackMask);
+		format.format = DegradeFormat(format, rgbTrackMask);
 	} while(format);
 
-	return format;
+	return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1369,7 +1369,7 @@ void Dubber::InitSelectInputFormat() {
 		throw MyError("Video format negotiation failed: use slow-repack or full mode.");
 	}
 
-	// Negotiate RGB format.
+	// Negotiate format.
 
 	VDPixmapFormatEx format = mOptions.video.mInputFormat;
 

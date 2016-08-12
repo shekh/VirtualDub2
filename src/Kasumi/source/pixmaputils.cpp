@@ -89,7 +89,7 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
 };
 
 int VDPixmapFormatMatrixType(sint32 format) {
-	switch (format) {
+	switch (VDPixmapFormatNormalize(format)) {
 	case nsVDPixmap::kPixFormat_YUV422_V210:
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
@@ -99,6 +99,9 @@ int VDPixmapFormatMatrixType(sint32 format) {
 	case nsVDPixmap::kPixFormat_YUV444_Planar:
 	case nsVDPixmap::kPixFormat_YUV422_Planar:
 	case nsVDPixmap::kPixFormat_YUV420_Planar:
+	case nsVDPixmap::kPixFormat_YUV410_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_YUYV:
+	case nsVDPixmap::kPixFormat_YUV422_UYVY:
 		return 2; // combined
 	}
 
@@ -107,11 +110,9 @@ int VDPixmapFormatMatrixType(sint32 format) {
 
 // derive base format if possible,
 // and expand mode flags
-VDPixmapFormatEx VDPixmapFormatNormalize(sint32 format) {
+VDPixmapFormatEx VDPixmapFormatNormalize(VDPixmapFormatEx format) {
 	using namespace nsVDPixmap;
 	VDPixmapFormatEx r = format;
-
-	const VDPixmapFormatInfo& info = VDPixmapGetInfo(format);
 
 	switch (format) {
 	case kPixFormat_YUV444_Planar_709_FR:
@@ -182,7 +183,80 @@ VDPixmapFormatEx VDPixmapFormatNormalize(sint32 format) {
 		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
 		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
 		break;
+
+	case kPixFormat_YUV410_Planar_709_FR:
+		r.format = kPixFormat_YUV410_Planar;
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		break;
+
+	case kPixFormat_YUV410_Planar_FR:
+		r.format = kPixFormat_YUV410_Planar;
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		break;
+
+	case kPixFormat_YUV410_Planar_709:
+		r.format = kPixFormat_YUV410_Planar;
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		break;
+
+	case kPixFormat_YUV410_Planar:
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		break;
+
+  case kPixFormat_YUV422_YUYV_709_FR:
+		r.format = kPixFormat_YUV422_YUYV;
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		break;
+
+  case kPixFormat_YUV422_YUYV_FR:
+		r.format = kPixFormat_YUV422_YUYV;
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		break;
+
+  case kPixFormat_YUV422_YUYV_709:
+		r.format = kPixFormat_YUV422_YUYV;
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		break;
+
+  case kPixFormat_YUV422_YUYV:
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		break;
+
+  case kPixFormat_YUV422_UYVY_709_FR:
+		r.format = kPixFormat_YUV422_UYVY;
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		break;
+
+  case kPixFormat_YUV422_UYVY_FR:
+		r.format = kPixFormat_YUV422_UYVY;
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		break;
+
+  case kPixFormat_YUV422_UYVY_709:
+		r.format = kPixFormat_YUV422_UYVY;
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		break;
+
+  case kPixFormat_YUV422_UYVY:
+		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		break;
+
 	}
+
+	if (format.colorSpaceMode) r.colorSpaceMode = format.colorSpaceMode;
+	if (format.colorRangeMode) r.colorRangeMode = format.colorRangeMode;
 
 	return r;
 }
@@ -192,8 +266,6 @@ VDPixmapFormatEx VDPixmapFormatNormalize(sint32 format) {
 VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format, VDPixmapFormatEx opt) {
 	using namespace nsVDPixmap;
 	VDPixmapFormatEx r = VDPixmapFormatNormalize(format);
-	if (format.colorSpaceMode) r.colorSpaceMode = format.colorSpaceMode;
-	if (format.colorRangeMode) r.colorRangeMode = format.colorRangeMode;
 
 	int opt_type = VDPixmapFormatMatrixType(opt);
 	if (opt_type==1 || opt_type==2) {
@@ -222,22 +294,37 @@ VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format, VDPixmapFormatEx
 		else
 			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV420_Planar_FR : kPixFormat_YUV420_Planar;
 		break;
+
+	case kPixFormat_YUV410_Planar:
+		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV410_Planar_709_FR : kPixFormat_YUV410_Planar_709;
+		else
+			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV410_Planar_FR : kPixFormat_YUV410_Planar;
+		break;
+
+	case kPixFormat_YUV422_YUYV:
+		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV422_YUYV_709_FR : kPixFormat_YUV422_YUYV_709;
+		else
+			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV422_YUYV_FR : kPixFormat_YUV422_YUYV;
+		break;
+
+	case kPixFormat_YUV422_UYVY:
+		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV422_UYVY_709_FR : kPixFormat_YUV422_UYVY_709;
+		else
+			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV422_UYVY_FR : kPixFormat_YUV422_UYVY;
+		break;
 	}
 
 	return r;
 }
 
 VDStringA VDPixmapFormatPrintSpec(VDPixmapFormatEx format) {
-	const VDPixmapFormatInfo& info = VDPixmapGetInfo(format);
 	int type = VDPixmapFormatMatrixType(format);
 
-	if (type==2) {
-		VDPixmapFormatEx format2 = VDPixmapFormatNormalize(format);
-		if (format.colorSpaceMode) format2.colorSpaceMode = format.colorSpaceMode;
-		if (format.colorRangeMode) format2.colorRangeMode = format.colorRangeMode;
-		format = format2;
-	}
-
+	format = VDPixmapFormatNormalize(format);
+	const VDPixmapFormatInfo& info = VDPixmapGetInfo(format);
 	VDStringA s(info.name);
 
 	if (type==1 || type==2) {

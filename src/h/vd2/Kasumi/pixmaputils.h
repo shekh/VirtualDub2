@@ -87,7 +87,7 @@ inline VDPixmapLayout VDPixmapToLayout(const VDPixmap& px, void *&p) {
 }
 
 int VDPixmapFormatMatrixType(sint32 format);
-VDPixmapFormatEx VDPixmapFormatNormalize(sint32 format);
+VDPixmapFormatEx VDPixmapFormatNormalize(VDPixmapFormatEx format);
 VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format, VDPixmapFormatEx opt);
 VDStringA VDPixmapFormatPrintSpec(VDPixmapFormatEx format);
 

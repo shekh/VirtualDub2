@@ -830,6 +830,8 @@ protected:
 	bool OnLoaded();
 	bool OnCommand(uint32 id, uint32 extcode);
 	void OnDataExchange(bool write);
+	void InitFocus();
+	void InitFinalFormat();
 	void SyncControls();
 	void SyncInputColor();
 
@@ -837,6 +839,7 @@ protected:
 	DubOptions& mOpts;
 	bool mbInputBrowsePending;
 	bool mSelectInput;
+	bool mEnableMatrix;
 	int mLockFormat;
 
 	struct FormatButtonMapping {
@@ -889,6 +892,7 @@ INT_PTR VDDialogVideoDepthW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPara
 					mInputFormat = dlg.GetSelectedFormat();
 
 				SyncControls();
+				InitFinalFormat();
 			}
 
 			return TRUE;
@@ -898,20 +902,15 @@ INT_PTR VDDialogVideoDepthW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPara
 }
 
 bool VDDialogVideoDepthW32::OnLoaded() {
-	SetFocusToControl(IDC_INPUT_AUTOSELECT);
 	OnDataExchange(false);
-	if (mSelectInput)
+	InitFocus();
+	InitFinalFormat();
+	if (mSelectInput) {
 		SetWindowText(mhdlg,"Decompression format");
-	else
+		SetDlgItemText(mhdlg,IDC_MATRIX_TITLE, "Interpret as:");
+	} else {
 		SetWindowText(mhdlg,"Output format to compressor");
-	ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), mSelectInput && inputVideo ? SW_SHOW:SW_HIDE);
-	if (mSelectInput && inputVideo) {
-		VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
-		const VDPixmapFormatInfo& info = VDPixmapGetInfo(inputFormat);
-		VDString s;
-		s += "Current format: ";
-		s += info.name;
-		SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
+		SetDlgItemText(mhdlg,IDC_MATRIX_TITLE, "Encode as:");
 	}
 	if (mLockFormat!=-1) {
 		EnableControl(IDC_INPUT_OTHER,false);
@@ -936,6 +935,16 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 						key.setInt("Input format", format);
 					else
 						key.setInt("Output format", format);
+
+					if (mEnableMatrix) {
+						if (mSelectInput) {
+							key.setInt("Input space", mInputFormat.colorSpaceMode);
+							key.setInt("Input range", mInputFormat.colorRangeMode);
+						} else {
+							key.setInt("Output space", mInputFormat.colorSpaceMode);
+							key.setInt("Output range", mInputFormat.colorRangeMode);
+						}
+					}
 				}
 				break;
 
@@ -948,26 +957,32 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 
 			case IDC_CS_NONE:
 				mInputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
+				InitFinalFormat();
 				return TRUE;
 
 			case IDC_CS_601:
 				mInputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+				InitFinalFormat();
 				return TRUE;
 
 			case IDC_CS_709:
 				mInputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+				InitFinalFormat();
 				return TRUE;
 
 			case IDC_CR_NONE:
 				mInputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+				InitFinalFormat();
 				return TRUE;
 
 			case IDC_CR_LIMITED:
 				mInputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+				InitFinalFormat();
 				return TRUE;
 
 			case IDC_CR_FULL:
 				mInputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+				InitFinalFormat();
 				return TRUE;
 		}
 
@@ -976,6 +991,7 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 			if (fbm.mInputButton == id) {
 				mInputFormat.format = fbm.mFormat;
 				SyncInputColor();
+				InitFinalFormat();
 			}
 		}
 	}
@@ -996,6 +1012,33 @@ void VDDialogVideoDepthW32::OnDataExchange(bool write) {
 			mInputFormat = mOpts.video.mOutputFormat;
 		SyncControls();
 	}
+}
+
+void VDDialogVideoDepthW32::InitFinalFormat() {
+	ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), mSelectInput && inputVideo ? SW_SHOW:SW_HIDE);
+	if (mSelectInput && inputVideo) {
+		VDPixmapFormatEx inputFormat = inputVideo->getSourceFormat();
+		VDString s;
+		s += "Current format: ";
+		VDPixmapFormatEx opt = mInputFormat;
+		if (opt.format==0) opt.format = inputFormat;
+		s += VDPixmapFormatPrintSpec(VDPixmapFormatCombine(inputFormat,opt));
+		SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
+	}
+}
+
+void VDDialogVideoDepthW32::InitFocus() {
+	int format = mLockFormat!=-1 ? mLockFormat : mInputFormat;
+	for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
+		const FormatButtonMapping& fbm = kFormatButtonMappings[i];
+
+		if (fbm.mFormat == format) {
+			SetFocusToControl(fbm.mInputButton);
+			return;
+		}
+	}
+
+	SetFocusToControl(IDC_INPUT_OTHER);
 }
 
 void VDDialogVideoDepthW32::SyncControls() {
@@ -1019,6 +1062,12 @@ void VDDialogVideoDepthW32::SyncControls() {
 
 void VDDialogVideoDepthW32::SyncInputColor() {
 	bool enable = VDPixmapFormatMatrixType(mInputFormat)!=0;
+	if (mInputFormat==0 && mSelectInput && inputVideo) {
+		VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
+		enable = VDPixmapFormatMatrixType(inputFormat)!=0;
+	}
+	mEnableMatrix = enable;
+
 	EnableControl(IDC_STATIC_COLORSPACE, enable);
 	EnableControl(IDC_STATIC_COLORRANGE, enable);
 	EnableControl(IDC_CS_NONE,   enable);
