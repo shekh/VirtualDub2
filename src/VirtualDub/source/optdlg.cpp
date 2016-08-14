@@ -1061,9 +1061,10 @@ void VDDialogVideoDepthW32::SyncControls() {
 }
 
 void VDDialogVideoDepthW32::SyncInputColor() {
-	bool enable = VDPixmapFormatMatrixType(mInputFormat)!=0;
-	if (mInputFormat==0 && mSelectInput && inputVideo) {
-		VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
+	int format = mLockFormat!=-1 ? mLockFormat : mInputFormat;
+	bool enable = VDPixmapFormatMatrixType(format)!=0;
+	if (format==0 && mSelectInput && inputVideo) {
+		VDPixmapFormatEx inputFormat = inputVideo->getSourceFormat();
 		enable = VDPixmapFormatMatrixType(inputFormat)!=0;
 	}
 	mEnableMatrix = enable;
