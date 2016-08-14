@@ -30,6 +30,7 @@
 #include <vd2/VDLib/Dialog.h>
 #include <vd2/VDLib/UIProxies.h>
 #include <vd2/Riza/videocodec.h>
+#include <vd2/Riza/bitmap.h>
 #include <vd2/Kasumi/pixmaputils.h>
 
 #include "resource.h"
@@ -44,6 +45,7 @@ extern HINSTANCE g_hInst;
 extern std::list<class VDExternalModule *>		g_pluginModules;
 extern DubOptions			g_dubOpts;
 extern vdrefptr<IVDVideoSource> inputVideo;
+extern COMPVARS2 g_compression;
 
 const wchar_t g_szNo[]=L"No";
 const wchar_t g_szYes[]=L"Yes";
@@ -126,6 +128,7 @@ protected:
 	void SetVideoDepthOptionsAsk();
 
 	COMPVARS2 *mpCompVars;
+	bool mCapture;
 	BITMAPINFOHEADER *mpSrcFormat;
 	EncoderHIC*	mhCodec;
 	int	mSelect;
@@ -150,6 +153,7 @@ VDUIDialogChooseVideoCompressorW32::VDUIDialogChooseVideoCompressorW32(COMPVARS2
 	, mpSrcFormat(src)
 {
 	mCodecList.OnSelectionChanged() += mdelSelChanged.Bind(this, &VDUIDialogChooseVideoCompressorW32::OnCodecSelectionChanged);
+	mCapture = cv==&g_compression;
 }
 
 bool VDUIDialogChooseVideoCompressorW32::OnLoaded() {
@@ -161,7 +165,7 @@ bool VDUIDialogChooseVideoCompressorW32::OnLoaded() {
 	AddProxy(&mCodecList, IDC_COMP_LIST);
 
 	EnumerateCodecs();
-	EnumeratePluginCodecs();
+	if(!mCapture) EnumeratePluginCodecs();
 	std::sort(mCodecs.begin(), mCodecs.end(), CodecSort());
 
 	RebuildCodecList();
@@ -186,6 +190,7 @@ bool VDUIDialogChooseVideoCompressorW32::OnLoaded() {
 		CheckButton(IDC_USE_DATARATE, BST_UNCHECKED);
 
 	SetFocusToControl(IDC_COMP_LIST);
+	EnableControl(IDC_PIXELFORMAT,!mCapture);
 	return true;
 }
 
@@ -829,16 +834,23 @@ void VDUIDialogChooseVideoCompressorW32::OnCodecSelectionChanged(VDUIProxyListBo
 }
 
 void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
-	VDPixmapFormatEx format = g_dubOpts.video.mOutputFormat;
-	if (mhCodec) {
-		int codec_format = mhCodec->queryInputFormat(0);
-		if (codec_format) format.format = codec_format;
+	VDPixmapFormatEx format = 0;
+	if (mCapture) {
+		if (mpSrcFormat) format = VDBitmapFormatToPixmapFormat(*(VDAVIBitmapInfoHeader*)mpSrcFormat);
+	} else {
+		format = g_dubOpts.video.mOutputFormat;
+		if (mhCodec) {
+			int codec_format = mhCodec->queryInputFormat(0);
+			if (codec_format) format.format = codec_format;
+		}
 	}
 
 	VDString s;
 
 	if(format==0) {
-		if (g_dubOpts.video.mode >= DubVideoOptions::M_FULL && inputVideo) {
+		if (mCapture) {
+			s += "auto";
+		} else if (g_dubOpts.video.mode >= DubVideoOptions::M_FULL && inputVideo) {
 			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
 			s += "auto (";
 			s += VDPixmapFormatPrintSpec(inputFormat);
