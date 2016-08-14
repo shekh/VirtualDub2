@@ -57,7 +57,6 @@ void VDFilterFrameConverter::Init(IVDFilterFrameSource *source, const VDPixmapLa
 	mSourceLayout = sourceLayoutOverride ? *sourceLayoutOverride : source->GetOutputLayout();
 	SetOutputLayout(outputLayout);
 
-	if(threads<=0) threads = 1;
 	node_count = threads;
 	node = new VDFilterFrameConverterNode[threads];
 	{for(int i=0; i<threads; i++){
