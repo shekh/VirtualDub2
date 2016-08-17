@@ -118,16 +118,26 @@ void VDVideoFilterPreviewZoomPopup::Update(int x, int y, const uint32 pixels[7][
 	}
 }
 
+int flt255_digits(float v)
+{
+	int n = 3;
+	if(v<100) n = 2;
+	if(v<10) n = 1;
+	if(v<1) n = 0;
+	if(v<0.1) n = -1;
+	return n;
+}
+
 void VDVideoFilterPreviewZoomPopup::UpdateText() {
 	uint32 rgb = mBitmap[3][3] & 0xffffff;
 	SetControlTextF(IDC_POSITION, L"%d,%d", x, y);
 	SetControlTextF(IDC_COLOR, L"#%06X", rgb);
-	SetControlTextF(IDC_RED,   L"R: %1.3g", ps.r);
-	SetControlTextF(IDC_GREEN, L"G: %1.3g", ps.g);
-	SetControlTextF(IDC_BLUE,  L"B: %1.3g", ps.b);
+	SetControlTextF(IDC_RED,   L"R: %1.*g", flt255_digits(ps.r)+2, ps.r);
+	SetControlTextF(IDC_GREEN, L"G: %1.*g", flt255_digits(ps.g)+2, ps.g);
+	SetControlTextF(IDC_BLUE,  L"B: %1.*g", flt255_digits(ps.b)+2, ps.b);
 	if(ps.sa!=-1) {
 		ShowControl(IDC_ALPHA, true);
-		SetControlTextF(IDC_ALPHA,  L"A: %1.3g", ps.a);
+		SetControlTextF(IDC_ALPHA,  L"A: %1.*g", flt255_digits(ps.a)+2, ps.a);
 		ShowControl(IDC_ALPHA2, true);
 		SetControlTextF(IDC_ALPHA2,  L"A: %X", ps.sa);
 	} else {
