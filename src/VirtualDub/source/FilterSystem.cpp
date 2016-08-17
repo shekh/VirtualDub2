@@ -947,7 +947,7 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 			}
 
 			if (streamInfo.mbAlignOnEntry) {
-				const VDFilterStreamDesc& croppedDesc = streamInfo.mExternalSrcPreAlign.GetStreamDesc();
+				const VDFilterStreamDesc& croppedDesc = streamInfo.mExternalSrcCropped.GetStreamDesc();
 				const VDFilterStreamDesc& preAlignDesc = streamInfo.mExternalSrcPreAlign.GetStreamDesc();
 
 				AppendAlignmentFilter(tail, croppedDesc.mLayout, preAlignDesc.mLayout);
