@@ -180,7 +180,6 @@ namespace {
 
 void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditListMode editListMode = kVDJobEditListMode_Include, bool bIncludeTextInfo = true) {
 	char *mem= NULL;
-	long l;
 
 	int audioSourceMode = g_project->GetAudioSourceMode();
 
@@ -344,7 +343,9 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 					g_Vcompression.lDataRate);
 		}
 
-		l = g_Vcompression.driver->getStateSize();
+		long l = 0;
+		if (g_Vcompression.driver)
+			l = g_Vcompression.driver->getStateSize();
 
 		if (l>0) {
 			mem = (char *)allocmem(l + ((l+2)/3)*4 + 1);
