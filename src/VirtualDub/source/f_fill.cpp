@@ -47,13 +47,8 @@ typedef struct MyFilterData {
 	sint32 mSourceHeight;
 } MyFilterData;
 
-static int fill_run(const FilterActivation *fa, const FilterFunctions *ff) {
+static int fill_run32(const FilterActivation *fa, const FilterFunctions *ff) {
 	MyFilterData *mfd = (MyFilterData *)fa->filter_data;
-
-	VDPixmap* px = (VDPixmap*)fa->src.mpPixmap;
-	bool px_alpha = px->info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid;
-	if (mfd->use_alpha && !px_alpha)
-		return 0;
 
 	unsigned long w,h;
 	Pixel *dst;
@@ -61,9 +56,6 @@ static int fill_run(const FilterActivation *fa, const FilterFunctions *ff) {
 	int g = (mfd->color & 0xff00)>>8;
 	int b = (mfd->color & 0xff0000)>>16;
 	Pixel c = (Pixel)((r<<16) | (g<<8) | (b));
-
-	if (mfd->x1+mfd->x2 >= fa->dst.w) return 0;
-	if (mfd->y1+mfd->y2 >= fa->dst.h) return 0;
 
 	dst = (Pixel *)((char *)((Pixel *)fa->dst.data + mfd->x1) + mfd->y2*fa->dst.pitch);
 
@@ -93,11 +85,67 @@ static int fill_run(const FilterActivation *fa, const FilterFunctions *ff) {
 	return 0;
 }
 
+static int fill_run64(const FilterActivation *fa, const FilterFunctions *ff) {
+	MyFilterData *mfd = (MyFilterData *)fa->filter_data;
+	VDPixmap* px = (VDPixmap*)fa->src.mpPixmap;
+
+	unsigned long w,h;
+	uint32 r = (mfd->color & 0xff);
+	uint32 g = (mfd->color & 0xff00)>>8;
+	uint32 b = (mfd->color & 0xff0000)>>16;
+	r = r*px->info.ref_r/255;
+	g = g*px->info.ref_g/255;
+	b = b*px->info.ref_b/255;
+	uint32 ref_a = px->info.ref_a;
+
+	uint16* dst = (uint16*)fa->dst.data + mfd->y2*fa->dst.pitch/2 + mfd->x1*4;
+	h = fa->dst.h - mfd->y1 - mfd->y2;
+	do {
+		uint16* dst2 = dst;
+		w = fa->dst.w - mfd->x1 - mfd->x2;
+		if (mfd->use_alpha) {
+			do {
+				uint32 a = dst2[3]*0x8000/ref_a;
+				uint32 ra = 0x8000-a;
+				dst2[0] = uint16((dst2[0]*ra + b*a + 0x4000)>>15);
+				dst2[1] = uint16((dst2[1]*ra + g*a + 0x4000)>>15);
+				dst2[2] = uint16((dst2[2]*ra + r*a + 0x4000)>>15);
+				dst2+=4;
+			} while(--w);
+		} else {
+			do {
+				dst2[0] = uint16(b);
+				dst2[1] = uint16(g);
+				dst2[2] = uint16(r);
+				dst2+=4;
+			} while(--w);
+		}
+
+		dst += fa->dst.pitch/2;
+	} while(--h);
+
+	return 0;
+}
+
+static int fill_run(const FilterActivation *fa, const FilterFunctions *ff) {
+	MyFilterData *mfd = (MyFilterData *)fa->filter_data;
+	VDPixmap* px = (VDPixmap*)fa->src.mpPixmap;
+	bool px_alpha = px->info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid;
+	if (mfd->use_alpha && !px_alpha)
+		return 0;
+	if (mfd->x1+mfd->x2 >= fa->dst.w) return 0;
+	if (mfd->y1+mfd->y2 >= fa->dst.h) return 0;
+
+	if (px->format==nsVDXPixmap::kPixFormat_XRGB8888) return fill_run32(fa,ff);
+	if (px->format==nsVDXPixmap::kPixFormat_XRGB64) return fill_run64(fa,ff);
+	return 0;
+}
+
 static long fill_param(FilterActivation *fa, const FilterFunctions *ff) {
 	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
 	VDXPixmapLayout& pxldst = *fa->dst.mpPixmapLayout;
 
-	if (pxlsrc.format != nsVDXPixmap::kPixFormat_XRGB8888)
+	if (pxlsrc.format != nsVDXPixmap::kPixFormat_XRGB8888 && pxlsrc.format != nsVDXPixmap::kPixFormat_XRGB64)
 		return FILTERPARAM_NOT_SUPPORTED;
 
 	pxldst.data = pxlsrc.data;
