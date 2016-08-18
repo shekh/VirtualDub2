@@ -177,6 +177,7 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 
 				pClipCtrl->SetBitmapSize(mfd->mSourceWidth, mfd->mSourceHeight);
 				pClipCtrl->SetClipBounds(vdrect32(mfd->x1, mfd->y1, mfd->x2, mfd->y2));
+				pClipCtrl->SetFillBorder(false);
 
 				GetWindowRect(hDlg, &rw);
 				GetWindowRect(hWnd, &rc);

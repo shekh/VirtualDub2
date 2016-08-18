@@ -47,13 +47,16 @@ public:
 	void SetImageRect(int x, int y, int cx, int cy);
 	void SetSourceSize(int w, int h);
 	void SetBounds(int x1, int y1, int x2, int y2);
+	void OnPaint(HDC dc);
 
 	HWND GetHwnd() const { return mhwnd; }
 
 	static LRESULT CALLBACK StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	bool fillBorder;
+
 private:
 	LRESULT WndProc(UINT msg, WPARAM wParam, LPARAM lParam);
-	void OnPaint();
 	void OnMouseMove(int x, int y, int mods);
 	void OnLButtonDown(int x, int y);
 	LRESULT OnNcHitTest(int x, int y);
@@ -71,6 +74,13 @@ private:
 	double	mXBounds[2], mYBounds[2];
 
 	int	mDragPoleX, mDragPoleY;
+};
+
+class ClippingDrawMode: public IVDVideoDisplayDrawMode {
+public:
+	VDClippingControlOverlay* pOverlay;
+
+	virtual void Paint(HDC dc);
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -94,6 +104,8 @@ VDClippingControlOverlay::VDClippingControlOverlay(HWND hwnd)
 
 	if (!mBorderPen)
 		mBorderPen = (HPEN)GetStockObject(WHITE_PEN);
+
+	fillBorder = true;
 }
 
 VDClippingControlOverlay::~VDClippingControlOverlay() {
@@ -156,7 +168,18 @@ LRESULT CALLBACK VDClippingControlOverlay::StaticWndProc(HWND hwnd, UINT msg, WP
 LRESULT VDClippingControlOverlay::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
 	case WM_PAINT:
-		OnPaint();
+		{
+			PAINTSTRUCT ps;
+			HDC hdc = BeginPaint(mhwnd, &ps);
+			RECT r;
+			GetClientRect(mhwnd, &r);
+			const int w = r.right - r.left;
+			const int h = r.bottom - r.top;
+
+			Draw3DRect(hdc, r.left, r.top, w, h, FALSE);
+			Draw3DRect(hdc, r.left+3, r.top+3, w-6, h-6, TRUE);
+			EndPaint(mhwnd, &ps);
+		}
 		return 0;
 	case WM_NCHITTEST:
 		return OnNcHitTest((SHORT)LOWORD(lParam), (SHORT)HIWORD(lParam));
@@ -176,17 +199,32 @@ LRESULT VDClippingControlOverlay::WndProc(UINT msg, WPARAM wParam, LPARAM lParam
 	return DefWindowProc(mhwnd, msg, wParam, lParam);
 }
 
-void VDClippingControlOverlay::OnPaint() {
-	PAINTSTRUCT ps;
-	HDC hdc = BeginPaint(mhwnd, &ps);
-
+void VDClippingControlOverlay::OnPaint(HDC hdc) {
 	if (hdc) {
 		HGDIOBJ hgoOld = SelectObject(hdc, mBorderPen);
 		int i;
 
-		RECT r;
-		GetClientRect(mhwnd, &r);
-		FillRect(hdc, &r, (HBRUSH)(COLOR_3DFACE+1));
+		if (fillBorder) {
+			long y0 = VDCeilToInt(mYBounds[0] * mHeight - 0.5) - 1;
+			long y1 = VDCeilToInt(mYBounds[1] * mHeight - 0.5);
+			long x0 = VDCeilToInt(mXBounds[0] * mWidth - 0.5) - 1;
+			long x1 = VDCeilToInt(mXBounds[1] * mWidth - 0.5);
+			RECT r;
+			GetClientRect(mhwnd, &r);
+			RECT r1 = r;
+			r1.bottom = y0;
+			FillRect(hdc, &r1, (HBRUSH)(COLOR_3DFACE+1));
+			r1.bottom = r.bottom;
+			r1.top = y1;
+			FillRect(hdc, &r1, (HBRUSH)(COLOR_3DFACE+1));
+			r1.top = y0;
+			r1.bottom = y1;
+			r1.right = x0;
+			FillRect(hdc, &r1, (HBRUSH)(COLOR_3DFACE+1));
+			r1.right = r.right;
+			r1.left = x1;
+			FillRect(hdc, &r1, (HBRUSH)(COLOR_3DFACE+1));
+		}
 
 		::SetBkMode(hdc, OPAQUE);
 		::SetBkColor(hdc, RGB(0, 0, 0));
@@ -194,37 +232,34 @@ void VDClippingControlOverlay::OnPaint() {
 		// draw horizontal lines
 		static const int adjust[2]={-1,0};
 		for(i=0; i<2; ++i) {
-			long y = mY + VDCeilToInt(mYBounds[i] * mHeight - 0.5) + adjust[i];
+			long y = VDCeilToInt(mYBounds[i] * mHeight - 0.5) + adjust[i];
 
-			if (y >= mY && y < mY+mHeight) {
-				MoveToEx(hdc, mX, y, NULL);
-				LineTo(hdc, mX + mWidth, y);
+			if (y >= 0 && y < mHeight) {
+				MoveToEx(hdc, 0, y, NULL);
+				LineTo(hdc, mWidth, y);
 			}
 		}
 
 		// draw vertical lines
 		for(i=0; i<2; ++i) {
-			long x = mX + VDCeilToInt(mXBounds[i] * mWidth - 0.5) + adjust[i];
+			long x = VDCeilToInt(mXBounds[i] * mWidth - 0.5) + adjust[i];
 
-			if (x >= mX && x < mX+mWidth) {
-				MoveToEx(hdc, x, mY, NULL);
-				LineTo(hdc, x, mY + mHeight);
+			if (x >= 0 && x < mWidth) {
+				MoveToEx(hdc, x, 0, NULL);
+				LineTo(hdc, x, mHeight);
 			}
 		}
 
 		SelectObject(hdc, hgoOld);
-
-		const int w = r.right - r.left;
-		const int h = r.bottom - r.top;
-
-		Draw3DRect(hdc, r.left, r.top, w, h, FALSE);
-		Draw3DRect(hdc, r.left+3, r.top+3, w-6, h-6, TRUE);
-
-		EndPaint(mhwnd, &ps);
 	}
 }
 
 void VDClippingControlOverlay::OnMouseMove(int x, int y, int mods) {
+	long y0 = VDCeilToInt(mYBounds[0] * mHeight - 0.5) - 1;
+	long y1 = VDCeilToInt(mYBounds[1] * mHeight - 0.5);
+	long x0 = VDCeilToInt(mXBounds[0] * mWidth - 0.5) - 1;
+	long x1 = VDCeilToInt(mXBounds[1] * mWidth - 0.5);
+
 	if (mDragPoleX>=0 || mDragPoleY>=0) {
 		bool roundoff = (mods & MK_SHIFT) != 0;
 
@@ -288,20 +323,50 @@ void VDClippingControlOverlay::OnMouseMove(int x, int y, int mods) {
 				mYBounds[i] = v;
 		}
 
-		RECT r;
-		HWND hwndParent = GetParent(mhwnd);
-		GetWindowRect(mhwnd, &r);
-		MapWindowPoints(NULL, hwndParent, (LPPOINT)&r, 2);
 		ClippingControlBounds ccb;
-
 		ccb.x1 = VDRoundToLong(mSourceWidth * mXBounds[0]);
 		ccb.x2 = VDRoundToLong(mSourceWidth * (1.0 - mXBounds[1]));
 		ccb.y1 = VDRoundToLong(mSourceHeight * mYBounds[0]);
 		ccb.y2 = VDRoundToLong(mSourceHeight * (1.0 - mYBounds[1]));
 
+		HWND hwndParent = GetParent(mhwnd);
 		SendMessage(hwndParent, CCM_SETCLIPBOUNDS, 0, (LPARAM)&ccb);
 
-		InvalidateRect(hwndParent, &r, TRUE);
+		long ny0 = VDCeilToInt(mYBounds[0] * mHeight - 0.5) - 1;
+		long ny1 = VDCeilToInt(mYBounds[1] * mHeight - 0.5);
+		long nx0 = VDCeilToInt(mXBounds[0] * mWidth - 0.5) - 1;
+		long nx1 = VDCeilToInt(mXBounds[1] * mWidth - 0.5);
+
+		HWND d = GetDlgItem(hwndParent, 513);
+		IVDVideoDisplay *pVD = VDGetIVideoDisplay((VDGUIHandle)d);
+		if (mDragPoleX==0 && x0!=nx0) {
+			RECT r;
+			GetClientRect(d, &r);
+			r.left = std::min(x0,nx0)-1;
+			r.right = std::max(x0,nx0)+2;
+			pVD->DrawInvalidate(&r);
+		}
+		if (mDragPoleX==1 && x1!=nx1) {
+			RECT r;
+			GetClientRect(d, &r);
+			r.left = std::min(x1,nx1)-1;
+			r.right = std::max(x1,nx1)+2;
+			pVD->DrawInvalidate(&r);
+		}
+		if (mDragPoleY==0 && y0!=ny0) {
+			RECT r;
+			GetClientRect(d, &r);
+			r.top = std::min(y0,ny0)-1;
+			r.bottom = std::max(y0,ny0)+2;
+			pVD->DrawInvalidate(&r);
+		}
+		if (mDragPoleY==1 && y1!=ny1) {
+			RECT r;
+			GetClientRect(d, &r);
+			r.top = std::min(y1,ny1)-1;
+			r.bottom = std::max(y1,ny1)+2;
+			pVD->DrawInvalidate(&r);
+		}
 	}
 
 	OnSetCursor(HTCLIENT, WM_MOUSEMOVE);
@@ -383,6 +448,10 @@ void VDClippingControlOverlay::PoleHitTest(int& x, int& y) {
 	y = yi;
 }
 
+void ClippingDrawMode::Paint(HDC dc) {
+	pOverlay->OnPaint(dc);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 //
 //	VDClippingControl
@@ -396,6 +465,7 @@ public:
 	void GetClipBounds(vdrect32& r);
 	void AutoSize(int borderw, int borderh);
 	void BlitFrame(const VDPixmap *);
+	void SetFillBorder(bool v);
 
 	static LRESULT CALLBACK StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	void DisplayRequestUpdate(IVDVideoDisplay *pDisp);
@@ -445,6 +515,7 @@ private:
 	bool fInhibitRefresh;
 
 	VDClippingControlOverlay *pOverlay;
+	ClippingDrawMode drawMode;
 };
 
 ATOM RegisterClippingControl() {
@@ -506,6 +577,10 @@ IVDPositionControl *VDGetIPositionControlFromClippingControl(VDGUIHandle h) {
 	HWND hwndPosition = GetDlgItem((HWND)h, 512 /* IDC_POSITION */);
 
 	return VDGetIPositionControl((VDGUIHandle)hwndPosition);
+}
+
+void VDClippingControl::SetFillBorder(bool v) {
+	pOverlay->fillBorder = v;
 }
 
 void VDClippingControl::SetBitmapSize(int sourceW, int sourceH) {
@@ -634,29 +709,10 @@ BOOL CALLBACK VDClippingControl::ShowChildrenProc(HWND hWnd, LPARAM lParam) {
 }
 
 void VDClippingControl::ResetDisplayBounds() {
-	HWND hwndDisplay = GetDlgItem(mhwnd, kIDC_VIDEODISPLAY);
-	IVDVideoDisplay *pVD = VDGetIVideoDisplay((VDGUIHandle)hwndDisplay);
-
-	// scale bounds to actual display size
-	int scaledx1 = VDCeilToInt(x1 * mInvSourceWidth  * mDisplayWidth  - 0.5);
-	int scaledy1 = VDCeilToInt(y1 * mInvSourceHeight * mDisplayHeight - 0.5);
-	int scaledx2 = VDCeilToInt((1.0 - x2*mInvSourceWidth ) * mDisplayWidth  - 0.5);
-	int scaledy2 = VDCeilToInt((1.0 - y2*mInvSourceHeight) * mDisplayHeight - 0.5);
-	int w = 0;
-	int h = 0;
-
-	if (scaledx1 >= scaledx2 || scaledy1 >= scaledy2)
-		ShowWindow(hwndDisplay, SW_HIDE);
-	else {
-		ShowWindow(hwndDisplay, SW_SHOWNA);
-		vdrect32 r(x1, y1, mSourceWidth - x2, mSourceHeight - y2);
-
-		w = r.width();
-		h = r.height();
-
-		pVD->SetSourceSubrect(&r);
-		SetWindowPos(hwndDisplay, NULL, mOverlayX+4+scaledx1, mOverlayY+4+scaledy1, scaledx2-scaledx1, scaledy2-scaledy1, SWP_NOACTIVATE|SWP_NOCOPYBITS|SWP_NOZORDER);
-	}
+	int w = mSourceWidth - x1 - x2;
+	int h = mSourceHeight - y1 - y2;
+	if (w<0) w = 0;
+	if (h<0) h = 0;
 
 	HWND hwndSize = GetDlgItem(mhwnd, kIDC_SIZE);
 	if (hwndSize)
@@ -776,8 +832,10 @@ LRESULT VDClippingControl::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			EnumChildWindows(mhwnd, InitChildrenProc, 0);
 
 			pOverlay = VDClippingControlOverlay::Create(mhwnd, 0, 0, 0, 0, 0);
+			drawMode.pOverlay = pOverlay;
 
 			IVDVideoDisplay *pVD = VDGetIVideoDisplay((VDGUIHandle)hwndDisplay);
+			pVD->SetDrawMode(&drawMode);
 
 			pVD->SetCallback(this);
 			
@@ -842,7 +900,9 @@ LRESULT VDClippingControl::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 					r.top		= mOverlayY + 4;
 					r.right		= r.left + mDisplayWidth;
 					r.bottom	= r.top + mDisplayHeight;
-					InvalidateRect(mhwnd, &r, TRUE);
+					HWND hwndDisplay = GetDlgItem(mhwnd, kIDC_VIDEODISPLAY);
+					IVDVideoDisplay *pVD = VDGetIVideoDisplay((VDGUIHandle)hwndDisplay);
+					pVD->DrawInvalidate(0);
 
 					pOverlay->SetBounds(x1, y1, x2, y2);
 					ResetDisplayBounds();
@@ -965,5 +1025,8 @@ void VDClippingControl::OnSize(int w, int h) {
 
 	pOverlay->SetImageRect(4, 4, mDisplayWidth, mDisplayHeight);
 	SetWindowPos(pOverlay->GetHwnd(), NULL, mOverlayX, mOverlayY, overlayW, overlayH, SWP_NOACTIVATE|SWP_NOCOPYBITS|SWP_NOZORDER);
+	HWND hwndDisplay = GetDlgItem(mhwnd, kIDC_VIDEODISPLAY);
+	ShowWindow(hwndDisplay, SW_SHOWNA);
+	SetWindowPos(hwndDisplay, NULL, mOverlayX+4, mOverlayY+4, mDisplayWidth, mDisplayHeight, SWP_NOACTIVATE|SWP_NOCOPYBITS|SWP_NOZORDER);
 	ResetDisplayBounds();
 }

@@ -34,6 +34,11 @@ public:
 	virtual void DisplayRequestUpdate(IVDVideoDisplay *pDisp) = 0;
 };
 
+class VDINTERFACE IVDVideoDisplayDrawMode {
+public:
+	virtual void Paint(HDC dc) = 0;
+};
+
 class VDINTERFACE IVDVideoDisplay {
 public:
 	enum {
@@ -101,6 +106,8 @@ public:
 	virtual void Update(int mode = kAllFields) = 0;
 	virtual void Cache() = 0;
 	virtual void SetCallback(IVDVideoDisplayCallback *p) = 0;
+	virtual void SetDrawMode(IVDVideoDisplayDrawMode *p) = 0;
+	virtual void DrawInvalidate(RECT* r) = 0;
 
 	enum AccelerationMode {
 		kAccelOnlyInForeground,

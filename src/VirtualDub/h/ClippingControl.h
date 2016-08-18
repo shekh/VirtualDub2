@@ -49,6 +49,7 @@ public:
 	virtual void GetClipBounds(vdrect32& r) = 0;
 	virtual void AutoSize(int borderW, int borderH);
 	virtual void BlitFrame(const VDPixmap *px) = 0;
+	virtual void SetFillBorder(bool v) = 0;
 };
 
 struct ClippingControlBounds {

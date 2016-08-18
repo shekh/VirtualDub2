@@ -113,6 +113,8 @@ protected:
 	void Reset();
 	void Cache();
 	void SetCallback(IVDVideoDisplayCallback *pcb);
+	void SetDrawMode(IVDVideoDisplayDrawMode *p);
+	void DrawInvalidate(RECT* r);
 	void SetAccelerationMode(AccelerationMode mode);
 	FilterMode GetFilterMode();
 	void SetFilterMode(FilterMode mode);
@@ -188,6 +190,7 @@ protected:
 	UINT	mReinitDisplayTimer;
 
 	IVDVideoDisplayCallback		*mpCB;
+	IVDVideoDisplayDrawMode		*mpDrawMode;
 	int		mInhibitRefresh;
 
 	/// Locks out normal WM_PAINT processing on the child window if non-zero.
@@ -361,6 +364,7 @@ VDVideoDisplayWindow::VDVideoDisplayWindow(HWND hwnd, const CREATESTRUCT& create
 	, mbMiniDriverClearOtherMonitors(false)
 	, mReinitDisplayTimer(0)
 	, mpCB(0)
+	, mpDrawMode(0)
 	, mInhibitRefresh(0)
 	, mInhibitPaint(0)
 	, mSyncDelta(0.0f)
@@ -628,6 +632,10 @@ void VDVideoDisplayWindow::SetCallback(IVDVideoDisplayCallback *pCB) {
 	mpCB = pCB;
 }
 
+void VDVideoDisplayWindow::SetDrawMode(IVDVideoDisplayDrawMode *p) {
+	mpDrawMode = p;
+}
+
 void VDVideoDisplayWindow::SetAccelerationMode(AccelerationMode mode) {
 	mAccelMode = mode;
 }
@@ -864,6 +872,9 @@ void VDVideoDisplayWindow::OnChildPaint() {
 			FillRect(hdc, &r, (HBRUSH)(COLOR_WINDOW + 1));
 		}
 
+		if (mpDrawMode)
+			mpDrawMode->Paint(hdc);
+
 		EndPaint(mhwndChild, &ps);
 	}
 
@@ -1019,6 +1030,9 @@ void VDVideoDisplayWindow::OnPaint() {
 			SelectObject(hdc, hgo);
 		}
 
+		if (mpDrawMode)
+			mpDrawMode->Paint(hdc);
+
 		EndPaint(mhwnd, &ps);
 	}
 
@@ -1095,8 +1109,9 @@ bool VDVideoDisplayWindow::SyncInit(bool bAutoRefresh, bool bAllowNonpersistentS
 
 	do {
 		bool isTermServ = (sbEnableTS || sbEnableTS3D) && VDIsTerminalServicesClient();
+		bool isDrawing = mpDrawMode!=0;
 
-		if (!sbEnableTS || !sbEnableTS3D || !isTermServ) {
+		if ((!sbEnableTS || !sbEnableTS3D || !isTermServ) && !isDrawing) {
 			if (mAccelMode != kAccelOnlyInForeground || !mSource.bAllowConversion || bIsForeground) {
 				// The 3D drivers don't currently support subrects.
 				if (sbEnableDX) {
@@ -1216,6 +1231,13 @@ void VDVideoDisplayWindow::SyncUpdate(int mode) {
 				VDPROFILEEND();
 				mSyncDelta = mpMiniDriver->GetSyncDelta();
 
+				if (mpDrawMode) {
+					if (HDC hdc = GetDC(mhwndChild)) {
+						mpDrawMode->Paint(hdc);
+						ReleaseDC(mhwndChild, hdc);
+					}
+				}
+
 				if (!mpMiniDriver->IsFramePending())
 					RequestNextFrame();
 			}
@@ -1256,6 +1278,12 @@ void VDVideoDisplayWindow::SyncSetDisplayMode(DisplayMode mode) {
 			InvalidateRect(mhwnd, NULL, FALSE);
 			InvalidateRect(mhwndChild, NULL, FALSE);
 		}
+	}
+}
+
+void VDVideoDisplayWindow::DrawInvalidate(RECT* r) {
+	if (mpMiniDriver) {
+		InvalidateRect(mhwndChild, r, FALSE);
 	}
 }
 
