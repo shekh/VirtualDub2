@@ -26,11 +26,12 @@ public:
 	virtual void SetSourcePAR(const VDFraction& fr) = 0;
 	virtual void SetZoom(double zoom, bool useWorkArea=true) = 0;
 	virtual double GetMaxZoomForArea(int w, int h) = 0;
-	virtual void SetBorderless(bool) = 0;
+	virtual void SetBorder(int v=4) = 0;
 	virtual bool GetAutoSize() = 0;
 	virtual void SetAutoSize(bool) = 0;
 	virtual void InitSourcePAR() = 0;
 	virtual void SetWorkArea(RECT& r) = 0;
+	virtual void SetDrawMode(IVDVideoDisplayDrawMode *p) = 0;
 };
 
 IVDVideoWindow *VDGetIVideoWindow(HWND hwnd);

@@ -22,8 +22,6 @@
 #include <vd2/system/refcount.h>
 #include <vd2/kasumi/pixmap.h>
 
-#include "ClippingControl.h"
-
 #include "resource.h"
 #include "filter.h"
 #include "VBitmap.h"
@@ -41,29 +39,30 @@ typedef struct MyFilterData {
 	long x1, y1, x2, y2;
 	bool use_alpha, use_alpha_temp;
 	COLORREF color, color_temp;
+	long x1_temp, y1_temp, x2_temp, y2_temp;
+
 	HBRUSH hbrColor;
 
 	sint32 mSourceWidth;
 	sint32 mSourceHeight;
+
+	FilterActivation* fa;
 } MyFilterData;
 
 static int fill_run32(const FilterActivation *fa, const FilterFunctions *ff) {
 	MyFilterData *mfd = (MyFilterData *)fa->filter_data;
 
 	unsigned long w,h;
-	Pixel *dst;
 	int r = (mfd->color & 0xff);
 	int g = (mfd->color & 0xff00)>>8;
 	int b = (mfd->color & 0xff0000)>>16;
-	Pixel c = (Pixel)((r<<16) | (g<<8) | (b));
 
-	dst = (Pixel *)((char *)((Pixel *)fa->dst.data + mfd->x1) + mfd->y2*fa->dst.pitch);
-
+	uint8* dst = (uint8*)fa->dst.data + mfd->y2*fa->dst.pitch + mfd->x1*4;
 	h = fa->dst.h - mfd->y1 - mfd->y2;
 	do {
+		uint8* dst2 = dst;
 		w = fa->dst.w - mfd->x1 - mfd->x2;
 		if (mfd->use_alpha) {
-			uint8* dst2 = (uint8*)dst;
 			do {
 				int a = dst2[3];
 				int ra = 255-a;
@@ -73,13 +72,15 @@ static int fill_run32(const FilterActivation *fa, const FilterFunctions *ff) {
 				dst2+=4;
 			} while(--w);
 		} else {
-			Pixel *dst2 = dst;
 			do {
-				*dst2++ = c;
+				dst2[0] = uint8(b);
+				dst2[1] = uint8(g);
+				dst2[2] = uint8(r);
+				dst2+=4;
 			} while(--w);
 		}
 
-		dst = (Pixel32 *)((char *)dst + fa->dst.pitch);
+		dst += fa->dst.pitch;
 	} while(--h);
 
 	return 0;
@@ -153,164 +154,145 @@ static long fill_param(FilterActivation *fa, const FilterFunctions *ff) {
 	return FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_SUPPORTS_ALTFORMATS;
 }
 
+static void ClipEditCallback(int x1, int y1, int x2, int y2, int state, void *pData) {
+	HWND hDlg = (HWND)pData;
+	MyFilterData *mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+	mfd->x1 = x1;
+	mfd->y1 = y1;
+	mfd->x2 = x2;
+	mfd->y2 = y2;
+	SetDlgItemInt(hDlg, IDC_CLIP_X0, mfd->x1, FALSE);
+	SetDlgItemInt(hDlg, IDC_CLIP_X1, mfd->x2, FALSE);
+	SetDlgItemInt(hDlg, IDC_CLIP_Y0, mfd->y1, FALSE);
+	SetDlgItemInt(hDlg, IDC_CLIP_Y1, mfd->y2, FALSE);
+	if (state==1) mfd->fa->ifp->RedoFrame();
+}
+
 static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 	MyFilterData *mfd;
 
-    switch (message)
-    {
-        case WM_INITDIALOG:
+	switch (message)
+	{
+		case WM_INITDIALOG:
+		{
+			mfd = (MyFilterData *)lParam;
+			SetWindowLongPtr(hDlg, DWLP_USER, (LONG)mfd);
+
+			mfd->color_temp = mfd->color;
+			mfd->use_alpha_temp = mfd->use_alpha;
+			mfd->x1_temp = mfd->x1;
+			mfd->y1_temp = mfd->y1;
+			mfd->x2_temp = mfd->x2;
+			mfd->y2_temp = mfd->y2;
+			mfd->hbrColor = CreateSolidBrush(mfd->color);
+
+			HWND hWndAlpha = GetDlgItem(hDlg, IDC_USE_ALPHA);
+			SendMessage(hWndAlpha,  BM_SETCHECK, mfd->use_alpha ? BST_CHECKED:BST_UNCHECKED, 0);
+			SetDlgItemInt(hDlg, IDC_CLIP_X0, mfd->x1, FALSE);
+			SetDlgItemInt(hDlg, IDC_CLIP_X1, mfd->x2, FALSE);
+			SetDlgItemInt(hDlg, IDC_CLIP_Y0, mfd->y1, FALSE);
+			SetDlgItemInt(hDlg, IDC_CLIP_Y1, mfd->y2, FALSE);
+
+			mfd->fa->fma->fmpreview->SetThickBorder();
+			mfd->fa->ifp->Display((VDXHWND)hDlg,true);
+			mfd->fa->fma->fmpreview->SetClipEditMode(mfd->x1, mfd->y1, mfd->x2, mfd->y2);
+			mfd->fa->fma->fmpreview->SetClipEditCallback(ClipEditCallback, hDlg);
+		}
+		return (TRUE);
+
+		case WM_COMMAND:
+		switch(LOWORD(wParam)) {
+		case IDOK:
 			{
-				LONG hspace;
-				RECT rw, rc, rcok, rccancel, rcpickcolor, rccolor, rcalpha;
-				HWND hWnd, hWndOk, hWndCancel, hWndPickColor, hWndColor, hWndAlpha;
-				long x,y;
-
-				mfd = (MyFilterData *)lParam;
-				SetWindowLongPtr(hDlg, DWLP_USER, (LONG)mfd);
-
-				hWnd = GetDlgItem(hDlg, IDC_BORDERS);
-				IVDClippingControl *pClipCtrl = VDGetIClippingControl((VDGUIHandle)hWnd);
-
-				mfd->color_temp = mfd->color;
-				mfd->use_alpha_temp = mfd->use_alpha;
-				mfd->hbrColor = CreateSolidBrush(mfd->color);
-
-				pClipCtrl->SetBitmapSize(mfd->mSourceWidth, mfd->mSourceHeight);
-				pClipCtrl->SetClipBounds(vdrect32(mfd->x1, mfd->y1, mfd->x2, mfd->y2));
-				pClipCtrl->SetFillBorder(false);
-
-				GetWindowRect(hDlg, &rw);
-				GetWindowRect(hWnd, &rc);
-				int origW = (rw.right - rw.left);
-				int origH = (rw.bottom - rw.top);
-				int padW = (rw.right - rw.left) - (rc.right - rc.left);
-				int padH = origH - (rc.bottom - rc.top);
-				pClipCtrl->AutoSize(padW, padH);
-
-				IVDPositionControl *pc = VDGetIPositionControlFromClippingControl((VDGUIHandle)hWnd);
-				guiPositionInitFromStream(pc);
-
-				GetWindowRect(hWnd, &rc);
-				MapWindowPoints(NULL, hDlg, (LPPOINT)&rc, 2);
-
-				int newW = (rc.right - rc.left) + padW;
-				int newH = (rc.bottom - rc.top) + padH;
-				if (newW<origW) newW = origW;
-				SetWindowPos(hDlg, NULL, 0, 0, newW, newH, SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE);
-				SendMessage(hDlg, DM_REPOSITION, 0, 0);
-
-				hWndCancel = GetDlgItem(hDlg, IDCANCEL);
-				hWndOk = GetDlgItem(hDlg, IDOK);
-				hWndPickColor = GetDlgItem(hDlg, IDC_PICK_COLOR);
-				hWndColor = GetDlgItem(hDlg, IDC_COLOR);
-				hWndAlpha = GetDlgItem(hDlg, IDC_USE_ALPHA);
-				GetWindowRect(hWndOk, &rcok);
-				GetWindowRect(hWndCancel, &rccancel);
-				GetWindowRect(hWndPickColor, &rcpickcolor);
-				GetWindowRect(hWndColor, &rccolor);
-				GetWindowRect(hWndAlpha, &rcalpha);
-				hspace = rccancel.left - rcok.right;
-				MapWindowPoints(NULL, hDlg, (LPPOINT)&rcok, 2);
-				MapWindowPoints(NULL, hDlg, (LPPOINT)&rccancel, 2);
-				MapWindowPoints(NULL, hDlg, (LPPOINT)&rcpickcolor, 2);
-				MapWindowPoints(NULL, hDlg, (LPPOINT)&rccolor, 2);
-				MapWindowPoints(NULL, hDlg, (LPPOINT)&rcalpha, 2);
-
-				x = newW - origW + rccancel.left;
-				y = newH - origH;
-
-				SetWindowPos(hWndCancel	, NULL, x           ,    rccancel.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
-
-				x -= (rcok.right - rcok.left);
-				SetWindowPos(hWndOk		, NULL, x - hspace  ,        rcok.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
-
-				SetWindowPos(hWndPickColor, NULL, rcpickcolor.left, rcpickcolor.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
-
-				SetWindowPos(hWndColor	, NULL, rccolor.left,        rccolor.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
-
-				SetWindowPos(hWndAlpha	, NULL, rcalpha.left,        rcalpha.top + y, 0,0,SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
-				SendMessage(hWndAlpha,  BM_SETCHECK, mfd->use_alpha ? BST_CHECKED:BST_UNCHECKED, 0);
-			}
-
-            return (TRUE);
-
-        case WM_COMMAND:
-			switch(LOWORD(wParam)) {
-			case IDOK:
-				{
-					ClippingControlBounds ccb;
-
-					mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
-					SendMessage(GetDlgItem(hDlg, IDC_BORDERS), CCM_GETCLIPBOUNDS, 0, (LPARAM)&ccb);
-					mfd->x1 = ccb.x1;
-					mfd->y1 = ccb.y1;
-					mfd->x2 = ccb.x2;
-					mfd->y2 = ccb.y2;
-					mfd->color = mfd->color_temp;
-					mfd->use_alpha = mfd->use_alpha_temp;
-					if (mfd->hbrColor) {
-						DeleteObject(mfd->hbrColor);
-						mfd->hbrColor = NULL;
-					}
-					EndDialog(hDlg, 0);
-				}
-				return TRUE;
-			case IDCANCEL:
 				mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
 				if (mfd->hbrColor) {
 					DeleteObject(mfd->hbrColor);
 					mfd->hbrColor = NULL;
 				}
-				EndDialog(hDlg, 1);
-				return TRUE;
-			case IDC_BORDERS:
-				{
-					IVDPositionControl *pc = VDGetIPositionControlFromClippingControl((VDGUIHandle)(HWND)lParam);
-					guiPositionBlit((HWND)lParam, guiPositionHandleCommand(wParam, pc));
-				}
-				return TRUE;
-
-			case IDC_PICK_COLOR:
-				mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
-
-				if (guiChooseColor(hDlg, mfd->color_temp)) {
-					DeleteObject(mfd->hbrColor);
-					mfd->hbrColor = CreateSolidBrush(mfd->color_temp);
-					RedrawWindow(GetDlgItem(hDlg, IDC_COLOR), NULL, NULL, RDW_ERASE|RDW_INVALIDATE|RDW_UPDATENOW);
-				}
-
-				return TRUE;
-
-			case IDC_USE_ALPHA:
-				mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
-				mfd->use_alpha_temp = IsDlgButtonChecked(hDlg, IDC_USE_ALPHA)!=0;
-				return TRUE;
-			}
-            break;
-
-		case WM_NOTIFY:
-			{
-				HWND hwndClipping = ((NMHDR *)lParam)->hwndFrom;
-				IVDPositionControl *pc = VDGetIPositionControlFromClippingControl((VDGUIHandle)hwndClipping);
-				guiPositionBlit(hwndClipping, guiPositionHandleNotify(lParam, pc));
-			}
-			break;
-
-		case WM_DRAWITEM:
-			{
-				mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
-				DRAWITEMSTRUCT* ds = (DRAWITEMSTRUCT*)lParam;
-				FillRect(ds->hDC,&ds->rcItem,mfd->hbrColor);
+				EndDialog(hDlg, 0);
 			}
 			return TRUE;
-    }
-    return FALSE;
+
+		case IDCANCEL:
+			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+			mfd->color = mfd->color_temp;
+			mfd->use_alpha = mfd->use_alpha_temp;
+			mfd->x1 = mfd->x1_temp;
+			mfd->y1 = mfd->y1_temp;
+			mfd->x2 = mfd->x2_temp;
+			mfd->y2 = mfd->y2_temp;
+			if (mfd->hbrColor) {
+				DeleteObject(mfd->hbrColor);
+				mfd->hbrColor = NULL;
+			}
+			EndDialog(hDlg, 1);
+			return TRUE;
+
+		case IDC_PICK_COLOR:
+			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+
+			if (guiChooseColor(hDlg, mfd->color)) {
+				DeleteObject(mfd->hbrColor);
+				mfd->hbrColor = CreateSolidBrush(mfd->color);
+				RedrawWindow(GetDlgItem(hDlg, IDC_COLOR), NULL, NULL, RDW_ERASE|RDW_INVALIDATE|RDW_UPDATENOW);
+				mfd->fa->ifp->RedoFrame();
+			}
+
+			return TRUE;
+
+		case IDC_USE_ALPHA:
+			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+			mfd->use_alpha = IsDlgButtonChecked(hDlg, IDC_USE_ALPHA)!=0;
+
+			mfd->fa->ifp->RedoFrame();
+			return TRUE;
+
+		case IDC_CLIP_X0:
+			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+			mfd->x1 = GetDlgItemInt(hDlg,IDC_CLIP_X0,0,false);
+			mfd->fa->fma->fmpreview->SetClipEditMode(mfd->x1, mfd->y1, mfd->x2, mfd->y2);
+			mfd->fa->ifp->RedoFrame();
+			return TRUE;
+
+		case IDC_CLIP_X1:
+			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+			mfd->x2 = GetDlgItemInt(hDlg,IDC_CLIP_X1,0,false);
+			mfd->fa->fma->fmpreview->SetClipEditMode(mfd->x1, mfd->y1, mfd->x2, mfd->y2);
+			mfd->fa->ifp->RedoFrame();
+			return TRUE;
+
+		case IDC_CLIP_Y0:
+			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+			mfd->y1 = GetDlgItemInt(hDlg,IDC_CLIP_Y0,0,false);
+			mfd->fa->fma->fmpreview->SetClipEditMode(mfd->x1, mfd->y1, mfd->x2, mfd->y2);
+			mfd->fa->ifp->RedoFrame();
+			return TRUE;
+
+		case IDC_CLIP_Y1:
+			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+			mfd->y2 = GetDlgItemInt(hDlg,IDC_CLIP_Y1,0,false);
+			mfd->fa->fma->fmpreview->SetClipEditMode(mfd->x1, mfd->y1, mfd->x2, mfd->y2);
+			mfd->fa->ifp->RedoFrame();
+			return TRUE;
+		}
+		break;
+
+	case WM_DRAWITEM:
+		{
+			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
+			DRAWITEMSTRUCT* ds = (DRAWITEMSTRUCT*)lParam;
+			FillRect(ds->hDC,&ds->rcItem,mfd->hbrColor);
+		}
+		return TRUE;
+	}
+	return FALSE;
 }
 
 static int fill_config(FilterActivation *fa, const FilterFunctions *ff, VDXHWND hWnd) {
 	MyFilterData *mfd = (MyFilterData *)fa->filter_data;
 	mfd->mSourceWidth = fa->src.w;
 	mfd->mSourceHeight = fa->src.h;
+	mfd->fa = fa;
 
 	return DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_FILTER_FILL), (HWND)hWnd, fillDlgProc, (LPARAM)mfd);
 }

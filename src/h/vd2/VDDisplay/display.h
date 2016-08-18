@@ -37,6 +37,7 @@ public:
 class VDINTERFACE IVDVideoDisplayDrawMode {
 public:
 	virtual void Paint(HDC dc) = 0;
+	virtual void SetDisplayPos(int x, int y, int w, int h) = 0;
 };
 
 class VDINTERFACE IVDVideoDisplay {

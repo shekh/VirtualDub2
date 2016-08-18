@@ -21,6 +21,7 @@
 #include <windows.h>
 
 #include <vd2/system/vectors.h>
+#include <vd2/VDDisplay/display.h>
 
 struct VDPixmap;
 
@@ -54,6 +55,7 @@ public:
 
 struct ClippingControlBounds {
 	sint32 x1, y1, x2, y2;
+	int state;
 };
 
 ATOM RegisterClippingControl();
@@ -62,5 +64,48 @@ class IVDPositionControl;
 
 IVDClippingControl *VDGetIClippingControl(VDGUIHandle h);
 IVDPositionControl *VDGetIPositionControlFromClippingControl(VDGUIHandle h);
+
+class VDClippingControlOverlay: public IVDVideoDisplayDrawMode {
+public:
+	VDClippingControlOverlay(HWND hwnd);
+	~VDClippingControlOverlay();
+
+	static VDClippingControlOverlay *Create(HWND hwndParent, int x, int y, int cx, int cy, UINT id);
+
+	void SetImageRect(int x, int y, int cx, int cy);
+	void SetSourceSize(int w, int h);
+	void SetBounds(int x1, int y1, int x2, int y2);
+	void Paint(HDC dc);
+	void SetDisplayPos(int x, int y, int w, int h);
+
+	HWND GetHwnd() const { return mhwnd; }
+
+	static LRESULT CALLBACK StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	HWND hwndDisplay;
+	IVDVideoDisplay *pVD;
+	bool fillBorder;
+	bool drawFrame;
+
+private:
+	LRESULT WndProc(UINT msg, WPARAM wParam, LPARAM lParam);
+	void OnMouseMove(int x, int y, int mods);
+	void OnLButtonDown(int x, int y);
+	LRESULT OnNcHitTest(int x, int y);
+	bool OnSetCursor(UINT htcode, UINT mousemsg);
+	void PoleHitTest(int& x, int& y);
+
+	const HWND mhwnd;
+
+	HPEN	mBorderPen;
+
+	int		mX, mY, mWidth, mHeight;
+	int		mSourceWidth, mSourceHeight;
+	double	mInvSourceWidth, mInvSourceHeight;
+
+	double	mXBounds[2], mYBounds[2];
+
+	int	mDragPoleX, mDragPoleY;
+};
 
 #endif

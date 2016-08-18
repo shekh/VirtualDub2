@@ -479,6 +479,7 @@
 #define IDC_ALIGNMENT                   1152
 #define IDC_FILEDESC                    1152
 #define IDC_NAME                        1152
+#define IDC_CLIP_X0                     1152
 #define IDS_VIDEO_FRAMERATE             1153
 #define IDC_DEFAULT_DRIVER              1153
 #define IDC_FILELIMIT_SETTING           1153
@@ -489,6 +490,7 @@
 #define IDC_XPOS                        1153
 #define IDC_TAPS                        1153
 #define IDC_ASPECT_RATIO2               1153
+#define IDC_CLIP_X1                     1153
 #define IDS_VIDEO_COLORDEPTH            1154
 #define IDC_SELECT_CAPTURE_FILE         1154
 #define IDC_DISKLIMIT_SETTING           1154
@@ -497,10 +499,12 @@
 #define IDC_YPOS                        1154
 #define IDC_PADDING_INITIAL             1154
 #define IDC_EXPORT                      1154
+#define IDC_CLIP_Y0                     1154
 #define IDS_VIDEO_COMPRESSION           1155
 #define IDC_USE_CURRENT_FILE            1155
 #define IDC_DROPLIMIT_SETTING           1155
 #define IDC_OUTPUTLO                    1155
+#define IDC_CLIP_Y1                     1155
 #define IDS_VIDEO_CLIPPING              1156
 #define IDC_DEFAULT_CAPFILE             1156
 #define IDS_VIDEO_MODE_DIRECT           1157

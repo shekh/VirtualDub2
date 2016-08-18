@@ -416,6 +416,7 @@ VDFilterActivationImpl::VDFilterActivationImpl()
 
 	SetSourceStreamCount(1);
 
+	fma_ref = &fma;
 	fma.filter = 0;
 	fma.filterMod = 0;
 	fma.filter_data = 0;
@@ -450,6 +451,7 @@ VDFilterActivationImpl::VDFilterActivationImpl(const VDFilterActivationImpl& src
 
 	SetSourceStreamCount(1);
 
+	fma_ref = &fma;
 	fma.filter = 0;
 	fma.filterMod = 0;
 	fma.filter_data = 0;

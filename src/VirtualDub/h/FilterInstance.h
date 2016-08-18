@@ -188,6 +188,8 @@ public:
 	uint32		mSourceStreamCount;		// (V16+)
 	VDXFBitmap *const *mpSourceStreams;	// (V16+)
 
+	FilterModActivation* fma_ref;		// (V18+)
+
 private:
 	char mSizeCheckSentinel;
 

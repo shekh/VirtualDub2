@@ -38,6 +38,7 @@
 #include "oshelper.h"
 #include "dub.h"
 #include "projectui.h"
+#include "ClippingControl.h"
 
 extern HINSTANCE	g_hInst;
 extern VDProject *g_project;
@@ -283,6 +284,8 @@ public:
 	void SetInitialTime(VDTime t);
 	void SetFilterList(HWND w){ mhwndFilterList = w; }
 	void RedoFrame2() { OnVideoRedraw(); }
+	void SetThickBorder();
+	void SetClipEditMode(int x1, int y1, int x2, int y2);
 
 	void SetButtonCallback(VDXFilterPreviewButtonCallback, void *);
 	void SetSampleCallback(VDXFilterPreviewSampleCallback, void *);
@@ -304,6 +307,7 @@ public:
 	int64 FMSetPosition(int64 pos);
 	void FMSetPositionCallback(FilterModPreviewPositionCallback, void *);
 	void FMSetZoomCallback(FilterModPreviewZoomCallback, void *);
+	void SetClipEditCallback(FilterModPreviewClipEditCallback, void *);
 	int FMTranslateAccelerator(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
 	HWND GetHwnd(){ return mhdlg; }
 	int TranslateAcceleratorMessage(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
@@ -350,6 +354,7 @@ private:
 	int			mDisplayW;
 	int			mDisplayH;
 	RECT		mWorkArea;
+	int			mBorder;
 
 	VDTime		mInitialTimeUS;
 	sint64		mInitialFrame;
@@ -361,6 +366,7 @@ private:
 	IVDPositionControl	*mpPosition;
 	IVDVideoDisplay *mpDisplay;
 	IVDVideoWindow *mpVideoWindow;
+	VDClippingControlOverlay *pOverlay;
 	FilterSystem *mpFiltSys;
 	VDFilterChainDesc *mpFilterChainDesc;
 	FilterInstance *mpThisFilter;
@@ -375,6 +381,8 @@ private:
 	void							*mpvPositionCBData;
 	FilterModPreviewZoomCallback	mpZoomCallback;
 	void							*mpvZoomCBData;
+	FilterModPreviewClipEditCallback mpClipEditCallback;
+	void							*mpClipEditCBData;
 	PreviewZoomInfo   zoom_info;
 
 	MyError		mFailureReason;
@@ -423,6 +431,7 @@ FilterPreview::FilterPreview(FilterSystem *pFiltSys, VDFilterChainDesc *pFilterC
 	, mpPosition(NULL)
 	, mpDisplay(NULL)
 	, mpVideoWindow(NULL)
+	, pOverlay(NULL)
 	, mpFiltSys(pFiltSys)
 	, mpFilterChainDesc(pFilterChainDesc)
 	, mpThisFilter(pfiThisFilter)
@@ -431,6 +440,7 @@ FilterPreview::FilterPreview(FilterSystem *pFiltSys, VDFilterChainDesc *pFilterC
 	, mpSampleCallback(NULL)
 	, mpPositionCallback(NULL)
 	, mpZoomCallback(NULL)
+	, mpClipEditCallback(NULL)
 {
 	mode_cursor = 0;
 	cross_cursor = LoadCursor(0,IDC_CROSS);
@@ -438,6 +448,7 @@ FilterPreview::FilterPreview(FilterSystem *pFiltSys, VDFilterChainDesc *pFilterC
 	mWorkArea.top = 0;
 	mWorkArea.right = 0;
 	mWorkArea.bottom = 0;
+	mBorder = 0;
 }
 
 FilterPreview::~FilterPreview() {
@@ -490,6 +501,7 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 
 		mhwndVideoWindow = NULL;
 		mpVideoWindow = 0;
+		pOverlay = 0;
 
 		mDlgNode.Remove();
 
@@ -714,6 +726,14 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		}
 		break;
 
+	case CCM_SETCLIPBOUNDS:
+		{
+			ClippingControlBounds *ccb = (ClippingControlBounds *)lParam;
+			if (mpClipEditCallback)
+				mpClipEditCallback(ccb->x1,ccb->y1,ccb->x2,ccb->y2,ccb->state,mpClipEditCBData);
+		}
+		return 0;
+
 	case MYWM_REDRAW:
 		OnVideoRedraw();
 		return TRUE;
@@ -816,12 +836,33 @@ void FilterPreview::OnInit() {
 	mpVideoWindow->SetChild(mhwndDisplay);
 	mpVideoWindow->SetDisplay(mpDisplay);
 	mpVideoWindow->SetMouseTransparent(true);
-	mpVideoWindow->SetBorderless(true);
+	mpVideoWindow->SetBorder(mBorder);
 	mpVideoWindow->InitSourcePAR();
+
+	if (mBorder) {
+		pOverlay = VDClippingControlOverlay::Create(mhdlg, 0, 0, 0, 0, 0);
+		mpDisplay->SetDrawMode(pOverlay);
+		pOverlay->fillBorder = false;
+		pOverlay->drawFrame = false;
+		pOverlay->hwndDisplay = mhwndDisplay;
+		pOverlay->pVD = mpDisplay;
+		mpVideoWindow->SetDrawMode(pOverlay);
+	}
 
 	mDlgNode.hdlg = mhdlg;
 	mDlgNode.mhAccel = g_projectui->GetAccelPreview();
 	guiAddModelessDialog(&mDlgNode);
+}
+
+void FilterPreview::SetThickBorder() {
+	mBorder = 8;
+	if (mpVideoWindow)
+		mpVideoWindow->SetBorder(mBorder);
+}
+
+void FilterPreview::SetClipEditMode(int x1, int y1, int x2, int y2) {
+	if (pOverlay)
+		pOverlay->SetBounds(x1,y1,x2,y2);
 }
 
 void FilterPreview::OnResize() {
@@ -988,6 +1029,8 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 
 		mpVideoWindow->SetSourceSize(w, h);
 		mpVideoWindow->SetSourcePAR(mpFiltSys->GetOutputPixelAspect());
+		if (pOverlay)
+			pOverlay->SetSourceSize(w, h);
 
 		if (mpFiltSys->GetOutputFrameRate() == srcRate)
 			mpPosition->SetRange(0, mpTimeline->GetLength());
@@ -1376,6 +1419,11 @@ void FilterPreview::FMSetPositionCallback(FilterModPreviewPositionCallback pfppc
 void FilterPreview::FMSetZoomCallback(FilterModPreviewZoomCallback pfppc, void *pvData) {
 	mpZoomCallback = pfppc;
 	mpvZoomCBData	= pvData;
+}
+
+void FilterPreview::SetClipEditCallback(FilterModPreviewClipEditCallback pfppc, void *pvData) {
+	mpClipEditCallback = pfppc;
+	mpClipEditCBData = pvData;
 }
 
 void FilterPreview::InitButton(VDXHWND hwnd) {
@@ -1942,7 +1990,7 @@ void PixmapView::OnInit() {
 	mpVideoWindow->SetChild(mhwndDisplay);
 	mpVideoWindow->SetDisplay(mpDisplay);
 	mpVideoWindow->SetMouseTransparent(true);
-	mpVideoWindow->SetBorderless(true);
+	mpVideoWindow->SetBorder(0);
 	mpVideoWindow->InitSourcePAR();
 
 	mDlgNode.hdlg = mhdlg;

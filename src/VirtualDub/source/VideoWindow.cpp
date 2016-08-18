@@ -66,10 +66,11 @@ public:
 	void SetSourcePAR(const VDFraction& fr);
 	void SetResizeParentEnabled(bool enabled);
 	double GetMaxZoomForArea(int w, int h);
-	void SetBorderless(bool v){ mbBorderless=v; mBorder = v?0:4; }
+	void SetBorder(int v){ mbBorderless=v==0; mBorder = v; }
 	bool GetAutoSize(){ return mbAutoSize; }
 	void SetAutoSize(bool v){ mbAutoSize = v; }
 	void InitSourcePAR();
+	void SetDrawMode(IVDVideoDisplayDrawMode *p){ mDrawMode=p; }
 
 private:
 	HWND mhwnd;
@@ -101,6 +102,7 @@ private:
 	bool mbAutoSize;
 
 	IVDVideoDisplay *mpDisplay;
+	IVDVideoDisplayDrawMode *mDrawMode;
 	VDStringW	mSourcePARTextPattern;
 
 	LRESULT mLastHitTest;
@@ -170,6 +172,7 @@ VDVideoWindow::VDVideoWindow(HWND hwnd)
 	mWorkArea.top = 0;
 	mWorkArea.right = 0;
 	mWorkArea.bottom = 0;
+	mDrawMode = 0;
 }
 
 VDVideoWindow::~VDVideoWindow() {
@@ -374,6 +377,9 @@ void VDVideoWindow::SetChildPos(float dx, float dy) {
 		int x = (r.right-r.left)/2 - VDRoundToInt(mPanWidth*px);
 		int y = (r.bottom-r.top)/2 - VDRoundToInt(mPanHeight*py);
 		SetWindowPos(mhwndChild, NULL, x, y, mPanWidth, mPanHeight, SWP_NOZORDER|SWP_NOCOPYBITS);
+
+		if (mDrawMode)
+			mDrawMode->SetDisplayPos(x,y,mPanWidth,mPanHeight);
 	}
 }
 
@@ -661,11 +667,27 @@ void VDVideoWindow::NCPaint(HRGN hrgn) {
 
 		OffsetRect(&rc, -rc.left, -rc.top);
 
-		DrawEdge(hdc, &rc, BDR_RAISEDOUTER|BDR_RAISEDINNER, BF_RECT);
-		rc.left		+= 2;
-		rc.right	-= 2;
-		rc.top		+= 2;
-		rc.bottom	-= 2;
+		if (mBorder>4) {
+			RECT r1=rc;
+			RECT r2=rc;
+			RECT r3=rc;
+			RECT r4=rc;
+			r1.right = mBorder-2;
+			r2.left = r2.right -(mBorder-2);
+			r3.bottom = mBorder-2;
+			r4.top = r2.bottom -(mBorder-2);
+			FillRect(hdc,&r1,(HBRUSH)(COLOR_3DFACE+1));
+			FillRect(hdc,&r2,(HBRUSH)(COLOR_3DFACE+1));
+			FillRect(hdc,&r3,(HBRUSH)(COLOR_3DFACE+1));
+			FillRect(hdc,&r4,(HBRUSH)(COLOR_3DFACE+1));
+		} else {
+			DrawEdge(hdc, &rc, BDR_RAISEDOUTER|BDR_RAISEDINNER, BF_RECT);
+		}
+
+		rc.left		+= mBorder-2;
+		rc.right	-= mBorder-2;
+		rc.top		+= mBorder-2;
+		rc.bottom	-= mBorder-2;
 		DrawEdge(hdc, &rc, BDR_SUNKENOUTER|BDR_SUNKENINNER, BF_RECT);
 
 		ReleaseDC(mhwnd, hdc);
@@ -697,7 +719,7 @@ LRESULT VDVideoWindow::HitTest(int x, int y) {
 	GetClientRect(mhwnd, &rc);
 	ScreenToClient(mhwnd, &pt);
 
-	if (mbBorderless || (pt.x >= mBorder && pt.y >= mBorder && pt.x < rc.right-mBorder && pt.y < rc.bottom-mBorder))
+	if (mbBorderless || mBorder>4 || (pt.x >= mBorder && pt.y >= mBorder && pt.x < rc.right-mBorder && pt.y < rc.bottom-mBorder))
 		return mbMouseTransparent ? HTTRANSPARENT : HTCLIENT; //HTCAPTION;
 	else {
 		int xseg = std::min<int>(16, rc.right/3);

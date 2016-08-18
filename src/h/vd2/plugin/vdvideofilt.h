@@ -185,6 +185,7 @@ struct PreviewZoomInfo {
 
 typedef void (__cdecl *FilterModPreviewPositionCallback)(int64 pos, void *pData);
 typedef void (__cdecl *FilterModPreviewZoomCallback)(PreviewZoomInfo& info, void *pData);
+typedef void (__cdecl *FilterModPreviewClipEditCallback)(int x1, int y1, int x2, int y2, int state, void *pData);
 struct tagMSG;
 
 class IVDXFilterPreview2 : public IVDXFilterPreview {
@@ -203,6 +204,11 @@ public:
 
 	// FilterModVersion>=5
 	virtual long SampleFrames(IFilterModPreviewSample*)=0;
+
+  // new
+	virtual void SetThickBorder() = 0;
+	virtual void SetClipEditMode(int x1, int y1, int x2, int y2) = 0;
+	virtual void SetClipEditCallback(FilterModPreviewClipEditCallback, void *) = 0;
 };
 
 class IFilterModTimeline {
@@ -265,7 +271,7 @@ public:
 
 enum {
 	// This is the highest API version supported by this header file.
-	VIRTUALDUB_FILTERDEF_VERSION		= 17,
+	VIRTUALDUB_FILTERDEF_VERSION		= 18,
 
 	// This is the absolute lowest API version supported by this header file.
 	// Note that V4 is rather old, corresponding to VirtualDub 1.2.
@@ -467,6 +473,8 @@ public:
 
 	uint32		mSourceStreamCount;		// (V16+)
 	VDXFBitmap *const *mpSourceStreams;	// (V16+)
+
+	FilterModActivation* fma;	// (V18+)
 };
 
 enum {
