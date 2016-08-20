@@ -285,7 +285,7 @@ public:
 	void SetFilterList(HWND w){ mhwndFilterList = w; }
 	void RedoFrame2() { OnVideoRedraw(); }
 	void SetThickBorder();
-	void SetClipEditMode(int x1, int y1, int x2, int y2);
+	void SetClipEdit(ClipEditInfo& info);
 
 	void SetButtonCallback(VDXFilterPreviewButtonCallback, void *);
 	void SetSampleCallback(VDXFilterPreviewSampleCallback, void *);
@@ -295,10 +295,12 @@ public:
 	void InitButton(VDXHWND);
 	void Toggle(VDXHWND);
 	void Display(VDXHWND, bool);
+	void DisplayEx(VDXHWND, PreviewExInfo& info);
 	void RedoFrame();
 	void UndoSystem();
 	void RedoSystem();
 	void Close();
+	const VDPixmapLayout& GetFrameBufferLayout();
 	void CopyOutputFrameToClipboard();
 	void SaveImageAsk();
 	bool SampleCurrentFrame();
@@ -355,6 +357,8 @@ private:
 	int			mDisplayH;
 	RECT		mWorkArea;
 	int			mBorder;
+	bool		mbDisplaySource;
+	bool		mbShowOverlay;
 
 	VDTime		mInitialTimeUS;
 	sint64		mInitialFrame;
@@ -449,6 +453,8 @@ FilterPreview::FilterPreview(FilterSystem *pFiltSys, VDFilterChainDesc *pFilterC
 	mWorkArea.right = 0;
 	mWorkArea.bottom = 0;
 	mBorder = 0;
+	mbDisplaySource = false;
+	mbShowOverlay = false;
 }
 
 FilterPreview::~FilterPreview() {
@@ -462,6 +468,7 @@ void FilterPreview::SetInitialTime(VDTime t) {
 }
 
 void FilterPreview::ExitZoomMode() {
+	if (pOverlay && mbShowOverlay) ShowWindow(pOverlay->GetHwnd(),true);
 	if(mZoomPopup.IsCreated()){
 		mZoomPopup.Destroy();
 		mode_cursor = 0;
@@ -594,8 +601,8 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		{
 			POINT pt = {(SHORT)LOWORD(lParam), (SHORT)HIWORD(lParam)};
 
-			int xoffset = pt.x - mDisplayX;
-			int yoffset = pt.y - mDisplayY;
+			int xoffset = pt.x - mDisplayX - mBorder;
+			int yoffset = pt.y - mDisplayY - mBorder;
 
 			int DisplayX,DisplayY;
 			int DisplayW,DisplayH;
@@ -603,16 +610,27 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 			xoffset -= DisplayX;
 			yoffset -= DisplayY;
 
-			if ((wParam & MK_SHIFT) && mpFiltSys->isRunning() && mpVideoFrameBuffer && xoffset < DisplayW && yoffset < DisplayH) {
-				VDPixmap output = VDPixmapFromLayout(mpFiltSys->GetOutputLayout(), (void *)mpVideoFrameBuffer->LockRead());
+			if ((wParam & MK_SHIFT) && mpFiltSys->isRunning() && mpVideoFrameBuffer && xoffset>=-10 && yoffset>=-10 && xoffset < DisplayW+10 && yoffset < DisplayH+10) {
+				VDPixmap output = VDPixmapFromLayout(GetFrameBufferLayout(), (void *)mpVideoFrameBuffer->LockRead());
 				output.info = mpVideoFrameBuffer->info;
+				if (xoffset<0) xoffset = 0;
+				if (yoffset<0) yoffset = 0;
+				if (xoffset>=output.w) xoffset = output.w-1;
+				if (yoffset>=output.h) yoffset = output.h-1;
 				uint32 pixels[7][7];
 				int x = VDFloorToInt((xoffset + 0.5) * (double)output.w / (double)DisplayW);
 				int y = VDFloorToInt((yoffset + 0.5) * (double)output.h / (double)DisplayH);
+				int bg = GetSysColor(COLOR_BTNFACE);
+				bg = (bg & 0xff00) | ((bg & 0xff)<<16) | ((bg & 0xff0000)>>16);
 
 				for(int i=0; i<7; ++i) {
 					for(int j=0; j<7; ++j) {
-						pixels[i][j] = 0xFFFFFF & VDPixmapSample(output, x+j-3, y+3-i);
+						int x1 = x+j-3;
+						int y1 = y+3-i;
+						if (x1<0 || y1<0 || x1>=output.w || y1>=output.h)
+							pixels[i][j] = bg;
+						else
+							pixels[i][j] = 0xFFFFFF & VDPixmapSample(output, x1, y1);
 					}
 				}
 
@@ -647,6 +665,7 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 				else
 					pts.y += 32;
 
+				if (pOverlay) ShowWindow(pOverlay->GetHwnd(),false);
 				SetWindowPos(mZoomPopup.GetWindowHandle(), NULL, pts.x, pts.y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
 				mZoomPopup.Update(x, y, pixels, ps);
 				ShowWindow(mZoomPopup.GetWindowHandle(), SW_SHOWNOACTIVATE);
@@ -729,8 +748,15 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 	case CCM_SETCLIPBOUNDS:
 		{
 			ClippingControlBounds *ccb = (ClippingControlBounds *)lParam;
-			if (mpClipEditCallback)
-				mpClipEditCallback(ccb->x1,ccb->y1,ccb->x2,ccb->y2,ccb->state,mpClipEditCBData);
+			if (mpClipEditCallback) {
+				ClipEditInfo info;
+				info.flags = ccb->state==1 ? info.edit_finish : info.edit_update;
+				info.x1 = ccb->x1;
+				info.y1 = ccb->y1;
+				info.x2 = ccb->x2;
+				info.y2 = ccb->y2;
+				mpClipEditCallback(info,mpClipEditCBData);
+			}
 		}
 		return 0;
 
@@ -820,7 +846,12 @@ void FilterPreview::OnInit() {
 	mpPosition = VDGetIPositionControl((VDGUIHandle)mhwndPosition);
 	SetWindowPos(mhwndPosition, NULL, 0, 0, r1.right, 64, SWP_NOZORDER|SWP_NOACTIVATE);
 
-	mpPosition->SetRange(0, mpTimeline->GetLength());
+	if (mbDisplaySource) {
+		const VDFilterStreamDesc srcDesc(mpThisFilter->GetSourceDesc());
+		mpPosition->SetRange(0, srcDesc.mFrameCount < 0 ? 1000 : srcDesc.mFrameCount);
+	} else {
+		mpPosition->SetRange(0, mpTimeline->GetLength());
+	}
 	mpPosition->SetFrameTypeCallback(VDGetPositionControlCallbackTEMP());
 
 	VDRenderSetVideoSourceInputFormat(inputVideo, g_dubOpts.video.mInputFormat);
@@ -840,6 +871,7 @@ void FilterPreview::OnInit() {
 	mpVideoWindow->InitSourcePAR();
 
 	if (mBorder) {
+		mbShowOverlay = true;
 		pOverlay = VDClippingControlOverlay::Create(mhdlg, 0, 0, 0, 0, 0);
 		mpDisplay->SetDrawMode(pOverlay);
 		pOverlay->fillBorder = false;
@@ -854,15 +886,30 @@ void FilterPreview::OnInit() {
 	guiAddModelessDialog(&mDlgNode);
 }
 
-void FilterPreview::SetThickBorder() {
-	mBorder = 8;
+void FilterPreview::DisplayEx(VDXHWND parent, PreviewExInfo& info) {
+	mBorder = 0;
+	if (info.flags & info.thick_border)
+		mBorder = 8;
+	mbDisplaySource = false;
+	if (info.flags & info.display_source)
+		mbDisplaySource = true;
+
 	if (mpVideoWindow)
 		mpVideoWindow->SetBorder(mBorder);
+
+	Display(parent,true);
+
+	if (info.flags & info.no_exit)
+		EnableMenuItem(GetSystemMenu(mhdlg, FALSE), SC_CLOSE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+	else
+		EnableMenuItem(GetSystemMenu(mhdlg, FALSE), SC_CLOSE, MF_BYCOMMAND | MF_ENABLED);
 }
 
-void FilterPreview::SetClipEditMode(int x1, int y1, int x2, int y2) {
-	if (pOverlay)
-		pOverlay->SetBounds(x1,y1,x2,y2);
+void FilterPreview::SetClipEdit(ClipEditInfo& info) {
+	if (pOverlay) {
+		pOverlay->SetBounds(info.x1,info.y1,info.x2,info.y2);
+		pOverlay->fillBorder = (info.flags & info.fill_border)!=0;
+	}
 }
 
 void FilterPreview::OnResize() {
@@ -1021,7 +1068,7 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 
 		mpFiltSys->ReadyFilters();
 
-		const VDPixmapLayout& output = mpFiltSys->GetOutputLayout();
+		const VDPixmapLayout& output = GetFrameBufferLayout();
 		w = output.w;
 		h = output.h;
 		mWidth = w;
@@ -1031,20 +1078,47 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 		mpVideoWindow->SetSourcePAR(mpFiltSys->GetOutputPixelAspect());
 		if (pOverlay)
 			pOverlay->SetSourceSize(w, h);
+		if (mpClipEditCallback) {
+			ClipEditInfo info;
+			info.flags = info.init_size;
+			info.w = w;
+			info.h = h;
+			mpClipEditCallback(info,mpClipEditCBData);
+		}
 
-		if (mpFiltSys->GetOutputFrameRate() == srcRate)
-			mpPosition->SetRange(0, mpTimeline->GetLength());
-		else
-			mpPosition->SetRange(0, mpFiltSys->GetOutputFrameCount());
+		if (mbDisplaySource) {
+			const VDFilterStreamDesc srcDesc(mpThisFilter->GetSourceDesc());
+			mpPosition->SetRange(0, srcDesc.mFrameCount < 0 ? 1000 : srcDesc.mFrameCount);
+		} else {
+			if (mpFiltSys->GetOutputFrameRate() == srcRate)
+				mpPosition->SetRange(0, mpTimeline->GetLength());
+			else
+				mpPosition->SetRange(0, mpFiltSys->GetOutputFrameCount());
 
-		VDPosition sel_start = g_project->GetSelectionStartFrame();
-		VDPosition sel_end = g_project->GetSelectionEndFrame();
-		mpPosition->SetSelection(sel_start, sel_end);
-		mpPosition->SetTimeline(*mpTimeline);
+			VDPosition sel_start = g_project->GetSelectionStartFrame();
+			VDPosition sel_end = g_project->GetSelectionEndFrame();
+			mpPosition->SetSelection(sel_start, sel_end);
+			mpPosition->SetTimeline(*mpTimeline);
+		}
 
 		if (mInitialTimeUS >= 0) {
-			const VDFraction outputRate(mpFiltSys->GetOutputFrameRate());
-			mpPosition->SetPosition(VDRoundToInt64(outputRate.asDouble() * (double)mInitialTimeUS * (1.0 / 1000000.0)));
+			if (mbDisplaySource) {
+				if (mpFiltSys->isRunning()) {
+					const VDFraction& dstfr = mpFiltSys->GetOutputFrameRate();
+					VDPosition timelineFrame = VDRoundToInt64(dstfr.asDouble() * (double)mInitialTimeUS * (1.0 / 1000000.0));
+
+					IVDFilterFrameSource *src = mpThisFilter->GetSource(0);
+					if (src) {
+						VDPosition localFrame = mpFiltSys->GetSymbolicFrame(timelineFrame, src);
+
+						if (localFrame >= 0)
+							mpPosition->SetPosition(localFrame);
+					}
+				}
+			} else {
+				const VDFraction outputRate(mpFiltSys->GetOutputFrameRate());
+				mpPosition->SetPosition(VDRoundToInt64(outputRate.asDouble() * (double)mInitialTimeUS * (1.0 / 1000000.0)));
+			}
 		} else if (mInitialFrame >=0) {
 			mpPosition->SetPosition(mInitialFrame);
 		}
@@ -1090,7 +1164,15 @@ void FilterPreview::OnVideoRedraw() {
 		}
 
 		vdrefptr<IVDFilterFrameClientRequest> req;
-		if (mpFiltSys->RequestFrame(mLastOutputFrame, 0, ~req)) {
+		bool have_request;
+		if (mbDisplaySource) {
+			IVDFilterFrameSource *src = mpThisFilter->GetSource(0);
+			have_request = src->CreateRequest(mLastOutputFrame, false, 0, ~req);
+		} else {
+			have_request = mpFiltSys->RequestFrame(mLastOutputFrame, 0, ~req);
+		}
+
+		if (have_request) {
 
 			while(!req->IsCompleted()) {
 				if (mpFiltSys->Run(NULL, false) == FilterSystem::kRunResult_Running)
@@ -1144,8 +1226,7 @@ void FilterPreview::OnVideoRedraw() {
 				mpVideoFrameBuffer = req->GetResultBuffer();
 				const void *p = mpVideoFrameBuffer->LockRead();
 
-				const VDPixmapLayout& layout = mpFiltSys->GetOutputLayout();
-				VDPixmap px = VDPixmapFromLayout(layout, (void *)p);
+				VDPixmap px = VDPixmapFromLayout(GetFrameBufferLayout(), (void *)p);
 				px.info = mpVideoFrameBuffer->info;
 
 				mpDisplay->SetSourcePersistent(false, px);
@@ -1507,11 +1588,28 @@ void FilterPreview::Close() {
 	UndoSystem();
 }
 
+const VDPixmapLayout& FilterPreview::GetFrameBufferLayout() {
+	if (mbDisplaySource) {
+		IVDFilterFrameSource *src = mpThisFilter->GetSource(0);
+		if (src) return src->GetOutputLayout();
+		mbDisplaySource = false;
+		mpClipEditCallback = 0;
+		if (pOverlay) {
+			mpDisplay->SetDrawMode(0);
+			mpVideoWindow->SetDrawMode(0);
+			ShowWindow(pOverlay->GetHwnd(),SW_HIDE);
+			mbShowOverlay = false;
+		}
+	}
+
+	return mpFiltSys->GetOutputLayout();
+}
+
 void FilterPreview::CopyOutputFrameToClipboard() {
 	if (!mpFiltSys->isRunning() || !mpVideoFrameBuffer)
 		return;
 
-	VDPixmap px = VDPixmapFromLayout(mpFiltSys->GetOutputLayout(), (void *)mpVideoFrameBuffer->LockRead());
+	VDPixmap px = VDPixmapFromLayout(GetFrameBufferLayout(), (void *)mpVideoFrameBuffer->LockRead());
 	px.info = mpVideoFrameBuffer->info;
 	g_project->CopyFrameToClipboard(px);
 	mpVideoFrameBuffer->Unlock();
@@ -1522,7 +1620,7 @@ void FilterPreview::SaveImageAsk() {
 		return;
 
 	VDPosition pos = mpPosition->GetPosition();
-	VDPixmap px = VDPixmapFromLayout(mpFiltSys->GetOutputLayout(), (void *)mpVideoFrameBuffer->LockRead());
+	VDPixmap px = VDPixmapFromLayout(GetFrameBufferLayout(), (void *)mpVideoFrameBuffer->LockRead());
 	px.info = mpVideoFrameBuffer->info;
 	mpVideoFrameBuffer->Unlock();
 	SaveImage(mhdlg, pos, &px);
@@ -1785,7 +1883,7 @@ long FilterPreview::SampleFrames(IFilterModPreviewSample* handler) {
 					mpVideoFrameBuffer = req->GetResultBuffer();
 					const void *p = mpVideoFrameBuffer->LockRead();
 
-					const VDPixmapLayout& layout = mpFiltSys->GetOutputLayout();
+					const VDPixmapLayout& layout = mpThisFilter->GetOutputLayout();
 					VDPixmap px = VDPixmapFromLayout(layout, (void *)p);
 					px.info = mpVideoFrameBuffer->info;
 

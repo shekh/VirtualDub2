@@ -154,18 +154,30 @@ static long fill_param(FilterActivation *fa, const FilterFunctions *ff) {
 	return FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_SUPPORTS_ALTFORMATS;
 }
 
-static void ClipEditCallback(int x1, int y1, int x2, int y2, int state, void *pData) {
+static void ClipEditCallback(ClipEditInfo& info, void *pData) {
 	HWND hDlg = (HWND)pData;
 	MyFilterData *mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
-	mfd->x1 = x1;
-	mfd->y1 = y1;
-	mfd->x2 = x2;
-	mfd->y2 = y2;
+	if (info.flags & info.edit_update) {
+		mfd->x1 = info.x1;
+		mfd->y1 = info.y1;
+		mfd->x2 = info.x2;
+		mfd->y2 = info.y2;
+	}
 	SetDlgItemInt(hDlg, IDC_CLIP_X0, mfd->x1, FALSE);
 	SetDlgItemInt(hDlg, IDC_CLIP_X1, mfd->x2, FALSE);
 	SetDlgItemInt(hDlg, IDC_CLIP_Y0, mfd->y1, FALSE);
 	SetDlgItemInt(hDlg, IDC_CLIP_Y1, mfd->y2, FALSE);
-	if (state==1) mfd->fa->ifp->RedoFrame();
+	if (info.flags & info.edit_finish) mfd->fa->ifp->RedoFrame();
+}
+
+static void SetClipEdit(MyFilterData *mfd) {
+	ClipEditInfo clip;
+	clip.x1 = mfd->x1;
+	clip.y1 = mfd->y1;
+	clip.x2 = mfd->x2;
+	clip.y2 = mfd->y2;
+	if (mfd->fa->fma->fmpreview)
+		mfd->fa->fma->fmpreview->SetClipEdit(clip);
 }
 
 static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -193,10 +205,13 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 			SetDlgItemInt(hDlg, IDC_CLIP_Y0, mfd->y1, FALSE);
 			SetDlgItemInt(hDlg, IDC_CLIP_Y1, mfd->y2, FALSE);
 
-			mfd->fa->fma->fmpreview->SetThickBorder();
-			mfd->fa->ifp->Display((VDXHWND)hDlg,true);
-			mfd->fa->fma->fmpreview->SetClipEditMode(mfd->x1, mfd->y1, mfd->x2, mfd->y2);
-			mfd->fa->fma->fmpreview->SetClipEditCallback(ClipEditCallback, hDlg);
+			if (mfd->fa->fma->fmpreview) {
+				PreviewExInfo mode;
+				mode.flags = mode.thick_border | mode.custom_draw | mode.no_exit;
+				mfd->fa->fma->fmpreview->DisplayEx((VDXHWND)hDlg,mode);
+				mfd->fa->fma->fmpreview->SetClipEditCallback(ClipEditCallback, hDlg);
+				SetClipEdit(mfd);
+			}
 		}
 		return (TRUE);
 
@@ -250,28 +265,28 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 		case IDC_CLIP_X0:
 			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
 			mfd->x1 = GetDlgItemInt(hDlg,IDC_CLIP_X0,0,false);
-			mfd->fa->fma->fmpreview->SetClipEditMode(mfd->x1, mfd->y1, mfd->x2, mfd->y2);
+			SetClipEdit(mfd);
 			mfd->fa->ifp->RedoFrame();
 			return TRUE;
 
 		case IDC_CLIP_X1:
 			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
 			mfd->x2 = GetDlgItemInt(hDlg,IDC_CLIP_X1,0,false);
-			mfd->fa->fma->fmpreview->SetClipEditMode(mfd->x1, mfd->y1, mfd->x2, mfd->y2);
+			SetClipEdit(mfd);
 			mfd->fa->ifp->RedoFrame();
 			return TRUE;
 
 		case IDC_CLIP_Y0:
 			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
 			mfd->y1 = GetDlgItemInt(hDlg,IDC_CLIP_Y0,0,false);
-			mfd->fa->fma->fmpreview->SetClipEditMode(mfd->x1, mfd->y1, mfd->x2, mfd->y2);
+			SetClipEdit(mfd);
 			mfd->fa->ifp->RedoFrame();
 			return TRUE;
 
 		case IDC_CLIP_Y1:
 			mfd = (MyFilterData *)GetWindowLongPtr(hDlg, DWLP_USER);
 			mfd->y2 = GetDlgItemInt(hDlg,IDC_CLIP_Y1,0,false);
-			mfd->fa->fma->fmpreview->SetClipEditMode(mfd->x1, mfd->y1, mfd->x2, mfd->y2);
+			SetClipEdit(mfd);
 			mfd->fa->ifp->RedoFrame();
 			return TRUE;
 		}

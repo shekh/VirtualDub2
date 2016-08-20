@@ -53,9 +53,6 @@ public:
 	virtual void SetFilterList(HWND w) = 0;
 	virtual HWND GetHwnd() = 0;
 	virtual void RedoFrame2() = 0;
-	virtual void SetThickBorder() = 0;
-	virtual void SetClipEditMode(int x1, int y1, int x2, int y2) = 0;
-	virtual void SetClipEditCallback(FilterModPreviewClipEditCallback, void *) = 0;
 };
 
 bool VDCreatePixmapViewDialog(IVDPixmapViewDialog **);

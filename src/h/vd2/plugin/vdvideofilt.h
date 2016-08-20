@@ -183,9 +183,37 @@ struct PreviewZoomInfo {
 	PreviewZoomInfo() { version = 0; }
 };
 
+struct PreviewExInfo {
+	int version;
+	enum {
+		thick_border = 1,
+		custom_draw = 2,
+		display_source = 4,
+		no_exit = 8,
+	};
+	int flags;
+
+	PreviewExInfo() { version = 0; flags = 0; }
+};
+
+struct ClipEditInfo {
+	int version;
+	enum {
+		edit_update = 1,
+		edit_finish = 2,
+		fill_border = 4,
+		init_size = 8,
+	};
+	int flags;
+	int x1,y1,x2,y2;
+	int w,h;
+
+	ClipEditInfo() { version = 0; flags = 0; }
+};
+
 typedef void (__cdecl *FilterModPreviewPositionCallback)(int64 pos, void *pData);
 typedef void (__cdecl *FilterModPreviewZoomCallback)(PreviewZoomInfo& info, void *pData);
-typedef void (__cdecl *FilterModPreviewClipEditCallback)(int x1, int y1, int x2, int y2, int state, void *pData);
+typedef void (__cdecl *FilterModPreviewClipEditCallback)(ClipEditInfo& info, void *pData);
 struct tagMSG;
 
 class IVDXFilterPreview2 : public IVDXFilterPreview {
@@ -205,9 +233,9 @@ public:
 	// FilterModVersion>=5
 	virtual long SampleFrames(IFilterModPreviewSample*)=0;
 
-  // new
-	virtual void SetThickBorder() = 0;
-	virtual void SetClipEditMode(int x1, int y1, int x2, int y2) = 0;
+	// new
+	virtual void DisplayEx(VDXHWND, PreviewExInfo& info)=0;
+	virtual void SetClipEdit(ClipEditInfo& info) = 0;
 	virtual void SetClipEditCallback(FilterModPreviewClipEditCallback, void *) = 0;
 };
 
