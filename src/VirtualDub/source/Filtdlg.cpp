@@ -1236,7 +1236,6 @@ void VDVideoFiltersDialog::CreateView(VDFilterChainEntry *ent) {
 	IVDPixmapViewDialog *view;
 	VDCreatePixmapViewDialog(&view);
 	view->SetDestroyCallback(editor->DestroyView,editor);
-	view->AddRef();
 	editor->extra_view.push_back(view);
 
 	if (editor->preview && editor->preview->GetHwnd()) {

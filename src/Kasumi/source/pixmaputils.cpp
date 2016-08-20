@@ -839,6 +839,7 @@ void VDPixmapBuffer::assign(const VDPixmap& src) {
 		format = 0;
 	} else {
 		init(src.w, src.h, src.format);
+		info = src.info;
 
 		const VDPixmapFormatInfo& srcinfo = VDPixmapGetInfo(src.format);
 		int qw = (src.w + srcinfo.qw - 1) / srcinfo.qw;
