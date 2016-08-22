@@ -869,6 +869,8 @@ void VDVideoDisplayMinidriverGDI::InternalRefresh(HDC hdc, const RECT& rClient, 
 		}
 	}
 
+	if (mhClipRgn) SelectClipRgn(hdc,mhClipRgn);
+
 	SetStretchBltMode(hdcComp, COLORONCOLOR);
 	vdrect32 r;
 	if (mbUseSubrect)
@@ -927,6 +929,8 @@ void VDVideoDisplayMinidriverGDI::InternalRefresh(HDC hdc, const RECT& rClient, 
 	if (hdcComp != hdc) {
 		BitBlt(hdc, rDst.left, rDst.top, rDst.right - rDst.left, rDst.bottom - rDst.top, hdcComp, rDstComp.left, rDstComp.top, SRCCOPY);
 	}
+
+	if (mhClipRgn) SelectClipRgn(hdc,0);
 }
 
 int VDVideoDisplayMinidriverGDI::GetScreenIntermediatePixmapFormat(HDC hdc) {

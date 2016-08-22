@@ -76,6 +76,7 @@ public:
 	void SetSourceSize(int w, int h);
 	void SetBounds(int x1, int y1, int x2, int y2);
 	void Paint(HDC dc);
+	void PreparePaint(IVDVideoDisplayMinidriver* driver);
 	void SetDisplayPos(int x, int y, int w, int h);
 
 	HWND GetHwnd() const { return mhwnd; }

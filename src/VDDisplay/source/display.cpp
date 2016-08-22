@@ -859,6 +859,9 @@ void VDVideoDisplayWindow::OnChildPaint() {
 		GetClientRect(mhwndChild, &r);
 
 		if (mpMiniDriver && mpMiniDriver->IsValid()) {
+			if (mpDrawMode)
+				mpDrawMode->PreparePaint(mpMiniDriver);
+
 			VerifyDriverResult(mpMiniDriver->Paint(hdc, r, IVDVideoDisplayMinidriver::kModeAllFields));
 
 			if (mbMiniDriverClearOtherMonitors && ps.fErase) {
@@ -1226,6 +1229,9 @@ void VDVideoDisplayWindow::SyncUpdate(int mode) {
 		ReleaseActiveFrame();
 		if (success) {
 			if (!mInhibitRefresh) {
+				if (mpDrawMode)
+					mpDrawMode->PreparePaint(mpMiniDriver);
+
 				VDPROFILEBEGINEX2("V-Refresh",0,vdprofiler_flag_wait);
 				mpMiniDriver->Refresh((IVDVideoDisplayMinidriver::UpdateMode)mode);
 				VDPROFILEEND();

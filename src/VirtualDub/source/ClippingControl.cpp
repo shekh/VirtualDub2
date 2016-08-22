@@ -21,6 +21,7 @@
 
 #include <windows.h>
 #include <vd2/VDDisplay/display.h>
+#include <vd2/VDDisplay/displaydrv.h>
 #include <vd2/system/w32assist.h>
 
 #include "oshelper.h"
@@ -171,6 +172,16 @@ LRESULT VDClippingControlOverlay::WndProc(UINT msg, WPARAM wParam, LPARAM lParam
 		return OnSetCursor(LOWORD(lParam), HIWORD(lParam));
 	}
 	return DefWindowProc(mhwnd, msg, wParam, lParam);
+}
+
+void VDClippingControlOverlay::PreparePaint(IVDVideoDisplayMinidriver* driver) {
+	if (fillBorder) {
+		long y0 = VDCeilToInt(mYBounds[0] * mHeight - 0.5) - 1;
+		long y1 = VDCeilToInt(mYBounds[1] * mHeight - 0.5);
+		long x0 = VDCeilToInt(mXBounds[0] * mWidth - 0.5) - 1;
+		long x1 = VDCeilToInt(mXBounds[1] * mWidth - 0.5);
+		driver->SetClipRgn(CreateRectRgn(x0,y0,x1,y1));
+	}
 }
 
 void VDClippingControlOverlay::Paint(HDC hdc) {

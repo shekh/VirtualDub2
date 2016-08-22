@@ -359,6 +359,7 @@ private:
 	int			mBorder;
 	bool		mbDisplaySource;
 	bool		mbShowOverlay;
+	bool		mbNoExit;
 
 	VDTime		mInitialTimeUS;
 	sint64		mInitialFrame;
@@ -455,6 +456,7 @@ FilterPreview::FilterPreview(FilterSystem *pFiltSys, VDFilterChainDesc *pFilterC
 	mBorder = 0;
 	mbDisplaySource = false;
 	mbShowOverlay = false;
+	mbNoExit = false;
 }
 
 FilterPreview::~FilterPreview() {
@@ -899,7 +901,8 @@ void FilterPreview::DisplayEx(VDXHWND parent, PreviewExInfo& info) {
 
 	Display(parent,true);
 
-	if (info.flags & info.no_exit)
+	mbNoExit = (info.flags & info.no_exit)!=0;
+	if (mbNoExit)
 		EnableMenuItem(GetSystemMenu(mhdlg, FALSE), SC_CLOSE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 	else
 		EnableMenuItem(GetSystemMenu(mhdlg, FALSE), SC_CLOSE, MF_BYCOMMAND | MF_ENABLED);
@@ -1255,6 +1258,7 @@ void FilterPreview::OnVideoRedraw() {
 bool FilterPreview::OnCommand(UINT cmd) {
 	switch(cmd) {
 	case IDCANCEL:
+		if (mbNoExit) return true;
 		if (mpButtonCallback)
 			mpButtonCallback(false, mpvButtonCBData);
 

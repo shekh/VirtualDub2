@@ -11,6 +11,7 @@ VDGUIHandle VDCreateDisplayWindowW32(uint32 dwExFlags, uint32 dwFlags, int x, in
 
 class IVDVideoDisplay;
 class IVDDisplayCompositor;
+class IVDVideoDisplayMinidriver;
 
 class VDVideoDisplayFrame : public vdlist_node, public IVDRefCount {
 public:
@@ -36,6 +37,7 @@ public:
 
 class VDINTERFACE IVDVideoDisplayDrawMode {
 public:
+	virtual void PreparePaint(IVDVideoDisplayMinidriver* driver) = 0;
 	virtual void Paint(HDC dc) = 0;
 	virtual void SetDisplayPos(int x, int y, int w, int h) = 0;
 };

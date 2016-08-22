@@ -336,11 +336,13 @@ VDVideoDisplayMinidriver::VDVideoDisplayMinidriver()
 	, mPixelSharpnessX(1.0f)
 	, mPixelSharpnessY(1.0f)
 	, mpCompositor(NULL)
+	, mhClipRgn(0)
 {
 }
 
 VDVideoDisplayMinidriver::~VDVideoDisplayMinidriver() {
 	vdsaferelease <<= mpCompositor;
+	if (mhClipRgn) DeleteObject(mhClipRgn);
 }
 
 bool VDVideoDisplayMinidriver::IsFramePending() {
@@ -397,6 +399,11 @@ void VDVideoDisplayMinidriver::SetCompositor(IVDDisplayCompositor *compositor) {
 		mpCompositor->Release();
 
 	mpCompositor = compositor;
+}
+
+void VDVideoDisplayMinidriver::SetClipRgn(HRGN rgn) { 
+	if (mhClipRgn) DeleteObject(mhClipRgn);
+	mhClipRgn = rgn; 
 }
 
 bool VDVideoDisplayMinidriver::Tick(int id) {

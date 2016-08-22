@@ -95,6 +95,7 @@ public:
 	virtual void SetDestRect(const vdrect32 *r, uint32 color) = 0;
 	virtual void SetPixelSharpness(float xfactor, float yfactor) = 0;
 	virtual void SetCompositor(IVDDisplayCompositor *compositor) = 0;
+	virtual void SetClipRgn(HRGN rgn) = 0;
 
 	virtual bool Tick(int id) = 0;
 	virtual void Poll() = 0;
@@ -125,6 +126,7 @@ public:
 	virtual void SetDestRect(const vdrect32 *r, uint32 color);
 	virtual void SetPixelSharpness(float xfactor, float yfactor);
 	virtual void SetCompositor(IVDDisplayCompositor *compositor);
+	virtual void SetClipRgn(HRGN rgn);
 
 	virtual bool Tick(int id);
 	virtual void Poll();
@@ -154,6 +156,7 @@ protected:
 	int			mBorderRectCount;
 
 	IVDDisplayCompositor *mpCompositor;
+	HRGN mhClipRgn;
 };
 
 IVDVideoDisplayMinidriver *VDCreateVideoDisplayMinidriverOpenGL();
