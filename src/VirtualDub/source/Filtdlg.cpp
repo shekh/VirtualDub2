@@ -27,6 +27,7 @@
 #include <vd2/Kasumi/pixmapops.h>
 #include <vd2/Kasumi/pixmaputils.h>
 #include <vd2/VDLib/Dialog.h>
+#include <vd2/VDXFrame/VideoFilter.h>
 
 #include "resource.h"
 #include "FilterPreview.h"
@@ -487,6 +488,147 @@ void VDVideoFilterOutputNameDialog::OnDataExchange(bool write) {
 
 ///////////////////////////////////////////////////////////////////////////
 //
+//	Cropping dialog
+//
+///////////////////////////////////////////////////////////////////////////
+
+class VDFilterClippingDialog2 : public VDDialogFrameW32 {
+public:
+	FilterInstance *fa;
+	IVDXFilterPreview2 *fp2;
+	IFilterModPreview *fmpreview;
+	int x1,y1,x2,y2;
+	int mSourceWidth,mSourceHeight;
+
+	VDFilterClippingDialog2();
+	bool OnLoaded();
+
+	INT_PTR DlgProc(UINT msg, WPARAM wParam, LPARAM lParam);
+	void SetClipEdit();
+	void init_crop();
+	void init_size();
+	static void ClipEditCallback(ClipEditInfo& info, void *pData);
+};
+
+VDFilterClippingDialog2::VDFilterClippingDialog2()
+	: VDDialogFrameW32(IDD_FILTER_CLIPPING)
+{
+	mSourceWidth = 0;
+	mSourceHeight = 0;
+}
+
+void VDFilterClippingDialog2::init_crop() {
+	SetDlgItemInt(mhdlg, IDC_CLIP_X0, x1, FALSE);
+	SetDlgItemInt(mhdlg, IDC_CLIP_X1, x2, FALSE);
+	SetDlgItemInt(mhdlg, IDC_CLIP_Y0, y1, FALSE);
+	SetDlgItemInt(mhdlg, IDC_CLIP_Y1, y2, FALSE);
+}
+
+void VDFilterClippingDialog2::init_size() {
+	int w = mSourceWidth - x1 - x2;
+	int h = mSourceHeight - y1 - y2;
+	if (w<0) w = 0;
+	if (h<0) h = 0;
+
+	SetControlTextF(IDC_CROP_SIZE, L"%dx%u", w, h);
+}
+
+void VDFilterClippingDialog2::ClipEditCallback(ClipEditInfo& info, void *pData) {
+	VDFilterClippingDialog2* dlg = (VDFilterClippingDialog2*)pData;
+	if (info.flags & info.init_size) {
+		dlg->mSourceWidth = info.w;
+		dlg->mSourceHeight = info.h;
+	}
+	if (info.flags & info.edit_update) {
+		dlg->x1 = info.x1;
+		dlg->y1 = info.y1;
+		dlg->x2 = info.x2;
+		dlg->y2 = info.y2;
+	}
+	dlg->init_crop();
+	dlg->init_size();
+}
+
+void VDFilterClippingDialog2::SetClipEdit() {
+	ClipEditInfo clip;
+	clip.x1 = x1;
+	clip.y1 = y1;
+	clip.x2 = x2;
+	clip.y2 = y2;
+	clip.flags = clip.fill_border;
+	if (fmpreview)
+		fmpreview->SetClipEdit(clip);
+}
+
+bool VDFilterClippingDialog2::OnLoaded() {
+	const vdrect32& r = fa->GetCropInsets();
+	x1 = r.left;
+	y1 = r.top;
+	x2 = r.right;
+	y2 = r.bottom;
+	VDSetDialogDefaultIcons(mhdlg);
+	init_crop();
+
+	bool precise = fa->IsPreciseCroppingEnabled();
+	CheckButton(IDC_CROP_PRECISE, precise);
+	CheckButton(IDC_CROP_FAST, !precise);
+
+	if (fmpreview) {
+		PreviewExInfo mode;
+		mode.flags = mode.thick_border | mode.custom_draw | mode.display_source | mode.no_exit;
+		fmpreview->SetClipEditCallback(ClipEditCallback, this);
+		fmpreview->DisplayEx((VDXHWND)mhdlg,mode);
+		SetClipEdit();
+	}
+	return true;
+}
+
+INT_PTR VDFilterClippingDialog2::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
+	switch (message)
+	{
+		case WM_COMMAND:
+		switch(LOWORD(wParam)) {
+		case IDOK:
+			fa->SetCrop(x1, y1, x2, y2, IsButtonChecked(IDC_CROP_PRECISE));
+			EndDialog(mhdlg,0);
+			return TRUE;
+
+		case IDCANCEL:
+			EndDialog(mhdlg,1);
+			return TRUE;
+
+		case IDC_CLIP_X0:
+			x1 = GetDlgItemInt(mhdlg,IDC_CLIP_X0,0,false);
+			init_size();
+			SetClipEdit();
+			return TRUE;
+
+		case IDC_CLIP_X1:
+			x2 = GetDlgItemInt(mhdlg,IDC_CLIP_X1,0,false);
+			init_size();
+			SetClipEdit();
+			return TRUE;
+
+		case IDC_CLIP_Y0:
+			y1 = GetDlgItemInt(mhdlg,IDC_CLIP_Y0,0,false);
+			init_size();
+			SetClipEdit();
+			return TRUE;
+
+		case IDC_CLIP_Y1:
+			y2 = GetDlgItemInt(mhdlg,IDC_CLIP_Y1,0,false);
+			init_size();
+			SetClipEdit();
+			return TRUE;
+		}
+		break;
+	}
+
+	return VDDialogFrameW32::DlgProc(message, wParam, lParam);
+}
+
+///////////////////////////////////////////////////////////////////////////
+//
 //	Filter list dialog
 //
 ///////////////////////////////////////////////////////////////////////////
@@ -525,6 +667,7 @@ protected:
 	void SaveFilters();
 	void AddFilter(int pos);
 	bool ConfigureFilter(FilterInstance *fa);
+	bool ConfigureCrop(FilterInstance *fa);
 	void CreateView(VDFilterChainEntry *ent);
 
 	bool		mbShowFormats;
@@ -835,13 +978,8 @@ bool VDVideoFiltersDialog::OnCommand(uint32 id, uint32 extcode) {
 
 				if (fli) {
 					FilterInstance *fa = fli->mpEntry->mpInstance;
-
-					if (fa && fa->IsEnabled()) {
-						VDFilterChainDesc desc;
-						MakeFilterChainDesc(desc);
-
-						VDShowFilterClippingDialog((VDGUIHandle)mhdlg, fa, &desc, editor->mInitialTimeUS);
-
+					if (fa && fa!=editor->config_first) {
+						ConfigureCrop(fa);
 						RedoFilters();
 					}
 				}
@@ -1198,7 +1336,50 @@ void VDVideoFiltersDialog::AddFilter(int pos) {
 	}
 }
 
+bool VDVideoFiltersDialog::ConfigureCrop(FilterInstance *fa) {
+	bool fRemove = false;
+
+	if (!is_first || !fa->IsEnabled()) {
+		editor->config_second = fa;
+
+		VDXFilterPreviewThunk thunk;
+		thunk.editor = editor;
+		thunk.pFiltInst = fa;
+		VDFilterClippingDialog2 dlg;
+		dlg.fa = fa;
+		dlg.fp2 = &thunk;
+		dlg.fmpreview = 0;
+		fRemove = dlg.ShowDialog((VDGUIHandle)mhdlg)!=0;
+
+		editor->config_second = 0;
+
+	} else {
+		editor->config_first = fa;
+		
+		if (VDCreateVideoFilterPreviewDialog(&editor->mFiltSys, editor->mpVS ? &editor->filter_desc : NULL, fa, ~editor->preview)) {
+			editor->preview->SetFilterList(mhdlg);
+			if (editor->mInitialTimeUS >= 0)
+				editor->preview->SetInitialTime(editor->mInitialTimeUS);
+
+			VDFilterClippingDialog2 dlg;
+			dlg.fa = fa;
+			dlg.fp2 = editor->preview->AsIVDXFilterPreview2();
+			dlg.fmpreview = editor->preview->AsIFilterModPreview();
+			fRemove = dlg.ShowDialog((VDGUIHandle)mhdlg)!=0;
+		}
+
+		editor->preview = 0;
+		editor->config_first = 0;
+	}
+
+	return fRemove;
+}
+
 bool VDVideoFiltersDialog::ConfigureFilter(FilterInstance *fa) {
+	extern const VDXFilterDefinition g_VDVFCrop;
+	if (fa->GetDefinition()->name==g_VDVFCrop.name)
+		return ConfigureCrop(fa);
+
 	bool fRemove = false;
 
 	if (!is_first) {

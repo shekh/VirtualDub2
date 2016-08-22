@@ -136,3 +136,9 @@ extern const VDXFilterDefinition g_VDVFNull = VDXVideoFilterDefinition<VDVFNull>
 	NULL,
 	"null transform",
 	"Does nothing. Typically used as a placeholder for cropping.");
+
+extern const VDXFilterDefinition g_VDVFCrop = VDXVideoFilterDefinition<VDVFNull>(
+	NULL,
+	"crop",
+	"Used for cropping.");
+
