@@ -53,6 +53,10 @@ bool VDPixmapBltAlphaConst(const VDPixmap& dst, const VDPixmap& src, float alpha
 		case nsVDPixmap::kPixFormat_Pal8:
 		case nsVDPixmap::kPixFormat_RGB565:
 		case nsVDPixmap::kPixFormat_XRGB1555:
+		case nsVDPixmap::kPixFormat_XRGB64:
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
 			return false;
 	}
 

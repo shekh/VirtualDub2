@@ -436,6 +436,17 @@ static void func_VDVFiltInst_GetClipping(IVDScriptInterpreter *isi, VDScriptValu
 	}
 }
 
+static void func_VDVFiltInst_SetOpacityClipping(IVDScriptInterpreter *isi, VDScriptValue *argv, int argc) {
+	VDFilterChainEntry *ent = (VDFilterChainEntry *)argv[-1].asObjectPtr();
+
+	int x1 = std::max<int>(0, argv[0].asInt());
+	int y1 = std::max<int>(0, argv[1].asInt());
+	int x2 = std::max<int>(0, argv[2].asInt());
+	int y2 = std::max<int>(0, argv[3].asInt());
+
+	ent->mpInstance->SetOpacityCrop(x1, y1, x2, y2);
+}
+
 static void func_VDVFiltInst_AddOpacityCurve(IVDScriptInterpreter *isi, VDScriptValue *argv, int argc) {
 	VDFilterChainEntry *ent = (VDFilterChainEntry *)argv[-1].asObjectPtr();
 
@@ -532,6 +543,7 @@ static const VDScriptFunctionDef obj_VDVFiltInst_functbl[]={
 	{ func_VDVFiltInst_SetClipping		, "SetClipping", "0iiii" },
 	{ func_VDVFiltInst_SetClipping		, NULL, "0iiiii" },
 	{ func_VDVFiltInst_GetClipping		, "GetClipping", "ii" },
+	{ func_VDVFiltInst_SetOpacityClipping, "SetOpacityClipping", "0iiii" },
 	{ func_VDVFiltInst_AddOpacityCurve	, "AddOpacityCurve", "v" },
 	{ func_VDVFiltInst_SetEnabled		, "SetEnabled", "0i" },
 	{ func_VDVFiltInst_SetForceSingleFBEnabled, "SetForceSingleFBEnabled", "0i" },

@@ -669,6 +669,10 @@ VDFilterConfiguration::VDFilterConfiguration()
 	, mCropY1(0)
 	, mCropX2(0)
 	, mCropY2(0)
+	, mBlendX1(0)
+	, mBlendY1(0)
+	, mBlendX2(0)
+	, mBlendY2(0)
 	, mbEnabled(true)
 	, mbForceSingleFB(false)
 {
@@ -692,6 +696,27 @@ void VDFilterConfiguration::SetCrop(int x1, int y1, int x2, int y2, bool precise
 	mCropX2 = x2;
 	mCropY2 = y2;
 	mbPreciseCrop = precise;
+}
+
+bool VDFilterConfiguration::IsOpacityEnabled() const {
+	if (IsOpacityCroppingEnabled()) return true;
+	if (mpAlphaCurve) return true;
+	return false;
+}
+
+bool VDFilterConfiguration::IsOpacityCroppingEnabled() const {
+	return (mBlendX1 | mBlendY1 | mBlendX2 | mBlendY2) != 0;
+}
+
+vdrect32 VDFilterConfiguration::GetOpacityCropInsets() const {
+	return vdrect32(mBlendX1, mBlendY1, mBlendX2, mBlendY2);
+}
+
+void VDFilterConfiguration::SetOpacityCrop(int x1, int y1, int x2, int y2) {
+	mBlendX1 = x1;
+	mBlendY1 = y1;
+	mBlendX2 = x2;
+	mBlendY2 = y2;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1349,7 +1374,7 @@ void FilterInstance::Start(uint32 flags, IVDFilterFrameSource *const *pSources, 
 	mbStarted = true;
 
 	// allocate blend buffer
-	if (GetAlphaParameterCurve()) {
+	if (IsOpacityEnabled()) {
 		if (!(mFlags & FILTERPARAM_SWAP_BUFFERS)) {
 			// if this is an in-place filter and we have a blend curve, allocate other buffer as well.
 			vdrefptr<VDFilterFrameBuffer> blendbuf;
@@ -2264,7 +2289,7 @@ void FilterInstance::RunFilterInner() {
 
 	const VDPixmap *blendSrc = NULL;
 
-	if ((!sampleCB && !sampleHandler) && alpha < 254.5f / 255.0f && mRealSrc.mPixmap.data) {
+	if ((!sampleCB && !sampleHandler) && (alpha < 254.5f / 255.0f || IsOpacityCroppingEnabled()) && mRealSrc.mPixmap.data) {
 		if (mFlags & FILTERPARAM_SWAP_BUFFERS) {
 			if (alpha < 0.5f / 255.0f)
 				skipFilter = true;
@@ -2306,8 +2331,8 @@ void FilterInstance::RunFilterInner() {
 					// Deliberately ignore the return code. It was supposed to be an error value,
 					// but earlier versions didn't check it and logoaway returns true in some cases.
 					filter->runProc(AsVDXFilterActivation(), &g_VDFilterCallbacks);
-          if (view) view->SetImage(mRealDst.mPixmap);
-          view = 0;
+					if (view) view->SetImage(mRealDst.mPixmap);
+					view = 0;
 				}
 			}
 		}
@@ -2321,11 +2346,71 @@ void FilterInstance::RunFilterInner() {
 		}
 	}
 
-	if ((!sampleCB && !sampleHandler) && !skipBlit && alpha < 254.5f / 255.0f) {
-		if (alpha > 0.5f / 255.0f)
-			VDPixmapBltAlphaConst(mRealDst.mPixmap, *blendSrc, 1.0f - alpha);
-		else
+	if ((!sampleCB && !sampleHandler) && !skipBlit && (alpha < 254.5f / 255.0f || IsOpacityCroppingEnabled())) {
+		const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(blendSrc->format);
+		int xmask = ~((1 << (formatInfo.qwbits + formatInfo.auxwbits)) - 1);
+		int ymask = ~((1 << (formatInfo.qhbits + formatInfo.auxhbits)) - 1);
+
+		int qx1 = (mBlendX1 & xmask) >> formatInfo.qwbits;
+		int qy1 = (mBlendY1 & ymask) >> formatInfo.qhbits;
+		int qx2 = (mBlendX2 & xmask) >> formatInfo.qwbits;
+		int qy2 = (mBlendY2 & ymask) >> formatInfo.qhbits;
+
+		int qw = blendSrc->w >> formatInfo.qwbits;
+		int qh = blendSrc->h >> formatInfo.qhbits;
+
+		if (alpha > 0.5f / 255.0f && qx1+qx2<qw && qy1+qy2<qh) {
+			VDPixmap src;
+			VDPixmap dst;
+
+			if (alpha < 254.5f / 255.0f) {
+				src = VDPixmapOffset(*blendSrc,        qx1 << formatInfo.qwbits, qy1 << formatInfo.qhbits);
+				dst = VDPixmapOffset(mRealDst.mPixmap, qx1 << formatInfo.qwbits, qy1 << formatInfo.qhbits);
+				src.w -= (qx1+qx2) << formatInfo.qwbits;
+				dst.w -= (qx1+qx2) << formatInfo.qwbits;
+				src.h -= (qy1+qy2) << formatInfo.qhbits;
+				dst.h -= (qy1+qy2) << formatInfo.qhbits;
+				VDPixmapBltAlphaConst(dst, src, 1.0f - alpha);
+			}
+
+			if (qy1>0) {
+				src = VDPixmapOffset(*blendSrc,        0, 0);
+				dst = VDPixmapOffset(mRealDst.mPixmap, 0, 0);
+				src.h = qy1 << formatInfo.qhbits;
+				dst.h = qy1 << formatInfo.qhbits;
+				VDPixmapBlt(dst, src);
+			}
+
+			if (qy2>0) {
+				src = VDPixmapOffset(*blendSrc,        0, (qh-qy2) << formatInfo.qhbits);
+				dst = VDPixmapOffset(mRealDst.mPixmap, 0, (qh-qy2) << formatInfo.qhbits);
+				src.h = qy2 << formatInfo.qhbits;
+				dst.h = qy2 << formatInfo.qhbits;
+				VDPixmapBlt(dst, src);
+			}
+
+			if (qx1>0) {
+				src = VDPixmapOffset(*blendSrc,        0, qy1 << formatInfo.qhbits);
+				dst = VDPixmapOffset(mRealDst.mPixmap, 0, qy1 << formatInfo.qhbits);
+				src.w = qx1 << formatInfo.qwbits;
+				dst.w = qx1 << formatInfo.qwbits;
+				src.h -= (qy1+qy2) << formatInfo.qhbits;
+				dst.h -= (qy1+qy2) << formatInfo.qhbits;
+				VDPixmapBlt(dst, src);
+			}
+			
+			if (qx2>0) {
+				src = VDPixmapOffset(*blendSrc,        (qw-qx2) << formatInfo.qwbits, qy1 << formatInfo.qhbits);
+				dst = VDPixmapOffset(mRealDst.mPixmap, (qw-qx2) << formatInfo.qwbits, qy1 << formatInfo.qhbits);
+				src.w = qx2 << formatInfo.qwbits;
+				dst.w = qx2 << formatInfo.qwbits;
+				src.h -= (qy1+qy2) << formatInfo.qhbits;
+				dst.h -= (qy1+qy2) << formatInfo.qhbits;
+				VDPixmapBlt(dst, src);
+			}
+		} else {
 			VDPixmapBlt(mRealDst.mPixmap, *blendSrc);
+		}
 	}
 
 	if (mFlags & FILTERPARAM_NEEDS_LAST)
@@ -2759,7 +2844,7 @@ void FilterInstance::CheckValidConfiguration() {
 		throw MyError("Cannot start filter chain: The output of filter \"%s\" is smaller than 1x1.", GetName());
 
 
-	if (GetAlphaParameterCurve()) {
+	if (IsOpacityEnabled()) {
 		// size check
 		if (mRealSrc.w != mRealDst.w || mRealSrc.h != mRealDst.h) {
 			throw MyError("Cannot start filter chain: Filter \"%s\" has a blend curve attached and has differing input and output sizes (%dx%d -> %dx%d). Input and output sizes must match."

@@ -238,6 +238,7 @@
 #define IDD_EXTENC_EDIT_VIDEO           306
 #define IDD_SAVEIMAGE_FORMAT            307
 #define IDR_FILE_EXPORTMENU             308
+#define IDD_FILTER_BLENDING             308
 #define IDR_TOOLS_MENU                  309
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
@@ -571,6 +572,7 @@
 #define IDC_MUXPARTIAL                  1184
 #define IDC_BACKGROUND                  1184
 #define IDC_USE_ALPHA                   1184
+#define IDC_BLEND_CURVE                 1184
 #define IDC_AVI_DISABLEOPTIMIZEDIO      1185
 #define IDC_DISABLE_ALL_MESSAGES        1185
 #define IDC_AUTOLOADSEGMENTS            1185

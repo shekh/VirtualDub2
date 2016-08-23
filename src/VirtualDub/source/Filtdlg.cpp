@@ -530,7 +530,7 @@ void VDFilterClippingDialog2::init_size() {
 	if (w<0) w = 0;
 	if (h<0) h = 0;
 
-	SetControlTextF(IDC_CROP_SIZE, L"%dx%u", w, h);
+	SetControlTextF(IDC_CROP_SIZE, L"Size: %dx%u", w, h);
 }
 
 void VDFilterClippingDialog2::ClipEditCallback(ClipEditInfo& info, void *pData) {
@@ -629,6 +629,195 @@ INT_PTR VDFilterClippingDialog2::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 
 ///////////////////////////////////////////////////////////////////////////
 //
+//	Opacity cropping dialog
+//
+///////////////////////////////////////////////////////////////////////////
+
+class VDFilterBlendingDialog : public VDDialogFrameW32 {
+public:
+	FilterInstance *fa;
+	IVDXFilterPreview2 *fp2;
+	IFilterModPreview *fmpreview;
+	int x1,y1,x2,y2;
+	int mSourceWidth,mSourceHeight;
+	vdrect32 r0;
+	vdrefptr<VDParameterCurve> curve;
+
+	VDFilterBlendingDialog();
+	bool OnLoaded();
+
+	INT_PTR DlgProc(UINT msg, WPARAM wParam, LPARAM lParam);
+	void SetClipEdit();
+	void init_crop();
+	void init_size();
+	void apply_crop();
+	void apply_curve(bool v);
+	static void ClipEditCallback(ClipEditInfo& info, void *pData);
+};
+
+VDFilterBlendingDialog::VDFilterBlendingDialog()
+	: VDDialogFrameW32(IDD_FILTER_BLENDING)
+{
+	mSourceWidth = 0;
+	mSourceHeight = 0;
+}
+
+void VDFilterBlendingDialog::init_crop() {
+	SetDlgItemInt(mhdlg, IDC_CLIP_X0, x1, FALSE);
+	SetDlgItemInt(mhdlg, IDC_CLIP_X1, x2, FALSE);
+	SetDlgItemInt(mhdlg, IDC_CLIP_Y0, y1, FALSE);
+	SetDlgItemInt(mhdlg, IDC_CLIP_Y1, y2, FALSE);
+}
+
+void VDFilterBlendingDialog::init_size() {
+	int w = mSourceWidth - x1 - x2;
+	int h = mSourceHeight - y1 - y2;
+	if (w<0) w = 0;
+	if (h<0) h = 0;
+
+	SetControlTextF(IDC_CROP_SIZE, L"Size: %dx%u", w, h);
+}
+
+void VDFilterBlendingDialog::apply_crop() {
+	bool c0 = fa->IsOpacityEnabled();
+	fa->SetOpacityCrop(x1, y1, x2, y2);
+	bool c1 = fa->IsOpacityEnabled();
+	if (fp2) {
+		if (c0==c1)
+			fp2->RedoFrame();
+		else
+			fp2->RedoSystem();
+	}
+}
+
+void VDFilterBlendingDialog::apply_curve(bool v) {
+	bool c0 = fa->IsOpacityEnabled();
+	if (!v) {
+		fa->SetAlphaParameterCurve(0);
+	} else if (curve) {
+		fa->SetAlphaParameterCurve(curve);
+	} else {
+		VDParameterCurve *c1 = new_nothrow VDParameterCurve();
+		if (c1) {
+			c1->SetYRange(0.0f, 1.0f);
+			fa->SetAlphaParameterCurve(c1);
+		}
+	}
+	bool c1 = fa->IsOpacityEnabled();
+	if (fp2) {
+		if (c0==c1)
+			fp2->RedoFrame();
+		else
+			fp2->RedoSystem();
+	}
+}
+
+void VDFilterBlendingDialog::ClipEditCallback(ClipEditInfo& info, void *pData) {
+	VDFilterBlendingDialog* dlg = (VDFilterBlendingDialog*)pData;
+	if (info.flags & info.init_size) {
+		dlg->mSourceWidth = info.w;
+		dlg->mSourceHeight = info.h;
+	}
+	if (info.flags & info.edit_update) {
+		dlg->x1 = info.x1;
+		dlg->y1 = info.y1;
+		dlg->x2 = info.x2;
+		dlg->y2 = info.y2;
+	}
+	dlg->init_crop();
+	dlg->init_size();
+	if (info.flags & info.edit_finish) dlg->apply_crop();
+}
+
+void VDFilterBlendingDialog::SetClipEdit() {
+	ClipEditInfo clip;
+	clip.x1 = x1;
+	clip.y1 = y1;
+	clip.x2 = x2;
+	clip.y2 = y2;
+	if (fmpreview)
+		fmpreview->SetClipEdit(clip);
+}
+
+bool VDFilterBlendingDialog::OnLoaded() {
+	const vdrect32& r = fa->GetOpacityCropInsets();
+	r0 = r;
+	x1 = r.left;
+	y1 = r.top;
+	x2 = r.right;
+	y2 = r.bottom;
+	VDSetDialogDefaultIcons(mhdlg);
+	init_crop();
+
+	curve = fa->GetAlphaParameterCurve();
+	CheckButton(IDC_BLEND_CURVE,curve!=0);
+
+	if (fmpreview) {
+		PreviewExInfo mode;
+		mode.flags = mode.thick_border | mode.custom_draw | mode.no_exit;
+		fmpreview->SetClipEditCallback(ClipEditCallback, this);
+		fmpreview->DisplayEx((VDXHWND)mhdlg,mode);
+		SetClipEdit();
+	}
+	return true;
+}
+
+INT_PTR VDFilterBlendingDialog::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
+	switch (message)
+	{
+		case WM_COMMAND:
+		switch(LOWORD(wParam)) {
+		case IDOK:
+			fa->SetOpacityCrop(x1, y1, x2, y2);
+			EndDialog(mhdlg,0);
+			return TRUE;
+
+		case IDCANCEL:
+			fa->SetOpacityCrop(r0.left, r0.top, r0.right, r0.bottom);
+			fa->SetAlphaParameterCurve(curve);
+			EndDialog(mhdlg,1);
+			return TRUE;
+
+		case IDC_BLEND_CURVE:
+			apply_curve(IsButtonChecked(IDC_BLEND_CURVE));
+			return TRUE;
+
+		case IDC_CLIP_X0:
+			x1 = GetDlgItemInt(mhdlg,IDC_CLIP_X0,0,false);
+			init_size();
+			SetClipEdit();
+			apply_crop();
+			return TRUE;
+
+		case IDC_CLIP_X1:
+			x2 = GetDlgItemInt(mhdlg,IDC_CLIP_X1,0,false);
+			init_size();
+			SetClipEdit();
+			apply_crop();
+			return TRUE;
+
+		case IDC_CLIP_Y0:
+			y1 = GetDlgItemInt(mhdlg,IDC_CLIP_Y0,0,false);
+			init_size();
+			SetClipEdit();
+			apply_crop();
+			return TRUE;
+
+		case IDC_CLIP_Y1:
+			y2 = GetDlgItemInt(mhdlg,IDC_CLIP_Y1,0,false);
+			init_size();
+			SetClipEdit();
+			apply_crop();
+			return TRUE;
+		}
+		break;
+	}
+
+	return VDDialogFrameW32::DlgProc(message, wParam, lParam);
+}
+
+///////////////////////////////////////////////////////////////////////////
+//
 //	Filter list dialog
 //
 ///////////////////////////////////////////////////////////////////////////
@@ -668,6 +857,7 @@ protected:
 	void AddFilter(int pos);
 	bool ConfigureFilter(FilterInstance *fa);
 	bool ConfigureCrop(FilterInstance *fa);
+	bool ConfigureBlend(FilterInstance *fa);
 	void CreateView(VDFilterChainEntry *ent);
 
 	bool		mbShowFormats;
@@ -993,18 +1183,8 @@ bool VDVideoFiltersDialog::OnCommand(uint32 id, uint32 extcode) {
 
 				if (fli) {
 					FilterInstance *fa = fli->mpEntry->mpInstance;
-
-					if (fa) {
-						if (fa->GetAlphaParameterCurve()) {
-							fa->SetAlphaParameterCurve(NULL);
-						} else {
-							VDParameterCurve *curve = new_nothrow VDParameterCurve();
-							if (curve) {
-								curve->SetYRange(0.0f, 1.0f);
-								fa->SetAlphaParameterCurve(curve);
-							}
-						}
-
+					if (fa && fa!=editor->config_first) {
+						ConfigureBlend(fa);
 						RedoFilters();
 					}
 				}
@@ -1375,6 +1555,45 @@ bool VDVideoFiltersDialog::ConfigureCrop(FilterInstance *fa) {
 	return fRemove;
 }
 
+bool VDVideoFiltersDialog::ConfigureBlend(FilterInstance *fa) {
+	bool fRemove = false;
+
+	if (!is_first || !fa->IsEnabled()) {
+		editor->config_second = fa;
+
+		VDXFilterPreviewThunk thunk;
+		thunk.editor = editor;
+		thunk.pFiltInst = fa;
+		VDFilterBlendingDialog dlg;
+		dlg.fa = fa;
+		dlg.fp2 = &thunk;
+		dlg.fmpreview = 0;
+		fRemove = dlg.ShowDialog((VDGUIHandle)mhdlg)!=0;
+
+		editor->config_second = 0;
+
+	} else {
+		editor->config_first = fa;
+		
+		if (VDCreateVideoFilterPreviewDialog(&editor->mFiltSys, editor->mpVS ? &editor->filter_desc : NULL, fa, ~editor->preview)) {
+			editor->preview->SetFilterList(mhdlg);
+			if (editor->mInitialTimeUS >= 0)
+				editor->preview->SetInitialTime(editor->mInitialTimeUS);
+
+			VDFilterBlendingDialog dlg;
+			dlg.fa = fa;
+			dlg.fp2 = editor->preview->AsIVDXFilterPreview2();
+			dlg.fmpreview = editor->preview->AsIFilterModPreview();
+			fRemove = dlg.ShowDialog((VDGUIHandle)mhdlg)!=0;
+		}
+
+		editor->preview = 0;
+		editor->config_first = 0;
+	}
+
+	return fRemove;
+}
+
 bool VDVideoFiltersDialog::ConfigureFilter(FilterInstance *fa) {
 	extern const VDXFilterDefinition g_VDVFCrop;
 	if (fa->GetDefinition()->name==g_VDVFCrop.name)
@@ -1674,7 +1893,7 @@ void VDVideoFiltersDialog::FilterListItem::GetText(int subItem, VDStringW& s) co
 	case 0:
 		if (fi->IsEnabled()) {
 			s.sprintf(L"%s%s%s%s"
-						, fi->GetAlphaParameterCurve() ? L"[B] " : L""
+						, fi->IsOpacityEnabled() ? L"[B] " : L""
 						, streamInfo2 && streamInfo2->mbConvertOnEntry ? L"[C] " : streamInfo && streamInfo->mbAlignOnEntry ? L"[A]" : L""
 						, fi->IsAccelerated() ? L"[3D]" : L""
 						, fi->IsForceSingleFBEnabled() ? L"[F]" : L""

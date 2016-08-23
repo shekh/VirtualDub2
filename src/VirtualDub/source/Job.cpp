@@ -430,6 +430,18 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 			}
 		}
 
+		if (fa->IsOpacityCroppingEnabled()) {
+			const vdrect32& cropInsets = fa->GetOpacityCropInsets();
+
+			output.addf("VirtualDub.video.filters.instance[%d].SetOpacityClipping(%d,%d,%d,%d);"
+						, iFilter
+						, cropInsets.left
+						, cropInsets.top
+						, cropInsets.right
+						, cropInsets.bottom
+						);
+		}
+		
 		VDParameterCurve *pc = fa->GetAlphaParameterCurve();
 		if (pc) {
 			output.addf("declare curve = VirtualDub.video.filters.instance[%d].AddOpacityCurve();", iFilter);

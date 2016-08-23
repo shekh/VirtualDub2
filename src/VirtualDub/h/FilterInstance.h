@@ -283,6 +283,10 @@ public:
 	bool	IsPreciseCroppingEnabled() const;
 	vdrect32 GetCropInsets() const;
 	void	SetCrop(int x1, int y1, int x2, int y2, bool precise);
+	bool	IsOpacityEnabled() const;
+	bool	IsOpacityCroppingEnabled() const;
+	vdrect32 GetOpacityCropInsets() const;
+	void	SetOpacityCrop(int x1, int y1, int x2, int y2);
 
 	VDParameterCurve *GetAlphaParameterCurve() const { return mpAlphaCurve; }
 	void SetAlphaParameterCurve(VDParameterCurve *p) { mpAlphaCurve = p; }
@@ -295,6 +299,10 @@ protected:
 	int		mCropY1;
 	int		mCropX2;
 	int		mCropY2;
+	int		mBlendX1;
+	int		mBlendY1;
+	int		mBlendX2;
+	int		mBlendY2;
 
 	vdrefptr<VDParameterCurve> mpAlphaCurve;
 };
