@@ -85,10 +85,15 @@ void VDClippingControlOverlay::SetImageRect(int x, int y, int cx, int cy) {
 }
 
 void VDClippingControlOverlay::SetSourceSize(int w, int h) {
+	int x1 = VDRoundToLong(mSourceWidth * mXBounds[0]);
+	int x2 = VDRoundToLong(mSourceWidth * (1.0 - mXBounds[1]));
+	int y1 = VDRoundToLong(mSourceHeight * mYBounds[0]);
+	int y2 = VDRoundToLong(mSourceHeight * (1.0 - mYBounds[1]));
 	mSourceWidth		= w;
 	mSourceHeight		= h;
 	mInvSourceWidth		= w ? 1.0 / (double)w : 0.0;
 	mInvSourceHeight	= h ? 1.0 / (double)h : 0.0;
+	SetBounds(x1,y1,x2,y2);
 }
 
 void VDClippingControlOverlay::SetBounds(int x1, int y1, int x2, int y2) {

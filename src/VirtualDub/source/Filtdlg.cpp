@@ -601,24 +601,28 @@ INT_PTR VDFilterClippingDialog2::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 			x1 = GetDlgItemInt(mhdlg,IDC_CLIP_X0,0,false);
 			init_size();
 			SetClipEdit();
+			fp2->RedoFrame();
 			return TRUE;
 
 		case IDC_CLIP_X1:
 			x2 = GetDlgItemInt(mhdlg,IDC_CLIP_X1,0,false);
 			init_size();
 			SetClipEdit();
+			fp2->RedoFrame();
 			return TRUE;
 
 		case IDC_CLIP_Y0:
 			y1 = GetDlgItemInt(mhdlg,IDC_CLIP_Y0,0,false);
 			init_size();
 			SetClipEdit();
+			fp2->RedoFrame();
 			return TRUE;
 
 		case IDC_CLIP_Y1:
 			y2 = GetDlgItemInt(mhdlg,IDC_CLIP_Y1,0,false);
 			init_size();
 			SetClipEdit();
+			fp2->RedoFrame();
 			return TRUE;
 		}
 		break;
