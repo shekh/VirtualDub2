@@ -637,8 +637,7 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 				if (x>=output.w) x = output.w-1;
 				if (y>=output.h) y = output.h-1;
 
-				int bg = GetSysColor(COLOR_BTNFACE);
-				bg = (bg & 0xff00) | ((bg & 0xff)<<16) | ((bg & 0xff0000)>>16);
+				int bg = VDSwizzleU32(GetSysColor(COLOR_BTNFACE)) >> 8;
 
 				uint32 pixels[7][7];
 				for(int i=0; i<7; ++i) {
@@ -2044,6 +2043,7 @@ BOOL PixmapView::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 
 		mpVideoWindow = NULL;
 		mhwndVideoWindow = NULL;
+		mhdlg = NULL;
 
 		mDlgNode.Remove();
 		if (destroyCB) destroyCB(this,destroyCBData);
@@ -2116,7 +2116,7 @@ void PixmapView::OnInit() {
 	mDlgNode.mhAccel = g_projectui->GetAccelPreview();
 	guiAddModelessDialog(&mDlgNode);
 
-	if (image.w)
+	if (image.format)
 		mpVideoWindow->SetSourceSize(image.w, image.h);
 	else
 		mpVideoWindow->SetSourceSize(256, 256);
@@ -2151,7 +2151,11 @@ void PixmapView::OnPaint() {
 
 void PixmapView::OnVideoRedraw() {
 	ShowWindow(mhwndVideoWindow, SW_SHOW);
-	mpDisplay->SetSourcePersistent(false, image);
+	if (image.format)
+		mpDisplay->SetSourcePersistent(false, image);
+	else
+		mpDisplay->SetSourceSolidColor(VDSwizzleU32(GetSysColor(COLOR_3DFACE)) >> 8);
+	mpDisplay->Update(IVDVideoDisplay::kAllFields);
 }
 
 bool PixmapView::OnCommand(UINT cmd) {
@@ -2159,7 +2163,6 @@ bool PixmapView::OnCommand(UINT cmd) {
 	case IDCANCEL:
 		SetActiveWindow(mhwndParent);
 		DestroyWindow(mhdlg);
-		mhdlg = NULL;
 		return true;
 
 	case ID_VIDEO_COPYOUTPUTFRAME:
@@ -2183,22 +2186,20 @@ void PixmapView::SetImage(VDPixmap& px) {
 	image.assign(px);
 
 	if (mpVideoWindow) {
-		if (image.w)
+		if (image.format)
 			mpVideoWindow->SetSourceSize(image.w, image.h);
 		else
 			mpVideoWindow->SetSourceSize(256, 256);
-		mpDisplay->SetSourcePersistent(false, image);
-		//InvalidateRect(mhdlg, NULL, false);
-		mpDisplay->Update(IVDVideoDisplay::kAllFields);
+		OnVideoRedraw();
 	}
 }
 
 void PixmapView::CopyOutputFrameToClipboard() {
-	if (image.w==0 || image.h==0) return;
+	if (!image.format) return;
 	g_project->CopyFrameToClipboard(image);
 }
 
 void PixmapView::SaveImageAsk() {
-	if (image.w==0 || image.h==0) return;
+	if (!image.format) return;
 	SaveImage(mhdlg, -1, &image);
 }
