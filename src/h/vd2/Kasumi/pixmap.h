@@ -143,6 +143,9 @@ struct VDPixmapFormatEx {
 		colorSpaceMode == v.colorSpaceMode &&
 		colorRangeMode == v.colorRangeMode);
 	}
+	bool defaultMode() const {
+		return colorSpaceMode == nsVDXPixmap::kColorSpaceMode_None && colorRangeMode == nsVDXPixmap::kColorRangeMode_None;
+	}
 };
 
 struct VDPixmapLayout {
