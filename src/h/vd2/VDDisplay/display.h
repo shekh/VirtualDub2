@@ -39,6 +39,7 @@ class VDINTERFACE IVDVideoDisplayDrawMode {
 public:
 	virtual void PreparePaint(IVDVideoDisplayMinidriver* driver) = 0;
 	virtual void Paint(HDC dc) = 0;
+	virtual void PaintZoom(HDC dc, int xDest, int yDest, int destW, int destH, int xSrc, int ySrc, int srcW, int srcH) = 0;
 	virtual void SetDisplayPos(int x, int y, int w, int h) = 0;
 };
 

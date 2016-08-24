@@ -239,6 +239,35 @@ void VDClippingControlOverlay::Paint(HDC hdc) {
 	}
 }
 
+void VDClippingControlOverlay::PaintZoom(HDC hdc, int xDst, int yDst, int dstW, int dstH, int xSrc, int ySrc, int srcW, int srcH) {
+	HGDIOBJ hgoOld = SelectObject(hdc, mBorderPen);
+	int i;
+
+	::SetBkMode(hdc, OPAQUE);
+	::SetBkColor(hdc, RGB(0, 0, 0));
+
+	// draw horizontal lines
+	static const int adjust[2]={-1,0};
+	for(i=0; i<2; ++i) {
+    double p = VDRoundToLong(mSourceHeight * mYBounds[i]);
+		long y = VDCeilToInt((p-ySrc)/srcH*dstH - 0.5) + yDst + adjust[i];
+
+		MoveToEx(hdc, xDst, y, NULL);
+		LineTo(hdc, xDst+dstW, y);
+	}
+
+	// draw vertical lines
+	for(i=0; i<2; ++i) {
+    double p = VDRoundToLong(mSourceWidth * mXBounds[i]);
+		long x = VDCeilToInt((p-xSrc)/srcW*dstW - 0.5) + xDst + adjust[i];
+
+		MoveToEx(hdc, x, yDst, NULL);
+		LineTo(hdc, x, yDst+dstH);
+	}
+
+	SelectObject(hdc, hgoOld);
+}
+
 void VDClippingControlOverlay::OnMouseMove(int x, int y, int mods) {
 	long y0 = VDCeilToInt(mYBounds[0] * mHeight - 0.5) - 1;
 	long y1 = VDCeilToInt(mYBounds[1] * mHeight - 0.5);

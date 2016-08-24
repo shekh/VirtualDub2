@@ -69,6 +69,8 @@ public:
 
 	VDZINT_PTR DlgProc(VDZUINT msg, VDZWPARAM wParam, VDZLPARAM lParam);
 
+	IVDVideoDisplayDrawMode* drawMode;
+
 protected:
 	bool OnLoaded();
 	bool OnEraseBkgnd(HDC hdc);
@@ -101,6 +103,7 @@ VDVideoFilterPreviewZoomPopup::VDVideoFilterPreviewZoomPopup()
 	mBitmapInfo.bmiHeader.biClrImportant	= 0;
 	black_pen = CreatePen(PS_SOLID,0,RGB(0,0,0));
 	white_pen = CreatePen(PS_SOLID,0,RGB(255,255,255));
+	drawMode = 0;
 }
 
 VDVideoFilterPreviewZoomPopup::~VDVideoFilterPreviewZoomPopup() {
@@ -248,6 +251,18 @@ void VDVideoFilterPreviewZoomPopup::OnPaint() {
 				7,
 				7,
 				mBitmap, &mBitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+
+		if (drawMode) {
+			int saveHandle = SaveDC(hdc);
+			IntersectClipRect(hdc,mBitmapRect.left,mBitmapRect.top,mBitmapRect.right,mBitmapRect.bottom);
+			drawMode->PaintZoom(hdc,
+					mBitmapRect.left,
+					mBitmapRect.top,
+					mBitmapRect.right - mBitmapRect.left,
+					mBitmapRect.bottom - mBitmapRect.top,
+					x-3, y-3, 7, 7);
+			RestoreDC(hdc, saveHandle);
+		}
 
 		HPEN pen = black_pen;
 		uint32 px = mBitmap[3][3] & 0xffffff;
@@ -615,16 +630,17 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 			if ((wParam & MK_SHIFT) && mpFiltSys->isRunning() && mpVideoFrameBuffer && xoffset>=-10 && yoffset>=-10 && xoffset < DisplayW+10 && yoffset < DisplayH+10) {
 				VDPixmap output = VDPixmapFromLayout(GetFrameBufferLayout(), (void *)mpVideoFrameBuffer->LockRead());
 				output.info = mpVideoFrameBuffer->info;
-				if (xoffset<0) xoffset = 0;
-				if (yoffset<0) yoffset = 0;
-				if (xoffset>=output.w) xoffset = output.w-1;
-				if (yoffset>=output.h) yoffset = output.h-1;
-				uint32 pixels[7][7];
 				int x = VDFloorToInt((xoffset + 0.5) * (double)output.w / (double)DisplayW);
 				int y = VDFloorToInt((yoffset + 0.5) * (double)output.h / (double)DisplayH);
+				if (x<0) x = 0;
+				if (y<0) y = 0;
+				if (x>=output.w) x = output.w-1;
+				if (y>=output.h) y = output.h-1;
+
 				int bg = GetSysColor(COLOR_BTNFACE);
 				bg = (bg & 0xff00) | ((bg & 0xff)<<16) | ((bg & 0xff0000)>>16);
 
+				uint32 pixels[7][7];
 				for(int i=0; i<7; ++i) {
 					for(int j=0; j<7; ++j) {
 						int x1 = x+j-3;
@@ -668,6 +684,7 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 					pts.y += 32;
 
 				if (pOverlay) ShowWindow(pOverlay->GetHwnd(),false);
+				mZoomPopup.drawMode = mbShowOverlay ? pOverlay:0;
 				SetWindowPos(mZoomPopup.GetWindowHandle(), NULL, pts.x, pts.y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
 				mZoomPopup.Update(x, y, pixels, ps);
 				ShowWindow(mZoomPopup.GetWindowHandle(), SW_SHOWNOACTIVATE);
