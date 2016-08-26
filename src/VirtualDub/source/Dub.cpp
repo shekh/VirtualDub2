@@ -1078,7 +1078,11 @@ void Dubber::InitOutputFile() {
 						foundDibCompatibleFormat = true;
 					}
 
-					bool result = mpVideoCompressor->Query((LPBITMAPINFO)&*mpCompressorVideoFormat, NULL);
+					bool result = true;
+					
+					if (mpVideoCompressor)
+						result = mpVideoCompressor->Query((LPBITMAPINFO)&*mpCompressorVideoFormat, NULL);
+
 					if (result) {
 						outputVariantID = variant;
 						break;
@@ -1204,8 +1208,12 @@ void Dubber::InitOutputFile() {
 		if(mOptions.video.mode >= DubVideoOptions::M_FULL) {
 			const VDPixmapLayout& bmout = filters.GetOutputLayout();
 
-			VDMakeBitmapCompatiblePixmapLayout(mVideoFilterOutputPixmapLayout, bmout.w, bmout.h, outputFormatID, outputVariantID, bmout.palette);
-			mVideoFilterOutputPixmapLayout.formatEx = outputFormatID;
+			if (driverLayout.format) {
+				mVideoFilterOutputPixmapLayout = driverLayout;
+			} else {
+				VDMakeBitmapCompatiblePixmapLayout(mVideoFilterOutputPixmapLayout, bmout.w, bmout.h, outputFormatID, outputVariantID, bmout.palette);
+				mVideoFilterOutputPixmapLayout.formatEx = outputFormatID;
+			}
 
 			const char *s = VDPixmapGetInfo(mVideoFilterOutputPixmapLayout.format).name;
 

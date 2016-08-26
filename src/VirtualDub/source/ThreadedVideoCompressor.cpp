@@ -479,8 +479,8 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 		int out_format = pCompressor->GetInputFormat(&out_info);
 		if (out_format) {
 			if (!repack_buffer->data) {
-				repack_buffer->init(src.w,src.h,src.format);
-				std::swap(repack_buffer->data2, repack_buffer->data3); // swap to match YV12, see VDMakeBitmapCompatiblePixmapLayout
+				const VDPixmapLayout srclayout = VDPixmapToLayoutFromBase(src, src.data);
+				repack_buffer->init(srclayout);
 			}
 			dst = repack_buffer->data;
 			VDPixmap_YUV_Normalize(*repack_buffer,src,out_info.ref_r);
