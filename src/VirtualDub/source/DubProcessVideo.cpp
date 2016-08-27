@@ -1171,6 +1171,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	VDPixmap pxsrc = VDPixmapFromLayout(layout, (void *)buf->LockRead());
 	pxsrc.info = buf->info;
 	pxsrc.info.frame_num = nextOutputFrame.mTimelineFrame;
+	pBuffer->mPixmap.format = bufferFormatEx.format;
 	pBuffer->mPixmap.info.colorSpaceMode = bufferFormatEx.colorSpaceMode;
 	pBuffer->mPixmap.info.colorRangeMode = bufferFormatEx.colorRangeMode;
 	if (!mpOutputBlitter)

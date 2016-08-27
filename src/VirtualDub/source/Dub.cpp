@@ -1021,8 +1021,11 @@ void Dubber::InitOutputFile() {
 		if (mpOutputSystem)
 			outputFormatID = mpOutputSystem->GetVideoOutputFormatOverride();
 
-		if (!outputFormatID && mpVideoCompressor)
+		if (!outputFormatID && mpVideoCompressor) {
 			outputFormatID = mpVideoCompressor->QueryInputFormat(&outputFormatInfo);
+			if (outputFormatID)
+				mOptions.video.mOutputFormat.format = outputFormatID;
+		}
 
 		if (!outputFormatID) {
 			outputFormatID = mOptions.video.mOutputFormat.format;
