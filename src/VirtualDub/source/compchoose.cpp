@@ -252,6 +252,13 @@ bool VDUIDialogChooseVideoCompressorW32::OnCommand(uint32 id, uint32 extcode) {
 			if (mhCodec) {
 				mhCodec->configure(mhdlg);
 				mCodecState.clear();
+				if (mhCodec->obj) {
+					int len = mhCodec->getStateSize();
+					if (len > 0) {
+						mCodecState.resize(len);
+						mhCodec->getState(mCodecState.data(), len);
+					}
+				}
 
 				if (mpCurrent)
 					UpdateEnables();
