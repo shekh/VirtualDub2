@@ -304,6 +304,7 @@ void VDVideoCompressorVCM::Start(const VDPixmapLayout& layout, FilterModPixmapIn
 	mInputLayout = layout;
 	mInputInfo = info;
 	internalStart(outputFormat, outputFormatSize, frameRate, frameCount);
+	GetOutputFormat(&layout, mOutputFormat);
 }
 
 void VDVideoCompressorVCM::internalStart(const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) {
@@ -779,6 +780,10 @@ crunch_complete:
 		}
 	}
 
+	if (mInputLayout.format && (dwFlagsOut & VDCOMPRESS_WAIT)!=0) {
+		bNoOutputProduced = true;
+	}
+
 	if (bNoOutputProduced) {
 		lKeyRateCounter = lKeyRateCounterSave;
 		return false;
@@ -930,6 +935,11 @@ EncoderHIC* EncoderHIC::open(DWORD type, DWORD handler, DWORD flags) {
 	EncoderHIC* plugin = new EncoderHIC;
 	plugin->hic = hic;
 	return plugin;
+}
+
+DWORD EncoderHIC::getNext(DWORD handler) {
+	if(vdproc) return vdproc(0,0,VDICM_ENUMFORMATS,handler,0);
+	return 0;
 }
 
 int EncoderHIC::getInfo(ICINFO& info) {

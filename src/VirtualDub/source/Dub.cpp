@@ -1133,10 +1133,12 @@ void Dubber::InitOutputFile() {
 				outputFormat.assign(srcFormat, vsrcStream->getFormatLen());
 			}
 
-			if (driverLayout.format)
+			if (driverLayout.format) {
 				mpVideoCompressor->Start(driverLayout, outputFormatInfo, &*outputFormat, outputFormat.size(), vInfo.mFrameRate, vInfo.end_proc_dst);
-			else
+				outputFormat.assign((const VDAVIBitmapInfoHeader *)mpVideoCompressor->GetOutputFormat(), mpVideoCompressor->GetOutputFormatSize());
+			} else {
 				mpVideoCompressor->Start(&*mpCompressorVideoFormat, mpCompressorVideoFormat.size(), &*outputFormat, outputFormat.size(), vInfo.mFrameRate, vInfo.end_proc_dst);
+			}
 
 			lVideoSizeEstimate = mpVideoCompressor->GetMaxOutputSize();
 		} else {

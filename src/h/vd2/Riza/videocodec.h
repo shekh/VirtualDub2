@@ -125,6 +125,7 @@ struct EncoderHIC{
 	static EncoderHIC* load(const VDStringW& path, DWORD type, DWORD handler, DWORD flags);
 	static EncoderHIC* open(DWORD type, DWORD handler, DWORD flags);
 
+	DWORD getNext(DWORD handler);
 	int getInfo(ICINFO& info);
 	int compressQuery(void* src, void* dst, const VDPixmapLayout* pxsrc=0);
 	int queryInputFormat(FilterModPixmapInfo* info);

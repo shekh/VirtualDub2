@@ -427,8 +427,10 @@ void VDUIDialogChooseVideoCompressorW32::EnumeratePluginCodecs() {
 			VDExternalModule *pModule = *it;
 			const VDStringW& path = pModule->GetFilename();
 
-			EncoderHIC* plugin = EncoderHIC::load(path, ICTYPE_VIDEO, 0, ICMODE_COMPRESS);
-			if(plugin){
+			int next_fcc = 0;
+			while(1){
+				EncoderHIC* plugin = EncoderHIC::load(path, ICTYPE_VIDEO, next_fcc, ICMODE_COMPRESS);
+				if (!plugin) break;
 				ICINFO ici = { sizeof(ICINFO) };
 				char namebuf[64];
 
@@ -460,7 +462,9 @@ void VDUIDialogChooseVideoCompressorW32::EnumeratePluginCodecs() {
 						mSelect = pii->select;
 				}
 
+				next_fcc = plugin->getNext(ici.fccHandler);
 				delete plugin;
+				if(!next_fcc) break;
 			}
 		}
 	}
