@@ -196,6 +196,8 @@ VDVideoCompressorVCM::VDVideoCompressorVCM(EncoderHIC* driver, uint32 kilobytesP
 {
 	pPrevBuffer		= NULL;
 	pConfigData		= NULL;
+	fCompressionStarted = false;
+	mbCompressionRestarted = false;
 
 	this->driver = driver;
 	lDataRate = kilobytesPerSecond;
