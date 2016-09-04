@@ -941,7 +941,7 @@ EncoderHIC* EncoderHIC::open(DWORD type, DWORD handler, DWORD flags) {
 
 DWORD EncoderHIC::getNext(DWORD handler) {
 	if(vdproc) return vdproc(0,0,VDICM_ENUMFORMATS,handler,0);
-	return 0;
+	return -1;
 }
 
 int EncoderHIC::getInfo(ICINFO& info) {

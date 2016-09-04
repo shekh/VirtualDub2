@@ -458,13 +458,13 @@ void VDUIDialogChooseVideoCompressorW32::EnumeratePluginCodecs() {
 				mCodecs.push_back(pii);
 
 				if (mpCompVars->driver) {
-					if(plugin->module==mpCompVars->driver->module)
+					if(pii->fccHandler==mpCompVars->fccHandler && plugin->module==mpCompVars->driver->module)
 						mSelect = pii->select;
 				}
 
 				next_fcc = plugin->getNext(ici.fccHandler);
 				delete plugin;
-				if(!next_fcc) break;
+				if(next_fcc==0||next_fcc==-1) break;
 			}
 		}
 	}
@@ -843,6 +843,7 @@ void VDUIDialogChooseVideoCompressorW32::OnCodecSelectionChanged(VDUIProxyListBo
 
 	CodecInfo *pii = data >= 0 ? mCodecs[data] : NULL;
 
+	mSelect = pii ? pii->select : -1;
 	SelectCompressor(pii);
 	UpdateFormat();
 }
