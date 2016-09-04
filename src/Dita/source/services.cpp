@@ -386,7 +386,7 @@ struct VDGetFileNameHook {
 	int *mpOptVals;
 };
 
-static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions, int *pOptVals) {
+static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions, int *pOptVals, OPENFILENAMEW *hookOptions) {
 	FilespecEntry fsent;
 	tFilespecMap::iterator it;
 
@@ -491,6 +491,14 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 			ofn.w.lpfnHook	= VDGetFileNameHook::HookFn;
 			ofn.w.lCustData	= (LPARAM)&hook;
 		}
+	}
+
+	if (hookOptions) {
+		ofn.w.Flags		|= hookOptions->Flags;
+		ofn.w.hInstance = hookOptions->hInstance;
+		ofn.w.lpTemplateName = hookOptions->lpTemplateName;
+		ofn.w.lpfnHook	= hookOptions->lpfnHook;
+		ofn.w.lCustData	= hookOptions->lCustData;
 	}
 
 	bool existingFileName = false;
@@ -600,12 +608,12 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 	return strFilename;
 }
 
-const VDStringW VDGetLoadFileName(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions, int *pOptVals) {
-	return VDGetFileName(false, nKey, ctxParent, pszTitle, pszFilters, pszExt, pOptions, pOptVals);
+const VDStringW VDGetLoadFileName(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions, int *pOptVals, OPENFILENAMEW *hookOptions) {
+	return VDGetFileName(false, nKey, ctxParent, pszTitle, pszFilters, pszExt, pOptions, pOptVals, hookOptions);
 }
 
-const VDStringW VDGetSaveFileName(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions, int *pOptVals) {
-	return VDGetFileName(true, nKey, ctxParent, pszTitle, pszFilters, pszExt, pOptions, pOptVals);
+const VDStringW VDGetSaveFileName(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions, int *pOptVals, OPENFILENAMEW *hookOptions) {
+	return VDGetFileName(true, nKey, ctxParent, pszTitle, pszFilters, pszExt, pOptions, pOptVals, hookOptions);
 }
 
 void VDSetLastLoadSavePath(long nKey, const wchar_t *path) {

@@ -1643,9 +1643,9 @@ void VDProjectUI::SetAudioInterleaveOptionsAsk() {
 	ActivateDubDialog(g_hInst, MAKEINTRESOURCE(IDD_INTERLEAVE), (HWND)mhwnd, AudioInterleaveDlgProc);
 }
 
-void VDProjectUI::SetAudioCompressionAsk() {
+void VDProjectUI::SetAudioCompressionAsk(HWND parent) {
 	if (!inputAudio)
-		g_ACompressionFormat = (VDWaveFormat *)AudioChooseCompressor((HWND)mhwnd, (WAVEFORMATEX *)g_ACompressionFormat, NULL, g_ACompressionFormatHint);
+		g_ACompressionFormat = (VDWaveFormat *)AudioChooseCompressor(parent, (WAVEFORMATEX *)g_ACompressionFormat, NULL, g_ACompressionFormatHint);
 	else {
 
 		WAVEFORMATEX wfex = {0};
@@ -1681,7 +1681,7 @@ void VDProjectUI::SetAudioCompressionAsk() {
 		wfex.nBlockAlign		= (WORD)((wfex.wBitsPerSample+7)/8 * wfex.nChannels);
 		wfex.nAvgBytesPerSec	= wfex.nSamplesPerSec * wfex.nBlockAlign;
 
-		g_ACompressionFormat = (VDWaveFormat *)AudioChooseCompressor((HWND)mhwnd, (WAVEFORMATEX *)g_ACompressionFormat, &wfex, g_ACompressionFormatHint);
+		g_ACompressionFormat = (VDWaveFormat *)AudioChooseCompressor(parent, (WAVEFORMATEX *)g_ACompressionFormat, &wfex, g_ACompressionFormatHint);
 
 	}
 
@@ -2235,7 +2235,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 
 		case ID_AUDIO_CONVERSION:				SetAudioConversionOptionsAsk();	break;
 		case ID_AUDIO_INTERLEAVE:				SetAudioInterleaveOptionsAsk();	break;
-		case ID_AUDIO_COMPRESSION:				SetAudioCompressionAsk();			break;
+		case ID_AUDIO_COMPRESSION:				SetAudioCompressionAsk((HWND)mhwnd);			break;
 
 		case ID_AUDIO_VOLUME:					SetAudioVolumeOptionsAsk();		break;
 

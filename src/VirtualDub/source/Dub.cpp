@@ -177,6 +177,7 @@ DubOptions g_dubOpts = {
 	true,			// show status
 	false,			// force show status
 	false,			// move slider
+	false,			// remove audio
 	100,			// run at 100%
 };
 
@@ -447,6 +448,7 @@ public:
 	bool NegotiateFastFormat(int format);
 	void InitSelectInputFormat();
 	void Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, AudioSource *const *pAudioSources, uint32 nAudioSources, IVDDubberOutputSystem *outsys, void *videoCompVars, const FrameSubset *, const VDFraction& frameRateTimeline);
+	AudioStream* InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources);
 	void Go(int iPriority = 0);
 	void Stop();
 
@@ -1396,6 +1398,14 @@ void Dubber::InitSelectInputFormat() {
 	const char *s = VDPixmapGetInfo(vSrc->getTargetFormat().format).name;
 
 	VDLogAppMessage(kVDLogInfo, kVDST_Dub, (mOptions.video.mode == DubVideoOptions::M_FULL) ? kVDM_FullUsingInputFormat : kVDM_SlowRecompressUsingFormat, 1, &s);
+}
+
+AudioStream* Dubber::InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources) {
+	mAudioSources.assign(pAudioSources, pAudioSources + nAudioSources);
+	AudioSource *audioSrc = mAudioSources.empty() ? NULL : mAudioSources.front();
+	InitAudioStreamValuesStatic(aInfo, audioSrc, &mOptions);
+	InitAudioConversionChain();
+	return audioStream;
 }
 
 void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, AudioSource *const *pAudioSources, uint32 nAudioSources, IVDDubberOutputSystem *pOutputSystem, void *videoCompVars, const FrameSubset *pfs, const VDFraction& frameRateTimeline) {

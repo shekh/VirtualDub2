@@ -186,7 +186,7 @@ public:
 	void CloseAVI();			// to be removed later....
 	void Close();
 
-	void SaveAVI(const wchar_t *filename, bool compat, bool addAsJob);
+	void SaveAVI(const wchar_t *filename, bool compat, bool addAsJob, bool removeAudio);
 	void SaveFilmstrip(const wchar_t *pFilename, bool propagateErrors);
 	void SaveAnimatedGIF(const wchar_t *pFilename, int loopCount, bool propagateErrors, DubOptions *optsOverride = NULL);
 	void SaveAnimatedPNG(const wchar_t *pFilename, int loopCount, int alpha, int grayscale, bool propagateErrors, DubOptions *optsOverride = NULL);

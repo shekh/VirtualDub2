@@ -85,7 +85,7 @@ public:
 	void SetAudioFiltersAsk();
 	void SetAudioConversionOptionsAsk();
 	void SetAudioInterleaveOptionsAsk();
-	void SetAudioCompressionAsk();
+	void SetAudioCompressionAsk(HWND parent);
 	void SetAudioVolumeOptionsAsk();
 	void SetAudioSourceWAVAsk();
 	void SetAudioErrorModeAsk();

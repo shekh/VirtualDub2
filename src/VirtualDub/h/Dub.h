@@ -150,6 +150,7 @@ public:
 	bool	fShowStatus;
 	bool	mbForceShowStatus;
 	bool	fMoveSlider;
+	bool	removeAudio;
 
 	uint32	mThrottlePercent;
 };
@@ -223,6 +224,7 @@ public:
 	virtual void SetOutputDisplay(IVDVideoDisplay *pDisplay) = 0;
 	virtual void SetAudioFilterGraph(const VDAudioFilterGraph& graph)=0;
 	virtual void Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, AudioSource *const *pAudioSources, uint32 nAudioSources, IVDDubberOutputSystem *out, void *videoCompVars, const FrameSubset *pfs, const VDFraction& frameRateTimeline) = 0;
+	virtual AudioStream* InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources) = 0;
 	virtual void Go(int iPriority = 0) = 0;
 	virtual void Stop() = 0;
 

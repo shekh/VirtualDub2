@@ -240,6 +240,7 @@
 #define IDR_FILE_EXPORTMENU             308
 #define IDD_FILTER_BLENDING             308
 #define IDR_TOOLS_MENU                  309
+#define IDD_SAVEVIDEO_FORMAT            309
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -481,6 +482,7 @@
 #define IDC_FILEDESC                    1152
 #define IDC_NAME                        1152
 #define IDC_CLIP_X0                     1152
+#define IDC_COMPRESSION                 1152
 #define IDS_VIDEO_FRAMERATE             1153
 #define IDC_DEFAULT_DRIVER              1153
 #define IDC_FILELIMIT_SETTING           1153
@@ -492,6 +494,7 @@
 #define IDC_TAPS                        1153
 #define IDC_ASPECT_RATIO2               1153
 #define IDC_CLIP_X1                     1153
+#define IDC_COMPRESSION2                1153
 #define IDS_VIDEO_COLORDEPTH            1154
 #define IDC_SELECT_CAPTURE_FILE         1154
 #define IDC_DISKLIMIT_SETTING           1154
@@ -506,6 +509,7 @@
 #define IDC_DROPLIMIT_SETTING           1155
 #define IDC_OUTPUTLO                    1155
 #define IDC_CLIP_Y1                     1155
+#define IDC_COMPRESSION4                1155
 #define IDS_VIDEO_CLIPPING              1156
 #define IDC_DEFAULT_CAPFILE             1156
 #define IDS_VIDEO_MODE_DIRECT           1157
@@ -573,6 +577,7 @@
 #define IDC_BACKGROUND                  1184
 #define IDC_USE_ALPHA                   1184
 #define IDC_BLEND_CURVE                 1184
+#define IDC_ENABLE_AUDIO                1184
 #define IDC_AVI_DISABLEOPTIMIZEDIO      1185
 #define IDC_DISABLE_ALL_MESSAGES        1185
 #define IDC_AUTOLOADSEGMENTS            1185
@@ -678,9 +683,11 @@
 #define IDC_BROWSEOUTPUTFOLDER          1282
 #define IDC_DUMPSTATUS                  1282
 #define IDC_BROWSE                      1282
+#define IDC_COMPRESSION_CHANGE          1282
 #define IDS_AUDIO_SOURCE_AVI            1283
 #define IDC_REGDUMP                     1283
 #define IDC_ALPHAFILE_BROWSE            1283
+#define IDC_COMPRESSION_CHANGE2         1283
 #define IDS_AUDIO_SOURCE_WAV            1284
 #define IDC_STATIC_BOMBREASON           1284
 #define IDS_AUDIO_COMPRESSION           1285
@@ -947,8 +954,12 @@
 #define IDS_HELP_CONTENTS               1536
 #define IDC_CROP_SIZE                   1536
 #define IDS_HELP_CHANGELOG              1537
+#define IDC_SAVE_AUDIO                  1537
 #define IDS_HELP_RELEASENOTES           1538
+#define IDC_AUDIO_INFO                  1538
 #define IDS_HELP_ABOUT                  1539
+#define IDC_SAVE_DONOW                  1539
+#define IDC_SAVE_MAKEJOB                1540
 #define IDS_VIDEO_SEEK_START            1664
 #define IDS_VIDEO_SEEK_END              1665
 #define IDS_VIDEO_SEEK_PREV             1666
@@ -1508,7 +1519,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        310
 #define _APS_NEXT_COMMAND_VALUE         40587
-#define _APS_NEXT_CONTROL_VALUE         1537
+#define _APS_NEXT_CONTROL_VALUE         1540
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

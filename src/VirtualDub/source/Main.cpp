@@ -38,6 +38,9 @@
 #include <vd2/Dita/services.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmaputils.h>
+#include <vd2/VDLib/Dialog.h>
+#include "VideoSource.h"
+#include "AudioSource.h"
 #include "Dub.h"
 #include "DubOutput.h"
 #include "command.h"
@@ -78,6 +81,7 @@ extern vdrefptr<VDProjectUI> g_projectui;
 
 vdrefptr<IVDCaptureProject> g_capProject;
 vdrefptr<IVDCaptureProjectUI> g_capProjectUI;
+extern vdrefptr<AudioSource>	inputAudio;
 
 wchar_t g_szInputAVIFile[MAX_PATH];
 wchar_t g_szInputWAVFile[MAX_PATH];
@@ -90,6 +94,9 @@ extern const char g_szWarning[]="VirtualDub Warning";
 extern const wchar_t g_szWarningW[]=L"VirtualDub Warning";
 
 static const char g_szRegKeyPersistence[]="Persistence";
+
+extern COMPVARS2 g_Vcompression;
+extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
 
 ///////////////////////////
 
@@ -305,15 +312,203 @@ void OpenAVI(bool ext_opt) {
 
 ////////////////////////////////////
 
+class VDSaveVideoDialogW32 {
+public:
+	VDSaveVideoDialogW32(){ removeAudio=false; }
+
+	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
+	void InitCodec();
+
+	HWND mhdlg;
+	VDDialogResizerW32 mResizer;
+	AudioSource* inputAudio;
+	bool removeAudio;
+	bool addJob;
+};
+
+void VDSaveVideoDialogW32::InitCodec() {
+	VDStringW name;
+	VDPixmapFormatEx format = g_dubOpts.video.mOutputFormat;
+	if (g_Vcompression.driver) {
+		ICINFO ici = { sizeof(ICINFO) };
+		if (g_Vcompression.driver->getInfo(ici)) {
+			name = ici.szDescription;
+		}
+		int codec_format = g_Vcompression.driver->queryInputFormat(0);
+		if (codec_format) format.format = codec_format;
+	} else {
+		name = VDStringW(L"(Uncompressed RGB/YCbCr)");
+	}
+	if (g_dubOpts.video.mode==DubVideoOptions::M_NONE) {
+		name = VDStringW(L"(Stream copy)");
+		EnableWindow(GetDlgItem(mhdlg,IDC_COMPRESSION_CHANGE),false);
+	}
+
+	SetDlgItemTextW(mhdlg,IDC_COMPRESSION,name.c_str());
+
+	VDString s;
+
+	if(format==0) {
+		if (g_dubOpts.video.mode >= DubVideoOptions::M_FULL && inputVideo) {
+			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
+			s += VDPixmapFormatPrintSpec(inputFormat);
+		} else {
+			s += "auto";
+		}
+	} else {
+		s += VDPixmapFormatPrintSpec(format);
+	}
+
+	SetDlgItemText(mhdlg,IDC_COMPRESSION2,s.c_str());
+
+	if (inputAudio) {
+		CheckDlgButton(mhdlg,IDC_ENABLE_AUDIO,removeAudio ? BST_UNCHECKED:BST_CHECKED);
+		EnableWindow(GetDlgItem(mhdlg,IDC_SAVE_AUDIO),true);
+		EnableWindow(GetDlgItem(mhdlg,IDC_ENABLE_AUDIO),true);
+	} else {
+		CheckDlgButton(mhdlg,IDC_ENABLE_AUDIO,BST_UNCHECKED);
+		EnableWindow(GetDlgItem(mhdlg,IDC_SAVE_AUDIO),false);
+		EnableWindow(GetDlgItem(mhdlg,IDC_ENABLE_AUDIO),false);
+	}
+
+	if (inputAudio && !removeAudio) {
+		EnableWindow(GetDlgItem(mhdlg,IDC_AUDIO_COMPRESSION),true);
+		EnableWindow(GetDlgItem(mhdlg,IDC_AUDIO_INFO),true);
+	} else {
+		EnableWindow(GetDlgItem(mhdlg,IDC_AUDIO_COMPRESSION),false);
+		EnableWindow(GetDlgItem(mhdlg,IDC_AUDIO_INFO),false);
+	}
+
+	VDString aname;
+	if (g_ACompressionFormat) {
+		aname = g_ACompressionFormatHint;
+	} else {
+		aname = VDString("No compression (PCM)");
+	}
+
+	if (g_dubOpts.audio.mode==DubVideoOptions::M_NONE) {
+		if (inputAudio && inputAudio->getWaveFormat()->mTag==VDWaveFormat::kTagPCM)
+			aname = VDString("No compression (PCM)");
+		else
+			aname = VDString("(Stream copy)");
+		EnableWindow(GetDlgItem(mhdlg,IDC_COMPRESSION_CHANGE2),false);
+	}
+	SetDlgItemText(mhdlg,IDC_AUDIO_COMPRESSION,aname.c_str());
+}
+
+INT_PTR VDSaveVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
+	switch(message) {
+	case WM_INITDIALOG:
+		mResizer.Init(mhdlg);
+		mResizer.Add(IDC_SAVE_DONOW, VDDialogResizerW32::kBR);
+		mResizer.Add(IDC_SAVE_MAKEJOB, VDDialogResizerW32::kBR);
+
+		if (inputAudio) {
+			IDubber* dubber = CreateDubber(&g_dubOpts);
+			try {
+				if (g_dubOpts.audio.bUseAudioFilterGraph)
+					dubber->SetAudioFilterGraph(g_audioFilterGraph);
+				AudioSource* asrc = inputAudio;
+				AudioStream* as = dubber->InitAudio(&asrc,1);
+				VDWaveFormat fmt = *as->GetFormat();
+				VDString s;
+				s.sprintf("%d Hz %d-bit %d ch", fmt.mSamplingRate, fmt.mSampleBits, fmt.mChannels);
+				SetDlgItemText(mhdlg,IDC_AUDIO_INFO,s.c_str());
+			} catch(const MyError& e) {
+				SetDlgItemText(mhdlg,IDC_AUDIO_INFO,e.c_str());
+				removeAudio = true;
+				inputAudio = 0;
+			}
+			delete dubber;
+
+		} else {
+			SetDlgItemText(mhdlg,IDC_AUDIO_INFO,"");
+		}
+
+		CheckDlgButton(mhdlg,IDC_SAVE_DONOW, addJob ? BST_UNCHECKED:BST_CHECKED);
+		CheckDlgButton(mhdlg,IDC_SAVE_MAKEJOB, addJob ? BST_CHECKED:BST_UNCHECKED);
+
+		InitCodec();
+		return TRUE;
+
+	case WM_SIZE:
+		mResizer.Relayout();
+		return TRUE;
+
+	case WM_COMMAND:
+		switch(LOWORD(wParam)) {
+		case IDC_COMPRESSION_CHANGE:
+			{
+				ChooseCompressor(mhdlg,&g_Vcompression,0);
+				InitCodec();
+			}
+			break;
+		case IDC_COMPRESSION_CHANGE2:
+			{
+				g_projectui->SetAudioCompressionAsk(mhdlg);
+				InitCodec();
+			}
+			break;
+		case IDC_ENABLE_AUDIO:
+			removeAudio = !SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+			InitCodec();
+			break;
+		case IDC_SAVE_DONOW:
+		case IDC_SAVE_MAKEJOB:
+			addJob = IsDlgButtonChecked(mhdlg,IDC_SAVE_MAKEJOB)!=0;
+			break;
+		}
+		break;
+	}
+
+	return FALSE;
+}
+
+UINT_PTR CALLBACK SaveVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch(msg){
+	case WM_INITDIALOG:
+		{
+			OPENFILENAMEW* fn = (OPENFILENAMEW*)lParam;
+			VDSaveVideoDialogW32* dlg = (VDSaveVideoDialogW32*)fn->lCustData;
+			SetWindowLongPtr(hdlg, DWLP_USER, (LONG_PTR)dlg);
+			dlg->mhdlg = hdlg;
+			dlg->DlgProc(msg,wParam,lParam);
+			return TRUE;
+		}
+
+	case WM_SIZE:
+	case WM_COMMAND:
+		{
+			VDSaveVideoDialogW32* dlg = (VDSaveVideoDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
+			dlg->DlgProc(msg,wParam,lParam);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	if (!inputVideo) {
 		MessageBox(hWnd, "No input video stream to process.", g_szError, MB_OK);
 		return;
 	}
 
-	VDStringW fname(VDGetSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (VDGUIHandle)hWnd, fUseCompatibility ? L"Save AVI 1.0 File" : L"Save AVI 2.0 File", fileFilters0, L"avi"));
+	VDSaveVideoDialogW32 dlg;
+	dlg.inputAudio = inputAudio;
+	dlg.addJob = queueAsJob;
+
+	OPENFILENAMEW fn = {sizeof(fn),0};
+	fn.Flags = OFN_ENABLETEMPLATE | OFN_ENABLEHOOK;
+	fn.hInstance = GetModuleHandle(0);
+	fn.lpTemplateName = MAKEINTRESOURCEW(IDD_SAVEVIDEO_FORMAT);
+	fn.lpfnHook = SaveVideoProc;
+	fn.lCustData = (LONG_PTR)&dlg;
+
+	const wchar_t* title = fUseCompatibility ? L"Save AVI 1.0 File" : L"Save AVI 2.0 File";
+	VDStringW fname = VDGetSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (VDGUIHandle)hWnd, title, fileFilters0, L"avi", 0, 0, &fn);
 	if (!fname.empty()) {
-		g_project->SaveAVI(fname.c_str(), fUseCompatibility, queueAsJob);
+		g_project->SaveAVI(fname.c_str(), fUseCompatibility, dlg.addJob, dlg.removeAudio);
 	}
 }
 

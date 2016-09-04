@@ -5,6 +5,8 @@
 
 #include <vd2/system/vdtypes.h>
 #include <vd2/system/VDString.h>
+#include <windows.h>
+#include <commdlg.h>
 
 enum {
 	// editor
@@ -48,8 +50,8 @@ class IVDUIContext;
 
 IVDUIContext *VDGetUIContext();
 
-const VDStringW VDGetLoadFileName(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions = NULL, int *pOptVals = NULL);
-const VDStringW VDGetSaveFileName(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions = NULL, int *pOptVals = NULL);
+const VDStringW VDGetLoadFileName(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions = NULL, int *pOptVals = NULL, OPENFILENAMEW *hookOptions=0);
+const VDStringW VDGetSaveFileName(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions = NULL, int *pOptVals = NULL, OPENFILENAMEW *hookOptions=0);
 void VDSetLastLoadSavePath(long nKey, const wchar_t *path);
 const VDStringW VDGetLastLoadSavePath(long nKey);
 void VDSetLastLoadSaveFileName(long nKey, const wchar_t *fileName);

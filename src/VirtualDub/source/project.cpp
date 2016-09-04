@@ -1861,14 +1861,17 @@ void VDProject::Close() {
 	}
 }
 
-void VDProject::SaveAVI(const wchar_t *filename, bool compat, bool addAsJob) {
+void VDProject::SaveAVI(const wchar_t *filename, bool compat, bool addAsJob, bool removeAudio) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
 
-	if (addAsJob)
-		JobAddConfiguration(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), filename, compat, &inputAVI->listFiles, 0, 0, true, 0);
-	else
-		::SaveAVI(filename, false, NULL, compat);
+	if (addAsJob) {
+		DubOptions opts = g_dubOpts;
+		opts.removeAudio = removeAudio;
+		JobAddConfiguration(this, &opts, g_szInputAVIFile, mInputDriverName.c_str(), filename, compat, &inputAVI->listFiles, 0, 0, true, 0);
+	} else {
+		::SaveAVI(filename, false, NULL, compat, removeAudio);
+	}
 }
 
 void VDProject::SaveFilmstrip(const wchar_t *pFilename, bool propagateErrors) {
@@ -2442,6 +2445,7 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 
 		IVDVideoSource *vsrc = inputVideo;
 		AudioSource *asrc = inputAudio;
+		if (fAudioOnly == 3) asrc = 0;
 		COMPVARS2 *comp = &g_Vcompression;
 		if(filters.isTrimmedChain() && pOutputSystem->IsNull()) comp = 0;
 

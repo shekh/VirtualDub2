@@ -177,7 +177,7 @@ void SaveWAV(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SaveAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, bool fCompatibility) {
+void SaveAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, bool fCompatibility, bool removeAudio) {
 	VDAVIOutputFileSystem fileout;
 
 	fileout.Set1GBLimit(g_prefs.fAVIRestrict1Gb != 0);
@@ -187,7 +187,7 @@ void SaveAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, bool
 	fileout.SetBuffer(VDPreferencesGetRenderOutputBufferSize());
 	fileout.SetTextInfo(g_project->GetTextInfo());
 
-	g_project->RunOperation(&fileout, FALSE, quick_opts, g_prefs.main.iDubPriority, fProp, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	g_project->RunOperation(&fileout, removeAudio ? 3:FALSE, quick_opts, g_prefs.main.iDubPriority, fProp, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 void SaveStripedAVI(const wchar_t *szFile) {

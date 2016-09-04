@@ -182,6 +182,7 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 	char *mem= NULL;
 
 	int audioSourceMode = g_project->GetAudioSourceMode();
+	if (opt->removeAudio) audioSourceMode = kVDAudioSourceMode_None;
 
 	switch(audioSourceMode) {
 
