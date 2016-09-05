@@ -1682,6 +1682,15 @@ void VDPixmapUberBlitterGenerator::ycbcr_to_ycbcr_generic(const VDPixmapGenYCbCr
 	args[2] = StackEntry(src, 2);
 }
 
+void VDPixmapUberBlitterGenerator::addToEnd(IVDPixmapGen* extra) {
+	StackEntry *args = &mStack.back();
+	((VDPixmapGenWindowBasedOneSourceSimple*)extra)->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(extra);
+	MarkDependency(extra, args[0].mpSrc);
+	args[0] = StackEntry(extra, 0);
+}
+
 IVDPixmapBlitter *VDPixmapUberBlitterGenerator::create() {
 	vdautoptr<VDPixmapUberBlitter> blitter(new VDPixmapUberBlitter);
 

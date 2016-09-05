@@ -147,6 +147,160 @@ void VDPixmapGen_X16R16G16B16_To_X8R8G8B8::Compute(void *dst0, sint32 y) {
 	}
 }
 
+void VDPixmapGen_X16R16G16B16_Normalize::Compute(void *dst0, sint32 y) {
+  if (do_normalize)
+    ComputeAll(dst0,y);
+  else if(a_mask)
+    ComputeWipeAlpha(dst0,y);
+  else
+    mpSrc->ProcessRow(dst0,y);
+}
+
+void VDPixmapGen_X16R16G16B16_Normalize::ComputeAll(void *dst0, sint32 y) {
+	const uint16* src = (const uint16*)mpSrc->GetRow(y, mSrcIndex);
+	uint16* dst = (uint16*)dst0;
+
+	const int n2 = ((16-size_t(dst)) & 0xF)/8;
+	const int n0 = (mWidth-n2)/2;
+	const int n1 = mWidth-n2-n0*2;
+
+	{for(sint32 x=0; x<n2; x++) {
+		uint16 r = src[2];
+		uint16 g = src[1];
+		uint16 b = src[0];
+		uint16 a = src[3];
+		src += 4;
+
+		if(r>ref_r) r=max_value; else r=(r*mr+0x8000)>>16;
+		if(g>ref_g) g=max_value; else g=(g*mg+0x8000)>>16;
+		if(b>ref_b) b=max_value; else b=(b*mb+0x8000)>>16;
+		if(a>ref_a) a=max_value; else a=(a*ma+0x8000)>>16;
+
+		dst[2] = r;
+		dst[1] = g;
+		dst[0] = b;
+		dst[3] = a | a_mask;
+		dst += 4;
+	}}
+
+	uint16 sr = 0x10000-ref_r;
+	uint16 sg = 0x10000-ref_g;
+	uint16 sb = 0x10000-ref_b;
+	uint16 sa = 0x10000-ref_a;
+	__m128i sat = _mm_set_epi16(sa,sr,sg,sb,sa,sr,sg,sb);
+	__m128i mm = _mm_set_epi16(ma,mr,mg,mb,ma,mr,mg,mb);
+	__m128i mask = _mm_set_epi16(a_mask,0,0,0,a_mask,0,0,0);
+	{for(sint32 x=0; x<n0; x++) {
+		__m128i c = _mm_loadu_si128((const __m128i*)src);
+		c = _mm_adds_epu16(c,sat);
+		c = _mm_sub_epi16(c,sat);
+		__m128i a = _mm_mullo_epi16(c,mm);
+		a = _mm_srli_epi16(a,15);
+		c = _mm_mulhi_epu16(c,mm);
+		c = _mm_adds_epu16(c,a);
+		c = _mm_or_si128(c,mask);
+		_mm_store_si128((__m128i*)dst,c);
+		src+=8;
+		dst+=8;
+	}}
+
+	{for(sint32 x=0; x<n1; x++) {
+		uint16 r = src[2];
+		uint16 g = src[1];
+		uint16 b = src[0];
+		uint16 a = src[3];
+		src += 4;
+
+		if(r>ref_r) r=max_value; else r=(r*mr+0x8000)>>16;
+		if(g>ref_g) g=max_value; else g=(g*mg+0x8000)>>16;
+		if(b>ref_b) b=max_value; else b=(b*mb+0x8000)>>16;
+		if(a>ref_a) a=max_value; else a=(a*ma+0x8000)>>16;
+
+		dst[2] = r;
+		dst[1] = g;
+		dst[0] = b;
+		dst[3] = a | a_mask;
+		dst += 4;
+	}}
+}
+
+void VDPixmapGen_X16R16G16B16_Normalize::ComputeWipeAlpha(void *dst0, sint32 y) {
+	const uint16* src = (const uint16*)mpSrc->GetRow(y, mSrcIndex);
+	uint16* dst = (uint16*)dst0;
+
+	const int n2 = ((16-size_t(dst)) & 0xF)/8;
+	const int n0 = (mWidth-n2)/2;
+	const int n1 = mWidth-n2-n0*2;
+
+	{for(sint32 x=0; x<n2; x++) {
+		dst[2] = src[2];
+		dst[1] = src[1];
+		dst[0] = src[0];
+		uint16 a = src[3];
+		dst[3] = a | a_mask;
+		src += 4;
+		dst += 4;
+	}}
+
+	__m128i mask = _mm_set_epi16(a_mask,0,0,0,a_mask,0,0,0);
+	{for(sint32 x=0; x<n0; x++) {
+		__m128i c = _mm_loadu_si128((const __m128i*)src);
+		c = _mm_or_si128(c,mask);
+		_mm_store_si128((__m128i*)dst,c);
+		src+=8;
+		dst+=8;
+	}}
+
+	{for(sint32 x=0; x<n1; x++) {
+		dst[2] = src[2];
+		dst[1] = src[1];
+		dst[0] = src[0];
+		uint16 a = src[3];
+		dst[3] = a | a_mask;
+		src += 4;
+		dst += 4;
+	}}
+}
+
+void VDPixmapGen_X8R8G8B8_Normalize::Compute(void *dst0, sint32 y) {
+	if (a_mask)
+		ComputeWipeAlpha(dst0,y);
+	else
+		mpSrc->ProcessRow(dst0,y);
+}
+
+void VDPixmapGen_X8R8G8B8_Normalize::ComputeWipeAlpha(void *dst0, sint32 y) {
+	const uint32* src = (const uint32*)mpSrc->GetRow(y, mSrcIndex);
+	uint32* dst = (uint32*)dst0;
+
+	const int n2 = ((16-size_t(dst)) & 0xF)/4;
+	const int n0 = (mWidth-n2)/4;
+	const int n1 = mWidth-n2-n0*4;
+
+	{for(sint32 x=0; x<n2; x++) {
+		uint32 c = src[0];
+		dst[0] = c | a_mask;
+		src++;
+		dst++;
+	}}
+
+	__m128i mask = _mm_set1_epi32(a_mask);
+	{for(sint32 x=0; x<n0; x++) {
+		__m128i c = _mm_loadu_si128((const __m128i*)src);
+		c = _mm_or_si128(c,mask);
+		_mm_store_si128((__m128i*)dst,c);
+		src+=4;
+		dst+=4;
+	}}
+
+	{for(sint32 x=0; x<n1; x++) {
+		uint32 c = src[0];
+		dst[0] = c | a_mask;
+		src++;
+		dst++;
+	}}
+}
+
 void VDPixmap_X16R16G16B16_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc, uint32 max_value) {
 	int ref_r = pxsrc.info.ref_r;
 	int ref_g = pxsrc.info.ref_g;
@@ -173,10 +327,10 @@ void VDPixmap_X16R16G16B16_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc, uin
 			uint16 a = src[3];
 			src += 4;
 
-			if(r>ref_r) r=max_value; else r=(r*mr)>>16;
-			if(g>ref_g) g=max_value; else g=(g*mg)>>16;
-			if(b>ref_b) b=max_value; else b=(b*mb)>>16;
-			if(a>ref_a) a=max_value; else a=(a*ma)>>16;
+			if(r>ref_r) r=max_value; else r=(r*mr+0x8000)>>16;
+			if(g>ref_g) g=max_value; else g=(g*mg+0x8000)>>16;
+			if(b>ref_b) b=max_value; else b=(b*mb+0x8000)>>16;
+			if(a>ref_a) a=max_value; else a=(a*ma+0x8000)>>16;
 
 			dst[2] = r;
 			dst[1] = g;

@@ -792,15 +792,15 @@ namespace {
 	}
 }
 
-IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src) {
+IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src, IVDPixmapGen* extraDst, IVDPixmapGen* extraSrc) {
 	const VDPixmapLayout& dstlayout = VDPixmapToLayoutFromBase(dst, dst.data);
 	const VDPixmapLayout& srclayout = VDPixmapToLayoutFromBase(src, src.data);
 
-	return VDPixmapCreateBlitter(dstlayout, srclayout);
+	return VDPixmapCreateBlitter(dstlayout, srclayout, extraDst, extraSrc);
 }
 
-IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src) {
-	if (src.format == dst.format) {
+IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapGen* extraDst, IVDPixmapGen* extraSrc) {
+	if (src.format == dst.format && !extraDst && !extraSrc) {
 		return VDCreatePixmapUberBlitterDirectCopy(dst, src);
 	}
 
@@ -1598,6 +1598,8 @@ space_reconvert:
 
 	// check if we need a type change (possible with 16F)
 	srcToken = BlitterConvertType(gen, srcToken, dstToken, w, h);
+
+	if (extraDst) gen.addToEnd(extraDst);
 
 	return gen.create();
 }

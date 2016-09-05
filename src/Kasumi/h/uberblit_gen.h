@@ -148,6 +148,8 @@ public:
 	void lanczos3v(float yoffset, float yfactor, uint32 h);
 	void lanczos3(float xoffset, float xfactor, uint32 w, float yoffset, float yfactor, uint32 h);
 
+	void addToEnd(IVDPixmapGen* extra);
+
 	IVDPixmapBlitter *create();
 
 protected:

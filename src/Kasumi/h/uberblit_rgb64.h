@@ -153,4 +153,72 @@ protected:
 	void Compute(void *dst0, sint32 y);
 };
 
+class VDPixmapGen_X16R16G16B16_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+	VDPixmapGen_X16R16G16B16_Normalize(){ max_value=0xFFFF; }
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		mpSrc->TransformPixmapInfo(src,dst);
+		if (VDPixmap_X16R16G16B16_IsNormalized(dst,max_value)) {
+			do_normalize = false;
+		} else {
+			do_normalize = true;
+			ref_r = dst.ref_r;
+			ref_g = dst.ref_g;
+			ref_b = dst.ref_b;
+			ref_a = dst.ref_a;
+			mr = max_value*0x10000/ref_r;
+			mg = max_value*0x10000/ref_g;
+			mb = max_value*0x10000/ref_b;
+			ma = max_value*0x10000/ref_a;
+			dst.ref_r = max_value;
+			dst.ref_g = max_value;
+			dst.ref_b = max_value;
+			dst.ref_a = max_value;
+		}
+
+		a_mask = 0;
+		if(dst.alpha_type==FilterModPixmapInfo::kAlphaInvalid)
+			a_mask = max_value;
+	}
+
+	void Start() {
+		StartWindow(mWidth * 8);
+	}
+
+	uint32 max_value;
+
+protected:
+	int ref_r,ref_g,ref_b,ref_a;
+	uint32 mr,mg,mb,ma;
+	uint32 a_mask;
+	bool do_normalize;
+
+	void Compute(void *dst0, sint32 y);
+	void ComputeAll(void *dst0, sint32 y);
+	void ComputeWipeAlpha(void *dst0, sint32 y);
+};
+
+class VDPixmapGen_X8R8G8B8_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		mpSrc->TransformPixmapInfo(src,dst);
+
+		a_mask = 0;
+		if(dst.alpha_type==FilterModPixmapInfo::kAlphaInvalid)
+			a_mask = 0xFF000000;
+	}
+
+	void Start() {
+		StartWindow(mWidth * 4);
+	}
+
+protected:
+	uint32 a_mask;
+
+	void Compute(void *dst0, sint32 y);
+	void ComputeWipeAlpha(void *dst0, sint32 y);
+};
+
 #endif

@@ -1174,8 +1174,22 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	pBuffer->mPixmap.format = bufferFormatEx.format;
 	pBuffer->mPixmap.info.colorSpaceMode = bufferFormatEx.colorSpaceMode;
 	pBuffer->mPixmap.info.colorRangeMode = bufferFormatEx.colorRangeMode;
-	if (!mpOutputBlitter)
-		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc);
+	if (!mpOutputBlitter) {
+		FilterModPixmapInfo out_info;
+		int out_format = 0;
+		if (mpVideoCompressor) out_format = mpVideoCompressor->GetInputFormat(&out_info);
+		IVDPixmapGen* extraDst = 0;
+		if (pBuffer->mPixmap.format==nsVDPixmap::kPixFormat_XRGB8888) {
+			VDPixmapGen_X8R8G8B8_Normalize* normalize = new VDPixmapGen_X8R8G8B8_Normalize;
+			extraDst = normalize;
+		}
+		if (pBuffer->mPixmap.format==nsVDPixmap::kPixFormat_XRGB64) {
+			VDPixmapGen_X16R16G16B16_Normalize* normalize = new VDPixmapGen_X16R16G16B16_Normalize;
+			if (out_format) normalize->max_value = out_info.ref_r;
+			extraDst = normalize;
+		}
+		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc, extraDst, 0);
+	}
 
 	mpOutputBlitter->Blit(pBuffer->mPixmap, pxsrc);
 	buf->Unlock();
