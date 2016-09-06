@@ -4049,6 +4049,7 @@ bool VDVideoDisplayMinidriverDX9::ModifySource(const VDVideoDisplaySourceInfo& i
 	}
 
 	mSource = info;
+	mbSwapChainImageValid = false;
 	return true;
 }
 
