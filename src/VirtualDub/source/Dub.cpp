@@ -262,6 +262,22 @@ namespace {
 		return true;
 	}
 
+	int DegradeFormatYUV(int format) {
+		using namespace nsVDPixmap;
+
+		switch(format) {
+		case kPixFormat_YUV410_Planar:	format = kPixFormat_YUV420_Planar; break;
+		case kPixFormat_YUV411_Planar:	format = kPixFormat_YUV422_YUYV; break;
+		case kPixFormat_YUV420_Planar:	format = kPixFormat_YUV422_YUYV; break;
+		case kPixFormat_YUV422_Planar:	format = kPixFormat_YUV422_YUYV; break;
+		case kPixFormat_YUV444_Planar:	format = kPixFormat_YUV422_YUYV; break;
+		default:
+			return 0;
+		}
+
+		return format;
+	}
+
 	int DegradeFormat(int format, uint32& rgbMask) {
 		using namespace nsVDPixmap;
 
@@ -325,15 +341,36 @@ namespace {
 }
 
 int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx format) {
+	// first try incoming format
+	if (vsrc->setTargetFormat(format))
+		return vsrc->getTargetFormat().format;
+
+	if (DegradeFormatYUV(format)) {
+		// if incoming format is some yuv, try variants
+		// at last set default
+		while (format) {
+			format.format = DegradeFormatYUV(format);
+
+			if (vsrc->setTargetFormat(format))
+				return vsrc->getTargetFormat().format;
+		}
+
+		// decoder failed to set default format
+		return 0;
+	}
+
+	// proceed to rgb
+	// at last set default
 	uint32 rgbTrackMask = 0;
 
-	do {
+	while (format) {
+		format.format = DegradeFormat(format, rgbTrackMask);
+
 		if (vsrc->setTargetFormat(format))
 			return vsrc->getTargetFormat().format;
+	}
 
-		format.format = DegradeFormat(format, rgbTrackMask);
-	} while(format);
-
+	// decoder failed to set default format
 	return 0;
 }
 
