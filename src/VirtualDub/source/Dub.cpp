@@ -1438,8 +1438,11 @@ void Dubber::InitSelectInputFormat() {
 }
 
 AudioStream* Dubber::InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources) {
+	mOptions.audio.fStartAudio = false;
+	mOptions.audio.fEndAudio = true;
 	mAudioSources.assign(pAudioSources, pAudioSources + nAudioSources);
 	AudioSource *audioSrc = mAudioSources.empty() ? NULL : mAudioSources.front();
+	InitVideoStreamValuesStatic(vInfo, 0, audioSrc, &mOptions, 0, 0, 0);
 	InitAudioStreamValuesStatic(aInfo, audioSrc, &mOptions);
 	InitAudioConversionChain();
 	return audioStream;
