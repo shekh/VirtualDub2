@@ -2143,10 +2143,7 @@ protected:
 		static const char sszHelpText[]=
 				"Oops -- VirtualDub has crashed. Details are listed below which may "
 				"help you pinpoint the problem. If a third party driver is implicated, "
-				"try using another driver and see if the problem goes away. For "
-				"reproducible problems in VirtualDub itself, use \"Save...\" and "
-				"email the problem report to <phaeron@virtualdub.org> along with a "
-				"description of what you were doing.";
+				"try using another driver and see if the problem goes away.";
 
 		SendDlgItemMessage(mhdlg, IDC_CRASH_HELP, WM_SETTEXT, 0, (LPARAM)sszHelpText);
 
