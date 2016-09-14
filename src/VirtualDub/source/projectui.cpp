@@ -3396,8 +3396,8 @@ void VDProjectUI::UpdateVideoFrameLayout() {
 			VDFraction inputPAR(inputVideo->getPixelAspectRatio());
 
 			IVDVideoWindow *inputWin = VDGetIVideoWindow(mhwndInputFrame);
-			inputWin->SetSourceSize(w, h);
 			inputWin->SetSourcePAR(inputPAR);
+			inputWin->SetSourceSize(w, h);
 
 			// figure out output size too
 
@@ -3419,8 +3419,8 @@ void VDProjectUI::UpdateVideoFrameLayout() {
 			}
 
 			IVDVideoWindow *outputWin = VDGetIVideoWindow(mhwndOutputFrame);
-			outputWin->SetSourceSize(w2, h2);
 			outputWin->SetSourcePAR(outputPAR);
+			outputWin->SetSourceSize(w2, h2);
 		}
 	}
 
