@@ -3448,12 +3448,16 @@ public:
 	}
 
 	DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+		//! limit to Low for compatibility with mpeg-2 plugin
+
 		if (nHeaderSize >= 12) {
 			if (!memcmp(pHeader, "RIFF", 4) && !memcmp((char*)pHeader+8, "CDXA", 4))
-				return kDC_High;
+				return kDC_Low;
+				//return kDC_High;
 
 			if (*(const uint32 *)pHeader == 0xba010000 || *(const uint32 *)pHeader==0xb3010000)
-				return kDC_High;
+				return kDC_Low;
+				//return kDC_High;
 
 			// Second pass for MPEG.  This time, scan the first 64 bytes for 00 00 01 BA.
 
@@ -3468,7 +3472,8 @@ public:
 					break;
 
 			if (i < limit)
-				return kDC_Moderate;
+				return kDC_Low;
+				//return kDC_Moderate;
 
 		}
 
