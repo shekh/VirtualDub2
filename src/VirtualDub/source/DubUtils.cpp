@@ -53,7 +53,7 @@ void VDStreamInterleaver::InitStream(int stream, uint32 nSampleSize, sint32 nPre
 	Stream& streaminfo = mStreams[stream];
 
 	streaminfo.mSamplesWrittenToSegment = 0;
-	streaminfo.mMaxSampleSize		= nSampleSize;
+	//streaminfo.mMaxSampleSize		= nSampleSize;
 	streaminfo.mPreloadMicroFrames	= (sint32)((double)nPreload / nSamplesPerFrame * 65536);
 	streaminfo.mSamplesPerFrame		= nSamplesPerFrame;
 	streaminfo.mSamplesPerFramePending	= -1;

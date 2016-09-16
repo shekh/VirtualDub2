@@ -348,7 +348,13 @@ void VDSaveVideoDialogW32::InitCodec() {
 
 	VDString s;
 
-	if(format==0) {
+	if (g_dubOpts.video.mode < DubVideoOptions::M_FASTREPACK) {
+		format = 0;
+		if (inputVideo)
+			format = inputVideo->getSourceFormat();
+	}
+
+	if (format==0) {
 		if (g_dubOpts.video.mode >= DubVideoOptions::M_FULL && inputVideo) {
 			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
 			s += VDPixmapFormatPrintSpec(inputFormat);

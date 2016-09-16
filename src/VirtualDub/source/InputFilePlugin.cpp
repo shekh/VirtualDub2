@@ -409,6 +409,8 @@ public:
 	void streamBegin(bool fRealTime, bool bForceReset);
 	void streamRestart();
 	void streamAppendReinit();
+	void applyStreamMode(sint32 flags);
+	void LoadFormat();
 
 	void invalidateFrameBuffer();
 	bool isFrameBufferValid();
@@ -438,6 +440,7 @@ protected:
 
 	vdrefptr<IVDXVideoSource> mpXVS;
 	vdrefptr<IVDXStreamSource> mpXS;
+	vdrefptr<IVDXStreamSourceV5> mpXS3;
 	vdrefptr<IVDXVideoDecoder> mpXVDec;
 	vdrefptr<IFilterModVideoDecoder> mpFMVDec;
 	vdrefptr<IVDXVideoDecoderModel> mpXVDecModel;
@@ -449,6 +452,34 @@ protected:
 	VDPixmap mTargetFormat;
 	VDPixmapFormatEx formatEx;
 };
+
+void VDVideoSourcePlugin::LoadFormat()
+{
+	const void *format;
+	uint32 formatLen;
+	vdwithinputplugin(mpContext) {
+		format = mpXS->GetDirectFormat();
+		formatLen = mpXS->GetDirectFormatLen();
+	}
+
+	if (format) {
+		memcpy(allocFormat(formatLen), format, formatLen);
+	} else {
+		BITMAPINFOHEADER *bih = (BITMAPINFOHEADER *)allocFormat(sizeof(BITMAPINFOHEADER));
+
+		bih->biSize				= sizeof(BITMAPINFOHEADER);
+		bih->biWidth			= mVSInfo.mWidth;
+		bih->biHeight			= mVSInfo.mHeight;
+		bih->biPlanes			= 1;
+		bih->biCompression		= 0xFFFFFFFF;
+		bih->biBitCount			= 32;
+		bih->biSizeImage		= 0;
+		bih->biXPelsPerMeter	= 0;
+		bih->biYPelsPerMeter	= 0;
+		bih->biClrUsed			= 0;
+		bih->biClrImportant		= 0;
+	}
+}
 
 VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverContextImpl *pContext, InputFile *pParent)
 	: mpParent(pParent)
@@ -468,6 +499,8 @@ VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverCont
 			mpXS->GetStreamSourceInfo(mSSInfo.mInfo);
 
 		pVS->GetVideoSourceInfo(mVSInfo);
+
+		mpXS3 = (IVDXStreamSourceV5 *)mpXS->AsInterface(IVDXStreamSourceV5::kIID);
 
 		// create a video decoder.
 		pVS->CreateVideoDecoder(~mpXVDec);
@@ -535,27 +568,7 @@ VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverCont
 	mSampleFirst = 0;
 	mSampleLast = mSSInfo.mInfo.mSampleCount;
 
-	if (format) {
-		int len;
-		vdwithinputplugin(mpContext) {
-			len = mpXS->GetDirectFormatLen();
-		}
-		memcpy(allocFormat(len), format, len);
-	} else {
-		BITMAPINFOHEADER *bih = (BITMAPINFOHEADER *)allocFormat(sizeof(BITMAPINFOHEADER));
-
-		bih->biSize				= sizeof(BITMAPINFOHEADER);
-		bih->biWidth			= mVSInfo.mWidth;
-		bih->biHeight			= mVSInfo.mHeight;
-		bih->biPlanes			= 1;
-		bih->biCompression		= 0xFFFFFFFF;
-		bih->biBitCount			= 32;
-		bih->biSizeImage		= 0;
-		bih->biXPelsPerMeter	= 0;
-		bih->biYPelsPerMeter	= 0;
-		bih->biClrUsed			= 0;
-		bih->biClrImportant		= 0;
-	}
+	LoadFormat();
 
 	streamInfo.fccType			= VDAVIStreamInfo::kTypeVideo;
 	streamInfo.fccHandler		= mSSInfo.mfccHandler;
@@ -751,6 +764,14 @@ uint32 VDVideoSourcePlugin::streamGetDecodePadding() {
 	}
 
 	return padding;
+}
+
+void VDVideoSourcePlugin::applyStreamMode(sint32 flags) {
+	if (!mpXS3) return;
+		vdwithinputplugin(mpContext) {
+		mpXS3->ApplyStreamMode(flags);
+	}
+	LoadFormat();
 }
 
 void VDVideoSourcePlugin::streamBegin(bool fRealTime, bool bForceReset) {

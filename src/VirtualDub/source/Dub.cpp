@@ -49,6 +49,7 @@
 #include <vd2/Riza/bitmap.h>
 #include <vd2/VDDisplay/display.h>
 #include <vd2/Riza/videocodec.h>
+#include <vd2/plugin/vdinputdriver.h>
 #include "AudioFilterSystem.h"
 #include "convert.h"
 #include "filters.h"
@@ -1159,6 +1160,7 @@ void Dubber::InitOutputFile() {
 			// If we are using smart rendering, we have no choice but to match the source format.
 			if (mOptions.video.mbUseSmartRendering) {
 				IVDStreamSource *vsrcStream = vSrc->asStream();
+				vsrcStream->applyStreamMode(IVDXStreamSourceV5::kStreamModeDirectCopy|IVDXStreamSourceV5::kStreamModeUncompress);
 				const VDAVIBitmapInfoHeader *srcFormat = vSrc->getImageFormat();
 				bool qresult;
 				if (driverLayout.format)
@@ -1183,19 +1185,21 @@ void Dubber::InitOutputFile() {
 		} else {
 			if (mOptions.video.mode < DubVideoOptions::M_FASTREPACK) {
 
+				IVDStreamSource *pVideoStream = vSrc->asStream();
+				pVideoStream->applyStreamMode(IVDXStreamSourceV5::kStreamModeDirectCopy);
+
 				if (vSrc->getImageFormat()->biCompression == 0xFFFFFFFF)
 					throw MyError("The source video stream uses a compression algorithm which is not compatible with AVI files. "
 								"Direct stream copy cannot be used with this video stream.");
 
-				IVDStreamSource *pVideoStream = vSrc->asStream();
-
 				outputFormat.assign(vSrc->getImageFormat(), pVideoStream->getFormatLen());
 
+				lVideoSizeEstimate = 0;
+				/*
 				// cheese
 				const VDPosition videoFrameStart	= pVideoStream->getStart();
 				const VDPosition videoFrameEnd		= pVideoStream->getEnd();
 
-				lVideoSizeEstimate = 0;
 				for(VDPosition frame = videoFrameStart; frame < videoFrameEnd; ++frame) {
 					uint32 bytes = 0;
 
@@ -1203,6 +1207,7 @@ void Dubber::InitOutputFile() {
 						if (lVideoSizeEstimate < bytes)
 							lVideoSizeEstimate = bytes;
 				}
+				*/
 			} else {
 				if (mOptions.video.mbUseSmartRendering) {
 					throw MyError("Cannot initialize smart rendering: No video codec is selected for compression.");
@@ -1860,7 +1865,11 @@ void Dubber::Stop() {
 
 	filters.DeinitFilters();
 
-	if (fVDecompressionOk)	{ vSrc->asStream()->streamEnd(); }
+	if (fVDecompressionOk)	{
+		IVDStreamSource *pVideoStream = vSrc->asStream();
+		pVideoStream->streamEnd(); 
+		pVideoStream->applyStreamMode(IVDXStreamSourceV5::kStreamModeUncompress);
+	}
 	if (fADecompressionOk)	{ aSrc->streamEnd(); }
 
 	{

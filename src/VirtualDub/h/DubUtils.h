@@ -66,7 +66,7 @@ protected:
 	struct Stream {
 		sint64		mSamplesWrittenToSegment;
 		sint32		mSamplesToWrite;
-		sint32		mMaxSampleSize;
+		//sint32		mMaxSampleSize;
 		double		mSamplesPerFrame;
 		double		mSamplesPerFramePending;
 		sint32		mIntervalMicroFrames;

@@ -578,7 +578,7 @@ void VDVideoCompressorVCM::Restart() {
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
 
 		driver->compressEnd();
-		res = driver->compressBegin((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat);
+		res = driver->compressBegin((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat, &mInputLayout);
 	}
 
 	if (res != ICERR_OK)

@@ -114,6 +114,29 @@ public:
 	virtual void				VDXAPIENTRY GetStreamSourceInfoV3(VDXStreamSourceInfoV3&) = 0;
 };
 
+// V5+ (FilterMod)
+class IVDXStreamSourceV5 : public IVDXUnknown {
+public:
+	enum { kIID = VDXMAKEFOURCC('X', 's', 't', '3') };
+
+	enum {
+		// query: return false if direct copy is unsupported and should be disabled by host
+		// apply: if not present, decoder can discard packets
+		kStreamModeDirectCopy = 1,
+
+		// query: return false if decode is unsupported
+		// apply: if not present, decoder can bypass decoding
+		kStreamModeUncompress = 2,
+
+		// query: return false if decoder has no optimization for this mode
+		// apply: if present, decoder should assume linear access (use frame threading etc), otherwise should assume random access
+		kStreamModePlayForward = 4,
+	};
+
+	virtual void VDXAPIENTRY ApplyStreamMode(uint32 flags) = 0;
+	virtual bool VDXAPIENTRY QueryStreamMode(uint32 flags) = 0;
+};
+
 class IVDXVideoDecoderModel : public IVDXUnknown {
 public:
 	enum { kIID = VDXMAKEFOURCC('X', 'v', 'd', 'm') };
@@ -295,7 +318,8 @@ enum {
 	//         on 1.8.x and 1.9.x releases.
 	// V4 (1.10.1): Added NoOptions definition flag.
 	// V4 (FilterMod): Added ForceByName definition flag.
-	kVDXPlugin_InputDriverAPIVersion = 4
+	// V5 (FilterMod): Extended StreamSource interface
+	kVDXPlugin_InputDriverAPIVersion = 5
 };
 
 #endif

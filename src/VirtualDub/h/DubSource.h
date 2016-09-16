@@ -65,6 +65,8 @@ public:
 	virtual void streamBegin(bool fRealTime, bool bForceReset) = 0;
 	virtual void streamEnd() = 0;
 
+	virtual void applyStreamMode(sint32 flags){}
+
 	enum ErrorMode {
 		kErrorModeReportAll = 0,
 		kErrorModeConceal,
