@@ -912,6 +912,7 @@ static void func_VDVideo_SetCompression(IVDScriptInterpreter *, VDScriptValue *a
 			const wchar_t* name = VDFileSplitPath(path.c_str());
 			if (_wcsicmp(name,fileName.c_str())!=0) continue;
 			g_Vcompression.driver = EncoderHIC::load(path, g_Vcompression.fccType, g_Vcompression.fccHandler, ICMODE_COMPRESS);
+			break;
 		}
 	} else {
 		g_Vcompression.driver = EncoderHIC::open(g_Vcompression.fccType, g_Vcompression.fccHandler, ICMODE_COMPRESS);
