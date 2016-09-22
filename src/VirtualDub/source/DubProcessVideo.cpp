@@ -1174,7 +1174,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	pBuffer->mPixmap.format = bufferFormatEx.format;
 	pBuffer->mPixmap.info.colorSpaceMode = bufferFormatEx.colorSpaceMode;
 	pBuffer->mPixmap.info.colorRangeMode = bufferFormatEx.colorRangeMode;
-	if (!mpOutputBlitter) {
+	if (!mpOutputBlitter && !mbPreview) {
 		FilterModPixmapInfo out_info;
 		int out_format = 0;
 		if (mpVideoCompressor) out_format = mpVideoCompressor->GetInputFormat(&out_info);
@@ -1189,6 +1189,8 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 			extraDst = normalize;
 		}
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc, extraDst, 0);
+	} else if(!mpOutputBlitter) {
+		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc);
 	}
 
 	mpOutputBlitter->Blit(pBuffer->mPixmap, pxsrc);

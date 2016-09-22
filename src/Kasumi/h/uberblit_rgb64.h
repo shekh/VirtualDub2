@@ -175,6 +175,8 @@ public:
 			dst.ref_g = max_value;
 			dst.ref_b = max_value;
 			dst.ref_a = max_value;
+			scale_down = true;
+			if (mr>0x10000 || mg>0x10000 || mb>0x10000 || ma>0x10000) scale_down = false;
 		}
 
 		a_mask = 0;
@@ -193,6 +195,7 @@ protected:
 	uint32 mr,mg,mb,ma;
 	uint32 a_mask;
 	bool do_normalize;
+	bool scale_down;
 
 	void Compute(void *dst0, sint32 y);
 	void ComputeAll(void *dst0, sint32 y);

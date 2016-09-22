@@ -148,21 +148,22 @@ void VDPixmapGen_X16R16G16B16_To_X8R8G8B8::Compute(void *dst0, sint32 y) {
 }
 
 void VDPixmapGen_X16R16G16B16_Normalize::Compute(void *dst0, sint32 y) {
-  if (do_normalize)
-    ComputeAll(dst0,y);
-  else if(a_mask)
-    ComputeWipeAlpha(dst0,y);
-  else
-    mpSrc->ProcessRow(dst0,y);
+	if (do_normalize)
+		ComputeAll(dst0,y);
+	else if(a_mask)
+		ComputeWipeAlpha(dst0,y);
+	else
+		mpSrc->ProcessRow(dst0,y);
 }
 
 void VDPixmapGen_X16R16G16B16_Normalize::ComputeAll(void *dst0, sint32 y) {
 	const uint16* src = (const uint16*)mpSrc->GetRow(y, mSrcIndex);
 	uint16* dst = (uint16*)dst0;
 
-	const int n2 = ((16-size_t(dst)) & 0xF)/8;
-	const int n0 = (mWidth-n2)/2;
-	const int n1 = mWidth-n2-n0*2;
+	int n2 = ((16-size_t(dst)) & 0xF)/8;
+	int n0 = (mWidth-n2)/2;
+	int n1 = mWidth-n2-n0*2;
+	if(!scale_down){ n2=mWidth; n0=0; n1=0; }
 
 	{for(sint32 x=0; x<n2; x++) {
 		uint16 r = src[2];
