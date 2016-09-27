@@ -2603,12 +2603,14 @@ bool VDVideoUploadContextD3D9::Init(void *hmonitor, bool use9ex, const VDPixmap&
 			}
 			break;
 
+		/*
 		case nsVDPixmap::kPixFormat_YUV422_V210:
 			if (mpManager->IsTextureFormatAvailable(D3DFMT_A2B10G10R10) && caps.PixelShaderVersion >= D3DPS_VERSION(2, 0)) {
 				mUploadMode = kUploadModeDirectV210;
 				d3dfmt = D3DFMT_A2B10G10R10;
 			}
 			break;
+		*/
 	}
 	
 	if (mUploadMode == kUploadModeNormal) {
@@ -2729,9 +2731,11 @@ bool VDVideoUploadContextD3D9::Init(void *hmonitor, bool use9ex, const VDPixmap&
 			case nsVDPixmap::kPixFormat_YUV420_NV12:
 				VDMemset8Rect(lr.pBits, lr.Pitch, 0x10, texw, texh);
 				break;
+			/*
 			case nsVDPixmap::kPixFormat_YUV422_V210:
 				VDMemset32Rect(lr.pBits, lr.Pitch, 0x20080200, ((texw + 5) / 6) * 4, texh);
 				break;
+			*/
 			case nsVDPixmap::kPixFormat_XRGB1555:
 			case nsVDPixmap::kPixFormat_RGB565:
 				VDMemset16Rect(lr.pBits, lr.Pitch, 0, texw, texh);
