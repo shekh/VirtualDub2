@@ -1171,9 +1171,11 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	VDPixmap pxsrc = VDPixmapFromLayout(layout, (void *)buf->LockRead());
 	pxsrc.info = buf->info;
 	pxsrc.info.frame_num = nextOutputFrame.mTimelineFrame;
-	pBuffer->mPixmap.format = bufferFormatEx.format;
-	pBuffer->mPixmap.info.colorSpaceMode = bufferFormatEx.colorSpaceMode;
-	pBuffer->mPixmap.info.colorRangeMode = bufferFormatEx.colorRangeMode;
+	if (bufferFormatEx) {
+		pBuffer->mPixmap.format = bufferFormatEx.format;
+		pBuffer->mPixmap.info.colorSpaceMode = bufferFormatEx.colorSpaceMode;
+		pBuffer->mPixmap.info.colorRangeMode = bufferFormatEx.colorRangeMode;
+	}
 	if (!mpOutputBlitter && !mbPreview) {
 		FilterModPixmapInfo out_info;
 		int out_format = 0;
