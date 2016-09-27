@@ -651,7 +651,8 @@ void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width,
 						break;
 
 					case kPixFormat_YUV422_V210:
-						format = kPixFormat_YUV422_Planar;
+						format = kPixFormat_YUV422_Planar16;
+						//format = kPixFormat_YUV422_Planar;
 						break;
 
 					case kPixFormat_Y8_FR:

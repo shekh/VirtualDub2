@@ -76,4 +76,34 @@ protected:
 	void Compute(void *dst0, sint32 y);
 };
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//	V210 -> P16
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+class VDPixmapGen_V210_To_P16 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+	void Start();
+	const void *GetRow(sint32 y, uint32 index);
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo unused;
+		mpSrc->TransformPixmapInfo(src,unused);
+    dst.colorSpaceMode = src.colorSpaceMode;
+    dst.colorRangeMode = src.colorRangeMode;
+    dst.ref_r = 0x3FF;
+    dst.ref_g = 0;
+    dst.ref_b = 0;
+    dst.ref_a = 0;
+	}
+
+	sint32 GetWidth(int index) const;
+	uint32 GetType(uint32 output) const;
+
+protected:
+	void Compute(void *dst0, sint32 y);
+};
+
 #endif	// f_VD2_KASUMI_UBERBLIT_V210_H

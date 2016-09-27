@@ -618,6 +618,11 @@ namespace {
 							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
 							break;
 
+						case kVDPixType_V210:
+							gen.conv_V210_to_P16();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
+							break;
+
 						default:
 							targetType = kVDPixType_32F_32F_32F_LE;
 							goto type_reconvert;

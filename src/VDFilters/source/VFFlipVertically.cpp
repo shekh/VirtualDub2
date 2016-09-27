@@ -61,6 +61,8 @@ static long flipv_param(VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 		case nsVDXPixmap::kPixFormat_YUV411_Planar_FR:
 		case nsVDXPixmap::kPixFormat_YUV411_Planar_709:
 		case nsVDXPixmap::kPixFormat_YUV411_Planar_709_FR:
+		case nsVDXPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDXPixmap::kPixFormat_YUV422_Planar16:
 			subh = pxdst.h;
 			pxdst.data2 += pxdst.pitch2*(subh - 1);
 			pxdst.pitch2 = -pxdst.pitch2;
@@ -71,6 +73,7 @@ static long flipv_param(VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 		case nsVDXPixmap::kPixFormat_YUV420_Planar_FR:
 		case nsVDXPixmap::kPixFormat_YUV420_Planar_709:
 		case nsVDXPixmap::kPixFormat_YUV420_Planar_709_FR:
+		case nsVDXPixmap::kPixFormat_YUV420_Planar16:
 			subh = (pxdst.h + 1) >> 1;
 			pxdst.data2 += pxdst.pitch2*(subh - 1);
 			pxdst.pitch2 = -pxdst.pitch2;

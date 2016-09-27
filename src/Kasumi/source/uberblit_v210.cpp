@@ -216,3 +216,59 @@ void VDPixmapGen_V210_To_32F::Compute(void *dst0, sint32 y) {
 		dstB += 3;
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VDPixmapGen_V210_To_P16::Start() {
+	StartWindow(((mWidth + 5) / 6) * 6 * sizeof(uint16), 3);
+}
+
+const void *VDPixmapGen_V210_To_P16::GetRow(sint32 y, uint32 index) {
+	return (const uint8 *)VDPixmapGenWindowBasedOneSource::GetRow(y, index) + mWindowPitch * index;
+}
+
+sint32 VDPixmapGen_V210_To_P16::GetWidth(int index) const {
+	return index == 1 ? mWidth : (mWidth + 1) >> 1;
+}
+
+uint32 VDPixmapGen_V210_To_P16::GetType(uint32 output) const {
+	return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16_LE;
+}
+
+void VDPixmapGen_V210_To_P16::Compute(void *dst0, sint32 y) {
+	uint16 *dstR = (uint16 *)dst0;
+	uint16 *dstG = (uint16 *)((char *)dstR + mWindowPitch);
+	uint16 *dstB = (uint16 *)((char *)dstG + mWindowPitch);
+	const uint32 *src = (const uint32 *)mpSrc->GetRow(y, mSrcIndex);
+	uint32 w = (mWidth + 5) / 6;
+
+	// dword 0: XX Cr0 Y0 Cb0
+	// dword 1: XX Y2 Cb1 Y1
+	// dword 2: XX Cb2 Y3 Cr1
+	// dword 3: XX Y5 Cr2 Y4
+
+	for(uint32 i=0; i<w; ++i) {
+		const uint32 w0 = src[0];
+		const uint32 w1 = src[1];
+		const uint32 w2 = src[2];
+		const uint32 w3 = src[3];
+		src += 4;
+    
+		dstB[0] =  w0        & 0x3ff;
+		dstG[0] = (w0 >> 10) & 0x3ff;
+		dstR[0] = (w0 >> 20) & 0x3ff;
+		dstG[1] =  w1        & 0x3ff;
+		dstB[1] = (w1 >> 10) & 0x3ff;
+		dstG[2] = (w1 >> 20) & 0x3ff;
+		dstR[1] =  w2        & 0x3ff;
+		dstG[3] = (w2 >> 10) & 0x3ff;
+		dstB[2] = (w2 >> 20) & 0x3ff;
+		dstG[4] =  w3        & 0x3ff;
+		dstR[2] = (w3 >> 10) & 0x3ff;
+		dstG[5] = (w3 >> 20) & 0x3ff;
+    
+		dstR += 3;
+		dstG += 6;
+		dstB += 3;
+	}
+}

@@ -89,6 +89,7 @@ public:
 	void conv_16F_to_32F();
 	void conv_16_to_32F();
 	void conv_V210_to_32F();
+	void conv_V210_to_P16();
 
 	void conv_8888_to_555();
 	void conv_8888_to_565();
