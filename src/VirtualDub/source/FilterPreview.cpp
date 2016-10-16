@@ -1197,6 +1197,8 @@ void FilterPreview::OnVideoRedraw() {
 				if (mpFiltSys->Run(NULL, false) == FilterSystem::kRunResult_Running)
 					continue;
 
+				if (req->IsCompleted()) break;
+
 				switch(mpVideoFrameSource->RunRequests(NULL,0)) {
 					case IVDFilterFrameSource::kRunResult_Running:
 					case IVDFilterFrameSource::kRunResult_IdleWasActive:
@@ -1225,6 +1227,8 @@ void FilterPreview::OnVideoRedraw() {
 				while(!req2->IsCompleted()) {
 					if (mpFiltSys->Run(NULL, false) == FilterSystem::kRunResult_Running)
 						continue;
+
+					if (req->IsCompleted()) break;
 
 					switch(mpVideoFrameSource->RunRequests(NULL,0)) {
 						case IVDFilterFrameSource::kRunResult_Running:
@@ -1683,6 +1687,8 @@ bool FilterPreview::SampleCurrentFrame() {
 						if (mpFiltSys->Run(NULL, false) == FilterSystem::kRunResult_Running)
 							continue;
 
+						if (req->IsCompleted()) break;
+
 						switch(mpVideoFrameSource->RunRequests(NULL,0)) {
 							case IVDFilterFrameSource::kRunResult_Running:
 							case IVDFilterFrameSource::kRunResult_IdleWasActive:
@@ -1811,6 +1817,8 @@ long FilterPreview::SampleFrames() {
 					if (mpFiltSys->Run(NULL, false) == FilterSystem::kRunResult_Running)
 						continue;
 
+					if (req->IsCompleted()) break;
+
 					switch(mpVideoFrameSource->RunRequests(NULL,0)) {
 						case IVDFilterFrameSource::kRunResult_Running:
 						case IVDFilterFrameSource::kRunResult_IdleWasActive:
@@ -1882,6 +1890,8 @@ long FilterPreview::SampleFrames(IFilterModPreviewSample* handler) {
 				while(!req->IsCompleted()) {
 					if (mpFiltSys->Run(NULL, false) == FilterSystem::kRunResult_Running)
 						continue;
+
+					if (req->IsCompleted()) break;
 
 					switch(mpVideoFrameSource->RunRequests(NULL,0)) {
 						case IVDFilterFrameSource::kRunResult_Running:
