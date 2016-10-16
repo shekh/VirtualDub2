@@ -327,6 +327,7 @@ namespace {
 		{ ID_EDIT_SETSELEND,			"Edit.SetSelectionEnd" },
 		{ ID_EDIT_SETMARKER,			"Edit.ToggleMarker" },
 		{ ID_EDIT_CLEARMARKERS,			"Edit.ClearMarkers" },
+		{ ID_EDIT_MARKERSFROMKEYS,		"Edit.MarkersFromKeys" },
 		{ ID_VIEW_POSITIONCONTROL,		"View.TogglePositionControl" },
 		{ ID_VIEW_STATUSBAR,			"View.ToggleStatusBar" },
 		{ ID_VIEW_CURVEEDITOR,			"View.ToggleCurveEditor" },
@@ -2226,6 +2227,19 @@ bool VDProjectUI::MenuHit(UINT id) {
 			mTimeline.ClearMarker();
 			mpPosition->SetTimeline(mTimeline);
 			break;
+		case ID_EDIT_MARKERSFROMKEYS:
+			if (inputVideo) {
+				VDPosition pos = 0;
+				while (1) {
+					pos = inputVideo->nextKey(pos);
+					if(pos==-1) break;
+					mTimeline.SetMarkerSrc(pos);
+				}
+
+				if (mpCB)
+					mpCB->UITimelineUpdated();
+			}
+			break;
 
 		case ID_AUDIO_ADVANCEDFILTERING:
 			g_dubOpts.audio.bUseAudioFilterGraph = !g_dubOpts.audio.bUseAudioFilterGraph;
@@ -2657,6 +2671,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_EDIT_CROPTOSELECTION		, bSelectionExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_SETMARKER			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_CLEARMARKERS			, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_EDIT_MARKERSFROMKEYS		, bSourceFileExists);
 
 	const wchar_t *undoAction = GetCurrentUndoAction();
 	const wchar_t *redoAction = GetCurrentRedoAction();

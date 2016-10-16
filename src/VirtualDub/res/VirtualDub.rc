@@ -131,6 +131,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Toggle marker",               ID_EDIT_SETMARKER
         MENUITEM "Clear markers",               ID_EDIT_CLEARMARKERS
+        MENUITEM "Markers from keys",           ID_EDIT_MARKERSFROMKEYS
     END
     POPUP "V&iew"
     BEGIN
