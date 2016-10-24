@@ -269,6 +269,8 @@ public:
 	virtual bool SetProjectData(const void* buf, const size_t buf_size, const wchar_t* id)=0;
 	virtual bool GetDataDir(wchar_t* buf, size_t* buf_size)=0;
 	virtual bool GetProjectDir(wchar_t* buf, size_t* buf_size)=0;
+	// FilterModVersion>=6
+	virtual bool GetMainSource(wchar_t* buf, size_t* buf_size)=0;
 };
 
 class IVDXVideoPrefetcher : public IVDXUnknown {
@@ -507,7 +509,7 @@ public:
 
 enum {
 	// This is the highest API version supported by this header file.
-	FILTERMOD_VERSION = 5,
+	FILTERMOD_VERSION = 6,
 };
 
 class FilterModActivation {

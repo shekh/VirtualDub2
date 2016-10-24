@@ -354,6 +354,7 @@ public:
 	virtual bool SetProjectData(const void* buf, const size_t buf_size, const wchar_t* id);
 	virtual bool GetDataDir(wchar_t* buf, size_t* buf_size);
 	virtual bool GetProjectDir(wchar_t* buf, size_t* buf_size);
+	virtual bool GetMainSource(wchar_t* buf, size_t* buf_size);
 };
 
 class FilterInstance : protected VDFilterActivationImpl, public VDFilterConfiguration, public vdrefcounted<IVDFilterFrameSource> {

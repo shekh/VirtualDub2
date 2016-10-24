@@ -37,6 +37,7 @@
 
 extern FilterFunctions g_VDFilterCallbacks;
 extern VDProject *g_project;
+extern wchar_t g_szInputAVIFile[MAX_PATH];
 
 /////////////////////////////////////
 
@@ -3029,5 +3030,23 @@ bool FilterModProject::GetProjectDir(wchar_t* buf, size_t* buf_size) {
 
 	*buf_size = size;
 	memcpy(buf,base.c_str(),size);
+	return true;
+}
+
+bool FilterModProject::GetMainSource(wchar_t* buf, size_t* buf_size) {
+	if (!g_szInputAVIFile[0]) {
+		*buf_size = 0;
+		return true;
+	}
+
+	VDStringW filename(VDGetFullPath(g_szInputAVIFile));
+	size_t size = (filename.length()+1)*2;
+	if (!buf || *buf_size<size) {
+		*buf_size = size;
+		return false;
+	}
+
+	*buf_size = size;
+	memcpy(buf,filename.c_str(),size);
 	return true;
 }
