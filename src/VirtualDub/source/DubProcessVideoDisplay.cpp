@@ -25,6 +25,7 @@
 #include "DubUtils.h"
 #include "AsyncBlitter.h"
 #include "ThreadedVideoCompressor.h"
+#include "VideoSource.h"
 #include "prefs.h"
 
 bool VDPreferencesIsPreferInternalVideoDecodersEnabled();

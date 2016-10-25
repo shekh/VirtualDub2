@@ -116,8 +116,15 @@ void VDVideoDecompressorVCM::Init(const void *srcFormat, uint32 srcFormatSize, H
 		mDriverName = VDswprintf(L"Video codec \"%ls\"", 1, &pName);
 	}
 
+	// utvideo alpha sources
 	if (bih->biCompression==VDMAKEFOURCC('U', 'L', 'R', 'A')) mbUseAlpha = true;
 	if (bih->biCompression==VDMAKEFOURCC('U', 'Q', 'R', 'A')) mbUseAlpha = true;
+
+	// magicyuv alpha sources
+	if (bih->biCompression==VDMAKEFOURCC('M', '8', 'R', 'A')) mbUseAlpha = true;
+	if (bih->biCompression==VDMAKEFOURCC('M', '8', 'Y', 'A')) mbUseAlpha = true;
+	if (bih->biCompression==VDMAKEFOURCC('M', '0', 'R', 'A')) mbUseAlpha = true;
+	if (bih->biCompression==VDMAKEFOURCC('M', '2', 'R', 'A')) mbUseAlpha = true;
 }
 
 bool VDVideoDecompressorVCM::QueryTargetFormat(int format) {
