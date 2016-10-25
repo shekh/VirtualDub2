@@ -1601,8 +1601,21 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 	// Initialize input window display.
 
 	if (!mbInputDisplayInitialized && mpInputDisplay) {
-		if (mbDoVideo)
-			mpInputDisplay->SetSource(false, vSrc->getTargetFormat(), NULL, 0, true, mOptions.video.previewFieldMode>0);
+		if (mbDoVideo) {
+			const VDPixmap& pxsrc = vSrc->getTargetFormat();
+			VDPixmap px;
+			px.w = pxsrc.w;
+			px.h = pxsrc.h;
+			px.format = pxsrc.format;
+			px.pitch = pxsrc.pitch;
+			px.pitch2 = pxsrc.pitch2;
+			px.pitch3 = pxsrc.pitch3;
+			px.palette = pxsrc.palette;
+			px.data = NULL;
+			px.data2 = NULL;
+			px.data3 = NULL;
+			mpInputDisplay->SetSource(false, px, NULL, 0, true, mOptions.video.previewFieldMode>0);
+		}
 	}
 
 	// initialize output parameters and output file

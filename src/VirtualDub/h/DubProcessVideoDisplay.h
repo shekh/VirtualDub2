@@ -47,6 +47,7 @@ public:
 	void SetOutputDisplay(IVDVideoDisplay *pVideoDisplay);
 	void SetBlitter(IVDAsyncBlitter *blitter);
 	void SetVideoCompressor(IVDVideoCompressor *pCompressor);
+	void SetVideoSource(IVDVideoSource *pVideo);
 
 	sint32 GetLatency() const;
 	uint32 GetDisplayClock() const;
@@ -74,6 +75,7 @@ protected:
 	bool				mbInputLocked;
 
 	// DISPLAY
+	vdrefptr<IVDVideoSource>	mpVideoSource;
 	uint32				mFramesToDrop;
 	IVDAsyncBlitter		*mpBlitter;
 	IVDVideoDisplay		*mpInputDisplay;

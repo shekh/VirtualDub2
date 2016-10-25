@@ -401,6 +401,23 @@ namespace {
 
 		return true;
 	}
+
+	bool VDAssertValidPixmapInfo(const VDPixmap& px) {
+		switch(px.format){
+		case nsVDPixmap::kPixFormat_XRGB64:
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+			if (px.info.ref_r<=0) {
+				VDDEBUG("Kasumi: Invalid PixmapInfo detected in pixmap.\n"
+						"        Pixmap info: format=%d, ref_r=%d\n", px.format, px.info.ref_r);
+				VDASSERT(!"Kasumi: Invalid PixmapInfo detected in pixmap.\n");
+				return false;
+			}
+		}
+		return true;
+	}
+
 #endif
 
 VDPixmap VDPixmapOffset(const VDPixmap& src, vdpixpos x, vdpixpos y) {

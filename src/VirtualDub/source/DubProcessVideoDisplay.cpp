@@ -19,6 +19,7 @@
 #include <vd2/system/profile.h>
 #include <vd2/Riza/bitmap.h>
 #include <vd2/VDDisplay/display.h>
+#include <../Kasumi/h/uberblit_rgb64.h>
 #include "Dub.h"
 #include "DubProcessVideoDisplay.h"
 #include "DubUtils.h"
@@ -158,6 +159,10 @@ void VDDubVideoProcessorDisplay::SetVideoCompressor(IVDVideoCompressor *pCompres
 	mpVideoCompressor = pCompressor;
 }
 
+void VDDubVideoProcessorDisplay::SetVideoSource(IVDVideoSource *pVideo) {
+	mpVideoSource = pVideo;
+}
+
 sint32 VDDubVideoProcessorDisplay::GetLatency() const {
 	return mpBlitter->getFrameDelta();
 }
@@ -206,6 +211,8 @@ void VDDubVideoProcessorDisplay::UnlockAndDisplay(bool forceDisplay, VDRenderOut
 	bool renderOutputFrame = (renderFrame || mbVideoDecompressorEnabled) && mpOutputDisplay && mpOptions->video.mode == DubVideoOptions::M_FULL && mpOptions->video.fShowOutputFrame && outputValid;
 
 	if (renderInputFrame) {
+		const VDPixmap& px = mpVideoSource->getTargetFormat();
+		mpInputDisplay->SetSource(false, px, NULL, 0, true, mpOptions->video.previewFieldMode>0);
 		mpBlitter->postAPC(BUFFERID_INPUT, AsyncUpdateCallback, mpInputDisplay, (void *)&mpOptions->video.previewFieldMode);
 	} else
 		mpBlitter->unlock(BUFFERID_INPUT);
@@ -310,6 +317,9 @@ void VDDubVideoProcessorDisplay::UpdateDecompressedVideo(const void *data, uint3
 		try {
 			memset((char *)data + size, 0xA5, kDecodeOverflowWorkaroundSize);
 			mpVideoDecompressor->DecompressFrame(mVideoDecompBuffer.base(), (char *)data, size, isKey, false);
+			if(mpVideoDecompressor->GetAlpha()) mVideoDecompBuffer.info.alpha_type = FilterModPixmapInfo::kAlphaMask;
+			if(mVideoDecompBuffer.format==nsVDPixmap::kPixFormat_XRGB64)
+				VDPixmap_b64a_to_X16R16G16B16(mVideoDecompBuffer,mVideoDecompBuffer);
 		} catch(const MyError&) {
 			mpBlitter->postAPC(0, AsyncDecompressorErrorCallback, mpOutputDisplay, NULL);
 			mbVideoDecompressorErrored = true;

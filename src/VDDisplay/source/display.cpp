@@ -428,8 +428,10 @@ void VDVideoDisplayWindow::SetSourcePalette(const uint32 *palette, int count) {
 
 bool VDVideoDisplayWindow::SetSource(bool bAutoUpdate, const VDPixmap& src, void *pObject, ptrdiff_t offset, bool bAllowConversion, bool bInterlaced) {
 	// We do allow data to be NULL for set-without-load.
-	if (src.data)
+	if (src.data) {
 		VDAssertValidPixmap(src);
+		VDAssertValidPixmapInfo(src);
+	}
 
 	VDVideoDisplaySourceInfo params;
 

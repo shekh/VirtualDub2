@@ -30,8 +30,10 @@ inline const VDPixmapFormatInfo& VDPixmapGetInfo(sint32 format) {
 
 #ifdef _DEBUG
 	bool VDAssertValidPixmap(const VDPixmap& px);
+	bool VDAssertValidPixmapInfo(const VDPixmap& px);
 #else
 	inline bool VDAssertValidPixmap(const VDPixmap& px) { return true; }
+	inline bool VDAssertValidPixmapInfo(const VDPixmap& px) { return true; }
 #endif
 
 inline VDPixmap VDPixmapFromLayout(const VDPixmapLayout& layout, void *p) {

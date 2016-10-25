@@ -189,6 +189,8 @@ void VDDubVideoProcessor::SetBlitter(IVDAsyncBlitter *blitter) {
 
 void VDDubVideoProcessor::SetVideoSources(IVDVideoSource *const *pVideoSources, uint32 count) {
 	mVideoSources.assign(pVideoSources, pVideoSources + count);
+	if (count)
+		mpProcDisplay->SetVideoSource(pVideoSources[0]);
 }
 
 void VDDubVideoProcessor::SetVideoFrameSource(VDFilterFrameManualSource *fs) {
