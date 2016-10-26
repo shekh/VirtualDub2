@@ -338,7 +338,7 @@ namespace {
 
 			paddd		mm6,mm0
 			ja			xloop
-			jz			xend
+			jz			xend_
 	xfin:
 			pcmpeqb		mm4, mm4
 			mov			ebx, [esp+20]
@@ -366,7 +366,7 @@ namespace {
 			pmaddwd		mm0,mm0			;mm0 = sq(pA + pC - 2*pB)	[mm0 mm5 mm3]
 			paddd		mm5,mm3
 			paddd		mm6,mm0
-	xend:
+	xend_:
 			movq		mm0, mm6
 			psrlq		mm0, 32
 			movq		mm1, mm5

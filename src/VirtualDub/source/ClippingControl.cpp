@@ -15,8 +15,6 @@
 //	along with this program; if not, write to the Free Software
 //	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#define f_CLIPPINGCONTROL_CPP
-
 #include "stdafx.h"
 
 #include <windows.h>
@@ -33,7 +31,7 @@ extern HINSTANCE g_hInst;
 
 static LRESULT APIENTRY ClippingControlWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-extern const char szClippingControlName[]="birdyClippingControl";
+const char szClippingControlName[]="birdyClippingControl";
 static const char szClippingControlOverlayName[]="birdyClippingControlOverlay";
 
 /////////////////////////////////////////////////////////////////////////////

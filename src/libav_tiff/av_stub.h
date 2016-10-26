@@ -2,6 +2,7 @@
 #define AVCODEC_STUB_H
 
 #include <stdint.h>
+#include <limits.h>
 #include <malloc.h>
 #include <string.h>
 #include <stdio.h>
