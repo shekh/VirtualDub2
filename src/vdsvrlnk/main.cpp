@@ -3,11 +3,11 @@
 #include <windows.h>
 
 
+/*
 namespace Windows95 {
-
 #include <svrapi.h>
-
 };
+*/
 
 
 #include <lmcons.h>
@@ -55,11 +55,6 @@ typedef	NET_API_STATUS (APIENTRY *LPNETSERVERGETINFONT)(
 				LPBYTE				*bufptr);
 
 static void InitComputerAlias() {
-	union {
-		struct Windows95::server_info_50 si_95;
-		char buf[2048];
-	} si;
-	unsigned short needed_size;
 	HMODULE hDll = NULL;
 	FARPROC fpNetServerGetInfo = NULL;
 
@@ -71,6 +66,12 @@ static void InitComputerAlias() {
 	// fake a computer name with 'ANON' and then 8 hex digits of the
 	// current tick value.
 
+    /*
+	union {
+		struct Windows95::server_info_50 si_95;
+		char buf[2048];
+	} si;
+	unsigned short needed_size;
 	if (hDll = LoadLibrary("svrapi.dll")) {
 		fpNetServerGetInfo = GetProcAddress(hDll, "NetServerGetInfo");
 
@@ -84,6 +85,7 @@ static void InitComputerAlias() {
 
 		FreeLibrary(hDll);
 	}
+    */
 
 	// Okay, that didn't work -- try Windows NT/2000.
 

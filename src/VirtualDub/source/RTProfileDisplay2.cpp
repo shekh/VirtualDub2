@@ -799,7 +799,7 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			mDragOffsetX = (short)LOWORD(lParam);
 			mDragOffsetY = (short)HIWORD(lParam);
 			::SetCapture(mhwnd);
-			::SetCursor(::LoadCursor(NULL, MAKEINTRESOURCE(IDC_SIZEALL)));
+			::SetCursor(::LoadCursor(NULL, IDC_SIZEALL));
 			::SetFocus(mhwnd);
 			break;
 
@@ -829,7 +829,7 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 
 		case WM_SETCURSOR:
 			if (::GetCapture() == mhwnd) {
-				::SetCursor(::LoadCursor(NULL, MAKEINTRESOURCE(IDC_SIZEALL)));
+				::SetCursor(::LoadCursor(NULL, IDC_SIZEALL));
 				return TRUE;
 			}
 			break;

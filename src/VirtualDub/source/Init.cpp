@@ -1181,10 +1181,10 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 		if (!argsFound && g_consoleMode)
 			throw MyError(
 				"This application allows usage of VirtualDub from the command line. To use\n"
-				"the program interactively, launch "VD_PROGRAM_EXEFILE_NAMEA" directly.\n"
+				"the program interactively, launch " VD_PROGRAM_EXEFILE_NAMEA " directly.\n"
 				"\n"
-				"Usage: "VD_PROGRAM_CLIEXE_NAMEA" ( /<switches> | video-file ) ...\n"
-				"       "VD_PROGRAM_CLIEXE_NAMEA" /? for help\n");
+				"Usage: " VD_PROGRAM_CLIEXE_NAMEA " ( /<switches> | video-file ) ...\n"
+				"       " VD_PROGRAM_CLIEXE_NAMEA " /? for help\n");
 
 		if (!g_consoleMode && !fExitOnDone)
 			disp.Post((VDGUIHandle)g_hWnd);

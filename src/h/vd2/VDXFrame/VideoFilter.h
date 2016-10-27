@@ -159,7 +159,7 @@ const VDXScriptObject VDXVideoFilterScriptObjectAdapter<T>::sScriptObject = {
 	NULL, (T::sScriptMethods == VDXVideoFilter::sScriptMethods) ? NULL : (VDXScriptFunctionDef *)static_cast<const VDXScriptFunctionDef *>(T::sScriptMethods), NULL
 };
 
-template<bool (&T_Routine)(VDXHWND)>
+template<bool (*T_Routine)(VDXHWND)>
 static bool VDXAPIENTRY VDXStaticAboutConfigureAdapter(VDXHWND parent) {
 	return T_Routine(parent);
 }
@@ -213,7 +213,7 @@ public:
 		mSourceCountHighMinus1 = T::kMaxInputCount - 1;
 
 		mpStaticAboutProc = T::StaticAbout == VDXVideoFilter::StaticAbout ? NULL : VDXStaticAboutConfigureAdapter<T::StaticAbout>;
-		mpStaticConfigureProc = T::StaticConfigure == VDXVideoFilter::StaticConfigure ? NULL :VDXStaticAboutConfigureAdapter<T::StaticConfigure>;
+		mpStaticConfigureProc = T::StaticConfigure == VDXVideoFilter::StaticConfigure ? NULL : VDXStaticAboutConfigureAdapter<T::StaticConfigure>;
 	}
 
 private:

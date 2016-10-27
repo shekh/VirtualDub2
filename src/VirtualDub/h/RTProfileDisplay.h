@@ -22,9 +22,7 @@
 
 #define RTPROFILEDISPLAYCONTROLCLASS (g_szRTProfileDisplayControlName)
 
-#ifndef f_RTPROFILEDISPLAY_CPP
 extern const char g_szRTProfileDisplayControlName[];
-#endif
 
 ATOM RegisterRTProfileDisplayControl();
 

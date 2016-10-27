@@ -183,9 +183,7 @@ char *TranslateDriverMessage(UINT msg) {
 
 /////////////////////
 
-extern "C" __declspec(dllexport) LRESULT CALLBACK DriverProc(DWORD dwDriverID, HDRVR hDriver, UINT uiMessage, LPARAM lParam1, LPARAM lParam2);
-
-__declspec(dllexport) LRESULT CALLBACK DriverProc(DWORD dwDriverID, HDRVR hDriver, UINT uiMessage, LPARAM lParam1, LPARAM lParam2)
+extern "C" __declspec(dllexport) LRESULT CALLBACK DriverProc(DWORD_PTR dwDriverID, HDRVR hDriver, UINT uiMessage, LPARAM lParam1, LPARAM lParam2)
 {
     IVideoCompressor *pi;
     int	    i;

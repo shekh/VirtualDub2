@@ -1,0 +1,8 @@
+1. Install Visual Studio 2015 Community Edition with Windows XP Support for C++
+2. Install latest DirectX SDK (2010 June): https://www.microsoft.com/en-us/download/details.aspx?id=6812
+3. Download YASM: http://yasm.tortall.net/Download.html
+   * Win64 .exe (for general use on 64-bit Windows)
+   Rename to yasm.exe and put it somewhere in the PATH
+4. Open src\VirtualDub.sln
+5. Build Win32 variant FIRST
+6. Build x64 variant

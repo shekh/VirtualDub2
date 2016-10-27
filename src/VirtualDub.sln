@@ -1,7 +1,12 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VirtualDub", "VirtualDub\VirtualDub.vcxproj", "{0766DAC1-1BC2-4FC8-BDDA-E083FC2F56F4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00} = {DBBE5717-54C3-494F-8EEF-6123B6DC8A00}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Kasumi", "Kasumi\Kasumi.vcxproj", "{0D252872-7542-4232-8D02-53F9182AEE15}"
 EndProject
@@ -55,79 +60,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDCapture", "VDCapture\VDCa
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VDDisplay", "VDDisplay\VDDisplay.vcxproj", "{6638DCCD-01B4-49F8-BC66-696648AA0B84}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "zlib\zlib.vcxproj", "{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libav_tiff", "libav_tiff\libav_tiff.vcxproj", "{5E347AEF-8712-47A5-93C6-13CCA58DD09C}"
+EndProject
 Global
-	GlobalSection(SourceCodeControl) = preSolution
-		SccNumberOfProjects = 28
-		SccProjectUniqueName0 = VirtualDub\\VirtualDub.vcxproj
-		SccLocalPath0 = .
-		SccProjectFilePathRelativizedFromConnection0 = VirtualDub\\
-		SccProjectUniqueName1 = Kasumi\\Kasumi.vcxproj
-		SccLocalPath1 = .
-		SccProjectFilePathRelativizedFromConnection1 = Kasumi\\
-		SccProjectUniqueName2 = Meia\\Meia.vcxproj
-		SccLocalPath2 = .
-		SccProjectFilePathRelativizedFromConnection2 = Meia\\
-		SccProjectUniqueName3 = Priss\\Priss.vcxproj
-		SccLocalPath3 = .
-		SccProjectFilePathRelativizedFromConnection3 = Priss\\
-		SccProjectUniqueName4 = Riza\\Riza.vcxproj
-		SccLocalPath4 = .
-		SccProjectFilePathRelativizedFromConnection4 = Riza\\
-		SccProjectUniqueName5 = system\\system.vcxproj
-		SccLocalPath5 = .
-		SccProjectFilePathRelativizedFromConnection5 = system\\
-		SccProjectUniqueName6 = Dita\\Dita.vcxproj
-		SccLocalPath6 = .
-		SccProjectFilePathRelativizedFromConnection6 = Dita\\
-		SccProjectUniqueName7 = VDLib\\VDLib.vcxproj
-		SccLocalPath7 = .
-		SccProjectFilePathRelativizedFromConnection7 = VDLib\\
-		SccProjectUniqueName8 = VDXFrame\\VDXFrame.vcxproj
-		SccLocalPath8 = ..
-		SccProjectFilePathRelativizedFromConnection8 = src\\VDXFrame\\
-		SccProjectUniqueName9 = VDCapture\\VDCapture.vcxproj
-		SccLocalPath9 = .
-		SccProjectFilePathRelativizedFromConnection9 = VDCapture\\
-		SccProjectUniqueName10 = VDDisplay\\VDDisplay.vcxproj
-		SccLocalPath10 = .
-		SccProjectFilePathRelativizedFromConnection10 = VDDisplay\\
-		SccLocalPath11 = .
-		SccProjectUniqueName12 = Ami\\Ami.vcxproj
-		SccLocalPath12 = Ami
-		SccProjectUniqueName13 = VDFilters\\VDFilters.vcxproj
-		SccLocalPath13 = .
-		SccProjectFilePathRelativizedFromConnection13 = VDFilters\\
-		SccProjectUniqueName14 = vdlaunch\\vdlaunch.vcxproj
-		SccLocalPath14 = vdlaunch
-		SccProjectUniqueName15 = vdjson\\vdjson.vcxproj
-		SccLocalPath15 = .
-		SccProjectFilePathRelativizedFromConnection15 = vdjson\\
-		SccProjectUniqueName16 = Tessa\\Tessa.vcxproj
-		SccLocalPath16 = .
-		SccProjectFilePathRelativizedFromConnection16 = Tessa\\
-		SccProjectUniqueName17 = helpfile\\helpfile.vcxproj
-		SccLocalPath17 = helpfile
-		SccProjectUniqueName18 = vdub\\vdub.vcxproj
-		SccLocalPath18 = vdub
-		SccProjectUniqueName19 = vdsvrlnk\\vdsvrlnk.vcxproj
-		SccLocalPath19 = vdsvrlnk
-		SccProjectUniqueName20 = vdremote\\vdremote.vcxproj
-		SccLocalPath20 = vdremote
-		SccProjectUniqueName21 = vdicmdrv\\vdicmdrv.vcxproj
-		SccLocalPath21 = vdicmdrv
-		SccProjectUniqueName22 = test\\test.vcxproj
-		SccLocalPath22 = test
-		SccProjectUniqueName23 = Sylia\\Sylia.vcxproj
-		SccLocalPath23 = Sylia
-		SccProjectUniqueName24 = Setup\\Setup.vcxproj
-		SccLocalPath24 = Setup
-		SccProjectUniqueName25 = Lina\\Lina.vcxproj
-		SccLocalPath25 = Lina
-		SccProjectUniqueName26 = disasm\\disasm.vcxproj
-		SccLocalPath26 = disasm
-		SccProjectUniqueName27 = Asuka\\Asuka.vcxproj
-		SccLocalPath27 = Asuka
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
 		Debug|x64 = Debug|x64
@@ -418,6 +355,30 @@ Global
 		{6638DCCD-01B4-49F8-BC66-696648AA0B84}.Release|Win32.Build.0 = Release|Win32
 		{6638DCCD-01B4-49F8-BC66-696648AA0B84}.Release|x64.ActiveCfg = Release|x64
 		{6638DCCD-01B4-49F8-BC66-696648AA0B84}.Release|x64.Build.0 = Release|x64
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Debug|Win32.Build.0 = Debug|Win32
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Debug|x64.ActiveCfg = Debug|x64
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Debug|x64.Build.0 = Debug|x64
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Helpfile|Win32.ActiveCfg = Release|Win32
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Helpfile|Win32.Build.0 = Release|Win32
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Helpfile|x64.ActiveCfg = Release|x64
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Helpfile|x64.Build.0 = Release|x64
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Release|Win32.ActiveCfg = Release|Win32
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Release|Win32.Build.0 = Release|Win32
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Release|x64.ActiveCfg = Release|x64
+		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00}.Release|x64.Build.0 = Release|x64
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Debug|Win32.Build.0 = Debug|Win32
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Debug|x64.ActiveCfg = Debug|x64
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Debug|x64.Build.0 = Debug|x64
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Helpfile|Win32.ActiveCfg = Release|Win32
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Helpfile|Win32.Build.0 = Release|Win32
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Helpfile|x64.ActiveCfg = Release|x64
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Helpfile|x64.Build.0 = Release|x64
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Release|Win32.ActiveCfg = Release|Win32
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Release|Win32.Build.0 = Release|Win32
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Release|x64.ActiveCfg = Release|x64
+		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

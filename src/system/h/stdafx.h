@@ -28,4 +28,4 @@
 #include <math.h>
 #include <ctype.h>
 
-const int MIIM_FTYPE = 0x100;
+//const int MIIM_FTYPE = 0x100;

@@ -414,7 +414,7 @@ namespace {
 			return E_FAIL;
 		}
 		WCHAR wsz[256];
-		swprintf(wsz, 256, L"FilterGraph %08p pid %08x", (DWORD_PTR)pUnkGraph, GetCurrentProcessId());
+		swprintf(wsz, 256, L"FilterGraph %08p pid %08x", (void*)pUnkGraph, GetCurrentProcessId());
 		HRESULT hr = CreateItemMoniker(L"!", wsz, &pMoniker);
 		if (SUCCEEDED(hr)) {
 			hr = pROT->Register(0, pUnkGraph, pMoniker, pdwRegister);

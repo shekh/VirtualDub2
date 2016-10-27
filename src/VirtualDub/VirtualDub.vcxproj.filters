@@ -710,6 +710,9 @@
     <ClCompile Include="source\af_timestretch.cpp">
       <Filter>Filters\Source - Audio Filters</Filter>
     </ClCompile>
+    <ClCompile Include="source\tool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="h\afiltdlg.h">
@@ -1200,6 +1203,9 @@
     </ClInclude>
     <ClInclude Include="..\h\vd2\plugin\vdvideoutil.h">
       <Filter>Filters\Interface headers - plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="source\tool.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
