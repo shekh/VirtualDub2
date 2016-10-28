@@ -28,4 +28,6 @@
 #include <math.h>
 #include <ctype.h>
 
+#if _MSC_VER <= 1500
 const int MIIM_FTYPE = 0x100;
+#endif

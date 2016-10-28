@@ -5,6 +5,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 
 #pragma warning(disable:4018)
 #pragma warning(disable:4244)
@@ -42,6 +43,9 @@ static char* av_strdup(const char* p){
 
 #define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
+#undef ENOMEM
+#undef ENOSYS
+#undef EINVAL
 #define AVERROR_UNKNOWN -1
 #define AVERROR_INVALIDDATA -1
 #define ENOMEM -2

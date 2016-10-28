@@ -560,7 +560,7 @@ void VDCLIProcessW32::Run(const char *name, const wchar_t *cmdLine, HANDLE hStdI
 	VDStringW launchCmdLine(VDMakePath(programPath.c_str(), VD_LAUNCH_HELPER_NAMEW));
 
 	if (!VDDoesPathExist(launchCmdLine.c_str()))
-		throw MyError("CLI: Cannot launch external program. The program launch helper "VD_LAUNCH_HELPER_NAMEA" is missing.");
+		throw MyError("CLI: Cannot launch external program. The program launch helper " VD_LAUNCH_HELPER_NAMEA " is missing.");
 
 	VDSignal launchEvent;
 

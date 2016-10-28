@@ -1006,9 +1006,9 @@ static void VDDebugDumpCrashContext(EXCEPTION_POINTERS *pExc, IVDProtectedScopeO
 		out.writef(" in module '%.64s'.", mi.name);
 	else
 #ifdef _M_AMD64
-		out.writef(" at "PTR_08lx".", pExc->ContextRecord->Rip);
+		out.writef(" at " PTR_08lx ".", pExc->ContextRecord->Rip);
 #else
-		out.writef(" at "PTR_08lx".", pExc->ContextRecord->Eip);
+		out.writef(" at " PTR_08lx ".", pExc->ContextRecord->Eip);
 #endif
 
 	if (exr.ExceptionCode == EXCEPTION_ACCESS_VIOLATION && exr.NumberParameters >= 2) {
@@ -1444,7 +1444,7 @@ static void VDDebugCrashDumpMemoryRegion(VDDebugCrashTextOutput& out, uintptr ba
 	}
 
 	for(int i=0; i<count; i+=8) {
-		out.WriteF("%-4s  "PTR_08lx":", name, base + 4*i);
+		out.WriteF("%-4s  " PTR_08lx ":", name, base + 4*i);
 		for(int j=0; j<8 && i+j < count; ++j)
 			out.WriteF(" %08x", savemem[i+j]);
 		out.Write("\n");
@@ -1804,11 +1804,11 @@ static void VDDebugCrashDumpCallStack(VDDebugCrashTextOutput& out, HANDLE hThrea
 					const char *pExportName = CrashLookupExport((HMODULE)mi.base, data, fnbase);
 
 					if (pExportName)
-						out.WriteF(PTR_08lx": %s!%s ["PTR_08lx"+%lx+%lx]\n", data, mi.name, pExportName, mi.base, fnbase, (long)(data-mi.base-fnbase));
+						out.WriteF(PTR_08lx ": %s!%s [" PTR_08lx "+%lx+%lx]\n", data, mi.name, pExportName, mi.base, fnbase, (long)(data-mi.base-fnbase));
 					else
-						out.WriteF(PTR_08lx": %s!%08lx\n", data, mi.name, (long)(data - mi.base));
+						out.WriteF(PTR_08lx ": %s!%08lx\n", data, mi.name, (long)(data - mi.base));
 				} else
-					out.WriteF(PTR_08lx": "PTR_08lx"\n", data, data);
+					out.WriteF(PTR_08lx ": " PTR_08lx "\n", data, data);
 
 				--limit;
 			}

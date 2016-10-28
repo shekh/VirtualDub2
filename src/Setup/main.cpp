@@ -491,7 +491,7 @@ BOOL APIENTRY AboutDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
 #else
 				"Release build"
 #endif
-				" ("__DATE__" "__TIME__")");
+				" (" __DATE__ " " __TIME__ ")");
 
 			return TRUE;
 
