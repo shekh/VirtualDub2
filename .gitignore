@@ -12,3 +12,6 @@ src/VDFilters/autogen
 src/VirtualDub/autogen
 version2.bin
 verstub.asm
+ipch
+*.db
+*.opendb

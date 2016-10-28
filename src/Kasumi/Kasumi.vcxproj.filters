@@ -154,6 +154,9 @@
     <ClCompile Include="source\stdafx.cpp">
       <Filter>Precompiled Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\uberblit_rgb64.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="h\bitutils.h">

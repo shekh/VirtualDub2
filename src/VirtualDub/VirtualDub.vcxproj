@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -21,10 +21,8 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0766DAC1-1BC2-4FC8-BDDA-E083FC2F56F4}</ProjectGuid>
     <RootNamespace>VirtualDub</RootNamespace>
-    <SccProjectName>Perforce Project</SccProjectName>
-    <SccLocalPath>..</SccLocalPath>
-    <SccProvider>MSSCCI:Perforce SCM</SccProvider>
   </PropertyGroup>
+	<Import Project="..\VirtualDub-projects.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -127,7 +125,7 @@ yasm -g cv8 -f win32 -o "$(IntDir)verstub.obj" verstub.asm
 </Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;shlwapi.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;shlwapi.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(VDLibPath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libc;libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -190,7 +188,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
 </Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(VDLibPath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libc;libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -250,7 +248,7 @@ yasm -g cv8 -f win32 -o "$(IntDir)verstub.obj" verstub.asm
 </Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;shlwapi.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;shlwapi.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(VDLibPath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -313,7 +311,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
 </Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(VDLibPath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -927,6 +925,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="source\tool.cpp" />
     <ClCompile Include="source\uiframe.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1852,6 +1851,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
     <ClInclude Include="..\h\vd2\plugin\vdvideoaccel.h" />
     <ClInclude Include="..\h\vd2\plugin\vdvideofilt.h" />
     <ClInclude Include="..\h\vd2\plugin\vdvideoutil.h" />
+    <ClInclude Include="source\tool.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="res\addpoint.cur" />
