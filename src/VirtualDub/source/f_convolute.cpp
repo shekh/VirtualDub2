@@ -242,7 +242,7 @@ static INT_PTR CALLBACK convoluteDlgProc( HWND hDlg, UINT message, WPARAM wParam
 				for(i=0; i<9; i++)
 					SetDlgItemInt(hDlg, IDC_MATRIX_1+i, cfd->m[i], TRUE);
 
-				SetWindowLongPtr(hDlg, DWLP_USER, (LONG)cfd);
+				SetWindowLongPtr(hDlg, DWLP_USER, (LPARAM)cfd);
 			}
             return (TRUE);
 

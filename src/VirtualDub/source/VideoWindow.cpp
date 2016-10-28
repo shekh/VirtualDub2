@@ -15,8 +15,6 @@
 //	along with this program; if not, write to the Free Software
 //	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#define f_VIDEOWINDOW_CPP
-
 #include "stdafx.h"
 
 #include <algorithm>
@@ -37,11 +35,11 @@ extern HINSTANCE g_hInst;
 
 extern bool VDPreferencesIsDisplay3DEnabled();
 
-static LRESULT APIENTRY VideoWindowWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+//static LRESULT APIENTRY VideoWindowWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 ////////////////////////////
 
-extern const char g_szVideoWindowClass[]="VDVideoWindow";
+const char g_szVideoWindowClass[]="VDVideoWindow";
 
 ////////////////////////////
 

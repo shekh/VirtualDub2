@@ -1793,7 +1793,7 @@ static void VDDebugCrashDumpCallStack(VDDebugCrashTextOutput& out, HANDLE hThrea
 		
 		if (fValid) {
 			if (VDDebugInfoLookupRVA(&g_debugInfo, data, buf, sizeof buf) >= 0) {
-				out.WriteF(PTR_08lx": %s()\n", data, buf);
+				out.WriteF(PTR_08lx ": %s()\n", data, buf);
 				--limit;
 			} else {
 				ModuleInfo mi;

@@ -15,8 +15,6 @@
 //	along with this program; if not, write to the Free Software
 //	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#define f_LOGWINDOW_CPP
-
 #include "stdafx.h"
 
 #include <windows.h>
@@ -42,7 +40,7 @@ enum {
 extern HINSTANCE g_hInst;
 extern const char g_szError[];
 
-extern const char g_szLogWindowControlName[]="phaeronLogWindowControl";
+const char g_szLogWindowControlName[]="phaeronLogWindowControl";
 
 class VDLogWindowControl : public IVDLogWindowControl {
 public:

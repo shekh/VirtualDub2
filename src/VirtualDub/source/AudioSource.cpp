@@ -379,7 +379,7 @@ bool AudioSourceDV::init() {
 			break;
 		}
 
-		streamTestPos += (uint64)(1 << i);
+		streamTestPos += int64(1) << i;
 	}
 
 open_ok:

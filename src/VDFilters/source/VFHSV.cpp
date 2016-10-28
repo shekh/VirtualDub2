@@ -1459,7 +1459,7 @@ static INT_PTR CALLBACK hsvDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPAR
 			{
 				HWND hwnd;
 				mfd = (HSVFilterData *)lParam;
-				SetWindowLongPtr(hDlg, DWLP_USER, (LONG)mfd);
+				SetWindowLongPtr(hDlg, DWLP_USER, (LPARAM)mfd);
 
 				hwnd = GetDlgItem(hDlg, IDC_HUE);
 				SendMessage(hwnd, TBM_SETRANGEMIN, (WPARAM)FALSE, 0);

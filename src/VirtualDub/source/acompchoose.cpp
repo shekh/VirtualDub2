@@ -342,7 +342,7 @@ static INT_PTR CALLBACK AudioChooseCompressionDlgProc(HWND hdlg, UINT msg, WPARA
 
 			aed.hwndDriverList = GetDlgItem(hdlg, IDC_DRIVER);
 
-			acmDriverEnum(ACMDriverEnumerator, (DWORD)&aed, ACM_DRIVERENUMF_NOLOCAL);
+			acmDriverEnum(ACMDriverEnumerator, (DWORD_PTR)&aed, ACM_DRIVERENUMF_NOLOCAL);
 
 			freemem(aed.pwfex);
 

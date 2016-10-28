@@ -61,7 +61,7 @@ static INT_PTR CALLBACK embossDlgProc( HWND hDlg, UINT message, WPARAM wParam, L
 				CheckDlgButton(hDlg, IDC_DIR_MIDDLERIGHT+mfd->direction, TRUE);
 				CheckDlgButton(hDlg, IDC_ROUNDED, !!mfd->rounded);
 
-				SetWindowLongPtr(hDlg, DWLP_USER, (LONG)mfd);
+				SetWindowLongPtr(hDlg, DWLP_USER, (LPARAM)mfd);
 			}
             return (TRUE);
 

@@ -27,9 +27,7 @@ struct VDPixmap;
 
 #define CLIPPINGCONTROLCLASS (szClippingControlName)
 
-#ifndef f_CLIPPINGCONTROL_CPP
 extern const char szClippingControlName[];
-#endif
 
 #define CCS_POSITION			(0x00000001L)
 #define CCS_FRAME				(0x00000002L)

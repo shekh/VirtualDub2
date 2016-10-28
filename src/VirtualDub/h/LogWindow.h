@@ -25,9 +25,7 @@
 
 #define LOGWINDOWCONTROLCLASS (g_szLogWindowControlName)
 
-#ifndef f_LOGWINDOW_CPP
 extern const char g_szLogWindowControlName[];
-#endif
 
 ATOM RegisterLogWindowControl();
 

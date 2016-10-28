@@ -53,7 +53,7 @@ void tool_lookup(const vdfastvector<const char *>& args, const vdfastvector<cons
 	int line;
 
 	if (pss->LookupLine(addr, fn, line))
-		printf("%08I64x   %s + %x [%s:%d]\n", addr, sym->name, addr-sym->rva, fn, line);
+		printf("%08I64x   %s + %llx [%s:%d]\n", addr, sym->name, addr-sym->rva, fn, line);
 	else
-		printf("%08I64x   %s + %x\n", addr, sym->name, addr-sym->rva);
+		printf("%08I64x   %s + %llx\n", addr, sym->name, addr-sym->rva);
 }

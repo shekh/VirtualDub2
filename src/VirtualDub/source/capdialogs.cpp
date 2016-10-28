@@ -900,7 +900,7 @@ public:
 				VDStringW s(GetCaption(300));
 
 				int v;
-				char dummy;
+				wchar_t dummy;
 				
 				if (1 != swscanf(s.c_str(), L" %d %c", &v, &dummy)) {
 					if (mTimingSetup.mbAllowLateInserts) {

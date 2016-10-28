@@ -331,7 +331,7 @@ static INT_PTR CALLBACK timesmoothDlgProc( HWND hDlg, UINT message, WPARAM wPara
 
 				mfd = (timesmoothFilterData *)lParam;
 
-				SetWindowLongPtr(hDlg, DWLP_USER, (LONG)mfd);
+				SetWindowLongPtr(hDlg, DWLP_USER, (LPARAM)mfd);
 
 				hwndItem = GetDlgItem(hDlg, IDC_STRENGTH);
 				SendMessage(hwndItem, TBM_SETRANGE, TRUE, MAKELONG(0, 10));

@@ -155,18 +155,18 @@ __emit 0x10
 		lock mov cs:dword ptr [eax+ecx*4+12300000h], 12345678h
 
 		__emit 0x2e
-		jc x1
+		jc x1_
 
 		__emit 0x3e
-		jc y1
+		jc y1_
 
 		call esi
 
 		shl ecx,1
 
 		ret
-x1:
-y1:
+x1_:
+y1_:
 		nop
 
 		fldcw word ptr [esp]

@@ -188,7 +188,7 @@ static INT_PTR CALLBACK fillDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 		case WM_INITDIALOG:
 		{
 			mfd = (MyFilterData *)lParam;
-			SetWindowLongPtr(hDlg, DWLP_USER, (LONG)mfd);
+			SetWindowLongPtr(hDlg, DWLP_USER, (LPARAM)mfd);
 
 			mfd->color_temp = mfd->color;
 			mfd->use_alpha_temp = mfd->use_alpha;
