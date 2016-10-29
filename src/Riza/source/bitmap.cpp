@@ -120,6 +120,10 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 		return kPixFormat_YUV420_NV12;
 
 	case VDMAKEFOURCC('b', '6', '4', 'a'):
+		variant = 2;
+		return kPixFormat_XRGB64;
+
+	case VDMAKEFOURCC('B', 'R', 'A', 64):
 		return kPixFormat_XRGB64;
 	}
 	return 0;
@@ -130,6 +134,9 @@ int VDGetPixmapToBitmapVariants(int format) {
 		return 3;
 
 	if (format == nsVDPixmap::kPixFormat_Y8)
+		return 2;
+
+	if (format == nsVDPixmap::kPixFormat_XRGB64)
 		return 2;
 
 	return 1;
@@ -276,7 +283,15 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biSizeImage	= w*4 * h;
 		break;
 	case kPixFormat_XRGB64:
-		dst->biCompression	= VDMAKEFOURCC('b', '6', '4', 'a');
+		switch(variant) {
+		case 2:
+			dst->biCompression	= VDMAKEFOURCC('b', '6', '4', 'a');
+			break;
+		case 1:
+		default:
+			dst->biCompression	= VDMAKEFOURCC('B', 'R', 'A', 64);
+			break;
+		}
 		dst->biBitCount		= 64;
 		dst->biSizeImage	= w*8 * h;
 		break;

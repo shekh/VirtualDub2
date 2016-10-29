@@ -1103,6 +1103,10 @@ void Dubber::InitOutputFile() {
 
 				bool foundDibCompatibleFormat = false;
 				for(variant=1; variant <= variants; ++variant) {
+					// BRA[64] is more simple but is not supported as output yet
+					if (outputFormatID==nsVDPixmap::kPixFormat_XRGB64 && variant==1)
+						continue;
+
 					bool dibCompatible;
 					if (srcFormat.empty()) {
 						dibCompatible = VDMakeBitmapFormatFromPixmapFormat(mpCompressorVideoFormat, outputFormatID, variant, outputWidth, outputHeight);
