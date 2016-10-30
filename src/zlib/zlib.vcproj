@@ -21,9 +21,9 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\..\lib\$(ConfigurationName)"
-			IntermediateDirectory="..\..\obj\$(ConfigurationName)\$(ProjectName)"
+			OutputDirectory="$(VDLibPath)"
 			ConfigurationType="4"
+			InheritedPropertySheets="..\VirtualDub-VC2005-IX86.vsprops;..\VirtualDub-VC2005-Debug.vsprops;..\VirtualDub-VC2005.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="0"
 			>
@@ -87,9 +87,9 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="..\..\lib\$(ConfigurationName)X64"
-			IntermediateDirectory="..\..\obj\$(ConfigurationName)X64\$(ProjectName)"
+			OutputDirectory="$(VDLibPath)"
 			ConfigurationType="4"
+			InheritedPropertySheets="..\VirtualDub-VC2005-AMD64.vsprops;..\VirtualDub-VC2005-Debug.vsprops;..\VirtualDub-VC2005.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="0"
 			>
@@ -154,9 +154,9 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\..\lib\$(ConfigurationName)"
-			IntermediateDirectory="..\..\obj\$(ConfigurationName)\$(ProjectName)"
+			OutputDirectory="$(VDLibPath)"
 			ConfigurationType="4"
+			InheritedPropertySheets="..\VirtualDub-VC2005-IX86.vsprops;..\VirtualDub-VC2005-Release.vsprops;..\VirtualDub-VC2005.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="0"
 			>
@@ -217,9 +217,9 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="..\..\lib\$(ConfigurationName)X64"
-			IntermediateDirectory="..\..\obj\$(ConfigurationName)X64\$(ProjectName)"
+			OutputDirectory="$(VDLibPath)"
 			ConfigurationType="4"
+			InheritedPropertySheets="..\VirtualDub-VC2005-AMD64.vsprops;..\VirtualDub-VC2005-Release.vsprops;..\VirtualDub-VC2005.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="0"
 			>
