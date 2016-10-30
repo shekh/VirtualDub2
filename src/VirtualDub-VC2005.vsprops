@@ -22,7 +22,7 @@
 	/>
 	<UserMacro
 		Name="VDDirTag"
-		Value="$(VDConfigDirTag)9$(VDPlatformDirTag)"
+		Value="$(VDConfigDirTag)$(VDPlatformDirTag)"
 	/>
 	<UserMacro
 		Name="VDLibPath"

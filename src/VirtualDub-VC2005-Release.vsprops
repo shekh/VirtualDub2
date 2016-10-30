@@ -6,6 +6,6 @@
 	>
 	<UserMacro
 		Name="VDConfigDirTag"
-		Value="Release"
+		Value="Release9"
 	/>
 </VisualStudioPropertySheet>
