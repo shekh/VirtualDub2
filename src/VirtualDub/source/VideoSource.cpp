@@ -643,7 +643,7 @@ public:
 	VDVideoDecompressorDIB();
 	~VDVideoDecompressorDIB();
 
-	void Init(const VDPixmapLayout& srcLayout, const uint32 *palette, uint32 maxPaletteEntries);
+	void Init(const VDPixmapLayout& srcLayout, int variant, const uint32 *palette, uint32 maxPaletteEntries);
 
 	bool QueryTargetFormat(int format);
 	bool QueryTargetFormat(const void *format);
@@ -657,12 +657,21 @@ public:
 	void DecompressFrame(void *dst, const void *src, uint32 srcSize, bool keyframe, bool preroll);
 	const void *GetRawCodecHandlePtr();
 	const wchar_t *GetName();
+	bool GetAlpha() {
+		switch (mSrcLayout.format) {
+		case nsVDPixmap::kPixFormat_XRGB8888:
+		case nsVDPixmap::kPixFormat_XRGB64:
+			return true;
+		}
+		return false;
+	}
 
 protected:
 	int		mWidth, mHeight;
 	uint32	mSrcLinSize;
 	int		mDstFormat;
 	int		mDstFormatVariant;
+	int		mSrcFormatVariant;
 	VDPixmapLayout	mSrcLayout;
 	VDPixmapLayout	mDstLayout;
 
@@ -675,6 +684,7 @@ VDVideoDecompressorDIB::VDVideoDecompressorDIB()
 	, mSrcLinSize(0)
 	, mDstFormat(0)
 	, mDstFormatVariant(0)
+	, mSrcFormatVariant(0)
 	, mSrcLayout()
 	, mDstLayout()
 {
@@ -683,10 +693,11 @@ VDVideoDecompressorDIB::VDVideoDecompressorDIB()
 VDVideoDecompressorDIB::~VDVideoDecompressorDIB() {
 }
 
-void VDVideoDecompressorDIB::Init(const VDPixmapLayout& srcLayout, const uint32 *palette, uint32 maxPaletteEntries) {
+void VDVideoDecompressorDIB::Init(const VDPixmapLayout& srcLayout, int variant, const uint32 *palette, uint32 maxPaletteEntries) {
 	mWidth = srcLayout.w;
 	mHeight = srcLayout.h;
 	mSrcLayout = srcLayout;
+	mSrcFormatVariant = variant;
 	mSrcLinSize = VDPixmapLayoutGetMinSize(mSrcLayout);
 
 	uint32 palEnts = VDPixmapGetInfo(srcLayout.format).palsize;
@@ -719,10 +730,23 @@ bool VDVideoDecompressorDIB::QueryTargetFormat(const void *format) {
 }
 
 bool VDVideoDecompressorDIB::SetTargetFormat(int format) {
-	if (!format)
-		format = mSrcLayout.format;
+	if (mSrcFormatVariant!=1) {
+		VDMakeBitmapCompatiblePixmapLayout(mDstLayout, mWidth, mHeight, mSrcLayout.format, 0);
+		mDstFormat = mSrcLayout.format;
+		mDstFormatVariant = mSrcFormatVariant;
+		return true;
+	}
 
-	if (mSrcLayout.format==nsVDPixmap::kPixFormat_XRGB64)
+	switch(mSrcLayout.format) {
+	case nsVDPixmap::kPixFormat_XRGB64:
+	case nsVDPixmap::kPixFormat_YUV444_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		format = mSrcLayout.format;
+		break;
+	}
+
+	if (!format)
 		format = mSrcLayout.format;
 
 	VDMakeBitmapCompatiblePixmapLayout(mDstLayout, mWidth, mHeight, format, 0);
@@ -818,7 +842,7 @@ IVDVideoDecompressor *VDFindVideoDecompressorEx(uint32 fccHandler, const VDAVIBi
 			VDMakeBitmapCompatiblePixmapLayout(layout, hdr->biWidth, hdr->biHeight, format, variant);
 
 			const uint32 *palette = (const uint32 *)(hdr + 1);
-			static_cast<VDVideoDecompressorDIB *>(dec)->Init(layout, palette, hdrlen >= sizeof(VDAVIBitmapInfoHeader) ? (hdrlen - sizeof(VDAVIBitmapInfoHeader)) >> 2 : 0);
+			static_cast<VDVideoDecompressorDIB *>(dec)->Init(layout, variant, palette, hdrlen >= sizeof(VDAVIBitmapInfoHeader) ? (hdrlen - sizeof(VDAVIBitmapInfoHeader)) >> 2 : 0);
 			return dec;
 		}
 	}
@@ -1328,7 +1352,7 @@ bool VideoSourceAVI::_construct(int streamIndex) {
 	mSourceLayout.h			= abs(bmih->biHeight);
 	mSourceVariant			= 1;
 
-	mSourceLayout.format = VDBitmapFormatToPixmapFormat(*(const VDAVIBitmapInfoHeader *)bmih);
+	mSourceLayout.format = VDBitmapFormatToPixmapFormat(*(const VDAVIBitmapInfoHeader *)bmih, mSourceVariant);
 
 	if (!VDPreferencesIsDirectYCbCrInputEnabled()) {
 		if (VDPixmapIsYCbCrFormat(mSourceLayout.format))
@@ -2167,11 +2191,6 @@ const void *VideoSourceAVI::streamGetFrame(const void *inputBuffer, uint32 data_
 					vdprotected2("using input buffer at "VDPROT_PTR"-"VDPROT_PTR, const void *, inputBuffer, const void *, (const char *)inputBuffer + data_len - 1) {
 						vdprotected1("decompressing video frame %lu", unsigned long, (unsigned long)frame_num) {
 							mpDecompressor->DecompressFrame(mpFrameBuffer, inputBuffer, data_len, _isKey(frame_num), is_preroll);
-
-							mTargetFormat.info.frame_num = frame_num;
-							if(mpDecompressor->GetAlpha()) mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaMask;
-							if(mTargetFormat.format==nsVDPixmap::kPixFormat_XRGB64)
-								VDPixmap_bitmap_to_X16R16G16B16(mTargetFormat,mTargetFormat,mTargetFormatVariant);
 						}
 					}
 				}
@@ -2190,6 +2209,10 @@ const void *VideoSourceAVI::streamGetFrame(const void *inputBuffer, uint32 data_
 	}
 
 	lLastFrame = frame_num;
+	mTargetFormat.info.frame_num = frame_num;
+	if(mpDecompressor->GetAlpha()) mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaMask;
+	if(mTargetFormat.format==nsVDPixmap::kPixFormat_XRGB64)
+		VDPixmap_bitmap_to_X16R16G16B16(mTargetFormat,mTargetFormat,mTargetFormatVariant);
 
 	return getFrameBuffer();
 }
