@@ -170,21 +170,6 @@ namespace {
 			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_32F_32F_32F_LE;
 		}
 
-		// if the source type is 16, we have to convert to 32F
-		if ((srcToken & kVDPixType_Mask) == kVDPixType_16_16_16_LE) {
-			// 0 1 2
-			gen.conv_16_to_32F();
-			gen.swap(1);
-			// 1 0 2
-			gen.conv_16_to_32F();
-			gen.swap(2);
-			// 2 0 1
-			gen.conv_16_to_32F();
-			gen.swap(2);
-			gen.swap(1);
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_32F_32F_32F_LE;
-		}
-
 		// look up sampling info
 		const VDPixmapSamplingInfo& srcInfo = VDPixmapGetSamplingInfo(srcToken);
 		const VDPixmapSamplingInfo& dstInfo = VDPixmapGetSamplingInfo(dstSamplingToken);
@@ -995,12 +980,8 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 			break;
 
 		case kVDPixType_V210:
-			gen.conv_V210_to_32F();
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_32F_32F_32F_LE;
-			break;
-
-		case kVDPixType_16_16_16_LE:
-			srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
+			gen.conv_V210_to_P16();
+			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
 			break;
 
 		case kVDPixType_16x4_LE:
@@ -1056,18 +1037,16 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 		}
 
 		// Do this here before range/space mode is fully established
-		uint32 src_format_type = VDPixmapGetFormatTokenFromFormat(src.format) & kVDPixType_Mask;
-		if (src_format_type==kVDPixType_V210 || src_format_type==kVDPixType_16_16_16_LE) {
+		if ((srcToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE) {
 			if ((dstToken & kVDPixSpace_Mask)==kVDPixSpace_BGR) {
-				srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 				bool studioRGB = true;
 				const VDPixmapGenYCbCrBasis* basis = &g_VDPixmapGenYCbCrBasis_601;
 				if (src.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
 					basis = &g_VDPixmapGenYCbCrBasis_709;
 				if (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full)
 					studioRGB = false;
-				gen.ycbcr_to_rgb32f_generic(*basis, studioRGB);
-				srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_BGR | kVDPixType_32Fx4_LE;
+				gen.ycbcr_to_rgb64_generic(*basis, studioRGB);
+				srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_BGR | kVDPixType_16x4_LE;
 			}
 		}
 

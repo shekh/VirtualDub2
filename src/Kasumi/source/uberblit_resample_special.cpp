@@ -80,6 +80,26 @@ void VDPixmapGenResampleRow_x2_p0_lin_u8::Compute(void *dst0, sint32 y) {
 	nsVDPixmapSpanUtils::horiz_expand2x_coaligned((uint8 *)dst0, src, mWidth);
 }
 
+//---------------------------------------------------------------------
+
+void VDPixmapGenResampleRow_x2_p0_lin_u16::Init(IVDPixmapGen *src, uint32 srcIndex) {
+	InitSource(src, srcIndex);
+	src->AddWindowRequest(0, 0);
+
+	mWidth = mSrcWidth * 2;
+}
+
+void VDPixmapGenResampleRow_x2_p0_lin_u16::Start() {
+	mpSrc->Start();
+	StartWindow(mWidth*2);
+}
+
+void VDPixmapGenResampleRow_x2_p0_lin_u16::Compute(void *dst0, sint32 y) {
+	const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex);
+
+	nsVDPixmapSpanUtils::horiz_expand2x_coaligned_u16((uint16 *)dst0, src, mWidth);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void VDPixmapGenResampleRow_x4_p0_lin_u8::Init(IVDPixmapGen *src, uint32 srcIndex) {
@@ -178,6 +198,31 @@ void VDPixmapGenResampleCol_d2_pnqrtr_lin_u8::Compute(void *dst0, sint32 y) {
 	};
 
 	nsVDPixmapSpanUtils::vert_expand2x_centered((uint8 *)dst0, src, mWidth, ~y << 7);
+}
+
+//---------------------------------------------------------------------
+
+
+void VDPixmapGenResampleCol_d2_pnqrtr_lin_u16::Init(IVDPixmapGen *src, uint32 srcIndex) {
+	InitSource(src, srcIndex);
+	src->AddWindowRequest(-1, 1);
+
+	mHeight = mSrcHeight * 2;
+}
+
+void VDPixmapGenResampleCol_d2_pnqrtr_lin_u16::Start() {
+	mpSrc->Start();
+	StartWindow(mWidth*2);
+}
+
+void VDPixmapGenResampleCol_d2_pnqrtr_lin_u16::Compute(void *dst0, sint32 y) {
+	sint32 y2 = (y - 1) >> 1;
+	const uint16 *src[2] = {
+		(const uint16 *)mpSrc->GetRow(y2, mSrcIndex),
+		(const uint16 *)mpSrc->GetRow(y2+1, mSrcIndex),
+	};
+
+	nsVDPixmapSpanUtils::vert_expand2x_centered_u16((uint16 *)dst0, src, mWidth, ~y << 7);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

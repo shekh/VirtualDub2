@@ -65,6 +65,10 @@ DEFINE_TEST_NONAUTO(UberblitPerf) {
 		nsVDPixmap::kPixFormat_YUV420_Planar_709_FR,
 		nsVDPixmap::kPixFormat_YUV411_Planar_709_FR,
 		nsVDPixmap::kPixFormat_YUV410_Planar_709_FR,
+		nsVDPixmap::kPixFormat_XRGB64,
+		nsVDPixmap::kPixFormat_YUV420_Planar16,
+		nsVDPixmap::kPixFormat_YUV422_Planar16,
+		nsVDPixmap::kPixFormat_YUV444_Planar16,
 	};
 
 	enum {
@@ -80,11 +84,11 @@ DEFINE_TEST_NONAUTO(UberblitPerf) {
 
 	static const int kSize = 512;
 
-	vdautoarrayptr<char> dstbuf(new char[kSize*kSize*4]);
-	vdautoarrayptr<char> srcbuf(new char[kSize*kSize*4]);
+	vdautoarrayptr<char> dstbuf(new char[kSize*kSize*8]);
+	vdautoarrayptr<char> srcbuf(new char[kSize*kSize*8]);
 	uint32 palette[256]={0};
 
-	memset(srcbuf.get(), 0, kSize*kSize*4);
+	memset(srcbuf.get(), 0, kSize*kSize*8);
 
 	VDPixmap srcPixmaps[kFormatCount];
 
@@ -93,6 +97,10 @@ DEFINE_TEST_NONAUTO(UberblitPerf) {
 		VDPixmapCreateLinearLayout(layout, kFormats[srcformat], kSize, kSize, 16);
 		srcPixmaps[srcformat] = VDPixmapFromLayout(layout, srcbuf.get());
 		srcPixmaps[srcformat].palette = palette;
+		srcPixmaps[srcformat].info.ref_r = 0xFFFF;
+		srcPixmaps[srcformat].info.ref_g = 0xFFFF;
+		srcPixmaps[srcformat].info.ref_b = 0xFFFF;
+		srcPixmaps[srcformat].info.ref_a = 0xFFFF;
 	}
 
 	vdfastvector<PerfEntry> perfEntries;
@@ -110,11 +118,16 @@ DEFINE_TEST_NONAUTO(UberblitPerf) {
 //		srcformat = 15;
 			const VDPixmap& srcPixmap = srcPixmaps[srcformat];
 			const char *srcName = VDPixmapGetInfo(kFormats[srcformat]).name;
+      bool blt_fail = false;
 
 			uint64 bltTime = (uint64)(sint64)-1;
 			for(int i=0; i<10; ++i) {
 				uint64 t1 = VDGetPreciseTick();
-				VDPixmapBlt(dstPixmap, srcPixmap);
+				if (!VDPixmapBlt(dstPixmap, srcPixmap)) {
+					blt_fail = true;
+					bltTime = 0;
+					break;
+				}
 				t1 = VDGetPreciseTick() - t1;
 
 				if (bltTime > t1)
@@ -139,7 +152,10 @@ DEFINE_TEST_NONAUTO(UberblitPerf) {
 			double bltSpeed = (double)(kSize*kSize) / 1000000.0 / (double)bltTime * VDGetPreciseTicksPerSecond();
 			double uberSpeed = (double)(kSize*kSize) / 1000000.0 / (double)uberTime * VDGetPreciseTicksPerSecond();
 
-			printf("%-20s %-20s %8.2fMP/sec %8.2fMP/sec\n", dstName, srcName, bltSpeed, uberSpeed);
+			if (blt_fail)
+				printf("%-18s <- %-18s %14s %8.2fMP/sec\n", dstName, srcName, "not impl.", uberSpeed);
+			else
+				printf("%-18s <- %-18s %8.2fMP/sec %8.2fMP/sec\n", dstName, srcName, bltSpeed, uberSpeed);
 
 			PerfEntry& ent = perfEntries.push_back();
 
@@ -148,6 +164,10 @@ DEFINE_TEST_NONAUTO(UberblitPerf) {
 			ent.bltSpeed = bltSpeed;
 			ent.uberSpeed = uberSpeed;
 			ent.ratio = uberSpeed / bltSpeed;
+			if (blt_fail) {
+  				ent.bltSpeed = 0;
+				ent.ratio = 0;
+			}
 		}
 	}
 
@@ -163,7 +183,10 @@ DEFINE_TEST_NONAUTO(UberblitPerf) {
 		const char *srcName = VDPixmapGetInfo(kFormats[ent.srcFormat]).name;
 		const char *dstName = VDPixmapGetInfo(kFormats[ent.dstFormat]).name;
 
-		printf("%-20s %-20s %8.2fMP/sec %8.2fMP/sec (%.1f%%)\n", dstName, srcName, ent.bltSpeed, ent.uberSpeed, ent.ratio*100.0);
+		if(!ent.bltSpeed)
+			printf("%-18s <- %-18s %14s %8.2fMP/sec\n", dstName, srcName, "not impl.", ent.uberSpeed);
+		else
+			printf("%-18s <- %-18s %8.2fMP/sec %8.2fMP/sec (%.1f%%)\n", dstName, srcName, ent.bltSpeed, ent.uberSpeed, ent.ratio*100.0);
 
 		if (ent.ratio >= 1.0)
 			break;

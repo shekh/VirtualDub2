@@ -35,6 +35,50 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////
 
+class VDPixmapGenYCbCrToRGB64Generic : public VDPixmapGenYCbCrToRGB64Base {
+public:
+	VDPixmapGenYCbCrToRGB64Generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB);
+
+	uint32 GetType(uint32 output) const;
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo buf;
+		mpSrcY->TransformPixmapInfo(src,buf);
+		mpSrcCr->TransformPixmapInfo(src,buf);
+		mpSrcCb->TransformPixmapInfo(src,buf);
+		dst.copy_frame(buf);
+		dst.ref_r = 0xFFFF;
+		dst.ref_g = 0xFFFF;
+		dst.ref_b = 0xFFFF;
+		dst.ref_a = 0xFFFF;
+		ref_r = buf.ref_r;
+	}
+
+	void Start() {
+		VDPixmapGenYCbCrToRGB64Base::Start();
+		UpdateParams();
+	}
+
+protected:
+	void UpdateParams();
+	virtual void Compute(void *dst0, sint32 y);
+
+	VDPixmapGenYCbCrBasis basis;
+	bool studioRGB;
+	int ref_r;
+
+	float mCoY;
+	float mCoRCr;
+	float mCoGCr;
+	float mCoGCb;
+	float mCoBCb;
+	float mBiasR;
+	float mBiasG;
+	float mBiasB;
+};
+
+////////////////////////////////////////////////////////////////////////////
+
 class VDPixmapGenYCbCrToRGB32FGeneric : public VDPixmapGenYCbCrToRGB32FBase {
 public:
 	VDPixmapGenYCbCrToRGB32FGeneric(const VDPixmapGenYCbCrBasis& basis, bool studioRGB);

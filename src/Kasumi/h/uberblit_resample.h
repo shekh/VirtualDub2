@@ -28,6 +28,10 @@ public:
 
 	void Init(IVDPixmapGen *src, uint32 srcIndex, uint32 width, float offset, float step, nsVDPixmap::FilterMode filterMode, float filterFactor, bool interpolationOnly);
 
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		mpSrc->TransformPixmapInfo(src,dst);
+	}
+
 	void Start();
 
 	uint32 GetType(uint32 output) const {
@@ -37,6 +41,7 @@ public:
 protected:
 	void Compute(void *dst0, sint32 y);
 	void Compute8(void *dst0, sint32 y);
+	void Compute16(void *dst0, sint32 y);
 	void Compute32(void *dst0, sint32 y);
 	void Compute128(void *dst0, sint32 y);
 
@@ -59,6 +64,10 @@ public:
 	~VDPixmapGenResampleCol();
 
 	void Init(IVDPixmapGen *src, uint32 srcIndex, uint32 height, float offset, float step, nsVDPixmap::FilterMode filterMode, float filterFactor, bool interpolationOnly);
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		mpSrc->TransformPixmapInfo(src,dst);
+	}
 
 	void Start();
 

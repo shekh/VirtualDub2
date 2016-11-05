@@ -73,7 +73,17 @@ DEFINE_TEST(Uberblit) {
 	const VDPixmapFormatInfo& fiSrc = VDPixmapGetInfo(src[0].format);
 	const VDPixmapFormatInfo& fiOutput = VDPixmapGetInfo(output.format);
 
-	for(int srcformat = nsVDPixmap::kPixFormat_XRGB1555; srcformat < nsVDPixmap::kPixFormat_Max_Standard; ++srcformat) {
+	int src_start = nsVDPixmap::kPixFormat_XRGB1555;
+	int src_end = nsVDPixmap::kPixFormat_Max_Standard-1;
+	int dst_start = nsVDPixmap::kPixFormat_XRGB1555;
+	int dst_end = nsVDPixmap::kPixFormat_Max_Standard-1;
+
+	#if 0
+	src_start = src_end = nsVDPixmap::kPixFormat_YUV444_Planar16;
+	dst_start = dst_end = nsVDPixmap::kPixFormat_XRGB64;
+	#endif
+
+	for(int srcformat = src_start; srcformat <= src_end; ++srcformat) {
 		VDPixmapFormat srcformat2 = (VDPixmapFormat)srcformat;
 
 		if (srcformat == kPixFormat_YUV444_XVYU)
@@ -96,7 +106,7 @@ DEFINE_TEST(Uberblit) {
 			in[v].validate();
 		}
 
-		for(int dstformat = nsVDPixmap::kPixFormat_XRGB1555; dstformat < nsVDPixmap::kPixFormat_Max_Standard; ++dstformat) {
+		for(int dstformat = dst_start; dstformat <= dst_end; ++dstformat) {
 			VDPixmapFormat dstformat2 = (VDPixmapFormat)dstformat;
 
 			if (dstformat == kPixFormat_YUV444_XVYU)
@@ -111,7 +121,10 @@ DEFINE_TEST(Uberblit) {
 				dstformat == kPixFormat_Y8_FR
 				) ? 2 : 8;
 
+			// convert src to dst
 			vdautoptr<IVDPixmapBlitter> blit2(VDPixmapCreateBlitter(out, in[0]));
+
+			// convert dst to rgb32
 			vdautoptr<IVDPixmapBlitter> blit3(VDPixmapCreateBlitter(output, out));
 
 			const VDPixmapFormatInfo& fiOut = VDPixmapGetInfo(out.format);

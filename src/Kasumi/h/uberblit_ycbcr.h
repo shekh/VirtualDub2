@@ -52,6 +52,18 @@ public:
 };
 
 
+class VDPixmapGenYCbCrToRGB64Base : public VDPixmapGenYCbCrToRGBBase {
+public:
+	void Start() {
+		mpSrcY->Start();
+		mpSrcCb->Start();
+		mpSrcCr->Start();
+
+		StartWindow(mWidth * 8);
+	}
+};
+
+
 class VDPixmapGenYCbCrToRGB32FBase : public VDPixmapGenYCbCrToRGBBase {
 public:
 	void Start() {

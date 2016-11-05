@@ -78,4 +78,24 @@ protected:
 	void Compute(void *dst0, sint32 y);
 };
 
+//---------------------------------------------------------------------
+
+class VDPixmapGenResampleRow_x2_p0_lin_u16 : public VDPixmapGenWindowBasedOneSource {
+public:
+	void Init(IVDPixmapGen *src, uint32 srcIndex);
+	void Start();
+
+protected:
+	void Compute(void *dst0, sint32 y);
+};
+
+class VDPixmapGenResampleCol_d2_pnqrtr_lin_u16: public VDPixmapGenWindowBasedOneSource {
+public:
+	void Init(IVDPixmapGen *src, uint32 srcIndex);
+	void Start();
+
+protected:
+	void Compute(void *dst0, sint32 y);
+};
+
 #endif

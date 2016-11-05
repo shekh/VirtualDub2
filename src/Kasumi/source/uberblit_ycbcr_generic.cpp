@@ -225,6 +225,169 @@ void VDPixmapGenYCbCrToRGB32Generic::Compute(void *dst0, sint32 y) {
 
 ////////////////////////////////////////////////////////////////////////////
 
+VDPixmapGenYCbCrToRGB64Generic::VDPixmapGenYCbCrToRGB64Generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB) {
+	this->basis = basis;
+	this->studioRGB = studioRGB;
+}
+
+void VDPixmapGenYCbCrToRGB64Generic::UpdateParams() {
+	float scale;
+	float scale2;
+	float bias;
+
+	if (studioRGB) {
+		scale = 255.0f / 219.0f;
+		scale2 = 255.0f / 224.0f;
+		bias = -16.0f / 255.0f;
+	} else {
+		scale = 1.0f;
+		scale2 = 1.0f;
+		bias = 0.0f;
+	}
+
+	int max_value = 0xFFFF;
+	float m = float(max_value)/ref_r;
+
+	mCoY = scale;
+	mCoRCr = basis.mToRGB[1][0] * scale2;
+	mCoGCr = basis.mToRGB[1][1] * scale2;
+	mCoGCb = basis.mToRGB[0][1] * scale2;
+	mCoBCb = basis.mToRGB[0][2] * scale2;
+	mCoY *= m;
+	mCoRCr *= m;
+	mCoGCr *= m;
+	mCoGCb *= m;
+	mCoBCb *= m;
+	mBiasR = bias*scale*max_value - (128.0f / 255.0f)*mCoRCr*ref_r;
+	mBiasG = bias*scale*max_value - (128.0f / 255.0f)*(mCoGCr + mCoGCb)*ref_r;
+	mBiasB = bias*scale*max_value - (128.0f / 255.0f)*mCoBCb*ref_r;
+}
+
+uint32 VDPixmapGenYCbCrToRGB64Generic::GetType(uint32 output) const {
+	return (mpSrcY->GetType(mSrcIndexY) & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixType_16x4_LE | kVDPixSpace_BGR;
+}
+
+void VDPixmapGenYCbCrToRGB64Generic::Compute(void *dst0, sint32 y) {
+	uint16 *dst = (uint16 *)dst0;
+	const uint16 *srcY = (const uint16 *)mpSrcY->GetRow(y, mSrcIndexY);
+	const uint16 *srcCb = (const uint16 *)mpSrcCb->GetRow(y, mSrcIndexCb);
+	const uint16 *srcCr = (const uint16 *)mpSrcCr->GetRow(y, mSrcIndexCr);
+
+	VDCPUCleanupExtensions();
+	// requires round-to-nearest (standard)
+	int prev_csr = _mm_getcsr();
+	VDASSERT((prev_csr & 0x6000)==0);
+
+	const __m128 const_my = _mm_set1_ps(mCoY);
+	const __m128 const_rcr = _mm_set1_ps(mCoRCr);
+	const __m128 const_gcr = _mm_set1_ps(mCoGCr);
+	const __m128 const_gcb = _mm_set1_ps(mCoGCb);
+	const __m128 const_bcb = _mm_set1_ps(mCoBCb);
+	const __m128 const_biasR = _mm_set1_ps(mBiasR-0x8000);
+	const __m128 const_biasG = _mm_set1_ps(mBiasG-0x8000);
+	const __m128 const_biasB = _mm_set1_ps(mBiasB-0x8000);
+	const __m128i zero = _mm_setzero_si128();
+	const __m128i bias = _mm_set1_epi16((uint16)0x8000);
+
+	sint32 w0 = (mWidth-4) & ~3;
+	sint32 w1 = mWidth-w0;
+
+	for(sint32 i=0; i<w0/4; ++i) {
+		__m128i y = _mm_loadu_si128((__m128i*)srcY);
+		y = _mm_unpacklo_epi16(y,zero);
+		__m128 yf = _mm_cvtepi32_ps(y);
+
+		__m128i cb = _mm_loadu_si128((__m128i*)srcCb);
+		cb = _mm_unpacklo_epi16(cb,zero);
+		__m128 cbf = _mm_cvtepi32_ps(cb);
+
+		__m128i cr = _mm_loadu_si128((__m128i*)srcCr);
+		cr = _mm_unpacklo_epi16(cr,zero);
+		__m128 crf = _mm_cvtepi32_ps(cr);
+
+		yf = _mm_mul_ps(yf,const_my);
+
+		__m128 Rf = _mm_mul_ps(crf,const_rcr);
+		Rf = _mm_add_ps(Rf,yf);
+		Rf = _mm_add_ps(Rf,const_biasR);
+
+		__m128 Bf = _mm_mul_ps(cbf,const_bcb);
+		Bf = _mm_add_ps(Bf,yf);
+		Bf = _mm_add_ps(Bf,const_biasB);
+
+		crf = _mm_mul_ps(crf,const_gcr);
+		cbf = _mm_mul_ps(cbf,const_gcb);
+		__m128 Gf = _mm_add_ps(crf,cbf);
+		Gf = _mm_add_ps(Gf,yf);
+		Gf = _mm_add_ps(Gf,const_biasG);
+
+		__m128i R = _mm_cvtps_epi32(Rf);
+		__m128i G = _mm_cvtps_epi32(Gf);
+		__m128i B = _mm_cvtps_epi32(Bf);
+		R = _mm_packs_epi32(R,R);
+		G = _mm_packs_epi32(G,G);
+		B = _mm_packs_epi32(B,B);
+		__m128i BG = _mm_unpacklo_epi16(B,G);
+		__m128i R0 = _mm_unpacklo_epi16(R,zero);
+		BG = _mm_add_epi16(BG,bias);
+		R0 = _mm_add_epi16(R0,bias);
+		__m128i BGR0_0 = _mm_unpacklo_epi32(BG,R0);
+		__m128i BGR0_1 = _mm_unpackhi_epi32(BG,R0);
+		_mm_storeu_si128((__m128i*)dst,BGR0_0);
+		_mm_storeu_si128((__m128i*)(dst+8),BGR0_1);
+
+		dst += 16;
+		srcY += 4;
+		srcCb += 4;
+		srcCr += 4;
+	}
+
+	for(sint32 i=0; i<w1; ++i) {
+		int y = *srcY;
+		__m128 yf = _mm_cvtsi32_ss(_mm_setzero_ps(),y);
+
+		int cb = *srcCb;
+		__m128 cbf = _mm_cvtsi32_ss(_mm_setzero_ps(),cb);
+
+		int cr = *srcCr;
+		__m128 crf = _mm_cvtsi32_ss(_mm_setzero_ps(),cr);
+
+		yf = _mm_mul_ss(yf,const_my);
+
+		__m128 Rf = _mm_mul_ss(crf,const_rcr);
+		Rf = _mm_add_ss(Rf,yf);
+		Rf = _mm_add_ss(Rf,const_biasR);
+
+		__m128 Bf = _mm_mul_ss(cbf,const_bcb);
+		Bf = _mm_add_ss(Bf,yf);
+		Bf = _mm_add_ss(Bf,const_biasB);
+
+		crf = _mm_mul_ss(crf,const_gcr);
+		cbf = _mm_mul_ss(cbf,const_gcb);
+		__m128 Gf = _mm_add_ss(crf,cbf);
+		Gf = _mm_add_ss(Gf,yf);
+		Gf = _mm_add_ss(Gf,const_biasG);
+
+		int R = _mm_cvtss_si32(Rf) + 0x8000;
+		int G = _mm_cvtss_si32(Gf) + 0x8000;
+		int B = _mm_cvtss_si32(Bf) + 0x8000;
+		if(R<0) R = 0; if(R>0xFFFF) R = 0xFFFF;
+		if(G<0) G = 0; if(G>0xFFFF) G = 0xFFFF;
+		if(B<0) B = 0; if(B>0xFFFF) B = 0xFFFF;
+		dst[0] = uint16(B);
+		dst[1] = uint16(G);
+		dst[2] = uint16(R);
+		dst[3] = 0;
+
+		dst += 4;
+		srcY++;
+		srcCb++;
+		srcCr++;
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////
+
 VDPixmapGenYCbCrToRGB32FGeneric::VDPixmapGenYCbCrToRGB32FGeneric(const VDPixmapGenYCbCrBasis& basis, bool studioRGB) {
 	float scale;
 	float scale2;

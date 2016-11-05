@@ -846,6 +846,18 @@ void VDPixmapUberBlitterGenerator::linearh(float xoffset, float xfactor, uint32 
 		}
 	}
 
+	if (xoffset == 0.5f && (src->GetType(srcIndex) & kVDPixType_Mask) == kVDPixType_16_LE) {
+		if (xfactor == 0.5f && w == srcw*2) {
+			VDPixmapGenResampleRow_x2_p0_lin_u16 *out = new VDPixmapGenResampleRow_x2_p0_lin_u16;
+
+			out->Init(src, srcIndex);
+			mGenerators.push_back(out);
+			MarkDependency(out, src);
+			args[0] = StackEntry(out, 0);
+			return;
+		}
+	}
+
 	VDPixmapGenResampleRow *out = new VDPixmapGenResampleRow;
 
 	out->Init(args[0].mpSrc, args[0].mSrcIndex, w, xoffset, xfactor, nsVDPixmap::kFilterLinear, 0, interpOnly);
@@ -905,6 +917,18 @@ void VDPixmapUberBlitterGenerator::linearv(float yoffset, float yfactor, uint32 
 #else
 			VDPixmapGenResampleCol_d4_pn38_lin_u8 *out = new VDPixmapGenResampleCol_d4_pn38_lin_u8;
 #endif
+
+			out->Init(src, srcIndex);
+			mGenerators.push_back(out);
+			MarkDependency(out, src);
+			args[0] = StackEntry(out, 0);
+			return;
+		}
+	}
+
+	if ((src->GetType(srcIndex) & kVDPixType_Mask) == kVDPixType_16_LE) {
+		if (yoffset == 0.25f && yfactor == 0.5f && h == srch*2) {
+			VDPixmapGenResampleCol_d2_pnqrtr_lin_u16 *out = new VDPixmapGenResampleCol_d2_pnqrtr_lin_u16;
 
 			out->Init(src, srcIndex);
 			mGenerators.push_back(out);
@@ -1616,6 +1640,22 @@ void VDPixmapUberBlitterGenerator::ycbcr_to_rgb32_generic(const VDPixmapGenYCbCr
 	StackEntry *args = &mStack.back() - 2;
 
 	VDPixmapGenYCbCrToRGB32Generic *src = new VDPixmapGenYCbCrToRGB32Generic(basis, studioRGB);
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex, args[1].mpSrc, args[1].mSrcIndex, args[2].mpSrc, args[2].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	MarkDependency(src, args[1].mpSrc);
+	MarkDependency(src, args[2].mpSrc);
+	args[0] = StackEntry(src, 0);
+	mStack.pop_back();
+	mStack.pop_back();
+}
+
+void VDPixmapUberBlitterGenerator::ycbcr_to_rgb64_generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB) {
+	StackEntry *args = &mStack.back() - 2;
+
+	VDPixmapGenYCbCrToRGB64Generic *src = new VDPixmapGenYCbCrToRGB64Generic(basis, studioRGB);
 
 	src->Init(args[0].mpSrc, args[0].mSrcIndex, args[1].mpSrc, args[1].mSrcIndex, args[2].mpSrc, args[2].mSrcIndex);
 
