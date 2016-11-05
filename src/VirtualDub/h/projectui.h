@@ -73,6 +73,7 @@ public:
 	void SaveRawVideoAsk(bool batchMode);
 	void ExportViaEncoderAsk(bool batchMode);
 	void ExportViaDriverTool(int id);
+	void ExportViaDriverTool(const char* id);
 	void SaveConfigurationAsk();
 	void LoadConfigurationAsk();
 	void LoadProjectAsk();

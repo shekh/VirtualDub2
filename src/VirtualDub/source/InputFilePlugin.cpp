@@ -66,11 +66,13 @@ public:
 	virtual uint32 VDXAPIENTRY GetCPUFeatureFlags();
 
 	VDStringW	mName;
+	int max_api_version;
 	MyError		mError;
 };
 
 VDInputDriverContextImpl::VDInputDriverContextImpl(const VDPluginDescription *pInfo) {
 	mName.sprintf(L"Input driver plugin \"%S\"", pInfo->mName.c_str());
+	max_api_version = pInfo->mpShadowedInfo->mTypeAPIVersionUsed;
 	mpCallbacks = this;
 }
 
@@ -1226,6 +1228,9 @@ public:
 
 	bool GetVideoSource(int index, IVDVideoSource **ppSrc);
 	bool GetAudioSource(int index, AudioSource **ppSrc);
+	int GetInputDriverApiVersion(){ 
+		return mpContext->max_api_version;
+	}
 	void GetFileTool(IFilterModFileTool **pp){
 		*pp=0;
 		if (mpXObject) {

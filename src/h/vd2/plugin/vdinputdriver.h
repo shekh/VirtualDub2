@@ -179,6 +179,9 @@ public:
 	enum { kIID = VDXMAKEFOURCC('F', 'M', 'f', 't') };
 	virtual bool VDXAPIENTRY GetExportMenuInfo(int id, char* name, int name_size, bool* enabled) = 0;
 	virtual bool VDXAPIENTRY ExecuteExport(int id, VDXHWND hwndParent, IProjectState* state) = 0;
+
+	// V6
+	virtual bool VDXAPIENTRY GetExportCommandName(int id, char* name, int name_size) = 0;
 };
 
 enum VDXVideoFrameType {
@@ -319,7 +322,8 @@ enum {
 	// V4 (1.10.1): Added NoOptions definition flag.
 	// V4 (FilterMod): Added ForceByName definition flag.
 	// V5 (FilterMod): Extended StreamSource interface
-	kVDXPlugin_InputDriverAPIVersion = 5
+	// V6 (FilterMod): Extended IFilterModFileTool interface
+	kVDXPlugin_InputDriverAPIVersion = 6
 };
 
 #endif

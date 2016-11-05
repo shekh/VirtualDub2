@@ -403,6 +403,7 @@ namespace {
 		{ ID_HELP_ONLINE_KB,			"Help.ShowOnlineKB" },
 		//{ ID_DUBINPROGRESS_ABORTFAST,	"Render.AbortWithoutDialog" },
 		{ ID_DUBINPROGRESS_ABORT,		"Render.Abort" },
+		{ ID_EXPORT_STREAM_COPY,		"Export.StreamCopy" },
 	};
 }
 
@@ -1058,6 +1059,25 @@ class ProjectState: public IProjectState {
 		return true;
 	}
 };
+
+void VDProjectUI::ExportViaDriverTool(const char* name) {
+	int api_version = inputAVI->GetInputDriverApiVersion();
+	if (api_version<6) return;
+	IFilterModFileTool* tool;
+	inputAVI->GetFileTool(&tool);
+	if (tool) {
+		ProjectState state;
+		{for(int id=0;;id++) {
+			char name2[128];
+			if (!tool->GetExportCommandName(id,name2,128)) break;
+			if (strcmp(name,name2)==0) {
+				tool->ExecuteExport(id,(VDXHWND)mhwnd,&state);
+				break;
+			}
+		}}
+		tool->Release();
+	}
+}
 
 void VDProjectUI::ExportViaDriverTool(int id) {
 	IFilterModFileTool* tool;
@@ -1995,6 +2015,9 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_EXPORT_DRIVERTOOL2:
 		case ID_EXPORT_DRIVERTOOL3:
 			ExportViaDriverTool(id-ID_EXPORT_DRIVERTOOL0);
+			break;
+		case ID_EXPORT_STREAM_COPY:	
+			ExportViaDriverTool("Export.StreamCopy");
 			break;
 		case ID_FILE_CLOSEAVI:					Close();						break;
 		case ID_FILE_STARTSERVER:				StartServer();					break;

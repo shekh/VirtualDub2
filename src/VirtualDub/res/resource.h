@@ -1463,6 +1463,7 @@
 #define ID_DISPLAY_BLEND0               40585
 #define ID_DISPLAY_BLEND1               40586
 #define ID_EDIT_MARKERSFROMKEYS         40587
+#define ID_EXPORT_STREAM_COPY           40588
 #define ID_AUDIOMODE_11KHZ_8MONO        41000
 #define ID_AUDIOMODE_11KHZ_8STEREO      41001
 #define ID_AUDIOMODE_11KHZ_16MONO       41002
@@ -1519,7 +1520,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        310
-#define _APS_NEXT_COMMAND_VALUE         40588
+#define _APS_NEXT_COMMAND_VALUE         40589
 #define _APS_NEXT_CONTROL_VALUE         1540
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

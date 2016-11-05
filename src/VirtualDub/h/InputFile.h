@@ -78,6 +78,7 @@ public:
 	virtual bool GetAudioSource(int index, AudioSource **ppSrc);
 
 	virtual void GetFileTool(IFilterModFileTool **pp){ *pp=0; } 
+	virtual int GetInputDriverApiVersion(){ return -1; }
 
 protected:
 	void AddFilename(const wchar_t *lpszFile);
