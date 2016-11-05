@@ -31,7 +31,7 @@ public:
 	VDFilterFrameConverter();
 	~VDFilterFrameConverter();
 
-	void Init(IVDFilterFrameSource *source, const VDPixmapLayout& outputLayout, const VDPixmapLayout *sourceLayoutOverride, int threads);
+	void Init(IVDFilterFrameSource *source, const VDPixmapLayout& outputLayout, const VDPixmapLayout *sourceLayoutOverride);
 	void Start(IVDFilterFrameEngine *frameEngine);
 	void Stop();
 
@@ -40,6 +40,7 @@ public:
 	sint64 GetSymbolicFrame(sint64 outputFrame, IVDFilterFrameSource *source);
 	sint64 GetNearestUniqueFrame(sint64 outputFrame);
 
+	int AllocateNodes(int threads);
 	RunResult RunRequests(const uint32 *batchNumberLimit, int index);
 	RunResult RunProcess(int index);
 

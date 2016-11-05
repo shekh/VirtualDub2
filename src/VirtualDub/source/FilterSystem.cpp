@@ -123,10 +123,10 @@ VDFilterSystemProcessNode::VDFilterSystemProcessNode(IVDFilterFrameSource *src, 
 	, mbBlocked(true)
 	, mbAccelerated(src->IsAccelerated())
 {
-	if (src->IsAccelerated()) threads = 1;
-	proxy_count = threads;
-	proxy = new VDFilterSystemProcessProxy[threads];
-	{for(int i=0; i<threads; i++){
+	//if (src->IsAccelerated()) threads = 1;
+	proxy_count = src->AllocateNodes(threads);
+	proxy = new VDFilterSystemProcessProxy[proxy_count];
+	{for(int i=0; i<proxy_count; i++){
 		proxy[i].engine = this;
 		proxy[i].index = i;
 	}}
@@ -1432,7 +1432,7 @@ void FilterSystem::DeallocateBuffers() {
 void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout& dstLayout) {
 	vdrefptr<VDFilterFrameConverter> conv(new VDFilterFrameConverter);
 
-	conv->Init(tail.mpSrc, dstLayout, NULL, mProcessNodes);
+	conv->Init(tail.mpSrc, dstLayout, NULL);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 	conv->RegisterSourceAllocReqs(0, tail.mpProxy);
 	tail.mpSrc = conv;
@@ -1445,7 +1445,7 @@ void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout
 void FilterSystem::AppendAlignmentFilter(StreamTail& tail, const VDPixmapLayout& dstLayout, const VDPixmapLayout& srcLayout) {
 	vdrefptr<VDFilterFrameConverter> conv(new VDFilterFrameConverter);
 
-	conv->Init(tail.mpSrc, dstLayout, &srcLayout, mProcessNodes);
+	conv->Init(tail.mpSrc, dstLayout, &srcLayout);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 	conv->RegisterSourceAllocReqs(0, tail.mpProxy);
 	tail.mpSrc = conv;

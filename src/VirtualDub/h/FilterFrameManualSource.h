@@ -60,6 +60,7 @@ public:
 
 	void Start(IVDFilterFrameEngine *frameEngine) {}
 	void Stop() {}
+	int AllocateNodes(int threads) { return 1; }
 	RunResult RunRequests(const uint32 *batchNumberLimit, int index) { return kRunResult_Idle; }
 	RunResult RunProcess(int index) { return kRunResult_Idle; }
 

@@ -265,6 +265,7 @@ public:
 		kRunResult_BatchLimitedWasActive
 	};
 
+	virtual int AllocateNodes(int threads) = 0;
 	virtual RunResult RunRequests(const uint32 *batchNumberLimit, int index) = 0;
 	virtual RunResult RunProcess(int index) = 0;
 };
@@ -402,6 +403,7 @@ public:
 	bool	CreateRequest(sint64 outputFrame, bool writable, uint32 batchNumber, IVDFilterFrameClientRequest **req);
 	bool	CreateSamplingRequest(sint64 outputFrame, VDXFilterPreviewSampleCallback sampleCB, void *sampleCBData, IFilterModPreviewSample* sampleHandler, uint32 batchNumber, IVDFilterFrameClientRequest **req);
 	static int GetSamplingRequestResult(IVDFilterFrameClientRequest *req);
+	int AllocateNodes(int threads) { return 1; }
 	RunResult RunRequests(const uint32 *batchNumberLimit, int index);
 	RunResult RunProcess(int index);
 

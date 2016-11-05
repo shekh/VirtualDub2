@@ -46,23 +46,27 @@ VDFilterFrameConverterNode::VDFilterFrameConverterNode()
 VDFilterFrameConverter::VDFilterFrameConverter()
 {
 	node = 0;
+	node_count = 0;
 }
 
 VDFilterFrameConverter::~VDFilterFrameConverter() {
 	delete[] node;
 }
 
-void VDFilterFrameConverter::Init(IVDFilterFrameSource *source, const VDPixmapLayout& outputLayout, const VDPixmapLayout *sourceLayoutOverride, int threads) {
+void VDFilterFrameConverter::Init(IVDFilterFrameSource *source, const VDPixmapLayout& outputLayout, const VDPixmapLayout *sourceLayoutOverride) {
 	mpSource = source;
 	mSourceLayout = sourceLayoutOverride ? *sourceLayoutOverride : source->GetOutputLayout();
 	SetOutputLayout(outputLayout);
+}
 
+int VDFilterFrameConverter::AllocateNodes(int threads) {
 	node_count = threads;
 	node = new VDFilterFrameConverterNode[threads];
 	{for(int i=0; i<threads; i++){
 		node[i].source = this;
 		node[i].mpBlitter = VDPixmapCreateBlitter(mLayout, mSourceLayout);
 	}}
+	return threads;
 }
 
 void VDFilterFrameConverter::Start(IVDFilterFrameEngine *engine) {
