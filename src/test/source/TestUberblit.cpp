@@ -93,7 +93,7 @@ DEFINE_TEST(Uberblit) {
 		vdautoptr<IVDPixmapBlitter> blit1;
 				const VDPixmapFormatInfo& fiIn = VDPixmapGetInfo(in[0].format);
 
-		const int maxsrctest = (srcformat == kPixFormat_Y8 || srcformat == kPixFormat_Y8_FR) ? 2 : 8;
+		const int maxsrctest = (srcformat == kPixFormat_Y8 || srcformat == kPixFormat_Y8_FR || srcformat == kPixFormat_Y16) ? 2 : 8;
 
 		for(int v=0; v<maxsrctest; ++v) {
 			in[v].init(size, size, srcformat);
@@ -117,8 +117,10 @@ DEFINE_TEST(Uberblit) {
 
 			int maxtest = (srcformat == kPixFormat_Y8 ||
 				srcformat == kPixFormat_Y8_FR ||
+				srcformat == kPixFormat_Y16 ||
 				dstformat == kPixFormat_Y8 ||
-				dstformat == kPixFormat_Y8_FR
+				dstformat == kPixFormat_Y8_FR ||
+				dstformat == kPixFormat_Y16
 				) ? 2 : 8;
 
 			// convert src to dst

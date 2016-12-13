@@ -69,6 +69,7 @@ public:
 	void ldsrc(int srcIndex, int srcPlane, int x, int y, uint32 w, uint32 h, uint32 type, uint32 bpr);
 
 	void ldconst(uint8 fill, uint32 bpr, uint32 w, uint32 h, uint32 type);
+	void ldconstF(float fill, uint32 bpr, uint32 w, uint32 h, uint32 type);
 
 	void extract_8in16(int offset, uint32 w, uint32 h);
 	void extract_8in32(int offset, uint32 w, uint32 h);

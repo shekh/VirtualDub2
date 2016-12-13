@@ -86,6 +86,7 @@ uint32 VDPixmapGetFormatTokenFromFormat(int format) {
 	case kPixFormat_YUV444_Planar16:	return kVDPixType_16_16_16_LE | kVDPixSamp_444 | kVDPixSpace_YCC_601;
 	case kPixFormat_YUV422_Planar16:	return kVDPixType_16_16_16_LE | kVDPixSamp_422 | kVDPixSpace_YCC_601;
 	case kPixFormat_YUV420_Planar16:	return kVDPixType_16_16_16_LE | kVDPixSamp_420_MPEG2 | kVDPixSpace_YCC_601;
+	case kPixFormat_Y16:				return kVDPixType_16_LE | kVDPixSamp_444 | kVDPixSpace_Y_601;
 	default:
 		VDASSERT(false);
 		return 0;
@@ -467,6 +468,31 @@ namespace {
 					}
 					break;
 
+				case kVDPixType_16_LE:
+					switch(srcType) {
+						case kVDPixType_16_16_16_LE:
+							gen.pop();
+							gen.swap(1);
+							gen.pop();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_LE;
+							break;
+
+						case kVDPixType_16F_LE:
+						case kVDPixType_8:
+							targetType = kVDPixType_32F_LE;
+							goto type_reconvert;
+
+						case kVDPixType_32F_LE:
+							gen.conv_32F_to_16();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_LE;
+							break;
+
+						default:
+							targetType = kVDPixType_16_16_16_LE;
+							goto type_reconvert;
+					}
+					break;
+
 				case kVDPixType_8_8_8:
 					switch(srcType) {
 						case kVDPixType_B8G8_R8G8:
@@ -823,6 +849,7 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 	case kVDPixType_555_LE:
 	case kVDPixType_565_LE:
 	case kVDPixType_1555_LE:
+	case kVDPixType_16_LE:
 		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w*2);
 		break;
 
@@ -1328,6 +1355,25 @@ space_reconvert:
 						break;
 					case kVDPixSpace_Y_601:
 					case kVDPixSpace_Y_709:
+						if ((srcToken & kVDPixType_Mask)!=kVDPixType_8) {
+							srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_LE, w, h);
+							srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_601;
+
+							{
+								const VDPixmapSamplingInfo& sinfo = VDPixmapGetSamplingInfo(srcToken);
+								int cw = ((w - 1) >> sinfo.mPlane1Cb.mXBits) + 1;
+								int ch = ((h - 1) >> sinfo.mPlane1Cb.mYBits) + 1;
+
+								gen.ldconstF(128.0/255.0, cw, cw, ch, srcToken);
+							}
+
+							gen.dup();
+							gen.swap(2);
+							gen.swap(1);
+							srcToken = kVDPixSpace_YCC_601 | kVDPixType_32F_32F_32F_LE | (srcToken & kVDPixSamp_Mask);
+							break;
+						}
+
 						srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_YCC_601 | kVDPixType_8;
 
 						{

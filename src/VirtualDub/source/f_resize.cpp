@@ -76,6 +76,20 @@ namespace {
 		int iw = VDCeilToInt(r.right	- 0.5f) - ix;
 		int ih = VDCeilToInt(r.bottom	- 0.5f) - iy;
 
+		int c0 = (c >> 8) & 0xFF;
+		int c1 = c & 0xFF;
+		int c2 = (c >> 16) & 0xFF;
+
+		switch(px.format) {
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+			c0 = (c0*px.info.ref_r+1)/0xFF;
+			c1 = (c1*px.info.ref_r+1)/0xFF;
+			c2 = (c2*px.info.ref_r+1)/0xFF;
+			break;
+		}
+
 		switch(px.format) {
 		case nsVDPixmap::kPixFormat_Pal1:
 		case nsVDPixmap::kPixFormat_Pal2:
@@ -163,6 +177,35 @@ namespace {
 				VDPixmapRectFillPlane8(px.data3, px.pitch3, isubx, isuby, isubw, isubh, (uint8)(c >> 16));
 			}
 			break;
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+			VDPixmapRectFillPlane16(px.data, px.pitch, ix, iy, iw, ih, (uint16)c0);
+			VDPixmapRectFillPlane16(px.data2, px.pitch2, ix, iy, iw, ih, (uint16)c1);
+			VDPixmapRectFillPlane16(px.data3, px.pitch3, ix, iy, iw, ih, (uint16)c2);
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+			{
+				int isubx = VDCeilToInt(r.left		* 0.5f - 0.25f);
+				int isuby = VDCeilToInt(r.top		* 1.0f - 0.5f );
+				int isubw = VDCeilToInt(r.right		* 0.5f - 0.25f) - isubx;
+				int isubh = VDCeilToInt(r.bottom	* 1.0f - 0.5f ) - isuby;
+
+				VDPixmapRectFillPlane16(px.data, px.pitch, ix, iy, iw, ih, (uint16)c0);
+				VDPixmapRectFillPlane16(px.data2, px.pitch2, isubx, isuby, isubw, isubh, (uint16)c1);
+				VDPixmapRectFillPlane16(px.data3, px.pitch3, isubx, isuby, isubw, isubh, (uint16)c2);
+			}
+			break;
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+			{
+				int isubx = VDCeilToInt(r.left		* 0.5f - 0.25f);
+				int isuby = VDCeilToInt(r.top		* 0.5f - 0.5f );
+				int isubw = VDCeilToInt(r.right		* 0.5f - 0.25f) - isubx;
+				int isubh = VDCeilToInt(r.bottom	* 0.5f - 0.5f ) - isuby;
+
+				VDPixmapRectFillPlane16(px.data, px.pitch, ix, iy, iw, ih, (uint16)c0);
+				VDPixmapRectFillPlane16(px.data2, px.pitch2, isubx, isuby, isubw, isubh, (uint16)c1);
+				VDPixmapRectFillPlane16(px.data3, px.pitch3, isubx, isuby, isubw, isubh, (uint16)c2);
+			}
+			break;
 		}
 	}
 
@@ -201,6 +244,9 @@ namespace {
 			case nsVDPixmap::kPixFormat_YUV420_Planar:
 			case nsVDPixmap::kPixFormat_YUV411_Planar:
 			case nsVDPixmap::kPixFormat_YUV410_Planar:
+			case nsVDPixmap::kPixFormat_YUV420_Planar16:
+			case nsVDPixmap::kPixFormat_YUV422_Planar16:
+			case nsVDPixmap::kPixFormat_YUV444_Planar16:
 				VDPixmapRectFillRaw(px, rDst, VDConvertRGBToYCbCr(c));
 				break;
 
@@ -393,6 +439,9 @@ uint32 VDVideoFilterResize::GetParams() {
 		case nsVDXPixmap::kPixFormat_YUV411_Planar_FR:
 		case nsVDXPixmap::kPixFormat_YUV411_Planar_709:
 		case nsVDXPixmap::kPixFormat_YUV411_Planar_709_FR:
+		case nsVDXPixmap::kPixFormat_YUV420_Planar16:
+		case nsVDXPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDXPixmap::kPixFormat_YUV444_Planar16:
 			break;
 
 		case nsVDXPixmap::kPixFormat_VDXA_RGB:

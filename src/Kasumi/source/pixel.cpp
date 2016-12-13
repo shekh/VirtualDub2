@@ -388,6 +388,14 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_Y16:
+		{
+			int ref = px.info.ref_r;
+			uint8 py = VDPixmapSample16(px.data, px.pitch, x, y, ref);
+			return VDConvertYCbCrToRGB(py,0x80,0x80,false,false);
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_Y8:
 		{
 			uint8 luma = ((const uint8 *)px.data + px.pitch*y)[x];

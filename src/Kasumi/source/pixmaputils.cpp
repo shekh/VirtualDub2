@@ -86,6 +86,7 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
 	/* YUV444_Planar16 */			{ "YUV444P16",		false, 1, 1,  0,  0,  2, 2, 0, 0, 2,   0 },
 	/* YUV422_Planar16 */			{ "YUV422P16",		false, 1, 1,  0,  0,  2, 2, 1, 0, 2,   0 },
 	/* YUV420_Planar16 */			{ "YUV420P16",		false, 1, 1,  0,  0,  2, 2, 1, 1, 2,   0 },
+	/* Y16 */						{ "I16",			false, 1, 1,  1,  0,  2, 0, 0, 0, 0,   0 },
 };
 
 int VDPixmapFormatMatrixType(sint32 format) {

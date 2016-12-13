@@ -55,4 +55,56 @@ protected:
 	vdfastvector<uint8> mRow;
 };
 
+class VDPixmapGenFillF : public IVDPixmapGen {
+public:
+	void Init(float fill, uint32 bpr, sint32 width, sint32 height, uint32 type) {
+		mRow.resize(bpr, fill);
+		mWidth = width;
+		mHeight = height;
+		mType = type;
+	}
+
+	void AddWindowRequest(int minY, int maxY) {
+	}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+	}
+
+	void Start() {
+	}
+
+	sint32 GetWidth(int) const {
+		return mWidth;
+	}
+
+	sint32 GetHeight(int) const {
+		return mHeight;
+	}
+
+	bool IsStateful() const {
+		return false;
+	}
+
+	const void *GetRow(sint32 y, uint32 output) {
+		return mRow.data();
+	}
+
+	void ProcessRow(void *dst, sint32 y) {
+		if (!mRow.empty()) {
+			for(int i=1; i<(int)mRow.size(); i++) mRow[i] = mRow[0];
+		}
+	}
+
+	uint32 GetType(uint32 index) const {
+		return mType;
+	}
+
+protected:
+	sint32		mWidth;
+	sint32		mHeight;
+	uint32		mType;
+
+	vdfastvector<float> mRow;
+};
+
 #endif

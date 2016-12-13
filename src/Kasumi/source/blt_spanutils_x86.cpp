@@ -18,7 +18,6 @@
 
 #include <stdafx.h>
 #include "blt_spanutils_x86.h"
-#include <emmintrin.h>
 
 #ifdef _MSC_VER
 	#pragma warning(disable: 4799)		// warning C4799: function 'nsVDPixmapSpanUtils::vdasm_horiz_expand2x_coaligned_ISSE' has no EMMS instruction
@@ -47,40 +46,6 @@ namespace nsVDPixmapSpanUtils {
 			do {
 				dst[0] = src[0];
 				dst[1] = (uint8)((src[0] + src[1] + 1)>>1);
-				dst += 2;
-				++src;
-			} while((w+=2)<0);
-		}
-
-		w -= 2;
-		while(w < 0) {
-			++w;
-			*dst++ = src[0];
-		}
-	}
-
-	void horiz_expand2x_coaligned_u16(uint16 *dst, const uint16 *src, sint32 w) {
-		if (w >= 17) {
-			uint32 fastcount = (w - 1) & ~15;
-			{for(int i=0; i<int(fastcount/16); i++){
-				__m128i a = _mm_loadu_si128((__m128i*)src);
-				__m128i b = _mm_loadu_si128((__m128i*)(src+1));
-				__m128i m = _mm_avg_epu16(a,b);
-				__m128i c0 = _mm_unpacklo_epi16(a,m);
-				__m128i c1 = _mm_unpackhi_epi16(a,m);
-				_mm_storeu_si128((__m128i*)dst,c0);
-				_mm_storeu_si128((__m128i*)(dst+8),c1);
-				dst+=16;
-				src+=8;
-			}}
-			w -= fastcount;
-		}
-
-		w = -w;
-		if ((w+=2) < 0) {
-			do {
-				dst[0] = src[0];
-				dst[1] = (uint16)((src[0] + src[1] + 1)>>1);
 				dst += 2;
 				++src;
 			} while((w+=2)<0);
@@ -142,40 +107,6 @@ namespace nsVDPixmapSpanUtils {
 		if (w) {
 			do {
 				*dst++ = (uint8)((*src1++ + 3**src3++ + 2) >> 2);
-			} while(--w);
-		}
-	}
-
-	void vert_expand2x_centered_u16(uint16 *dst, const uint16 *const *srcs, sint32 w, uint8 phase) {
-		const uint16 *src3 = srcs[0];
-		const uint16 *src1 = srcs[1];
-
-		if (phase >= 128)
-			std::swap(src1, src3);
-
-		uint32 fastcount = w & ~7;
-
-		if (fastcount) {
-			__m128i const1 = _mm_set1_epi16((uint16)0xFFFF);
-			{for(int i=0; i<int(fastcount/8); i++){
-				__m128i a = _mm_loadu_si128((__m128i*)src3);
-				__m128i b = _mm_loadu_si128((__m128i*)src1);
-				__m128i an = _mm_xor_si128(a,const1);
-				__m128i bn = _mm_xor_si128(b,const1);
-				__m128i cn = _mm_avg_epu16(an,bn);
-				cn = _mm_xor_si128(cn,const1);
-				__m128i r = _mm_avg_epu16(cn,a);
-				_mm_storeu_si128((__m128i*)dst,r);
-				dst += 8;
-				src1 += 8;
-				src3 += 8;
-			}}
-			w -= fastcount;
-		}
-
-		if (w) {
-			do {
-				*dst++ = (uint16)((*src1++ + 3**src3++ + 2) >> 2);
 			} while(--w);
 		}
 	}

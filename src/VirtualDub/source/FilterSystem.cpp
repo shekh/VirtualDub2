@@ -409,7 +409,7 @@ void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width,
 		if (flags == FILTERPARAM_NOT_SUPPORTED || (flags & FILTERPARAM_SUPPORTS_ALTFORMATS)) {
 			using namespace nsVDPixmap;
 
-			VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_YUV420_Planar16 + 1);
+			VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_Y16 + 1);
 
 			std::bitset<nsVDPixmap::kPixFormat_Max_Standard> formatMask;
 
@@ -463,6 +463,7 @@ void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width,
 			formatMask.set(kPixFormat_YUV444_Planar16);
 			formatMask.set(kPixFormat_YUV422_Planar16);
 			formatMask.set(kPixFormat_YUV420_Planar16);
+			formatMask.set(kPixFormat_Y16);
 
 			static const int kStaticOrder[]={
 				kPixFormat_YUV444_Planar,

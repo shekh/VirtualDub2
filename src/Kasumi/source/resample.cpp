@@ -118,6 +118,9 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 		case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
 		case nsVDPixmap::kPixFormat_YUV410_Planar_709:
 		case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
 			break;
 
 		default:
@@ -200,11 +203,13 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 		case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
 		case nsVDPixmap::kPixFormat_YUV444_Planar_709:
 		case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
 			break;
 		case nsVDPixmap::kPixFormat_YUV422_Planar:
 		case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
 		case nsVDPixmap::kPixFormat_YUV422_Planar_709:
 		case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
 			srcrect2.translate(0.25f, 0.0f);
 			dstrect2.translate(0.25f, 0.0f);
 			break;
@@ -212,6 +217,7 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 		case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
 		case nsVDPixmap::kPixFormat_YUV420_Planar_709:
 		case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
 			srcrect2.translate(0.25f, 0.0f);
 			dstrect2.translate(0.25f, 0.0f);
 			break;
@@ -273,16 +279,30 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 		case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
 		case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
 		case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
-			gen.ldsrc(0, 0, 0, 0, sw, sh, kVDPixType_8, sw);
-			ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
-
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
 			{
+				int plane_format = kVDPixType_8;
+				int bpp = 1;
+				switch (srcformat) {
+				case nsVDPixmap::kPixFormat_YUV444_Planar16:
+				case nsVDPixmap::kPixFormat_YUV422_Planar16:
+				case nsVDPixmap::kPixFormat_YUV420_Planar16:
+					plane_format = kVDPixType_16_LE;
+					bpp = 2;
+					break;
+				}
+
+				gen.ldsrc(0, 0, 0, 0, sw, sh, plane_format, sw*bpp);
+				ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
+
 				const VDPixmapFormatInfo& info = VDPixmapGetInfo(dstformat);
 				uint32 subsw = -(-(sint32)sw >> info.auxwbits);
 				uint32 subsh = -(-(sint32)sh >> info.auxhbits);
 
 				VDPixmapUberBlitterGenerator gen2;
-				gen2.ldsrc(0, 0, 0, 0, subsw, subsh, kVDPixType_8, subsw);
+				gen2.ldsrc(0, 0, 0, 0, subsw, subsh, plane_format, subsw*bpp);
 				ApplyFilters(gen2, mDstRectPlane12.width(), mDstRectPlane12.height(), xoffset2, yoffset2, xfactor, yfactor);
 				mpBlitter2 = gen2.create();
 				if (!mpBlitter2)
@@ -333,21 +353,33 @@ void VDPixmapResampler::Process(const VDPixmap& dst, const VDPixmap& src) {
 		case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
 		case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
 		case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
 			// blit primary plane
 			mpBlitter->Blit(dst, &mDstRectPlane0, src);
 
 			// slice and blit secondary planes
 			{
+				int plane_format = nsVDPixmap::kPixFormat_Y8;
+				switch(dst.format) {
+				case nsVDPixmap::kPixFormat_YUV444_Planar16:
+				case nsVDPixmap::kPixFormat_YUV422_Planar16:
+				case nsVDPixmap::kPixFormat_YUV420_Planar16:
+					plane_format = nsVDPixmap::kPixFormat_Y16;
+					break;
+				}
+
 				const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(dst.format);
 				VDPixmap pxdst;
-				pxdst.format	= nsVDPixmap::kPixFormat_Y8;
+				pxdst.format	= plane_format;
 				pxdst.w			= -(-dst.w >> formatInfo.auxwbits);
 				pxdst.h			= -(-dst.h >> formatInfo.auxhbits);
 				pxdst.pitch		= dst.pitch2;
 				pxdst.data		= dst.data2;
 
 				VDPixmap pxsrc;
-				pxsrc.format	= nsVDPixmap::kPixFormat_Y8;
+				pxsrc.format	= plane_format;
 				pxsrc.w			= -(-src.w >> formatInfo.auxwbits);
 				pxsrc.h			= -(-src.h >> formatInfo.auxhbits);
 				pxsrc.pitch		= src.pitch2;
