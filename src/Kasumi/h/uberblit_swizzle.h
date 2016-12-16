@@ -109,6 +109,29 @@ protected:
 	int mOffset;
 };
 
+class VDPixmapGen_16In32 : public VDPixmapGenWindowBasedOneSource {
+public:
+	void Init(IVDPixmapGen *gen, int srcIndex, int offset, uint32 w, uint32 h) {
+		InitSource(gen, srcIndex);
+		mOffset = offset;
+		SetOutputSize(w, h);
+		gen->AddWindowRequest(0, 0);
+	}
+
+	void Start() {
+		StartWindow(mWidth*2);
+	}
+
+	uint32 GetType(uint32 index) const {
+		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16_LE;
+	}
+
+protected:
+	void Compute(void *dst0, sint32 y);
+
+	int mOffset;
+};
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //	16-bit interleavers

@@ -1034,6 +1034,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ReadVideoFrame(const 
 				VDPROFILEBEGINEX("V-BlitIn", (uint32)frameInfo.mDisplayFrame);
 				mpInputBlitter->Blit(pxdst, pxsrc);
 				buf->info = pxdst.info;
+				VDPROFILEEND();
 
 				buf->Unlock();
 
@@ -1192,7 +1193,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 			if (out_format) normalize->max_value = out_info.ref_r;
 			extraDst = normalize;
 		}
-		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc, extraDst, 0);
+		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc, extraDst);
 	} else if(!mpOutputBlitter) {
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc);
 	}

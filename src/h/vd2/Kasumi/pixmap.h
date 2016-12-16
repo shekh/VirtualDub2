@@ -96,6 +96,14 @@ struct VDPixmap {
 	vdpixoffset		pitch3;
 
 	FilterModPixmapInfo info;
+	struct Ext{
+		int format_swizzle;
+
+		Ext() { clear(); }
+		void clear() {
+			format_swizzle = 0;
+		}
+	} ext;
 
 	void clear() {
 		data = 0;
@@ -109,6 +117,7 @@ struct VDPixmap {
 		data3 = 0;
 		pitch3 = 0;
 		info.clear();
+		ext.clear();
 	}
 };
 

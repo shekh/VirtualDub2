@@ -676,6 +676,16 @@ void VDPixmapUberBlitterGenerator::extract_8in32(int offset, uint32 w, uint32 h)
 	args[0] = StackEntry(src, 0);
 }
 
+void VDPixmapUberBlitterGenerator::extract_16in32(int offset, uint32 w, uint32 h) {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_16In32 *src = new VDPixmapGen_16In32;
+	src->Init(args[0].mpSrc, args[0].mSrcIndex, offset, w, h);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
 void VDPixmapUberBlitterGenerator::swap_8in16(uint32 w, uint32 h, uint32 bpr) {
 	StackEntry *args = &mStack.back();
 

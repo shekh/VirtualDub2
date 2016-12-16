@@ -18,6 +18,7 @@
 
 #include <stdafx.h>
 #include "uberblit_swizzle.h"
+#include <emmintrin.h>
 
 void VDPixmapGen_Swap8In16::Init(IVDPixmapGen *gen, int srcIndex, uint32 w, uint32 h, uint32 bpr) {
 	InitSource(gen, srcIndex);
@@ -104,5 +105,34 @@ void VDPixmapGen_B8x2_To_B8R8::Compute(void *dst0, sint32 y) {
 		++srcCb;
 		++srcCr;
 		dst += 2;
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+void VDPixmapGen_16In32::Compute(void *dst0, sint32 y) {
+	const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex) + mOffset;
+	uint16 *dst = (uint16 *)dst0;
+
+	sint32 w = mWidth;
+	int w0 = w & ~7;
+	w -= w0;
+
+	{for(int i=0; i<w0/8; i++){
+		__m128i a0 = _mm_loadu_si128((__m128i*)src);
+		__m128i a1 = _mm_loadu_si128((__m128i*)(src+8));
+		a0 = _mm_slli_epi32(a0,16);
+		a0 = _mm_srai_epi32(a0,16);
+		a1 = _mm_slli_epi32(a1,16);
+		a1 = _mm_srai_epi32(a1,16);
+		__m128i b = _mm_packs_epi32(a0,a1);
+		_mm_storeu_si128((__m128i*)dst,b);
+		dst += 8;
+		src += 16;
+	}}
+
+	for(sint32 x=0; x<w; ++x) {
+		*dst++ = *src;
+		src += 2;
 	}
 }

@@ -89,6 +89,8 @@ protected:
 	void Compute(void *dst0, sint32 y);
 };
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 bool inline VDPixmap_YUV_IsNormalized(const FilterModPixmapInfo& info, uint32 max_value=0xFFFF) {
 	if (info.ref_r!=max_value)
 		return false;
@@ -96,5 +98,6 @@ bool inline VDPixmap_YUV_IsNormalized(const FilterModPixmapInfo& info, uint32 ma
 }
 
 void VDPixmap_YUV_Normalize(VDPixmap& dst, const VDPixmap& src, uint32 max_value=0xFFFF);
+void VDPixmap_bitmap_to_YUV422_Planar16(VDPixmap& dst, const VDPixmap& src, int variant);
 
 #endif

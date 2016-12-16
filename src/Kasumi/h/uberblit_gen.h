@@ -73,6 +73,7 @@ public:
 
 	void extract_8in16(int offset, uint32 w, uint32 h);
 	void extract_8in32(int offset, uint32 w, uint32 h);
+	void extract_16in32(int offset, uint32 w, uint32 h);
 	void swap_8in16(uint32 w, uint32 h, uint32 bpr);
 
 	void conv_Pal1_to_8888(int srcIndex);

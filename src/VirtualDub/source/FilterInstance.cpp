@@ -46,7 +46,7 @@ namespace {
 	static const uint32 kFrameSizeLimit = 0x08000000;		// 128MB
 
 	void StructCheck() {
-		VDASSERTCT(sizeof(VDPixmap)-sizeof(FilterModPixmapInfo) == sizeof(VDXPixmap));
+		//VDASSERTCT(sizeof(VDPixmap)-sizeof(FilterModPixmapInfo) == sizeof(VDXPixmap));
 		//VDASSERTCT(sizeof(VDPixmapLayout)-sizeof(VDPixmapFormatEx) == sizeof(VDXPixmapLayout));
 		VDASSERTCT(offsetof(VDPixmapLayout, pitch3)+sizeof(((VDPixmapLayout*)0)->pitch3) == sizeof(VDXPixmapLayout));
 				

@@ -20,6 +20,7 @@
 #include <vd2/Riza/bitmap.h>
 #include <vd2/VDDisplay/display.h>
 #include <../Kasumi/h/uberblit_rgb64.h>
+#include <../Kasumi/h/uberblit_16f.h>
 #include "Dub.h"
 #include "DubProcessVideoDisplay.h"
 #include "DubUtils.h"
@@ -322,6 +323,8 @@ void VDDubVideoProcessorDisplay::UpdateDecompressedVideo(const void *data, uint3
 			int variant = mpVideoDecompressor->GetTargetFormatVariant();
 			if(mVideoDecompBuffer.format==nsVDPixmap::kPixFormat_XRGB64)
 				VDPixmap_bitmap_to_X16R16G16B16(mVideoDecompBuffer,mVideoDecompBuffer,variant);
+			if(mVideoDecompBuffer.format==nsVDPixmap::kPixFormat_YUV422_Planar16)
+				VDPixmap_bitmap_to_YUV422_Planar16(mVideoDecompBuffer,mVideoDecompBuffer,variant);
 		} catch(const MyError&) {
 			mpBlitter->postAPC(0, AsyncDecompressorErrorCallback, mpOutputDisplay, NULL);
 			mbVideoDecompressorErrored = true;

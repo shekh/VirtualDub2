@@ -808,15 +808,15 @@ namespace {
 	}
 }
 
-IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src, IVDPixmapGen* extraDst, IVDPixmapGen* extraSrc) {
+IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src, IVDPixmapGen* extraDst) {
 	const VDPixmapLayout& dstlayout = VDPixmapToLayoutFromBase(dst, dst.data);
 	const VDPixmapLayout& srclayout = VDPixmapToLayoutFromBase(src, src.data);
 
-	return VDPixmapCreateBlitter(dstlayout, srclayout, extraDst, extraSrc);
+	return VDPixmapCreateBlitter(dstlayout, srclayout, extraDst, src.ext.format_swizzle);
 }
 
-IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapGen* extraDst, IVDPixmapGen* extraSrc) {
-	if (src.format == dst.format && !extraDst && !extraSrc) {
+IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapGen* extraDst, int src_swizzle) {
+	if (src.format == dst.format && !extraDst && !src_swizzle) {
 		return VDCreatePixmapUberBlitterDirectCopy(dst, src);
 	}
 
@@ -923,6 +923,18 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 			int cybits = sampInfo.mPlane1Cb.mYBits;
 			int w2 = -(-w >> cxbits);
 			int h2 = -(-h >> cybits);
+
+			if (src.format==nsVDPixmap::kPixFormat_YUV422_Planar16 && src_swizzle==3) {
+				gen.ldsrc(0, 1, 0, 0, w2, h2, cbtoken, w2 * 4);
+				gen.dup();
+				gen.extract_16in32(1, w2, h2);
+				gen.swap(1);
+				gen.extract_16in32(0, w2, h2);
+				gen.ldsrc(0, 0, 0, 0, w, h, ytoken, w*2);
+				gen.swap(1);
+				break;
+			}
+
 			gen.ldsrc(0, 2, 0, 0, w2, h2, cbtoken, w2 * 2);
 			gen.ldsrc(0, 0, 0, 0, w, h, ytoken, w*2);
 			gen.ldsrc(0, 1, 0, 0, w2, h2, crtoken, w2 * 2);
