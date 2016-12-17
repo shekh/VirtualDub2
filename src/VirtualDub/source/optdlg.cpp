@@ -846,30 +846,32 @@ protected:
 	struct FormatButtonMapping {
 		int mFormat;
 		uint32 mInputButton;
-		uint32 mOutputButton;
 	};
 
 	static const FormatButtonMapping kFormatButtonMappings[];
 };
 
 const VDDialogVideoDepthW32::FormatButtonMapping VDDialogVideoDepthW32::kFormatButtonMappings[] = {
-	{	nsVDPixmap::kPixFormat_Null,			IDC_INPUT_AUTOSELECT,		IDC_OUTPUT_AUTOSELECT,		},
-	{	nsVDPixmap::kPixFormat_XRGB1555,		IDC_INPUT_XRGB1555,			IDC_OUTPUT_XRGB1555,		},
-	{	nsVDPixmap::kPixFormat_RGB565,			IDC_INPUT_RGB565,			IDC_OUTPUT_RGB565,			},
-	{	nsVDPixmap::kPixFormat_RGB888,			IDC_INPUT_RGB888,			IDC_OUTPUT_RGB888,			},
-	{	nsVDPixmap::kPixFormat_XRGB8888,		IDC_INPUT_XRGB8888,			IDC_OUTPUT_XRGB8888,		},
-	{	nsVDPixmap::kPixFormat_XRGB64,			IDC_INPUT_XRGB64,			IDC_OUTPUT_XRGB64,			},
-	{	nsVDPixmap::kPixFormat_YUV422_UYVY,		IDC_INPUT_YUV422_UYVY,		IDC_OUTPUT_YUV422_UYVY,		},
-	{	nsVDPixmap::kPixFormat_YUV422_YUYV,		IDC_INPUT_YUV422_YUY2,		IDC_OUTPUT_YUV422_YUY2,		},
-	{	nsVDPixmap::kPixFormat_YUV420_Planar,	IDC_INPUT_YUV420_PLANAR,	IDC_OUTPUT_YUV420_PLANAR,	},
-	{	nsVDPixmap::kPixFormat_YUV422_Planar,	IDC_INPUT_YUV422_PLANAR,	IDC_OUTPUT_YUV422_PLANAR,	},
-	{	nsVDPixmap::kPixFormat_YUV410_Planar,	IDC_INPUT_YUV410_PLANAR,	IDC_OUTPUT_YUV410_PLANAR,	},
-	{	nsVDPixmap::kPixFormat_Y8,				IDC_INPUT_Y8,				IDC_OUTPUT_Y8,				},
-	{	nsVDPixmap::kPixFormat_Y8_FR,			IDC_INPUT_I8,				IDC_OUTPUT_I8,				},
-	{	nsVDPixmap::kPixFormat_YUV444_Planar,	IDC_INPUT_YUV444_PLANAR,	IDC_OUTPUT_YUV444_PLANAR,	},
-	{	nsVDPixmap::kPixFormat_YUV422_V210,		IDC_INPUT_YUV422_V210,		IDC_OUTPUT_YUV422_V210,		},
-	{	nsVDPixmap::kPixFormat_YUV422_UYVY_709,	IDC_INPUT_YUV422_UYVY_709,	IDC_OUTPUT_YUV422_UYVY_709,	},
-	{	nsVDPixmap::kPixFormat_YUV420_NV12,		IDC_INPUT_YUV420_NV12,		IDC_OUTPUT_YUV420_NV12,		},
+	{	nsVDPixmap::kPixFormat_Null,			IDC_INPUT_AUTOSELECT},
+	{	nsVDPixmap::kPixFormat_XRGB1555,		IDC_INPUT_XRGB1555},
+	{	nsVDPixmap::kPixFormat_RGB565,			IDC_INPUT_RGB565},
+	{	nsVDPixmap::kPixFormat_RGB888,			IDC_INPUT_RGB888},
+	{	nsVDPixmap::kPixFormat_XRGB8888,		IDC_INPUT_XRGB8888},
+	{	nsVDPixmap::kPixFormat_XRGB64,			IDC_INPUT_XRGB64},
+	{	nsVDPixmap::kPixFormat_YUV422_UYVY,		IDC_INPUT_YUV422_UYVY},
+	{	nsVDPixmap::kPixFormat_YUV422_YUYV,		IDC_INPUT_YUV422_YUY2},
+	{	nsVDPixmap::kPixFormat_YUV420_Planar,	IDC_INPUT_YUV420_PLANAR},
+	{	nsVDPixmap::kPixFormat_YUV422_Planar,	IDC_INPUT_YUV422_PLANAR},
+	{	nsVDPixmap::kPixFormat_YUV410_Planar,	IDC_INPUT_YUV410_PLANAR},
+	{	nsVDPixmap::kPixFormat_Y8,				IDC_INPUT_Y8},
+	{	nsVDPixmap::kPixFormat_Y8_FR,			IDC_INPUT_I8},
+	{	nsVDPixmap::kPixFormat_YUV444_Planar,	IDC_INPUT_YUV444_PLANAR},
+	{	nsVDPixmap::kPixFormat_YUV422_V210,		IDC_INPUT_YUV422_V210},
+	{	nsVDPixmap::kPixFormat_YUV422_UYVY_709,	IDC_INPUT_YUV422_UYVY_709},
+	{	nsVDPixmap::kPixFormat_YUV420_NV12,		IDC_INPUT_YUV420_NV12},
+	{	nsVDPixmap::kPixFormat_YUV444_Planar16,	IDC_INPUT_YUV444_PLANAR16},
+	{	nsVDPixmap::kPixFormat_YUV422_Planar16,	IDC_INPUT_YUV422_PLANAR16},
+	{	nsVDPixmap::kPixFormat_YUV420_Planar16,	IDC_INPUT_YUV420_PLANAR16},
 };
 
 INT_PTR VDDialogVideoDepthW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
@@ -1020,7 +1022,7 @@ void VDDialogVideoDepthW32::InitFinalFormat() {
 	if (mSelectInput && inputVideo) {
 		VDPixmapFormatEx inputFormat = inputVideo->getSourceFormat();
 		VDString s;
-		s += "Current format: ";
+		s += " Current format: ";
 		VDPixmapFormatEx opt = mInputFormat;
 		if (opt.format==0) opt.format = inputFormat;
 		s += VDPixmapFormatPrintSpec(VDPixmapFormatCombine(inputFormat,opt));

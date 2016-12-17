@@ -7,6 +7,7 @@
 struct VDPixmap;
 struct VDPixmapLayout;
 class IVDPixmapGen;
+class IVDPixmapExtraGen;
 
 class IVDPixmapBlitter {
 public:
@@ -15,8 +16,8 @@ public:
 	virtual void Blit(const VDPixmap& dst, const vdrect32 *rDst, const VDPixmap& src) = 0;
 };
 
-IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src, IVDPixmapGen* extraDst=0);
-IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapGen* extraDst=0, int src_swizzle=0);
+IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src, IVDPixmapExtraGen* extraDst=0);
+IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapExtraGen* extraDst=0, int src_swizzle=0);
 
 class VDPixmapCachedBlitter {
 	VDPixmapCachedBlitter(const VDPixmapCachedBlitter&);

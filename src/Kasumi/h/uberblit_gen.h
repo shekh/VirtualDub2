@@ -6,6 +6,7 @@
 
 class IVDPixmapGenSrc;
 struct VDPixmapGenYCbCrBasis;
+class VDPixmapGenWindowBasedOneSourceSimple;
 
 class VDPixmapUberBlitterDirectCopy : public IVDPixmapBlitter {
 public:
@@ -152,7 +153,7 @@ public:
 	void lanczos3v(float yoffset, float yfactor, uint32 h);
 	void lanczos3(float xoffset, float xfactor, uint32 w, float yoffset, float yfactor, uint32 h);
 
-	void addToEnd(IVDPixmapGen* extra);
+	void addToEnd(VDPixmapGenWindowBasedOneSourceSimple* extra, int srcIndex=0);
 
 	IVDPixmapBlitter *create();
 

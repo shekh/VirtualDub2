@@ -134,4 +134,11 @@ public:
 	}
 };
 
+class VDPixmapUberBlitterGenerator;
+
+class IVDPixmapExtraGen {
+public:
+	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst) = 0;
+};
+
 #endif

@@ -21,6 +21,8 @@
 #include <vd2/system/math.h>
 #include <vd2/Kasumi/pixmaputils.h>
 #include "uberblit_16f.h"
+#include "uberblit_gen.h"
+#include <emmintrin.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -113,6 +115,61 @@ void VDPixmapGen_16_To_32F::Compute(void *dst0, sint32 y) {
 		dst++;
 		src++;
 	}
+}
+
+void VDPixmapGen_Y16_Normalize::Compute(void *dst0, sint32 y) {
+	if (do_normalize)
+		ComputeNormalize(dst0,y);
+	else
+		mpSrc->ProcessRow(dst0,y);
+}
+
+void VDPixmapGen_Y16_Normalize::ComputeNormalize(void *dst0, sint32 y) {
+	uint16 *dst = (uint16 *)dst0;
+	const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex);
+
+	int w = mWidth;
+	int w0 = mWidth & ~7;
+	if(!scale_down) w0 = 0;
+	w -= w0;
+
+	uint16 s = 0x10000-ref;
+	__m128i sat = _mm_set1_epi16(s);
+	__m128i mm = _mm_set1_epi16(m);
+	{for(int x=0; x<w0/8; x++) {
+		__m128i c = _mm_loadu_si128((const __m128i*)src);
+		c = _mm_adds_epu16(c,sat);
+		c = _mm_sub_epi16(c,sat);
+		__m128i a = _mm_mullo_epi16(c,mm);
+		a = _mm_srli_epi16(a,15);
+		c = _mm_mulhi_epu16(c,mm);
+		c = _mm_adds_epu16(c,a);
+		_mm_storeu_si128((__m128i*)dst,c);
+		src+=8;
+		dst+=8;
+	}}
+
+	{for(int x=0; x<w; x++) {
+		uint16 v = *src;
+		src++;
+
+		if(v>ref) v=max_value; else v=(v*m)>>16;
+
+		*dst = v;
+		dst++;
+	}}
+}
+
+void ExtraGen_YUV_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst) {
+	VDPixmapGen_Y16_Normalize* normalize0 = new VDPixmapGen_Y16_Normalize;
+	VDPixmapGen_Y16_Normalize* normalize1 = new VDPixmapGen_Y16_Normalize;
+	VDPixmapGen_Y16_Normalize* normalize2 = new VDPixmapGen_Y16_Normalize;
+	normalize0->max_value = max_value;
+	normalize1->max_value = max_value;
+	normalize2->max_value = max_value;
+	gen.addToEnd(normalize0,2);
+	gen.addToEnd(normalize1,1);
+	gen.addToEnd(normalize2,0);
 }
 
 void VDPixmap_YUV_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc, uint32 max_value) {

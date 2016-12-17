@@ -122,6 +122,9 @@ public:
 		}
 		return mInputLayout.format; 
 	}
+	virtual void GetInputBitmapFormat(vdstructex<tagBITMAPINFOHEADER>& bm) {
+		bm = mInputFormat;
+	}
 	bool Query(const void *inputFormat, const void *outputFormat);
 	bool Query(const VDPixmapLayout *inputFormat, const void *outputFormat = NULL);
 	void GetOutputFormat(const void *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat);

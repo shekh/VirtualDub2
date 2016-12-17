@@ -474,18 +474,6 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 	VDPROFILEBEGIN("V-Format");
 	VDPixmap& src = pBuffer->mPixmap;
 	void* dst = pBuffer->mpBase;
-	if (src.format==nsVDPixmap::kPixFormat_YUV420_Planar16 || src.format==nsVDPixmap::kPixFormat_YUV422_Planar16 || src.format==nsVDPixmap::kPixFormat_YUV444_Planar16) {
-		FilterModPixmapInfo out_info;
-		int out_format = pCompressor->GetInputFormat(&out_info);
-		if (out_format) {
-			if (!repack_buffer->data) {
-				const VDPixmapLayout srclayout = VDPixmapToLayoutFromBase(src, src.data);
-				repack_buffer->init(srclayout);
-			}
-			dst = repack_buffer->data;
-			VDPixmap_YUV_Normalize(*repack_buffer,src,out_info.ref_r);
-		}
-	}
 	if (src.format==nsVDPixmap::kPixFormat_XRGB64) {
 		int out_format = pCompressor->GetInputFormat(0);
 		if (!out_format) {

@@ -285,6 +285,7 @@
 #define IDC_DECIMATE_TARGET             1022
 #define IDC_OUTPUT_XRGB1555             1022
 #define IDC_STATIC_AUDIO_BUFFER         1022
+#define IDC_INPUT_YUV420_PLANAR16       1022
 #define IDC_FILTER_LIST                 1023
 #define IDC_FRAMERATE_TARGET            1023
 #define IDC_OUTPUT_RGB565               1023
@@ -313,6 +314,7 @@
 #define IDC_MATRIX_4                    1031
 #define IDS_FILE_QUIT                   1031
 #define IDC_OUTPUT_YUV422_PLANAR        1031
+#define IDC_INPUT_YUV422_PLANAR16       1031
 #define IDC_MATRIX_5                    1032
 #define IDS_FILE_STARTSERVER            1032
 #define IDC_OUTPUT_YUV410_PLANAR        1032
@@ -334,6 +336,7 @@
 #define IDC_BIAS                        1038
 #define IDS_FILE_PREVIEWINPUT           1038
 #define IDC_OUTPUT_YUV444_PLANAR        1038
+#define IDC_INPUT_YUV444_PLANAR16       1038
 #define IDC_SAMPLINGRATE_11KHZ          1039
 #define IDS_FILE_PREVIEWOUTPUT          1039
 #define IDC_INPUT_YUV422_V210           1039

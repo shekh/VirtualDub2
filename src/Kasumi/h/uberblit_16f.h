@@ -91,6 +91,49 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+class VDPixmapGen_Y16_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	VDPixmapGen_Y16_Normalize(){ max_value = 0xFFFF; }
+
+	uint32 max_value;
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		mpSrc->TransformPixmapInfo(src,dst);
+		if (dst.ref_r==max_value) {
+			do_normalize = false;
+		} else {
+			do_normalize = true;
+			ref = dst.ref_r;
+			m = max_value*0x10000/ref;
+			dst.ref_r = max_value;
+			scale_down = true;
+			if (m>0x10000) scale_down = false;
+		}
+	}
+
+	void Start() {
+		StartWindow(mWidth * 2);
+	}
+
+protected:
+	int ref;
+	uint32 m;
+	bool do_normalize;
+	bool scale_down;
+
+	void Compute(void *dst0, sint32 y);
+	void ComputeNormalize(void *dst0, sint32 y);
+};
+
+class ExtraGen_YUV_Normalize : public IVDPixmapExtraGen {
+public:
+	uint32 max_value;
+
+	ExtraGen_YUV_Normalize(){ max_value=0xFFFF; }
+	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst);
+};
+
 bool inline VDPixmap_YUV_IsNormalized(const FilterModPixmapInfo& info, uint32 max_value=0xFFFF) {
 	if (info.ref_r!=max_value)
 		return false;

@@ -203,6 +203,14 @@ protected:
 	void ComputeWipeAlpha(void *dst0, sint32 y);
 };
 
+class ExtraGen_X16R16G16B16_Normalize : public IVDPixmapExtraGen {
+public:
+	uint32 max_value;
+
+	ExtraGen_X16R16G16B16_Normalize(){ max_value=0xFFFF; }
+	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst);
+};
+
 class VDPixmapGen_X8R8G8B8_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
 
@@ -223,6 +231,11 @@ protected:
 
 	void Compute(void *dst0, sint32 y);
 	void ComputeWipeAlpha(void *dst0, sint32 y);
+};
+
+class ExtraGen_X8R8G8B8_Normalize : public IVDPixmapExtraGen {
+public:
+	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst);
 };
 
 #endif

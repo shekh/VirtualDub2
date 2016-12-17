@@ -22,6 +22,7 @@
 #include <vd2/Dita/resources.h>
 #include <vd2/Riza/bitmap.h>
 #include <../Kasumi/h/uberblit_rgb64.h>
+#include <../Kasumi/h/uberblit_16f.h>
 #include "AVIPipe.h"
 #include "AVIOutput.h"
 #include "Dub.h"
@@ -1181,17 +1182,48 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	}
 	if (!mpOutputBlitter && !mbPreview) {
 		FilterModPixmapInfo out_info;
-		int out_format = 0;
-		if (mpVideoCompressor) out_format = mpVideoCompressor->GetInputFormat(&out_info);
-		IVDPixmapGen* extraDst = 0;
-		if (pBuffer->mPixmap.format==nsVDPixmap::kPixFormat_XRGB8888) {
-			VDPixmapGen_X8R8G8B8_Normalize* normalize = new VDPixmapGen_X8R8G8B8_Normalize;
-			extraDst = normalize;
+		out_info.ref_r = 0xFFFF;
+		out_info.ref_g = 0xFFFF;
+		out_info.ref_b = 0xFFFF;
+		out_info.ref_a = 0xFFFF;
+		if (mpVideoCompressor) {
+			if (!mpVideoCompressor->GetInputFormat(&out_info)) {
+				vdstructex<tagBITMAPINFOHEADER> bm;
+				mpVideoCompressor->GetInputBitmapFormat(bm);
+				int variant;
+				VDBitmapFormatToPixmapFormat((VDAVIBitmapInfoHeader&)*bm.data(),variant);
+				if(pBuffer->mPixmap.format==nsVDPixmap::kPixFormat_YUV422_Planar16) {
+					// ffmpeg, 10 bit
+					if (variant==2) out_info.ref_r = 0x3FF;
+					if (variant>2) throw MyError("Output format is not implemented");
+				}
+			}
 		}
-		if (pBuffer->mPixmap.format==nsVDPixmap::kPixFormat_XRGB64) {
-			VDPixmapGen_X16R16G16B16_Normalize* normalize = new VDPixmapGen_X16R16G16B16_Normalize;
-			if (out_format) normalize->max_value = out_info.ref_r;
-			extraDst = normalize;
+
+		IVDPixmapExtraGen* extraDst = 0;
+		switch (pBuffer->mPixmap.format) {
+		case nsVDPixmap::kPixFormat_XRGB8888:
+			{
+				ExtraGen_X8R8G8B8_Normalize* normalize = new ExtraGen_X8R8G8B8_Normalize;
+				extraDst = normalize;
+			}
+			break;
+		case nsVDPixmap::kPixFormat_XRGB64:
+			{
+				ExtraGen_X16R16G16B16_Normalize* normalize = new ExtraGen_X16R16G16B16_Normalize;
+				normalize->max_value = out_info.ref_r;
+				extraDst = normalize;
+			}
+			break;
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+			{
+				ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
+				normalize->max_value = out_info.ref_r;
+				extraDst = normalize;
+			}
+			break;
 		}
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc, extraDst);
 	} else if(!mpOutputBlitter) {

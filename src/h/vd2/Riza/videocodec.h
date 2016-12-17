@@ -46,6 +46,7 @@ public:
 
 	virtual int QueryInputFormat(FilterModPixmapInfo* info) = 0;
 	virtual int GetInputFormat(FilterModPixmapInfo* info) = 0;
+	virtual void GetInputBitmapFormat(vdstructex<tagBITMAPINFOHEADER>& bm) = 0;
 	virtual bool Query(const void *inputFormat, const void *outputFormat = NULL) = 0;
 	virtual bool Query(const VDPixmapLayout *inputFormat, const void *outputFormat = NULL) { return false; }
 	virtual void GetOutputFormat(const void *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat) = 0;
