@@ -416,7 +416,7 @@ bool VDAVIOutputRawVideoSystem::AcceptsVideo() {
 	return true;
 }
 
-int VDAVIOutputRawVideoSystem::GetVideoOutputFormatOverride() {
+int VDAVIOutputRawVideoSystem::GetVideoOutputFormatOverride(int last_format) {
 	return mFormat.mOutputFormat;
 }
 
@@ -533,7 +533,7 @@ bool VDAVIOutputCLISystem::AcceptsAudio() {
 	return mpAudEncProfile != NULL;
 }
 
-int VDAVIOutputCLISystem::GetVideoOutputFormatOverride() {
+int VDAVIOutputCLISystem::GetVideoOutputFormatOverride(int last_format) {
 	VDAVIOutputRawVideoFormat rawFormat = {};
 	InitOutputFormat(rawFormat,mpVidEncProfile);
 	return rawFormat.mOutputFormat;
@@ -597,6 +597,39 @@ bool VDAVIOutputImagesSystem::IsVideoImageOutputRequired() {
 	return IsVideoImageOutputEnabled(); 
 }
 
+int VDAVIOutputImagesSystem::GetVideoOutputFormatOverride(int last_format) {
+	using namespace nsVDPixmap;
+	switch (mFormat) {
+	case AVIOutputImages::kFormatTIFF_LZW:
+	case AVIOutputImages::kFormatTIFF_RAW:
+	case AVIOutputImages::kFormatTIFF_ZIP:
+		switch (last_format) {
+		case kPixFormat_RGB888:
+		case kPixFormat_XRGB8888:
+		case kPixFormat_XRGB1555:
+		case kPixFormat_XRGB64:
+			return last_format;
+		case kPixFormat_YUV444_Planar16:
+		case kPixFormat_YUV422_Planar16:
+		case kPixFormat_YUV420_Planar16:
+			return kPixFormat_XRGB64;
+		}
+		return kPixFormat_RGB888;
+	case AVIOutputImages::kFormatTGA:
+	case AVIOutputImages::kFormatTGAUncompressed:
+	case AVIOutputImages::kFormatPNG:
+		switch (last_format) {
+		case kPixFormat_RGB888:
+		case kPixFormat_XRGB8888:
+		case kPixFormat_XRGB1555:
+			return last_format;
+		}
+		return kPixFormat_RGB888;
+	default:
+		return kPixFormat_RGB888;
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////
 //
 //	VDAVIOutputFilmstripSystem
@@ -650,6 +683,17 @@ VDAVIOutputGIFSystem::VDAVIOutputGIFSystem(const wchar_t *filename)
 VDAVIOutputGIFSystem::~VDAVIOutputGIFSystem() {
 }
 
+int VDAVIOutputGIFSystem::GetVideoOutputFormatOverride(int last_format) {
+	using namespace nsVDPixmap;
+	switch (last_format) {
+	case kPixFormat_RGB888:
+	case kPixFormat_XRGB8888:
+	case kPixFormat_XRGB1555:
+		return last_format;
+	}
+	return kPixFormat_XRGB8888;
+}
+
 IVDMediaOutput *VDAVIOutputGIFSystem::CreateSegment() {
 	vdautoptr<IVDAVIOutputGIF> pOutput(VDCreateAVIOutputGIF());
 
@@ -692,6 +736,17 @@ VDAVIOutputAPNGSystem::VDAVIOutputAPNGSystem(const wchar_t *filename)
 }
 
 VDAVIOutputAPNGSystem::~VDAVIOutputAPNGSystem() {
+}
+
+int VDAVIOutputAPNGSystem::GetVideoOutputFormatOverride(int last_format) {
+	using namespace nsVDPixmap;
+	switch (last_format) {
+	case kPixFormat_RGB888:
+	case kPixFormat_XRGB8888:
+	case kPixFormat_XRGB1555:
+		return last_format;
+	}
+	return kPixFormat_XRGB8888;
 }
 
 IVDMediaOutput *VDAVIOutputAPNGSystem::CreateSegment() {

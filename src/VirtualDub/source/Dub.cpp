@@ -1052,6 +1052,10 @@ void Dubber::InitOutputFile() {
 
 		// initialize compression
 
+		int last_format = vSrc->getTargetFormat().format;
+		if(mOptions.video.mode >= DubVideoOptions::M_FULL)
+			last_format = filters.GetOutputLayout().format;
+
 		VDPixmapFormatEx outputFormatID = 0;
 		int outputVariantID = 0;
 		FilterModPixmapInfo outputFormatInfo;
@@ -1059,7 +1063,7 @@ void Dubber::InitOutputFile() {
 		VDPixmapLayout driverLayout = {0};
 
 		if (mpOutputSystem)
-			outputFormatID = mpOutputSystem->GetVideoOutputFormatOverride();
+			outputFormatID = mpOutputSystem->GetVideoOutputFormatOverride(last_format);
 
 		if (!outputFormatID && mpVideoCompressor) {
 			outputFormatID = mpVideoCompressor->QueryInputFormat(&outputFormatInfo);
@@ -1553,7 +1557,7 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 		int outputFormat = 0;
 		
 		if (pOutputSystem)
-			outputFormat = pOutputSystem->GetVideoOutputFormatOverride();
+			outputFormat = pOutputSystem->GetVideoOutputFormatOverride(output.format);
 
 		if (!outputFormat && mpVideoCompressor)
 			outputFormat = mpVideoCompressor->QueryInputFormat(0);

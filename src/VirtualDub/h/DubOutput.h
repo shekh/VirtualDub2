@@ -42,7 +42,7 @@ public:
 	virtual bool IsVideoImageOutputRequired() = 0;
 	virtual bool AreNullFramesAllowed() = 0;
 	virtual bool IsVideoCompressionEnabled() = 0;
-	virtual int GetVideoOutputFormatOverride() = 0;
+	virtual int GetVideoOutputFormatOverride(int last_format) = 0;
 
 	virtual bool IsCompressedAudioAllowed() = 0;
 	virtual bool IsNull() = 0;
@@ -63,7 +63,7 @@ public:
 	virtual bool IsVideoImageOutputRequired() { return false; }
 	virtual bool AreNullFramesAllowed() { return false; }
 	virtual bool IsVideoCompressionEnabled() { return false; }
-	virtual int GetVideoOutputFormatOverride() { return 0; }
+	virtual int GetVideoOutputFormatOverride(int last_format) { return 0; }
 
 	virtual bool IsCompressedAudioAllowed() { return true; }
 	virtual bool IsNull() { return false; }
@@ -186,7 +186,7 @@ public:
 	bool AcceptsVideo();
 	bool IsVideoImageOutputEnabled() { return true; }
 	bool IsVideoImageOutputRequired() { return true; }
-	int GetVideoOutputFormatOverride();
+	int GetVideoOutputFormatOverride(int last_format);
 
 private:
 	VDStringW	mFilename;
@@ -208,7 +208,7 @@ public:
 	bool AcceptsAudio();
 	bool IsVideoImageOutputEnabled() { return true; }
 	bool IsVideoImageOutputRequired() { return true; }
-	int GetVideoOutputFormatOverride();
+	int GetVideoOutputFormatOverride(int last_format);
 	bool IsCompressedAudioAllowed();
 
 private:
@@ -232,6 +232,7 @@ public:
 	void SetFormat(int format, int quality);
 	bool IsVideoImageOutputEnabled();
 	bool IsVideoImageOutputRequired();
+	int GetVideoOutputFormatOverride(int last_format);
 
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
@@ -263,6 +264,8 @@ public:
 	VDAVIOutputGIFSystem(const wchar_t *filename);
 	~VDAVIOutputGIFSystem();
 
+	int GetVideoOutputFormatOverride(int last_format);
+
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
 	bool AcceptsVideo();
@@ -278,6 +281,8 @@ class VDAVIOutputAPNGSystem : public VDDubberOutputSystem {
 public:
 	VDAVIOutputAPNGSystem(const wchar_t *filename);
 	~VDAVIOutputAPNGSystem();
+
+	int GetVideoOutputFormatOverride(int last_format);
 
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);

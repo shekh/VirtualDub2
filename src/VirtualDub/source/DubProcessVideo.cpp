@@ -1226,6 +1226,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 			break;
 		}
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc, extraDst);
+		delete extraDst;
 	} else if(!mpOutputBlitter) {
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc);
 	}

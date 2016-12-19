@@ -208,7 +208,9 @@ void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 
 
 		const void *p;
 		uint32 len;
-		mpPNGEncoder->Encode(VDPixmapFromLayout(pxl, (void *)pBuffer), p, len, mQuality < 50);
+		VDPixmap px = VDPixmapFromLayout(pxl, (void *)pBuffer);
+		px.info.alpha_type = info->alpha_type;
+		mpPNGEncoder->Encode(px, p, len, mQuality < 50);
 
 		mFile.write(p, len);
 	} else if (mFormat == AVIOutputImages::kFormatTGA || mFormat == AVIOutputImages::kFormatTGAUncompressed) {
@@ -461,24 +463,28 @@ AVIOutputImages::~AVIOutputImages() {
 void AVIOutputImages::WriteSingleImage(const wchar_t *name, int format, int q, VDPixmap* px) {
 	AVIVideoImageOutputStream stream(name,L"",0,format,q);
 
-	if (format == AVIOutputImages::kFormatTIFF_LZW || format == AVIOutputImages::kFormatTIFF_RAW || format == AVIOutputImages::kFormatTIFF_ZIP) {
-		stream.WriteVideoImage(px);
+	VDAVIOutputImagesSystem system;
+	system.SetFormat(format,q);
+	int temp_format = system.GetVideoOutputFormatOverride(px->format);
+
+	if (system.IsVideoImageOutputEnabled()) {
+		if (temp_format==px->format) {
+			stream.WriteVideoImage(px);
+			return;
+		}
+
+		VDPixmapBuffer buf;
+		buf.init(px->w,px->h,temp_format);
+		IVDPixmapBlitter* blt = VDPixmapCreateBlitter(buf,*px);
+		blt->Blit(buf,*px);
+		delete blt;
+		stream.WriteVideoImage(&buf);
 		return;
 	}
 
 	bool alpha = px->info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid;
-
-	int temp_format;
-	switch(px->format){
-	case nsVDPixmap::kPixFormat_XRGB8888:
-		temp_format = alpha ? nsVDPixmap::kPixFormat_XRGB8888:nsVDPixmap::kPixFormat_RGB888;
-		break;
-	case nsVDPixmap::kPixFormat_RGB888:
-		temp_format = px->format;
-		break;
-	default:
+	if (!alpha && temp_format==nsVDPixmap::kPixFormat_XRGB8888)
 		temp_format = nsVDPixmap::kPixFormat_RGB888;
-	}
 
 	vdstructex<VDAVIBitmapInfoHeader>	outputFormat;
 	if (!VDMakeBitmapFormatFromPixmapFormat(outputFormat, temp_format, 1, px->w, px->h))
@@ -489,7 +495,9 @@ void AVIOutputImages::WriteSingleImage(const wchar_t *name, int format, int q, V
 
 	VDPixmapBuffer buf;
 	buf.init(layout,0);
-	VDPixmapBlt(buf, *px);
+	IVDPixmapBlitter* blt = VDPixmapCreateBlitter(buf,*px);
+	blt->Blit(buf,*px);
+	delete blt;
 
 	stream.setFormat(outputFormat.data(),outputFormat.size());
 	stream.write(0,buf.base(),buf.size(),1,&buf.info);

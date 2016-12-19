@@ -1017,6 +1017,15 @@ VDImageEncoderPNG::~VDImageEncoderPNG() {
 }
 
 void VDImageEncoderPNG::Encode(const VDPixmap& px, const void *&p, uint32& len, bool quick) {
+	int tmp_format = nsVDPixmap::kPixFormat_XRGB8888;
+	int bpp = 4;
+	int hdr_type = 6; // truecolor & alpha
+	if (px.info.alpha_type==FilterModPixmapInfo::kAlphaInvalid) {
+		tmp_format = nsVDPixmap::kPixFormat_RGB888;
+		bpp = 3;
+		hdr_type = 2; // truecolor
+	}
+
 	mOutput.assign(kPNGSignature, kPNGSignature + 8);
 
 	struct IHDR {
@@ -1036,7 +1045,7 @@ void VDImageEncoderPNG::Encode(const VDPixmap& px, const void *&p, uint32& len, 
 	ihdr.mWidth				= VDToBE32(px.w);
 	ihdr.mHeight			= VDToBE32(px.h);
 	ihdr.mDepth				= 8;
-	ihdr.mColorType			= 2;		// truecolor
+	ihdr.mColorType			= hdr_type;
 	ihdr.mCompression		= 0;		// Deflate
 	ihdr.mFilterMethod		= 0;		// basic adaptive filtering
 	ihdr.mInterlaceMethod	= 0;		// no interlacing
@@ -1047,7 +1056,7 @@ void VDImageEncoderPNG::Encode(const VDPixmap& px, const void *&p, uint32& len, 
 	mOutput.insert(mOutput.end(), (const uint8 *)&ihdr, (const uint8 *)&ihdr + 21);
 	mOutput.insert(mOutput.end(), (const uint8 *)&ihdr_crc, (const uint8 *)&ihdr_crc + 4);
 
-	VDPixmapBuffer pxtmp(px.w, px.h, nsVDPixmap::kPixFormat_RGB888);
+	VDPixmapBuffer pxtmp(px.w, px.h, tmp_format);
 	VDPixmapBlt(pxtmp, px);
 
 	vdautoptr<VDPNGDeflateEncoder> enc(new VDPNGDeflateEncoder);	// way too big for stack
@@ -1061,7 +1070,7 @@ void VDImageEncoderPNG::Encode(const VDPixmap& px, const void *&p, uint32& len, 
 	};
 
 	const uint32 w = pxtmp.w;
-	const uint32 rowbytes = w*3;
+	const uint32 rowbytes = w*bpp;
 	vdfastvector<uint8> temprowbuf(rowbytes*5);
 	uint8 *tempmem = temprowbuf.data();
 	const uint8 *prevrow = NULL;
@@ -1078,7 +1087,7 @@ void VDImageEncoderPNG::Encode(const VDPixmap& px, const void *&p, uint32& len, 
 			uint8 r = dst[2];
 			dst[0] = r;
 			dst[2] = b;
-			dst += 3;
+			dst += bpp;
 		}
 
 		// try all predictors
@@ -1095,7 +1104,7 @@ void VDImageEncoderPNG::Encode(const VDPixmap& px, const void *&p, uint32& len, 
 
 		for(int i=0; i<5; ++i) {
 			uint8 *dst = tempmem + rowbytes * i;
-			predictors[i](dst, src, prevrow, rowbytes, 3);
+			predictors[i](dst, src, prevrow, rowbytes, bpp);
 
 			uint32 score = ComputeSumAbsoluteSignedBytes((const sint8*)dst, rowbytes);
 			if (score < bestscore) {
