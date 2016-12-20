@@ -96,6 +96,7 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 	
 	switch(srcformat) {
 		case nsVDPixmap::kPixFormat_XRGB8888:
+		case nsVDPixmap::kPixFormat_XRGB64:
 		case nsVDPixmap::kPixFormat_Y8:
 		case nsVDPixmap::kPixFormat_Y8_FR:
 		case nsVDPixmap::kPixFormat_YUV444_Planar:
@@ -254,6 +255,11 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 			ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
 			break;
 
+		case nsVDPixmap::kPixFormat_XRGB64:
+			gen.ldsrc(0, 0, 0, 0, sw, sh, VDPixmapGetFormatTokenFromFormat(srcformat), sw*8);
+			ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
+			break;
+
 		case nsVDPixmap::kPixFormat_Y8:
 			gen.ldsrc(0, 0, 0, 0, sw, sh, kVDPixType_8, sw);
 			ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
@@ -329,6 +335,7 @@ void VDPixmapResampler::Process(const VDPixmap& dst, const VDPixmap& src) {
 
 	switch(dst.format) {
 		case nsVDPixmap::kPixFormat_XRGB8888:
+		case nsVDPixmap::kPixFormat_XRGB64:
 		case nsVDPixmap::kPixFormat_Y8:
 			mpBlitter->Blit(dst, &mDstRectPlane0, src);
 			break;

@@ -43,6 +43,7 @@ protected:
 	void Compute8(void *dst0, sint32 y);
 	void Compute16(void *dst0, sint32 y);
 	void Compute32(void *dst0, sint32 y);
+	void Compute64(void *dst0, sint32 y);
 	void Compute128(void *dst0, sint32 y);
 
 	IVDResamplerSeparableRowStage *mpRowStage;

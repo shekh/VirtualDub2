@@ -56,6 +56,10 @@ namespace {
 		VDMemset32Rect(vdptroffset(dst, dstpitch*y + x*4), dstpitch, c, w, h);
 	}
 
+	void VDPixmapRectFillPlane64(void *dst, ptrdiff_t dstpitch, int x, int y, int w, int h, uint64 c) {
+		VDMemset64Rect(vdptroffset(dst, dstpitch*y + x*8), dstpitch, c, w, h);
+	}
+
 	void VDPixmapRectFillRaw(const VDPixmap& px, const vdrect32f& r0, uint32 c) {
 		vdrect32f r(r0);
 
@@ -108,6 +112,16 @@ namespace {
 			break;
 		case nsVDPixmap::kPixFormat_XRGB8888:
 			VDPixmapRectFillPlane32(px.data, px.pitch, ix, iy, iw, ih, c);
+			break;
+		case nsVDPixmap::kPixFormat_XRGB64:
+			{
+				int b = c & 0xFF;
+				int g = (c>>8) & 0xFF;
+				int r = (c>>16) & 0xFF;
+				int a = (c>>24) & 0xFF;
+				uint64 c64 = b*0x101ul | g*0x1010000ul | r*0x10100000000ul | a*0x101000000000000ul;
+				VDPixmapRectFillPlane64(px.data, px.pitch, ix, iy, iw, ih, c64);
+			}
 			break;
 		case nsVDPixmap::kPixFormat_YUV444_Planar:
 		case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
@@ -228,6 +242,7 @@ namespace {
 
 			case nsVDPixmap::kPixFormat_RGB888:
 			case nsVDPixmap::kPixFormat_XRGB8888:
+			case nsVDPixmap::kPixFormat_XRGB64:
 				VDPixmapRectFillRaw(px, rDst, c);
 				break;
 
@@ -427,6 +442,7 @@ void VDVideoFilterResize::Run() {
 uint32 VDVideoFilterResize::GetParams() {
 	switch(fa->src.mpPixmapLayout->format) {
 		case nsVDXPixmap::kPixFormat_XRGB8888:
+		case nsVDXPixmap::kPixFormat_XRGB64:
 		case nsVDXPixmap::kPixFormat_YUV444_Planar:
 		case nsVDXPixmap::kPixFormat_YUV444_Planar_FR:
 		case nsVDXPixmap::kPixFormat_YUV444_Planar_709:

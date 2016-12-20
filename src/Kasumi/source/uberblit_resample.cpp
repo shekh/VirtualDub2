@@ -201,21 +201,25 @@ void VDPixmapGenResampleRow::Init(IVDPixmapGen *src, uint32 srcIndex, uint32 wid
 			{ kVDPixType_8,			false,	nsVDPixmap::kFilterPoint,		0,					RowFactory<VDResamplerRowStageSeparablePoint8> },
 			{ kVDPixType_8888,		false,	nsVDPixmap::kFilterPoint,		0,					RowFactory<VDResamplerRowStageSeparablePoint32> },
 			{ kVDPixType_16_LE,		false,	nsVDPixmap::kFilterPoint,		0,					RowFactory<VDResamplerRowStageSeparablePoint16> },
+			{ kVDPixType_16x4_LE,		false,	nsVDPixmap::kFilterPoint,	0,					RowFactory<VDResamplerRowStageSeparablePoint16x4> },
 			{ kVDPixType_8,			true,	nsVDPixmap::kFilterLinear,		0,					RowFactory<VDResamplerRowStageSeparableLinear8> },
 			{ kVDPixType_8888,		true,	nsVDPixmap::kFilterLinear,		0,					RowFactory<VDResamplerRowStageSeparableLinear32> },
 			{ kVDPixType_8,			false,	nsVDPixmap::kFilterLinear,		0,					RowFactoryLinear<VDResamplerRowStageSeparableTable8> },
 			{ kVDPixType_8888,		false,	nsVDPixmap::kFilterLinear,		0,					RowFactoryLinear<VDResamplerRowStageSeparableTable32> },
 			{ kVDPixType_16_LE,		false,	nsVDPixmap::kFilterLinear,		0,					RowFactoryLinear<VDResamplerRowStageSeparableTable16> },
+			{ kVDPixType_16x4_LE,		false,	nsVDPixmap::kFilterLinear,	0,					RowFactoryLinear<VDResamplerRowStageSeparableTable16x4> },
 			{ kVDPixType_32F_LE,	false,	nsVDPixmap::kFilterLinear,		0,					RowFactoryLinear<VDResamplerRowStageSeparableTable32F> },
 			{ kVDPixType_32Fx4_LE,	false,	nsVDPixmap::kFilterLinear,		0,					RowFactoryLinear<VDResamplerRowStageSeparableTable32Fx4> },
 			{ kVDPixType_8,			false,	nsVDPixmap::kFilterCubic,		0,					RowFactoryCubic<VDResamplerRowStageSeparableTable8> },
 			{ kVDPixType_8888,		false,	nsVDPixmap::kFilterCubic,		0,					RowFactoryCubic<VDResamplerRowStageSeparableTable32> },
 			{ kVDPixType_16_LE,		false,	nsVDPixmap::kFilterCubic,		0,					RowFactoryCubic<VDResamplerRowStageSeparableTable16> },
+			{ kVDPixType_16x4_LE,		false,	nsVDPixmap::kFilterCubic,	0,					RowFactoryCubic<VDResamplerRowStageSeparableTable16x4> },
 			{ kVDPixType_32F_LE,	false,	nsVDPixmap::kFilterCubic,		0,					RowFactoryCubic<VDResamplerRowStageSeparableTable32F> },
 			{ kVDPixType_32Fx4_LE,	false,	nsVDPixmap::kFilterCubic,		0,					RowFactoryCubic<VDResamplerRowStageSeparableTable32Fx4> },
 			{ kVDPixType_8,			false,	nsVDPixmap::kFilterLanczos3,	0,					RowFactoryLanczos3<VDResamplerRowStageSeparableTable8> },
 			{ kVDPixType_8888,		false,	nsVDPixmap::kFilterLanczos3,	0,					RowFactoryLanczos3<VDResamplerRowStageSeparableTable32> },
 			{ kVDPixType_16_LE,		false,	nsVDPixmap::kFilterLanczos3,	0,					RowFactoryLanczos3<VDResamplerRowStageSeparableTable16> },
+			{ kVDPixType_16x4_LE,		false,	nsVDPixmap::kFilterLanczos3,0,					RowFactoryLanczos3<VDResamplerRowStageSeparableTable16x4> },
 			{ kVDPixType_32F_LE,	false,	nsVDPixmap::kFilterLanczos3,	0,					RowFactoryLanczos3<VDResamplerRowStageSeparableTable32F> },
 			{ kVDPixType_32Fx4_LE,	false,	nsVDPixmap::kFilterLanczos3,	0,					RowFactoryLanczos3<VDResamplerRowStageSeparableTable32Fx4> },
 		};
@@ -262,6 +266,9 @@ void VDPixmapGenResampleRow::Init(IVDPixmapGen *src, uint32 srcIndex, uint32 wid
 		case kVDPixType_32F_LE:
 			mBytesPerSample = 4;
 			break;
+		case kVDPixType_16x4_LE:
+			mBytesPerSample = 8;
+			break;
 		case kVDPixType_32Fx4_LE:
 			mBytesPerSample = 16;
 			break;
@@ -291,6 +298,9 @@ void VDPixmapGenResampleRow::Compute(void *dst0, sint32 y) {
 			break;
 		case 4:
 			Compute32(dst0, y);
+			break;
+		case 8:
+			Compute64(dst0, y);
 			break;
 		case 16:
 			Compute128(dst0, y);
@@ -483,6 +493,67 @@ void VDPixmapGenResampleRow::Compute32(void *dst0, sint32 y) {
 	}
 }
 
+void VDPixmapGenResampleRow::Compute64(void *dst0, sint32 y) {
+	const uint64 *src = (const uint64 *)mpSrc->GetRow(y, mSrcIndex);
+	uint64 *dst = (uint64 *)dst0;
+
+	// process pre-copy region
+	if (uint32 count = mAxis.dx_precopy) {
+		VDMemset64(dst, src[0], count);
+		dst += count;
+	}
+
+	uint64 *p = (uint64*)mTempSpace.data();
+	sint32 u = mAxis.u;
+	const sint32 dudx = mAxis.dudx;
+
+	// process dual-clip region
+	if (uint32 count = mAxis.dx_dualclip) {
+		VDMemset64(p, src[0], mRowFiltW);
+		memcpy(p + mRowFiltW, src+1, (mSrcWidth-2)*sizeof(uint64));
+		VDMemset64(p + mRowFiltW + (mSrcWidth-2), src[mSrcWidth-1], mRowFiltW);
+
+		mpRowStage->Process(dst, p, count, u + ((mRowFiltW-1)<<16), dudx);
+		u += dudx*count;
+		dst += count;
+	} else if (mpRowStage2) {
+		mpRowStage2->Process(dst, p, mAxis.dx_preclip + mAxis.dx_active + mAxis.dx_postclip);
+	} else {
+		// process pre-clip region
+		if (uint32 count = mAxis.dx_preclip) {
+			VDMemset64(p, src[0], mRowFiltW);
+			memcpy(p + mRowFiltW, src+1, (mRowFiltW-1)*sizeof(uint64));
+
+			mpRowStage->Process(dst, p, count, u + ((mRowFiltW-1)<<16), dudx);
+			u += dudx*count;
+			dst += count;
+		}
+
+		// process active region
+		if (uint32 count = mAxis.dx_active) {
+			mpRowStage->Process(dst, src, count, u, dudx);
+			u += dudx*count;
+			dst += count;
+		}
+
+		// process post-clip region
+		if (uint32 count = mAxis.dx_postclip) {
+			uint32 offset = mSrcWidth + 1 - mRowFiltW;
+
+			memcpy(p, src+offset, (mRowFiltW-1)*sizeof(uint64));
+			VDMemset64(p + (mRowFiltW-1), src[mSrcWidth-1], mRowFiltW);
+
+			mpRowStage->Process(dst, p, count, u - (offset<<16), dudx);
+			dst += count;
+		}
+	}
+
+	// process post-copy region
+	if (uint32 count = mAxis.dx_postcopy) {
+		VDMemset64(dst, src[mSrcWidth-1], count);
+	}
+}
+
 void VDPixmapGenResampleRow::Compute128(void *dst0, sint32 y) {
 	const uint32 *src = (const uint32 *)mpSrc->GetRow(y, mSrcIndex);
 	uint32 *dst = (uint32 *)dst0;
@@ -610,16 +681,19 @@ void VDPixmapGenResampleCol::Init(IVDPixmapGen *src, uint32 srcIndex, uint32 hei
 		{ kVDPixType_8,			false,	nsVDPixmap::kFilterLinear,		0,					ColFactoryLinear<VDResamplerColStageSeparableTable8> },
 		{ kVDPixType_8888,		false,	nsVDPixmap::kFilterLinear,		0,					ColFactoryLinear<VDResamplerColStageSeparableTable32> },
 		{ kVDPixType_16_LE,		false,	nsVDPixmap::kFilterLinear,		0,					ColFactoryLinear<VDResamplerColStageSeparableTable16> },
+		{ kVDPixType_16x4_LE,		false,	nsVDPixmap::kFilterLinear,	0,					ColFactoryLinear<VDResamplerColStageSeparableTable16x4> },
 		{ kVDPixType_32F_LE,	false,	nsVDPixmap::kFilterLinear,		0,					ColFactoryLinear<VDResamplerColStageSeparableTable32F> },
 		{ kVDPixType_32Fx4_LE,	false,	nsVDPixmap::kFilterLinear,		0,					ColFactoryLinear<VDResamplerColStageSeparableTable32Fx4> },
 		{ kVDPixType_8,			false,	nsVDPixmap::kFilterCubic,		0,					ColFactoryCubic<VDResamplerColStageSeparableTable8> },
 		{ kVDPixType_8888,		false,	nsVDPixmap::kFilterCubic,		0,					ColFactoryCubic<VDResamplerColStageSeparableTable32> },
 		{ kVDPixType_16_LE,		false,	nsVDPixmap::kFilterCubic,		0,					ColFactoryCubic<VDResamplerColStageSeparableTable16> },
+		{ kVDPixType_16x4_LE,		false,	nsVDPixmap::kFilterCubic,	0,					ColFactoryCubic<VDResamplerColStageSeparableTable16x4> },
 		{ kVDPixType_32F_LE,	false,	nsVDPixmap::kFilterCubic,		0,					ColFactoryCubic<VDResamplerColStageSeparableTable32F> },
 		{ kVDPixType_32Fx4_LE,	false,	nsVDPixmap::kFilterCubic,		0,					ColFactoryCubic<VDResamplerColStageSeparableTable32Fx4> },
 		{ kVDPixType_8,			false,	nsVDPixmap::kFilterLanczos3,	0,					ColFactoryLanczos3<VDResamplerColStageSeparableTable8> },
 		{ kVDPixType_8888,		false,	nsVDPixmap::kFilterLanczos3,	0,					ColFactoryLanczos3<VDResamplerColStageSeparableTable32> },
 		{ kVDPixType_16_LE,		false,	nsVDPixmap::kFilterLanczos3,	0,					ColFactoryLanczos3<VDResamplerColStageSeparableTable16> },
+		{ kVDPixType_16x4_LE,		false,	nsVDPixmap::kFilterLanczos3,0,					ColFactoryLanczos3<VDResamplerColStageSeparableTable16x4> },
 		{ kVDPixType_32F_LE,	false,	nsVDPixmap::kFilterLanczos3,	0,					ColFactoryLanczos3<VDResamplerColStageSeparableTable32F> },
 		{ kVDPixType_32Fx4_LE,	false,	nsVDPixmap::kFilterLanczos3,	0,					ColFactoryLanczos3<VDResamplerColStageSeparableTable32Fx4> },
 	};
@@ -665,6 +739,9 @@ void VDPixmapGenResampleCol::Init(IVDPixmapGen *src, uint32 srcIndex, uint32 hei
 		case kVDPixType_8888:
 		case kVDPixType_32F_LE:
 			mBytesPerSample = 4;
+			break;
+		case kVDPixType_16x4_LE:
+			mBytesPerSample = 8;
 			break;
 		case kVDPixType_32Fx4_LE:
 			mBytesPerSample = 16;
