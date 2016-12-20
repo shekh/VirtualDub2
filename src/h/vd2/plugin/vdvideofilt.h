@@ -72,6 +72,10 @@ enum {
 	///
 	FILTERPARAM_PURE_TRANSFORM		= 0x00000010L,
 
+	/// Filter requests that 16-bits input bitmap is normalized. This guarantees that info.ref_r..info.ref_a attributes are 0xFFFF when applicable.
+	///
+	FILTERPARAM_NORMALIZE16		= 0x00000020L,
+
 	/// Filter cannot support the requested source format. Note that this sets all bits, so the meaning
 	/// of other bits is ignored. The one exception is that FILTERPARAM_SUPPORTS_ALTFORMATS is assumed
 	/// to be implicitly set.

@@ -7,18 +7,31 @@
 void VDPixmapGen_X8R8G8B8_To_X16R16G16B16::Compute(void *dst0, sint32 y) {
 	uint16 *dst = (uint16 *)dst0;
 	const uint8 *src = (const uint8 *)mpSrc->GetRow(y, mSrcIndex);
-	sint32 w = mWidth;
+	int w = mWidth;
+	int w0 = mWidth & ~3;
+	w -= w0;
 
-	VDCPUCleanupExtensions();
+	__m128i zero = _mm_setzero_si128();
+	{for(int i=0; i<w0/4; i++){
+		__m128i a = _mm_loadu_si128((__m128i*)src);
+		__m128i b0 = _mm_unpacklo_epi8(a,zero);
+		__m128i b1 = _mm_unpackhi_epi8(a,zero);
+		b0 = _mm_or_si128(b0,_mm_slli_si128(b0,1));
+		b1 = _mm_or_si128(b1,_mm_slli_si128(b1,1));
+		_mm_storeu_si128((__m128i*)dst,b0);
+		_mm_storeu_si128((__m128i*)(dst+8),b1);
+		dst += 16;
+		src += 16;
+	}}
 
-	for(sint32 i=0; i<w; ++i) {
-		dst[0] = src[0]<<8;
-		dst[1] = src[1]<<8;
-		dst[2] = src[2]<<8;
-		dst[3] = src[3]<<8;
+	{for(int i=0; i<w; i++){
+		dst[0] = (src[0]<<8) + src[0];
+		dst[1] = (src[1]<<8) + src[1];
+		dst[2] = (src[2]<<8) + src[2];
+		dst[3] = (src[3]<<8) + src[3];
 		dst += 4;
 		src += 4;
-	}
+	}}
 }
 
 void VDPixmapGen_X16R16G16B16_To_X32B32G32R32F::Compute(void *dst0, sint32 y) {

@@ -1108,6 +1108,7 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 
 		streamInfo.mExternalSrcPreAlign.ConvertPixmapLayoutToBitmapLayout();
 		streamInfo.mbAlignOnEntry = false;
+		streamInfo.mbNormalizeOnEntry = false;
 	}
 
 	pfsi	= &mfsi;
@@ -1235,6 +1236,13 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 
 			if (alignmentViolationDetected)
 				continue;
+		}
+
+		if (flags & FILTERPARAM_NORMALIZE16) {
+			for(uint32 streamIndex = 0; streamIndex < numInputs; ++streamIndex) {
+				VDFilterPrepareStreamInfo& streamInfo = prepareInfo.mStreams[streamIndex];
+				streamInfo.mbNormalizeOnEntry = true;
+			}
 		}
 
 		break;

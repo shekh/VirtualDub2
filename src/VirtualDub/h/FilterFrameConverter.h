@@ -31,7 +31,7 @@ public:
 	VDFilterFrameConverter();
 	~VDFilterFrameConverter();
 
-	void Init(IVDFilterFrameSource *source, const VDPixmapLayout& outputLayout, const VDPixmapLayout *sourceLayoutOverride);
+	void Init(IVDFilterFrameSource *source, const VDPixmapLayout& outputLayout, const VDPixmapLayout *sourceLayoutOverride, bool normalize16);
 	void Start(IVDFilterFrameEngine *frameEngine);
 	void Stop();
 
@@ -50,6 +50,7 @@ protected:
 	IVDFilterFrameEngine *mpEngine;
 	IVDFilterFrameSource *mpSource;
 	VDPixmapLayout		mSourceLayout;
+	bool mNormalize16;
 
 	VDFilterFrameConverterNode* node;
 	int node_count;

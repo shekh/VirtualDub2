@@ -17,6 +17,8 @@
 
 #include "stdafx.h"
 #include <vd2/Kasumi/pixmaputils.h>
+#include <../Kasumi/h/uberblit_rgb64.h>
+#include <../Kasumi/h/uberblit_16f.h>
 #include "FilterFrameConverter.h"
 
 class VDFilterFrameConverterNode {
@@ -53,19 +55,38 @@ VDFilterFrameConverter::~VDFilterFrameConverter() {
 	delete[] node;
 }
 
-void VDFilterFrameConverter::Init(IVDFilterFrameSource *source, const VDPixmapLayout& outputLayout, const VDPixmapLayout *sourceLayoutOverride) {
+void VDFilterFrameConverter::Init(IVDFilterFrameSource *source, const VDPixmapLayout& outputLayout, const VDPixmapLayout *sourceLayoutOverride, bool normalize16) {
 	mpSource = source;
 	mSourceLayout = sourceLayoutOverride ? *sourceLayoutOverride : source->GetOutputLayout();
+	mNormalize16 = normalize16;
 	SetOutputLayout(outputLayout);
 }
 
 int VDFilterFrameConverter::AllocateNodes(int threads) {
 	node_count = threads;
 	node = new VDFilterFrameConverterNode[threads];
+
+	IVDPixmapExtraGen* extraDst = 0;
+	if (mNormalize16) {
+		switch (mLayout.format) {
+		case nsVDPixmap::kPixFormat_XRGB64:
+			extraDst = new ExtraGen_X16R16G16B16_Normalize;
+			break;
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+			extraDst = new ExtraGen_YUV_Normalize;
+			break;
+		}
+	}
+
 	{for(int i=0; i<threads; i++){
 		node[i].source = this;
-		node[i].mpBlitter = VDPixmapCreateBlitter(mLayout, mSourceLayout);
+		node[i].mpBlitter = VDPixmapCreateBlitter(mLayout, mSourceLayout, extraDst);
 	}}
+
+	delete extraDst;
+
 	return threads;
 }
 

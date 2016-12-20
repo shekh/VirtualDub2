@@ -946,6 +946,22 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 					if (cpuConversionRequired)
 						AppendConversionFilter(tail, extSrcLayout);
 				}
+			} else if (streamInfo.mbNormalizeOnEntry) {
+				// assume in all cases when usual conversion is applied the bitmap is normalized anyway
+			
+				bool normalizeRequired = false;
+				int dstFormat = extSrcLayout.format;
+				switch (dstFormat) {
+				case nsVDPixmap::kPixFormat_XRGB64:
+				case nsVDPixmap::kPixFormat_YUV420_Planar16:
+				case nsVDPixmap::kPixFormat_YUV422_Planar16:
+				case nsVDPixmap::kPixFormat_YUV444_Planar16:
+					normalizeRequired = true;
+					break;
+				}
+
+				if (normalizeRequired)
+					AppendConversionFilter(tail, extSrcLayout, true);
 			}
 
 			if (streamInfo.mbAlignOnEntry) {
@@ -1430,10 +1446,10 @@ void FilterSystem::DeallocateBuffers() {
 	}
 }
 
-void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout& dstLayout) {
+void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout& dstLayout, bool normalize16) {
 	vdrefptr<VDFilterFrameConverter> conv(new VDFilterFrameConverter);
 
-	conv->Init(tail.mpSrc, dstLayout, NULL);
+	conv->Init(tail.mpSrc, dstLayout, NULL, normalize16);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 	conv->RegisterSourceAllocReqs(0, tail.mpProxy);
 	tail.mpSrc = conv;
@@ -1446,7 +1462,7 @@ void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout
 void FilterSystem::AppendAlignmentFilter(StreamTail& tail, const VDPixmapLayout& dstLayout, const VDPixmapLayout& srcLayout) {
 	vdrefptr<VDFilterFrameConverter> conv(new VDFilterFrameConverter);
 
-	conv->Init(tail.mpSrc, dstLayout, &srcLayout);
+	conv->Init(tail.mpSrc, dstLayout, &srcLayout, false);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 	conv->RegisterSourceAllocReqs(0, tail.mpProxy);
 	tail.mpSrc = conv;

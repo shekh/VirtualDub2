@@ -313,6 +313,7 @@ struct VDFilterPrepareStreamInfo {
 	VFBitmapInternal	mExternalSrcPreAlign;	// [prepare only] cropped
 	VFBitmapInternal	mExternalSrcCropped;	// [prepare only] post-align
 	bool	mbAlignOnEntry;
+	bool	mbNormalizeOnEntry;
 };
 
 struct VDFilterPrepareInfo {

@@ -26,10 +26,10 @@ public:
 		mpSrc->TransformPixmapInfo(src,buf);
 		dst.copy_frame(buf);
 		dst.copy_alpha(buf);
-		dst.ref_r = 0xFF00;
-		dst.ref_g = 0xFF00;
-		dst.ref_b = 0xFF00;
-		dst.ref_a = 0xFF00;
+		dst.ref_r = 0xFFFF;
+		dst.ref_g = 0xFFFF;
+		dst.ref_b = 0xFFFF;
+		dst.ref_a = 0xFFFF;
 	}
 
 	void Start() {

@@ -113,7 +113,7 @@ private:
 		VDFilterFrameAllocatorProxy *mpProxy;
 	};
 
-	void AppendConversionFilter(StreamTail& tail, const VDPixmapLayout& dstLayout);
+	void AppendConversionFilter(StreamTail& tail, const VDPixmapLayout& dstLayout, bool normalize16=false);
 	void AppendAlignmentFilter(StreamTail& tail, const VDPixmapLayout& dstLayout, const VDPixmapLayout& srcLayout);
 	void AppendAccelUploadFilter(StreamTail& tail, const vdrect32& srcCrop);
 	void AppendAccelDownloadFilter(StreamTail& tail, const VDPixmapLayout& layout);
