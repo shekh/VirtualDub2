@@ -22,8 +22,10 @@
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmaputils.h>
 #include <vd2/Kasumi/pixmapops.h>
+#include <vd2/Kasumi/blitter.h>
 #include <vd2/Riza/bitmap.h>
 #include <vd2/libav_tiff/tiff_image.h>
+#include "DubOutput.h"
 #include "AVIOutput.h"
 #include "AVIOutputImages.h"
 #include "imagejpeg.h"
