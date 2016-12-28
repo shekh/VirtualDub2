@@ -3395,6 +3395,12 @@ void VDProjectUI::RepositionPanes(bool reset) {
 				}
 			}
 		}
+	} else {
+		for(int i=1; i<n; ++i) {
+			HWND hwndPane = panes[i];
+			IVDVideoWindow *w = VDGetIVideoWindow(hwndPane);
+			w->Resize(false);
+		}
 	}
 
 	int x = 0;
