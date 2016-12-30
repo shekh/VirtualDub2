@@ -177,7 +177,7 @@ public:
 			dst.ref_b = max_value;
 			dst.ref_a = max_value;
 			scale_down = true;
-			if (mr>0x10000 || mg>0x10000 || mb>0x10000 || ma>0x10000) scale_down = false;
+			if (mr>=0x10000 || mg>=0x10000 || mb>=0x10000 || ma>=0x10000) scale_down = false;
 		}
 
 		a_mask = 0;

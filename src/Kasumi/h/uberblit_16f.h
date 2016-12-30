@@ -108,7 +108,7 @@ public:
 			m = max_value*0x10000/ref;
 			dst.ref_r = max_value;
 			scale_down = true;
-			if (m>0x10000) scale_down = false;
+			if (m>=0x10000) scale_down = false;
 		}
 	}
 

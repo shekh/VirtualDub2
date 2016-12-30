@@ -1188,6 +1188,10 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 		out_info.ref_a = 0xFFFF;
 		if (mpVideoCompressor) {
 			if (!mpVideoCompressor->GetInputFormat(&out_info)) {
+				out_info.ref_r = 0xFFFF;
+				out_info.ref_g = 0xFFFF;
+				out_info.ref_b = 0xFFFF;
+				out_info.ref_a = 0xFFFF;
 				vdstructex<tagBITMAPINFOHEADER> bm;
 				mpVideoCompressor->GetInputBitmapFormat(bm);
 				int variant;

@@ -121,7 +121,7 @@ void VDPixmapGen_Y16_Normalize::Compute(void *dst0, sint32 y) {
 	if (do_normalize)
 		ComputeNormalize(dst0,y);
 	else
-		mpSrc->ProcessRow(dst0,y);
+		memcpy(dst0,mpSrc->GetRow(y, mSrcIndex),mWidth*2);
 }
 
 void VDPixmapGen_Y16_Normalize::ComputeNormalize(void *dst0, sint32 y) {
