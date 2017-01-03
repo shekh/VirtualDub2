@@ -117,6 +117,76 @@ void VDPixmapGen_16_To_32F::Compute(void *dst0, sint32 y) {
 	}
 }
 
+void VDPixmapGen_8_To_16::Compute(void *dst0, sint32 y) {
+	uint16 *dst = (uint16 *)dst0;
+	const uint8 *src = (const uint8 *)mpSrc->GetRow(y, mSrcIndex);
+	int w = mWidth;
+	int w0 = mWidth & ~15;
+	w -= w0;
+
+	__m128i zero = _mm_setzero_si128();
+	{for(int i=0; i<w0/16; i++){
+		__m128i a = _mm_loadu_si128((__m128i*)src);
+		__m128i b0 = _mm_unpacklo_epi8(a,zero);
+		__m128i b1 = _mm_unpackhi_epi8(a,zero);
+		b0 = _mm_or_si128(b0,_mm_slli_si128(b0,1));
+		b1 = _mm_or_si128(b1,_mm_slli_si128(b1,1));
+		_mm_storeu_si128((__m128i*)dst,b0);
+		_mm_storeu_si128((__m128i*)(dst+8),b1);
+		dst += 16;
+		src += 16;
+	}}
+
+	{for(int i=0; i<w; i++){
+		dst[0] = (src[0]<<8) + src[0];
+		dst++;
+		src++;
+	}}
+}
+
+void VDPixmapGen_16_To_8::Start() {
+	StartWindow(mWidth);
+}
+
+uint32 VDPixmapGen_16_To_8::GetType(uint32 output) const {
+	return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8;
+}
+
+void VDPixmapGen_16_To_8::Compute(void *dst0, sint32 y) {
+	const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex);
+	uint8 *dst = (uint8 *)dst0;
+
+	const int n0 = mWidth & ~15;
+	const int n1 = mWidth-n0;
+
+	__m128i mm = _mm_set1_epi16(m);
+
+	for(sint32 i=0; i<n0/16; ++i) {
+		__m128i c0 = _mm_loadu_si128((const __m128i*)src);
+		__m128i c1 = _mm_loadu_si128((const __m128i*)(src+8));
+		__m128i a0 = _mm_mullo_epi16(c0,mm);
+		__m128i a1 = _mm_mullo_epi16(c1,mm);
+		a0 = _mm_srli_epi16(a0,15);
+		a1 = _mm_srli_epi16(a1,15);
+		c0 = _mm_mulhi_epu16(c0,mm);
+		c1 = _mm_mulhi_epu16(c1,mm);
+		c0 = _mm_adds_epu16(c0,a0);
+		c1 = _mm_adds_epu16(c1,a1);
+		__m128i v = _mm_packus_epi16(c0,c1);
+		_mm_storeu_si128((__m128i*)dst,v);
+		src+=16;
+		dst+=16;
+	}
+
+	for(sint32 i=0; i<n1; ++i) {
+		uint16 c = src[0];
+		if(c>ref) c=255; else c=(c*m+0x8000)>>16;
+		*dst = (uint8)c;
+		src++;
+		dst++;
+	}
+}
+
 void VDPixmapGen_Y16_Normalize::Compute(void *dst0, sint32 y) {
 	if (do_normalize)
 		ComputeNormalize(dst0,y);

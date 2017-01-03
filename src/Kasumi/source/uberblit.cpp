@@ -453,9 +453,13 @@ namespace {
 							break;
 
 						case kVDPixType_16F_LE:
-						case kVDPixType_16_LE:
 							targetType = kVDPixType_32F_LE;
 							goto type_reconvert;
+
+						case kVDPixType_16_LE:
+							gen.conv_16_to_8();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8;
+							break;
 
 						case kVDPixType_32F_LE:
 							gen.conv_32F_to_8();
@@ -478,9 +482,13 @@ namespace {
 							break;
 
 						case kVDPixType_16F_LE:
-						case kVDPixType_8:
 							targetType = kVDPixType_32F_LE;
 							goto type_reconvert;
+
+						case kVDPixType_8:
+							gen.conv_8_to_16();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_LE;
+							break;
 
 						case kVDPixType_32F_LE:
 							gen.conv_32F_to_16();
@@ -516,7 +524,6 @@ namespace {
 							srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSamp_Mask)) | kVDPixType_8_8_8 | kVDPixSamp_422;
 							break;
 						case kVDPixType_16F_16F_16F_LE:
-						case kVDPixType_16_16_16_LE:
 						case kVDPixType_V210:
 							targetType = kVDPixType_32F_32F_32F_LE;
 							goto type_reconvert;
@@ -529,6 +536,19 @@ namespace {
 							gen.swap(2);
 							// 2 0 1
 							gen.conv_32F_to_8();
+							gen.swap(2);
+							gen.swap(1);
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
+							break;
+						case kVDPixType_16_16_16_LE:
+							// 0 1 2
+							gen.conv_16_to_8();
+							gen.swap(1);
+							// 1 0 2
+							gen.conv_16_to_8();
+							gen.swap(2);
+							// 2 0 1
+							gen.conv_16_to_8();
 							gen.swap(2);
 							gen.swap(1);
 							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
@@ -615,6 +635,20 @@ namespace {
 
 				case kVDPixType_16_16_16_LE:
 					switch(srcType) {
+						case kVDPixType_8_8_8:
+							// 0 1 2
+							gen.conv_8_to_16();
+							gen.swap(1);
+							// 1 0 2
+							gen.conv_8_to_16();
+							gen.swap(2);
+							// 2 0 1
+							gen.conv_8_to_16();
+							gen.swap(2);
+							gen.swap(1);
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
+							break;
+
 						case kVDPixType_32F_32F_32F_LE:
 							// 0 1 2
 							gen.conv_32F_to_16();
@@ -1562,18 +1596,22 @@ space_reconvert:
 							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
 							break;
 						case kVDPixSpace_YCC_601:
+							if ((srcToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 							gen.ycbcr_to_ycbcr_generic(dstBasis, false, g_VDPixmapGenYCbCrBasis_601, true, targetSpace);
 							srcToken = (srcToken & ~kVDPixSpace_Mask) | targetSpace;
 							break;
 						case kVDPixSpace_YCC_709:
+							if ((srcToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 							gen.ycbcr_to_ycbcr_generic(dstBasis, false, g_VDPixmapGenYCbCrBasis_709, true, targetSpace);
 							srcToken = (srcToken & ~kVDPixSpace_Mask) | targetSpace;
 							break;
 						case kVDPixSpace_YCC_601_FR:
+							if ((srcToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 							gen.ycbcr_to_ycbcr_generic(dstBasis, false, g_VDPixmapGenYCbCrBasis_601, false, targetSpace);
 							srcToken = (srcToken & ~kVDPixSpace_Mask) | targetSpace;
 							break;
 						case kVDPixSpace_YCC_709_FR:
+							if ((srcToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 							gen.ycbcr_to_ycbcr_generic(dstBasis, false, g_VDPixmapGenYCbCrBasis_709, false, targetSpace);
 							srcToken = (srcToken & ~kVDPixSpace_Mask) | targetSpace;
 							break;

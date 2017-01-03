@@ -90,8 +90,6 @@ void VDPixmapGen_X32B32G32R32F_To_X16R16G16B16::Compute(void *dst0, sint32 y) {
 }
 
 void VDPixmapGen_X16R16G16B16_To_X8R8G8B8::Compute(void *dst0, sint32 y) {
-	VDCPUCleanupExtensions();
-
 	const uint8* src = (const uint8*)mpSrc->GetRow(y, mSrcIndex);
 	uint8 *dst = (uint8 *)dst0;
 

@@ -90,6 +90,57 @@ protected:
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//	16 -> 8
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+class VDPixmapGen_8_To_16 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo buf;
+		mpSrc->TransformPixmapInfo(src,buf);
+		dst.copy_frame(buf);
+		dst.ref_r = 0xFFFF;
+	}
+
+	void Start() {
+		StartWindow(mWidth * 2);
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16_LE;
+	}
+
+protected:
+
+	void Compute(void *dst0, sint32 y);
+};
+
+class VDPixmapGen_16_To_8 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo buf;
+		mpSrc->TransformPixmapInfo(src,buf);
+		dst.copy_frame(buf);
+		ref = buf.ref_r;
+		m = 0xFF0000/buf.ref_r;
+	}
+
+	void Start();
+
+	uint32 GetType(uint32 output) const;
+
+protected:
+	int ref;
+	uint32 m;
+
+	void Compute(void *dst0, sint32 y);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 class VDPixmapGen_Y16_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
 public:

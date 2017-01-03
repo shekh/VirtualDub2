@@ -1093,6 +1093,17 @@ void VDPixmapUberBlitterGenerator::conv_8_to_32F() {
 	args[0] = StackEntry(src, 0);
 }
 
+void VDPixmapUberBlitterGenerator::conv_8_to_16() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_8_To_16 *src = new VDPixmapGen_8_To_16;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
 void VDPixmapUberBlitterGenerator::conv_16F_to_32F() {
 	StackEntry *args = &mStack.back();
 	VDPixmapGen_16F_To_32F *src = new VDPixmapGen_16F_To_32F;
@@ -1107,6 +1118,17 @@ void VDPixmapUberBlitterGenerator::conv_16F_to_32F() {
 void VDPixmapUberBlitterGenerator::conv_16_to_32F() {
 	StackEntry *args = &mStack.back();
 	VDPixmapGen_16_To_32F *src = new VDPixmapGen_16_To_32F;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
+void VDPixmapUberBlitterGenerator::conv_16_to_8() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_16_To_8 *src = new VDPixmapGen_16_To_8;
 
 	src->Init(args[0].mpSrc, args[0].mSrcIndex);
 
