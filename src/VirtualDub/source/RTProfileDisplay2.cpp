@@ -184,6 +184,7 @@ void VDEventProfilerW32::BeginScope(const char *name, uintptr *cache, uint32 dat
 	Event& ev = pti->mpCurrentBlock->mEvents[idx++];
 	ev.mTimestamp = VDGetPreciseTick();
 	ev.mScopeId = scopeId;
+	if (flags & vdprofiler_flag_loop) ev.mScopeId |= 0x80000000;
 	ev.mbOpen = true;
 	ev.mAncillaryData = data;
 
@@ -466,8 +467,14 @@ void VDEventProfileThreadTracker::Update() {
 			tev.mScopeId = ev.mScopeId;
 			tev.mChildScopes = 0xFFFFFFFF;
 			tev.mAncillaryData = ev.mAncillaryData;
-
-			mEventStack.push_back(mEvents.size() - 1);
+			bool loop = (ev.mScopeId & 0x80000000)!=0;
+			tev.mScopeId &= ~0x80000000;
+			if (loop) {
+				tev.mEndTime = tev.mStartTime;
+				tev.mChildScopes = 0;
+			} else {
+				mEventStack.push_back(mEvents.size() - 1);
+			}
 		} else if (!mEventStack.empty()) {
 			size_t idx = mEventStack.back();
 			mEventStack.pop_back();
@@ -501,6 +508,7 @@ protected:
 	bool OnKey(INT wParam);
 	void OnTimer();
 	void UpdateList();
+	void UpdateSummary();
 	void UpdateListTop(bool sync);
 
 protected:
@@ -520,6 +528,7 @@ protected:
 	const HWND mhwnd;
 	HWND    mhwndList;
 	void*   old_list_proc;
+	HWND    mhwndSummary;
 	HFONT		mhfont;
 	HPEN    pen1;
 	HPEN    pen2;
@@ -584,6 +593,7 @@ VDRTProfileDisplay2::VDRTProfileDisplay2(HWND hwnd)
 	list_event_count = 0;
 	list_top = 0;
 	mhwndList = 0;
+	mhwndSummary = 0;
 	selection = 0;
 	pen1 = 0;
 	pen2 = 0;
@@ -714,6 +724,10 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 				}
 				return 0;
 			}
+
+		case WM_USER+603: // set summary list
+			mhwndSummary = (HWND)lParam;
+			return 0;
 
 		case WM_DESTROY:
 			{
@@ -1149,6 +1163,79 @@ struct EventSort {
 	}
 };
 
+struct EventSortId {
+	bool operator()(const VDProfileTrackedEvent *x, const VDProfileTrackedEvent *y) {
+		if (x->mScopeId==y->mScopeId)
+			return x->mStartTime<y->mStartTime;
+		return x->mScopeId<y->mScopeId;
+	}
+};
+
+void VDRTProfileDisplay2::UpdateSummary() {
+	vdfastvector<const VDProfileTrackedEvent *>	list;
+
+	size_t threadCount = mThreadProfiles.size();
+	double msPerTick = VDGetPreciseSecondsPerTick()*1000;
+
+	for(size_t i=0; i<threadCount; ++i) {
+		VDEventProfileThreadTracker *tracker = mThreadProfiles[i];
+
+		if (!tracker)
+			continue;
+
+		const vdspan<VDProfileTrackedEvent>& events = tracker->GetEvents();
+		
+		if (!events.empty()) {
+			for(uint32 j=0; j<events.size(); ++j) {
+				const VDProfileTrackedEvent& ev = events[j];
+				if (ev.mChildScopes == 0xFFFFFFFF)
+					continue;
+				if (ev.mChildScopes != 0)
+					continue;
+
+				list.push_back(&ev);
+			}
+		}
+	}
+
+	std::sort(list.begin(), list.end(), EventSortId());
+
+	HWND wnd = mhwndSummary;
+	SendMessage(wnd, LB_RESETCONTENT, 0, 0);
+	int tabs[] = {30,80,130,180};
+	SendMessage(wnd, LB_SETTABSTOPS, 4, (LPARAM)tabs);
+	SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)"num\t min\t average\t rms\t id");
+
+	for(size_t i=0; i<list.size();) {
+		uint32 id = list[i]->mScopeId;
+		bool loop = (mScopes[id].flags & vdprofiler_flag_loop)!=0;
+		uint64 t0 = list[i]->mStartTime;
+		if (loop) i++;
+		double d0 = 0;
+		double da = 0;
+		double ds = 0;
+		int n = 0;
+		for(; i<list.size(); ++i) {
+			const VDProfileTrackedEvent& ev = *list[i];
+			if (ev.mScopeId!=id) break;
+			uint64 dt = loop ? ev.mStartTime-t0 : ev.mEndTime-ev.mStartTime;
+			t0 = ev.mStartTime;
+			double d = (double)(dt) * msPerTick;
+			da += d;
+			ds += d*d;
+			if(n==0) d0 = d;
+			if(d<d0) d0 = d;
+			n++;
+		}
+
+		if (da/n<0.1) continue;
+
+		const char *s = mScopes[id].name;
+		mTempStr.sprintf("%d \t %5.1fms \t %5.1fms \t %5.1fms \t %s", n, d0, da/n, sqrt(ds/n), s);
+		SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)mTempStr.c_str());
+	}
+}
+
 void VDRTProfileDisplay2::UpdateList() {
 	SendMessage(mhwndList, LB_RESETCONTENT, 0, 0);
 	int tabs[] = {50,90,130,200};
@@ -1205,6 +1292,8 @@ void VDRTProfileDisplay2::UpdateList() {
 
 		SendMessage(mhwndList, LB_ADDSTRING, 0, (LPARAM)mTempStr.c_str());
 	}
+
+	UpdateSummary();
 
 	list_event_count = event_count;
 }

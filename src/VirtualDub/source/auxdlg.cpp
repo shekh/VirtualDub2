@@ -35,6 +35,7 @@
 #include <vd2/system/VDString.h>
 #include "LogWindow.h"
 #include "RTProfileDisplay.h"
+#include "projectui.h"
 
 extern "C" unsigned long version_num;
 extern "C" char version_time[];
@@ -44,6 +45,7 @@ extern HINSTANCE g_hInst;
 
 static volatile HWND g_hwndLogWindow = NULL;
 static volatile HWND g_hwndProfileWindow = NULL;
+extern vdrefptr<VDProjectUI> g_projectui;
 
 class VDLogWindowThread : public VDThread {
 public:
@@ -122,8 +124,10 @@ public:
 				VDSetDialogDefaultIcons(hdlg);
 				HWND w1 = GetDlgItem(hdlg, IDC_PROFILE);
 				HWND w2 = GetDlgItem(hdlg, IDC_PROFILE_LIST);
+				HWND w3 = GetDlgItem(hdlg, IDC_PROFILE_SUMMARY);
 				SendMessage(w2,LB_SETCOLUMNWIDTH,400,0);
 				SendMessage(w1,WM_USER+600,0,(LPARAM)w2);
+				SendMessage(w1,WM_USER+603,0,(LPARAM)w3);
 				VDUIRestoreWindowPlacementW32(hdlg, "ProfileDisplay2", SW_SHOW);
 			}
 		case WM_SIZE:
@@ -132,25 +136,32 @@ public:
 				GetClientRect(hdlg, &r);
 				HWND w1 = GetDlgItem(hdlg, IDC_PROFILE);
 				HWND w2 = GetDlgItem(hdlg, IDC_PROFILE_LIST);
+				HWND w3 = GetDlgItem(hdlg, IDC_PROFILE_SUMMARY);
+				RECT r3;
+				GetWindowRect(w3, &r3);
+				int x1 = r3.right-r3.left;
 				MINMAXINFO mmi;
 				SendMessage(w1,WM_GETMINMAXINFO,0,(LPARAM)&mmi);
 				int h1 = mmi.ptMaxTrackSize.y;
 				if(r.bottom<h1) h1 = r.bottom;
-				SetWindowPos(w1, NULL, 0, 0, r.right, h1, SWP_NOZORDER|SWP_NOACTIVATE);
+				SetWindowPos(w1, NULL, x1, 0, r.right-x1, h1, SWP_NOZORDER|SWP_NOACTIVATE);
 				if(r.bottom<=h1){
 					ShowWindow(w2,SW_HIDE);
 				} else {
 					ShowWindow(w2,SW_SHOW);
-					SetWindowPos(w2, NULL, 0, h1+4, r.right, r.bottom-h1-4, SWP_NOZORDER|SWP_NOACTIVATE);
+					SetWindowPos(w2, NULL, x1, h1+4, r.right-x1, r.bottom-h1-4, SWP_NOZORDER|SWP_NOACTIVATE);
 				}
+				SetWindowPos(w3, NULL, 0, 0, x1-4, r.bottom, SWP_NOZORDER|SWP_NOACTIVATE);
 			}
 			return TRUE;
 		case WM_DESTROY:
 			VDUISaveWindowPlacementW32(hdlg, "ProfileDisplay2");
 			return FALSE;
 		case WM_COMMAND:
-			if (LOWORD(wParam) == IDCANCEL)
+			if (LOWORD(wParam) == IDCANCEL){
+				SetForegroundWindow(g_projectui->GetHwnd());
 				EndDialog(hdlg, 0);
+			}
 
 			if (LOWORD(wParam) == IDC_PROFILE_LIST){
 				if(HIWORD(wParam) == LBN_SELCHANGE){

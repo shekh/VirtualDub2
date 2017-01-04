@@ -391,6 +391,7 @@ namespace {
 		{ ID_TOOLS_CREATESPARSEAVI,		"Tools.CreateSparseAVI" },
 		{ ID_TOOLS_EXPANDSPARSEAVI,		"Tools.ExpandSparseAVI" },
 		{ ID_TOOLS_BENCHMARKRESAMPLER,	"Tools.BenchmarkResampler" },
+		{ ID_TOOLS_BENCHMARKANALYZEPASS,"Tools.BenchmarkAnalyzePass" },
 		{ ID_TOOLS_CREATEPALETTIZEDAVI,	"Tools.CreatePalettizedAVI" },
 		{ ID_TOOLS_CREATETESTVIDEO,		"Tools.CreateTestVideo" },
 		{ ID_HELP_LICENSE,				"Help.ShowLicense" },
@@ -2421,6 +2422,14 @@ bool VDProjectUI::MenuHit(UINT id) {
 			VDBenchmarkResampler(mhwnd);
 			break;
 
+		case ID_TOOLS_BENCHMARKANALYZEPASS:
+			extern void VDOpenProfileWindow();
+			extern void VDCloseProfileWindow();
+			VDCloseProfileWindow();
+			VDOpenProfileWindow();
+			RunNullVideoPass();
+			break;
+
 		case ID_TOOLS_CREATEPALETTIZEDAVI:
 			extern void VDCreateTestPal8Video(VDGUIHandle);
 			VDCreateTestPal8Video(mhwnd);
@@ -2661,6 +2670,8 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 		}}
 
 		VDUIUpdateMenuAcceleratorsW32(mhMenuTools, mAccelTableDef);
+
+		VDEnableMenuItemW32(hmenuTools, ID_TOOLS_BENCHMARKANALYZEPASS, bSourceFileExists);
 
 		MENUITEMINFOA info = {0};
 		info.cbSize = sizeof(info);

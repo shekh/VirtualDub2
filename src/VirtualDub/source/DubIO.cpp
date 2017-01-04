@@ -48,6 +48,7 @@ VDDubIOThread::VDDubIOThread(
 	, mbError(false)
 	, mbPreview(preview)
 	, mAudioSamplesWritten(0)
+	, mVideoRequestTargetSample(0)
 	, mbVideoRequestActive(false)
 	, mbVideoRequestFirstSample(false)
 	, mpVideoRequestSource(NULL)
@@ -133,7 +134,7 @@ void VDDubIOThread::ThreadRun() {
 
 							VDDubAutoThreadLocation loc(mpCurrentAction, "reading video data");
 
-							VDPROFILEBEGIN("Video");
+							VDPROFILEBEGINEX("V-Read",(uint32)mVideoRequestTargetSample);
 
 							MainAddVideoFrame();
 
