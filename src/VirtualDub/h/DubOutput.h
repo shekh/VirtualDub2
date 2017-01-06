@@ -150,6 +150,31 @@ private:
 	int			mBufferSize;
 };
 
+class VDAVIOutputPluginSystem : public VDDubberOutputSystem {
+public:
+	VDAVIOutputPluginSystem(const wchar_t *pszFilename);
+	~VDAVIOutputPluginSystem();
+
+	IVDMediaOutput *CreateSegment();
+	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
+	bool AcceptsVideo() { return true; }
+	bool AcceptsAudio() { return true; }
+	bool IsVideoCompressionEnabled() { return true; }
+	bool AreNullFramesAllowed() { return true; }
+	void SetTextInfo(const std::list<std::pair<uint32, VDStringA> >& info);
+	void SetDriver(IVDOutputDriver* driver, const char* format) {
+		this->driver = driver;
+		this->format = format;
+	}
+
+private:
+	VDStringW	mFilename;
+	typedef std::list<std::pair<uint32, VDStringA> > tTextInfo;
+	tTextInfo	mTextInfo;
+	IVDOutputDriver* driver;
+	VDString format;
+};
+
 class VDAVIOutputRawSystem : public VDDubberOutputSystem {
 public:
 	VDAVIOutputRawSystem(const wchar_t *pszFilename);

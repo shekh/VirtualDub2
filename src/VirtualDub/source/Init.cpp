@@ -75,7 +75,9 @@
 #include "version.h"
 #include "AutoRecover.h"
 #include "ExternalEncoderProfile.h"
+#include "AVIOutputPlugin.h"
 #include "FilterInstance.h"
+#include "InputFile.h"
 
 #pragma comment(lib, "shlwapi")
 
@@ -84,8 +86,6 @@
 extern void InitBuiltinFilters();
 extern void VDInitBuiltinAudioFilters();
 extern void VDInitBuiltinInputDrivers();
-extern void VDInitInputDrivers();
-extern void VDShutdownInputDrivers();
 extern void VDInitExternalCallTrap();
 extern void VDInitVideoCodecBugTrap();
 extern void VDInitProtectedScopeHook();
@@ -527,6 +527,7 @@ bool Init(HINSTANCE hInstance, int nCmdShow, VDCommandLine& cmdLine) {
 	VDInitBuiltinAudioFilters();
 	VDInitBuiltinInputDrivers();
 	VDInitInputDrivers();
+	VDInitOutputDrivers();
 	VDInitTools();
 	VDLoadExternalEncoderProfiles();
 
@@ -608,6 +609,7 @@ void Deinit() {
 	DeinitJobSystem();
 
 	VDShutdownTools();
+	VDShutdownOutputDrivers();
 	VDShutdownInputDrivers();			// must be before plugin system
 	VDDeinitPluginSystem();
 
@@ -1012,6 +1014,7 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 
 					VDAddPluginModule(token);
 					VDInitInputDrivers();
+					VDInitOutputDrivers();
 					VDInitTools();
 
 					guiSetStatus("Loaded external module: %s", 255, VDTextWToA(token).c_str());

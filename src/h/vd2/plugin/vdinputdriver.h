@@ -326,4 +326,52 @@ enum {
 	kVDXPlugin_InputDriverAPIVersion = 6
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+enum VDXVideoStreamType {
+	kVDXST_Video,
+	kVDXST_Audio,
+	kVDXST_Subtitle,
+	kVDXST_Data,
+};
+
+class IVDXOutputFile : public IVDXUnknown {
+public:
+	enum { kIID = VDXMAKEFOURCC('X', 'o', 'f', 'l') };
+
+	virtual void	VDXAPIENTRY Init(const wchar_t *path, const char* format) = 0;
+	virtual uint32 VDXAPIENTRY CreateStream(int type) = 0;
+	virtual void VDXAPIENTRY SetVideo(uint32 index, const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) = 0;
+	virtual void VDXAPIENTRY Write(uint32 index, uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples) = 0;
+	virtual void Finalize() = 0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// IVDXInputFileDriver
+//
+class IVDXOutputFileDriver : public IVDXUnknown {
+public:
+	enum { kIID = VDXMAKEFOURCC('X', 'o', 'f', 'd') };
+
+	virtual bool	VDXAPIENTRY CreateOutputFile(IVDXOutputFile **ppFile) = 0;
+	virtual bool	VDXAPIENTRY EnumFormats(int i, wchar_t* filter, wchar_t* ext, char* name) = 0; // all buffers are 128 chars
+};
+
+typedef bool (VDXAPIENTRY *VDXOutputDriverCreateProc)(const VDXInputDriverContext *pContext, IVDXOutputFileDriver **);
+
+struct VDXOutputDriverDefinition {
+	uint32		mSize;				// size of this structure in bytes
+	uint32		mFlags;       // reserved
+
+	const wchar_t *mpDriverName;
+	const wchar_t *mpDriverTagName;
+
+	VDXOutputDriverCreateProc		mpCreate;
+};
+
+enum {
+	// V1 (FilterMod): Initial version
+	kVDXPlugin_OutputDriverAPIVersion = 1
+};
+
 #endif

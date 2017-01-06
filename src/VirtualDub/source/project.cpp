@@ -1877,6 +1877,18 @@ void VDProject::SaveAVI(const wchar_t *filename, bool compat, bool addAsJob, boo
 	}
 }
 
+void VDProject::SavePlugin(const wchar_t *filename, IVDOutputDriver* driver, const char* format, bool addAsJob, bool removeAudio) {
+	if (!inputVideo)
+		throw MyError("No input file to process.");
+
+	if (addAsJob) {
+		DubOptions opts = g_dubOpts;
+		opts.removeAudio = removeAudio;
+	} else {
+		::SavePlugin(filename, driver, format, NULL, removeAudio);
+	}
+}
+
 void VDProject::SaveFilmstrip(const wchar_t *pFilename, bool propagateErrors) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");

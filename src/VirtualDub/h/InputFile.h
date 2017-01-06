@@ -123,6 +123,7 @@ public:
 typedef std::vector<vdrefptr<IVDInputDriver> > tVDInputDrivers;
 
 void VDInitInputDrivers();
+void VDShutdownInputDrivers();
 void VDGetInputDrivers(tVDInputDrivers& l, uint32 flags);
 IVDInputDriver *VDGetInputDriverByName(const wchar_t *name);
 IVDInputDriver *VDGetInputDriverForLegacyIndex(int idx);

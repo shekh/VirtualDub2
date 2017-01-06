@@ -125,6 +125,29 @@ namespace {
 	protected:
 		VDXToolDefinition	mDefinition;
 	};
+
+	class VDShadowedOutputDriverDescription : public VDShadowedPluginDescription {
+	public:
+		virtual void Init(const VDPluginInfo *pInfo, VDExternalModule *pModule) {
+			VDShadowedPluginDescription::Init(pInfo, pModule);
+
+			const VDXOutputDriverDefinition *def = static_cast<const VDXOutputDriverDefinition *>(pInfo->mpTypeSpecificInfo);
+			memset(&mDefinition, 0, sizeof mDefinition);
+			memcpy(&mDefinition, def, std::min<uint32>(def->mSize, sizeof mDefinition));
+			mShadowedInfo.mpTypeSpecificInfo = &mDefinition;
+
+			mDriverName = def->mpDriverName;
+			mDefinition.mpDriverName = mDriverName.c_str();
+			mDriverTagName = def->mpDriverTagName;
+			mDefinition.mpDriverTagName = mDriverTagName.c_str();
+		}
+
+	protected:
+		VDXOutputDriverDefinition	mDefinition;
+
+		VDStringW				mDriverName;
+		VDStringW				mDriverTagName;
+	};
 }
 
 
@@ -183,6 +206,16 @@ void VDConnectPluginDescription(const VDPluginInfo *pInfo, VDExternalModule *pMo
 					throw MyError("Plugin uses too old of an API version (v%u < v%u)", pInfo->mAPIVersionUsed, 1);
 
 				pDesc = new VDShadowedToolDescription;
+				break;
+
+			case kVDXPluginType_Output:
+				if (pInfo->mTypeAPIVersionRequired > kVDXPlugin_OutputDriverAPIVersion)
+					throw MyError("Plugin requires a newer input API version (v%u > v%u)", pInfo->mTypeAPIVersionRequired, kVDXPlugin_OutputDriverAPIVersion);
+
+				if (pInfo->mTypeAPIVersionUsed < 1)
+					throw MyError("Plugin uses too old of an API version (v%u < v%u)", pInfo->mAPIVersionUsed, 1);
+
+				pDesc = new VDShadowedOutputDriverDescription;
 				break;
 
 			default:

@@ -113,6 +113,7 @@ uint32 VDXAPIENTRY VDInputDriverContextImpl::GetCPUFeatureFlags() {
 	return CPUGetEnabledExtensions();
 }
 
+/*
 struct VDInputDriverCallAutoScope {
 	VDInputDriverCallAutoScope(VDInputDriverContextImpl *context) : mpContext(context) {
 		mpContext->BeginExternalCall();
@@ -126,6 +127,7 @@ struct VDInputDriverCallAutoScope {
 
 	VDInputDriverContextImpl *mpContext;
 };
+*/
 
 // We have to be careful NOT to call the error cleanup code when an exception
 // occurs, because it'll throw another exception!

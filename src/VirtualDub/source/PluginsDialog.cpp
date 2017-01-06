@@ -221,6 +221,7 @@ bool VDUIDialogPlugins::OnLoaded() {
 	VDEnumeratePluginDescriptions(descs, kVDXPluginType_Input);
 	VDEnumeratePluginDescriptions(descs, kVDXPluginType_Audio);
 	VDEnumeratePluginDescriptions(descs, kVDXPluginType_Tool);
+	VDEnumeratePluginDescriptions(descs, kVDXPluginType_Output);
 
 	while(!descs.empty()) {
 		VDPluginDescription *desc = descs.back();

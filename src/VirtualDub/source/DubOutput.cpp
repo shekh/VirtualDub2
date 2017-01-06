@@ -21,6 +21,7 @@
 #include <list>
 #include "AVIOutput.h"
 #include "AVIOutputFile.h"
+#include "AVIOutputPlugin.h"
 #include "AVIOutputFLM.h"
 #include "AVIOutputGIF.h"
 #include "AVIOutputAPNG.h"
@@ -330,6 +331,56 @@ void VDAVIOutputWAVSystem::CloseSegment(IVDMediaOutput *pSegment, bool bLast, bo
 
 bool VDAVIOutputWAVSystem::AcceptsAudio() {
 	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//
+//	VDAVIOutputPluginSystem
+//
+///////////////////////////////////////////////////////////////////////////
+
+VDAVIOutputPluginSystem::VDAVIOutputPluginSystem(const wchar_t *pszFilename)
+	: mFilename(pszFilename)
+{
+}
+
+VDAVIOutputPluginSystem::~VDAVIOutputPluginSystem() {
+}
+
+void VDAVIOutputPluginSystem::SetTextInfo(const std::list<std::pair<uint32, VDStringA> >& info) {
+	mTextInfo = info;
+}
+
+IVDMediaOutput *VDAVIOutputPluginSystem::CreateSegment() {
+	vdautoptr<IVDMediaOutputPlugin> pOutput(VDCreateMediaOutputPlugin(driver,format.c_str()));
+
+	if (!mVideoFormat.empty()) {
+		IVDMediaOutputStream *pVideoOut = pOutput->createVideoStream();
+		pVideoOut->setFormat(&mVideoFormat[0], mVideoFormat.size());
+		pVideoOut->setStreamInfo(mVideoStreamInfo);
+	}
+
+	if (!mAudioFormat.empty()) {
+		IVDMediaOutputStream *pAudioOut = pOutput->createAudioStream();
+		pAudioOut->setFormat(&mAudioFormat[0], mAudioFormat.size());
+		pAudioOut->setStreamInfo(mAudioStreamInfo);
+	}
+
+	if (!mTextInfo.empty()) {
+		tTextInfo::const_iterator it(mTextInfo.begin()), itEnd(mTextInfo.end());
+
+		for(; it!=itEnd; ++it)
+			pOutput->setTextInfo((*it).first, (*it).second.c_str());
+	}
+
+	pOutput->init(mFilename.c_str());
+
+	return pOutput.release();
+}
+
+void VDAVIOutputPluginSystem::CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize) {
+	vdautoptr<IVDMediaOutputPlugin> pFile(static_cast<IVDMediaOutputPlugin *>(pSegment));
+	pFile->finalize();
 }
 
 ///////////////////////////////////////////////////////////////////////////

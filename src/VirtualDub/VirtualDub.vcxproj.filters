@@ -524,6 +524,9 @@
     <ClCompile Include="source\AVIOutputFile.cpp">
       <Filter>Source - I/O drivers</Filter>
     </ClCompile>
+    <ClCompile Include="source\AVIOutputPlugin.cpp">
+      <Filter>Source - I/O drivers</Filter>
+    </ClCompile>
     <ClCompile Include="source\AVIOutputFLM.cpp">
       <Filter>Source - I/O drivers</Filter>
     </ClCompile>
@@ -1100,6 +1103,9 @@
       <Filter>Headers - I/O drivers</Filter>
     </ClInclude>
     <ClInclude Include="h\AVIOutputFile.h">
+      <Filter>Headers - I/O drivers</Filter>
+    </ClInclude>
+    <ClInclude Include="h\AVIOutputPlugin.h">
       <Filter>Headers - I/O drivers</Filter>
     </ClInclude>
     <ClInclude Include="h\AVIOutputFLM.h">

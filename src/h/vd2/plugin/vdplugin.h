@@ -88,7 +88,8 @@ enum {
 	kVDXPluginType_Video,		// Updated video filter API is not yet complete.
 	kVDXPluginType_Audio,
 	kVDXPluginType_Input,
-	kVDXPluginType_Tool
+	kVDXPluginType_Tool,
+	kVDXPluginType_Output
 };
 
 typedef bool (VDXAPIENTRY *VDXShowStaticAboutProc)(VDXHWND parent);

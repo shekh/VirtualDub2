@@ -58,6 +58,7 @@ void AppendAVI(const wchar_t *pszFile);
 void AppendAVIAutoscan(const wchar_t *pszFile);
 void SaveWAV(const wchar_t *szFilename, bool fProp = false, DubOptions *quick_opts=NULL);
 void SaveAVI(const wchar_t *szFilename, bool fProp = false, DubOptions *quick_opts=NULL, bool fCompatibility=false, bool removeAudio=false);
+void SavePlugin(const wchar_t *szFilename, IVDOutputDriver* driver, const char* format, DubOptions *quick_opts=NULL, bool removeAudio=false);
 void SaveStripedAVI(const wchar_t *szFile);
 void SaveStripeMaster(const wchar_t *szFile);
 void SaveSegmentedAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, long lSpillThreshold, long lSpillFrameThreshold, int digits);

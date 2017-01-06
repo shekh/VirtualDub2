@@ -5192,86 +5192,18 @@
       <File
         RelativePath="source\AVIOutput.cpp"
         >
-        <FileConfiguration
-          Name="Debug|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Debug|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
       </File>
       <File
         RelativePath=".\source\AVIOutputCLI.cpp"
         >
       </File>
       <File
-        RelativePath="source\AVIOutputFile.cpp"
+        RelativePath=".\source\AVIOutputFile.cpp"
         >
-        <FileConfiguration
-          Name="Debug|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Debug|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
+      </File>
+      <File
+        RelativePath=".\source\AVIOutputPlugin.cpp"
+        >
       </File>
       <File
         RelativePath=".\source\AVIOutputFLM.cpp"
@@ -5288,82 +5220,10 @@
       <File
         RelativePath="source\AVIOutputImages.cpp"
         >
-        <FileConfiguration
-          Name="Debug|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Debug|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
       </File>
       <File
         RelativePath="source\AVIOutputPreview.cpp"
         >
-        <FileConfiguration
-          Name="Debug|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Debug|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
       </File>
       <File
         RelativePath=".\source\AVIOutputRawAudio.cpp"
@@ -5380,82 +5240,10 @@
       <File
         RelativePath="source\AVIOutputStriped.cpp"
         >
-        <FileConfiguration
-          Name="Debug|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Debug|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
       </File>
       <File
         RelativePath="source\AVIOutputWAV.cpp"
         >
-        <FileConfiguration
-          Name="Debug|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|Win32"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Debug|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
-        <FileConfiguration
-          Name="Release|x64"
-          >
-          <Tool
-            Name="VCCLCompilerTool"
-            AdditionalIncludeDirectories=""
-            PreprocessorDefinitions=""
-          />
-        </FileConfiguration>
       </File>
       <File
         RelativePath=".\source\AVIReadCache.cpp"
@@ -5887,6 +5675,10 @@
       </File>
       <File
         RelativePath="h\AVIOutputFile.h"
+        >
+      </File>
+      <File
+        RelativePath="h\AVIOutputPlugin.h"
         >
       </File>
       <File
