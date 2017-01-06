@@ -2511,6 +2511,11 @@ void VDProjectUI::RepaintMainWindow(HWND hWnd) {
 }
 
 void VDProjectUI::ShowMenuHelp(WPARAM wParam) {
+	if (HIWORD(wParam)==0xFFFF) {
+		UINotifySelection();
+		return;
+	}
+
 	if (LOWORD(wParam) >= ID_MRU_FILE0 && LOWORD(wParam) <= ID_MRU_FILE3) {
 		HWND hwndStatus = GetDlgItem((HWND)mhwnd, IDC_STATUS_WINDOW);
 		char name[1024];
@@ -3276,7 +3281,8 @@ void VDProjectUI::OnPositionNotify(int code) {
 		mbLockPreviewRestart = true;
 		break;
 	case PCN_ENDTRACK:
-		guiSetStatus("", 255);
+		//guiSetStatus("", 255);
+		UINotifySelection();
 		mpPosition->SetAutoPositionUpdate(true);
 		mbLockPreviewRestart = false;
 		break;
@@ -4093,12 +4099,17 @@ void VDProjectUI::UISelectionUpdated(bool notifyUser) {
 			mpAudioDisplay->ClearSelectedFrameRange();
 	}
 
-	if (notifyUser) {
-		if (start <= end)
-			guiSetStatus("Selecting frames %u-%u (%u frames)", 255, (unsigned)start, (unsigned)end, (unsigned)(end - start));
-		else
-			guiSetStatus("", 255);
-	}
+	if (notifyUser)
+		UINotifySelection();
+}
+
+void VDProjectUI::UINotifySelection() {
+	VDPosition start(GetSelectionStartFrame());
+	VDPosition end(GetSelectionEndFrame());
+	if (start <= end)
+		guiSetStatus("Selecting frames %u-%u (%u frames)", 255, (unsigned)start, (unsigned)end, (unsigned)(end - start));
+	else
+		guiSetStatus("", 255);
 }
 
 void VDProjectUI::UIShuttleModeUpdated() {

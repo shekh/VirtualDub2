@@ -1338,8 +1338,10 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		return true;
 
 	case ID_EDIT_SETMARKER:
-		mpTimeline->ToggleMarker(mpPosition->GetPosition());
-		mpPosition->SetTimeline(*mpTimeline);
+		if (!mbDisplaySource) {
+			mpTimeline->ToggleMarker(mpPosition->GetPosition());
+			mpPosition->SetTimeline(*mpTimeline);
+		}
 		return true;
 
 	case ID_EDIT_PREVRANGE:

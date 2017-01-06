@@ -149,6 +149,7 @@ protected:
 	void UIAbortDubMessageLoop();
 	void UICurrentPositionUpdated(bool fast_update=false);
 	void UISelectionUpdated(bool notifyUser);
+	void UINotifySelection();
 	void UITimelineUpdated();
 	void UIShuttleModeUpdated();
 	void UISourceFileUpdated();
