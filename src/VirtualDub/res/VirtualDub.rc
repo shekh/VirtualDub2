@@ -70,7 +70,7 @@ BEGIN
         MENUITEM "Preview filtered...\tEnter",  ID_FILE_PREVIEWOUTPUT
         MENUITEM "Pre&view output from start...\tF5", ID_FILE_PREVIEWAVI
         MENUITEM "Run video analysis pass",     ID_FILE_RUNVIDEOANALYSISPASS
-        MENUITEM "Save &as AVI...\tF7",         ID_FILE_SAVEAVI
+        MENUITEM "Save &as...\tF7",             ID_FILE_SAVEAVI
         MENUITEM "Save old format AVI...\tShift+F7", ID_FILE_SAVECOMPATIBLEAVI
         MENUITEM "Save segmented AVI...",       ID_FILE_SAVESEGMENTEDAVI
         MENUITEM "&Close video file\tCtrl+W",   ID_FILE_CLOSEAVI
@@ -79,7 +79,7 @@ BEGIN
         POPUP "Queue &batch operation"
         BEGIN
             MENUITEM "Run video analysis pass",     ID_QUEUEBATCHOPERATION_RUNVIDEOANALYSISPASS
-            MENUITEM "Save as AVI...\tCtrl+Shift+F7", ID_QUEUEBATCHOPERATION_SAVEASAVI
+            MENUITEM "Save as...\tCtrl+Shift+F7",   ID_QUEUEBATCHOPERATION_SAVEASAVI
             MENUITEM "Save old format AVI...",      ID_QUEUEBATCHOPERATION_SAVECOMPATIBLEAVI
             MENUITEM "Save segmented AVI...",       ID_QUEUEBATCHOPERATION_SAVESEGMENTEDAVI
             MENUITEM "Save image sequence...",      ID_QUEUEBATCHOPERATION_SAVEIMAGESEQUENCE
@@ -3858,11 +3858,11 @@ STRINGTABLE
 BEGIN
     IDS_FILE_OPENAVI        "Select a file for processing."
     IDS_FILE_PREVIEWAVI     "Preview output stream in real time from the start."
-    IDS_FILE_SAVEAVI        "Render output to an AVI file."
-    IDS_FILE_CLOSEAVI       "Close the current source AVI, allowing the file to be manipulated by other programs."
+    IDS_FILE_SAVEAVI        "Render output to a file."
+    IDS_FILE_CLOSEAVI       "Close the current source, allowing the file to be manipulated by other programs."
     IDS_FILE_CAPTUREAVI     "Use Windows video capture services to capture video and audio to an AVI file."
     IDS_FILE_AVIINFO        "Display statistics on current AVI source file."
-    IDS_FILE_SAVEWAV        "Strip the audio track out of the current AVI and save it to disk as a WAV file."
+    IDS_FILE_SAVEWAV        "Strip the audio track out of the current file and save it to disk as a WAV file."
     IDS_FILE_QUIT           "And where do you think you're going!?  Get back here!"
     IDS_FILE_STARTSERVER    "Start serving the current file to other tasks using Frameserver mode."
     IDS_FILE_SAVESTRIPEDAVI "Render output to multiple files according to a striping description."

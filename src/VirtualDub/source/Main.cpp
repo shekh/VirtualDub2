@@ -56,7 +56,9 @@
 
 #include "InputFile.h"
 #include "AVIOutputImages.h"
+#include "AVIOutputPlugin.h"
 #include <vd2/system/error.h>
+#include <vd2/plugin/vdinputdriver.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -511,10 +513,69 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	fn.lpfnHook = SaveVideoProc;
 	fn.lCustData = (LONG_PTR)&dlg;
 
-	const wchar_t* title = fUseCompatibility ? L"Save AVI 1.0 File" : L"Save AVI 2.0 File";
-	VDStringW fname = VDGetSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (VDGUIHandle)hWnd, title, fileFilters0, L"avi", 0, 0, &fn);
+	VDStringW filters;
+	filters += L"Audio-Video Interleave (*.avi)";
+	filters += wchar_t(0);
+	filters += L"*.avi";
+	filters += wchar_t(0);
+
+	vdfastvector<IVDOutputDriver*> opt_driver;
+	vdfastvector<int> opt_format;
+	opt_driver.push_back(0);
+	opt_format.push_back(0);
+
+	if (!fUseCompatibility) {
+		tVDOutputDrivers drivers;
+		VDGetOutputDrivers(drivers);
+		for(tVDOutputDrivers::const_iterator it(drivers.begin()), itEnd(drivers.end()); it!=itEnd; ++it) {
+			IVDOutputDriver *driver = *it;
+			for(int i=0; ; i++){
+				wchar_t filter[128];
+				wchar_t ext[128];
+				char name[128];
+				if(!driver->GetDriver()->EnumFormats(i,filter,ext,name)) break;
+
+				filters += filter;
+				filters += wchar_t(0);
+				filters += ext;
+				filters += wchar_t(0);
+				opt_driver.push_back(driver);
+				opt_format.push_back(i);
+			}
+		}
+	}
+
+	filters +=	L"All files (*.*)";
+	filters += wchar_t(0);
+	filters += L"*.*";
+	filters += wchar_t(0);
+	opt_driver.push_back(0);
+	opt_format.push_back(0);
+
+	const wchar_t* title = fUseCompatibility ? L"Save AVI 1.0 File" : L"Save File";
+
+	const VDFileDialogOption opts[]={
+		{ VDFileDialogOption::kSelectedFilter, 0, NULL, 0, 0},
+		{0}
+	};
+
+	int optvals[]={ 0 };
+
+	VDStringW fname = VDGetSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (VDGUIHandle)hWnd, title, filters.c_str(), L"avi", opts, optvals, &fn);
 	if (!fname.empty()) {
-		g_project->SaveAVI(fname.c_str(), fUseCompatibility, dlg.addJob, dlg.removeAudio);
+		int type = optvals[0]-1;
+		IVDOutputDriver *driver = opt_driver[type];
+		int format = opt_format[type];
+		if (!driver) {
+			g_project->SaveAVI(fname.c_str(), fUseCompatibility, dlg.addJob, dlg.removeAudio);
+		} else {
+			wchar_t filter[128];
+			wchar_t ext[128];
+			char name[128];
+			driver->GetDriver()->EnumFormats(format,filter,ext,name);
+
+			g_project->SavePlugin(fname.c_str(), driver, name, dlg.addJob, dlg.removeAudio);
+		}
 	}
 }
 
