@@ -62,7 +62,7 @@ public:
 	void SetStatusHandler(IDubStatusHandler *pStatusHandler);
 	void SetInputDisplay(IVDVideoDisplay *pVideoDisplay);
 	void SetOutputDisplay(IVDVideoDisplay *pVideoDisplay);
-	void SetVideoFilterOutput(const VDPixmapLayout& layout);
+	void SetVideoOutput(const VDPixmapLayout& layout, int mode);
 	void SetVideoSources(IVDVideoSource *const *pVideoSources, uint32 count);
 	void SetVideoFrameSource(VDFilterFrameManualSource *fs);
 	void SetAudioSourcePresent(bool present);

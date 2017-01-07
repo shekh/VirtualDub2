@@ -129,8 +129,11 @@ void VDDubProcessThread::SetOutputDisplay(IVDVideoDisplay *pVideoDisplay) {
 	mVideoProcessor.SetOutputDisplay(pVideoDisplay);
 }
 
-void VDDubProcessThread::SetVideoFilterOutput(const VDPixmapLayout& layout) {
-	mVideoProcessor.SetVideoFilterOutput(layout);
+void VDDubProcessThread::SetVideoOutput(const VDPixmapLayout& layout, int mode) {
+	if (mode >= DubVideoOptions::M_FULL)
+		mVideoProcessor.SetVideoFilterOutput(layout);
+	else
+		mVideoProcessor.SetVideoDirectOutput(layout);
 }
 
 void VDDubProcessThread::SetVideoSources(IVDVideoSource *const *pVideoSources, uint32 count) {

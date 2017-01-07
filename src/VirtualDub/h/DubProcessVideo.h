@@ -81,6 +81,7 @@ public:
 	void SetInputDisplay(IVDVideoDisplay *pVideoDisplay);
 	void SetOutputDisplay(IVDVideoDisplay *pVideoDisplay);
 	void SetVideoFilterOutput(const VDPixmapLayout& layout);
+	void SetVideoDirectOutput(const VDPixmapLayout& layout);
 	void SetBlitter(IVDAsyncBlitter *blitter);
 	void SetVideoSources(IVDVideoSource *const *pVideoSources, uint32 count);
 	void SetVideoFrameSource(VDFilterFrameManualSource *fs);

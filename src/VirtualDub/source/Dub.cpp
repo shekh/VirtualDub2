@@ -1079,6 +1079,7 @@ void Dubber::InitOutputFile() {
 		}
 
 		outputFormatID = VDPixmapFormatCombine(outputFormatID, mOptions.video.mOutputFormat);
+		VDPixmapFormatEx outputFormatID0 = outputFormatID;
 
 		VDPixmapCreateLinearLayout(driverLayout,VDPixmapFormatNormalize(outputFormatID),outputWidth,outputHeight,16);
 		if (mpVideoCompressor && mpVideoCompressor->Query(&driverLayout, NULL)) {
@@ -1097,6 +1098,7 @@ void Dubber::InitOutputFile() {
 				// For slow recompress mode, we use the format produced by the source.
 				mpCompressorVideoFormat.assign(pSrcFormat, srcFormatLen);
 			} else {
+				restart_variants:
 				// For full recompression mode, we allow any format variant that the codec can accept.
 				// Try to find a variant that works.
 				const int variants = VDGetPixmapToBitmapVariants(outputFormatID);
@@ -1137,6 +1139,15 @@ void Dubber::InitOutputFile() {
 					if (result) {
 						outputVariantID = variant;
 						break;
+					}
+				}
+
+				if (variant > variants) {
+					// try to drop qualifiers if its the only way to pack bitmap (the only exception is HDYC)
+					VDPixmapFormatEx f = VDPixmapFormatNormalize(outputFormatID);
+					if (f.format!=outputFormatID) {
+						outputFormatID = f.format;
+						goto restart_variants;
 					}
 				}
 
@@ -1262,19 +1273,23 @@ void Dubber::InitOutputFile() {
 			mpOutputSystem->SetVideo(hdr, &*outputFormat, outputFormat.size());
 		}
 
-		if(mOptions.video.mode >= DubVideoOptions::M_FULL) {
-			const VDPixmapLayout& bmout = filters.GetOutputLayout();
+		{
+			// prepare layout used for output buffer
+			// mVideoFilterOutputPixmapLayout
+
+			const VDPixmapLayout& bmout = mOptions.video.mode >= DubVideoOptions::M_FULL ? filters.GetOutputLayout() : filters.GetInputLayout();
 
 			if (driverLayout.format) {
 				mVideoFilterOutputPixmapLayout = driverLayout;
 			} else {
 				VDMakeBitmapCompatiblePixmapLayout(mVideoFilterOutputPixmapLayout, bmout.w, bmout.h, outputFormatID, outputVariantID, bmout.palette);
-				mVideoFilterOutputPixmapLayout.formatEx = outputFormatID;
+				mVideoFilterOutputPixmapLayout.formatEx = outputFormatID0;
 			}
 
 			const char *s = VDPixmapGetInfo(mVideoFilterOutputPixmapLayout.format).name;
 
-			VDLogAppMessage(kVDLogInfo, kVDST_Dub, kVDM_FullUsingOutputFormat, 1, &s);
+			if(mOptions.video.mode >= DubVideoOptions::M_FULL)
+				VDLogAppMessage(kVDLogInfo, kVDST_Dub, kVDM_FullUsingOutputFormat, 1, &s);
 		}
 	}
 }
@@ -1740,10 +1755,10 @@ void Dubber::Go(int iPriority) {
 	if (mbDoVideo) {
 		mProcessThread.SetInputDisplay(mpInputDisplay);
 		mProcessThread.SetOutputDisplay(mpOutputDisplay);
-		mProcessThread.SetVideoCompressor(mpVideoCompressor, mOptions.video.mMaxVideoCompressionThreads);
-
-		if(mOptions.video.mode >= DubVideoOptions::M_FULL)
-			mProcessThread.SetVideoFilterOutput(mVideoFilterOutputPixmapLayout);
+		if (!fPreview) {
+			mProcessThread.SetVideoCompressor(mpVideoCompressor, mOptions.video.mMaxVideoCompressionThreads);
+			mProcessThread.SetVideoOutput(mVideoFilterOutputPixmapLayout, mOptions.video.mode);
+		}
 	}
 
 	mpVideoRequestQueue = new VDDubFrameRequestQueue;

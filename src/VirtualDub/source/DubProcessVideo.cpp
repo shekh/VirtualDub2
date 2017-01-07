@@ -175,12 +175,24 @@ void VDDubVideoProcessor::SetOutputDisplay(IVDVideoDisplay *pVideoDisplay) {
 	mpProcDisplay->SetOutputDisplay(pVideoDisplay);
 }
 
+// used in full processing
 void VDDubVideoProcessor::SetVideoFilterOutput(const VDPixmapLayout& layout) {
 	VDASSERT(!mpDisplayBufferTracker);
 	mpDisplayBufferTracker = new VDRenderOutputBufferTracker;
 	mpDisplayBufferTracker->AddRef();
 
 	mpDisplayBufferTracker->Init(3 + mExtraOutputBuffersRequired, layout);
+	bufferFormatEx = layout.formatEx;
+}
+
+// used in recompress
+// note: old code referenced buffer from decoder directly (crazy)
+void VDDubVideoProcessor::SetVideoDirectOutput(const VDPixmapLayout& layout) {
+	VDASSERT(!mpFrameBufferTracker);
+	mpFrameBufferTracker = new VDRenderOutputBufferTracker;
+	mpFrameBufferTracker->AddRef();
+
+	mpFrameBufferTracker->Init(1, layout);
 	bufferFormatEx = layout.formatEx;
 }
 
