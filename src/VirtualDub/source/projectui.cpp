@@ -931,7 +931,7 @@ void VDProjectUI::SetPaneLayout(PaneLayoutMode layout) {
 	::ShowWindow(mhwndInputFrame, mPaneLayoutMode != kPaneLayoutOutput && videoPresent);
 	::ShowWindow(mhwndOutputFrame, mPaneLayoutMode != kPaneLayoutInput && videoPresent);
 
-	RepositionPanes();
+	RepositionPanes(true);
 
 	mpInputDisplay->Reset();
 	mpOutputDisplay->Reset();
@@ -3413,7 +3413,7 @@ void VDProjectUI::RepositionPanes(bool reset) {
 			}
 		}
 	} else {
-		for(int i=1; i<n; ++i) {
+		for(int i=reset ? 0:1; i<n; ++i) {
 			HWND hwndPane = panes[i];
 			IVDVideoWindow *w = VDGetIVideoWindow(hwndPane);
 			w->Resize(false);
