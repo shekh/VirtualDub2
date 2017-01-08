@@ -133,6 +133,7 @@ protected:
 	EncoderHIC*	mhCodec;
 	int	mSelect;
 	vdblock<char>	mCodecState;
+	int mCodecStateId;
 	CodecInfo *mpCurrent;
 
 	VDStringW	mCurrentCompression;
@@ -148,6 +149,7 @@ VDUIDialogChooseVideoCompressorW32::VDUIDialogChooseVideoCompressorW32(COMPVARS2
 	: VDDialogFrameW32(IDD_VIDEOCOMPRESSION)
 	, mhCodec(NULL)
 	, mSelect(-1)
+	, mCodecStateId(-1)
 	, mpCurrent(NULL)
 	, mpCompVars(cv)
 	, mpSrcFormat(src)
@@ -167,6 +169,17 @@ bool VDUIDialogChooseVideoCompressorW32::OnLoaded() {
 	EnumerateCodecs();
 	if(!mCapture) EnumeratePluginCodecs();
 	std::sort(mCodecs.begin(), mCodecs.end(), CodecSort());
+
+	mCodecStateId = mSelect;
+	if (mpCompVars->dwFlags & ICMF_COMPVARS_VALID) {
+		if (mpCompVars->driver) {
+			int len = mpCompVars->driver->getStateSize();
+			if (len > 0) {
+				mCodecState.resize(len);
+				mpCompVars->driver->getState(mCodecState.data(), len);
+			}
+		}
+	}
 
 	RebuildCodecList();
 
@@ -251,6 +264,7 @@ bool VDUIDialogChooseVideoCompressorW32::OnCommand(uint32 id, uint32 extcode) {
 		case IDC_CONFIGURE:
 			if (mhCodec) {
 				mhCodec->configure(mhdlg);
+				mCodecStateId = mSelect;
 				mCodecState.clear();
 				int len = mhCodec->getStateSize();
 				if (len > 0) {
@@ -323,39 +337,9 @@ void VDUIDialogChooseVideoCompressorW32::OnHelp() {
 }
 
 void VDUIDialogChooseVideoCompressorW32::EnumerateCodecs() {
-	ICINFO info = {sizeof(ICINFO)};
-	int i;
-	int nComp;
-
-	if (mpCompVars->dwFlags & ICMF_COMPVARS_VALID) {
-		if (mpCompVars->driver) {
-			int len = mpCompVars->driver->getStateSize();
-
-			if (len > 0) {
-				mCodecState.resize(len);
-
-				mpCompVars->driver->getState(mCodecState.data(), len);
-			}
-		}
-	}
-
-	nComp = 0;
-
-	if (mpSrcFormat && mpSrcFormat->biCompression != BI_RGB) {
-		union {
-			char fccbuf[5];
-			FOURCC fcc;
-		};
-
-		fcc = mpSrcFormat->biCompression;
-		fccbuf[4] = 0;
-
-		mCurrentCompression.sprintf(L"(No recompression: %hs)", fccbuf);
-	} else
-		mCurrentCompression = L"(Uncompressed RGB/YCbCr)";
-
 	vdprotected("enumerating video codecs") {
-		for(i=0; ICInfo(ICTYPE_VIDEO, i, &info); i++) {
+		ICINFO info = {sizeof(ICINFO)};
+		for(int i=0; ICInfo(ICTYPE_VIDEO, i, &info); i++) {
 			HIC hic;
 
 			// Use "special" routine for ASV1.
@@ -470,6 +454,19 @@ void VDUIDialogChooseVideoCompressorW32::EnumeratePluginCodecs() {
 
 void VDUIDialogChooseVideoCompressorW32::RebuildCodecList() {
 	const bool showAll = IsButtonChecked(IDC_SHOW_ALL);
+
+	if (mpSrcFormat && mpSrcFormat->biCompression != BI_RGB) {
+		union {
+			char fccbuf[5];
+			FOURCC fcc;
+		};
+
+		fcc = mpSrcFormat->biCompression;
+		fccbuf[4] = 0;
+
+		mCurrentCompression.sprintf(L"(No recompression: %hs)", fccbuf);
+	} else
+		mCurrentCompression = L"(Uncompressed RGB/YCbCr)";
 
 	mCodecList.Clear();
 	mCodecList.AddItem(mCurrentCompression.c_str(), -1);
@@ -702,7 +699,7 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 		return;
 	}
 
-	if (pii->select == mSelect && !mCodecState.empty())
+	if (pii->select == mCodecStateId && !mCodecState.empty())
 		mhCodec->setState(mCodecState.data(), mCodecState.size());
 
 	mpCurrent = pii;
