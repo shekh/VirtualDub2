@@ -276,6 +276,9 @@ bool VideoSourceImages::setTargetFormat(VDPixmapFormatEx format) {
 		if (!AllocFrameBuffer(((w+3)&~3) * h * 8))
 			throw MyMemoryError();
 
+		if (!VideoSource::setTargetFormat(format))
+			return false;
+
 		VDPixmap px = {0};
 		px.format = format;
 		px.w = w;
