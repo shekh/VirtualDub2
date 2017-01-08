@@ -1089,6 +1089,9 @@ void Dubber::InitOutputFile() {
 			driverLayout.format = 0;
 		}
 
+		if (!driverLayout.format && outputFormatID==nsVDPixmap::kPixFormat_XYUV64)
+			throw MyError("Unable to initialize video compression. XYUV64 output is not implemented. Choose a different format.");
+
 		if (!driverLayout.format)
 		if (mOptions.video.mode >= DubVideoOptions::M_FASTREPACK) {
 			const VDAVIBitmapInfoHeader *pSrcFormat = vSrc->getDecompressedFormat();
@@ -1155,7 +1158,7 @@ void Dubber::InitOutputFile() {
 					if (foundDibCompatibleFormat) {
 						throw MyError("Unable to initialize video compression. Check that the video codec is compatible with the output video frame size and that the settings are correct, or try a different one.");
 					} else {
-						throw MyError("Unable to initialize video compression: The selected output format is not compatible with the Windows video codec API. Choose a different format in Video > Color Depth.");
+						throw MyError("Unable to initialize video compression: The selected output format is not compatible with the Windows video codec API. Choose a different format.");
 					}
 				}
 			}

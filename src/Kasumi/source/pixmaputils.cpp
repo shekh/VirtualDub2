@@ -87,6 +87,7 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
 	/* YUV422_Planar16 */			{ "YUV422P16",		false, 1, 1,  0,  0,  2, 2, 1, 0, 2,   0 },
 	/* YUV420_Planar16 */			{ "YUV420P16",		false, 1, 1,  0,  0,  2, 2, 1, 1, 2,   0 },
 	/* Y16 */						{ "I16",			false, 1, 1,  1,  0,  2, 0, 0, 0, 0,   0 },
+	/* YUV64 */						{ "XYUV64",			false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
 };
 
 int VDPixmapFormatMatrixType(sint32 format) {
@@ -95,6 +96,7 @@ int VDPixmapFormatMatrixType(sint32 format) {
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
+	case nsVDPixmap::kPixFormat_XYUV64:
 		return 1; // flexible
 
 	case nsVDPixmap::kPixFormat_YUV444_Planar:
@@ -409,6 +411,7 @@ namespace {
 		case nsVDPixmap::kPixFormat_YUV444_Planar16:
 		case nsVDPixmap::kPixFormat_YUV422_Planar16:
 		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		case nsVDPixmap::kPixFormat_XYUV64:
 			if (px.info.ref_r<=0) {
 				VDDEBUG("Kasumi: Invalid PixmapInfo detected in pixmap.\n"
 						"        Pixmap info: format=%d, ref_r=%d\n", px.format, px.info.ref_r);

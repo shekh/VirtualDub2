@@ -80,7 +80,7 @@ enum VDXCPUFeatureFlags {
 };
 
 enum {
-	kVDXPlugin_APIVersion		= 11
+	kVDXPlugin_APIVersion		= 12
 };
 
 
@@ -319,6 +319,8 @@ namespace nsVDXPixmap {
 		kPixFormat_YUV444_Planar16	= 58,
 		kPixFormat_YUV422_Planar16	= 59,
 		kPixFormat_YUV420_Planar16	= 60,
+		kPixFormat_Y16				= 61,
+		kPixFormat_XYUV64			= 62,
 
 		kPixFormat_VDXA_RGB			= 0x10001,
 		kPixFormat_VDXA_YUV			= 0x10002

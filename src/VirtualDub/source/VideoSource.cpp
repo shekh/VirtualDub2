@@ -743,6 +743,7 @@ bool VDVideoDecompressorDIB::SetTargetFormat(int format) {
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
+	case nsVDPixmap::kPixFormat_XYUV64:
 		format = mSrcLayout.format;
 		break;
 	}
@@ -2217,6 +2218,8 @@ const void *VideoSourceAVI::streamGetFrame(const void *inputBuffer, uint32 data_
 		VDPixmap_bitmap_to_X16R16G16B16(mTargetFormat,mTargetFormat,mTargetFormatVariant);
 	if(mTargetFormat.format==nsVDPixmap::kPixFormat_YUV422_Planar16)
 		VDPixmap_bitmap_to_YUV422_Planar16(mTargetFormat,mTargetFormat,mTargetFormatVariant);
+	if(mTargetFormat.format==nsVDPixmap::kPixFormat_XYUV64)
+		VDPixmap_bitmap_to_XYUV64(mTargetFormat,mTargetFormat,mTargetFormatVariant);
 
 	return getFrameBuffer();
 }

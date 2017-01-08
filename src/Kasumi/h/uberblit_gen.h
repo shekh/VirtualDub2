@@ -75,6 +75,7 @@ public:
 	void extract_8in16(int offset, uint32 w, uint32 h);
 	void extract_8in32(int offset, uint32 w, uint32 h);
 	void extract_16in32(int offset, uint32 w, uint32 h);
+	void extract_16in64(int offset, uint32 w, uint32 h);
 	void swap_8in16(uint32 w, uint32 h, uint32 bpr);
 
 	void conv_Pal1_to_8888(int srcIndex);
@@ -113,6 +114,7 @@ public:
 	void interleave_B8G8_R8G8();
 	void interleave_G8B8_G8R8();
 	void interleave_X8R8G8B8();
+	void interleave_X16R16G16B16();
 	void interleave_B8R8();
 
 	void conv_X16_to_8888();

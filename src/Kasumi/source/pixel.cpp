@@ -362,6 +362,23 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_XYUV64:
+		{
+			int ref = px.info.ref_r;
+			VDPixmapFormatEx f = px.format;
+			f.colorRangeMode = px.info.colorRangeMode;
+			f.colorSpaceMode = px.info.colorSpaceMode;
+			const uint16* s = (const uint16*)(size_t(px.data) + px.pitch*y + x*8);
+			uint32 pa = s[0];
+			uint32 py = s[1];
+			uint32 pcb = s[2];
+			uint32 pcr = s[3];
+			float r,g,b;
+			VDConvertYCbCrToRGB(py,pcb,pcr,ref,f,r,g,b);
+			return VDPackRGB(r,g,b);
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 		{
 			int ref = px.info.ref_r;

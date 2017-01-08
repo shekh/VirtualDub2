@@ -325,6 +325,8 @@ void VDDubVideoProcessorDisplay::UpdateDecompressedVideo(const void *data, uint3
 				VDPixmap_bitmap_to_X16R16G16B16(mVideoDecompBuffer,mVideoDecompBuffer,variant);
 			if(mVideoDecompBuffer.format==nsVDPixmap::kPixFormat_YUV422_Planar16)
 				VDPixmap_bitmap_to_YUV422_Planar16(mVideoDecompBuffer,mVideoDecompBuffer,variant);
+			if(mVideoDecompBuffer.format==nsVDPixmap::kPixFormat_XYUV64)
+				VDPixmap_bitmap_to_XYUV64(mVideoDecompBuffer,mVideoDecompBuffer,variant);
 		} catch(const MyError&) {
 			mpBlitter->postAPC(0, AsyncDecompressorErrorCallback, mpOutputDisplay, NULL);
 			mbVideoDecompressorErrored = true;

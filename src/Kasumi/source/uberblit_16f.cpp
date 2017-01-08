@@ -315,3 +315,9 @@ void VDPixmap_bitmap_to_YUV422_Planar16(VDPixmap& dst, const VDPixmap& src, int 
     dst.data3 = 0;
   }
 }
+
+void VDPixmap_bitmap_to_XYUV64(VDPixmap& dst, const VDPixmap& src, int variant) {
+	// Y416, msb aligned
+	dst.info.ref_r = 0xFF00;
+	dst.ext.format_swizzle = 1;
+}

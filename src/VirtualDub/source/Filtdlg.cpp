@@ -1929,7 +1929,7 @@ void VDVideoFiltersDialog::FilterListItem::GetText(int subItem, VDStringW& s) co
 						"RGB15",
 						"RGB16",
 						"RGB24",
-						"RGB32",
+						"RGB(A)32",
 						"Y8",
 						"UYVY",
 						"YUYV",
@@ -1978,11 +1978,12 @@ void VDVideoFiltersDialog::FilterListItem::GetText(int subItem, VDStringW& s) co
 						"YUV420ib-FR",
 						"YUV420ib-709",
 						"YUV420ib-709-FR",
-						"RGB64",
+						"RGB(A)64",
 						"YUV444P16",
 						"YUV422P16",
 						"YUV420P16",
 						"I16",
+						"YUV(A)64",
 					};
 
 					VDASSERTCT(sizeof(kFormatNames)/sizeof(kFormatNames[0]) == nsVDPixmap::kPixFormat_Max_Standard);
