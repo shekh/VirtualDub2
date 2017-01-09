@@ -1074,7 +1074,7 @@ void Dubber::InitOutputFile() {
 		if (!outputFormatID) {
 			outputFormatID = mOptions.video.mOutputFormat.format;
 
-			if (!outputFormatID)
+			if (!outputFormatID || mOptions.video.mode <= DubVideoOptions::M_SLOWREPACK)
 				outputFormatID = vSrc->getTargetFormat().format;
 		}
 
@@ -1089,7 +1089,7 @@ void Dubber::InitOutputFile() {
 			driverLayout.format = 0;
 		}
 
-		if (!driverLayout.format && outputFormatID==nsVDPixmap::kPixFormat_XYUV64)
+		if (!driverLayout.format && mpVideoCompressor && outputFormatID==nsVDPixmap::kPixFormat_XYUV64)
 			throw MyError("Unable to initialize video compression. XYUV64 output is not implemented. Choose a different format.");
 
 		if (!driverLayout.format)
@@ -1345,7 +1345,7 @@ bool Dubber::NegotiateFastFormat(const BITMAPINFOHEADER& bih) {
 	if (mpVideoCompressor->Query(pbih)) {
 		VDString buf;
 
-		if (pbih->biCompression >= 0x20000000)
+		if (pbih->biCompression > VDAVIBitmapInfoHeader::kCompressionBitfields)
 			buf = print_fourcc(pbih->biCompression);
 		else
 			buf.sprintf("RGB%d", pbih->biBitCount);
@@ -1372,7 +1372,7 @@ bool Dubber::NegotiateFastFormat(int format) {
 	if (mpVideoCompressor->Query(pbih)) {
 		VDString buf;
 
-		if (pbih->biCompression >= 0x20000000)
+		if (pbih->biCompression > VDAVIBitmapInfoHeader::kCompressionBitfields)
 			buf = print_fourcc(pbih->biCompression);
 		else
 			buf.sprintf("RGB%d", pbih->biBitCount);
@@ -1399,10 +1399,19 @@ void Dubber::InitSelectInputFormat() {
 
 	if (mOptions.video.mode == DubVideoOptions::M_FASTREPACK && mpVideoCompressor) {
 		// Attempt source format.
+		// this is typically codec format and should fail
+		// works when source is uncompressed
 		if (NegotiateFastFormat(bih)) {
 			if (mpInputDisplay)
 				mpInputDisplay->Reset();
+			mbInputDisplayInitialized = true;
+			return;
+		}
 
+		// Attempt automatic (best).
+		if (NegotiateFastFormat(0)) {
+			if (mpInputDisplay)
+				mpInputDisplay->Reset();
 			mbInputDisplayInitialized = true;
 			return;
 		}
@@ -1415,7 +1424,7 @@ void Dubber::InitSelectInputFormat() {
 		if (!(bih.biWidth & 1)) {
 			if (NegotiateFastFormat(nsVDPixmap::kPixFormat_YUV422_UYVY)) {
 				if (mpInputDisplay)
-					mpInputDisplay->SetSource(false, vSrc->getTargetFormat());
+					mpInputDisplay->Reset();
 				mbInputDisplayInitialized = true;
 				return;
 			}
@@ -1423,7 +1432,7 @@ void Dubber::InitSelectInputFormat() {
 			// Attempt YUY2.
 			if (NegotiateFastFormat(nsVDPixmap::kPixFormat_YUV422_YUYV)) {
 				if (mpInputDisplay)
-					mpInputDisplay->SetSource(false, vSrc->getTargetFormat());
+					mpInputDisplay->Reset();
 				mbInputDisplayInitialized = true;
 				return;
 			}
@@ -1431,7 +1440,7 @@ void Dubber::InitSelectInputFormat() {
 			if (!(bih.biHeight & 1)) {
 				if (NegotiateFastFormat(nsVDPixmap::kPixFormat_YUV420_Planar)) {
 					if (mpInputDisplay)
-						mpInputDisplay->SetSource(false, vSrc->getTargetFormat());
+						mpInputDisplay->Reset();
 					mbInputDisplayInitialized = true;
 					return;
 				}

@@ -55,6 +55,7 @@ public:
 
 protected:
 	HIC			mhic;
+	int			mBestFormat;
 	int			mFormat;
 	int			mFormatVariant;
 	bool		mbActive;
@@ -79,6 +80,7 @@ VDVideoDecompressorVCM::VDVideoDecompressorVCM()
 	: mhic(NULL)
 	, mbActive(false)
 	, mbUseAlpha(false)
+	, mBestFormat(0)
 	, mFormat(0)
 	, mFormatVariant(0)
 {
@@ -154,22 +156,47 @@ bool VDVideoDecompressorVCM::QueryTargetFormat(const void *format) {
 bool VDVideoDecompressorVCM::SetTargetFormat(int format) {
 	using namespace nsVDPixmap;
 
+	mBestFormat = 0;
+	const BITMAPINFO *pSrcFormat = (const BITMAPINFO *)mSrcFormat.data();
+	VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
+	DWORD size = ICDecompressGetFormat(mhic, pSrcFormat, 0);
+	if (size) {
+		vdstructex<VDAVIBitmapInfoHeader> bm;
+		bm.resize(size);
+		DWORD retval = ICDecompressGetFormat(mhic, pSrcFormat, bm.data());
+		if (retval==ICERR_OK) {
+			int variant;
+			mBestFormat = VDBitmapFormatToPixmapFormat(*bm.data(),variant);
+		}
+	}
+
 	if (!format) {
-		if (SetTargetFormat(kPixFormat_RGB888)
-			|| SetTargetFormat(kPixFormat_XRGB8888)
-			|| SetTargetFormat(kPixFormat_XRGB64)
-			|| SetTargetFormat(kPixFormat_XRGB1555)
-			|| SetTargetFormat(kPixFormat_YUV422_Planar16)
-			|| SetTargetFormat(kPixFormat_YUV422_V210)
-			|| SetTargetFormat(kPixFormat_YUV422_YUYV)
-			|| SetTargetFormat(kPixFormat_YUV422_UYVY)
-			|| SetTargetFormat(kPixFormat_YUV420_Planar)
-			)
-		{
-			return true;
+		switch (mBestFormat) {
+		case kPixFormat_YUV422_V210:
+		case kPixFormat_YUV422_Planar16:
+			if (SetTargetFormat(kPixFormat_YUV422_Planar16)) return true;
+			if (SetTargetFormat(kPixFormat_YUV422_V210)) return true;
+			break;
 		}
 
-		return SetTargetFormat(kPixFormat_Pal8);
+		if (mBestFormat && SetTargetFormat(mBestFormat)) return true;
+
+		if (SetTargetFormat(kPixFormat_YUV422_Planar16)) return true;
+		if (SetTargetFormat(kPixFormat_YUV422_V210)) return true;
+		if (SetTargetFormat(kPixFormat_XYUV64)) return true;
+		if (SetTargetFormat(kPixFormat_XRGB64)) return true;
+
+		if (SetTargetFormat(kPixFormat_RGB888)) return true;
+		if (SetTargetFormat(kPixFormat_XRGB8888)) return true;
+		if (SetTargetFormat(kPixFormat_XRGB1555)) return true;
+
+		if (SetTargetFormat(kPixFormat_YUV422_YUYV)) return true;
+		if (SetTargetFormat(kPixFormat_YUV422_UYVY)) return true;
+		if (SetTargetFormat(kPixFormat_YUV420_Planar)) return true;
+
+		if (SetTargetFormat(kPixFormat_Pal8)) return true;
+
+		return false;
 	}
 
 	vdstructex<VDAVIBitmapInfoHeader> bmformat;
