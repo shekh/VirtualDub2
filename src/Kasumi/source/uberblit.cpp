@@ -1061,18 +1061,22 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 		VDASSERT(false);
 	}
 
-	if ((srcToken & kVDPixType_Mask)==kVDPixType_V210 || (srcToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE || (srcToken & kVDPixType_Mask)==kVDPixType_16x4_LE) {
-		uint32 srcSpace = (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
-		if (src.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			srcSpace = (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
-		srcToken = (srcToken & ~kVDPixSpace_Mask) | srcSpace;
+	if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_YCC_601) {
+		if ((srcToken & kVDPixType_Mask)==kVDPixType_V210 || (srcToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE || (srcToken & kVDPixType_Mask)==kVDPixType_16x4_LE) {
+			uint32 srcSpace = (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
+			if (src.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
+				srcSpace = (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
+			srcToken = (srcToken & ~kVDPixSpace_Mask) | srcSpace;
+		}
 	}
 
-	if ((dstToken & kVDPixType_Mask)==kVDPixType_V210 || (dstToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE || (dstToken & kVDPixType_Mask)==kVDPixType_16x4_LE) {
-		uint32 dstSpace = (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
-		if (dst.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			dstSpace = (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
-		dstToken = (dstToken & ~kVDPixSpace_Mask) | dstSpace;
+	if ((dstToken & kVDPixSpace_Mask)==kVDPixSpace_YCC_601) {
+		if ((dstToken & kVDPixType_Mask)==kVDPixType_V210 || (dstToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE || (dstToken & kVDPixType_Mask)==kVDPixType_16x4_LE) {
+			uint32 dstSpace = (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
+			if (dst.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
+				dstSpace = (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
+			dstToken = (dstToken & ~kVDPixSpace_Mask) | dstSpace;
+		}
 	}
 
 	// check if we need a color space change

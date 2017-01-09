@@ -184,6 +184,9 @@ void VDConnectPluginDescription(const VDPluginInfo *pInfo, VDExternalModule *pMo
 
 				pDesc = new VDShadowedToolDescription;
 				break;
+
+			default:
+				return;
 		}
 
 		pDesc->AddRef();

@@ -1758,10 +1758,8 @@ void Dubber::Go(int iPriority) {
 	if (mbDoVideo) {
 		mProcessThread.SetInputDisplay(mpInputDisplay);
 		mProcessThread.SetOutputDisplay(mpOutputDisplay);
-		if (!fPreview) {
-			mProcessThread.SetVideoCompressor(mpVideoCompressor, mOptions.video.mMaxVideoCompressionThreads);
-			mProcessThread.SetVideoOutput(mVideoFilterOutputPixmapLayout, mOptions.video.mode);
-		}
+		mProcessThread.SetVideoCompressor(mpVideoCompressor, mOptions.video.mMaxVideoCompressionThreads);
+		mProcessThread.SetVideoOutput(mVideoFilterOutputPixmapLayout, mOptions.video.mode);
 	}
 
 	mpVideoRequestQueue = new VDDubFrameRequestQueue;
