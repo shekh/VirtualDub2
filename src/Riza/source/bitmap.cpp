@@ -20,6 +20,34 @@
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmaputils.h>
 
+VDString print_fourcc(uint32 a) {
+	uint8 fcc[4];
+	*(uint32 *)fcc = a;
+	VDString buf;
+	for(int i=0; i<4; ++i) {
+		uint8 c = fcc[i];
+		if (isalpha(c) || isdigit(c))
+			buf += c;
+		else
+			buf.append_sprintf("[%d]", c);
+	}
+	return buf;
+}
+
+VDStringW printW_fourcc(uint32 a) {
+	uint8 fcc[4];
+	*(uint32 *)fcc = a;
+	VDStringW buf;
+	for(int i=0; i<4; ++i) {
+		uint8 c = fcc[i];
+		if (isalpha(c) || isdigit(c))
+			buf += c;
+		else
+			buf.append_sprintf(L"[%d]", c);
+	}
+	return buf;
+}
+
 int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr) {
 	int variant;
 

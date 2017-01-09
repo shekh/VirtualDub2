@@ -101,6 +101,7 @@ struct VDPixmap {
 		int format_swizzle;
 
 		Ext() { clear(); }
+		bool operator!=(const Ext& a) const { return format_swizzle!=a.format_swizzle; }
 		void clear() {
 			format_swizzle = 0;
 		}

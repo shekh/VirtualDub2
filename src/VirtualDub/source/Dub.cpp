@@ -1343,14 +1343,14 @@ bool Dubber::NegotiateFastFormat(const BITMAPINFOHEADER& bih) {
 	const BITMAPINFOHEADER *pbih = (const BITMAPINFOHEADER *)mVideoSources.front()->getDecompressedFormat();
 
 	if (mpVideoCompressor->Query(pbih)) {
-		char buf[16]={0};
-		const char *s = buf;
+		VDString buf;
 
 		if (pbih->biCompression >= 0x20000000)
-			*(uint32 *)buf = pbih->biCompression;
+			buf = print_fourcc(pbih->biCompression);
 		else
-			sprintf(buf, "RGB%d", pbih->biBitCount);
+			buf.sprintf("RGB%d", pbih->biBitCount);
 
+		const char *s = buf.c_str();
 		VDLogAppMessage(kVDLogInfo, kVDST_Dub, kVDM_FastRecompressUsingFormat, 1, &s);
 		return true;
 	}
@@ -1370,14 +1370,14 @@ bool Dubber::NegotiateFastFormat(int format) {
 	const BITMAPINFOHEADER *pbih = (const BITMAPINFOHEADER *)mVideoSources.front()->getDecompressedFormat();
 
 	if (mpVideoCompressor->Query(pbih)) {
-		char buf[16]={0};
-		const char *s = buf;
+		VDString buf;
 
 		if (pbih->biCompression >= 0x20000000)
-			*(uint32 *)buf = pbih->biCompression;
+			buf = print_fourcc(pbih->biCompression);
 		else
-			sprintf(buf, "RGB%d", pbih->biBitCount);
+			buf.sprintf("RGB%d", pbih->biBitCount);
 
+		const char *s = buf.c_str();
 		VDLogAppMessage(kVDLogInfo, kVDST_Dub, kVDM_FastRecompressUsingFormat, 1, &s);
 		return true;
 	}

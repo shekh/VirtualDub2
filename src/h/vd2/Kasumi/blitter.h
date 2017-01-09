@@ -36,6 +36,8 @@ protected:
 	sint32 mDstWidth;
 	sint32 mDstHeight;
 	VDPixmapFormatEx mDstFormat;
+	VDPixmap::Ext mSrcExt;
+	VDPixmap::Ext mDstExt;
 	IVDPixmapBlitter *mpCachedBlitter;
 };
 

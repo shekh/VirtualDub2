@@ -26,9 +26,11 @@ void VDPixmapCachedBlitter::Blit(const VDPixmap& dst, const VDPixmap& src) {
 		dst.w != mDstWidth ||
 		dst.h != mDstHeight ||
 		!dstFormat.fullEqual(mDstFormat) ||
+		dst.ext != mDstExt ||
 		src.w != mSrcWidth ||
 		src.h != mSrcHeight ||
-		!srcFormat.fullEqual(mSrcFormat))
+		!srcFormat.fullEqual(mSrcFormat) ||
+		src.ext != mSrcExt)
 	{
 		if (mpCachedBlitter)
 			delete mpCachedBlitter;
@@ -39,9 +41,11 @@ void VDPixmapCachedBlitter::Blit(const VDPixmap& dst, const VDPixmap& src) {
 		mDstWidth = dst.w;
 		mDstHeight = dst.h;
 		mDstFormat = dstFormat;
+		mDstExt = dst.ext;
 		mSrcWidth = src.w;
 		mSrcHeight = src.h;
 		mSrcFormat = srcFormat;
+		mSrcExt = src.ext;
 	}
 
 	mpCachedBlitter->Blit(dst, src);

@@ -36,6 +36,7 @@
 #include <vd2/Dita/resources.h>
 #include <vd2/Dita/services.h>
 #include <vd2/Riza/audioformat.h>
+#include <vd2/Riza/bitmap.h>
 #include "AVIStripeSystem.h"
 #include "AVIReadHandler.h"
 
@@ -805,18 +806,8 @@ bool VDAVIFileInfoDialog::OnLoaded() {
 				buf += L"...";
 			}
 			
-			uint8 fcc[4];
-			*(uint32 *)fcc = pvs->getImageFormat()->biCompression;
-
 			buf += L" (";
-			for(int i=0; i<4; ++i) {
-				uint8 c = fcc[i];
-				if ((uint8)(c - 0x20) >= 0x7f)
-					c = ' ';
-
-				buf += c;
-			}
-
+			buf += printW_fourcc(pvs->getImageFormat()->biCompression);
 			buf += ')';
 		} else {
 			const uint32 comp = pvs->getImageFormat()->biCompression;

@@ -1435,16 +1435,14 @@ bool VideoSourceAVI::_construct(int streamIndex) {
 
 	if (!mpDecompressor) {
 		const char *s = LookupVideoCodec(bmih->biCompression);
+		VDString fcc = print_fourcc(bmih->biCompression);
 
-		throw MyError("Couldn't locate decompressor for format '%c%c%c%c' (%s)\n"
+		throw MyError("Couldn't locate decompressor for format '%s' (%s)\n"
 						"\n"
 						"VirtualDub requires a Video for Windows (VFW) compatible codec to decompress "
 						"video. DirectShow codecs, such as those used by Windows Media Player, are not "
 						"suitable."
-					,(bmih->biCompression    ) & 0xff
-					,(bmih->biCompression>> 8) & 0xff
-					,(bmih->biCompression>>16) & 0xff
-					,(bmih->biCompression>>24) & 0xff
+					,fcc.c_str()
 					,s ? s : "unknown");
 	}
 
