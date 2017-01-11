@@ -107,6 +107,7 @@ void VDDubIOThread::ThreadRun() {
 
 		while(!mbAbort && (bAudioActive || bVideoActive)) { 
 			bool bBlocked = true;
+			if (mbPreview) waitingForAudioSpace = false;
 
 			++mThreadCounter;
 
@@ -157,7 +158,7 @@ void VDDubIOThread::ThreadRun() {
 
 							VDDubAutoThreadLocation loc(mpCurrentAction, "reading audio data");
 
-							VDPROFILEBEGIN("Audio");
+							VDPROFILEBEGIN("Audio-read");
 
 							if (!MainAddAudioFrame() && mpAudio->isEnd()) {
 								if (!mbPreview && !mAudioSamplesWritten && VDPreferencesIsRenderNoAudioWarningEnabled()) {

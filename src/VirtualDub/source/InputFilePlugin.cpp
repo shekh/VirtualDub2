@@ -640,6 +640,7 @@ const VDPixmap& VDVideoSourcePlugin::getTargetFormat() {
 		mTargetFormat.info.clear();
 		if (mpFMVDec) {
 			const FilterModPixmapInfo& info = mpFMVDec->GetFrameBufferInfo();
+			mTargetFormat.info.copy_frame(info);
 			mTargetFormat.info.copy_ref(info);
 			mTargetFormat.info.copy_alpha(info);
 			//! todo: return struct size to grab further fields

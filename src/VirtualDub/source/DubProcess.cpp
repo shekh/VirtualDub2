@@ -447,7 +447,7 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 		mAudioBuffer.resize(nBlockAlign);
 		char *buf = mAudioBuffer.data();
 
-		VDPROFILEBEGIN("Audio");
+		VDPROFILEBEGIN("Audio-write");
 		while(totalSamples < count) {
 			while(mpAudioPipe->getLevel() < sizeof(int)) {
 				if (mpAudioPipe->isInputClosed()) {
@@ -522,7 +522,7 @@ ended:
 		if (mAudioBuffer.size() < bytes)
 			mAudioBuffer.resize(bytes);
 
-		VDPROFILEBEGIN("Audio");
+		VDPROFILEBEGIN("Audio-write");
 		while(totalBytes < bytes) {
 			int tc = mpAudioPipe->ReadPartial(&mAudioBuffer[totalBytes], bytes-totalBytes);
 
@@ -546,9 +546,11 @@ ended:
 				}
 
 				VDDubAutoThreadLocation loc(mpCurrentAction, "waiting for audio data from I/O thread");
+				VDPROFILEBEGINEX2("Audio-wait",0,vdprofiler_flag_wait);
 				mLoopThrottle.BeginWait();
 				mpAudioPipe->ReadWait();
 				mLoopThrottle.EndWait();
+				VDPROFILEEND();
 			}
 
 			mAudioSamplesWritten += tc;

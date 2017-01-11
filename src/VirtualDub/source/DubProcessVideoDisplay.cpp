@@ -32,6 +32,43 @@
 bool VDPreferencesIsPreferInternalVideoDecodersEnabled();
 IVDVideoDecompressor *VDFindVideoDecompressorEx(uint32 fccHandler, const VDAVIBitmapInfoHeader *hdr, uint32 hdrlen, bool preferInternal);
 
+bool VDDubVideoProcessorDisplay::AsyncUpdateCallback(int pass, void *pDisplayAsVoid, void *pInterlaced, bool aborting) {
+	if (aborting)
+		return false;
+
+	VDDubVideoProcessorDisplay *pProc = (VDDubVideoProcessorDisplay*)pDisplayAsVoid;
+
+	IVDVideoDisplay *pVideoDisplay = pProc->mpInputDisplay;
+	int nFieldMode = *(int *)pInterlaced;
+
+	const VDPixmap& px = pProc->mpVideoSource->getTargetFormat();
+	pVideoDisplay->SetSource(false, px, NULL, 0, true, nFieldMode>0);
+
+	uint32 baseFlags = IVDVideoDisplay::kVisibleOnly;
+
+	if (g_prefs.fDisplay & Preferences::kDisplayEnableVSync)
+		baseFlags |= IVDVideoDisplay::kVSync;
+
+	if (nFieldMode) {
+		if ((nFieldMode - 1) & 1) {
+			if (pass)
+				pVideoDisplay->Update(IVDVideoDisplay::kEvenFieldOnly | baseFlags);
+			else
+				pVideoDisplay->Update(IVDVideoDisplay::kOddFieldOnly | IVDVideoDisplay::kFirstField | baseFlags);
+		} else {
+			if (pass)
+				pVideoDisplay->Update(IVDVideoDisplay::kOddFieldOnly | baseFlags);
+			else
+				pVideoDisplay->Update(IVDVideoDisplay::kEvenFieldOnly | IVDVideoDisplay::kFirstField | baseFlags);
+		}
+
+		return !pass;
+	} else {
+		pVideoDisplay->Update(IVDVideoDisplay::kAllFields | baseFlags);
+		return false;
+	}
+}
+
 namespace {
 	enum {
 		// This is to work around an XviD decode bug (see VideoSource.h).
@@ -44,38 +81,6 @@ namespace {
 		BUFFERID_INPUT = 1,
 		BUFFERID_OUTPUT = 2
 	};
-
-	bool AsyncUpdateCallback(int pass, void *pDisplayAsVoid, void *pInterlaced, bool aborting) {
-		if (aborting)
-			return false;
-
-		IVDVideoDisplay *pVideoDisplay = (IVDVideoDisplay *)pDisplayAsVoid;
-		int nFieldMode = *(int *)pInterlaced;
-
-		uint32 baseFlags = IVDVideoDisplay::kVisibleOnly;
-
-		if (g_prefs.fDisplay & Preferences::kDisplayEnableVSync)
-			baseFlags |= IVDVideoDisplay::kVSync;
-
-		if (nFieldMode) {
-			if ((nFieldMode - 1) & 1) {
-				if (pass)
-					pVideoDisplay->Update(IVDVideoDisplay::kEvenFieldOnly | baseFlags);
-				else
-					pVideoDisplay->Update(IVDVideoDisplay::kOddFieldOnly | IVDVideoDisplay::kFirstField | baseFlags);
-			} else {
-				if (pass)
-					pVideoDisplay->Update(IVDVideoDisplay::kOddFieldOnly | baseFlags);
-				else
-					pVideoDisplay->Update(IVDVideoDisplay::kEvenFieldOnly | IVDVideoDisplay::kFirstField | baseFlags);
-			}
-
-			return !pass;
-		} else {
-			pVideoDisplay->Update(IVDVideoDisplay::kAllFields | baseFlags);
-			return false;
-		}
-	}
 
 	bool AsyncDecompressorFailedCallback(int pass, void *pDisplayAsVoid, void *, bool aborting) {
 		if (aborting)
@@ -213,9 +218,7 @@ void VDDubVideoProcessorDisplay::UnlockAndDisplay(bool forceDisplay, VDRenderOut
 	bool renderOutputFrame = (renderFrame || mbVideoDecompressorEnabled) && mpOutputDisplay && mpOptions->video.mode == DubVideoOptions::M_FULL && mpOptions->video.fShowOutputFrame && outputValid;
 
 	if (renderInputFrame) {
-		const VDPixmap& px = mpVideoSource->getTargetFormat();
-		mpInputDisplay->SetSource(false, px, NULL, 0, true, mpOptions->video.previewFieldMode>0);
-		mpBlitter->postAPC(BUFFERID_INPUT, AsyncUpdateCallback, mpInputDisplay, (void *)&mpOptions->video.previewFieldMode);
+		mpBlitter->postAPC(BUFFERID_INPUT, AsyncUpdateCallback, this, (void *)&mpOptions->video.previewFieldMode);
 	} else
 		mpBlitter->unlock(BUFFERID_INPUT);
 

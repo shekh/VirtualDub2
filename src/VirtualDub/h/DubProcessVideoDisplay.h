@@ -66,6 +66,7 @@ public:
 
 protected:
 	static bool AsyncReinitDisplayCallback(int pass, void *pThisAsVoid, void *, bool aborting);
+	static bool AsyncUpdateCallback(int pass, void *pDisplayAsVoid, void *pInterlaced, bool aborting);
 	static bool StaticAsyncUpdateOutputCallback(int pass, void *pThisAsVoid, void *pBuffer, bool aborting);
 	bool AsyncUpdateOutputCallback(int pass, VDRenderOutputBuffer *pBuffer, bool aborting);
 
