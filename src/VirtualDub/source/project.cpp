@@ -1036,7 +1036,10 @@ void VDProject::LockFilterChain(bool enableLock) {
 ///////////////////////////////////////////////////////////////////////////
 
 void VDProject::SaveScript(VDFile& f, const VDStringW& dataSubdir, bool relative) {
-	JobWriteProjectScript(f, this, relative, dataSubdir, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles);
+  if (inputAVI)
+	  JobWriteProjectScript(f, this, relative, dataSubdir, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles);
+  else
+	  JobWriteProjectScript(f, this, false, VDStringW(), &g_dubOpts, 0, 0, 0);
 }
 
 void VDProject::Quit() {

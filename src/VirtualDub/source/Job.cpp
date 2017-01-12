@@ -794,7 +794,7 @@ void JobWriteProjectScript(VDFile& f, const VDProject* project, bool project_rel
 	output.adds("// $script");
 	output.adds("");
 
-	JobAddConfigurationInputs(output, project_relative ? project:0, srcFile, srcInputDriver, pListAppended);
+	if (srcFile) JobAddConfigurationInputs(output, project_relative ? project:0, srcFile, srcInputDriver, pListAppended);
 	JobCreateScript(output, opt, kVDJobEditListMode_Include, true);
 
 	output.adds("");

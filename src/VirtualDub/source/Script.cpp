@@ -160,6 +160,8 @@ void RunProject(const wchar_t *name, void *hwnd) {
 
 void RunScriptMemory(const char *mem, bool stopAtReloadMarker) {
 	g_project->BeginLoading();
+	g_project->CloseAVI();
+	g_project->CloseWAV();
 
 	vdautoptr<IVDScriptInterpreter> isi(VDCreateScriptInterpreter());
 	const char *errorLineStart = mem;
