@@ -1185,7 +1185,12 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 				gen.ycbcr_to_rgb64_generic(*basis, studioRGB);
 				srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_BGR | kVDPixType_16x4_LE;
 			} else {
-				srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
+				uint32 dstSpace = dstToken & kVDPixSpace_Mask;
+				uint32 srcSpace = srcToken & kVDPixSpace_Mask;
+				bool convert_float = true;
+				if (srcSpace==kVDPixSpace_YCC_601 && dstSpace==kVDPixSpace_Y_601) convert_float = false;
+				if (srcSpace==kVDPixSpace_YCC_601_FR && dstSpace==kVDPixSpace_Y_601_FR) convert_float = false;
+				if (convert_float) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 			}
 		}
 
@@ -1348,7 +1353,7 @@ space_reconvert:
 								default:
 									VDASSERT(false);
 							}
-							srcToken = BlitterConvertType(gen, srcToken, kVDPixType_8, w, h);
+							srcToken = BlitterConvertType(gen, srcToken, dstToken & kVDPixType_Mask, w, h);
 							break;
 
 						default:
@@ -1380,7 +1385,7 @@ space_reconvert:
 								default:
 									VDASSERT(false);
 							}
-							srcToken = BlitterConvertType(gen, srcToken, kVDPixType_8, w, h);
+							srcToken = BlitterConvertType(gen, srcToken, dstToken & kVDPixType_Mask, w, h);
 							break;
 
 						default:
@@ -1412,7 +1417,7 @@ space_reconvert:
 								default:
 									VDASSERT(false);
 							}
-							srcToken = BlitterConvertType(gen, srcToken, kVDPixType_8, w, h);
+							srcToken = BlitterConvertType(gen, srcToken, dstToken & kVDPixType_Mask, w, h);
 							break;
 
 						default:
@@ -1444,7 +1449,7 @@ space_reconvert:
 								default:
 									VDASSERT(false);
 							}
-							srcToken = BlitterConvertType(gen, srcToken, kVDPixType_8, w, h);
+							srcToken = BlitterConvertType(gen, srcToken, dstToken & kVDPixType_Mask, w, h);
 							break;
 
 						default:
