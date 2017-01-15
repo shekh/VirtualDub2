@@ -1658,7 +1658,10 @@ void VDProjectUI::SetAudioFiltersAsk() {
 
 void VDProjectUI::SetAudioConversionOptionsAsk() {
 	extern bool VDDisplayAudioConversionDialog(VDGUIHandle hParent, DubOptions& opts, AudioSource *pSource);
-	VDDisplayAudioConversionDialog(mhwnd, g_dubOpts, inputAudio);
+	if (VDDisplayAudioConversionDialog(mhwnd, g_dubOpts, inputAudio)) {
+		SetAudioSource();
+		UIAudioSourceUpdated();
+	}
 }
 
 void VDProjectUI::SetAudioInterleaveOptionsAsk() {
@@ -1672,13 +1675,18 @@ void VDProjectUI::SetAudioCompressionAsk(HWND parent) {
 
 		WAVEFORMATEX wfex = {0};
 
-		memcpy(&wfex, inputAudio->getWaveFormat(), sizeof(PCMWAVEFORMAT));
-		// Say 16-bit if the source was compressed.
+		const VDWaveFormat* inputFormat = inputAudio->getWaveFormat();
+		memcpy(&wfex, inputFormat, sizeof(PCMWAVEFORMAT));
 
-		if (wfex.wFormatTag != WAVE_FORMAT_PCM)
-			wfex.wBitsPerSample = 16;
+		if (is_audio_float(inputFormat)) {
+			wfex.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
+		} else {
+			wfex.wFormatTag = WAVE_FORMAT_PCM;
 
-		wfex.wFormatTag = WAVE_FORMAT_PCM;
+			// Say 16-bit if the source was compressed.
+			if (!is_audio_pcm(inputFormat))
+				wfex.wBitsPerSample = 16;
+		}
 
 		switch(g_dubOpts.audio.newPrecision) {
 		case DubAudioOptions::P_8BIT:	wfex.wBitsPerSample = 8; break;
@@ -3586,7 +3594,7 @@ bool VDProjectUI::TickAudioDisplay() {
 	}
 
 	const VDWaveFormat *wfex = inputAudio->getWaveFormat();
-	if (wfex->mTag != WAVE_FORMAT_PCM || (wfex->mSampleBits != 8 && wfex->mSampleBits != 16)) {
+	if (!is_audio_pcm8(wfex) && !is_audio_pcm16(wfex) && !is_audio_float(wfex)) {
 		UpdateAudioDisplay();
 		return false;
 	}
@@ -3643,10 +3651,12 @@ bool VDProjectUI::TickAudioDisplay() {
 		if (apos + count > 0)
 			count = -(sint32)apos;
 
+		if (wfex->mSampleBits == 8)
+			VDMemset8(buf, 0x80, wfex->mChannels * count);
 		if (wfex->mSampleBits == 16)
 			VDMemset16(buf, 0, wfex->mChannels * count);
-		else
-			VDMemset8(buf, 0x80, wfex->mChannels * count);
+		if (wfex->mSampleBits == 32)
+			VDMemset32(buf, 0, wfex->mChannels * count);
 
 		actualSamples = count;
 		actualBytes = wfex->mBlockSize * count;
@@ -3658,11 +3668,13 @@ bool VDProjectUI::TickAudioDisplay() {
 	}
 	mAudioDisplayPosNext += actualSamples;
 
-	bool needMore;
+	bool needMore = false;
 	if (wfex->mSampleBits == 8)
 		needMore = mpAudioDisplay->ProcessAudio8U((const uint8 *)buf, actualSamples, 1, wfex->mBlockSize);
-	else
+	if (wfex->mSampleBits == 16)
 		needMore = mpAudioDisplay->ProcessAudio16S((const sint16 *)buf, actualSamples, 2, wfex->mBlockSize);
+	if (wfex->mSampleBits == 32)
+		needMore = mpAudioDisplay->ProcessAudioF((const float *)buf, actualSamples, 4, wfex->mBlockSize);
 
 	if (needMore)
 		return true;
@@ -3684,13 +3696,13 @@ void VDProjectUI::UpdateAudioDisplay() {
 	}
 
 	const VDWaveFormat *wfex = inputAudio->getWaveFormat();
-	if (wfex->mTag != WAVE_FORMAT_PCM) {
+	if (!is_audio_pcm(wfex) && !is_audio_float(wfex)) {
 		mpAudioDisplay->SetFailureMessage(L"Audio display is disabled because the audio track is compressed.");
 		mbAudioDisplayReadActive = false;
 		return;
 	}
 
-	if (wfex->mSampleBits != 8 && wfex->mSampleBits != 16) {
+	if (!is_audio_pcm8(wfex) && !is_audio_pcm16(wfex) && !is_audio_float(wfex)) {
 		mpAudioDisplay->SetFailureMessage(L"Audio display is disabled because the audio track uses an unsupported PCM format.");
 		mbAudioDisplayReadActive = false;
 		return;

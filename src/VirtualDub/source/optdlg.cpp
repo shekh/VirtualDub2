@@ -77,7 +77,9 @@ protected:
 	DubOptions& mOpts;
 	AudioSource *const mpSource;
 	bool mbSource16Bit;
+	bool mbSourceFloat;
 	bool mbSourcePrecisionKnown;
+	int sourceChannels;
 };
 
 VDDialogAudioConversionW32::VDDialogAudioConversionW32(DubOptions& opts, AudioSource *pSource)
@@ -85,13 +87,23 @@ VDDialogAudioConversionW32::VDDialogAudioConversionW32(DubOptions& opts, AudioSo
 	, mOpts(opts)
 	, mpSource(pSource)
 	, mbSource16Bit(true)
+	, mbSourceFloat(false)
 	, mbSourcePrecisionKnown(false)
+	, sourceChannels(0)
 {
 	if (pSource) {
 		const VDWaveFormat *fmt = pSource->getWaveFormat();
+		const VDWaveFormat *sfmt = pSource->getSourceWaveFormat();
+		if (sfmt) fmt = sfmt;
 
-		if (fmt->mTag == VDWaveFormat::kTagPCM) {
-			mbSource16Bit = (fmt->mSampleBits > 8);
+		sourceChannels = fmt->mChannels;
+
+		if (is_audio_pcm(fmt)) {
+			mbSource16Bit = (fmt->mSampleBits==16);
+			mbSourcePrecisionKnown = fmt->mSampleBits<=16;
+		}
+		if (is_audio_float(fmt)) {
+			mbSourceFloat = true;
 			mbSourcePrecisionKnown = true;
 		}
 	}
@@ -115,7 +127,9 @@ void VDDialogAudioConversionW32::RecomputeBandwidth() {
 		bps = 0;
 
 	if (IsDlgButtonChecked(mhdlg, IDC_PRECISION_NOCHANGE)) {
-		if (mbSourcePrecisionKnown && mbSource16Bit)
+		if (mbSourcePrecisionKnown && mbSourceFloat)
+			bps *= 4;
+		else if (mbSourcePrecisionKnown && mbSource16Bit)
 			bps *= 2;
 		else
 			bps = 0;
@@ -123,10 +137,7 @@ void VDDialogAudioConversionW32::RecomputeBandwidth() {
 		bps *= 2;
 
 	if (IsDlgButtonChecked(mhdlg, IDC_CHANNELS_NOCHANGE)) {
-		if (mpSource)
-			bps *= mpSource->getWaveFormat()->mChannels > 1 ? 2 : 1;
-		else
-			bps = 0;
+		bps *= sourceChannels;
 	} else if (IsDlgButtonChecked(mhdlg, IDC_CHANNELS_STEREO)) {
 		bps *= 2;
 	}
@@ -238,14 +249,16 @@ void VDDialogAudioConversionW32::ReinitDialog() {
 
 		if (!mbSourcePrecisionKnown)
 			strcpy(buf, "No change");
+		else if (mbSourceFloat)
+			strcpy(buf, "No change (float)");
 		else
 			wsprintf(buf, "No change (%ld-bit)", mbSource16Bit ? 16 : 8);
 		SetDlgItemText(mhdlg, IDC_PRECISION_NOCHANGE, buf);
 
-		if (pwfex->mChannels > 2)
-			wsprintf(buf, "No change (%dch.)", pwfex->mChannels);
+		if (sourceChannels > 2)
+			wsprintf(buf, "No change (%dch.)", sourceChannels);
 		else
-			wsprintf(buf, "No change (%s)", pwfex->mChannels>1 ? "stereo" : "mono");
+			wsprintf(buf, "No change (%s)", sourceChannels>1 ? "stereo" : "mono");
 		SetDlgItemText(mhdlg, IDC_CHANNELS_NOCHANGE, buf);
 	}
 

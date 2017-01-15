@@ -17,6 +17,10 @@
 //	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #include <vd2/Riza/audiocodec.h>
+#include <windows.h>
+#include <mmreg.h>
+#include <Ks.h>
+#include <Ksmedia.h>
 
 IVDAudioCodec *VDCreateAudioDecompressor(const VDWaveFormat *srcFormat, const VDWaveFormat *dstFormat) {
 	switch(srcFormat->mTag) {
@@ -32,4 +36,29 @@ IVDAudioCodec *VDCreateAudioDecompressor(const VDWaveFormat *srcFormat, const VD
 	}
 
 	return NULL;
+}
+
+bool is_audio_pcm(const VDWaveFormat *wfex) {
+	WAVEFORMATEXTENSIBLE *wfext = (WAVEFORMATEXTENSIBLE*)wfex;
+	if (wfex->mTag == WAVE_FORMAT_PCM) return true;
+	if (wfex->mTag == WAVE_FORMAT_EXTENSIBLE && wfext->SubFormat==KSDATAFORMAT_SUBTYPE_PCM) return true;
+	return false;
+}
+
+bool is_audio_pcm8(const VDWaveFormat *wfex) {
+	if (wfex->mSampleBits != 8) return false;
+	return is_audio_pcm(wfex);
+}
+
+bool is_audio_pcm16(const VDWaveFormat *wfex) {
+	if (wfex->mSampleBits != 8) return false;
+	return is_audio_pcm(wfex);
+}
+
+bool is_audio_float(const VDWaveFormat *wfex) {
+	if (wfex->mSampleBits != 32) return false;
+	WAVEFORMATEXTENSIBLE *wfext = (WAVEFORMATEXTENSIBLE*)wfex;
+	if (wfex->mTag == WAVE_FORMAT_IEEE_FLOAT) return true;
+	if (wfex->mTag == WAVE_FORMAT_EXTENSIBLE && wfext->SubFormat==KSDATAFORMAT_SUBTYPE_IEEE_FLOAT) return true;
+	return false;
 }

@@ -26,9 +26,24 @@ class IAVIReadStream;
 
 class AudioSource : public DubSource {
 public:
+	void *	src_format;
+	int		src_format_len;
+
+	AudioSource(){ src_format=0; src_format_len=0; }
+	~AudioSource(){ delete src_format; }
+
+	void *allocSrcWaveFormat(int format_len) {
+		if (src_format) delete src_format;
+		return src_format = (void *)new char[this->src_format_len = format_len];
+	}
+
 	const VDWaveFormat *getWaveFormat() const {
 		return (const VDWaveFormat *)getFormat();
 	}
+	const VDWaveFormat *getSourceWaveFormat() const {
+		return (const VDWaveFormat *)src_format;
+	}
+	virtual void SetTargetFormat(const VDWaveFormat* format){}
 };
 
 AudioSource *VDCreateAudioSourceWAV(const wchar_t *fn, uint32 inputBufferSize);

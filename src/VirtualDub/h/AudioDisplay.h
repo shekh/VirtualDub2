@@ -60,6 +60,7 @@ public:
 	virtual VDPosition GetReadPosition() = 0;
 	virtual bool ProcessAudio8U(const uint8 *src, int count, int chanStride, int sampleStride) = 0;
 	virtual bool ProcessAudio16S(const sint16 *src, int count, int chanStride, int sampleStride) = 0;
+	virtual bool ProcessAudioF(const float *src, int count, int chanStride, int sampleStride) = 0;
 
 	virtual VDEvent<IVDUIAudioDisplayControl, VDPosition>& AudioRequiredEvent() = 0;
 	virtual VDEvent<IVDUIAudioDisplayControl, VDUIAudioDisplaySelectionRange>& SetSelectStartEvent() = 0;

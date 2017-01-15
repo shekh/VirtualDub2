@@ -61,6 +61,7 @@ public:
 	void Advance(uint32 samples);
 	void CopyIn8U(const uint8 *src, uint32 count, ptrdiff_t stride);
 	void CopyIn16S(const sint16 *src, uint32 count, ptrdiff_t stride);
+	void CopyInF(const float *src, uint32 count, ptrdiff_t stride);
 
 	void Transform();
 

@@ -626,6 +626,7 @@ public:
 	VDPosition GetReadPosition();
 	bool ProcessAudio8U(const uint8 *src, int count, int chanStride, int sampleStride);
 	bool ProcessAudio16S(const sint16 *src, int count, int chanStride, int sampleStride);
+	bool ProcessAudioF(const float *src, int count, int chanStride, int sampleStride);
 	VDEvent<IVDUIAudioDisplayControl, VDPosition>& AudioRequiredEvent();
 	VDEvent<IVDUIAudioDisplayControl, VDUIAudioDisplaySelectionRange>& SetSelectStartEvent();
 	VDEvent<IVDUIAudioDisplayControl, VDUIAudioDisplaySelectionRange>& SetSelectTrackEvent();
@@ -634,7 +635,7 @@ public:
 	VDEvent<IVDUIAudioDisplayControl, sint32>& SetAudioOffsetEvent();
 
 protected:
-	bool ProcessAudio(const void *src, int count, int chanStride, int sampleStride, bool bit16);
+	bool ProcessAudio(const void *src, int count, int chanStride, int sampleStride, bool bit16, bool fmt_float);
 	void RecomputeMarkerSteps();
 	void InvalidateRange(int x1, int x2);
 
@@ -942,6 +943,7 @@ void VDAudioDisplayControl::SetFormat(double samplingRate, int channels) {
 		mSamplingRate = samplingRate;
 		mChanCount = channels;
 
+		mTransforms.clear();
 		mTransforms.resize(channels);
 
 		for(Transforms::iterator it(mTransforms.begin()), itEnd(mTransforms.end()); it!=itEnd; ++it) {
@@ -1115,11 +1117,15 @@ VDPosition VDAudioDisplayControl::GetReadPosition() {
 }
 
 bool VDAudioDisplayControl::ProcessAudio8U(const uint8 *src, int count, int chanStride, int sampleStride) {
-	return ProcessAudio(src, count, chanStride, sampleStride, false);
+	return ProcessAudio(src, count, chanStride, sampleStride, false, false);
 }
 
 bool VDAudioDisplayControl::ProcessAudio16S(const sint16 *src, int count, int chanStride, int sampleStride) {
-	return ProcessAudio(src, count, chanStride, sampleStride, true);
+	return ProcessAudio(src, count, chanStride, sampleStride, true, false);
+}
+
+bool VDAudioDisplayControl::ProcessAudioF(const float *src, int count, int chanStride, int sampleStride) {
+	return ProcessAudio(src, count, chanStride, sampleStride, false, true);
 }
 
 VDEvent<IVDUIAudioDisplayControl, VDPosition>& VDAudioDisplayControl::AudioRequiredEvent() {
@@ -1630,7 +1636,7 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps) {
 	}
 }
 
-bool VDAudioDisplayControl::ProcessAudio(const void *src, int count, int chanStride, int sampleStride, bool bit16) {
+bool VDAudioDisplayControl::ProcessAudio(const void *src, int count, int chanStride, int sampleStride, bool bit16, bool fmt_float) {
 	if (mReadPosition < 0 || mChanCount < 1)
 		return false;
 
@@ -1697,16 +1703,18 @@ bool VDAudioDisplayControl::ProcessAudio(const void *src, int count, int chanStr
 
 			VDASSERT(tc > 0);
 
-			if (bit16) {
+			if (fmt_float) {
+				for(int ch=0; ch<mChanCount; ++ch)
+					mTransforms[ch].CopyInF((const float *)((const char *)src + chanStride*ch), tc, sampleStride);
+			} else if (bit16) {
 				for(int ch=0; ch<mChanCount; ++ch)
 					mTransforms[ch].CopyIn16S((const signed short *)((const char *)src + chanStride*ch), tc, sampleStride);
-				src = (const signed short *)((const unsigned char *)src + sampleStride*tc);
 			} else {
 				for(int ch=0; ch<mChanCount; ++ch)
 					mTransforms[ch].CopyIn8U((const unsigned char *)src + chanStride*ch, tc, sampleStride);
-				src = (const unsigned char *)src + sampleStride*tc;
 			}
 
+			src = (const unsigned char *)src + sampleStride*tc;
 			mBufferedWindowSamples += tc;
 		}
 
@@ -1728,7 +1736,21 @@ bool VDAudioDisplayControl::ProcessAudio(const void *src, int count, int chanStr
 
 		uint8 *dst = &mImage[rawcount];
 
-		if (bit16) {
+		if (fmt_float) {
+			for(int ch = 0; ch < mChanCount; ++ch) {
+				const float *srcf = (const float *)((const char *)src + chanStride*ch);
+				uint8 *dst8 = dst + ch;
+
+				for(int i=0; i<count; ++i) {
+					int s = int(*srcf*128) + 0x80;
+					if(s<0) s=0; 
+					if(s>255) s=255;
+					*dst8 = (uint8)(s);
+					dst8 += mChanCount;
+					srcf = (const float *)((const char *)srcf + sampleStride);
+				}
+			}
+		} else if (bit16) {
 			for(int ch = 0; ch < mChanCount; ++ch) {
 				const sint16 *src16 = (const sint16 *)((const char *)src + chanStride*ch);
 				uint8 *dst8 = dst + ch;

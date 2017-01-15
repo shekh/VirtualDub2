@@ -1639,6 +1639,7 @@ void VDProject::OpenWAV(const wchar_t *szFile, IVDInputDriver *pSelectedDriver, 
 
 	mAudioSourceMode = kVDAudioSourceMode_External;
 	inputAudio = mpInputAudioExt = pNewAudio;
+	SetAudioSource();
 	if (mpCB)
 		mpCB->UIAudioSourceUpdated();
 }
@@ -2888,6 +2889,40 @@ void VDProject::SetAudioSource() {
 			}
 			inputAudio = NULL;
 			break;
+	}
+
+	if (inputAudio) {
+		const VDWaveFormat *fmt = inputAudio->getWaveFormat();
+		bool convert = false;
+		if (g_dubOpts.audio.newChannels!=DubAudioOptions::C_NOCHANGE) convert = true;
+		if (g_dubOpts.audio.newPrecision!=DubAudioOptions::P_NOCHANGE) convert = true;
+		if ((is_audio_pcm(fmt) || is_audio_float(fmt)) && convert) {
+			VDWaveFormat target = *fmt;
+			target.mTag = VDWaveFormat::kTagPCM;
+			switch (g_dubOpts.audio.newChannels) {
+			case DubAudioOptions::C_MONO:
+				target.mChannels = 1;
+				break;
+			case DubAudioOptions::C_NOCHANGE:
+				target.mChannels = 0;
+				break;
+			default:
+				target.mChannels = 2;
+			}
+			switch (g_dubOpts.audio.newPrecision) {
+			case DubAudioOptions::P_8BIT:
+				target.mSampleBits = 8;
+				break;
+			case DubAudioOptions::P_16BIT:
+				target.mSampleBits = 16;
+				break;
+			default:
+				target.mSampleBits = 0;
+			}
+			inputAudio->SetTargetFormat(&target);
+		} else {
+			inputAudio->SetTargetFormat(0);
+		}
 	}
 }
 

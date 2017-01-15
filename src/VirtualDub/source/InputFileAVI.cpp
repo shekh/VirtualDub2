@@ -860,7 +860,9 @@ bool VDAVIFileInfoDialog::OnLoaded() {
 
 		SetControlText(IDC_AUDIO_CHANNELS, buf.c_str());
 
-		if (fmt->mTag == WAVE_FORMAT_PCM)
+		if (is_audio_float(fmt))
+			SetControlTextF(IDC_AUDIO_PRECISION, L"%d-bit float", fmt->mSampleBits);
+		else if (is_audio_pcm(fmt))
 			SetControlTextF(IDC_AUDIO_PRECISION, L"%d-bit", fmt->mSampleBits);
 		else
 			SetControlText(IDC_AUDIO_PRECISION, L"N/A");
@@ -883,7 +885,9 @@ bool VDAVIFileInfoDialog::OnLoaded() {
 		if (fmt->mTag == nsVDWinFormats::kWAVE_FORMAT_EXTENSIBLE) {
 			const nsVDWinFormats::WaveFormatExtensible& wfe = *(const nsVDWinFormats::WaveFormatExtensible *)fmt;
 
-			if (wfe.mGuid == nsVDWinFormats::kKSDATAFORMAT_SUBTYPE_PCM) {
+			if (is_audio_float(fmt)) {
+				SetControlTextF(IDC_AUDIO_COMPRESSION, L"PCM (chmask %x)", wfe.mChannelMask);
+			} else if (is_audio_pcm(fmt)) {
 				SetControlTextF(IDC_AUDIO_COMPRESSION, L"PCM (%d bits real, chmask %x)", wfe.mBitDepth, wfe.mChannelMask);
 			} else {
 				SetControlTextF(IDC_AUDIO_COMPRESSION, L"Unk.: {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}"
@@ -899,7 +903,9 @@ bool VDAVIFileInfoDialog::OnLoaded() {
 					, wfe.mGuid.mData4[6]
 					, wfe.mGuid.mData4[7]);
 			}
-		} else if (fmt->mTag != WAVE_FORMAT_PCM) {
+		} else if (is_audio_pcm(fmt) || is_audio_float(fmt)) {
+			SetControlText(IDC_AUDIO_COMPRESSION, L"PCM (Uncompressed)");
+		} else {
 			// Retrieve maximum format size.
 
 			acmMetrics(NULL, ACM_METRIC_MAX_SIZE_FORMAT, (LPVOID)&cbwfxTemp);
@@ -941,10 +947,6 @@ bool VDAVIFileInfoDialog::OnLoaded() {
 
 			if (!fSuccessful)
 				SetControlTextF(IDC_AUDIO_COMPRESSION, L"Unknown (tag %04X)", fmt->mTag);
-		} else {
-			// It's a PCM format...
-
-			SetControlText(IDC_AUDIO_COMPRESSION, L"PCM (Uncompressed)");
 		}
 	}
 

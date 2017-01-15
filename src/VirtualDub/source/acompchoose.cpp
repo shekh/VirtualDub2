@@ -248,8 +248,10 @@ static void AudioChooseDisplaySpecs(HWND hdlg, WAVEFORMATEX *pwfex) {
 	int blps;
 
 	if (pwfex) {
-		if (pwfex->wFormatTag == WAVE_FORMAT_PCM)
-			strcpy(buf, "0x0001 (PCM)");
+		if (is_audio_pcm((VDWaveFormat*)pwfex))
+			strcpy(buf, "PCM");
+		else if (is_audio_float((VDWaveFormat*)pwfex))
+			strcpy(buf, "PCM float");
 		else
 			wsprintf(buf, "0x%04x", pwfex->wFormatTag);
 	} else
@@ -277,6 +279,13 @@ static void AudioChooseShowFormats(HWND hdlg, ACMTagEntry *pTag, bool fShowCompa
 	SendMessage(hwndListFormats, LB_RESETCONTENT, 0, 0);
 
 	if (!pTag) {
+		HWND hwndItem;
+		if (hwndItem = GetDlgItem(hdlg, IDC_CONFIGURE))
+			EnableWindow(hwndItem, false);
+
+		if (hwndItem = GetDlgItem(hdlg, IDC_ABOUT))
+			EnableWindow(hwndItem, false);
+
 		AudioChooseDisplaySpecs(hdlg, thisPtr->pwfexSrc);
 		return;
 	}
@@ -357,6 +366,7 @@ static INT_PTR CALLBACK AudioChooseCompressionDlgProc(HWND hdlg, UINT msg, WPARA
 
 			if (!aed.pTagSelect) {
 				SendMessage(aed.hwndDriverList, LB_SETCURSEL, 0, 0);
+				SendMessage(hdlg, WM_COMMAND, LBN_SELCHANGE<<16, (LPARAM)aed.hwndDriverList);
 			} else {
 				int cnt, i;
 				HWND hwndItem;

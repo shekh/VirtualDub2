@@ -1049,6 +1049,7 @@ public:
 
 	// DubSource
 	int _read(VDPosition lStart, uint32 lCount, void *lpBuffer, uint32 cbBuffer, uint32 *lBytesRead, uint32 *lSamplesRead);
+	void SetTargetFormat(const VDWaveFormat* format);
 
 	VBRMode GetVBRMode() const { return mVBRMode; }
 	VDPosition	TimeToPositionVBR(VDTime us) const;
@@ -1101,6 +1102,7 @@ VDAudioSourcePlugin::VDAudioSourcePlugin(IVDXAudioSource *pAS, VDInputDriverCont
 			len = mpXS->GetDirectFormatLen();
 		}
 		memcpy(allocFormat(len), format, len);
+		memcpy(allocSrcWaveFormat(len), format, len);
 	} else {
 		throw MyError("The audio stream has a custom format that cannot be supported.");
 	}
@@ -1127,6 +1129,26 @@ VDAudioSourcePlugin::VDAudioSourcePlugin(IVDXAudioSource *pAS, VDInputDriverCont
 	mVBRMode = (mSSInfo.mFlags & VDXStreamSourceInfoV3::kFlagVariableSizeSamples) ? kVBRModeVariableFrames : isVBR ? kVBRModeTimestamped : kVBRModeNone;
 	if (mVBRMode == kVBRModeVariableFrames)
 		streamInfo.dwSampleSize = 0;
+}
+
+void VDAudioSourcePlugin::SetTargetFormat(const VDWaveFormat* target) {
+	// check if SetTargetFormat implemented
+	if (mpContext->max_api_version<7) return;
+
+	const void *format;
+	vdwithinputplugin(mpContext) {
+		mpXAS->SetTargetFormat((VDXWAVEFORMATEX*)target);
+		format = mpXS->GetDirectFormat();
+	}
+	if (format) {
+		int len;
+		vdwithinputplugin(mpContext) {
+			len = mpXS->GetDirectFormatLen();
+		}
+		memcpy(allocFormat(len), format, len);
+	} else {
+		throw MyError("The audio stream has a custom format that cannot be supported.");
+	}
 }
 
 VDAudioSourcePlugin::~VDAudioSourcePlugin() {

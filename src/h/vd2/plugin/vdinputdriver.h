@@ -247,6 +247,9 @@ public:
 	enum { kIID = VDXMAKEFOURCC('X', 'a', 'd', 's') };
 
 	virtual void VDXAPIENTRY GetAudioSourceInfo(VDXAudioSourceInfo& info) = 0;
+
+	// V7
+	virtual void VDXAPIENTRY SetTargetFormat(const VDXWAVEFORMATEX* format) = 0;
 };
 
 class IVDXInputOptions : public IVDXUnknown {
@@ -323,7 +326,8 @@ enum {
 	// V4 (FilterMod): Added ForceByName definition flag.
 	// V5 (FilterMod): Extended StreamSource interface
 	// V6 (FilterMod): Extended IFilterModFileTool interface
-	kVDXPlugin_InputDriverAPIVersion = 6
+	// V7 (FilterMod): Extended IVDXAudioSource interface
+	kVDXPlugin_InputDriverAPIVersion = 7
 };
 
 ///////////////////////////////////////////////////////////////////////////////

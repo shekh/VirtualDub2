@@ -391,30 +391,8 @@ AudioStreamSource::AudioStreamSource(AudioSource *src, sint64 max_samples, bool 
 	if (max_samples < 0)
 		max_samples = 0;
 
-	struct WaveFormatExtensibleW32 {
-		VDWaveFormat mFormat;
-		union {
-			uint16 mBitDepth;
-			uint16 mSamplesPerBlock;		// may be zero, according to MSDN
-		};
-		uint32	mChannelMask;
-		GUID	mGuid;
-	};
-
-	static const GUID local_KSDATAFORMAT_SUBTYPE_PCM={	// so we don't have to bring in ksmedia.h
-		WAVE_FORMAT_PCM, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71
-	};
-
 	bool isPCM = false;
-
-	if (iFormat->mTag == WAVE_FORMAT_PCM)
-		isPCM = true;
-	else if (iFormat->mTag == WAVE_FORMAT_EXTENSIBLE) {
-		const WaveFormatExtensibleW32& wfexex = *(const WaveFormatExtensibleW32 *)iFormat;
-
-		if (wfexex.mGuid == local_KSDATAFORMAT_SUBTYPE_PCM)
-			isPCM = true;
-	}
+	if (is_audio_pcm(iFormat) || is_audio_float(iFormat)) isPCM = true;
 
 
 	if (!isPCM && allow_decompression) {

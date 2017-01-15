@@ -813,7 +813,29 @@ void InitAudioStreamValuesStatic(DubAudioStreamInfo& aInfo, AudioSource *audio, 
 			aInfo.resampling = true;
 		}
 
-		if (opt->audio.newPrecision != DubAudioOptions::P_NOCHANGE || opt->audio.newChannels != DubAudioOptions::C_NOCHANGE) {
+		bool change_precision = false;
+		bool change_layout = false;
+		const VDWaveFormat *fmt = audio->getWaveFormat();
+		switch(opt->audio.newPrecision) {
+		case DubAudioOptions::P_16BIT:
+			change_precision = fmt->mSampleBits!=16;
+			break;
+		case DubAudioOptions::P_8BIT:
+			change_precision = fmt->mSampleBits!=8;
+			break;
+		}
+		switch(opt->audio.newChannels) {
+		case DubAudioOptions::C_STEREO:
+			change_layout = fmt->mChannels!=2;
+			break;
+		case DubAudioOptions::C_MONO:
+		case DubAudioOptions::C_MONORIGHT:
+		case DubAudioOptions::C_MONOLEFT:
+			change_layout = fmt->mChannels!=1;
+			break;
+		}
+
+		if (change_precision || change_layout) {
 			aInfo.converting = true;
 
 			aInfo.is_16bit = (opt->audio.newPrecision==DubAudioOptions::P_16BIT);

@@ -387,20 +387,23 @@ void VDSaveVideoDialogW32::InitCodec() {
 		EnableWindow(GetDlgItem(mhdlg,IDC_AUDIO_INFO),false);
 	}
 
-	VDString aname;
-	if (g_ACompressionFormat) {
-		aname = g_ACompressionFormatHint;
-	} else {
-		aname = VDString("No compression (PCM)");
+	VDString aname = VDString("(None)");
+	if (inputAudio) {
+		if (g_ACompressionFormat) {
+			aname = g_ACompressionFormatHint;
+		} else {
+			aname = VDString("No compression (PCM)");
+		}
+		if (g_dubOpts.audio.mode==DubVideoOptions::M_NONE) {
+			const VDWaveFormat* fmt = inputAudio->getWaveFormat();
+			if (is_audio_pcm(fmt) || is_audio_float(fmt))
+				aname = VDString("No compression (PCM)");
+			else
+				aname = VDString("(Stream copy)");
+			EnableWindow(GetDlgItem(mhdlg,IDC_COMPRESSION_CHANGE2),false);
+		}
 	}
 
-	if (g_dubOpts.audio.mode==DubVideoOptions::M_NONE) {
-		if (inputAudio && inputAudio->getWaveFormat()->mTag==VDWaveFormat::kTagPCM)
-			aname = VDString("No compression (PCM)");
-		else
-			aname = VDString("(Stream copy)");
-		EnableWindow(GetDlgItem(mhdlg,IDC_COMPRESSION_CHANGE2),false);
-	}
 	SetDlgItemText(mhdlg,IDC_AUDIO_COMPRESSION,aname.c_str());
 }
 
@@ -418,9 +421,12 @@ INT_PTR VDSaveVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 					dubber->SetAudioFilterGraph(g_audioFilterGraph);
 				AudioSource* asrc = inputAudio;
 				AudioStream* as = dubber->InitAudio(&asrc,1);
-				VDWaveFormat fmt = *as->GetFormat();
+				VDWaveFormat* fmt = as->GetFormat();
 				VDString s;
-				s.sprintf("%d Hz %d-bit %d ch", fmt.mSamplingRate, fmt.mSampleBits, fmt.mChannels);
+				if (is_audio_float(fmt))
+					s.sprintf("%d Hz float %d ch", fmt->mSamplingRate, fmt->mChannels);
+				else
+					s.sprintf("%d Hz %d-bit %d ch", fmt->mSamplingRate, fmt->mSampleBits, fmt->mChannels);
 				SetDlgItemText(mhdlg,IDC_AUDIO_INFO,s.c_str());
 			} catch(const MyError& e) {
 				SetDlgItemText(mhdlg,IDC_AUDIO_INFO,e.c_str());
