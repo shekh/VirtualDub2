@@ -1989,6 +1989,16 @@ static void func_VirtualDub_Close(IVDScriptInterpreter *, VDScriptValue *arglist
 	g_project->Close();
 }
 
+static void func_VirtualDub_SaveFormat(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	if (arg_count > 1) {
+		g_FileOutDriver = VDTextAToW(*arglist[0].asString());
+		g_FileOutFormat = *arglist[1].asString();
+	} else {
+		g_FileOutDriver.clear();
+		g_FileOutFormat.clear();
+	}
+}
+
 static void func_VirtualDub_Preview(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 	DubOptions opts(g_dubOpts);
 	opts.fShowStatus			= false;
@@ -2168,6 +2178,8 @@ static const VDScriptFunctionDef obj_VirtualDub_functbl[]={
 	{ func_VirtualDub_intOpenTest,		"__OpenTest",			"0i" },
 	{ func_VirtualDub_Append,			"Append",				"0s" },
 	{ func_VirtualDub_Close,				"Close",				"0" },
+	{ func_VirtualDub_SaveFormat,			"SaveFormatAVI",		"0" },
+	{ func_VirtualDub_SaveFormat,			"SaveFormat",			"0ss" },
 	{ func_VirtualDub_Preview,			"Preview",				"0" },
 	{ func_VirtualDub_RunNullVideoPass,	"RunNullVideoPass",		"0" },
 	{ func_VirtualDub_SaveAVI,			"SaveAVI",				"0s" },

@@ -49,6 +49,9 @@ extern VDStringA		g_ACompressionFormatHint;
 
 extern VDAudioFilterGraph	g_audioFilterGraph;
 
+extern VDStringW		g_FileOutDriver;
+extern VDStringA		g_FileOutFormat;
+
 extern bool				g_drawDecompressedFrame;
 extern bool				g_showStatusWindow;
 

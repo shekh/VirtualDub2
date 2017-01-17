@@ -530,11 +530,15 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	opt_driver.push_back(0);
 	opt_format.push_back(0);
 
+	int select_filter = 0;
+	VDStringW selectExt = VDStringW(L"avi");
+
 	if (!fUseCompatibility) {
 		tVDOutputDrivers drivers;
 		VDGetOutputDrivers(drivers);
 		for(tVDOutputDrivers::const_iterator it(drivers.begin()), itEnd(drivers.end()); it!=itEnd; ++it) {
 			IVDOutputDriver *driver = *it;
+			bool match_driver = g_FileOutDriver == driver->GetSignatureName();
 			for(int i=0; ; i++){
 				wchar_t filter[128];
 				wchar_t ext[128];
@@ -547,6 +551,12 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 				filters += wchar_t(0);
 				opt_driver.push_back(driver);
 				opt_format.push_back(i);
+
+				if (match_driver && g_FileOutFormat == name) {
+					select_filter = opt_format.size()-1;
+					if (wcscmp(ext,L"*.*")!=0)
+						selectExt = VDFileSplitExt(ext)+1;
+				}
 			}
 		}
 	}
@@ -561,27 +571,31 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	const wchar_t* title = fUseCompatibility ? L"Save AVI 1.0 File" : L"Save File";
 
 	const VDFileDialogOption opts[]={
-		{ VDFileDialogOption::kSelectedFilter, 0, NULL, 0, 0},
+		{ VDFileDialogOption::kSelectedFilter_always, 0, NULL, 0, 0},
 		{0}
 	};
 
-	int optvals[]={ 0 };
+	int optvals[]={ select_filter+1 };
 
-	VDStringW fname = VDGetSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (VDGUIHandle)hWnd, title, filters.c_str(), L"avi", opts, optvals, &fn);
-	if (!fname.empty()) {
-		int type = optvals[0]-1;
-		IVDOutputDriver *driver = opt_driver[type];
-		int format = opt_format[type];
-		if (!driver) {
-			g_project->SaveAVI(fname.c_str(), fUseCompatibility, dlg.addJob, dlg.removeAudio);
-		} else {
-			wchar_t filter[128];
-			wchar_t ext[128];
-			char name[128];
-			driver->GetDriver()->EnumFormats(format,filter,ext,name);
-
+	VDStringW fname = VDGetSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (VDGUIHandle)hWnd, title, filters.c_str(), selectExt.c_str(), opts, optvals, &fn);
+	int type = optvals[0]-1;
+	IVDOutputDriver *driver = opt_driver[type];
+	int format = opt_format[type];
+	if (driver) {
+		wchar_t filter[128];
+		wchar_t ext[128];
+		char name[128];
+		driver->GetDriver()->EnumFormats(format,filter,ext,name);
+		g_FileOutDriver = driver->GetSignatureName();
+		g_FileOutFormat = name;
+		if (!fname.empty())
 			g_project->SavePlugin(fname.c_str(), driver, name, dlg.addJob, dlg.removeAudio);
-		}
+
+	} else {
+		g_FileOutDriver.clear();
+		g_FileOutFormat.clear();
+		if (!fname.empty())
+			g_project->SaveAVI(fname.c_str(), fUseCompatibility, dlg.addJob, dlg.removeAudio);
 	}
 }
 

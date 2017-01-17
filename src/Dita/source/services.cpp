@@ -441,6 +441,7 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 	VDGetFileNameHook hook = { pOptions, pOptVals };
 	int nReadOnlyIndex = -1;
 	int nSelectedFilterIndex = -1;
+	bool selectedFilterAlways = false;
 
 	if (pOptions) {
 		int y = 0;
@@ -473,6 +474,8 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 				if (pOptVals[nReadOnlyIndex])
 					ofn.w.Flags |= OFN_READONLY;
 				break;
+			case VDFileDialogOption::kSelectedFilter_always:
+				selectedFilterAlways = true;
 			case VDFileDialogOption::kSelectedFilter:
 				VDASSERT(nSelectedFilterIndex < 0);
 				nSelectedFilterIndex = opt.mDstIdx;
@@ -507,6 +510,14 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 
 		if (lastChar != '\\' && lastChar != ':')
 			existingFileName = true;
+
+		if (selectedFilterAlways) {
+			wchar_t* ext = VDFileSplitExt(fsent.szFile);
+			if (ext) {
+				ext[1] = 0;
+				wcscat(ext,pszExt);
+			}
+		}
 	}
 
 	VDStringW strFilename;
@@ -593,10 +604,12 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 		if (nReadOnlyIndex >= 0)
 			pOptVals[nReadOnlyIndex] = !!(ofn.w.Flags & OFN_READONLY);
 
+		strFilename = fsent.szFile;
+	}
+
+	if (bSuccess || selectedFilterAlways) {
 		if (nSelectedFilterIndex >= 0)
 			pOptVals[nSelectedFilterIndex] = ofn.w.nFilterIndex;
-
-		strFilename = fsent.szFile;
 	}
 
 	if (bSuccess) {

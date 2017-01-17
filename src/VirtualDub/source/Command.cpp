@@ -72,6 +72,9 @@ VDStringA			g_ACompressionFormatHint;
 
 VDAudioFilterGraph	g_audioFilterGraph;
 
+VDStringW		g_FileOutDriver;
+VDStringA		g_FileOutFormat;
+
 extern VDProject *g_project;
 
 

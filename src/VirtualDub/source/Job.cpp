@@ -377,6 +377,16 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 	} else
 		output.addf("VirtualDub.video.SetCompression();");
 
+	if (!g_FileOutDriver.empty()) {
+		const VDStringA driver(strCify(VDTextWToU8(g_FileOutDriver).c_str()));
+		output.addf("VirtualDub.SaveFormat(\"%s\",\"%s\");"
+			,driver.c_str()
+			,g_FileOutFormat.c_str()
+			);
+
+	} else
+		output.addf("VirtualDub.SaveFormatAVI();");
+
 	output.addf("VirtualDub.video.filters.BeginUpdate();");
 	output.addf("VirtualDub.video.filters.Clear();");
 
