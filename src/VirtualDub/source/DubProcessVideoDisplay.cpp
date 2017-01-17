@@ -216,6 +216,7 @@ void VDDubVideoProcessorDisplay::UnlockAndDisplay(bool forceDisplay, VDRenderOut
 	bool renderFrame = (forceDisplay || mRefreshFlag.xchg(0));
 	bool renderInputFrame = renderFrame && mpInputDisplay && mpOptions->video.fShowInputFrame;
 	bool renderOutputFrame = (renderFrame || mbVideoDecompressorEnabled) && mpOutputDisplay && mpOptions->video.mode == DubVideoOptions::M_FULL && mpOptions->video.fShowOutputFrame && outputValid;
+	bool renderAnyFrame = renderFrame && mpOutputDisplay && (mpOptions->video.fShowInputFrame || mpOptions->video.fShowOutputFrame) && outputValid;
 
 	if (renderInputFrame) {
 		mpBlitter->postAPC(BUFFERID_INPUT, AsyncUpdateCallback, this, (void *)&mpOptions->video.previewFieldMode);
@@ -237,6 +238,12 @@ void VDDubVideoProcessorDisplay::UnlockAndDisplay(bool forceDisplay, VDRenderOut
 			pBuffer->AddRef();
 			mpBlitter->postAPC(BUFFERID_OUTPUT, StaticAsyncUpdateOutputCallback, this, pBuffer);
 		}
+  } else if (renderAnyFrame && !renderInputFrame) {
+		mpLoopThrottle->BeginWait();
+		mpBlitter->lock(BUFFERID_OUTPUT);
+		mpLoopThrottle->EndWait();
+		pBuffer->AddRef();
+		mpBlitter->postAPC(BUFFERID_OUTPUT, StaticAsyncUpdateOutputCallback, this, pBuffer);
 	} else
 		mpBlitter->unlock(BUFFERID_OUTPUT);
 }

@@ -1681,43 +1681,6 @@ void VDProject::PreviewInput() {
 	dubOpt.audio.mVolume				= -1.0f;
 	dubOpt.audio.bUseAudioFilterGraph	= false;
 
-	/*
-	// deprecated: this option caused pointless trouble
-	switch(g_prefs.main.iPreviewDepth) {
-	case PreferencesMain::DEPTH_DISPLAY:
-		{
-			DEVMODE dm;
-			dm.dmSize = sizeof(DEVMODE);
-			dm.dmDriverExtra = 0;
-			if (!EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm))
-				dm.dmBitsPerPel = 16;
-
-			switch(dm.dmBitsPerPel) {
-			case 24:
-				dubOpt.video.mInputFormat = nsVDPixmap::kPixFormat_RGB888;
-				break;
-			case 32:
-				dubOpt.video.mInputFormat = nsVDPixmap::kPixFormat_XRGB8888;
-				break;
-			default:
-				dubOpt.video.mInputFormat = nsVDPixmap::kPixFormat_XRGB1555;
-				break;
-			}
-		}
-		break;
-	case PreferencesMain::DEPTH_FASTEST:
-	case PreferencesMain::DEPTH_16BIT:
-		dubOpt.video.mInputFormat = nsVDPixmap::kPixFormat_XRGB1555;
-		break;
-	case PreferencesMain::DEPTH_24BIT:
-		dubOpt.video.mInputFormat = nsVDPixmap::kPixFormat_RGB888;
-		break;
-
-	// Ignore: PreferencesMain::DEPTH_OUTPUT
-
-	};
-	*/
-
 	dubOpt.video.mOutputFormat			= dubOpt.video.mInputFormat;
 
 	dubOpt.video.mode					= DubVideoOptions::M_SLOWREPACK;
@@ -1755,6 +1718,8 @@ void VDProject::PreviewOutput() {
 	dubOpt.audio.enabled				= TRUE;
 	dubOpt.audio.interval				= 1;
 	dubOpt.audio.is_ms					= FALSE;
+
+	if (dubOpt.video.mode != DubVideoOptions::M_FULL) dubOpt.video.mode = DubVideoOptions::M_SLOWREPACK;
 	dubOpt.video.mSelectionStart.mOffset = start;
 	if (start>=dubOpt.video.mSelectionEnd.mOffset)
 		dubOpt.video.mSelectionEnd.mOffset = mTimeline.GetLength();
