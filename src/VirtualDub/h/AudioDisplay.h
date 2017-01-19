@@ -51,11 +51,11 @@ public:
 
 	virtual void SetFormat(double samplingRate, int channelCount) = 0;
 	virtual void SetFrameMarkers(sint64 mn, sint64 mx, double start, double rate) = 0;
-	virtual void SetHighlightedFrameMarker(VDPosition pos) = 0;
+	//virtual void SetHighlightedFrameMarker(VDPosition pos) = 0;
 	virtual void SetSelectedFrameRange(VDPosition start, VDPosition end) = 0;
 	virtual void ClearSelectedFrameRange() = 0;
-	virtual void SetPosition(VDPosition pos) = 0;
-	virtual void Rescan() = 0;
+	virtual void SetPosition(VDPosition pos, VDPosition hpos) = 0;
+	virtual void Rescan(bool redraw=true) = 0;
 
 	virtual VDPosition GetReadPosition() = 0;
 	virtual bool ProcessAudio8U(const uint8 *src, int count, int chanStride, int sampleStride) = 0;

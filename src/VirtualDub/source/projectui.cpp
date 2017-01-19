@@ -3721,8 +3721,8 @@ void VDProjectUI::UpdateAudioDisplayPosition() {
 		double audioPerVideoSamples = inputAudio->getRate().asDouble() / pVSS->getRate().asDouble();
 
 		mpAudioDisplay->SetFrameMarkers(0, VDCeilToInt64(inputAudio->getLength() / audioPerVideoSamples), 0.0, audioPerVideoSamples);
-		mpAudioDisplay->SetHighlightedFrameMarker(pos);
-		mpAudioDisplay->SetPosition(cenpos);
+		//mpAudioDisplay->SetHighlightedFrameMarker(pos);
+		mpAudioDisplay->SetPosition(cenpos,pos);
 		mAudioDisplayPosNext = mpAudioDisplay->GetReadPosition();
 	}
 }
@@ -3927,6 +3927,7 @@ void VDProjectUI::UISetDubbingMode(bool bActive, bool bIsPreview) {
 	mbDubActive = bActive;
 
 	if (bActive) {
+  	if (!bIsPreview) mpPosition->SetMessage(L"(dub in progress)");
 		UpdateVideoFrameLayout();
 
 		mpInputDisplay->SetAccelerationMode(IVDVideoDisplay::kAccelResetInForeground);
@@ -3966,10 +3967,12 @@ void VDProjectUI::UISetDubbingMode(bool bActive, bool bIsPreview) {
 		}
 
 		// reset video displays
+		mLastDisplayedInputFrame = -1;
+		mLastDisplayedTimelineFrame = -1;
 		mpInputDisplay->SetAccelerationMode(IVDVideoDisplay::kAccelOnlyInForeground);
 		mpOutputDisplay->SetAccelerationMode(IVDVideoDisplay::kAccelOnlyInForeground);
 		DisplayFrame();
-		UpdateAudioDisplayPosition();
+		UICurrentPositionUpdated(false);
 	}
 }
 
@@ -4075,11 +4078,16 @@ void VDProjectUI::UICurrentPositionUpdated(bool fast_update) {
 	mpPosition->SetPosition(pos);
 
 	if (!fast_update) {
-		if (mhwndCurveEditor)
+		if (mhwndCurveEditor) {
 			UpdateCurveEditorPosition();
+			RedrawWindow(mhwndCurveEditor,0,0,RDW_UPDATENOW);
+		}
 
-		if (mpAudioDisplay && !mbDubActive)
+		if (mpAudioDisplay && !mbDubActive) {
 			UpdateAudioDisplayPosition();
+			for(int i=0; i<10; i++) if(!TickAudioDisplay()) break;
+			RedrawWindow(mhwndAudioDisplay,0,0,RDW_UPDATENOW);
+		}
 	}
 }
 

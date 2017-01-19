@@ -134,6 +134,7 @@ protected:
 	void		ResetShuttle();
 
 	VDEvent<IVDPositionControl, VDPositionControlEventData>&	PositionUpdated();
+	void		SetMessage(const wchar_t* s);
 
 protected:
 	void InternalSetPosition(VDPosition pos, VDPositionControlEventData::EventType eventType);
@@ -922,6 +923,11 @@ void VDPositionControlW32::UpdateString(VDPosition pos) {
 
 		VDSetWindowTextW32(hwndFrame, buf);
 	}
+}
+
+void VDPositionControlW32::SetMessage(const wchar_t* s) {
+	HWND hwndFrame = GetDlgItem(mhwnd, IDC_FRAME);
+	VDSetWindowTextW32(hwndFrame, s);
 }
 
 void VDPositionControlW32::OnSize() {

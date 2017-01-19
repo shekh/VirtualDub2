@@ -80,6 +80,7 @@ public:
 	virtual void		ResetShuttle() = 0;
 
 	virtual VDEvent<IVDPositionControl, VDPositionControlEventData>&	PositionUpdated() = 0;
+	virtual void		SetMessage(const wchar_t* s) = 0;
 };
 
 IVDPositionControl *VDGetIPositionControl(VDGUIHandle h);

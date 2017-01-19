@@ -1749,6 +1749,7 @@ void VDProject::Preview(DubOptions *options) {
 	if (!options) {
 		opts.video.fShowDecompressedFrame = g_drawDecompressedFrame;
 		opts.fShowStatus = !!g_showStatusWindow;
+		opts.fMoveSlider = true;
 	}
 
 	VDAVIOutputPreviewSystem outpreview;
@@ -2135,8 +2136,10 @@ void VDProject::MoveToFrame(VDPosition frame) {
 		mposCurrentFrame = frame;
 		mbPositionCallbackEnabled = false;
 
-		if (!g_dubber && !mProjectLoading)
+		if (!g_dubber && !mProjectLoading) {
 			DisplayFrame();
+			while(UpdateFrame());
+		}
 
 		if (mpCB)
 			mpCB->UICurrentPositionUpdated();

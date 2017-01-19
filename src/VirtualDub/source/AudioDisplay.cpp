@@ -615,14 +615,15 @@ public:
 	void OnSize();
 	void OnTimer();
 	void PaintChannel(HDC hdc, int ch);
+	void CalcFocus(sint32& xh1, sint32& xh2, int64 windowPosition);
 
 	void SetFormat(double samplingRate, int channels);
 	void SetFrameMarkers(sint64 mn, sint64 mx, double start, double rate);
 	void SetHighlightedFrameMarker(VDPosition pos);
 	void SetSelectedFrameRange(VDPosition start, VDPosition end);
 	void ClearSelectedFrameRange();
-	void SetPosition(VDPosition pos);
-	void Rescan();
+	void SetPosition(VDPosition pos, VDPosition hpos);
+	void Rescan(bool redraw=true);
 	VDPosition GetReadPosition();
 	bool ProcessAudio8U(const uint8 *src, int count, int chanStride, int sampleStride);
 	bool ProcessAudio16S(const sint16 *src, int count, int chanStride, int sampleStride);
@@ -652,6 +653,7 @@ protected:
 	int			mChanHeight;
 	int			mChanWidth;
 	int			mChanCount;
+	int			mTextWidth;
 	VDPosition	mHighlightedMarker;
 	VDPosition	mSelectedMarkerRangeStart;
 	VDPosition	mSelectedMarkerRangeEnd;
@@ -745,6 +747,7 @@ VDAudioDisplayControl::VDAudioDisplayControl(HWND hwnd)
 	, mChanWidth(0)
 	, mChanHeight(0)
 	, mChanCount(0)
+	, mTextWidth(0)
 	, mAccumulatedSamples(0)
 	, mBufferedWindowSamples(0)
 	, mSamplingRate(44100.0)
@@ -924,7 +927,8 @@ void VDAudioDisplayControl::SetZoom(int samplesPerPixel) {
 
 		VDPosition pos = mPosition;
 		mPosition = -1;
-		SetPosition(pos);
+		InvalidateRect(mhwnd, NULL, TRUE);
+		SetPosition(pos,mHighlightedMarker);
 	}
 }
 
@@ -964,16 +968,18 @@ void VDAudioDisplayControl::SetFrameMarkers(sint64 mn, sint64 mx, double start, 
 	mMarkerInvRate = 1.0 / rate;
 
 	RecomputeMarkerSteps();
-	InvalidateRect(mhwnd, NULL, TRUE);
+
+	//RECT r = {0, mChanHeight * mChanCount, mChanWidth, mHeight};
+	//InvalidateRect(mhwnd, &r, false);
 }
 
-void VDAudioDisplayControl::SetHighlightedFrameMarker(VDPosition pos) {
+/*void VDAudioDisplayControl::SetHighlightedFrameMarker(VDPosition pos) {
 	if (mHighlightedMarker != pos) {
 		mHighlightedMarker = pos;
 
 		InvalidateRect(mhwnd, NULL, TRUE);
 	}
-}
+}*/
 
 void VDAudioDisplayControl::SetSelectedFrameRange(VDPosition start, VDPosition end) {
 	if (mSelectedMarkerRangeStart != start || mSelectedMarkerRangeEnd != end) {
@@ -995,7 +1001,7 @@ void VDAudioDisplayControl::ClearSelectedFrameRange() {
 	}
 }
 
-void VDAudioDisplayControl::SetPosition(VDPosition pos) {
+void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 	// round off position
 	pos -= pos % mSamplesPerPixel;
 
@@ -1004,6 +1010,37 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos) {
 		return;
 
 	sint64 newWindowPos = pos - ((mChanWidth * mSamplesPerPixel) >> 1);
+
+	int xa1,xa2,xb1,xb2;
+	CalcFocus(xa1,xa2,mWindowPosition);
+	CalcFocus(xb1,xb2,newWindowPos);
+	mHighlightedMarker = hpos;
+	int x0 = xb1;
+	int x1 = xa1;
+	CalcFocus(xb1,xb2,newWindowPos);
+
+	// redo old focus
+	RECT r2 = {xa1-8, 0, xa2+8, mChanHeight * mChanCount};
+	InvalidateRect(mhwnd,&r2,false);
+
+	if (mbSpectrumMode) {
+		RECT tr = {0, 0, mTextWidth, mChanHeight * mChanCount};
+		InvalidateRect(mhwnd,&tr,false);
+	}
+	if(mUpdateX2 > mUpdateX1) {
+		RECT r = {mUpdateX1, 0, mUpdateX2, mChanHeight * mChanCount};
+		InvalidateRect(mhwnd,&r,false);
+		mUpdateX1 = INT_MAX;
+		mUpdateX2 = INT_MIN;
+	}
+
+	ScrollWindow(mhwnd,x0-x1,0,0,0);
+	if(mUpdateX1!=INT_MAX) mUpdateX1 +=x0-x1;
+	if(mUpdateX2!=INT_MIN) mUpdateX2 +=x0-x1;
+
+	// redo new focus
+	RECT r3 = {xb1-8, 0, xb2+8, mChanHeight * mChanCount};
+	InvalidateRect(mhwnd,&r3,false);
 
 	// check for forward move within window
 	if (pos > mPosition && mPosition >= 0) {
@@ -1016,8 +1053,10 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos) {
 				if (mAccumulatedSamples >= delta) {
 					mAccumulatedSamples -= delta;
 					uint32 pitch = (mChanWidth + 3) & ~3;
-					for(int y=0; y<256*mChanCount; ++y)
+					for(int y=0; y<256*mChanCount; ++y){
 						memmove(&mImage[pitch*y], &mImage[pitch*y + delta], mAccumulatedSamples);
+						memset(&mImage[pitch*y + mAccumulatedSamples], 0, mChanWidth-mAccumulatedSamples);
+					}
 
 					mPosition = pos;
 					mWindowPosition = newWindowPos;
@@ -1027,7 +1066,7 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos) {
 						mAudioRequiredEvent.Raise(this, mReadPosition);
 					}
 
-					InvalidateRect(mhwnd, NULL, TRUE);
+					//InvalidateRect(mhwnd, NULL, TRUE);
 					return;
 				}
 			} else {
@@ -1043,7 +1082,7 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos) {
 						mReadPosition = newWindowPos + mAccumulatedSamples;
 						mAudioRequiredEvent.Raise(this, mReadPosition);
 					}
-					InvalidateRect(mhwnd, NULL, TRUE);
+					//InvalidateRect(mhwnd, NULL, TRUE);
 					return;
 				}
 			}
@@ -1053,10 +1092,10 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos) {
 	mPosition = pos;
 	mWindowPosition = newWindowPos;
 
-	Rescan();
+	Rescan(false);
 }
 
-void VDAudioDisplayControl::Rescan() {
+void VDAudioDisplayControl::Rescan(bool redraw) {
 	mImage.clear();
 	mAccumulatedSamples = 0;
 	mBufferedWindowSamples = 0;
@@ -1109,7 +1148,7 @@ void VDAudioDisplayControl::Rescan() {
 	if (mReadPosition >= 0)
 		mAudioRequiredEvent.Raise(this, mReadPosition);
 
-	InvalidateRect(mhwnd, NULL, TRUE);
+	if(redraw) InvalidateRect(mhwnd, NULL, TRUE);
 }
 
 VDPosition VDAudioDisplayControl::GetReadPosition() {
@@ -1376,6 +1415,14 @@ void VDAudioDisplayControl::OnRButtonDown(int x, int y, uint32 modifiers) {
 	PostMessage(mhwnd, WM_NULL, 0, 0);
 }
 
+void VDAudioDisplayControl::CalcFocus(sint32& xh1, sint32& xh2, int64 windowPosition) {
+	xh1 = VDFloorToInt((mHighlightedMarker*mMarkerRate + mMarkerStart - windowPosition) * mPixelsPerSample);
+	xh2 = VDFloorToInt(((mHighlightedMarker+1)*mMarkerRate + mMarkerStart - windowPosition) * mPixelsPerSample);
+
+	if (xh1 == xh2)
+		++xh2;
+}
+
 void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps) {
 	if (!mFailureMessage.empty() || !mChanCount) {
 		RECT r;
@@ -1484,11 +1531,8 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps) {
 	}
 
 	if (ps.rcPaint.top < mChanHeight * mChanCount && mHighlightedMarker >= marker1*mMarkerMinorStep && mHighlightedMarker < marker2*mMarkerMinorStep) {
-		sint32 xh1 = VDFloorToInt((mHighlightedMarker*mMarkerRate + mMarkerStart - mWindowPosition) * mPixelsPerSample);
-		sint32 xh2 = VDFloorToInt(((mHighlightedMarker+1)*mMarkerRate + mMarkerStart - mWindowPosition) * mPixelsPerSample);
-
-		if (xh1 == xh2)
-			++xh2;
+		sint32 xh1,xh2;
+		CalcFocus(xh1,xh2,mWindowPosition);
 
 		if (mbSpectrumMode)
 			StretchDIBits(hdc, xh1, 0, xh2 - xh1, mChanHeight * mChanCount, xh1, 0, xh2 - xh1, mbihSpectrumHighlight.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumHighlight, DIB_RGB_COLORS, SRCCOPY);
@@ -1517,12 +1561,17 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps) {
 		double divlimit = 1.0 - (double)mFontHeight * 2.0 / (double)mChanHeight;
 
 		int ybase = 0;
+		mTextWidth = 0;
 		for(int i=0; i<mChanCount; ++i) {
 			char buf[64];
 			SetTextAlign(hdc, TA_BOTTOM | TA_LEFT);
 			for(double d=0; d<divlimit; d += divunits) {
 				sprintf(buf, "%.0f Hz", (44100.0 / 8192.0 * 256.0 / 1.0) * d);
 				TextOut(hdc, 4, ybase + VDRoundToInt(mChanHeight*(1.0 - d/1.0)), buf, strlen(buf));
+				SIZE tsize;
+				GetTextExtentPoint32(hdc, buf, strlen(buf), &tsize);
+				tsize.cx += 8;
+				if (tsize.cx>mTextWidth) mTextWidth = tsize.cx;
 			}
 
 			SetTextAlign(hdc, TA_TOP | TA_LEFT);
@@ -1606,7 +1655,7 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps) {
 							PolyPolyline(hdc, &mPoints[x*2 + ch*w*2], twos, std::min<int>(x2-x, 128));
 					}
 				} else {
-					if (mbPointsDirty) {
+					if (mbPointsDirty || 1) {
 						mbPointsDirty = false;
 
 						size_t count = mImage.size() / mChanCount;

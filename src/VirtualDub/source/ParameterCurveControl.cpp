@@ -239,8 +239,19 @@ void VDParameterCurveControlW32::SetCurve(VDParameterCurve *curve) {
 }
 
 void VDParameterCurveControlW32::SetPosition(VDPosition pos) {
+	int x0 = CurveToScreenX(mPosX);
+	int x1 = CurveToScreenX((double)pos);
 	mPosX = (double)pos;
-	InvalidateRect(mhwnd, NULL, TRUE);
+
+	// redo old focus
+	RECT r2 = {x0-8,0,x0+8,mHeight};
+	InvalidateRect(mhwnd,&r2,false);
+
+	ScrollWindow(mhwnd,x0-x1,0,0,0);
+
+	// redo new focus
+	RECT r3 = {x1-8,0,x1+8,mHeight};
+	InvalidateRect(mhwnd,&r3,false);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -616,7 +627,7 @@ void VDParameterCurveControlW32::OnPaint() {
 				if (isFirstPt) {
 					SelectObject(hdc, mhpenEndLine);
 					MoveToEx(hdc, 0, y, NULL);
-					LineTo(hdc, x, y);
+					if (x>0) LineTo(hdc, x, y);
 					isFirstPt = false;
 				}
 
