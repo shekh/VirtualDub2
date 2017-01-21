@@ -51,7 +51,7 @@ bool is_audio_pcm8(const VDWaveFormat *wfex) {
 }
 
 bool is_audio_pcm16(const VDWaveFormat *wfex) {
-	if (wfex->mSampleBits != 8) return false;
+	if (wfex->mSampleBits != 16) return false;
 	return is_audio_pcm(wfex);
 }
 

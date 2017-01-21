@@ -1577,6 +1577,7 @@ static void func_VDAudio_SetConversion(IVDScriptInterpreter *, VDScriptValue *ar
 	g_dubOpts.audio.new_rate		= arglist[0].asInt();
 	g_dubOpts.audio.newPrecision	= (char)arglist[1].asInt();
 	g_dubOpts.audio.newChannels		= (char)arglist[2].asInt();
+	g_project->SetAudioSource();
 
 	if (arg_count >= 5) {
 		if (arglist[3].asInt())

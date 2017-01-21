@@ -258,6 +258,7 @@ bool AVIOutputPlugin::init(const wchar_t *szFile) {
 		} else {
 			vdwithoutputplugin(mpContext) {
 				s->plugin_id = outFile->CreateStream(kVDXST_Audio);
+				outFile->SetAudio(s->plugin_id,s->getStreamInfo(),s->getFormat(),s->getFormatLen());
 			}
 		}
 	}

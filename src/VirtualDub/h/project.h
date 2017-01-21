@@ -211,6 +211,7 @@ public:
 	int GetAudioSourceMode() const;
 	void SetAudioSourceNone();
 	void SetAudioSourceNormal(int index);
+	void SetAudioSource();
 
 	void SetAudioMode(int mode);
 	void SetAudioErrorMode(int errorMode);
@@ -277,7 +278,6 @@ protected:
 	static void StaticFastPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie);
 
 	void UpdateDubParameters(bool forceUpdate = false);
-	void SetAudioSource();
 
 	void OnDubAbort(IDubber *src, const bool& userAbort);
 

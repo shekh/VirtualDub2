@@ -346,6 +346,7 @@ public:
 	virtual void	VDXAPIENTRY Init(const wchar_t *path, const char* format) = 0;
 	virtual uint32 VDXAPIENTRY CreateStream(int type) = 0;
 	virtual void VDXAPIENTRY SetVideo(uint32 index, const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) = 0;
+	virtual void VDXAPIENTRY SetAudio(uint32 index, const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) = 0;
 	virtual void VDXAPIENTRY Write(uint32 index, uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples) = 0;
 	virtual void Finalize() = 0;
 };
