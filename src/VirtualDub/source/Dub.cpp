@@ -1471,6 +1471,7 @@ void Dubber::InitSelectInputFormat() {
 
 		// Attempt RGB format negotiation.
 		int format = mOptions.video.mInputFormat;
+		if (format==0) format = vSrc->getSourceFormat();
 		uint32 rgbTrackMask = 0;
 
 		do {
@@ -1480,7 +1481,7 @@ void Dubber::InitSelectInputFormat() {
 			format = DegradeFormat(format, rgbTrackMask);
 		} while(format);
 
-		throw MyError("Video format negotiation failed: use slow-repack or full mode.");
+		throw MyError("Video format negotiation failed: use normal-recompress or full mode.");
 	}
 
 	// Negotiate format.
@@ -1492,7 +1493,7 @@ void Dubber::InitSelectInputFormat() {
 		throw MyError(
 			"The video decompressor cannot decompress to the selected input format. "
 			"Check for a \"Force YUY2\" setting in the codec's properties or select a different "
-			"input video format under Video > Color Depth.");
+			"input video format under Video > Decode Format.");
 
 	const char *s = VDPixmapGetInfo(vSrc->getTargetFormat().format).name;
 

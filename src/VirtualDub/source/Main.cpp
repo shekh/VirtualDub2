@@ -320,6 +320,7 @@ public:
 
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 	void InitCodec();
+	void InitDubber();
 
 	HWND mhdlg;
 	VDDialogResizerW32 mResizer;
@@ -331,6 +332,7 @@ public:
 void VDSaveVideoDialogW32::InitCodec() {
 	VDStringW name;
 	VDPixmapFormatEx format = g_dubOpts.video.mOutputFormat;
+	if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) format = 0;
 	if (g_Vcompression.driver) {
 		ICINFO ici = { sizeof(ICINFO) };
 		if (g_Vcompression.driver->getInfo(ici)) {
@@ -350,15 +352,11 @@ void VDSaveVideoDialogW32::InitCodec() {
 
 	VDString s;
 
-	if (g_dubOpts.video.mode < DubVideoOptions::M_FASTREPACK) {
-		format = 0;
-		if (inputVideo)
-			format = inputVideo->getSourceFormat();
-	}
-
 	if (format==0) {
-		if (g_dubOpts.video.mode >= DubVideoOptions::M_FULL && inputVideo) {
+		if (inputVideo) {
 			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
+			if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) inputFormat = inputVideo->getSourceFormat();
+			s += "(auto) ";
 			s += VDPixmapFormatPrintSpec(inputFormat);
 		} else {
 			s += "auto";
@@ -407,41 +405,42 @@ void VDSaveVideoDialogW32::InitCodec() {
 	SetDlgItemText(mhdlg,IDC_AUDIO_COMPRESSION,aname.c_str());
 }
 
+void VDSaveVideoDialogW32::InitDubber() {
+	if (!inputAudio) return;
+
+	IDubber* dubber = CreateDubber(&g_dubOpts);
+	try {
+		if (g_dubOpts.audio.bUseAudioFilterGraph)
+			dubber->SetAudioFilterGraph(g_audioFilterGraph);
+		AudioSource* asrc = inputAudio;
+		AudioStream* as = dubber->InitAudio(&asrc,1);
+		VDWaveFormat* fmt = as->GetFormat();
+		VDString s;
+		if (is_audio_float(fmt))
+			s.sprintf("%d Hz float %d ch", fmt->mSamplingRate, fmt->mChannels);
+		else
+			s.sprintf("%d Hz %d-bit %d ch", fmt->mSamplingRate, fmt->mSampleBits, fmt->mChannels);
+		SetDlgItemText(mhdlg,IDC_AUDIO_INFO,s.c_str());
+
+	} catch(const MyError& e) {
+		SetDlgItemText(mhdlg,IDC_AUDIO_INFO,e.c_str());
+		removeAudio = true;
+		inputAudio = 0;
+	}
+	delete dubber;
+}
+
 INT_PTR VDSaveVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 	switch(message) {
 	case WM_INITDIALOG:
 		mResizer.Init(mhdlg);
 		mResizer.Add(IDC_SAVE_DONOW, VDDialogResizerW32::kBR);
 		mResizer.Add(IDC_SAVE_MAKEJOB, VDDialogResizerW32::kBR);
-
-		if (inputAudio) {
-			IDubber* dubber = CreateDubber(&g_dubOpts);
-			try {
-				if (g_dubOpts.audio.bUseAudioFilterGraph)
-					dubber->SetAudioFilterGraph(g_audioFilterGraph);
-				AudioSource* asrc = inputAudio;
-				AudioStream* as = dubber->InitAudio(&asrc,1);
-				VDWaveFormat* fmt = as->GetFormat();
-				VDString s;
-				if (is_audio_float(fmt))
-					s.sprintf("%d Hz float %d ch", fmt->mSamplingRate, fmt->mChannels);
-				else
-					s.sprintf("%d Hz %d-bit %d ch", fmt->mSamplingRate, fmt->mSampleBits, fmt->mChannels);
-				SetDlgItemText(mhdlg,IDC_AUDIO_INFO,s.c_str());
-			} catch(const MyError& e) {
-				SetDlgItemText(mhdlg,IDC_AUDIO_INFO,e.c_str());
-				removeAudio = true;
-				inputAudio = 0;
-			}
-			delete dubber;
-
-		} else {
-			SetDlgItemText(mhdlg,IDC_AUDIO_INFO,"");
-		}
-
 		CheckDlgButton(mhdlg,IDC_SAVE_DONOW, addJob ? BST_UNCHECKED:BST_CHECKED);
 		CheckDlgButton(mhdlg,IDC_SAVE_MAKEJOB, addJob ? BST_CHECKED:BST_UNCHECKED);
+		SetDlgItemText(mhdlg,IDC_AUDIO_INFO,"");
 
+		InitDubber();
 		InitCodec();
 		return TRUE;
 

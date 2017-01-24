@@ -203,7 +203,7 @@ bool VDUIDialogChooseVideoCompressorW32::OnLoaded() {
 		CheckButton(IDC_USE_DATARATE, BST_UNCHECKED);
 
 	SetFocusToControl(IDC_COMP_LIST);
-	EnableControl(IDC_PIXELFORMAT,!mCapture);
+	EnableControl(IDC_PIXELFORMAT,!mCapture && (g_dubOpts.video.mode > DubVideoOptions::M_FASTREPACK));
 	return true;
 }
 
@@ -861,6 +861,7 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 		if (mpSrcFormat) format = VDBitmapFormatToPixmapFormat(*(VDAVIBitmapInfoHeader*)mpSrcFormat);
 	} else {
 		format = g_dubOpts.video.mOutputFormat;
+		if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) format = 0;
 		if (mhCodec) {
 			int codec_format = mhCodec->queryInputFormat(0);
 			if (codec_format) format.format = codec_format;
@@ -872,11 +873,11 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	if(format==0) {
 		if (mCapture) {
 			s += "auto";
-		} else if (g_dubOpts.video.mode >= DubVideoOptions::M_FULL && inputVideo) {
+		} else if (inputVideo) {
 			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
-			s += "auto (";
+			if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) inputFormat = inputVideo->getSourceFormat();
+			s += "(auto) ";
 			s += VDPixmapFormatPrintSpec(inputFormat);
-			s += ")";
 		} else {
 			s += "auto";
 		}
