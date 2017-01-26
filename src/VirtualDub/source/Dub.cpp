@@ -1315,6 +1315,9 @@ void Dubber::InitOutputFile() {
 
 			if(mOptions.video.mode >= DubVideoOptions::M_FULL)
 				VDLogAppMessage(kVDLogInfo, kVDST_Dub, kVDM_FullUsingOutputFormat, 1, &s);
+
+			if(mOptions.video.mode > DubVideoOptions::M_NONE && mOptions.video.mbUseSmartRendering)
+				VDLogAppMessage(kVDLogInfo, kVDST_Dub, 11);
 		}
 	}
 }

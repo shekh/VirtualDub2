@@ -135,7 +135,7 @@ void VDDubIOThread::ThreadRun() {
 
 							VDDubAutoThreadLocation loc(mpCurrentAction, "reading video data");
 
-							VDPROFILEBEGINEX("V-Read",(uint32)mVideoRequestTargetSample);
+							VDPROFILEBEGINEX2("V-Read wait",0,vdprofiler_flag_wait);
 
 							MainAddVideoFrame();
 
@@ -281,7 +281,9 @@ bool VDDubIOThread::MainAddVideoFrame() {
 
 	// for the direct case, just read the frame and return
 	if (mVideoRequest.mbDirect) {
+		VDPROFILEBEGINEX("V-Read",(uint32)mVideoRequest.mSrcFrame);
 		ReadRawVideoFrame(srcIndex, mpVideoRequestSource->displayToStreamOrder(mVideoRequest.mSrcFrame), mVideoRequest.mSrcFrame, mVideoRequestTargetSample, false, true);
+		VDPROFILEEND();
 		mbVideoRequestActive = false;
 		return true;
 	}
@@ -289,11 +291,13 @@ bool VDDubIOThread::MainAddVideoFrame() {
 	// for the source frame case, read the next required frame and return
 	bool preroll;
 
+	VDPROFILEBEGINEX("V-Read",(uint32)mVideoRequest.mSrcFrame);
 	VDPosition pos = mpVideoRequestSource->streamGetNextRequiredFrame(preroll);
 	if (pos >= 0)
 		ReadRawVideoFrame(srcIndex, pos, mVideoRequest.mSrcFrame, mVideoRequestTargetSample, preroll, false);
 	else if (mbVideoRequestFirstSample)
 		ReadNullVideoFrame(srcIndex, mVideoRequest.mSrcFrame, mVideoRequestTargetSample);
+	VDPROFILEEND();
 
 	mbVideoRequestFirstSample = false;
 

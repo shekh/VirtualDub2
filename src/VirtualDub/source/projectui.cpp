@@ -3187,7 +3187,7 @@ void VDProjectUI::HandleDragDrop(HDROP hdrop) {
 					AppendAVI(filename.c_str());
 				}
 			} else {
-				Open(filenames.front().c_str(), NULL, false);
+				CmdOpen(filenames.front().c_str());
 			}
 
 			logDisp.Post(mhwnd);
