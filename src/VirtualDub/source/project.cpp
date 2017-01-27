@@ -1851,6 +1851,7 @@ void VDProject::SavePlugin(const wchar_t *filename, IVDOutputDriver* driver, con
 	if (addAsJob) {
 		DubOptions opts = g_dubOpts;
 		opts.removeAudio = removeAudio;
+		JobAddConfiguration(this, &opts, g_szInputAVIFile, mInputDriverName.c_str(), filename, false, &inputAVI->listFiles, 0, 0, true, 0);
 	} else {
 		::SavePlugin(filename, driver, format, NULL, removeAudio);
 	}
