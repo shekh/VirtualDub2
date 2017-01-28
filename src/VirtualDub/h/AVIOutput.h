@@ -24,6 +24,7 @@
 
 #include <vd2/system/file.h>
 #include <vd2/system/unknown.h>
+#include <vd2/plugin/vdinputdriver.h>
 
 #include "Fixes.h"
 
@@ -50,6 +51,9 @@ public:
 
 	virtual void	write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples) = 0;
 	virtual void	write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples, FilterModPixmapInfo* info) = 0;
+	virtual void	write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& info) {
+		write(info.flags,pBuffer,cbBuffer,info.samples);
+	}
 
 	virtual void	partialWriteBegin(uint32 flags, uint32 bytes, uint32 samples) = 0;
 	virtual void	partialWrite(const void *pBuffer, uint32 cbBuffer) = 0;

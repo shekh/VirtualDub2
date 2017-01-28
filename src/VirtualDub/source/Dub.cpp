@@ -444,6 +444,7 @@ private:
 
 	vdstructex<WAVEFORMATEX> mAudioCompressionFormat;
 	VDStringA			mAudioCompressionFormatHint;
+	vdblock<char>		mAudioCompressionConfig;
 
 	VDPixmapLayout		mVideoFilterOutputPixmapLayout;
 
@@ -472,7 +473,7 @@ public:
 	Dubber(DubOptions *);
 	~Dubber();
 
-	void SetAudioCompression(const VDWaveFormat *wf, uint32 cb, const char *pShortNameHint);
+	void SetAudioCompression(const VDWaveFormat *wf, uint32 cb, const char *pShortNameHint, vdblock<char>& config);
 	void SetPhantomVideoMode();
 	void SetInputDisplay(IVDVideoDisplay *);
 	void SetOutputDisplay(IVDVideoDisplay *);
@@ -573,12 +574,15 @@ Dubber::~Dubber() {
 
 /////////////////////////////////////////////////
 
-void Dubber::SetAudioCompression(const VDWaveFormat *wf, uint32 cb, const char *pShortNameHint) {
+void Dubber::SetAudioCompression(const VDWaveFormat *wf, uint32 cb, const char *pShortNameHint, vdblock<char>& config) {
 	mAudioCompressionFormat.assign((const WAVEFORMATEX *)wf, cb);
 	if (pShortNameHint)
 		mAudioCompressionFormatHint = pShortNameHint;
 	else
 		mAudioCompressionFormatHint.clear();
+		
+	mAudioCompressionConfig.resize(config.size());
+	memcpy(mAudioCompressionConfig.data(),config.data(),config.size());
 }
 
 void Dubber::SetPhantomVideoMode() {
@@ -983,7 +987,7 @@ void Dubber::InitAudioConversionChain() {
 	AudioCompressor *pCompressor = NULL;
 
 	if (mOptions.audio.mode > DubAudioOptions::M_NONE && !mAudioCompressionFormat.empty()) {
-		if (!(pCompressor = new_nothrow AudioCompressor(audioStream, (const VDWaveFormat *)&*mAudioCompressionFormat, mAudioCompressionFormat.size(), mAudioCompressionFormatHint.c_str())))
+		if (!(pCompressor = new_nothrow AudioCompressor(audioStream, (const VDWaveFormat *)&*mAudioCompressionFormat, mAudioCompressionFormat.size(), mAudioCompressionFormatHint.c_str(), mAudioCompressionConfig)))
 			throw MyMemoryError();
 
 		audioStream = pCompressor;

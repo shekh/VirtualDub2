@@ -2422,7 +2422,7 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 		g_dubber->SetStatusHandler(mpDubStatus);
 
 		if (!pOutputSystem->IsRealTime() && g_ACompressionFormat)
-			g_dubber->SetAudioCompression((const VDWaveFormat *)g_ACompressionFormat, g_ACompressionFormatSize, g_ACompressionFormatHint.c_str());
+			g_dubber->SetAudioCompression((const VDWaveFormat *)g_ACompressionFormat, g_ACompressionFormatSize, g_ACompressionFormatHint.c_str(), g_ACompressionConfig);
 
 		// As soon as we call Init(), this value is no longer ours to free.
 

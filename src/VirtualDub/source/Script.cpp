@@ -1695,6 +1695,8 @@ static void func_VDAudio_SetCompression(IVDScriptInterpreter *isi, VDScriptValue
 	else
 		g_ACompressionFormatSize = sizeof(WAVEFORMATEX)+ex_data;
 
+	g_ACompressionConfig.clear();
+
 	_CrtCheckMemory();
 }
 
@@ -1705,6 +1707,29 @@ static void func_VDAudio_SetCompressionWithHint(IVDScriptInterpreter *isi, VDScr
 
 	if (g_ACompressionFormat)
 		g_ACompressionFormatHint.assign(*arglist[arg_count - 1].asString());
+}
+
+static void func_VDAudio_SetCompData(IVDScriptInterpreter *isi, VDScriptValue *arglist, int arg_count) {
+	g_ACompressionConfig.clear();
+
+	void *mem;
+	long l = ((strlen(*arglist[1].asString())+3)/4)*3;
+
+	if (arglist[0].asInt() > l) return;
+
+	l = arglist[0].asInt();
+
+	if (!(mem = allocmem(l)))
+		VDSCRIPT_EXT_ERROR(OUT_OF_MEMORY);
+
+	_CrtCheckMemory();
+	memunbase64((char *)mem, *arglist[1].asString(), l);
+	_CrtCheckMemory();
+
+	g_ACompressionConfig.resize(l);
+	memcpy(g_ACompressionConfig.data(), mem, l);
+
+	freemem(mem);
 }
 
 static void func_VDAudio_SetVolume(IVDScriptInterpreter *isi, VDScriptValue *arglist, int arg_count) {
@@ -1748,6 +1773,7 @@ static VDScriptFunctionDef obj_VDAudio_functbl[]={
 	{ func_VDAudio_SetCompression	, NULL					, "0iiiiiiis" },
 	{ func_VDAudio_SetCompressionWithHint	, "SetCompressionWithHint"					, "0iiiiiis" },
 	{ func_VDAudio_SetCompressionWithHint	, NULL					, "0iiiiiiiss" },
+	{ func_VDAudio_SetCompData				, "SetCompData"			, "0is" },
 	{ func_VDAudio_SetVolume			, "SetVolume"			, "0" },
 	{ func_VDAudio_SetVolume			, NULL					, "0i" },
 	{ func_VDAudio_GetVolume			, "GetVolume"			, "i" },

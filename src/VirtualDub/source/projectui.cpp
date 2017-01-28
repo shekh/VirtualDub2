@@ -145,7 +145,7 @@ extern IVDPositionControlCallback *VDGetPositionControlCallbackTEMP() {
 extern char PositionFrameTypeCallback(HWND hwnd, void *pvData, long pos);
 
 extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
-extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *, WAVEFORMATEX *, VDString& shortNameHint);
+extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *, WAVEFORMATEX *, VDString& shortNameHint, vdblock<char>& config);
 extern void VDDisplayLicense(HWND hwndParent, bool conditional);
 
 extern void OpenAVI(bool extended_opt);
@@ -1670,7 +1670,7 @@ void VDProjectUI::SetAudioInterleaveOptionsAsk() {
 
 void VDProjectUI::SetAudioCompressionAsk(HWND parent) {
 	if (!inputAudio)
-		g_ACompressionFormat = (VDWaveFormat *)AudioChooseCompressor(parent, (WAVEFORMATEX *)g_ACompressionFormat, NULL, g_ACompressionFormatHint);
+		g_ACompressionFormat = (VDWaveFormat *)AudioChooseCompressor(parent, (WAVEFORMATEX *)g_ACompressionFormat, NULL, g_ACompressionFormatHint, g_ACompressionConfig);
 	else {
 
 		WAVEFORMATEX wfex = {0};
@@ -1711,7 +1711,7 @@ void VDProjectUI::SetAudioCompressionAsk(HWND parent) {
 		wfex.nBlockAlign		= (WORD)((wfex.wBitsPerSample+7)/8 * wfex.nChannels);
 		wfex.nAvgBytesPerSec	= wfex.nSamplesPerSec * wfex.nBlockAlign;
 
-		g_ACompressionFormat = (VDWaveFormat *)AudioChooseCompressor(parent, (WAVEFORMATEX *)g_ACompressionFormat, &wfex, g_ACompressionFormatHint);
+		g_ACompressionFormat = (VDWaveFormat *)AudioChooseCompressor(parent, (WAVEFORMATEX *)g_ACompressionFormat, &wfex, g_ACompressionFormatHint, g_ACompressionConfig);
 
 	}
 

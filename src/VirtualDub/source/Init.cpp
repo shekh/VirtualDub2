@@ -528,6 +528,7 @@ bool Init(HINSTANCE hInstance, int nCmdShow, VDCommandLine& cmdLine) {
 	VDInitBuiltinInputDrivers();
 	VDInitInputDrivers();
 	VDInitOutputDrivers();
+	VDInitAudioEnc();
 	VDInitTools();
 	VDLoadExternalEncoderProfiles();
 
@@ -609,6 +610,7 @@ void Deinit() {
 	DeinitJobSystem();
 
 	VDShutdownTools();
+	VDShutdownAudioEnc();
 	VDShutdownOutputDrivers();
 	VDShutdownInputDrivers();			// must be before plugin system
 	VDDeinitPluginSystem();
@@ -1015,6 +1017,7 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 					VDAddPluginModule(token);
 					VDInitInputDrivers();
 					VDInitOutputDrivers();
+					VDInitAudioEnc();
 					VDInitTools();
 
 					guiSetStatus("Loaded external module: %s", 255, VDTextWToA(token).c_str());

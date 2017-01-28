@@ -339,15 +339,26 @@ enum VDXVideoStreamType {
 	kVDXST_Data,
 };
 
+struct AVIStreamHeader_fixed;
+
 class IVDXOutputFile : public IVDXUnknown {
 public:
 	enum { kIID = VDXMAKEFOURCC('X', 'o', 'f', 'l') };
+
+	struct PacketInfo{
+		uint32 flags;
+		uint32 samples;
+		sint64 pcm_samples;
+		sint64 pts;
+
+		PacketInfo(){ pcm_samples=-1; pts=-1; }
+	};
 
 	virtual void	VDXAPIENTRY Init(const wchar_t *path, const char* format) = 0;
 	virtual uint32 VDXAPIENTRY CreateStream(int type) = 0;
 	virtual void VDXAPIENTRY SetVideo(uint32 index, const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) = 0;
 	virtual void VDXAPIENTRY SetAudio(uint32 index, const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) = 0;
-	virtual void VDXAPIENTRY Write(uint32 index, uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples) = 0;
+	virtual void VDXAPIENTRY Write(uint32 index, const void *pBuffer, uint32 cbBuffer, PacketInfo& info) = 0;
 	virtual void Finalize() = 0;
 };
 
@@ -377,6 +388,57 @@ struct VDXOutputDriverDefinition {
 enum {
 	// V1 (FilterMod): Initial version
 	kVDXPlugin_OutputDriverAPIVersion = 1
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class IVDXAudioEnc : public IVDXUnknown {
+public:
+	enum { kIID = VDXMAKEFOURCC('X', 'a', 'e', 'n') };
+
+	virtual bool HasAbout() = 0;
+	virtual bool HasConfig() = 0;
+	virtual void ShowAbout(VDXHWND parent) = 0;
+	virtual void ShowConfig(VDXHWND parent) = 0;
+	virtual size_t GetConfigSize() = 0;
+	virtual void* GetConfig() = 0;
+	virtual void SetConfig(void* data, size_t size) = 0;
+
+	virtual void SetInputFormat(VDXWAVEFORMATEX* format) = 0;
+	virtual void Shutdown() = 0;
+	virtual bool IsEnded() const = 0;
+
+	virtual unsigned	GetInputLevel() const = 0;
+	virtual unsigned	GetInputSpace() const = 0;
+	virtual unsigned	GetOutputLevel() const = 0;
+	virtual const VDXWAVEFORMATEX *GetOutputFormat() const = 0;
+	virtual unsigned	GetOutputFormatSize() const = 0;
+
+	virtual void		Restart() = 0;
+	virtual bool		Convert(bool flush, bool requireOutput) = 0;
+
+	virtual void		*LockInputBuffer(unsigned& bytes) = 0;
+	virtual void		UnlockInputBuffer(unsigned bytes) = 0;
+	virtual const void	*LockOutputBuffer(unsigned& bytes) = 0;
+	virtual void		UnlockOutputBuffer(unsigned bytes) = 0;
+	virtual unsigned	CopyOutput(void *dst, unsigned bytes, sint64& duration) = 0;
+};
+
+typedef bool (VDXAPIENTRY *VDXAudioEncCreateProc)(const VDXInputDriverContext *pContext, IVDXAudioEnc **);
+
+struct VDXAudioEncDefinition {
+	uint32		mSize;				// size of this structure in bytes
+	uint32		mFlags;       // reserved
+
+	const wchar_t *mpDriverName;
+	const char *mpDriverTagName;
+
+	VDXAudioEncCreateProc		mpCreate;
+};
+
+enum {
+	// V1 (FilterMod): Initial version
+	kVDXPlugin_AudioEncAPIVersion = 1
 };
 
 #endif

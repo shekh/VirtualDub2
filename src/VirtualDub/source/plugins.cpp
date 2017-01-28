@@ -148,6 +148,29 @@ namespace {
 		VDStringW				mDriverName;
 		VDStringW				mDriverTagName;
 	};
+
+	class VDShadowedAudioEncDescription : public VDShadowedPluginDescription {
+	public:
+		virtual void Init(const VDPluginInfo *pInfo, VDExternalModule *pModule) {
+			VDShadowedPluginDescription::Init(pInfo, pModule);
+
+			const VDXAudioEncDefinition *def = static_cast<const VDXAudioEncDefinition *>(pInfo->mpTypeSpecificInfo);
+			memset(&mDefinition, 0, sizeof mDefinition);
+			memcpy(&mDefinition, def, std::min<uint32>(def->mSize, sizeof mDefinition));
+			mShadowedInfo.mpTypeSpecificInfo = &mDefinition;
+
+			mDriverName = def->mpDriverName;
+			mDefinition.mpDriverName = mDriverName.c_str();
+			mDriverTagName = def->mpDriverTagName;
+			mDefinition.mpDriverTagName = mDriverTagName.c_str();
+		}
+
+	protected:
+		VDXAudioEncDefinition	mDefinition;
+
+		VDStringW				mDriverName;
+		VDString				mDriverTagName;
+	};
 }
 
 
@@ -200,7 +223,7 @@ void VDConnectPluginDescription(const VDPluginInfo *pInfo, VDExternalModule *pMo
 
 			case kVDXPluginType_Tool:
 				if (pInfo->mTypeAPIVersionRequired > kVDXPlugin_ToolAPIVersion)
-					throw MyError("Plugin requires a newer input API version (v%u > v%u)", pInfo->mTypeAPIVersionRequired, kVDXPlugin_ToolAPIVersion);
+					throw MyError("Plugin requires a newer tool API version (v%u > v%u)", pInfo->mTypeAPIVersionRequired, kVDXPlugin_ToolAPIVersion);
 
 				if (pInfo->mTypeAPIVersionUsed < 1)
 					throw MyError("Plugin uses too old of an API version (v%u < v%u)", pInfo->mAPIVersionUsed, 1);
@@ -210,12 +233,22 @@ void VDConnectPluginDescription(const VDPluginInfo *pInfo, VDExternalModule *pMo
 
 			case kVDXPluginType_Output:
 				if (pInfo->mTypeAPIVersionRequired > kVDXPlugin_OutputDriverAPIVersion)
-					throw MyError("Plugin requires a newer input API version (v%u > v%u)", pInfo->mTypeAPIVersionRequired, kVDXPlugin_OutputDriverAPIVersion);
+					throw MyError("Plugin requires a newer output API version (v%u > v%u)", pInfo->mTypeAPIVersionRequired, kVDXPlugin_OutputDriverAPIVersion);
 
 				if (pInfo->mTypeAPIVersionUsed < 1)
 					throw MyError("Plugin uses too old of an API version (v%u < v%u)", pInfo->mAPIVersionUsed, 1);
 
 				pDesc = new VDShadowedOutputDriverDescription;
+				break;
+
+			case kVDXPluginType_AudioEnc:
+				if (pInfo->mTypeAPIVersionRequired > kVDXPlugin_AudioEncAPIVersion)
+					throw MyError("Plugin requires a newer audioenc API version (v%u > v%u)", pInfo->mTypeAPIVersionRequired, kVDXPlugin_AudioEncAPIVersion);
+
+				if (pInfo->mTypeAPIVersionUsed < 1)
+					throw MyError("Plugin uses too old of an API version (v%u < v%u)", pInfo->mAPIVersionUsed, 1);
+
+				pDesc = new VDShadowedAudioEncDescription;
 				break;
 
 			default:

@@ -25,7 +25,10 @@
 #include "resource.h"
 #include <vd2/system/list.h>
 #include <vd2/system/protscope.h>
+#include <vd2/Riza/audiocodec.h>
 #include "gui.h"
+#include "AVIOutputPlugin.h"
+#include <vd2/plugin/vdinputdriver.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -64,6 +67,7 @@ public:
 	ACMFORMATTAGDETAILS aftd;
 	ACMDRIVERDETAILS add;
 	HACMDRIVERID hadid;
+	IVDAudioEnc* driver;
 	bool mbSupportsAbout;
 	bool mbSupportsConfigure;
 
@@ -74,6 +78,7 @@ public:
 ACMTagEntry::ACMTagEntry() {
 	memset(&add, 0, sizeof add);
 	add.cbStruct = sizeof add;
+	driver = 0;
 }
 
 ACMTagEntry::~ACMTagEntry() {
@@ -108,6 +113,7 @@ struct ACMEnumeratorData {
 struct ACMChooserData {
 	WAVEFORMATEX *pwfex, *pwfexSrc;
 	VDStringA *pHint;
+	vdblock<char> *pConfig;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -325,7 +331,6 @@ static INT_PTR CALLBACK AudioChooseCompressionDlgProc(HWND hdlg, UINT msg, WPARA
 	case WM_INITDIALOG:
 		{
 			ACMEnumeratorData aed;
-			int idx;
 			INT tabs[1];
 
 			thisPtr = (ACMChooserData *)lParam;
@@ -355,10 +360,43 @@ static INT_PTR CALLBACK AudioChooseCompressionDlgProc(HWND hdlg, UINT msg, WPARA
 
 			freemem(aed.pwfex);
 
+			tVDAudioEncList drivers;
+			VDGetAudioEncList(drivers);
+			{for(int i=0; i<drivers.size(); i++){
+				IVDAudioEnc *driver = drivers[i];
+				const wchar_t* name = driver->GetName();
+				int idx = SendDlgItemMessageW(hdlg, IDC_DRIVER, LB_INSERTSTRING, i, (LPARAM)name);
+				if (idx >= 0) {
+					ACMTagEntry* entry = new ACMTagEntry;
+					memset(&entry->add,0,sizeof(entry->add));
+					memset(&entry->aftd,0,sizeof(entry->aftd));
+					entry->hadid = 0;
+					entry->driver = driver;
+					entry->mbSupportsAbout = driver->GetDriver()->HasAbout();
+					entry->mbSupportsConfigure = driver->GetDriver()->HasConfig();
+					SendDlgItemMessage(hdlg, IDC_DRIVER, LB_SETITEMDATA, idx, (LPARAM)entry);
+
+					ACMFormatEntry *f1 = new ACMFormatEntry();
+					f1->pFormatTag = entry;
+					f1->fCompatible = true;
+					memset(&f1->afd,0,sizeof(f1->afd));
+					strcpy(f1->afd.szFormat,"custom");
+					f1->pwfex = (WAVEFORMATEX *)allocmem(sizeof(WAVEFORMATEX));
+					memset(f1->pwfex,0,sizeof(WAVEFORMATEX));
+					entry->formats.AddTail(f1);
+
+					if (*thisPtr->pHint==driver->GetSignatureName()) {
+						aed.pTagSelect = entry;
+						aed.pFormatSelect = f1;
+						driver->GetDriver()->SetConfig(thisPtr->pConfig->data(),thisPtr->pConfig->size());
+					}
+				}
+			}}
+
 			// This has to go last, because some version of DivX audio come up
 			// with a blank name. #*$&@*#$^)&@*#^@$
 
-			idx = SendDlgItemMessage(hdlg, IDC_DRIVER, LB_INSERTSTRING, 0, (LPARAM)"<No compression (PCM)>");
+			int idx = SendDlgItemMessage(hdlg, IDC_DRIVER, LB_INSERTSTRING, 0, (LPARAM)"<No compression (PCM)>");
 
 			if (idx >= 0)
 				SendDlgItemMessage(hdlg, IDC_DRIVER, LB_SETITEMDATA, idx, NULL);
@@ -427,6 +465,7 @@ static INT_PTR CALLBACK AudioChooseCompressionDlgProc(HWND hdlg, UINT msg, WPARA
 		case IDOK:
 			{
 				int idx = SendDlgItemMessage(hdlg, IDC_FORMAT, LB_GETCURSEL, 0, 0);
+				thisPtr->pConfig->clear();
 
 				if (idx < 0) {
 					thisPtr->pwfex = NULL;
@@ -436,7 +475,14 @@ static INT_PTR CALLBACK AudioChooseCompressionDlgProc(HWND hdlg, UINT msg, WPARA
 					thisPtr->pwfex = pFormat->pwfex;
 					pFormat->pwfex = NULL;
 
-					if (pFormat->pFormatTag->add.cbStruct > 0)
+					if (pFormat->pFormatTag->driver) {
+						thisPtr->pHint->assign(pFormat->pFormatTag->driver->GetSignatureName());
+						IVDXAudioEnc* driver = pFormat->pFormatTag->driver->GetDriver();
+						size_t config_size = driver->GetConfigSize();
+						void* config_data = driver->GetConfig();
+						thisPtr->pConfig->resize(config_size);
+						memcpy(thisPtr->pConfig->data(),config_data,config_size);
+					} else if (pFormat->pFormatTag->add.cbStruct > 0)
 						thisPtr->pHint->assign(pFormat->pFormatTag->add.szShortName);
 					else
 						thisPtr->pHint->clear();
@@ -545,12 +591,13 @@ redisplay_formats:
 	return FALSE;
 }
 
-WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *pwfexOld, WAVEFORMATEX *pwfexSrc, VDStringA& shortNameHint) {
+WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *pwfexOld, WAVEFORMATEX *pwfexSrc, VDStringA& shortNameHint, vdblock<char>& config) {
 	ACMChooserData data;
 
 	data.pwfex = pwfexOld;
 	data.pwfexSrc = pwfexSrc;
 	data.pHint = &shortNameHint;
+	data.pConfig = &config;
 
 	if (!DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_AUDIOCOMPRESSION), hwndParent, AudioChooseCompressionDlgProc, (LPARAM)&data))
 		return pwfexOld;

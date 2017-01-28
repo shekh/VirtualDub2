@@ -74,6 +74,10 @@ public:
 	virtual const void	*LockOutputBuffer(unsigned& bytes) = 0;
 	virtual void		UnlockOutputBuffer(unsigned bytes) = 0;
 	virtual unsigned	CopyOutput(void *dst, unsigned bytes) = 0;
+	virtual unsigned	CopyOutput(void *dst, unsigned bytes, sint64& duration) {
+		duration = -1;
+		return CopyOutput(dst,bytes);
+	}
 };
 
 IVDAudioCodec *VDLocateAudioDecompressor(const VDWaveFormat *srcFormat, const VDWaveFormat *dstFormat, bool preferInternalCodecs, const char *pShortNameDriverHint = NULL);

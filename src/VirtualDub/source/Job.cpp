@@ -300,6 +300,22 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 						,g_ACompressionFormat->mBlockSize
 						,VDEncodeScriptString(g_ACompressionFormatHint).c_str()
 						);
+
+		long l = g_ACompressionConfig.size();
+
+		if (l>0) {
+			mem = (char *)allocmem(l + ((l+2)/3)*4 + 1);
+			if (!mem) throw MyMemoryError();
+			memcpy(mem,g_ACompressionConfig.data(),l);
+			membase64(mem+l, mem, l);
+			VDStringA line;
+			line.sprintf("VirtualDub.audio.SetCompData(%d,\"", l);
+			line += (mem+l);
+			line += "\");";
+			output.adds(line.c_str());
+			freemem(mem);
+		}
+  
 	} else
 		output.addf("VirtualDub.audio.SetCompression();");
 

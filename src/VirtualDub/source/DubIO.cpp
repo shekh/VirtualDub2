@@ -394,7 +394,7 @@ bool VDDubIOThread::MainAddAudioFrame() {
 			if (mbAbort)
 				return false;
 
-			if (mpAudioPipe->getSpace() < blocksize + sizeof(int))
+			if (mpAudioPipe->getSpace() < blocksize + sizeof(int) + sizeof(sint64))
 				break;
 
 			long actualBytes, actualSamples;
@@ -410,10 +410,14 @@ bool VDDubIOThread::MainAddAudioFrame() {
 			VDASSERT(actualSamples == 1);
 
 			int sampleSize = actualBytes;
+			sint64 duration = mpAudio->GetLastPacketDuration();
 			{
 				VDDubAutoThreadLocation loc(mpCurrentAction, "pushing audio data to processing thread");
 
 				if (!mpAudioPipe->Write(&sampleSize, sizeof(int), &mbAbort))
+					return false;
+
+				if (!mpAudioPipe->Write(&duration, sizeof(duration), &mbAbort))
 					return false;
 
 				if (!mpAudioPipe->Write(buf, actualBytes, &mbAbort))

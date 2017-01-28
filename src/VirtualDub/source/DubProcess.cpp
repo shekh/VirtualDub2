@@ -449,7 +449,7 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 
 		VDPROFILEBEGIN("Audio-write");
 		while(totalSamples < count) {
-			while(mpAudioPipe->getLevel() < sizeof(int)) {
+			while(mpAudioPipe->getLevel() < sizeof(int) + sizeof(sint64)) {
 				if (mpAudioPipe->isInputClosed()) {
 					mpAudioPipe->CloseOutput();
 					if (mpInterleaver)
@@ -460,14 +460,19 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 				}
 
 				VDDubAutoThreadLocation loc(mpCurrentAction, "waiting for audio data from I/O thread");
+ 				VDPROFILEBEGINEX2("Audio-wait",0,vdprofiler_flag_wait);
 				mLoopThrottle.BeginWait();
 				mpAudioPipe->ReadWait();
 				mLoopThrottle.EndWait();
+				VDPROFILEEND();
 			}
 
 			int sampleSize;
 			int tc = mpAudioPipe->ReadPartial(&sampleSize, sizeof(int));
 			VDASSERT(tc == sizeof(int));
+			sint64 duration;
+			tc = mpAudioPipe->ReadPartial(&duration, sizeof(duration));
+			VDASSERT(tc == sizeof(duration));
 
 			VDASSERT(sampleSize <= nBlockAlign);
 
@@ -489,9 +494,11 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 					}
 
 					VDDubAutoThreadLocation loc(mpCurrentAction, "waiting for audio data from I/O thread");
+					VDPROFILEBEGINEX2("Audio-wait",0,vdprofiler_flag_wait);
 					mLoopThrottle.BeginWait();
 					mpAudioPipe->ReadWait();
 					mLoopThrottle.EndWait();
+					VDPROFILEEND();
 				}
 
 				pos += tc;
@@ -504,7 +511,11 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 			{
 				VDDubAutoThreadLocation loc(mpCurrentAction, "writing audio data to disk");
 
-				mpAudioOut->write(AVIOutputStream::kFlagKeyFrame, buf, sampleSize, 1);
+				IVDXOutputFile::PacketInfo info;
+				info.flags = AVIOutputStream::kFlagKeyFrame;
+				info.samples = 1;
+				info.pcm_samples = duration;
+				mpAudioOut->write(buf, sampleSize, info);
 			}
 			VDPROFILEEND();
 
@@ -567,7 +578,10 @@ ended:
 		{
 			VDDubAutoThreadLocation loc(mpCurrentAction, "writing audio data to disk");
 
-			mpAudioOut->write(AVIOutputStream::kFlagKeyFrame, mAudioBuffer.data(), totalBytes, totalSamples);
+			IVDXOutputFile::PacketInfo info;
+			info.flags = AVIOutputStream::kFlagKeyFrame;
+			info.samples = totalSamples;
+			mpAudioOut->write(mAudioBuffer.data(), totalBytes, info);
 		}
 		VDPROFILEEND();
 	}

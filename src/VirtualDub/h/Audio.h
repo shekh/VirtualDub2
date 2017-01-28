@@ -64,6 +64,7 @@ public:
 
 	virtual long _Read(void *buffer, long max_samples, long *lplBytes);
 	virtual long Read(void *buffer, long max_samples, long *lplBytes);
+	virtual sint64 GetLastPacketDuration(){ return -1; }
 	virtual bool Skip(sint64 samples);
 	virtual void SetSource(AudioStream *source);
 	virtual void SetLimit(sint64 limit);
@@ -155,19 +156,22 @@ class AudioCompressor : public AudioStream {
 private:
 	vdautoptr<IVDAudioCodec>	mpCodec;
 	bool fStreamEnded;
+	bool fVBR;
 	long bytesPerInputSample;
 	long bytesPerOutputSample;
+	sint64 lastPacketDuration;
 
 	char mDriverName[64];
 
 	enum { INPUT_BUFFER_SIZE = 16384 };
 
 public:
-	AudioCompressor(AudioStream *src, const VDWaveFormat *dst_format, long dst_format_len, const char *shortNameHint);
+	AudioCompressor(AudioStream *src, const VDWaveFormat *dst_format, long dst_format_len, const char *shortNameHint, vdblock<char>& config);
 	~AudioCompressor();
 	void CompensateForMP3();
-	bool IsVBR() const { return false; }
+	bool IsVBR() const;
 	long _Read(void *buffer, long samples, long *lplBytes);
+	sint64 GetLastPacketDuration(){ return lastPacketDuration; }
 	bool	isEnd();
 
 protected:
@@ -201,6 +205,7 @@ public:
 	long _Read(void *buffer, long max_samples, long *lplBytes);
 	bool _isEnd();
 	bool Skip(sint64);
+	sint64 GetLastPacketDuration(){ return source->GetLastPacketDuration(); }
 };
 
 class AudioSubset : public AudioStream {

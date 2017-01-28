@@ -31,6 +31,7 @@
 #include <vd2/Riza/w32audiocodec.h>
 #include "AudioFilterSystem.h"
 #include "AudioSource.h"
+#include "AVIOutputPlugin.h"
 #include "af_sink.h"
 
 #include "audio.h"
@@ -1444,20 +1445,34 @@ bool AudioStreamResampler::_isEnd() {
 //
 ///////////////////////////////////////////////////////////////////////////
 
-AudioCompressor::AudioCompressor(AudioStream *src, const VDWaveFormat *dst_format, long dst_format_len, const char *pShortNameHint) : AudioStream() {
+AudioCompressor::AudioCompressor(AudioStream *src, const VDWaveFormat *dst_format, long dst_format_len, const char *pShortNameHint, vdblock<char>& config) : AudioStream() {
 	VDWaveFormat *iFormat = src->GetFormat();
-	VDWaveFormat *oFormat = AllocFormat(dst_format_len);
-
-	memcpy(oFormat, dst_format, dst_format_len);
 
 	SetSource(src);
 
-	mpCodec = VDCreateAudioCompressorW32((const VDWaveFormat *)iFormat, dst_format, pShortNameHint, true);
+	if (dst_format->mTag) {
+		VDWaveFormat *oFormat = AllocFormat(dst_format_len);
+		memcpy(oFormat, dst_format, dst_format_len);
+		mpCodec = VDCreateAudioCompressorW32((const VDWaveFormat *)iFormat, dst_format, pShortNameHint, true);
+		fVBR = false;
+	} else {
+		mpCodec = VDCreateAudioCompressorPlugin((const VDWaveFormat *)iFormat, pShortNameHint, config);
+		dst_format_len = mpCodec->GetOutputFormatSize();
+		VDWaveFormat *oFormat = AllocFormat(dst_format_len);
+		memcpy(oFormat, mpCodec->GetOutputFormat(), dst_format_len);
+		dst_format = oFormat;
+		fVBR = true;
+	}
 
 	bytesPerInputSample = iFormat->mBlockSize;
 	bytesPerOutputSample = dst_format->mBlockSize;
+	lastPacketDuration = -1;
 
 	fStreamEnded = FALSE;
+}
+
+bool AudioCompressor::IsVBR() const {
+	return fVBR; 
 }
 
 AudioCompressor::~AudioCompressor() {
@@ -1509,6 +1524,24 @@ void AudioCompressor::CompensateForMP3() {
 long AudioCompressor::_Read(void *buffer, long samples, long *lplBytes) {
 	long bytes = 0;
 	long space = samples * bytesPerOutputSample;
+
+	if (fVBR) {
+		samples = 1;
+		while(!bytes) {
+			bytes = mpCodec->CopyOutput(buffer, space, lastPacketDuration);
+
+			if (!bytes) {
+				if (!Process())
+					break;
+			}
+		}
+
+		if (lplBytes)
+			*lplBytes = bytes;
+
+		return bytes ? 1:0;
+
+	}
 
 	while(space > 0) {
 		unsigned actualBytes = mpCodec->CopyOutput(buffer, space);

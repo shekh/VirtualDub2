@@ -27,6 +27,7 @@
 
 class IVDMediaOutput;
 class VDExtEncProfile;
+class IVDOutputDriver;
 
 class VDINTERFACE IVDDubberOutputSystem {
 public:

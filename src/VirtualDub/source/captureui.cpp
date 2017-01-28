@@ -174,7 +174,7 @@ static char g_szStripeFile[MAX_PATH];
 
 extern COMPVARS2 g_compression;
 
-extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *pwfexOld, WAVEFORMATEX *pwfexSrc, VDStringA& shortNameHint);
+extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *pwfexOld, WAVEFORMATEX *pwfexSrc, VDStringA& shortNameHint, vdblock<char>& config);
 extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
 
 static INT_PTR CALLBACK CaptureCustomVidSizeDlgProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -3147,6 +3147,7 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 				VDWaveFormat *pwfexSrc = NULL;
 				VDWaveFormat *pwfexOld = NULL;
 				VDStringA hint;
+				vdblock<char> config;
 
 				if (mpProject->GetAudioCompFormat(wfex, hint)) {
 					size_t len = wfex.size();
@@ -3158,7 +3159,7 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 					pwfexSrc = wfexSrc.data();
 
 				// pwfexOld is freed by AudioChooseCompressor
-				WAVEFORMATEX *pwfexNew = AudioChooseCompressor((HWND)mhwnd, (WAVEFORMATEX *)pwfexOld, (WAVEFORMATEX *)pwfexSrc, hint);
+				WAVEFORMATEX *pwfexNew = AudioChooseCompressor((HWND)mhwnd, (WAVEFORMATEX *)pwfexOld, (WAVEFORMATEX *)pwfexSrc, hint, config);
 
 				if (!pwfexNew)
 					mpProject->SetAudioCompFormat();

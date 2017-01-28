@@ -4,12 +4,15 @@
 #include <vd2/plugin/vdplugin.h>
 #include <vd2/system/cpuaccel.h>
 #include <vd2/system/debug.h>
+#include <vd2/Riza/audiocodec.h>
 #include <vd2/plugin/vdinputdriver.h>
 #include "AVIOutputPlugin.h"
 #include "plugins.h"
+#include "project.h"
 
 extern VDProject *g_project;
 static tVDOutputDrivers g_VDOutputDrivers;
+static tVDAudioEncList g_VDAudioEnc;
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -128,6 +131,7 @@ public:
 	AVIOutputPluginStream(AVIOutputPlugin *pParent, int nStream);
 
 	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples);
+	void write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& info);
 	void partialWriteBegin(uint32 flags, uint32 bytes, uint32 samples);
 	void partialWrite(const void *pBuffer, uint32 cbBuffer);
 	void partialWriteEnd();
@@ -147,8 +151,15 @@ AVIOutputPluginStream::AVIOutputPluginStream(AVIOutputPlugin *pParent, int nStre
 }
 
 void AVIOutputPluginStream::write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples) {
+	IVDXOutputFile::PacketInfo info;
+	info.flags = flags;
+	info.samples = samples;
+	write(pBuffer,cbBuffer,info);
+}
+
+void AVIOutputPluginStream::write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& info) {
 	vdwithoutputplugin(mpParent->mpContext) {
-		mpParent->outFile->Write(plugin_id,flags,pBuffer,cbBuffer,samples);
+		mpParent->outFile->Write(plugin_id,pBuffer,cbBuffer,info);
 	}
 	/*
 	partialWriteBegin(flags, cbBuffer, samples);
@@ -343,6 +354,180 @@ IVDOutputDriver *VDGetOutputDriverByName(const wchar_t *name) {
 		const wchar_t *dvname = pDriver->GetSignatureName();
 
 		if (dvname && !_wcsicmp(name, dvname))
+			return pDriver;
+	}
+
+	return NULL;
+}
+
+//----------------------------------------------------------------------------------------------
+
+class VDAudioPluginCodec : public IVDAudioCodec {
+public:
+	VDPluginDescription *mpDesc;
+	vdrefptr<IVDXAudioEnc> plugin;
+	VDOutputDriverContextImpl context;
+
+	VDAudioPluginCodec(VDPluginDescription *pDesc);
+	~VDAudioPluginCodec();
+
+	IVDXAudioEnc * GetDriver() {
+		return plugin;
+	}
+
+	virtual void Shutdown(){}
+
+	virtual bool IsEnded() const { return false; }
+
+	virtual unsigned	GetInputLevel() const {
+		return plugin->GetInputLevel(); 
+	}
+	virtual unsigned	GetInputSpace() const { 
+		return plugin->GetInputSpace();
+	}
+	virtual unsigned	GetOutputLevel() const {
+		return plugin->GetOutputLevel();
+	}
+	virtual const VDWaveFormat *GetOutputFormat() const {
+		return (VDWaveFormat*)plugin->GetOutputFormat();
+	}
+	virtual unsigned	GetOutputFormatSize() const {
+		return plugin->GetOutputFormatSize();
+	}
+
+	virtual void		Restart(){}
+	virtual bool		Convert(bool flush, bool requireOutput){
+		return plugin->Convert(flush,requireOutput);
+	}
+
+	virtual void*   LockInputBuffer(unsigned& bytes){
+		return plugin->LockInputBuffer(bytes);
+	}
+	virtual void		UnlockInputBuffer(unsigned bytes){
+		plugin->UnlockInputBuffer(bytes);
+	}
+	virtual const void* LockOutputBuffer(unsigned& bytes){
+		return plugin->LockInputBuffer(bytes);
+	}
+	virtual void		UnlockOutputBuffer(unsigned bytes){
+		plugin->UnlockOutputBuffer(bytes);
+	}
+	virtual unsigned	CopyOutput(void *dst, unsigned bytes){
+		sint64 duration;
+		return plugin->CopyOutput(dst,bytes,duration);
+	}
+	virtual unsigned	CopyOutput(void *dst, unsigned bytes, sint64& duration){
+		return plugin->CopyOutput(dst,bytes,duration);
+	}
+};
+
+VDAudioPluginCodec::VDAudioPluginCodec(VDPluginDescription *desc)
+	:context(desc)
+{
+	mpDesc = desc;
+	const VDPluginInfo* info = VDLockPlugin(desc);
+	VDXAudioEncDefinition* mpDef = (VDXAudioEncDefinition*)info->mpTypeSpecificInfo;
+	mpDef->mpCreate(&context, ~plugin);
+}
+
+VDAudioPluginCodec::~VDAudioPluginCodec() {
+	plugin = 0;
+	VDUnlockPlugin(mpDesc);
+}
+
+class VDAudioEncPlugin : public vdrefcounted<IVDAudioEnc> {
+public:
+	VDAudioEncPlugin(VDPluginDescription *pDesc);
+	~VDAudioEncPlugin();
+
+	const wchar_t *	GetName() {
+		return mpDef->mpDriverName;
+	}
+
+	const char *	GetSignatureName() {
+		return mpDef->mpDriverTagName;
+	}
+
+	IVDXAudioEnc * GetDriver() {
+		return plugin;
+	}
+
+	VDOutputDriverContextImpl* GetContext() {
+		return &context;
+	}
+
+	VDAudioPluginCodec* CreateCodec() {
+		VDAudioPluginCodec* codec = new VDAudioPluginCodec(mpDesc);
+		return codec;
+	}
+
+	VDPluginDescription *mpDesc;
+	const VDPluginInfo *info;
+	VDXAudioEncDefinition *mpDef;
+	vdrefptr<IVDXAudioEnc> plugin;
+	VDOutputDriverContextImpl context;
+};
+
+VDAudioEncPlugin::VDAudioEncPlugin(VDPluginDescription *desc)
+	:context(desc)
+{
+	mpDesc = desc;
+	info = VDLockPlugin(desc);
+	mpDef = (VDXAudioEncDefinition*)info->mpTypeSpecificInfo;
+	mpDef->mpCreate(&context, ~plugin);
+}
+
+VDAudioEncPlugin::~VDAudioEncPlugin() {
+	plugin = 0;
+	VDUnlockPlugin(mpDesc);
+}
+
+IVDAudioCodec *VDCreateAudioCompressorPlugin(const VDWaveFormat *srcFormat, const char *pSignatureName, vdblock<char>& config) {
+	VDAudioEncPlugin* driver = (VDAudioEncPlugin*)VDGetAudioEncByName(pSignatureName);
+	if (!driver) {
+		throw MyError(
+			"Error initializing audio stream compression:\n"
+			"Driver not found (%s).",
+			pSignatureName
+		);
+	}
+
+	VDAudioPluginCodec* codec = driver->CreateCodec();
+	codec->GetDriver()->SetConfig(config.data(),config.size());
+	codec->GetDriver()->SetInputFormat((VDXWAVEFORMATEX*)srcFormat);
+	return codec;
+}
+
+void VDInitAudioEnc() {
+	g_VDAudioEnc.clear();
+
+	std::vector<VDPluginDescription *> plugins;
+	VDEnumeratePluginDescriptions(plugins, kVDXPluginType_AudioEnc);
+
+	while(!plugins.empty()) {
+		VDPluginDescription *desc = plugins.back();
+		g_VDAudioEnc.push_back(vdrefptr<IVDAudioEnc>(new VDAudioEncPlugin(desc)));
+		plugins.pop_back();
+	}
+}
+
+void VDShutdownAudioEnc() {
+	g_VDAudioEnc.clear();
+}
+
+void VDGetAudioEncList(tVDAudioEncList& l) {
+	for(tVDAudioEncList::const_iterator it(g_VDAudioEnc.begin()), itEnd(g_VDAudioEnc.end()); it!=itEnd; ++it) {
+		l.push_back(*it);
+	}
+}
+
+IVDAudioEnc *VDGetAudioEncByName(const char *name) {
+	for(tVDAudioEncList::const_iterator it(g_VDAudioEnc.begin()), itEnd(g_VDAudioEnc.end()); it!=itEnd; ++it) {
+		IVDAudioEnc *pDriver = *it;
+
+		const char *dvname = pDriver->GetSignatureName();
+
+		if (dvname && !_stricmp(name, dvname))
 			return pDriver;
 	}
 

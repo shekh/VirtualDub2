@@ -89,7 +89,8 @@ enum {
 	kVDXPluginType_Audio,
 	kVDXPluginType_Input,
 	kVDXPluginType_Tool,
-	kVDXPluginType_Output
+	kVDXPluginType_Output,
+	kVDXPluginType_AudioEnc
 };
 
 typedef bool (VDXAPIENTRY *VDXShowStaticAboutProc)(VDXHWND parent);

@@ -18,7 +18,7 @@
 #ifndef f_FIXES_H
 #define f_FIXES_H
 
-typedef struct {
+struct AVIStreamHeader_fixed{
     uint32		fccType;
     uint32		fccHandler;
     uint32		dwFlags;
@@ -38,6 +38,6 @@ typedef struct {
 		sint16	right;
 		sint16	bottom;
 	} rcFrame;
-} AVIStreamHeader_fixed;
+};
 
 #endif

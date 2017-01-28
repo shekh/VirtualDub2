@@ -11,6 +11,9 @@ class IVDMediaOutput;
 struct VDPluginDescription;
 class IVDXOutputFileDriver;
 class VDOutputDriverContextImpl;
+class IVDXAudioEnc;
+class IVDAudioCodec;
+struct VDWaveFormat;
 
 class VDINTERFACE IVDOutputDriver : public IVDRefCount {
 public:
@@ -19,12 +22,25 @@ public:
   virtual VDOutputDriverContextImpl* GetContext() = 0;
 };
 
+class VDINTERFACE IVDAudioEnc : public IVDRefCount {
+public:
+	virtual const wchar_t *	GetName() = 0;
+	virtual const char *	GetSignatureName() = 0;
+	virtual IVDXAudioEnc * GetDriver() = 0;
+	virtual VDOutputDriverContextImpl* GetContext() = 0;
+};
+
 typedef std::vector<vdrefptr<IVDOutputDriver> > tVDOutputDrivers;
+typedef std::vector<vdrefptr<IVDAudioEnc> > tVDAudioEncList;
 
 void VDInitOutputDrivers();
 void VDShutdownOutputDrivers();
 void VDGetOutputDrivers(tVDOutputDrivers& l);
 IVDOutputDriver *VDGetOutputDriverByName(const wchar_t *name);
+void VDInitAudioEnc();
+void VDShutdownAudioEnc();
+void VDGetAudioEncList(tVDAudioEncList& l);
+IVDAudioEnc *VDGetAudioEncByName(const char *name);
 
 class IVDMediaOutputPlugin : public IVDMediaOutput {
 public:
@@ -32,5 +48,6 @@ public:
 };
 
 IVDMediaOutputPlugin *VDCreateMediaOutputPlugin(IVDOutputDriver* driver, const char* format);
+IVDAudioCodec *VDCreateAudioCompressorPlugin(const VDWaveFormat *srcFormat, const char *pSignatureName, vdblock<char>& config);
 
 #endif
