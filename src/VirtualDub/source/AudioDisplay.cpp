@@ -1577,6 +1577,10 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps) {
 			SetTextAlign(hdc, TA_TOP | TA_LEFT);
 			sprintf(buf, "%.0f Hz", range);
 			TextOut(hdc, 4, ybase + 4, buf, strlen(buf));
+			SIZE tsize;
+			GetTextExtentPoint32(hdc, buf, strlen(buf), &tsize);
+			tsize.cx += 8;
+			if (tsize.cx>mTextWidth) mTextWidth = tsize.cx;
 			ybase += mChanHeight;
 
 			FastFill(hdc, 0, ybase-1, mChanWidth, ybase, RGB(0,128,96));
