@@ -1324,6 +1324,11 @@ void Dubber::InitOutputFile() {
 				VDLogAppMessage(kVDLogInfo, kVDST_Dub, 11);
 		}
 	}
+
+	if (mbDoAudio) {
+		if(audioStream->IsVBR())
+			VDLogAppMessage(kVDLogInfo, kVDST_Dub, 12);
+	}
 }
 
 void Dubber::InitDirectDraw() {

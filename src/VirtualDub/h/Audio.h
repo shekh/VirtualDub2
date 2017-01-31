@@ -170,6 +170,7 @@ public:
 	~AudioCompressor();
 	void CompensateForMP3();
 	bool IsVBR() const;
+	const VDFraction GetSampleRate() const;
 	long _Read(void *buffer, long samples, long *lplBytes);
 	sint64 GetLastPacketDuration(){ return lastPacketDuration; }
 	bool	isEnd();

@@ -449,7 +449,7 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 
 		VDPROFILEBEGIN("Audio-write");
 		while(totalSamples < count) {
-			while(mpAudioPipe->getLevel() < sizeof(int) + sizeof(sint64)) {
+			while(mpAudioPipe->getLevel() < mpAudioPipe->VBRPacketHeaderSize()) {
 				if (mpAudioPipe->isInputClosed()) {
 					mpAudioPipe->CloseOutput();
 					if (mpInterleaver)
@@ -467,9 +467,12 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 				VDPROFILEEND();
 			}
 
+			// VBRPacketHeader size
 			int sampleSize;
 			int tc = mpAudioPipe->ReadPartial(&sampleSize, sizeof(int));
 			VDASSERT(tc == sizeof(int));
+
+			// VBRPacketHeader duration
 			sint64 duration;
 			tc = mpAudioPipe->ReadPartial(&duration, sizeof(duration));
 			VDASSERT(tc == sizeof(duration));

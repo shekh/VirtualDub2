@@ -1450,18 +1450,18 @@ AudioCompressor::AudioCompressor(AudioStream *src, const VDWaveFormat *dst_forma
 
 	SetSource(src);
 
-	if (dst_format->mTag) {
-		VDWaveFormat *oFormat = AllocFormat(dst_format_len);
-		memcpy(oFormat, dst_format, dst_format_len);
-		mpCodec = VDCreateAudioCompressorW32((const VDWaveFormat *)iFormat, dst_format, pShortNameHint, true);
-		fVBR = false;
-	} else {
-		mpCodec = VDCreateAudioCompressorPlugin((const VDWaveFormat *)iFormat, pShortNameHint, config);
+	mpCodec = VDCreateAudioCompressorPlugin((const VDWaveFormat *)iFormat, pShortNameHint, config, false);
+	if (mpCodec) {
 		dst_format_len = mpCodec->GetOutputFormatSize();
 		VDWaveFormat *oFormat = AllocFormat(dst_format_len);
 		memcpy(oFormat, mpCodec->GetOutputFormat(), dst_format_len);
 		dst_format = oFormat;
 		fVBR = true;
+	} else {
+		VDWaveFormat *oFormat = AllocFormat(dst_format_len);
+		memcpy(oFormat, dst_format, dst_format_len);
+		mpCodec = VDCreateAudioCompressorW32((const VDWaveFormat *)iFormat, dst_format, pShortNameHint, true);
+		fVBR = false;
 	}
 
 	bytesPerInputSample = iFormat->mBlockSize;
@@ -1473,6 +1473,15 @@ AudioCompressor::AudioCompressor(AudioStream *src, const VDWaveFormat *dst_forma
 
 bool AudioCompressor::IsVBR() const {
 	return fVBR; 
+}
+
+const VDFraction AudioCompressor::GetSampleRate() const {
+	if (fVBR) {
+		VDWaveFormat* format = GetFormat();
+		return VDFraction(format->mSamplingRate,format->mBlockSize);
+	} else {
+		return AudioStream::GetSampleRate();
+	}
 }
 
 AudioCompressor::~AudioCompressor() {

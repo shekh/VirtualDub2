@@ -13,6 +13,7 @@ stringset 1 {		// kVDST_Dub
 	message 9, "Dub: Output (compression) format is: %hs.";
 	message 10, "Dub: Reducing video compression thread count to one because video compressor is using delta frame compression and the key frame interval is longer than one frame.";
 	message 11, "Dub: Smart rendering is enabled.";
+	message 12, "Dub: Audio is in VBR mode.";
 }
 
 stringset 2 {		// kVDST_AVIReadHandler

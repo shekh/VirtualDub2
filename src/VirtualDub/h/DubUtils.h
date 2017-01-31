@@ -155,6 +155,10 @@ public:
 		return mbVBRModeEnabled;
 	}
 
+	int VBRPacketHeaderSize() {
+		return sizeof(int)+sizeof(sint64); // size+duration
+	}
+
 	void Abort() {
 		msigRead.signal();
 		msigWrite.signal();

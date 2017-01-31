@@ -97,7 +97,7 @@ void VDDubIOThread::ThreadRun() {
 		minAudioBufferSpace = format->mBlockSize;
 
 		if (mpAudioPipe->IsVBRModeEnabled())
-			minAudioBufferSpace += 4;
+			minAudioBufferSpace += mpAudioPipe->VBRPacketHeaderSize();
 	}
 
 	bool waitingForAudioSpace = false;
@@ -394,7 +394,7 @@ bool VDDubIOThread::MainAddAudioFrame() {
 			if (mbAbort)
 				return false;
 
-			if (mpAudioPipe->getSpace() < blocksize + sizeof(int) + sizeof(sint64))
+			if (mpAudioPipe->getSpace() < blocksize + mpAudioPipe->VBRPacketHeaderSize())
 				break;
 
 			long actualBytes, actualSamples;
@@ -414,9 +414,11 @@ bool VDDubIOThread::MainAddAudioFrame() {
 			{
 				VDDubAutoThreadLocation loc(mpCurrentAction, "pushing audio data to processing thread");
 
+				// VBRPacketHeader size
 				if (!mpAudioPipe->Write(&sampleSize, sizeof(int), &mbAbort))
 					return false;
 
+				// VBRPacketHeader duration
 				if (!mpAudioPipe->Write(&duration, sizeof(duration), &mbAbort))
 					return false;
 

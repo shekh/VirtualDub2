@@ -49,6 +49,7 @@ void VDStreamInterleaver::Init(int streams) {
 
 void VDStreamInterleaver::InitStream(int stream, uint32 nSampleSize, sint32 nPreload, double nSamplesPerFrame, double nInterval, sint32 nMaxPush) {
 	VDASSERT(stream>=0 && stream<mStreams.size());
+	VDASSERT(nSamplesPerFrame>0);
 
 	Stream& streaminfo = mStreams[stream];
 

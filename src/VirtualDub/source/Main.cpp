@@ -385,24 +385,26 @@ void VDSaveVideoDialogW32::InitCodec() {
 		EnableWindow(GetDlgItem(mhdlg,IDC_AUDIO_INFO),false);
 	}
 
-	VDString aname = VDString("(None)");
+	VDStringW aname = VDStringW(L"(None)");
 	if (inputAudio) {
 		if (g_ACompressionFormat) {
-			aname = g_ACompressionFormatHint;
+			aname = VDTextU8ToW(g_ACompressionFormatHint);
+			IVDAudioEnc* driver = (IVDAudioEnc*)VDGetAudioEncByName(g_ACompressionFormatHint.c_str());
+			if (driver) aname = driver->GetName();
 		} else {
-			aname = VDString("No compression (PCM)");
+			aname = VDStringW(L"No compression (PCM)");
 		}
 		if (g_dubOpts.audio.mode==DubVideoOptions::M_NONE) {
 			const VDWaveFormat* fmt = inputAudio->getWaveFormat();
 			if (is_audio_pcm(fmt) || is_audio_float(fmt))
-				aname = VDString("No compression (PCM)");
+				aname = VDStringW(L"No compression (PCM)");
 			else
-				aname = VDString("(Stream copy)");
+				aname = VDStringW(L"(Stream copy)");
 			EnableWindow(GetDlgItem(mhdlg,IDC_COMPRESSION_CHANGE2),false);
 		}
 	}
 
-	SetDlgItemText(mhdlg,IDC_AUDIO_COMPRESSION,aname.c_str());
+	SetDlgItemTextW(mhdlg,IDC_AUDIO_COMPRESSION,aname.c_str());
 }
 
 void VDSaveVideoDialogW32::InitDubber() {

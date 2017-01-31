@@ -482,14 +482,15 @@ VDAudioEncPlugin::~VDAudioEncPlugin() {
 	VDUnlockPlugin(mpDesc);
 }
 
-IVDAudioCodec *VDCreateAudioCompressorPlugin(const VDWaveFormat *srcFormat, const char *pSignatureName, vdblock<char>& config) {
+IVDAudioCodec *VDCreateAudioCompressorPlugin(const VDWaveFormat *srcFormat, const char *pSignatureName, vdblock<char>& config, bool throwIfNotFound) {
 	VDAudioEncPlugin* driver = (VDAudioEncPlugin*)VDGetAudioEncByName(pSignatureName);
 	if (!driver) {
-		throw MyError(
+		if (throwIfNotFound) throw MyError(
 			"Error initializing audio stream compression:\n"
 			"Driver not found (%s).",
 			pSignatureName
 		);
+		return 0;
 	}
 
 	VDAudioPluginCodec* codec = driver->CreateCodec();

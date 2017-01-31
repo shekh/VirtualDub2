@@ -742,7 +742,6 @@
 #define IDC_THRESHOLD                   1329
 #define IDC_TWEAK_TIMER2                1330
 #define IDC_EVENTS                      1331
-#define IDC_DRIVER                      1332
 #define IDC_FORMATTAG                   1332
 #define IDC_FORMAT                      1333
 #define IDC_STATIC_FORMATID             1334
