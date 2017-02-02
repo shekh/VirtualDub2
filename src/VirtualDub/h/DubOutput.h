@@ -23,6 +23,7 @@
 #include <vd2/system/vdalloc.h>
 #include <vd2/Kasumi/pixmaputils.h>
 #include "AVIStripeSystem.h"
+#include <vd2/plugin/vdinputdriver.h>
 #include "fixes.h"
 
 class IVDMediaOutput;
@@ -33,9 +34,9 @@ class VDINTERFACE IVDDubberOutputSystem {
 public:
 	virtual IVDMediaOutput *CreateSegment() = 0;
 	virtual void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize = true) = 0;
-	virtual void SetVideo(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) = 0;
-	virtual void SetVideoImageLayout(const AVIStreamHeader_fixed& asi, const VDPixmapLayout& layout) = 0;
-	virtual void SetAudio(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat, bool bInterleaved, bool vbr) = 0;
+	virtual void SetVideo(const VDXStreamInfo& si, const void *pFormat, int cbFormat) = 0;
+	virtual void SetVideoImageLayout(const VDXStreamInfo& si, const VDPixmapLayout& layout) = 0;
+	virtual void SetAudio(const VDXStreamInfo& si, const void *pFormat, int cbFormat, bool bInterleaved, bool vbr) = 0;
 	virtual bool AcceptsVideo() = 0;
 	virtual bool AcceptsAudio() = 0;
 	virtual bool IsRealTime() = 0;
@@ -54,9 +55,9 @@ public:
 	VDDubberOutputSystem();
 	~VDDubberOutputSystem();
 
-	virtual void SetVideo(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat);
-	virtual void SetVideoImageLayout(const AVIStreamHeader_fixed& asi, const VDPixmapLayout& layout);
-	virtual void SetAudio(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat, bool bInterleaved, bool vbr);
+	virtual void SetVideo(const VDXStreamInfo& si, const void *pFormat, int cbFormat);
+	virtual void SetVideoImageLayout(const VDXStreamInfo& si, const VDPixmapLayout& layout);
+	virtual void SetAudio(const VDXStreamInfo& si, const void *pFormat, int cbFormat, bool bInterleaved, bool vbr);
 	virtual bool AcceptsVideo() { return false; }
 	virtual bool AcceptsAudio() { return false; }
 	virtual bool IsRealTime() { return false; }
@@ -70,10 +71,10 @@ public:
 	virtual bool IsNull() { return false; }
 
 protected:
-	AVIStreamHeader_fixed	mVideoStreamInfo;
+	VDXStreamInfo			mVideoStreamInfo;
 	vdfastvector<char>		mVideoFormat;
 	VDPixmapLayout			mVideoImageLayout;
-	AVIStreamHeader_fixed	mAudioStreamInfo;
+	VDXStreamInfo			mAudioStreamInfo;
 	vdfastvector<char>		mAudioFormat;
 	bool					mbAudioVBR;
 	bool					mbAudioInterleaved;
@@ -95,7 +96,7 @@ public:
 
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
-	void SetVideo(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat);
+	void SetVideo(const VDXStreamInfo& si, const void *pFormat, int cbFormat);
 	bool AcceptsVideo();
 	bool AcceptsAudio();
 	bool AreNullFramesAllowed() { return true; }
@@ -361,8 +362,8 @@ public:
 
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
-	void SetVideo(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat);
-	void SetAudio(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat, bool bInterleaved, bool vbr);
+	void SetVideo(const VDXStreamInfo& si, const void *pFormat, int cbFormat);
+	void SetAudio(const VDXStreamInfo& si, const void *pFormat, int cbFormat, bool bInterleaved, bool vbr);
 	bool AcceptsVideo();
 	bool AcceptsAudio();
 	bool AreNullFramesAllowed();

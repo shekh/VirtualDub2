@@ -51,8 +51,9 @@ AVIStripedAudioOutputStream::AVIStripedAudioOutputStream(AVIOutputStriped *pPare
 }
 
 void AVIStripedAudioOutputStream::write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples) {
-	mpParent->writeChunk(TRUE, flags, pBuffer, cbBuffer, streamInfo.dwLength, lSamples);
-	streamInfo.dwLength += lSamples;
+	VDXAVIStreamHeader& hdr = streamInfo.aviHeader;
+	mpParent->writeChunk(TRUE, flags, pBuffer, cbBuffer, hdr.dwLength, lSamples);
+	hdr.dwLength += lSamples;
 }
 
 ////////////////////////////////////
@@ -77,8 +78,9 @@ AVIStripedVideoOutputStream::AVIStripedVideoOutputStream(AVIOutputStriped *pPare
 }
 
 void AVIStripedVideoOutputStream::write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples) {
-	mpParent->writeChunk(FALSE, flags, pBuffer, cbBuffer, streamInfo.dwLength, lSamples);
-	streamInfo.dwLength += lSamples;
+	VDXAVIStreamHeader& hdr = streamInfo.aviHeader;
+	mpParent->writeChunk(FALSE, flags, pBuffer, cbBuffer, hdr.dwLength, lSamples);
+	hdr.dwLength += lSamples;
 }
 
 
@@ -188,7 +190,8 @@ bool AVIOutputStriped::init(const wchar_t *szFile) {
 				pStripeVideoOut->setFormat(videoOut->getFormat(), videoOut->getFormatLen());
 			}
 
-			AVIStreamHeader_fixed vhdr(videoOut->getStreamInfo());
+			VDXStreamInfo vsi(videoOut->getStreamInfo());
+			VDXAVIStreamHeader& vhdr = vsi.aviHeader;
 
 			if (sinfo->isIndex()) {
 				vhdr.fccHandler		= 'TSDV';
@@ -197,14 +200,15 @@ bool AVIOutputStriped::init(const wchar_t *szFile) {
 				index_file = stripe_files[i];
 			}
 
-			pStripeVideoOut->setStreamInfo(vhdr);
+			pStripeVideoOut->setStreamInfo(vsi);
 		}
 		if (audioOut && (sinfo->isAudio() || sinfo->isIndex())) {
 			IVDMediaOutputStream *pStripeAudioOut = pOutput->createAudioStream();
 
 			pStripeAudioOut->setFormat(audioOut->getFormat(), audioOut->getFormatLen());
 
-			AVIStreamHeader_fixed ahdr(audioOut->getStreamInfo());
+			VDXStreamInfo asi(audioOut->getStreamInfo());
+			VDXAVIStreamHeader& ahdr = asi.aviHeader;
 
 			if (!sinfo->isAudio()) {
 				ahdr.fccType		= 'idua';
@@ -214,7 +218,7 @@ bool AVIOutputStriped::init(const wchar_t *szFile) {
 				index_file = stripe_files[i];
 			}
 
-			pStripeAudioOut->setStreamInfo(ahdr);
+			pStripeAudioOut->setStreamInfo(asi);
 		}
 
 		stripe_files[i]->disable_os_caching();

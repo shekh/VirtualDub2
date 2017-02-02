@@ -18,6 +18,11 @@
 #ifndef f_FIXES_H
 #define f_FIXES_H
 
+#include <vd2/plugin/vdinputdriver.h>
+
+typedef VDXAVIStreamHeader AVIStreamHeader_fixed;
+
+/*
 struct AVIStreamHeader_fixed{
     uint32		fccType;
     uint32		fccHandler;
@@ -39,5 +44,6 @@ struct AVIStreamHeader_fixed{
 		sint16	bottom;
 	} rcFrame;
 };
+*/
 
 #endif

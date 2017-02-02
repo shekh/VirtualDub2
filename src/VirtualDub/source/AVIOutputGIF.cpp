@@ -884,6 +884,7 @@ void AVIVideoGIFOutputStream::FlushFrame() {
 	if (mFrameData.empty())
 		return;
 
+	const VDXAVIStreamHeader& streamInfo = this->streamInfo.aviHeader;
 	// compute timestamp for this frame in centiseconds
 	double frameToTicksFactor = (double)streamInfo.dwScale / (double)streamInfo.dwRate * 100.0;
 	uint32 timestamp = VDRoundToInt32((sint32)mFrameCount * frameToTicksFactor);

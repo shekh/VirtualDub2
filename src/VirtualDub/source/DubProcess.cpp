@@ -621,9 +621,10 @@ void VDDubProcessThread::UpdateAudioStreamRate() {
 
 	mpAudioOut->setFormat(&*wfex, wfex.size());
 
-	AVIStreamHeader_fixed hdr(mpAudioOut->getStreamInfo());
+	VDXStreamInfo si(mpAudioOut->getStreamInfo());
+	VDXAVIStreamHeader& hdr = si.aviHeader;
 	hdr.dwRate = wfex->nAvgBytesPerSec * hdr.dwScale;
-	mpAudioOut->updateStreamInfo(hdr);
+	mpAudioOut->updateStreamInfo(si);
 }
 
 void VDDubProcessThread::OnVideoStreamEnded() {

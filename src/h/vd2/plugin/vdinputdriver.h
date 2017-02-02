@@ -339,7 +339,49 @@ enum VDXVideoStreamType {
 	kVDXST_Data,
 };
 
-struct AVIStreamHeader_fixed;
+struct VDXAVIStreamHeader {
+	uint32		fccType;
+	uint32		fccHandler;
+	uint32		dwFlags;
+	uint16		wPriority;
+	uint16		wLanguage;
+	uint32		dwInitialFrames;
+	uint32		dwScale;	
+	uint32		dwRate;
+	uint32		dwStart;
+	uint32		dwLength;
+	uint32		dwSuggestedBufferSize;
+	uint32		dwQuality;
+	uint32		dwSampleSize;
+	struct {
+		sint16	left;
+		sint16	top;
+		sint16	right;
+		sint16	bottom;
+	} rcFrame;
+};
+
+struct VDXStreamInfo {
+	VDXAVIStreamHeader aviHeader;
+
+	int avcodec_version; // LIBAVCODEC_VERSION_INT
+
+	// fields bellow correspond to AVCodecParameters
+	// audio only
+	int frame_size;
+	int block_align;
+	int initial_padding;
+	int trailing_padding;
+
+	VDXStreamInfo() {
+		memset(&aviHeader,0,sizeof(aviHeader));
+		avcodec_version = 0;
+		frame_size = 0;
+		block_align = 0;
+		initial_padding = 0;
+		trailing_padding = 0;
+	}
+};
 
 class IVDXOutputFile : public IVDXUnknown {
 public:
@@ -356,8 +398,8 @@ public:
 
 	virtual void	VDXAPIENTRY Init(const wchar_t *path, const char* format) = 0;
 	virtual uint32 VDXAPIENTRY CreateStream(int type) = 0;
-	virtual void VDXAPIENTRY SetVideo(uint32 index, const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) = 0;
-	virtual void VDXAPIENTRY SetAudio(uint32 index, const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) = 0;
+	virtual void VDXAPIENTRY SetVideo(uint32 index, const VDXStreamInfo& si, const void *pFormat, int cbFormat) = 0;
+	virtual void VDXAPIENTRY SetAudio(uint32 index, const VDXStreamInfo& si, const void *pFormat, int cbFormat) = 0;
 	virtual void VDXAPIENTRY Write(uint32 index, const void *pBuffer, uint32 cbBuffer, PacketInfo& info) = 0;
 	virtual void Finalize() = 0;
 };
@@ -413,6 +455,7 @@ public:
 	virtual unsigned	GetOutputLevel() const = 0;
 	virtual const VDXWAVEFORMATEX *GetOutputFormat() const = 0;
 	virtual unsigned	GetOutputFormatSize() const = 0;
+	virtual void		GetStreamInfo(VDXStreamInfo& si) const = 0;
 
 	virtual void		Restart() = 0;
 	virtual bool		Convert(bool flush, bool requireOutput) = 0;

@@ -132,7 +132,8 @@ void VDCreateTestPal8Video(VDGUIHandle h) {
 		const VDPixmap& pxsrc = pVS->getTargetFormat();
 		const uint32 rowbytes = (pxsrc.w+3) & ~3;
 
-		AVIStreamHeader_fixed hdr;
+		VDXStreamInfo si;
+		VDXAVIStreamHeader& hdr = si.aviHeader;
 
 		hdr.fccType		= 'sdiv';
 		hdr.fccHandler	= 0;
@@ -152,7 +153,7 @@ void VDCreateTestPal8Video(VDGUIHandle h) {
 		hdr.rcFrame.right	= (short)pxsrc.w;
 		hdr.rcFrame.bottom	= (short)pxsrc.h;
 
-		pVSOut->setStreamInfo(hdr);
+		pVSOut->setStreamInfo(si);
 
 		vdstructex<BITMAPINFOHEADER> bih;
 

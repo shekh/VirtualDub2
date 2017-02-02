@@ -61,19 +61,19 @@ VDDubberOutputSystem::VDDubberOutputSystem()
 VDDubberOutputSystem::~VDDubberOutputSystem() {
 }
 
-void VDDubberOutputSystem::SetVideo(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) {
-	mVideoStreamInfo = asi;
+void VDDubberOutputSystem::SetVideo(const VDXStreamInfo& si, const void *pFormat, int cbFormat) {
+	mVideoStreamInfo = si;
 	mVideoFormat.resize(cbFormat);
 	memcpy(&mVideoFormat[0], pFormat, cbFormat);
 }
 
-void VDDubberOutputSystem::SetVideoImageLayout(const AVIStreamHeader_fixed& asi, const VDPixmapLayout& layout) {
-	mVideoStreamInfo = asi;
+void VDDubberOutputSystem::SetVideoImageLayout(const VDXStreamInfo& si, const VDPixmapLayout& layout) {
+	mVideoStreamInfo = si;
 	mVideoImageLayout = layout;
 }
 
-void VDDubberOutputSystem::SetAudio(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat, bool bInterleaved, bool vbr) {
-	mAudioStreamInfo = asi;
+void VDDubberOutputSystem::SetAudio(const VDXStreamInfo& si, const void *pFormat, int cbFormat, bool bInterleaved, bool vbr) {
+	mAudioStreamInfo = si;
 	mAudioFormat.resize(cbFormat);
 	mbAudioVBR = vbr;
 	mbAudioInterleaved = bInterleaved;
@@ -207,8 +207,8 @@ void VDAVIOutputFileSystem::SetFilenamePattern(const wchar_t *pszFilename, const
 	mSegmentDigits		= nMinimumDigits;
 }
 
-void VDAVIOutputFileSystem::SetVideo(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) {
-	VDDubberOutputSystem::SetVideo(asi, pFormat, cbFormat);
+void VDAVIOutputFileSystem::SetVideo(const VDXStreamInfo& si, const void *pFormat, int cbFormat) {
+	VDDubberOutputSystem::SetVideo(si, pFormat, cbFormat);
 
 	if (uint32 alignmentThreshold = VDPreferencesGetAVIAlignmentThreshold()) {
 		const BITMAPINFOHEADER& bih = *(const BITMAPINFOHEADER *)pFormat;
@@ -803,13 +803,14 @@ int VDAVIOutputAPNGSystem::GetVideoOutputFormatOverride(int last_format) {
 IVDMediaOutput *VDAVIOutputAPNGSystem::CreateSegment() {
 	vdautoptr<IVDAVIOutputAPNG> pOutput(VDCreateAVIOutputAPNG());
 
-    pOutput->SetFramesCount(mVideoStreamInfo.dwLength);
+	const VDXAVIStreamHeader& hdr = mVideoStreamInfo.aviHeader;
+    pOutput->SetFramesCount(hdr.dwLength);
 	pOutput->SetLoopCount(mLoopCount);
 	pOutput->SetAlpha(mAlpha);
 	pOutput->SetGrayscale(mGrayscale);
 
-    uint32 dwRate  = mVideoStreamInfo.dwRate;
-    uint32 dwScale = mVideoStreamInfo.dwScale;
+    uint32 dwRate  = hdr.dwRate;
+    uint32 dwScale = hdr.dwScale;
 
     while ((dwRate>30000) || (dwScale>30000))
     {
@@ -945,9 +946,10 @@ VDAVIOutputSegmentedSystem::~VDAVIOutputSegmentedSystem() {
 
 IVDMediaOutput *VDAVIOutputSegmentedSystem::CreateSegment() {
 	double interval = mInterval;
+	const VDXAVIStreamHeader& hdr = mVideoStreamInfo.aviHeader;
 
 	if (mbIntervalIsSeconds) {
-		interval *= (double)mVideoStreamInfo.dwRate / (double)mVideoStreamInfo.dwScale;
+		interval *= (double)hdr.dwRate / (double)hdr.dwScale;
 		if (interval < 1.0)
 			interval = 1.0;
 	}
@@ -976,14 +978,14 @@ void VDAVIOutputSegmentedSystem::CloseSegment(IVDMediaOutput *pSegment, bool bLa
 	pSegment2->finalize();
 }
 
-void VDAVIOutputSegmentedSystem::SetVideo(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat) {
-	VDDubberOutputSystem::SetVideo(asi, pFormat, cbFormat);
-	mpChildSystem->SetVideo(asi, pFormat, cbFormat);
+void VDAVIOutputSegmentedSystem::SetVideo(const VDXStreamInfo& si, const void *pFormat, int cbFormat) {
+	VDDubberOutputSystem::SetVideo(si, pFormat, cbFormat);
+	mpChildSystem->SetVideo(si, pFormat, cbFormat);
 }
 
-void VDAVIOutputSegmentedSystem::SetAudio(const AVIStreamHeader_fixed& asi, const void *pFormat, int cbFormat, bool bInterleaved, bool vbr) {
-	VDDubberOutputSystem::SetAudio(asi, pFormat, cbFormat, bInterleaved, vbr);
-	mpChildSystem->SetAudio(asi, pFormat, cbFormat, bInterleaved, vbr);
+void VDAVIOutputSegmentedSystem::SetAudio(const VDXStreamInfo& si, const void *pFormat, int cbFormat, bool bInterleaved, bool vbr) {
+	VDDubberOutputSystem::SetAudio(si, pFormat, cbFormat, bInterleaved, vbr);
+	mpChildSystem->SetAudio(si, pFormat, cbFormat, bInterleaved, vbr);
 }
 
 bool VDAVIOutputSegmentedSystem::AcceptsVideo() {

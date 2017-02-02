@@ -116,6 +116,7 @@ void AVIVideoFLMOutputStream::init() {
 
 void AVIVideoFLMOutputStream::finalize() {
 	FilmstripHeader hdr;
+	const VDXAVIStreamHeader& streamInfo = this->streamInfo.aviHeader;
 
 	hdr.signature		= 0x52616e64;
 	hdr.numFrames		= mFrameCount;

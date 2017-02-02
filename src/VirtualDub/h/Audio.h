@@ -61,6 +61,7 @@ public:
 	virtual sint64 GetLength() const;
 	virtual const VDFraction GetSampleRate() const;
 	virtual bool IsVBR() const = 0;
+	virtual void GetStreamInfo(VDXStreamInfo& si) const {}
 
 	virtual long _Read(void *buffer, long max_samples, long *lplBytes);
 	virtual long Read(void *buffer, long max_samples, long *lplBytes);
@@ -170,6 +171,7 @@ public:
 	~AudioCompressor();
 	void CompensateForMP3();
 	bool IsVBR() const;
+	void GetStreamInfo(VDXStreamInfo& si) const;
 	const VDFraction GetSampleRate() const;
 	long _Read(void *buffer, long samples, long *lplBytes);
 	sint64 GetLastPacketDuration(){ return lastPacketDuration; }
@@ -203,10 +205,12 @@ public:
 	const VDFraction GetSampleRate() const;
 
 	bool IsVBR() const { return source->IsVBR(); }
+	void GetStreamInfo(VDXStreamInfo& si) const { source->GetStreamInfo(si); }
+	sint64 GetLastPacketDuration(){ return source->GetLastPacketDuration(); }
+
 	long _Read(void *buffer, long max_samples, long *lplBytes);
 	bool _isEnd();
 	bool Skip(sint64);
-	sint64 GetLastPacketDuration(){ return source->GetLastPacketDuration(); }
 };
 
 class AudioSubset : public AudioStream {

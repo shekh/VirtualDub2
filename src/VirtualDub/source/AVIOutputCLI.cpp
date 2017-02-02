@@ -650,9 +650,9 @@ public:
 	virtual int		getFormatLen();
 	virtual void	setFormat(const void *pFormat, int len);
 
-	virtual const AVIStreamHeader_fixed& getStreamInfo();
-	virtual void	setStreamInfo(const AVIStreamHeader_fixed& hdr);
-	virtual void	updateStreamInfo(const AVIStreamHeader_fixed& hdr);
+	virtual const VDXStreamInfo& getStreamInfo();
+	virtual void	setStreamInfo(const VDXStreamInfo& hdr);
+	virtual void	updateStreamInfo(const VDXStreamInfo& hdr);
 
 	virtual void	write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples);
 	virtual void	write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples, FilterModPixmapInfo* info);
@@ -702,15 +702,15 @@ void VDMediaOutputStreamProxy::setFormat(const void *pFormat, int len) {
 	return mpStream->setFormat(pFormat, len);
 }
 
-const AVIStreamHeader_fixed& VDMediaOutputStreamProxy::getStreamInfo() {
+const VDXStreamInfo& VDMediaOutputStreamProxy::getStreamInfo() {
 	return mpStream->getStreamInfo();
 }
 
-void VDMediaOutputStreamProxy::setStreamInfo(const AVIStreamHeader_fixed& hdr) {
+void VDMediaOutputStreamProxy::setStreamInfo(const VDXStreamInfo& hdr) {
 	mpStream->setStreamInfo(hdr);
 }
 
-void VDMediaOutputStreamProxy::updateStreamInfo(const AVIStreamHeader_fixed& hdr) {
+void VDMediaOutputStreamProxy::updateStreamInfo(const VDXStreamInfo& hdr) {
 	try {
 		mpStream->updateStreamInfo(hdr);
 	} catch(const MyError& e) {
@@ -1001,7 +1001,7 @@ bool AVIOutputCLI::init(const wchar_t *pwszFile) {
 
 		mpVideoOutput->init(mVideoPipe.GetInput());
 
-		const AVIStreamHeader_fixed& hdr = videoOut->getStreamInfo();
+		const VDXAVIStreamHeader& hdr = videoOut->getStreamInfo().aviHeader;
 
 		mFrameRate = VDFraction(hdr.dwRate, hdr.dwScale);
 

@@ -1912,7 +1912,8 @@ unknown_PCM_format:
 		if (!fTest) {
 			// setup stream headers
 
-			AVIStreamHeader_fixed vstrhdr={0};
+			VDXStreamInfo vsi;
+			VDXAVIStreamHeader& vstrhdr = vsi.aviHeader;
 
 			vstrhdr.fccType					= streamtypeVIDEO;
 			vstrhdr.fccHandler				= bmiToFile->biCompression;
@@ -1933,10 +1934,11 @@ unknown_PCM_format:
 			vstrhdr.rcFrame.bottom			= (short)abs(bmiToFile->biHeight);
 
 			icd.mpVideoOut->setFormat(bmiToFile, biSizeToFile);
-			icd.mpVideoOut->setStreamInfo(vstrhdr);
+			icd.mpVideoOut->setStreamInfo(vsi);
 
 			if (bCaptureAudio) {
-				AVIStreamHeader_fixed astrhdr={0};
+				VDXStreamInfo asi;
+				VDXAVIStreamHeader& astrhdr = asi.aviHeader;
 				astrhdr.fccType				= streamtypeAUDIO;
 				astrhdr.fccHandler			= 0;
 				astrhdr.dwScale				= wfexOutput->mBlockSize;
@@ -1945,7 +1947,7 @@ unknown_PCM_format:
 				astrhdr.dwSampleSize		= wfexOutput->mBlockSize; 
 
 				icd.mpAudioOut->setFormat(wfexOutput.data(), wfexOutput.size());
-				icd.mpAudioOut->setStreamInfo(astrhdr);
+				icd.mpAudioOut->setStreamInfo(asi);
 			}
 		}
 

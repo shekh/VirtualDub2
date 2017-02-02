@@ -1475,6 +1475,10 @@ bool AudioCompressor::IsVBR() const {
 	return fVBR; 
 }
 
+void AudioCompressor::GetStreamInfo(VDXStreamInfo& si) const {
+	if (mpCodec) mpCodec->GetStreamInfo(si);
+}
+
 const VDFraction AudioCompressor::GetSampleRate() const {
 	if (fVBR) {
 		VDWaveFormat* format = GetFormat();

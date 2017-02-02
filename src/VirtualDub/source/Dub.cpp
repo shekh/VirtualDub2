@@ -196,7 +196,7 @@ static const int g_iPriorities[][2]={
 };
 
 /////////////////////////////////////////////////
-void AVISTREAMINFOtoAVIStreamHeader(AVIStreamHeader_fixed *dest, const VDAVIStreamInfo *src) {
+void AVISTREAMINFOtoAVIStreamHeader(VDXAVIStreamHeader *dest, const VDAVIStreamInfo *src) {
 	dest->fccType			= src->fccType;
 	dest->fccHandler		= src->fccHandler;
 	dest->dwFlags			= 0;
@@ -1016,7 +1016,8 @@ void Dubber::InitOutputFile() {
 	if (mbDoAudio) {
 		// initialize AVI parameters...
 
-		AVIStreamHeader_fixed	hdr;
+		VDXStreamInfo si;
+		VDXAVIStreamHeader& hdr = si.aviHeader;
 
 		AVISTREAMINFOtoAVIStreamHeader(&hdr, &aSrc->getStreamInfo());
 		hdr.dwStart			= 0;
@@ -1029,7 +1030,9 @@ void Dubber::InitOutputFile() {
 			hdr.dwLength		= MulDiv(hdr.dwLength, outputAudioFormat->mSamplingRate, aSrc->getWaveFormat()->mSamplingRate);
 		}
 
-		mpOutputSystem->SetAudio(hdr, audioStream->GetFormat(), audioStream->GetFormatLen(), mOptions.audio.enabled, audioStream->IsVBR());
+		audioStream->GetStreamInfo(si);
+
+		mpOutputSystem->SetAudio(si, audioStream->GetFormat(), audioStream->GetFormatLen(), mOptions.audio.enabled, audioStream->IsVBR());
 	}
 
 	// Do video.
@@ -1050,7 +1053,8 @@ void Dubber::InitOutputFile() {
 			outputHeight = output.h;
 		}
 
-		AVIStreamHeader_fixed hdr;
+		VDXStreamInfo si;
+		VDXAVIStreamHeader& hdr = si.aviHeader;
 
 		AVISTREAMINFOtoAVIStreamHeader(&hdr, &vSrc->asStream()->getStreamInfo());
 
@@ -1292,14 +1296,14 @@ void Dubber::InitOutputFile() {
 		}
 
 		if (outputLayout.format && mpOutputSystem->IsVideoImageOutputEnabled()) {
-			mpOutputSystem->SetVideoImageLayout(hdr, outputLayout);
+			mpOutputSystem->SetVideoImageLayout(si, outputLayout);
 		} else {
 			if (!fPreview) {
 				if (mpOutputSystem->IsVideoImageOutputRequired() || outputFormat.empty())
 					throw MyError("The current output video format is not supported by the selected output path.");
 			}
 
-			mpOutputSystem->SetVideo(hdr, &*outputFormat, outputFormat.size());
+			mpOutputSystem->SetVideo(si, &*outputFormat, outputFormat.size());
 		}
 
 		{

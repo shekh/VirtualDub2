@@ -41,9 +41,9 @@ public:
 	virtual int		getFormatLen() = 0;
 	virtual void	setFormat(const void *pFormat, int len) = 0;
 
-	virtual const AVIStreamHeader_fixed& getStreamInfo() = 0;
-	virtual void	setStreamInfo(const AVIStreamHeader_fixed& hdr) = 0;
-	virtual void	updateStreamInfo(const AVIStreamHeader_fixed& hdr) = 0;
+	virtual const VDXStreamInfo& getStreamInfo() = 0;
+	virtual void	setStreamInfo(const VDXStreamInfo& hdr) = 0;
+	virtual void	updateStreamInfo(const VDXStreamInfo& hdr) = 0;
 
 	enum {
 		kFlagKeyFrame = 0x10		// clone of AVIIF_KEYFRAME
@@ -76,7 +76,7 @@ private:
 	vdfastvector<char>	mFormat;
 
 protected:
-	AVIStreamHeader_fixed		streamInfo;
+	VDXStreamInfo		streamInfo;
 
 public:
 	AVIOutputStream();
@@ -92,17 +92,17 @@ public:
 	virtual void *getFormat() { return mFormat.data(); }
 	virtual int getFormatLen() { return mFormat.size(); }
 
-	virtual const AVIStreamHeader_fixed& getStreamInfo() {
+	virtual const VDXStreamInfo& getStreamInfo() {
 		return streamInfo;
 	}
 
-	virtual void setStreamInfo(const AVIStreamHeader_fixed& hdr) {
+	virtual void setStreamInfo(const VDXStreamInfo& hdr) {
 		streamInfo = hdr;
-		streamInfo.dwLength = 0;
-		streamInfo.dwSuggestedBufferSize = 0;
+		streamInfo.aviHeader.dwLength = 0;
+		streamInfo.aviHeader.dwSuggestedBufferSize = 0;
 	}
 
-	virtual void updateStreamInfo(const AVIStreamHeader_fixed& hdr) {
+	virtual void updateStreamInfo(const VDXStreamInfo& hdr) {
 		streamInfo = hdr;
 	}
 

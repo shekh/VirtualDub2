@@ -395,6 +395,10 @@ public:
 		return plugin->GetOutputFormatSize();
 	}
 
+	virtual void GetStreamInfo(VDXStreamInfo& si) const {
+		plugin->GetStreamInfo(si);
+	}
+
 	virtual void		Restart(){}
 	virtual bool		Convert(bool flush, bool requireOutput){
 		return plugin->Convert(flush,requireOutput);

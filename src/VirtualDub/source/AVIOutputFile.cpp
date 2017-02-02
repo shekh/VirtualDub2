@@ -316,6 +316,7 @@ void AVIOutputFileStream::partialWriteBegin(uint32 flags, uint32 bytes, uint32 s
 	// ActiveMovie/WMP requires a non-zero dwSuggestedBufferSize for
 	// hierarchial indexing.  So we continually bump it up to the
 	// largest chunk size.
+	VDXAVIStreamHeader& streamInfo = this->streamInfo.aviHeader;
 
 	if (streamInfo.dwSuggestedBufferSize < bytes)
 		streamInfo.dwSuggestedBufferSize = bytes;
@@ -550,7 +551,7 @@ bool AVIOutputFile::init(const wchar_t *szFile) {
 	mAVIHeader.dwHeight					= 0;
 
 	if (mpFirstVideoStream) {
-		const AVIStreamHeader_fixed& vhdr = mpFirstVideoStream->getStreamInfo();
+		const VDXAVIStreamHeader& vhdr = mpFirstVideoStream->getStreamInfo().aviHeader;
 		const BITMAPINFOHEADER *pVF = (const BITMAPINFOHEADER *)mpFirstVideoStream->getFormat();
 		mAVIHeader.dwMicroSecPerFrame		= (uint32)((vhdr.dwScale * (uint64)1000000U) / vhdr.dwRate);
 		mAVIHeader.dwWidth					= pVF->biWidth;
@@ -718,7 +719,7 @@ void AVIOutputFile::finalize() {
 	if (mbExtendedAVI) {
 		if (mpFirstVideoStream) {
 			HeaderSeek(mAVI2HeaderPos+8);
-			dw = mpFirstVideoStream->getStreamInfo().dwLength;
+			dw = mpFirstVideoStream->getStreamInfo().aviHeader.dwLength;
 			HeaderWrite(&dw, 4);
 		}
 
@@ -756,7 +757,7 @@ void AVIOutputFile::finalize() {
 		tStreams::iterator it(mStreams.begin()), itEnd(mStreams.end());
 		for(; it!=itEnd; ++it) {
 			const StreamInfo& stream = *it;
-			const AVIStreamHeader_fixed& hdr = stream.mpStream->getStreamInfo();
+			const VDXAVIStreamHeader& hdr = stream.mpStream->getStreamInfo().aviHeader;
 
 			if (hdr.fccType == VDMAKEFOURCC('v', 'i', 'd', 's')) {
 				if (stream.mChunkCount && hdr.dwScale && stream.mChunkCount)
@@ -1062,7 +1063,7 @@ void AVIOutputFile::BlockClose() {
 
 	if (!mBlock) {
 		if (mpFirstVideoStream)
-			mAVIHeader.dwTotalFrames = mpFirstVideoStream->getStreamInfo().dwLength;
+			mAVIHeader.dwTotalFrames = mpFirstVideoStream->getStreamInfo().aviHeader.dwLength;
 
 		WriteIndexAVI1();
 
@@ -1287,7 +1288,7 @@ index_complete:
 	
 	// Write out the actual index blocks.
 	const uint32 chunkID = stream.mChunkID;
-	const uint32 dwSampleSize = stream.mpStream->getStreamInfo().dwSampleSize;
+	const uint32 dwSampleSize = stream.mpStream->getStreamInfo().aviHeader.dwSampleSize;
 
 	memset(asie, 0, sizeof(_avisuperindex_entry)*mSuperIndexLimit);
 

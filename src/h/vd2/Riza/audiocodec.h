@@ -31,6 +31,8 @@
 	#pragma pack(push, 2)
 #endif
 
+struct VDXStreamInfo;
+
 struct VDWaveFormat {
 	enum {
 		kTagPCM			= 1,
@@ -65,6 +67,7 @@ public:
 	virtual unsigned	GetOutputLevel() const = 0;
 	virtual const VDWaveFormat *GetOutputFormat() const = 0;
 	virtual unsigned	GetOutputFormatSize() const = 0;
+	virtual void		GetStreamInfo(VDXStreamInfo& si) const {}
 
 	virtual void		Restart() = 0;
 	virtual bool		Convert(bool flush, bool requireOutput) = 0;

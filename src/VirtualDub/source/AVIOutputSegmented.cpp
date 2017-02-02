@@ -214,7 +214,7 @@ public:
 
 	VDAVIOutputSegmentedStream();
 
-	void setStreamInfo(const AVIStreamHeader_fixed& hdr);
+	void setStreamInfo(const VDXStreamInfo& hdr);
 
 	virtual bool IsEnded() = 0;
 	virtual void CloseSegmentStream() = 0;
@@ -238,8 +238,9 @@ VDAVIOutputSegmentedStream::VDAVIOutputSegmentedStream()
 {
 }
 
-void VDAVIOutputSegmentedStream::setStreamInfo(const AVIStreamHeader_fixed& hdr) {
-	AVIOutputStream::setStreamInfo(hdr);
+void VDAVIOutputSegmentedStream::setStreamInfo(const VDXStreamInfo& si) {
+	AVIOutputStream::setStreamInfo(si);
+	const VDXAVIStreamHeader& hdr = si.aviHeader;
 
 	mSampleRate = (double)hdr.dwRate / (double)hdr.dwScale;
 	mInvSampleRate = (double)hdr.dwScale / (double)hdr.dwRate;
@@ -996,8 +997,8 @@ void VDAVIOutputSegmented::ReinitInterleaver() {
 		mStreamInterleaver.EnableInterleaving(true);
 		mStreamInterleaver.InitStream(0, 0, 0, 1, 1, 1);
 		const VDWaveFormat& wfex = *(const VDWaveFormat *)mpFirstAudioStream->getFormat();
-		const AVIStreamHeader_fixed& hdr = mpFirstVideoStream->getStreamInfo();
-		const AVIStreamHeader_fixed& hdra = mpFirstAudioStream->getStreamInfo();
+		const VDXAVIStreamHeader& hdr = mpFirstVideoStream->getStreamInfo().aviHeader;
+		const VDXAVIStreamHeader& hdra = mpFirstAudioStream->getStreamInfo().aviHeader;
 		double samplesPerSecond = (double)hdra.dwRate / (double)hdra.dwScale;
 		double invFrameRate = (double)hdr.dwScale / (double)hdr.dwRate;
 		sint32 preloadSamples = VDRoundToInt32(mAudioPreload * samplesPerSecond);
@@ -1075,8 +1076,8 @@ void VDAVIOutputSegmented::GetNextPreferredStreamWrite(int& stream, sint32& coun
 	}
 
 	if (stream) {
-		const AVIStreamHeader_fixed& vhdr = mpFirstVideoStream->getStreamInfo();
-		const AVIStreamHeader_fixed& ahdr = mpFirstAudioStream->getStreamInfo();
+		const VDXAVIStreamHeader& vhdr = mpFirstVideoStream->getStreamInfo().aviHeader;
+		const VDXAVIStreamHeader& ahdr = mpFirstAudioStream->getStreamInfo().aviHeader;
 
 		count = VDRoundToInt32(
 			((double)ahdr.dwRate / (double)ahdr.dwScale) *
