@@ -177,6 +177,8 @@ public:
 	sint64 GetLastPacketDuration(){ return lastPacketDuration; }
 	bool	isEnd();
 
+	bool fNoCorrectLayer3;
+
 protected:
 	bool Process();
 };

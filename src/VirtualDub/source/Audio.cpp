@@ -1457,11 +1457,13 @@ AudioCompressor::AudioCompressor(AudioStream *src, const VDWaveFormat *dst_forma
 		memcpy(oFormat, mpCodec->GetOutputFormat(), dst_format_len);
 		dst_format = oFormat;
 		fVBR = true;
+		fNoCorrectLayer3 = true;
 	} else {
 		VDWaveFormat *oFormat = AllocFormat(dst_format_len);
 		memcpy(oFormat, dst_format, dst_format_len);
 		mpCodec = VDCreateAudioCompressorW32((const VDWaveFormat *)iFormat, dst_format, pShortNameHint, true);
 		fVBR = false;
+		fNoCorrectLayer3 = false;
 	}
 
 	bytesPerInputSample = iFormat->mBlockSize;

@@ -34,6 +34,7 @@
 #include "AVIOutputSegmented.h"
 #include "AVIOutputCLI.h"
 #include "ExternalEncoderProfile.h"
+#include "dub.h"
 
 ///////////////////////////////////////////
 
@@ -349,6 +350,14 @@ VDAVIOutputPluginSystem::~VDAVIOutputPluginSystem() {
 
 void VDAVIOutputPluginSystem::SetTextInfo(const std::list<std::pair<uint32, VDStringA> >& info) {
 	mTextInfo = info;
+}
+
+bool VDAVIOutputPluginSystem::GetInterleavingOverride(DubAudioOptions& opt) {
+	opt.interval = 1;
+	opt.is_ms = false;
+	opt.offset = 0; // TODO: implement this
+	opt.preload = 0;
+	return true;
 }
 
 IVDMediaOutput *VDAVIOutputPluginSystem::CreateSegment() {

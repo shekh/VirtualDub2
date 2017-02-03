@@ -997,7 +997,7 @@ void Dubber::InitAudioConversionChain() {
 	// Check the output format, and if we're compressing to
 	// MPEG Layer III, compensate for the lag and create a bitrate corrector
 
-	if (!g_prefs.fNoCorrectLayer3 && pCompressor && pCompressor->GetFormat()->mTag == WAVE_FORMAT_MPEGLAYER3) {
+	if (!g_prefs.fNoCorrectLayer3 && pCompressor && !pCompressor->fNoCorrectLayer3 && pCompressor->GetFormat()->mTag == WAVE_FORMAT_MPEGLAYER3) {
 		pCompressor->CompensateForMP3();
 
 		if (!(audioCorrector = new_nothrow AudioStreamL3Corrector(audioStream)))
@@ -1543,6 +1543,8 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 		mAudioCompressionFormat.clear();
 		mAudioCompressionFormatHint.clear();
 	}
+
+	pOutputSystem->GetInterleavingOverride(mOptions.audio);
 
 	// begin init
 	mAudioSources.assign(pAudioSources, pAudioSources + nAudioSources);

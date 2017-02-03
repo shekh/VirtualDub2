@@ -29,6 +29,7 @@
 class IVDMediaOutput;
 class VDExtEncProfile;
 class IVDOutputDriver;
+class DubAudioOptions;
 
 class VDINTERFACE IVDDubberOutputSystem {
 public:
@@ -47,6 +48,7 @@ public:
 	virtual int GetVideoOutputFormatOverride(int last_format) = 0;
 
 	virtual bool IsCompressedAudioAllowed() = 0;
+	virtual bool GetInterleavingOverride(DubAudioOptions& opt) = 0;
 	virtual bool IsNull() = 0;
 };
 
@@ -68,6 +70,7 @@ public:
 	virtual int GetVideoOutputFormatOverride(int last_format) { return 0; }
 
 	virtual bool IsCompressedAudioAllowed() { return true; }
+	virtual bool GetInterleavingOverride(DubAudioOptions& opt) { return false; }
 	virtual bool IsNull() { return false; }
 
 protected:
@@ -163,6 +166,7 @@ public:
 	bool AcceptsAudio() { return true; }
 	bool IsVideoCompressionEnabled() { return true; }
 	bool AreNullFramesAllowed() { return true; }
+	bool GetInterleavingOverride(DubAudioOptions& opt);
 	void SetTextInfo(const std::list<std::pair<uint32, VDStringA> >& info);
 	void SetDriver(IVDOutputDriver* driver, const char* format) {
 		this->driver = driver;
