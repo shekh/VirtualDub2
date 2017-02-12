@@ -139,6 +139,7 @@ BEGIN
         MENUITEM "Status bar",                  ID_VIEW_STATUSBAR
         MENUITEM "Curve editor",                ID_VIEW_CURVEEDITOR
         MENUITEM "Audio display",               ID_VIEW_AUDIODISPLAY
+        MENUITEM "Maximize",                    ID_VIEW_MAXIMIZE
         MENUITEM SEPARATOR
         POPUP "Pane layout"
         BEGIN

@@ -329,6 +329,7 @@ namespace {
 		{ ID_EDIT_CLEARMARKERS,			"Edit.ClearMarkers" },
 		{ ID_EDIT_MARKERSFROMKEYS,		"Edit.MarkersFromKeys" },
 		{ ID_VIEW_POSITIONCONTROL,		"View.TogglePositionControl" },
+		{ ID_VIEW_MAXIMIZE,				"View.ToggleMaximize" },
 		{ ID_VIEW_STATUSBAR,			"View.ToggleStatusBar" },
 		{ ID_VIEW_CURVEEDITOR,			"View.ToggleCurveEditor" },
 		{ ID_VIEW_AUDIODISPLAY,			"View.ToggleAudioDisplay" },
@@ -431,6 +432,18 @@ public:
 	virtual void OnResize() { projectUI->RepositionPanes(); }
 };
 
+LRESULT WINAPI status_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	VDProjectUI* owner = (VDProjectUI*)GetWindowLongPtr(wnd,GWLP_USERDATA);
+
+	switch(msg){
+	case WM_SIZE:
+		return 0;
+	}
+
+	return CallWindowProc(owner->prevStatusProc,wnd,msg,wparam,lparam);
+}
+
 ///////////////////////////////////////////////////////////////////////////
 
 VDProjectUI::VDProjectUI()
@@ -470,6 +483,7 @@ VDProjectUI::VDProjectUI()
 	mMRUList.set_capacity(VDPreferencesGetMRUSize());
 	mMRUList.load();
 	mbFiltersPreview = false;
+	mbMaximize = false;
 }
 
 VDProjectUI::~VDProjectUI() {
@@ -551,13 +565,17 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 		return false;
 	}
 
+	prevStatusProc = (WNDPROC)GetWindowLongPtr(mhwndStatus,GWLP_WNDPROC);
+	SetWindowLongPtr(mhwndStatus,GWLP_USERDATA,(LPARAM)this);
+	SetWindowLongPtr(mhwndStatus,GWLP_WNDPROC,(LPARAM)status_proc);
+
 	SendMessage(mhwndStatus, SB_SIMPLE, TRUE, 0);
 
 	mbPositionControlVisible = true;
 	mbStatusBarVisible = true;
 
 	// Create position window.
-	mhwndPosition = CreateWindowEx(0, POSITIONCONTROLCLASS, "", WS_CHILD | WS_VISIBLE | PCS_PLAYBACK | PCS_MARK | PCS_SCENE, 0, 0, 200, 64, (HWND)mhwnd, (HMENU)IDC_POSITION, g_hInst, NULL);
+	mhwndPosition = CreateWindowEx(0, POSITIONCONTROLCLASS, "", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | PCS_PLAYBACK | PCS_MARK | PCS_SCENE, 0, 0, 200, 64, (HWND)mhwnd, (HMENU)IDC_POSITION, g_hInst, NULL);
 	if (!mhwndPosition) {
 		Detach();
 		return false;
@@ -2143,6 +2161,12 @@ bool VDProjectUI::MenuHit(UINT id) {
 			}
 			break;
 
+		case ID_VIEW_MAXIMIZE:
+			mbMaximize = !mbMaximize;
+			if(mbMaximize) ShowWindow((HWND)mhwnd,SW_SHOWMAXIMIZED);
+			UpdateMaximize((GetWindowLong((HWND)mhwnd,GWL_STYLE) & WS_MAXIMIZE)!=0);
+			break;
+
 		case ID_VIEW_CURVEEDITOR:
 			if (mpCurveEditor)
 				CloseCurveEditor();
@@ -2552,6 +2576,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDCheckMenuItemW32(hMenu, ID_VIEW_STATUSBAR, mbStatusBarVisible);
 	VDCheckMenuItemW32(hMenu, ID_VIEW_CURVEEDITOR, mpCurveEditor != NULL);
 	VDCheckMenuItemW32(hMenu, ID_VIEW_AUDIODISPLAY, mpAudioDisplay != NULL);
+	VDCheckMenuItemW32(hMenu, ID_VIEW_MAXIMIZE, mbMaximize);
 
 	VDCheckRadioMenuItemByCommandW32(hMenu, ID_PANELAYOUT_INPUTPANEONLY, mPaneLayoutMode == kPaneLayoutInput);
 	VDCheckRadioMenuItemByCommandW32(hMenu, ID_PANELAYOUT_OUTPUTPANEONLY, mPaneLayoutMode == kPaneLayoutOutput);
@@ -2883,6 +2908,12 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 		break;
 
 	case WM_SIZE:
+		if(wParam==SIZE_MAXIMIZED && mbMaximize){
+			UpdateMaximize(true);
+		}
+		if(wParam==SIZE_RESTORED){
+			UpdateMaximize(false);
+		}
 		OnSize();
 		return 0;
 
@@ -3225,38 +3256,61 @@ void VDProjectUI::OnGetMinMaxInfo(MINMAXINFO& mmi) {
 		mmi.ptMinTrackSize.y = minHeight;
 }
 
+void VDProjectUI::UpdateMaximize(bool window_max) {
+	if(mbMaximize && window_max){
+		int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
+		SetWindowLong((HWND)mhwnd,GWL_STYLE,style & ~(WS_CAPTION|WS_SYSMENU));
+	} else {
+		int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
+		SetWindowLong((HWND)mhwnd,GWL_STYLE,style | (WS_CAPTION|WS_SYSMENU));
+	}
+	SetWindowPos((HWND)mhwnd,0,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOACTIVATE|SWP_NOZORDER|SWP_FRAMECHANGED);
+	OnSize();
+}
+
 void VDProjectUI::OnSize() {
 	RECT rClient;
 
 	GetClientRect((HWND)mhwnd, &rClient);
 
-	HDWP hdwp = BeginDeferWindowPos(2);
-	HWND hwndPos[2]={
-		mbStatusBarVisible ? mhwndStatus : NULL,
-		mbPositionControlVisible ? mhwndPosition : NULL,
-	};
-
 	int w = rClient.right;
 	int y = rClient.bottom;
+	bool dock_status = mbMaximize && w>1200;
+	if (!mbPositionControlVisible) dock_status = false;
+	if (!mpPosition) dock_status = false;
 
-	for(int i=0; i<2; ++i) {
-		HWND hwnd = hwndPos[i];
-		if (!hwnd)
-			continue;
-
+	if (mbStatusBarVisible && !dock_status) {
+		HWND hwnd = mhwndStatus;
 		RECT r;
 		GetWindowRect(hwnd, &r);
 		int dy = r.bottom - r.top;
 		y -= dy;
-		hdwp = guiDeferWindowPos(hdwp, hwnd, NULL, 0, y, w, dy, SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOCOPYBITS);
+		SetWindowPos(hwnd, NULL, 0, y, w, dy, SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOCOPYBITS);
+	}
+	if (mbPositionControlVisible) {
+		HWND hwnd = mhwndPosition;
+		RECT r;
+		GetWindowRect(hwnd, &r);
+		int dy = r.bottom - r.top;
+		SetWindowPos(hwnd, NULL, 0, y-dy, w, dy, SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOCOPYBITS);
+
+		if (dock_status) {
+			RECT fr;
+			RECT sr;
+			GetWindowRect(GetDlgItem(mhwndPosition,501),&fr);
+			GetWindowRect(mhwndStatus, &sr);
+			int sx = fr.right-r.left+10;
+			int sdy = sr.bottom - sr.top;
+			SetWindowPos(mhwndStatus, NULL, sx, y-sdy, w-sx, sdy, SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOCOPYBITS);
+		}
+
+		y -= dy;
 	}
 
 	if (mpUIBase)
 		mpUIBase->Layout(vduirect(0, 0, rClient.right, y));
 
-	RepositionPanes();
-
-	guiEndDeferWindowPos(hdwp);
+	RepositionPanes(true);
 
 	int nParts = SendMessage(mhwndStatus, SB_GETPARTS, 0, 0);
 	if (nParts > 1) {
@@ -4576,6 +4630,7 @@ void VDProjectUI::LoadSettings() {
 	g_dubOpts.perf.useDirectDraw		= key.getBool("Accelerate preview", g_dubOpts.perf.useDirectDraw);
 	mPaneLayoutMode						= (PaneLayoutMode)key.getEnumInt("Pane layout mode", kPaneLayoutModeCount, mPaneLayoutMode);
 	mbAutoSizePanes						= key.getBool("Auto-size panes", mbAutoSizePanes);
+	mbMaximize							= key.getBool("Maximize main layout", mbMaximize);
 
 	// these are only saved from the Video Depth dialog.
 	VDRegistryAppKey keyPrefs("Preferences");
@@ -4603,7 +4658,8 @@ void VDProjectUI::SaveSettings() {
 	key.setBool("Preview audio sync", g_dubOpts.video.fSyncToAudio);
 	key.setBool("Accelerate preview", g_dubOpts.perf.useDirectDraw);
 	key.setInt("Pane layout mode", mPaneLayoutMode);
-	key.setInt("Auto-size panes", mbAutoSizePanes);
+	key.setBool("Auto-size panes", mbAutoSizePanes);
+	key.setBool("Maximize main layout", mbMaximize);
 }
 
 bool VDProjectUI::HandleUIEvent(IVDUIBase *pBase, IVDUIWindow *pWin, uint32 id, eEventType type, int item) {

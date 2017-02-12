@@ -104,6 +104,7 @@ public:
 
 public:
 	const wchar_t *edit_token;
+	WNDPROC prevStatusProc;
 	void UpdateAccelMain();
 
 protected:
@@ -141,6 +142,7 @@ protected:
 	void CloseCurveEditor();
 	void UpdateCurveList();
 	void UpdateCurveEditorPosition();
+	void UpdateMaximize(bool window_max);
 
 	void UIRefreshInputFrame(const VDPixmap *px);
 	void UIRefreshOutputFrame(const VDPixmap *px);
@@ -222,6 +224,7 @@ protected:
 	bool		mbPositionControlVisible;
 	bool		mbStatusBarVisible;
 	bool		mbFiltersPreview;
+	bool		mbMaximize;
 
 	bool		mbLockPreviewRestart;
 
