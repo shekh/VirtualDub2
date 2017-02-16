@@ -14,6 +14,7 @@ stringset 1 {		// kVDST_Dub
 	message 10, "Dub: Reducing video compression thread count to one because video compressor is using delta frame compression and the key frame interval is longer than one frame.";
 	message 11, "Dub: Smart rendering is enabled.";
 	message 12, "Dub: Audio is in VBR mode.";
+	message 13, "Dub: Audio output failed, switching to silent.";
 }
 
 stringset 2 {		// kVDST_AVIReadHandler
@@ -65,6 +66,7 @@ stringset 6 {		// kVDST_AudioSource
 	message 2, "AVI: A non-zero wBitsPerSample value was detected in the MP3 audio format structure. This has been corrected in-memory to zero for better compatibility "
 		"with commonly installed MP3 audio codecs.";
 	message 3, "AVI: Truncated or invalid compressed audio format detected (%d bytes, should be %d). Attempting to fix.";
+	message 4, "AVI: Substituted default channel mask for audio.";
 }
 
 stringset 7 {		// kVDST_ProjectUI

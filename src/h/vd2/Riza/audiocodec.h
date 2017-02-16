@@ -97,5 +97,6 @@ bool is_audio_pcm(const VDWaveFormat *wfex);
 bool is_audio_pcm8(const VDWaveFormat *wfex);
 bool is_audio_pcm16(const VDWaveFormat *wfex);
 bool is_audio_float(const VDWaveFormat *wfex);
+int default_channel_mask(int n);
 
 #endif	// f_VD2_RIZA_AUDIOCODEC_H

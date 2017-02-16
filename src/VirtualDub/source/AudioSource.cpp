@@ -19,6 +19,8 @@
 
 #include <windows.h>
 #include <vfw.h>
+#include <Ks.h>
+#include <Ksmedia.h>
 #include <vd2/system/file.h>
 #include <vd2/system/Error.h>
 #include <vd2/Dita/resources.h>
@@ -164,6 +166,25 @@ bool AudioSourceAVI::init() {
 			const int bad_len = format_len;
 			const int good_len = sizeof(WAVEFORMATEX) + cbSize;
 			VDLogAppMessage(kVDLogWarning, kVDST_AudioSource, kVDM_TruncatedCompressedFormatFixed, 2, &bad_len, &good_len);
+
+		} else if (((pwfex->mTag == WAVE_FORMAT_PCM) || (pwfex->mTag == WAVE_FORMAT_IEEE_FLOAT)) && pwfex->mChannels>2) {
+			requiredFormatSize = sizeof(WAVEFORMATEXTENSIBLE);
+			vdstructex<WAVEFORMATEXTENSIBLE> newFormat(requiredFormatSize);
+			memset(newFormat.data(), 0, requiredFormatSize);
+			memcpy(newFormat.data(), pwfex, sizeof(WAVEFORMATEX));
+			newFormat->Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+			newFormat->Samples.wValidBitsPerSample = pwfex->mSampleBits;
+			if (pwfex->mTag == WAVE_FORMAT_PCM) newFormat->SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+			if (pwfex->mTag == WAVE_FORMAT_IEEE_FLOAT) newFormat->SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+			newFormat->Format.cbSize = sizeof(WAVEFORMATEXTENSIBLE)-sizeof(WAVEFORMATEX);
+			newFormat->dwChannelMask = default_channel_mask(pwfex->mChannels);
+
+			if (!allocFormat(requiredFormatSize))
+				return FALSE;
+
+			pwfex = (VDWaveFormat *)getWaveFormat();
+			memcpy(pwfex, &*newFormat, requiredFormatSize);
+			VDLogAppMessage(kVDLogInfo, kVDST_AudioSource, 4);
 		}
 	}
 
