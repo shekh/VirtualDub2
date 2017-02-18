@@ -1041,7 +1041,7 @@ void Dubber::InitOutputFile() {
 		int outputWidth;
 		int outputHeight;
 		
-		if (mOptions.video.mode >= DubVideoOptions::M_FULL) {
+		if (mOptions.video.mode == DubVideoOptions::M_FULL) {
 			const VDPixmapLayout& outputLayout = filters.GetOutputLayout();
 
 			outputWidth = outputLayout.w;
@@ -1061,7 +1061,7 @@ void Dubber::InitOutputFile() {
 		hdr.dwSampleSize = 0;
 
 		bool selectFcchandlerBasedOnFormat = false;
-		if (mOptions.video.mode > DubVideoOptions::M_NONE && !mOptions.video.mbUseSmartRendering) {
+		if (mOptions.video.mode != DubVideoOptions::M_NONE && !mOptions.video.mbUseSmartRendering) {
 			if (mpVideoCompressor) {
 				hdr.fccHandler	= compVars->fccHandler;
 				hdr.dwQuality	= compVars->lQ;
@@ -1083,7 +1083,7 @@ void Dubber::InitOutputFile() {
 		// initialize compression
 
 		int last_format = vSrc->getTargetFormat().format;
-		if(mOptions.video.mode >= DubVideoOptions::M_FULL)
+		if(mOptions.video.mode == DubVideoOptions::M_FULL)
 			last_format = filters.GetOutputLayout().format;
 
 		VDPixmapFormatEx outputFormatID = 0;
@@ -1104,7 +1104,7 @@ void Dubber::InitOutputFile() {
 		if (!outputFormatID) {
 			outputFormatID = mOptions.video.mOutputFormat.format;
 
-			if (!outputFormatID || mOptions.video.mode <= DubVideoOptions::M_SLOWREPACK)
+			if (!outputFormatID || mOptions.video.mode < DubVideoOptions::M_SLOWREPACK)
 				outputFormatID = vSrc->getTargetFormat().format;
 		}
 
@@ -1122,14 +1122,19 @@ void Dubber::InitOutputFile() {
 		if (!driverLayout.format && mpVideoCompressor && outputFormatID==nsVDPixmap::kPixFormat_XYUV64)
 			throw MyError("Unable to initialize video compression. XYUV64 output is not implemented. Choose a different format.");
 
-		if (!driverLayout.format)
-		if (mOptions.video.mode >= DubVideoOptions::M_FASTREPACK) {
-			const VDAVIBitmapInfoHeader *pSrcFormat = vSrc->getDecompressedFormat();
-			const uint32 srcFormatLen = vSrc->getDecompressedFormatLen();
+		if (!driverLayout.format) {
+			if (mOptions.video.mode == DubVideoOptions::M_NONE) {
+				const VDAVIBitmapInfoHeader *pFormat = vSrc->getImageFormat();
+				mpCompressorVideoFormat.assign(pFormat, vSrc->asStream()->getFormatLen());
 
-			if (mOptions.video.mode <= DubVideoOptions::M_SLOWREPACK) {
-				// For slow recompress mode, we use the format produced by the source.
+			} else if (mOptions.video.mode == DubVideoOptions::M_FASTREPACK) {
+				// For fast recompress mode, the format must be already negotiated.
+				const VDAVIBitmapInfoHeader *pSrcFormat = vSrc->getDecompressedFormat();
+				const uint32 srcFormatLen = vSrc->getDecompressedFormatLen();
+				if (!pSrcFormat)
+					throw MyError("Unable to initialize video compression: The selected output format is not compatible with the Windows video codec API. Choose a different format.");
 				mpCompressorVideoFormat.assign(pSrcFormat, srcFormatLen);
+
 			} else {
 				restart_variants:
 				// For full recompression mode, we allow any format variant that the codec can accept.
@@ -1137,6 +1142,8 @@ void Dubber::InitOutputFile() {
 				const int variants = VDGetPixmapToBitmapVariants(outputFormatID);
 				int variant;
 
+				const VDAVIBitmapInfoHeader *pSrcFormat = vSrc->getDecompressedFormat();
+				const uint32 srcFormatLen = vSrc->getDecompressedFormatLen();
 				vdstructex<VDAVIBitmapInfoHeader> srcFormat;
 				srcFormat.assign(pSrcFormat, srcFormatLen);
 
@@ -1192,10 +1199,6 @@ void Dubber::InitOutputFile() {
 					}
 				}
 			}
-		} else {
-			const VDAVIBitmapInfoHeader *pFormat = vSrc->getImageFormat();
-
-			mpCompressorVideoFormat.assign(pFormat, vSrc->asStream()->getFormatLen());
 		}
 
 		// Initialize output compressor.
@@ -1235,7 +1238,7 @@ void Dubber::InitOutputFile() {
 
 			lVideoSizeEstimate = mpVideoCompressor->GetMaxOutputSize();
 		} else {
-			if (mOptions.video.mode < DubVideoOptions::M_FASTREPACK) {
+			if (mOptions.video.mode == DubVideoOptions::M_NONE) {
 
 				IVDStreamSource *pVideoStream = vSrc->asStream();
 				pVideoStream->applyStreamMode(IVDXStreamSourceV5::kStreamModeDirectCopy);
@@ -1321,10 +1324,10 @@ void Dubber::InitOutputFile() {
 
 			const char *s = VDPixmapGetInfo(mVideoFilterOutputPixmapLayout.format).name;
 
-			if(mOptions.video.mode >= DubVideoOptions::M_FULL)
+			if(mOptions.video.mode == DubVideoOptions::M_FULL)
 				VDLogAppMessage(kVDLogInfo, kVDST_Dub, kVDM_FullUsingOutputFormat, 1, &s);
 
-			if(mOptions.video.mode > DubVideoOptions::M_NONE && mOptions.video.mbUseSmartRendering)
+			if(mOptions.video.mode != DubVideoOptions::M_NONE && mOptions.video.mbUseSmartRendering)
 				VDLogAppMessage(kVDLogInfo, kVDST_Dub, 11);
 		}
 	}
