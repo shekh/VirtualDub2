@@ -1220,12 +1220,14 @@ static INT_PTR CALLBACK FilterValueDlgProc( HWND hDlg, UINT message, WPARAM wPar
 
 static int smoother_config(VDXFilterActivation *fa, const VDXFilterFunctions *ff, VDXHWND hWnd) {
 	MyFilterData *mfd = (MyFilterData *)fa->filter_data;
-	MyFilterData mfd_old = *mfd;
+	int grad_threshold = mfd->grad_threshold;
+	bool fBlurPass = mfd->fBlurPass;
 
 	mfd->ifp = fa->ifp;
 
 	if (DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_FILTER_SMOOTHER), (HWND)hWnd, FilterValueDlgProc, (LPARAM)mfd)) {
-		*mfd = mfd_old;
+		mfd->grad_threshold = grad_threshold;
+		mfd->fBlurPass = fBlurPass;
 		return 1;
 	}
 

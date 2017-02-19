@@ -370,7 +370,7 @@ static INT_PTR CALLBACK timesmoothDlgProc( HWND hDlg, UINT message, WPARAM wPara
 
 static int timesmooth_config(VDXFilterActivation *fa, const VDXFilterFunctions *ff, VDXHWND hWnd) {
 	timesmoothFilterData *mfd = (timesmoothFilterData *)fa->filter_data;
-	timesmoothFilterData mfd2 = *mfd;
+	int strength = mfd->strength;
 	int ret;
 
 	mfd->ifp = fa->ifp;
@@ -378,7 +378,7 @@ static int timesmooth_config(VDXFilterActivation *fa, const VDXFilterFunctions *
 	ret = DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_FILTER_TIMESMOOTH), (HWND)hWnd, timesmoothDlgProc, (LPARAM)mfd);
 
 	if (ret)
-		*mfd = mfd2;
+		mfd->strength = strength;
 
 	return ret;
 }

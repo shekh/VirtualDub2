@@ -20,6 +20,7 @@
 #include <vd2/system/error.h>
 #include <vd2/system/profile.h>
 #include <vd2/system/time.h>
+#include <vd2/system/log.h>
 #include <vd2/Riza/audiocodec.h>
 #include <vd2/Riza/audioout.h>
 #include <vd2/Dita/resources.h>

@@ -1840,8 +1840,8 @@ void VDVideoFiltersDialog::EnableConfigureBox(int index) {
 		bool skip = fa==editor->config_first;
 		EnableControl(IDC_CONFIGURE, fa->IsConfigurable() && !skip);
 		EnableControl(IDC_CLIPPING, fa->IsEnabled() && !skip);
+		EnableControl(IDC_BLENDING, fa->IsEnabled() && !skip);
 		EnableControl(IDC_DELETE, !skip);
-		EnableControl(IDC_BLENDING, true);
 		EnableControl(IDC_OPTIONS, true);
 	} else {
 		EnableControl(IDC_CONFIGURE, false);

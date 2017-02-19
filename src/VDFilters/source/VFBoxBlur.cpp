@@ -69,6 +69,7 @@ typedef struct BoxFilterData {
 	uint16 *trow;
 	int 	filter_width;
 	int 	filter_power;
+	int		started;
 } BoxFilterData;
 
 VDXScriptFunctionDef box_func_defs[]={
@@ -112,12 +113,16 @@ int boxInitProc(VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 
 	mfd->filter_width = 1;
 	mfd->filter_power = 1;
+	mfd->started = 0;
 
 	return 0;
 }
 
 int boxStartProc(VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 	BoxFilterData *mfd = (BoxFilterData *)fa->filter_data;
+
+	VDASSERT(mfd->started==0);
+	mfd->started++;
 
 	if (mfd->filter_power < 1)
 		mfd->filter_power = 1;
@@ -627,6 +632,9 @@ int boxRunProc(const VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 int boxEndProc(VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 	BoxFilterData *mfd = (BoxFilterData *)fa->filter_data;
 
+	mfd->started--;
+	VDASSERT(mfd->started==0);
+
 	free(mfd->rows);	mfd->rows = NULL;
 	free(mfd->trow);	mfd->trow = NULL;
 
@@ -715,18 +723,20 @@ INT_PTR CALLBACK boxConfigDlgProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPa
 
 int boxConfigProc(VDXFilterActivation *fa, const VDXFilterFunctions *ff, VDXHWND hwnd) {
 	BoxFilterData *mfd = (BoxFilterData *)fa->filter_data;
-	BoxFilterData mfd_old;
 	int res;
 
-	mfd_old = *mfd;
+	int filter_width = mfd->filter_width;
+	int filter_power = mfd->filter_power;
 	mfd->ifp = fa->ifp;
 
 	res = DialogBoxParam(g_hInst,
 			MAKEINTRESOURCE(IDD_FILTER_BOX), (HWND)hwnd,
 			boxConfigDlgProc, (LPARAM)mfd);
 
-	if (res)
-		*mfd = mfd_old;
+	if (res) {
+		mfd->filter_width = filter_width;
+		mfd->filter_power = filter_power;
+	}
 
 	return res;
 }
