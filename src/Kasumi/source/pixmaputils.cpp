@@ -111,6 +111,21 @@ int VDPixmapFormatMatrixType(sint32 format) {
 	return 0;
 }
 
+// for now only resolve some obvious equal formats
+int VDPixmapFormatDifference(VDPixmapFormatEx src, VDPixmapFormatEx dst) {
+	using namespace nsVDPixmap;
+	src = VDPixmapFormatNormalize(src);
+	dst = VDPixmapFormatNormalize(dst);
+	if (src.format==dst.format) return 0;
+
+	if (src.format==kPixFormat_YUV422_YUYV) src.format = kPixFormat_YUV422_Planar;
+	if (src.format==kPixFormat_YUV422_UYVY) src.format = kPixFormat_YUV422_Planar;
+	if (src.format==kPixFormat_YUV422_V210) src.format = kPixFormat_YUV422_Planar16;
+
+	if (src.format==dst.format) return 0;
+	return 1;
+}
+
 // derive base format if possible,
 // and expand mode flags
 VDPixmapFormatEx VDPixmapFormatNormalize(VDPixmapFormatEx format) {
