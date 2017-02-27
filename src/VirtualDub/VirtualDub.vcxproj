@@ -22,7 +22,7 @@
     <ProjectGuid>{0766DAC1-1BC2-4FC8-BDDA-E083FC2F56F4}</ProjectGuid>
     <RootNamespace>VirtualDub</RootNamespace>
   </PropertyGroup>
-	<Import Project="..\VirtualDub-projects.props" />
+  <Import Project="..\VirtualDub-projects.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -1975,6 +1975,9 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
       <Project>{0d252872-7542-4232-8d02-53f9182aee15}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\libav_tiff\libav_tiff.vcxproj">
+      <Project>{5e347aef-8712-47a5-93c6-13cca58dd09c}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Meia\Meia.vcxproj">
       <Project>{a8006c9b-e3c0-436d-8046-c3180b939e7a}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -2026,6 +2029,9 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
     <ProjectReference Include="..\VDXFrame\VDXFrame.vcxproj">
       <Project>{8102a7fc-a8cf-4d5a-a5d7-d858b4626d0d}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\zlib\zlib.vcxproj">
+      <Project>{dbbe5717-54c3-494f-8eef-6123b6dc8a00}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

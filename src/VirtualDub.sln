@@ -4,9 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VirtualDub", "VirtualDub\VirtualDub.vcxproj", "{0766DAC1-1BC2-4FC8-BDDA-E083FC2F56F4}"
-	ProjectSection(ProjectDependencies) = postProject
-		{DBBE5717-54C3-494F-8EEF-6123B6DC8A00} = {DBBE5717-54C3-494F-8EEF-6123B6DC8A00}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Kasumi", "Kasumi\Kasumi.vcxproj", "{0D252872-7542-4232-8D02-53F9182AEE15}"
 EndProject
