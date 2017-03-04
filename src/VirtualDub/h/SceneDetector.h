@@ -40,6 +40,7 @@ private:
 	bool last_valid;
 	bool first_diff;
 	bool last_fade_state;
+	bool enabled;
 
 	long cut_threshold;
 	double fade_threshold;

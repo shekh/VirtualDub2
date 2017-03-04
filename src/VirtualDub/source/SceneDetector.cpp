@@ -51,12 +51,13 @@ SceneDetector::~SceneDetector() {
 //////////////////////////////////////////////////////////////////////////
 
 void SceneDetector::SetThresholds(int cut_threshold, int fade_threshold) {
+	enabled = cut_threshold>0 || fade_threshold>0;
 	this->cut_threshold		= (cut_threshold * tile_w * tile_h) >> 4;
 	this->fade_threshold	= (fade_threshold * tile_w * tile_h)/16.0f;
 }
 
 bool SceneDetector::Enabled() {
-	return cut_threshold || fade_threshold;
+	return enabled;
 }
 
 bool SceneDetector::Submit(const VDPixmap& src) {
