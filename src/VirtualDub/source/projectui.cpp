@@ -2907,6 +2907,14 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 
 		break;
 
+	case WM_WINDOWPOSCHANGING:
+		// seems to fix borderless sizing issues
+		if(!(((WINDOWPOS*)lParam)->flags & SWP_NOSIZE)){
+			int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
+			SetWindowLong((HWND)mhwnd,GWL_STYLE,style | (WS_CAPTION|WS_SYSMENU));
+		}
+		break;
+
 	case WM_SIZE:
 		if(wParam==SIZE_MAXIMIZED && mbMaximize){
 			UpdateMaximize(true);
