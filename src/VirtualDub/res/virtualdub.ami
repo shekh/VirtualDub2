@@ -15,6 +15,7 @@ stringset 1 {		// kVDST_Dub
 	message 11, "Dub: Smart rendering is enabled.";
 	message 12, "Dub: Audio is in VBR mode.";
 	message 13, "Dub: Audio output failed, switching to silent.";
+	message 14, "Dub: Command line encoding started with format: %hs.";
 }
 
 stringset 2 {		// kVDST_AVIReadHandler

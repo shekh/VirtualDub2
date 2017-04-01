@@ -27,6 +27,7 @@
 #include <vd2/system/thread.h>
 #include <vd2/system/w32assist.h>
 #include <vd2/Riza/audiocodec.h>
+#include <vd2/Dita/resources.h>
 
 #include "AVIOutputWAV.h"
 #include "AVIOutputRawAudio.h"
@@ -40,6 +41,10 @@
 	#define VD_LAUNCH_HELPER_NAMEA	"vdlaunch.exe"
 	#define VD_LAUNCH_HELPER_NAMEW	L"vdlaunch.exe"
 #endif
+
+namespace {
+	enum { kVDST_Dub = 1 };
+};
 
 //////////////////////////////////////////////////////////////////////
 
@@ -925,6 +930,15 @@ void InitOutputFormat(VDAVIOutputRawVideoFormat& format, const VDExtEncProfile* 
 	if (vp->mPixelFormat==L"yuv444p")
 		format.mOutputFormat = nsVDPixmap::kPixFormat_YUV444_Planar;
 
+	if (vp->mPixelFormat==L"yuv420p16le")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_YUV420_Planar16;
+
+	if (vp->mPixelFormat==L"yuv422p16le")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_YUV422_Planar16;
+
+	if (vp->mPixelFormat==L"yuv444p16le")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_YUV444_Planar16;
+
 	if (vp->mPixelFormat==L"bgr24")
 		format.mOutputFormat = nsVDPixmap::kPixFormat_RGB888;
 
@@ -944,6 +958,9 @@ IVDMediaOutputStream *AVIOutputCLI::createVideoStream() {
 
 	mpVideoOutput = new AVIOutputRawVideo(rawFormat);
 	mpVideoOutput->SetInputLayout(mInputLayout);
+
+	const char *s = VDPixmapGetInfo(rawFormat.mOutputFormat).name;
+	VDLogAppMessage(kVDLogInfo, kVDST_Dub, 14, 1, &s);
 
 	vdautoptr<IVDMediaOutputStream> os(mpVideoOutput->createVideoStream());
 

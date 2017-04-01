@@ -2396,6 +2396,11 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 		opts->mThrottlePercent = pOutputSystem->IsRealTime() ? 100 : VDPreferencesGetRenderThrottlePercent();
 		opts->video.mMaxVideoCompressionThreads = VDPreferencesGetVideoCompressionThreadCount();
 
+		if (pOutputSystem->IsVideoImageOutputRequired()) {
+			if (opts->video.mode == DubVideoOptions::M_NONE)
+				opts->video.mode = DubVideoOptions::M_FASTREPACK;
+		}
+
 		if (!(g_dubber = CreateDubber(opts)))
 			throw MyMemoryError();
 

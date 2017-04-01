@@ -1537,8 +1537,14 @@ void VDProjectUI::ExportViaEncoderAsk(bool batch) {
 
 		if (!eset->mFileDesc.empty())
 			filterSpec += eset->mFileDesc;
-		else
-			filterSpec += L"Output file (*.*)";
+		else {
+			filterSpec += L"Output file (*.";
+			if (!eset->mFileExt.empty())
+				filterSpec += eset->mFileExt;
+			else
+				filterSpec += L"*";
+			filterSpec += L")";
+		}
 
 		filterSpec += (wchar_t)0;
 

@@ -327,21 +327,30 @@ void VDUIDialogExtEncVideo::OnDataExchange(bool write) {
 		if (sel==2)
 			mProfile.mPixelFormat = L"yuv444p";
 		if (sel==3)
-			mProfile.mPixelFormat = L"bgr24";
+			mProfile.mPixelFormat = L"yuv420p16le";
 		if (sel==4)
-			mProfile.mPixelFormat = L"bgra";
+			mProfile.mPixelFormat = L"yuv422p16le";
 		if (sel==5)
+			mProfile.mPixelFormat = L"yuv444p16le";
+		if (sel==6)
+			mProfile.mPixelFormat = L"bgr24";
+		if (sel==7)
+			mProfile.mPixelFormat = L"bgra";
+		if (sel==8)
 			mProfile.mPixelFormat = L"bgra64le";
 
 	} else {
 		SendMessage(cb,WM_SETFONT,(WPARAM)fixed_font,0);
 		SendMessage(cb,CB_RESETCONTENT,0,0);
-		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv420p    :   8 bit YUV 4:2:0");
-		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv422p    :   8 bit YUV 4:2:2");
-		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv444p    :   8 bit YUV 4:4:4");
-		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgr24      :   8 bit RGB");
-		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgra       :   8 bit RGBA");
-		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgra64le   :  16 bit RGBA");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv420p     :   8 bit YUV 4:2:0");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv422p     :   8 bit YUV 4:2:2");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv444p     :   8 bit YUV 4:4:4");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv420p16le :   16 bit YUV 4:2:0");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv422p16le :   16 bit YUV 4:2:2");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"yuv444p16le :   16 bit YUV 4:4:4");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgr24       :   8 bit RGB");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgra        :   8 bit RGBA");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgra64le    :  16 bit RGBA");
 
 		int sel = 0;
 		if (mProfile.mPixelFormat==L"yuv420p")
@@ -350,12 +359,18 @@ void VDUIDialogExtEncVideo::OnDataExchange(bool write) {
 			sel = 1;
 		if (mProfile.mPixelFormat==L"yuv444p")
 			sel = 2;
-		if (mProfile.mPixelFormat==L"bgr24")
+		if (mProfile.mPixelFormat==L"yuv420p16le")
 			sel = 3;
-		if (mProfile.mPixelFormat==L"bgra")
+		if (mProfile.mPixelFormat==L"yuv422p16le")
 			sel = 4;
-		if (mProfile.mPixelFormat==L"bgra64le")
+		if (mProfile.mPixelFormat==L"yuv444p16le")
 			sel = 5;
+		if (mProfile.mPixelFormat==L"bgr24")
+			sel = 6;
+		if (mProfile.mPixelFormat==L"bgra")
+			sel = 7;
+		if (mProfile.mPixelFormat==L"bgra64le")
+			sel = 8;
 
 		SendMessage(cb,CB_SETCURSEL, sel, 0);
 	}
