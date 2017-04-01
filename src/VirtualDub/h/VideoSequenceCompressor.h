@@ -28,61 +28,33 @@ class VideoSequenceCompressor {
 public:
 	VideoSequenceCompressor();
 	~VideoSequenceCompressor();
-	void SetDriver(EncoderHIC* driver, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle);
-	void GetOutputFormat(const void *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat);
-	void GetOutputFormat(const VDPixmapLayout *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat);
-	const void *GetOutputFormat();
-	uint32 GetOutputFormatSize();
-	int GetInputFormat(FilterModPixmapInfo* info) {
-		if (info) {
-			info->copy_ref(mInputInfo);
-			info->copy_alpha(mInputInfo);
-		}
-		return mInputLayout.format; 
-	}
 
-	void init(EncoderHIC* driver, long lQ, long lKeyRate);
-	void Start(const void *inputFormat, uint32 inputFormatSize, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);
-	void Start(const VDPixmapLayout& layout, FilterModPixmapInfo& info, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);
-	void internalStart(const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);
+	void init(EncoderHIC* driver, BITMAPINFO *pbiInput, BITMAPINFO *pbiOutput, long lQ, long lKeyRate);
+	void setDataRate(long lDataRate, long lUsPerFrame, long lFrameCount);
+	void start();
 	void dropFrame();
-	bool packFrame(void *dst, const void *src, bool& keyframe, uint32& size);
-	void Stop();
+	void *packFrame(void *pBits, bool *pfKeyframe, long *plSize);
+	void finish();
 
 	long getMaxSize() {
 		return lMaxPackedSize;
 	}
 
-	void* createResultBuffer();
-
 private:
-	void PackFrameInternal(void* dst, DWORD frameSize, DWORD q, const void *src, DWORD dwFlagsIn, DWORD& dwFlagsOut, sint32& bytes);
+	void PackFrameInternal(DWORD frameSize, DWORD q, void *pBits, DWORD dwFlagsIn, DWORD& dwFlagsOut, sint32& bytes);
 
 	EncoderHIC	*driver;
-	bool		mbOwnHandle;
 	DWORD		dwFlags;
 	DWORD		mVFWExtensionMessageID;
-	vdstructex<BITMAPINFOHEADER>	mInputFormat;
-	vdstructex<BITMAPINFOHEADER>	mOutputFormat;
-	VDPixmapLayout  	mInputLayout;
-	FilterModPixmapInfo mInputInfo;
-	VDFraction	mFrameRate;
-	VDPosition	mFrameCount;
-	char		*pPrevBuffer;
-	long		lFrameSent;
-	long		lFrameDone;
-	long		lKeyRate;
-	long		lQuality;
-	long		lDataRate;
+	BITMAPINFO	*pbiInput, *pbiOutput;
+	char		*pOutputBuffer, *pPrevBuffer;
+	long		lFrameNum, lKeyRate, lQuality;
 	long		lKeyRateCounter;
 	long		lMaxFrameSize;
 	long		lMaxPackedSize;
 	bool		fCompressionStarted;
 	long		lSlopSpace;
 	long		lKeySlopSpace;
-
-	bool		mbKeyframeOnly;
-	bool		mbCompressionRestarted;
 
 	// crunch emulation
 	sint32		mQualityLo;
@@ -92,7 +64,7 @@ private:
 	void		*pConfigData;
 	int			cbConfigData;
 
-	VDStringW	mCodecName;
+	VDStringA	mCodecName;
 	VDStringW	mDriverName;
 };
 

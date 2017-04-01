@@ -144,7 +144,7 @@ extern IVDPositionControlCallback *VDGetPositionControlCallbackTEMP() {
 
 extern char PositionFrameTypeCallback(HWND hwnd, void *pvData, long pos);
 
-extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars);
+extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
 extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *, WAVEFORMATEX *, VDString& shortNameHint, vdblock<char>& config);
 extern void VDDisplayLicense(HWND hwndParent, bool conditional);
 
@@ -1664,7 +1664,7 @@ void VDProjectUI::SetVideoCompressionAsk() {
 
 	g_Vcompression.cbSize = sizeof(COMPVARS);
 
-	ChooseCompressor((HWND)mhwnd, &g_Vcompression);
+	ChooseCompressor((HWND)mhwnd, &g_Vcompression, NULL);
 }
 
 void VDProjectUI::SetVideoErrorModeAsk() {

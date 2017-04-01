@@ -98,7 +98,7 @@ extern const wchar_t g_szWarningW[]=L"VirtualDub Warning";
 static const char g_szRegKeyPersistence[]="Persistence";
 
 extern COMPVARS2 g_Vcompression;
-extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars);
+extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
 
 ///////////////////////////
 
@@ -454,7 +454,7 @@ INT_PTR VDSaveVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 		switch(LOWORD(wParam)) {
 		case IDC_COMPRESSION_CHANGE:
 			{
-				ChooseCompressor(mhdlg,&g_Vcompression);
+				ChooseCompressor(mhdlg,&g_Vcompression,0);
 				InitCodec();
 			}
 			break;

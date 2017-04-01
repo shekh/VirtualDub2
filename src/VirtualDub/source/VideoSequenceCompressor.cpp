@@ -30,7 +30,17 @@
 #include "crash.h"
 #include "misc.h"
 
-extern IVDVideoCodecBugTrap *g_pVDVideoCodecBugTrap;
+namespace {
+	enum { kVDST_VideoSequenceCompressor = 10 };
+
+	enum {
+		kVDM_CodecModifiesInput
+	};
+}
+
+// XviD VFW extensions
+
+#define VFW_EXT_RESULT			1
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -81,119 +91,49 @@ extern IVDVideoCodecBugTrap *g_pVDVideoCodecBugTrap;
 
 VideoSequenceCompressor::VideoSequenceCompressor() {
 	pPrevBuffer		= NULL;
+	pOutputBuffer	= NULL;
 	pConfigData		= NULL;
-	fCompressionStarted = false;
-	mbCompressionRestarted = false;
 }
 
 VideoSequenceCompressor::~VideoSequenceCompressor() {
-	Stop();
 
-	if (mbOwnHandle)
-		delete driver;
+	freemem(pbiInput);
+	freemem(pbiOutput);
+
+	finish();
 
 	delete pConfigData;
+	delete pOutputBuffer;
 	delete pPrevBuffer;
 }
 
-void VideoSequenceCompressor::SetDriver(EncoderHIC* driver, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle) {
-	mbOwnHandle = ownHandle;
-	this->driver = driver;
-	lDataRate = kilobytesPerSecond;
-	lKeyRate = keyrate;
-	lQuality = quality;
+void VideoSequenceCompressor::init(EncoderHIC* driver, BITMAPINFO *pbiInput, BITMAPINFO *pbiOutput, long lQ, long lKeyRate) {
+	ICINFO	info;
+	LRESULT	res;
+	int cbSizeIn, cbSizeOut;
 
-	ICINFO info = {sizeof(ICINFO)};
-	DWORD rv;
+	cbSizeIn = VDGetSizeOfBitmapHeaderW32(&pbiInput->bmiHeader);
+	cbSizeOut = VDGetSizeOfBitmapHeaderW32(&pbiOutput->bmiHeader);
 
-	{
-		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-		rv = driver->getInfo(info);
-	}
+	this->driver	= driver;
+	this->pbiInput	= (BITMAPINFO *)allocmem(cbSizeIn);
+	this->pbiOutput	= (BITMAPINFO *)allocmem(cbSizeOut);
+	this->lKeyRate	= lKeyRate;
 
-	mbKeyframeOnly = true;
-	if (keyrate != 1 && rv >= sizeof info) {
-		if (info.dwFlags & (VIDCF_TEMPORAL | VIDCF_FASTTEMPORALC))
-			mbKeyframeOnly = false;
-	}
-}
-
-void VideoSequenceCompressor::GetOutputFormat(const void *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat) {
-	vdprotected("querying video compressor for output format") {
-		DWORD icErr;
-		LONG formatSize = driver->compressGetFormatSize((LPBITMAPINFO)inputFormat);
-		if (formatSize < ICERR_OK)
-			throw MyICError("Output compressor", formatSize);
-
-		outputFormat.resize(formatSize);
-
-		// Huffyuv doesn't initialize a few padding bytes at the end of its format
-		// struct, so we clear them here.
-		memset(&*outputFormat, 0, outputFormat.size());
-
-		if (ICERR_OK != (icErr = driver->compressGetFormat((LPBITMAPINFO)inputFormat, (LPBITMAPINFO)&*outputFormat)))
-			throw MyICError("Output compressor", icErr);
-	}
-}
-
-void VideoSequenceCompressor::GetOutputFormat(const VDPixmapLayout *inputFormat, vdstructex<tagBITMAPINFOHEADER>& outputFormat) {
-	vdprotected("querying video compressor for output format") {
-		DWORD icErr;
-		LONG formatSize = driver->compressGetFormatSize(0,inputFormat);
-		if (formatSize < ICERR_OK)
-			throw MyICError("Output compressor", formatSize);
-
-		outputFormat.resize(formatSize);
-
-		// Huffyuv doesn't initialize a few padding bytes at the end of its format
-		// struct, so we clear them here.
-		memset(&*outputFormat, 0, outputFormat.size());
-
-		if (ICERR_OK != (icErr = driver->compressGetFormat(0, (LPBITMAPINFO)&*outputFormat, inputFormat)))
-			throw MyICError("Output compressor", icErr);
-	}
-}
-
-const void *VideoSequenceCompressor::GetOutputFormat() {
-	return mOutputFormat.data();
-}
-
-uint32 VideoSequenceCompressor::GetOutputFormatSize() {
-	return mOutputFormat.size();
-}
-
-void VideoSequenceCompressor::Start(const void *inputFormat, uint32 inputFormatSize, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) {
-	const BITMAPINFOHEADER *pbihInput = (const BITMAPINFOHEADER *)inputFormat;
-	mInputFormat.assign(pbihInput, inputFormatSize);
-	mInputLayout.format = 0;
-	internalStart(outputFormat, outputFormatSize, frameRate, frameCount);
-}
-
-void VideoSequenceCompressor::Start(const VDPixmapLayout& layout, FilterModPixmapInfo& info, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) {
-	mInputLayout = layout;
-	mInputInfo = info;
-	internalStart(outputFormat, outputFormatSize, frameRate, frameCount);
-	GetOutputFormat(&layout, mOutputFormat);
-}
-
-void VideoSequenceCompressor::internalStart(const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) {
-	const BITMAPINFOHEADER *pbihOutput = (const BITMAPINFOHEADER *)outputFormat;
-	mOutputFormat.assign(pbihOutput, outputFormatSize);
-	mFrameRate = frameRate;
-	mFrameCount = frameCount;
+	memcpy(this->pbiInput, pbiInput, cbSizeIn);
+	memcpy(this->pbiOutput, pbiOutput, cbSizeOut);
 
 	lKeyRateCounter = 1;
 
 	// Retrieve compressor information.
-	ICINFO	info;
-	LRESULT	res;
+
 	res = driver->getInfo(info);
 
 	if (!res)
 		throw MyError("Unable to retrieve video compressor information.");
 
 	const wchar_t *pName = info.szDescription;
-	mCodecName = pName;
+	mCodecName = VDTextWToA(pName);
 	mDriverName = VDswprintf(L"The video codec \"%s\"", 1, &pName);
 
 	// Analyze compressor.
@@ -204,19 +144,21 @@ void VideoSequenceCompressor::internalStart(const void *outputFormat, uint32 out
 		if (!(info.dwFlags & VIDCF_FASTTEMPORALC)) {
 			// Allocate backbuffer
 
-			if (!(pPrevBuffer = new char[mInputFormat->biSizeImage]))
+			if (!(pPrevBuffer = new char[pbiInput->bmiHeader.biSizeImage]))
 				throw MyMemoryError();
 		}
 	}
 
-	if (!(info.dwFlags & VIDCF_QUALITY))
+	if (info.dwFlags & VIDCF_QUALITY)
+		lQuality = lQ;
+	else
 		lQuality = 0;
 
 	// Allocate destination buffer
 
 	{
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-		lMaxPackedSize = driver->compressGetSize((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat, &mInputLayout);
+		lMaxPackedSize = driver->compressGetSize(pbiInput, pbiOutput);
 	}
 
 	// Work around a bug in Huffyuv.  Ben tried to save some memory
@@ -231,11 +173,10 @@ void VideoSequenceCompressor::internalStart(const void *outputFormat, uint32 out
 	// actual worst case values are 43 and 51.  We'll compute the
 	// 43/51 value, and use the higher of the two.
 
-	//if (isEqualFOURCC(info.fccHandler, 'UYFH')) {
-	if ((info.fccHandler & 0xdfdfdfdf) == 'UYFH') {
-		long lRealMaxPackedSize = mInputFormat->biWidth * abs(mInputFormat->biHeight);
+	if (isEqualFOURCC(info.fccHandler, 'UYFH')) {
+		long lRealMaxPackedSize = pbiInput->bmiHeader.biWidth * abs(pbiInput->bmiHeader.biHeight);
 
-		if (mInputFormat->biCompression == BI_RGB)
+		if (pbiInput->bmiHeader.biCompression == BI_RGB)
 			lRealMaxPackedSize = (lRealMaxPackedSize * 51) >> 3;
 		else
 			lRealMaxPackedSize = (lRealMaxPackedSize * 43) >> 3;
@@ -243,6 +184,9 @@ void VideoSequenceCompressor::internalStart(const void *outputFormat, uint32 out
 		if (lRealMaxPackedSize > lMaxPackedSize)
 			lMaxPackedSize = lRealMaxPackedSize;
 	}
+
+	if (!(pOutputBuffer = new char[lMaxPackedSize]))
+		throw MyMemoryError();
 
 	// Save configuration state.
 	//
@@ -280,9 +224,12 @@ void VideoSequenceCompressor::internalStart(const void *outputFormat, uint32 out
 	lMaxFrameSize = 0;
 	lSlopSpace = 0;
 	lKeySlopSpace = 0;
+}
+
+void VideoSequenceCompressor::setDataRate(long lDataRate, long lUsPerFrame, long lFrameCount) {
 
 	if (lDataRate && (dwFlags & (VIDCF_CRUNCH|VIDCF_QUALITY)))
-		lMaxFrameSize = VDRoundToInt(lDataRate / frameRate.asDouble());
+		lMaxFrameSize = MulDiv(lDataRate, lUsPerFrame, 1000000);
 	else
 		lMaxFrameSize = 0;
 
@@ -305,26 +252,45 @@ void VideoSequenceCompressor::internalStart(const void *outputFormat, uint32 out
 
 		icf.dwFlags		= (DWORD)&icf.lKeyRate;
 		icf.lStartFrame = 0;
-		icf.lFrameCount = frameCount > 0xFFFFFFFF ? 0xFFFFFFFF : (uint32)frameCount;
+		icf.lFrameCount = lFrameCount;
 		icf.lQuality	= lQuality;
 		icf.lDataRate	= lDataRate;
 		icf.lKeyRate	= lKeyRate;
-		icf.dwRate		= frameRate.getHi();
-		icf.dwScale		= frameRate.getLo();
+		icf.dwRate		= 1000000;
+		icf.dwScale		= lUsPerFrame;
 
 		{
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-			driver->sendMessage(ICM_COMPRESS_FRAMES_INFO, (LPARAM)&icf, sizeof(ICCOMPRESSFRAMES));
-			driver->compressMatrixInfo(&mInputLayout);
+			driver->sendMessage(ICM_COMPRESS_FRAMES_INFO, (WPARAM)&icf, sizeof(ICCOMPRESSFRAMES));
 		}
 	}
+}
+
+void VideoSequenceCompressor::start() {
+	LRESULT	res;
+
+	// Query for VFW extensions (XviD)
+
+#if 0
+	BITMAPINFOHEADER bih = {0};
+
+	bih.biCompression = 0xFFFFFFFF;
+
+	res = ICCompressQuery(hic, &bih, NULL);
+
+	mVFWExtensionMessageID = 0;
+
+	if ((LONG)res >= 0) {
+		mVFWExtensionMessageID = res;
+	}
+#endif
 
 	vdprotected("passing start message to video compressor") {
 		// Start compression process
 
 		{
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-			res = driver->compressBegin((LPBITMAPINFO)&*mInputFormat, (LPBITMAPINFO)&*mOutputFormat, &mInputLayout);
+			res = driver->compressBegin(pbiInput, pbiOutput);
 		}
 
 		if (res != ICERR_OK)
@@ -335,7 +301,7 @@ void VideoSequenceCompressor::internalStart(const void *outputFormat, uint32 out
 		if (pPrevBuffer) {
 			{
 				VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-				res = driver->decompressBegin((LPBITMAPINFO)&*mOutputFormat, (LPBITMAPINFO)&*mInputFormat);
+				res = driver->decompressBegin(pbiOutput, pbiInput);
 			}
 
 			if (res != ICERR_OK) {
@@ -350,9 +316,7 @@ void VideoSequenceCompressor::internalStart(const void *outputFormat, uint32 out
 	}
 
 	fCompressionStarted = true;
-	mbCompressionRestarted = true;
-	lFrameSent = 0;
-	lFrameDone = 0;
+	lFrameNum = 0;
 
 
 	mQualityLo = 0;
@@ -360,7 +324,7 @@ void VideoSequenceCompressor::internalStart(const void *outputFormat, uint32 out
 	mQualityHi = 10000;
 }
 
-void VideoSequenceCompressor::Stop() {
+void VideoSequenceCompressor::finish() {
 	if (!fCompressionStarted)
 		return;
 
@@ -387,17 +351,15 @@ void VideoSequenceCompressor::dropFrame() {
 	if (lKeyRate && lKeyRateCounter>1)
 		--lKeyRateCounter;
 
-	// Hmm, this seems to make Cinepak restart on a key frame.
-	++lFrameDone;
+	++lFrameNum;
 }
 
-bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyframe, uint32& size) {
+void *VideoSequenceCompressor::packFrame(void *pBits, bool *pfKeyframe, long *plSize) {
 	DWORD dwFlagsOut=0, dwFlagsIn = ICCOMPRESS_KEYFRAME;
 	long lAllowableFrameSize=0;//xFFFFFF;	// yes, this is illegal according
 											// to the docs (see below)
 
 	long lKeyRateCounterSave = lKeyRateCounter;
-	mbCompressionRestarted = false;
 
 	// Figure out if we should force a keyframe.  If we don't have any
 	// keyframe interval, force only the first frame.  Otherwise, make
@@ -405,16 +367,14 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 	// the last emitted keyframe, since the compressor can opt to
 	// make keyframes on its own.
 
-	if (!mbKeyframeOnly) {
-		if (!lKeyRate) {
-			if (lFrameSent)
-				dwFlagsIn = 0;
-		} else {
-			if (--lKeyRateCounter)
-				dwFlagsIn = 0;
-			else
-				lKeyRateCounter = lKeyRate;
-		}
+	if (!lKeyRate) {
+		if (lFrameNum)
+			dwFlagsIn = 0;
+	} else {
+		if (--lKeyRateCounter)
+			dwFlagsIn = 0;
+		else
+			lKeyRateCounter = lKeyRate;
 	}
 
 	// Figure out how much space to give the compressor, if we are using
@@ -435,7 +395,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 	// such as when it emulates crunch using quality. The MSU lossless
 	// codec 0.5.2 is known to do this.
 	
-	const uint8 firstInputByte = *(const uint8 *)src;
+	const uint8 firstInputByte = *(const uint8 *)pBits;
 
 	// A couple of notes:
 	//
@@ -452,7 +412,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 		sint32 maxDelta = lMaxFrameSize/20 + 1;
 		int packs = 0;
 
-		PackFrameInternal(dst, 0, mQualityLast, src, dwFlagsIn, dwFlagsOut, bytes);
+		PackFrameInternal(0, mQualityLast, pBits, dwFlagsIn, dwFlagsOut, bytes);
 		++packs;
 
 		// Don't do crunching for key frames to keep consistent quality.
@@ -460,7 +420,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 			goto crunch_complete;
 
 		if (bytes < lAllowableFrameSize) {		// too low -- squeeze [mid, hi]
-			PackFrameInternal(dst, 0, mQualityHi, src, dwFlagsIn, dwFlagsOut, bytes);
+			PackFrameInternal(0, mQualityHi, pBits, dwFlagsIn, dwFlagsOut, bytes);
 			++packs;
 
 			if (abs(bytes - lAllowableFrameSize) <= maxDelta) {
@@ -482,7 +442,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 			while(lo <= hi) {
 				q = (lo+hi)>>1;
 
-				PackFrameInternal(dst, 0, q, src, dwFlagsIn, dwFlagsOut, bytes);
+				PackFrameInternal(0, q, pBits, dwFlagsIn, dwFlagsOut, bytes);
 				++packs;
 
 				sint32 delta = (bytes - lAllowableFrameSize);
@@ -509,7 +469,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 			mQualityLast = q;
 
 		} else {							// too low -- squeeze [lo, mid]
-			PackFrameInternal(dst, 0, mQualityLo, src, dwFlagsIn, dwFlagsOut, bytes);
+			PackFrameInternal(0, mQualityLo, pBits, dwFlagsIn, dwFlagsOut, bytes);
 			++packs;
 
 			if (abs(bytes - lAllowableFrameSize)*20 <= lAllowableFrameSize) {
@@ -531,7 +491,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 			while(lo <= hi) {
 				q = (lo+hi)>>1;
 
-				PackFrameInternal(dst, 0, q, src, dwFlagsIn, dwFlagsOut, bytes);
+				PackFrameInternal(0, q, pBits, dwFlagsIn, dwFlagsOut, bytes);
 				++packs;
 
 				sint32 delta = (bytes - lAllowableFrameSize);
@@ -563,15 +523,15 @@ crunch_complete:
 
 //		VDDEBUG("VideoSequenceCompressor: Packed frame %5d to %6u bytes; target=%d bytes / %d bytes, iterations = %d, range = [%5d, %5d, %5d]\n", lFrameNum, bytes, lAllowableFrameSize, lMaxFrameSize, packs, mQualityLo, mQualityLast, mQualityHi);
 	} else {	// No crunching or crunch directly supported
-		PackFrameInternal(dst, lAllowableFrameSize, lQuality, src, dwFlagsIn, dwFlagsOut, bytes);
+		PackFrameInternal(lAllowableFrameSize, lQuality, pBits, dwFlagsIn, dwFlagsOut, bytes);
 
 //		VDDEBUG("VideoSequenceCompressor: Packed frame %5d to %6u bytes; target=%d bytes / %d bytes\n", lFrameNum, bytes, lAllowableFrameSize, lMaxFrameSize);
 	}
 
 	// Flag a warning if the codec is improperly modifying its input buffer.
-	if (!lFrameSent && *(const uint8 *)src != firstInputByte) {
-		if (g_pVDVideoCodecBugTrap)
-			g_pVDVideoCodecBugTrap->OnCodecModifiedInput(mCodecName.c_str());
+	if (!lFrameNum && *(const uint8 *)pBits != firstInputByte) {
+		const char *pName = mCodecName.c_str();
+		VDLogAppMessage(kVDLogWarning, kVDST_VideoSequenceCompressor, kVDM_CodecModifiesInput, 1, &pName);
 	}
 
 	// Special handling for DivX 5 and XviD codecs:
@@ -579,26 +539,21 @@ crunch_complete:
 	// A one-byte frame starting with 0x7f should be discarded
 	// (lag for B-frame).
 
-	++lFrameSent;
 	bool bNoOutputProduced = false;
 
-	if (mOutputFormat->biCompression == '05xd' ||
-		mOutputFormat->biCompression == '05XD' ||
-		mOutputFormat->biCompression == 'divx' ||
-		mOutputFormat->biCompression == 'DIVX'
+	if (pbiOutput->bmiHeader.biCompression == '05xd' ||
+		pbiOutput->bmiHeader.biCompression == '05XD' ||
+		pbiOutput->bmiHeader.biCompression == 'divx' ||
+		pbiOutput->bmiHeader.biCompression == 'DIVX'
 		) {
-		if (bytes == 1 && *(char *)dst == 0x7f) {
+		if (bytes == 1 && *(char *)pOutputBuffer == 0x7f) {
 			bNoOutputProduced = true;
 		}
 	}
 
-	if (mInputLayout.format && (dwFlagsOut & VDCOMPRESS_WAIT)!=0) {
-		bNoOutputProduced = true;
-	}
-
 	if (bNoOutputProduced) {
 		lKeyRateCounter = lKeyRateCounterSave;
-		return false;
+		return NULL;
 	}
 
 	// If we're using a compressor with a stupid algorithm (Microsoft Video 1),
@@ -609,20 +564,20 @@ crunch_complete:
 
 		{
 			VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-			vdprotected4("decompressing frame %u from %08x to %08x using codec \"%ls\"", unsigned, lFrameDone, unsigned, (unsigned)dst, unsigned, (unsigned)pPrevBuffer, const wchar_t *, mCodecName.c_str()) {
-				res = driver->decompress(dwFlagsOut & AVIIF_KEYFRAME ? 0 : ICDECOMPRESS_NOTKEYFRAME,
-						&*mOutputFormat,
-						dst,
-						&*mInputFormat,
-						pPrevBuffer);
+			vdprotected4("decompressing frame %u from %08x to %08x using codec \"%s\"", unsigned, lFrameNum, unsigned, (unsigned)pOutputBuffer, unsigned, (unsigned)pPrevBuffer, const char *, mCodecName.c_str()) {
+				res = driver->decompress(dwFlagsOut & AVIIF_KEYFRAME ? 0 : ICDECOMPRESS_NOTKEYFRAME
+						,(LPBITMAPINFOHEADER)pbiOutput
+						,pOutputBuffer
+						,(LPBITMAPINFOHEADER)pbiInput
+						,pPrevBuffer);
 			}
 		}
 		if (res != ICERR_OK)
 			throw MyICError("Video compression", res);
 	}
 
-	++lFrameDone;
-	size = bytes;
+	++lFrameNum;
+	*plSize = bytes;
 
 	// Update quota.
 
@@ -642,16 +597,16 @@ crunch_complete:
 	// Was it a keyframe?
 
 	if (dwFlagsOut & AVIIF_KEYFRAME) {
-		keyframe = true;
+		*pfKeyframe = true;
 		lKeyRateCounter = lKeyRate;
 	} else {
-		keyframe = false;
+		*pfKeyframe = false;
 	}
 
-	return true;
+	return pOutputBuffer;
 }
 
-void VideoSequenceCompressor::PackFrameInternal(void* dst, DWORD frameSize, DWORD q, const void *src, DWORD dwFlagsIn, DWORD& dwFlagsOut, sint32& bytes) {
+void VideoSequenceCompressor::PackFrameInternal(DWORD frameSize, DWORD q, void *pBits, DWORD dwFlagsIn, DWORD& dwFlagsOut, sint32& bytes) {
 	DWORD dwChunkId = 0;
 	DWORD res;
 
@@ -659,32 +614,25 @@ void VideoSequenceCompressor::PackFrameInternal(void* dst, DWORD frameSize, DWOR
 	if (dwFlagsIn)
 		dwFlagsOut = AVIIF_KEYFRAME;
 
-	DWORD sizeImage = mOutputFormat->biSizeImage;
+	DWORD sizeImage = pbiOutput->bmiHeader.biSizeImage;
 
 	VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
-	vdprotected4("compressing frame %u from %08x to %08x using codec \"%ls\"", unsigned, lFrameSent, unsigned, (unsigned)src, unsigned, (unsigned)dst, const wchar_t *, mCodecName.c_str()) {
+	vdprotected4("compressing frame %u from %08x to %08x using codec \"%s\"", unsigned, lFrameNum, unsigned, (unsigned)pBits, unsigned, (unsigned)pOutputBuffer, const char *, mCodecName.c_str()) {
 		res = driver->compress(dwFlagsIn,
-				mOutputFormat.data(), dst,
-				mInputFormat.data(), (LPVOID)src,
+				(LPBITMAPINFOHEADER)pbiOutput, pOutputBuffer,
+				(LPBITMAPINFOHEADER)pbiInput, pBits,
 				&dwChunkId,
 				&dwFlagsOut,
-				lFrameSent,
-				lFrameSent ? frameSize : 0xFFFFFF,
+				lFrameNum,
+				lFrameNum ? frameSize : 0xFFFFFF,
 				q,
-				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : mInputFormat.data(),
-				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : pPrevBuffer,
-				&mInputLayout);
+				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : (LPBITMAPINFOHEADER)pbiInput,
+				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : pPrevBuffer);
 	}
 
-	bytes = mOutputFormat->biSizeImage;
-	mOutputFormat->biSizeImage = sizeImage;
+	bytes = pbiOutput->bmiHeader.biSizeImage;
+	pbiOutput->bmiHeader.biSizeImage = sizeImage;
 
 	if (res != ICERR_OK)
 		throw MyICError("Video compression", res);
-}
-
-void* VideoSequenceCompressor::createResultBuffer() {
-	void* r = new char[lMaxPackedSize];
-	if (!r)	throw MyMemoryError();
-	return r;
 }

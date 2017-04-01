@@ -136,7 +136,7 @@ stringset 9 {		// kVDST_Project
 }
 
 stringset 10 {		// kVDST_VideoSequenceCompressor
-	message 0, "Video codec \"%.128ls\" modified its input image buffer and appears to have a bug. Check with the vendor "
+	message 0, "Video codec \"%.128hs\" modified its input image buffer and appears to have a bug. Check with the vendor "
 		"for an updated version of the codec.";
 }
 

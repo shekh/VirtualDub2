@@ -46,8 +46,6 @@
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmapops.h>
 #include <vd2/Kasumi/pixmaputils.h>
-#include <../Kasumi/h/uberblit_rgb64.h>
-#include <../Kasumi/h/uberblit_16f.h>
 #include <vd2/Riza/bitmap.h>
 #include <vd2/Riza/videocodec.h>
 #include <vd2/VDCapture/capdriver.h>
@@ -289,12 +287,11 @@ public:
 
 	IVDCaptureFilterSystem *mpFilterSys;
 	VDPixmapLayout			mInputLayout;
-	vdautoptr<IVDPixmapBlitter>	mpOutputBlitter;
-	VDPixmapBuffer repack_buffer;
-	VDPixmapLayout driverLayout;
-	void *pOutputBuffer;
 
 	VDStringW		mCaptureRoot;
+
+	VDRTProfileChannel	mVideoProfileChannel;
+	VDRTProfileChannel	mAudioProfileChannel;
 
 	VDCaptureData();
 	~VDCaptureData();
@@ -340,7 +337,6 @@ VDCaptureData::VDCaptureData()
 	, mVideoSegmentIndex(0)
 	, mAudioSegmentIndex(0)
 	, mpVideoCompressor(NULL)
-	, pOutputBuffer(0)
 	, mpOutput(NULL)
 	, mpOutputFile(NULL)
 	, mpOutputFilePending(NULL)
@@ -364,6 +360,8 @@ VDCaptureData::VDCaptureData()
 	, mbAllFull(0)
 	, mbNTSC(0)
 	, mpFilterSys(NULL)
+	, mVideoProfileChannel("Video Output")
+	, mAudioProfileChannel("Audio Output")
 {
 }
 
@@ -1804,7 +1802,7 @@ void VDCaptureProject::Capture(bool fTest) {
 
 		if (bCaptureAudio) {
 			if (!GetAudioFormat(wfexInput)) {
-//#pragma vdpragma_TODO("Should probably give user feedback when audio capture isn't available.")
+#pragma vdpragma_TODO("Should probably give user feedback when audio capture isn't available.")
 				bCaptureAudio = false;
 			} else {
 				pResyncFilter->SetAudioRate(wfexInput->mDataRate);
@@ -1873,44 +1871,37 @@ unknown_PCM_format:
 
 		// initialize video compression
 		vdstructex<BITMAPINFOHEADER> bmiOutput;
-		icd.driverLayout.format = 0;
 
 		if (g_compression.driver) {
-			FilterModPixmapInfo outputFormatInfo;
-			outputFormatInfo.clear();
-			int outputFormatID = g_compression.driver->queryInputFormat(&outputFormatInfo);
-			//VDPixmapLayout driverLayout;
-			//VDGetPixmapLayoutForBitmapFormat(*(VDAVIBitmapInfoHeader*)bmiToFile,0,driverLayout);
-			VDPixmapCreateLinearLayout(icd.driverLayout,outputFormatID,bmiToFile->biWidth,abs(bmiToFile->biHeight),16);
-			if (g_compression.driver->compressQuery(NULL, NULL, &icd.driverLayout)==ICERR_OK) {
-				// use layout
-				if (mFilterInputLayout.format==0)
-					throw MyError("The current video capture format is not supported");
-			} else {
-				icd.driverLayout.format = 0;
+			LONG formatSize;
+			DWORD icErr;
 
-				DWORD icErr = g_compression.driver->compressQuery(bmiToFile, NULL);
-				if (icErr != ICERR_OK)
-					throw MyICError("Video compressor", icErr);
-			}
+			icErr = g_compression.driver->compressQuery(bmiToFile, NULL);
+
+			if (ICERR_OK != icErr)
+				throw MyICError("Video compressor", icErr);
+
+			formatSize = g_compression.driver->compressGetFormatSize((BITMAPINFO*)bmiToFile);
+			if (formatSize < ICERR_OK)
+				throw MyError("Error getting compressor output format size.");
+
+			bmiOutput.resize(formatSize);
+
+			// pre-clear format memory to work around Huffyuv 2.1.1 bug
+			memset(&*bmiOutput, 0, formatSize);
+
+			if (ICERR_OK != (icErr = g_compression.driver->compressGetFormat((BITMAPINFO *)bmiToFile, (BITMAPINFO *)bmiOutput.data())))
+				throw MyICError("Video compressor",icErr);
 
 			if (!(icd.mpVideoCompressor = new VideoSequenceCompressor()))
 				throw MyMemoryError();
 
-			VDFraction scaledRate(1000000, VDClampToSint32(outputFrameRate.scale64ir(1000000)));
-			icd.mpVideoCompressor->SetDriver(g_compression.driver, g_compression.lDataRate*1024, g_compression.lQ, g_compression.lKey, false);
-			if (icd.driverLayout.format) {
-				icd.mpVideoCompressor->GetOutputFormat(&icd.driverLayout, bmiOutput);
-				icd.mpVideoCompressor->Start(icd.driverLayout, outputFormatInfo, bmiOutput.data(), bmiOutput.size(), scaledRate, 0x0FFFFFFF);
-				icd.mpVideoCompressor->GetOutputFormat(&icd.driverLayout, bmiOutput);
-			} else {
-				icd.mpVideoCompressor->GetOutputFormat(bmiToFile, bmiOutput);
-				icd.mpVideoCompressor->Start(bmiToFile, biSizeToFile, bmiOutput.data(), bmiOutput.size(), scaledRate, 0x0FFFFFFF);
-			}
-			icd.pOutputBuffer = icd.mpVideoCompressor->createResultBuffer();
+			icd.mpVideoCompressor->init(g_compression.driver, (BITMAPINFO *)bmiToFile, (BITMAPINFO *)bmiOutput.data(), g_compression.lQ, g_compression.lKey);
+			icd.mpVideoCompressor->setDataRate(g_compression.lDataRate*1024, VDClampToSint32(outputFrameRate.scale64ir(1000000)), 0x0FFFFFFF);
+			icd.mpVideoCompressor->start();
 
 			bmiToFile = (VDAVIBitmapInfoHeader *)bmiOutput.data();
-			biSizeToFile = bmiOutput.size();
+			biSizeToFile = formatSize;
 		}
 
 		// set up output file headers and formats
@@ -2114,7 +2105,7 @@ VDDEBUG("Capture has stopped.\n");
 		}
 
 		if (icd.mpVideoCompressor)
-			icd.mpVideoCompressor->Stop();
+			icd.mpVideoCompressor->finish();
 
 		// finalize files
 
@@ -2168,8 +2159,6 @@ VDDEBUG("Capture has stopped.\n");
 		ShutdownFilter();
 
 	icd.mpVideoCompressor = NULL;
-	delete icd.pOutputBuffer;
-	icd.pOutputBuffer = 0;
 
 	if (icd.mpOutputFilePending && icd.mpOutputFilePending == icd.mpOutputFile)
 		icd.mpOutputFilePending = NULL;
@@ -2845,7 +2834,7 @@ void VDCaptureData::CreateNewFile() {
 
 		*const_cast<wchar_t *>(VDFileSplitPath(fname)) = 0;
 
-//#pragma vdpragma_TODO("This drops Unicode characters not representable in ANSI")
+#pragma vdpragma_TODO("This drops Unicode characters not representable in ANSI")
 		VDStringA fnameA(VDTextWToA(fname));
 
 		int len = fnameA.size();
@@ -3106,70 +3095,17 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 
 		vdsynchronized(mpProject->mVideoFilterLock) {
 			if (mpFilterSys) {
-				VDPROFILEBEGIN("V-Filter");
+				mVideoProfileChannel.Begin(0x008000, "V-Filter");
 
 				if (firstFrame)
 					mpFilterSys->ProcessIn(px);
 
 				frameProduced = mpFilterSys->ProcessOut(px, pFilteredData, dwBytesUsed);
 
-				VDPROFILEEND();
+				mVideoProfileChannel.End();
 				filterSystemActive = true;
 				key = true;
 			}
-		}
-
-		if (driverLayout.format) {
-			VDPROFILEBEGIN("V-BlitOut");
-			VDPixmap pxsrc(VDPixmapFromLayout(mInputLayout, pFilteredData));
-			if (!mpOutputBlitter) {
-				FilterModPixmapInfo out_info;
-				out_info.ref_r = 0xFFFF;
-				out_info.ref_g = 0xFFFF;
-				out_info.ref_b = 0xFFFF;
-				out_info.ref_a = 0xFFFF;
-				int format = 0;
-				if (mpVideoCompressor) {
-					format = mpVideoCompressor->GetInputFormat(&out_info);
-				}
-				if (!format) {
-					throw MyError("bad path");
-				}
-
-				IVDPixmapExtraGen* extraDst = 0;
-				switch (format) {
-				case nsVDPixmap::kPixFormat_XRGB8888:
-					{
-						ExtraGen_X8R8G8B8_Normalize* normalize = new ExtraGen_X8R8G8B8_Normalize;
-						extraDst = normalize;
-					}
-					break;
-				case nsVDPixmap::kPixFormat_XRGB64:
-					{
-						ExtraGen_X16R16G16B16_Normalize* normalize = new ExtraGen_X16R16G16B16_Normalize;
-						normalize->max_value = out_info.ref_r;
-						extraDst = normalize;
-					}
-					break;
-				case nsVDPixmap::kPixFormat_YUV420_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_Planar16:
-				case nsVDPixmap::kPixFormat_YUV444_Planar16:
-					{
-						ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
-						normalize->max_value = out_info.ref_r;
-						extraDst = normalize;
-					}
-					break;
-				}
-				repack_buffer.init(driverLayout);
-				mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc, extraDst);
-				delete extraDst;
-			}
-
-			mpOutputBlitter->Blit(repack_buffer, pxsrc);
-			pFilteredData = repack_buffer.base();
-			dwBytesUsed = repack_buffer.size();
-			VDPROFILEEND();
 		}
 
 		if (!frameProduced)
@@ -3269,21 +3205,20 @@ void VDCaptureData::VideoCallbackWriteFrame(void *pFilteredData, uint32 dwBytesU
 
 	if (mpVideoCompressor) {
 		bool isKey;
-		uint32 lBytes = 0;
+		long lBytes = 0;
+		void *lpCompressedData;
 
-		VDPROFILEBEGIN("V-Compress");
-		void* lpCompressedData = pOutputBuffer;
-		if (!mpVideoCompressor->packFrame(lpCompressedData, pFilteredData, isKey, lBytes))
-			lpCompressedData = 0;
-		VDPROFILEEND();
+		mVideoProfileChannel.Begin(0x80c080, "V-Compress");
+		lpCompressedData = mpVideoCompressor->packFrame(pFilteredData, &isKey, &lBytes);
+		mVideoProfileChannel.End();
 
 		if (mpOutput) {
-			VDPROFILEBEGIN("V-Write");
+			mVideoProfileChannel.Begin(0xe0e0e0, "V-Write");
 			mpVideoOut->write(
 					isKey ? AVIOutputStream::kFlagKeyFrame : 0,
 					lpCompressedData,
 					lBytes, 1);
-			VDPROFILEEND();
+			mVideoProfileChannel.End();
 
 			CheckVideoAfter();
 		}
@@ -3291,9 +3226,9 @@ void VDCaptureData::VideoCallbackWriteFrame(void *pFilteredData, uint32 dwBytesU
 		mLastVideoSize = lBytes + 24;
 	} else {
 		if (mpOutput) {
-			VDPROFILEBEGIN("V-Write");
+			mVideoProfileChannel.Begin(0xe0e0e0, "V-Write");
 			mpVideoOut->write(key ? AVIOutputStream::kFlagKeyFrame : 0, pFilteredData, dwBytesUsed, 1);
-			VDPROFILEEND();
+			mVideoProfileChannel.End();
 			CheckVideoAfter();
 		}
 
@@ -3351,9 +3286,9 @@ bool VDCaptureData::WaveCallback(const void *data, uint32 size, sint64 global_cl
 				pSrc += tc;
 			}
 		} else {
-			VDPROFILEBEGIN("A-Write");
+			mAudioProfileChannel.Begin(0xe0e0e0, "A-Write");
 			mpAudioOut->write(0, data, size, size / mAudioSampleSize);
-			VDPROFILEEND();
+			mAudioProfileChannel.End();
 			mTotalAudioSize += size + 24;
 			mSegmentAudioSize += size + 24;
 		}
