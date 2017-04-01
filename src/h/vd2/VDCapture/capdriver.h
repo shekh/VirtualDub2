@@ -53,6 +53,7 @@ namespace nsVDCapture {
 		kDialogVideoCapturePin,
 		kDialogVideoPreviewPin,
 		kDialogVideoCaptureFilter,
+		kDialogAudioCaptureFilter,
 		kDialogVideoCrossbar,
 		kDialogVideoCrossbar2,
 		kDialogTVTuner,

@@ -2803,6 +2803,7 @@ bool VDCaptureDriverDS::IsDriverDialogSupported(nsVDCapture::DriverDialog dlg) {
 		else
 			return mpVFWDialogs && SUCCEEDED(mpVFWDialogs->HasDialog(VfwCaptureDialog_Display));
 	case kDialogVideoCaptureFilter:	return DisplayPropertyPages(mpCapFilt, NULL, NULL, 0);
+	case kDialogAudioCaptureFilter:	return DisplayPropertyPages(mpAudioCapFilt, NULL, NULL, 0);
 	case kDialogVideoCapturePin:	return DisplayPropertyPages(mpRealCapturePin, NULL, NULL, 0);
 	case kDialogVideoPreviewPin:	return DisplayPropertyPages(mpRealPreviewPin, NULL, NULL, 0);
 	case kDialogVideoCrossbar:		return DisplayPropertyPages(mpCrossbar, NULL, NULL, 0);
@@ -2914,6 +2915,9 @@ void VDCaptureDriverDS::DisplayDriverDialog(nsVDCapture::DriverDialog dlg) {
 
 	case kDialogVideoCaptureFilter:
 		DisplayPropertyPages(mpCapFilt, mhwndParent, NULL, 0);
+		break;
+	case kDialogAudioCaptureFilter:
+		DisplayPropertyPages(mpAudioCapFilt, mhwndParent, NULL, 0);
 		break;
 	case kDialogVideoCrossbar:
 		DisplayPropertyPages(mpCrossbar, mhwndParent, NULL, 0);

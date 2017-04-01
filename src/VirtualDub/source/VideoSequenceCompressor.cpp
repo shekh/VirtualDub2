@@ -19,7 +19,7 @@
 #include <windows.h>
 #include <vfw.h>
 
-#include "VideoSequenceCompressor.h"
+#include <vd2/Kasumi/pixmap.h>
 #include <vd2/system/debug.h>
 #include <vd2/system/error.h>
 #include <vd2/system/log.h>
@@ -27,6 +27,7 @@
 #include <vd2/system/w32assist.h>
 #include <vd2/Dita/resources.h>
 #include <vd2/Riza/videocodec.h>
+#include "VideoSequenceCompressor.h"
 #include "crash.h"
 #include "misc.h"
 

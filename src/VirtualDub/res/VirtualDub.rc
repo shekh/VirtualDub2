@@ -413,6 +413,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Raw capture format...",       ID_AUDIO_RAWCAPTUREFORMAT
         MENUITEM "&Compression...\tA",          ID_AUDIO_COMPRESSION
+        MENUITEM "Capture filter...",           ID_AUDIO_CAPTUREFILTER
         MENUITEM "Windows &mixer...",           ID_AUDIO_WINMIXER
         POPUP "Audio input"
         BEGIN

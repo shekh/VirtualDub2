@@ -41,7 +41,6 @@
 #include "FilterSystem.h"
 #include "AVIOutputStriped.h"
 #include "AVIStripeSystem.h"
-#include "VideoSequenceCompressor.h"
 #include <vd2/Dita/services.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmapops.h>
@@ -57,6 +56,7 @@
 #include <vd2/VDCapture/capaudiocomp.h>
 #include <vd2/VDCapture/cap_dshow.h>
 
+#include "VideoSequenceCompressor.h"
 #include "crash.h"
 #include "gui.h"
 #include "oshelper.h"
@@ -579,6 +579,7 @@ public:
 
 	bool	SetAudioFormat(const VDWaveFormat& wfex, LONG cbwfex);
 	bool	GetAudioFormat(vdstructex<VDWaveFormat>& wfex);
+	void	ValidateAudioFormat();
 
 	void	SetAudioCompFormat();
 	void	SetAudioCompFormat(const VDWaveFormat& wfex, uint32 cbwfex, const char *pShortNameHint);
@@ -1422,6 +1423,29 @@ bool VDCaptureProject::GetAudioFormat(vdstructex<VDWaveFormat>& wfex) {
 
 	wfex.assign((const VDWaveFormat *)wfex0.data(), wfex0.size());
 	return true;
+}
+
+void VDCaptureProject::ValidateAudioFormat() {
+	std::list<vdstructex<VDWaveFormat> > aformats;
+	vdstructex<VDWaveFormat> currentFormat;
+
+	GetAudioFormat(currentFormat);
+	GetAvailableAudioFormats(aformats);
+
+	std::list<vdstructex<VDWaveFormat> >::const_iterator it(aformats.begin()), itEnd(aformats.end());
+
+	for(int idx=0; it!=itEnd; ++it, ++idx) {
+		const vdstructex<VDWaveFormat>& wfex = *it;
+
+		if (wfex == currentFormat) {
+			return;
+		}
+	}
+
+	if (!aformats.empty()) {
+		const vdstructex<VDWaveFormat>& wfex = aformats.front();
+		SetAudioFormat(*wfex, wfex.size());
+	}
 }
 
 void VDCaptureProject::SetAudioCompFormat() {

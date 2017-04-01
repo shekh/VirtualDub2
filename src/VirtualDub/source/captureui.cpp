@@ -1949,6 +1949,7 @@ void VDCaptureProjectUI::UICaptureDriverChanged(int driver) {
 		{ ID_VIDEO_CAPTUREPIN, kDialogVideoCapturePin },
 		{ ID_VIDEO_PREVIEWPIN, kDialogVideoPreviewPin },
 		{ ID_VIDEO_CAPTUREFILTER, kDialogVideoCaptureFilter },
+		{ ID_AUDIO_CAPTUREFILTER, kDialogAudioCaptureFilter },
 		{ ID_VIDEO_CROSSBAR, kDialogVideoCrossbar },
 		{ ID_VIDEO_CROSSBAR2, kDialogVideoCrossbar2 },
 		{ ID_VIDEO_TUNER, kDialogTVTuner }
@@ -3264,6 +3265,12 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 		case ID_VIDEO_CAPTUREFILTER:
 			SuspendDisplay(true);
 			mpProject->DisplayDriverDialog(kDialogVideoCaptureFilter);
+			ResumeDisplay();
+			break;
+		case ID_AUDIO_CAPTUREFILTER:
+			SuspendDisplay(true);
+			mpProject->DisplayDriverDialog(kDialogAudioCaptureFilter);
+			mpProject->ValidateAudioFormat();
 			ResumeDisplay();
 			break;
 		case ID_VIDEO_CROSSBAR:
