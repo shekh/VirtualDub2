@@ -29,6 +29,7 @@
 #include "filter.h"
 
 class VDFilterChainDesc;
+struct VDFilterChainEntry;
 class FilterInstance;
 class VDXFilterStateInfo;
 class FilterSystemBitmap;
@@ -50,6 +51,8 @@ public:
 };
 
 class FilterSystem {
+	struct PrepareState;
+
 	FilterSystem(const FilterSystem&);
 	FilterSystem& operator=(const FilterSystem&);
 public:
@@ -64,6 +67,7 @@ public:
 	void SetAsyncThreadPriority(int priority);
 
 	void prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width, uint32 src_height, VDPixmapFormatEx src_format, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect);
+	static void prepareLinearEntry(PrepareState& state, VDFilterChainEntry *ent, bool accelEnabled, uint32 alignReq);
 	void initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 filterStateFlags, VDFilterChainDesc *desc, IVDFilterFrameSource *src, uint32 src_width, uint32 src_height, VDPixmapFormatEx src_format, const uint32 *palette, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect);
 	void ReadyFilters();
 

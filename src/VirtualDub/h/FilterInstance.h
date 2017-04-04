@@ -312,7 +312,7 @@ struct VDFilterPrepareStreamInfo {
 	VFBitmapInternal	mExternalSrc;			// [prepare only] post convert (incoming)
 	VFBitmapInternal	mExternalSrcPreAlign;	// [prepare only] cropped
 	VFBitmapInternal	mExternalSrcCropped;	// [prepare only] post-align
-	bool	mbAlignOnEntry;
+	int		mAlignOnEntry;
 	bool	mbNormalizeOnEntry;
 };
 
@@ -389,7 +389,7 @@ public:
 	bool	Configure(VDXHWND parent, IVDXFilterPreview2 *ifp2, IFilterModPreview *ifmpreview);
 
 	void	PrepareReset();
-	uint32	Prepare(const VFBitmapInternal *inputs, uint32 numInputs, VDFilterPrepareInfo& prepareInfo);
+	uint32	Prepare(const VFBitmapInternal *inputs, uint32 numInputs, VDFilterPrepareInfo& prepareInfo, uint32 exitAlign);
 
 	void	SetEngine(IVDFilterFrameEngine *engine);
 	void	Start(IVDFilterFrameEngine *engine);
@@ -439,6 +439,7 @@ public:
 
 	sint64		GetLastSourceFrame()	const { return mfsi.lCurrentSourceFrame; }
 	sint64		GetLastOutputFrame()	const { return mfsi.lCurrentFrame; }
+	uint32		GetAlignReq() const { return mAlignReq; }
 
 	VDStringA mConfigString;
 	FilterModProject fmProject;
@@ -530,6 +531,7 @@ protected:
 	uint32		mFlags;
 	uint32		mLag;
 	uint32    mFilterModFlags;
+	uint32    mAlignReq;
 	int			mAPIVersion;
 
 	VDPosition	mLastResultFrame;

@@ -54,6 +54,9 @@ namespace {
 	bool IsVDXAFormat(int format) {
 		return format == nsVDXPixmap::kPixFormat_VDXA_RGB || format == nsVDXPixmap::kPixFormat_VDXA_YUV;
 	}
+
+	const uint32 max_align = 64;
+	const uint32 vdxa_align = 16;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -289,6 +292,13 @@ void FilterSystem::SetAsyncThreadPriority(int priority) {
 		mpBitmaps->mpProcessSchedulerThreadPool->SetPriority(mThreadPriority);
 }
 
+struct FilterSystem::PrepareState {
+	typedef vdhashmap<VDStringA, VFBitmapInternal *> NamedInputs;
+	VFBitmapInternal *baseInput;
+	VFBitmapInternal *prevInput;
+	NamedInputs namedInputs;
+};
+
 // prepareLinearChain(): init bitmaps in a linear filtering system
 void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width, uint32 src_height, VDPixmapFormatEx src_format, const VDFraction& sourceFrameRate, sint64 sourceFrameCount, const VDFraction& sourcePixelAspect) {
 	if (mbFiltersInited)
@@ -296,467 +306,75 @@ void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width,
 
 	DeallocateBuffers();
 
-	VDPixmapCreateLinearLayout(mpBitmaps->mInitialBitmap.mPixmapLayout, src_format, src_width, src_height, 16);
-	mpBitmaps->mInitialBitmap.mPixmapLayout.formatEx = src_format;
+	uint32 alignReq = 16;
+	bool align_changed;
 
-	if (VDPixmapGetInfo(src_format).palsize > 0)
-		mpBitmaps->mInitialBitmap.mPixmapLayout.palette = mPalette;
+	VFBitmapInternal *lastInput = 0;
 
-	if (src_format == nsVDPixmap::kPixFormat_XRGB8888)
-		VDPixmapLayoutFlipV(mpBitmaps->mInitialBitmap.mPixmapLayout);
+	for(;;){
+		VDPixmapCreateLinearLayout(mpBitmaps->mInitialBitmap.mPixmapLayout, src_format, src_width, src_height, alignReq);
+		mpBitmaps->mInitialBitmap.mPixmapLayout.formatEx = src_format;
 
-	mpBitmaps->mInitialBitmap.mFrameRateHi		= sourceFrameRate.getHi();
-	mpBitmaps->mInitialBitmap.mFrameRateLo		= sourceFrameRate.getLo();
-	mpBitmaps->mInitialBitmap.mFrameCount		= sourceFrameCount;
-	mpBitmaps->mInitialBitmap.ConvertPixmapLayoutToBitmapLayout();
-	mpBitmaps->mInitialBitmap.mAspectRatioHi	= sourcePixelAspect.getHi();
-	mpBitmaps->mInitialBitmap.mAspectRatioLo	= sourcePixelAspect.getLo();
+		if (VDPixmapGetInfo(src_format).palsize > 0)
+			mpBitmaps->mInitialBitmap.mPixmapLayout.palette = mPalette;
 
-	lRequiredSize = 0;
-	mbFiltersUseAcceleration = false;
+		if (src_format == nsVDPixmap::kPixFormat_XRGB8888)
+			VDPixmapLayoutFlipV(mpBitmaps->mInitialBitmap.mPixmapLayout);
 
-	VFBitmapInternal *baseInput = &mpBitmaps->mInitialBitmap;
-	VFBitmapInternal *prevInput = baseInput;
-	vdvector<VFBitmapInternal *> inputSrcs;
-	vdvector<VFBitmapInternal> inputs;
+		mpBitmaps->mInitialBitmap.mFrameRateHi		= sourceFrameRate.getHi();
+		mpBitmaps->mInitialBitmap.mFrameRateLo		= sourceFrameRate.getLo();
+		mpBitmaps->mInitialBitmap.mFrameCount		= sourceFrameCount;
+		mpBitmaps->mInitialBitmap.ConvertPixmapLayoutToBitmapLayout();
+		mpBitmaps->mInitialBitmap.mAspectRatioHi	= sourcePixelAspect.getHi();
+		mpBitmaps->mInitialBitmap.mAspectRatioLo	= sourcePixelAspect.getLo();
 
-	typedef vdhashmap<VDStringA, VFBitmapInternal *> NamedInputs;
-	NamedInputs namedInputs;
+		lRequiredSize = 0;
+		mbFiltersUseAcceleration = false;
+		align_changed = false;
 
-	namedInputs[VDStringA("$input")] = baseInput;
+		PrepareState state;
+		state.baseInput = &mpBitmaps->mInitialBitmap;
+		state.prevInput = state.baseInput;
+		state.namedInputs[VDStringA("$input")] = state.baseInput;
 
-	for(VDFilterChainDesc::Entries::const_iterator it(desc->mEntries.begin()), itEnd(desc->mEntries.end());
-		it != itEnd;
-		++it)
-	{
-		VDFilterChainEntry *ent = *it;
-		FilterInstance *fa = ent->mpInstance;
+		for(VDFilterChainDesc::Entries::const_iterator it(desc->mEntries.begin()), itEnd(desc->mEntries.end());
+			it != itEnd;
+			++it)
+		{
+			VDFilterChainEntry *ent = *it;
+    	FilterInstance *fa = ent->mpInstance;
+			if (!fa->IsEnabled())
+				continue;
 
-		if (!fa->IsEnabled())
-			continue;
-
-		const VDXFilterDefinition *fdef = fa->GetDefinition();
-		uint32 inputCount;
-		if (ent->mSources.empty()) {
-			inputSrcs.clear();
-			if (fdef->mSourceCountLowMinus1 < 0) {
-				inputCount = 0;
-			} else {
-				inputCount = 1;
-				inputSrcs.resize(1, prevInput);
+			prepareLinearEntry(state,ent,mbAccelEnabled,alignReq);
+			uint32 align = ent->mpInstance->GetAlignReq();
+			if (align>alignReq) {
+				alignReq = align;
+				align_changed = true;
+				break;
 			}
-		} else {
-			inputCount = ent->mSources.size();
 
-			inputSrcs.resize(inputCount);
+	    lRequiredSize += fa->mPrepareInfo.mLastFrameSizeRequired;
 
-			for(uint32 i=0; i<inputCount; ++i) {
-				const VDStringA& srcName = ent->mSources[i];
+	    state.prevInput = &fa->GetOutputStream();
+	    if (!ent->mOutputName.empty())
+		    state.namedInputs[ent->mOutputName] = state.prevInput;
 
-				if (srcName == "$prev")
-					inputSrcs[i] = prevInput;
-				else {
-					NamedInputs::const_iterator it(namedInputs.find(srcName));
+	    if (IsVDXAFormat(state.prevInput->mPixmapLayout.format))
+		    mbFiltersUseAcceleration = true;
 
-					if (it == namedInputs.end()) {
-						// We cannot throw out of this routine, so we use the previous
-						// input instead.
-						inputSrcs[i] = prevInput;
-					} else
-						inputSrcs[i] = it->second;
-				}
-			}
+			if (fa->IsTerminal())
+				break;
 		}
 
-		// check if the pin count is correct; if it is not, we need to fudge
-		if (inputCount < (fdef->mSourceCountLowMinus1 + 1) || inputCount > (fdef->mSourceCountHighMinus1 + 1)) {
-			inputSrcs.resize(fdef->mSourceCountLowMinus1 + 1, inputSrcs.empty() ? baseInput : inputSrcs.back());
+		if (!align_changed) {
+			lastInput = state.prevInput;
+			break;
 		}
-
-		// check if we need to blit
-		VDFilterPrepareInfo& prepareInfo = fa->mPrepareInfo;
-		VDFilterPrepareInfo2& prepareInfo2 = fa->mPrepareInfo2;
-
-		prepareInfo2.mStreams.resize(inputCount);
-		for(uint32 i=0; i<inputCount; ++i)
-			prepareInfo2.mStreams[i].mbConvertOnEntry = false;
-
-		inputs.clear();
-		inputs.resize(inputCount);
-
-		for(uint32 i = 0; i < inputCount; ++i)
-			inputs[i] = *inputSrcs[i];
-
-		const bool altFormatCheckRequired = fa->IsAltFormatCheckRequired();
-		if (altFormatCheckRequired) {
-			VFBitmapInternal& bmTemp = inputs.front();
-
-			if (bmTemp.mPixmapLayout.format != nsVDPixmap::kPixFormat_XRGB8888 || bmTemp.mPixmapLayout.pitch > 0
-				|| VDPixmapGetInfo(bmTemp.mPixmapLayout.format).palsize) {
-
-				VDPixmapCreateLinearLayout(bmTemp.mPixmapLayout, nsVDPixmap::kPixFormat_XRGB8888, bmTemp.w, bmTemp.h, 16);
-				VDPixmapLayoutFlipV(bmTemp.mPixmapLayout);
-				bmTemp.ConvertPixmapLayoutToBitmapLayout();
-
-				prepareInfo2.mStreams[0].mbConvertOnEntry = true;
-			}
-		}
-
-		fa->PrepareReset();
-
-		uint32 flags = fa->Prepare(inputs.data(), inputCount, prepareInfo);
-
-		if (flags == FILTERPARAM_NOT_SUPPORTED || (flags & FILTERPARAM_SUPPORTS_ALTFORMATS)) {
-			using namespace nsVDPixmap;
-
-			VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_XYUV64 + 1);
-
-			std::bitset<nsVDPixmap::kPixFormat_Max_Standard> formatMask;
-
-			formatMask.set(kPixFormat_XRGB1555);
-			formatMask.set(kPixFormat_RGB565);
-			formatMask.set(kPixFormat_RGB888);
-			formatMask.set(kPixFormat_XRGB8888);
-			formatMask.set(kPixFormat_Y8);
-			formatMask.set(kPixFormat_Y8_FR);
-			formatMask.set(kPixFormat_YUV422_UYVY);
-			formatMask.set(kPixFormat_YUV422_YUYV);
-			formatMask.set(kPixFormat_YUV444_Planar);
-			formatMask.set(kPixFormat_YUV422_Planar);
-			formatMask.set(kPixFormat_YUV420_Planar);
-			formatMask.set(kPixFormat_YUV420i_Planar);
-			formatMask.set(kPixFormat_YUV420it_Planar);
-			formatMask.set(kPixFormat_YUV420ib_Planar);
-			formatMask.set(kPixFormat_YUV411_Planar);
-			formatMask.set(kPixFormat_YUV410_Planar);
-			formatMask.set(kPixFormat_YUV422_UYVY_709);
-			formatMask.set(kPixFormat_YUV422_YUYV_709);
-			formatMask.set(kPixFormat_YUV444_Planar_709);
-			formatMask.set(kPixFormat_YUV422_Planar_709);
-			formatMask.set(kPixFormat_YUV420_Planar_709);
-			formatMask.set(kPixFormat_YUV420i_Planar_709);
-			formatMask.set(kPixFormat_YUV420it_Planar_709);
-			formatMask.set(kPixFormat_YUV420ib_Planar_709);
-			formatMask.set(kPixFormat_YUV411_Planar_709);
-			formatMask.set(kPixFormat_YUV410_Planar_709);
-			formatMask.set(kPixFormat_YUV422_UYVY_FR);
-			formatMask.set(kPixFormat_YUV422_YUYV_FR);
-			formatMask.set(kPixFormat_YUV444_Planar_FR);
-			formatMask.set(kPixFormat_YUV422_Planar_FR);
-			formatMask.set(kPixFormat_YUV420_Planar_FR);
-			formatMask.set(kPixFormat_YUV420i_Planar_FR);
-			formatMask.set(kPixFormat_YUV420it_Planar_FR);
-			formatMask.set(kPixFormat_YUV420ib_Planar_FR);
-			formatMask.set(kPixFormat_YUV411_Planar_FR);
-			formatMask.set(kPixFormat_YUV410_Planar_FR);
-			formatMask.set(kPixFormat_YUV422_UYVY_709_FR);
-			formatMask.set(kPixFormat_YUV422_YUYV_709_FR);
-			formatMask.set(kPixFormat_YUV444_Planar_709_FR);
-			formatMask.set(kPixFormat_YUV422_Planar_709_FR);
-			formatMask.set(kPixFormat_YUV420_Planar_709_FR);
-			formatMask.set(kPixFormat_YUV420i_Planar_709_FR);
-			formatMask.set(kPixFormat_YUV420it_Planar_709_FR);
-			formatMask.set(kPixFormat_YUV420ib_Planar_709_FR);
-			formatMask.set(kPixFormat_YUV411_Planar_709_FR);
-			formatMask.set(kPixFormat_YUV410_Planar_709_FR);
-			formatMask.set(kPixFormat_XRGB64);
-			formatMask.set(kPixFormat_YUV444_Planar16);
-			formatMask.set(kPixFormat_YUV422_Planar16);
-			formatMask.set(kPixFormat_YUV420_Planar16);
-			formatMask.set(kPixFormat_Y16);
-
-			static const int kStaticOrder[]={
-				kPixFormat_YUV444_Planar,
-				kPixFormat_YUV422_Planar,
-				kPixFormat_YUV422_UYVY,
-				kPixFormat_YUV422_YUYV,
-				kPixFormat_YUV420_Planar,
-				kPixFormat_YUV411_Planar,
-				kPixFormat_YUV410_Planar,
-				kPixFormat_XRGB8888
-			};
-
-			int staticOrderIndex = 0;
-
-			// test an invalid format and make sure the filter DOESN'T accept it
-			for(uint32 i = 0; i < inputCount; ++i)
-				inputs[i] = *inputSrcs[i];
-
-			inputs[0].mPixmapLayout.format = 255;
-
-			flags = fa->Prepare(inputs.data(), inputCount, prepareInfo);
-
-			inputs[0] = *inputSrcs[0];
-
-			int originalFormat = inputs[0].mPixmapLayout.format;
-			int format = originalFormat;
-			if (flags != FILTERPARAM_NOT_SUPPORTED) {
-				formatMask.reset();
-				VDASSERT(fa->GetInvalidFormatHandlingState());
-			} else {
-				bool conversionRequired = true;
-
-				if (mbAccelEnabled && fa->IsAcceleratable()) {
-					static const int kFormats[]={
-						nsVDXPixmap::kPixFormat_VDXA_RGB,
-						nsVDXPixmap::kPixFormat_VDXA_YUV,
-						nsVDXPixmap::kPixFormat_VDXA_RGB
-					};
-
-					const int *formats = kFormats + 1;
-
-					switch(originalFormat) {
-						case nsVDXPixmap::kPixFormat_RGB565:
-						case nsVDXPixmap::kPixFormat_XRGB1555:
-						case nsVDXPixmap::kPixFormat_RGB888:
-						case nsVDXPixmap::kPixFormat_XRGB8888:
-						case nsVDXPixmap::kPixFormat_VDXA_RGB:
-							formats = kFormats;
-							break;
-					}
-
-					for(int i=0; i<2; ++i) {
-						format = formats[i];
-
-						bool conversionFound = false;
-						for(uint32 j = 0; j < inputCount; ++j) {
-							inputs[j] = *inputSrcs[j];
-
-							if (inputs[j].mPixmapLayout.format != format)
-								conversionFound = true;
-
-							VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, nsVDPixmap::kPixFormat_XRGB8888, inputs[j].w, inputs[j].h, 16);
-							inputs[j].mPixmapLayout.format = format;
-							inputs[j].ConvertPixmapLayoutToBitmapLayout();
-						}
-
-						flags = fa->Prepare(inputs.data(), inputCount, prepareInfo);
-
-						if (flags != FILTERPARAM_NOT_SUPPORTED) {
-							// clear the format mask so we don't try any more formats
-							formatMask.reset();
-
-							conversionRequired = conversionFound;
-							break;
-						}
-					}
-
-					if (formatMask.any()) {
-						// failed - restore original first format to try
-						format = originalFormat;
-					}
-				}
-
-				// check if the incoming format is VDXA and we haven't already handled the situation --
-				// if so we must convert it to the equivalent.
-				if (formatMask.any()) {
-					switch(originalFormat) {
-						case nsVDXPixmap::kPixFormat_VDXA_RGB:
-							format = nsVDXPixmap::kPixFormat_XRGB8888;
-							break;
-						case nsVDXPixmap::kPixFormat_VDXA_YUV:
-							format = nsVDXPixmap::kPixFormat_YUV444_Planar;
-							break;
-					}
-				}
-
-				while(format && formatMask.any()) {
-					if (formatMask.test(format)) {
-						if (format == originalFormat) {
-							for(uint32 j = 0; j < inputCount; ++j)
-								inputs[j] = *inputSrcs[j];
-
-							flags = fa->Prepare(inputs.data(), inputCount, prepareInfo);
-
-							if (flags != FILTERPARAM_NOT_SUPPORTED) {
-								conversionRequired = false;
-								break;
-							}
-						}
-
-						for(uint32 j = 0; j < inputCount; ++j) {
-							inputs[j] = *inputSrcs[j];
-
-							VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, format, inputs[j].w, inputs[j].h, 16);
-
-							if (altFormatCheckRequired && format == nsVDPixmap::kPixFormat_XRGB8888)
-								VDPixmapLayoutFlipV(inputs[j].mPixmapLayout);
-
-							inputs[j].ConvertPixmapLayoutToBitmapLayout();
-						}
-
-						flags = fa->Prepare(inputs.data(), inputCount, prepareInfo);
-
-						if (flags != FILTERPARAM_NOT_SUPPORTED)
-							break;
-
-						formatMask.reset(format);
-					}
-
-					switch(format) {
-					case kPixFormat_YUV422_UYVY:
-						if (formatMask.test(kPixFormat_YUV422_YUYV))
-							format = kPixFormat_YUV422_YUYV;
-						else
-							format = kPixFormat_YUV422_Planar;
-						break;
-
-					case kPixFormat_YUV422_YUYV:
-						if (formatMask.test(kPixFormat_YUV422_UYVY))
-							format = kPixFormat_YUV422_UYVY;
-						else
-							format = kPixFormat_YUV422_Planar;
-						break;
-
-					case kPixFormat_YUV422_UYVY_709:
-						if (formatMask.test(kPixFormat_YUV422_YUYV_709))
-							format = kPixFormat_YUV422_YUYV_709;
-						else
-							format = kPixFormat_YUV422_Planar_709;
-						break;
-
-					case kPixFormat_YUV422_YUYV_709:
-						if (formatMask.test(kPixFormat_YUV422_UYVY_709))
-							format = kPixFormat_YUV422_UYVY_709;
-						else
-							format = kPixFormat_YUV422_Planar_709;
-						break;
-
-					case kPixFormat_YUV422_UYVY_FR:
-						if (formatMask.test(kPixFormat_YUV422_YUYV_FR))
-							format = kPixFormat_YUV422_YUYV_FR;
-						else
-							format = kPixFormat_YUV422_Planar_FR;
-						break;
-
-					case kPixFormat_YUV422_YUYV_709_FR:
-						if (formatMask.test(kPixFormat_YUV422_UYVY_709_FR))
-							format = kPixFormat_YUV422_UYVY_709_FR;
-						else
-							format = kPixFormat_YUV422_Planar_709_FR;
-						break;
-
-					case kPixFormat_Y8:
-					case kPixFormat_YUV422_Planar:
-						format = kPixFormat_YUV444_Planar;
-						break;
-
-					case kPixFormat_YUV420_Planar:
-					case kPixFormat_YUV411_Planar:
-						format = kPixFormat_YUV422_Planar;
-						break;
-
-					case kPixFormat_YUV410_Planar:
-					case kPixFormat_YUV420_NV12:
-						format = kPixFormat_YUV420_Planar;
-						break;
-
-					case kPixFormat_YUV422_V210:
-						format = kPixFormat_YUV422_Planar16;
-						//format = kPixFormat_YUV422_Planar;
-						break;
-
-					case kPixFormat_XYUV64:
-						format = kPixFormat_YUV444_Planar16;
-						break;
-
-					case kPixFormat_Y8_FR:
-					case kPixFormat_YUV422_Planar_FR:
-						format = kPixFormat_YUV444_Planar_FR;
-						break;
-
-					case kPixFormat_YUV420_Planar_FR:
-					case kPixFormat_YUV411_Planar_FR:
-						format = kPixFormat_YUV422_Planar_FR;
-						break;
-
-					case kPixFormat_YUV410_Planar_FR:
-						format = kPixFormat_YUV420_Planar_FR;
-						break;
-
-					case kPixFormat_YUV422_Planar_709:
-						format = kPixFormat_YUV444_Planar_709;
-						break;
-
-					case kPixFormat_YUV420_Planar_709:
-					case kPixFormat_YUV411_Planar_709:
-						format = kPixFormat_YUV422_Planar_709;
-						break;
-
-					case kPixFormat_YUV410_Planar_709:
-						format = kPixFormat_YUV420_Planar_709;
-						break;
-
-					case kPixFormat_YUV422_Planar_709_FR:
-						format = kPixFormat_YUV444_Planar_709_FR;
-						break;
-
-					case kPixFormat_YUV420_Planar_709_FR:
-					case kPixFormat_YUV411_Planar_709_FR:
-						format = kPixFormat_YUV422_Planar_709_FR;
-						break;
-
-					case kPixFormat_YUV410_Planar_709_FR:
-						format = kPixFormat_YUV420_Planar_709_FR;
-						break;
-
-					case kPixFormat_XRGB1555:
-					case kPixFormat_RGB565:
-					case kPixFormat_RGB888:
-					case kPixFormat_XRGB64:
-						if (formatMask.test(kPixFormat_XRGB8888)) {
-							format = kPixFormat_XRGB8888;
-							break;
-						}
-
-						// fall through
-
-					default:
-						if (staticOrderIndex < sizeof(kStaticOrder)/sizeof(kStaticOrder[0]))
-							format = kStaticOrder[staticOrderIndex++];
-						else if (formatMask.test(kPixFormat_XRGB8888))
-							format = kPixFormat_XRGB8888;
-						else {
-							for(size_t i=1; i<nsVDPixmap::kPixFormat_Max_Standard; ++i) {
-								if (formatMask.test(i)) {
-									format = i;
-									break;
-								}
-							}
-						}
-						break;
-					}
-				}
-
-				if (conversionRequired) {
-					for(uint32 j = 0; j < inputCount; ++j)
-						prepareInfo2.mStreams[j].mbConvertOnEntry = true;
-				}
-			}
-		}
-
-		if (fa->GetInvalidFormatState()) {
-			for(uint32 j = 0; j < inputCount; ++j)
-				prepareInfo2.mStreams[j].mbConvertOnEntry = false;
-
-			flags = 0;
-		}
-
-		lRequiredSize += prepareInfo.mLastFrameSizeRequired;
-
-		prevInput = &fa->GetOutputStream();
-
-		if (IsVDXAFormat(prevInput->mPixmapLayout.format))
-			mbFiltersUseAcceleration = true;
-
-		if (!ent->mOutputName.empty())
-			namedInputs[ent->mOutputName] = prevInput;
-
-		if (fa->IsTerminal()) break;
 	}
 
 	// 2/3) Temp buffers
-	VFBitmapInternal& final = *prevInput;
+	VFBitmapInternal& final = *lastInput;
 	mOutputPixelAspect.Assign(final.mAspectRatioHi, final.mAspectRatioLo);
 	mOutputFrameRate.Assign(final.mFrameRateHi, final.mFrameRateLo);
 	mOutputFrameCount = final.mFrameCount;
@@ -770,7 +388,421 @@ void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width,
 		else if (mpBitmaps->mFinalLayout.format == nsVDXPixmap::kPixFormat_VDXA_YUV)
 			format = nsVDXPixmap::kPixFormat_YUV444_Planar;
 
-		VDPixmapCreateLinearLayout(mpBitmaps->mFinalLayout, format, mpBitmaps->mFinalLayout.w, mpBitmaps->mFinalLayout.h, 16);
+		VDPixmapCreateLinearLayout(mpBitmaps->mFinalLayout, format, mpBitmaps->mFinalLayout.w, mpBitmaps->mFinalLayout.h, vdxa_align);
+	}
+}
+
+void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *ent, bool accelEnabled, uint32 alignReq) {
+  typedef PrepareState::NamedInputs NamedInputs;
+	FilterInstance *fa = ent->mpInstance;
+
+	const VDXFilterDefinition *fdef = fa->GetDefinition();
+	vdvector<VFBitmapInternal *> inputSrcs;
+	uint32 inputCount;
+	if (ent->mSources.empty()) {
+		inputSrcs.clear();
+		if (fdef->mSourceCountLowMinus1 < 0) {
+			inputCount = 0;
+		} else {
+			inputCount = 1;
+			inputSrcs.resize(1, state.prevInput);
+		}
+	} else {
+		inputCount = ent->mSources.size();
+
+		inputSrcs.resize(inputCount);
+
+		for(uint32 i=0; i<inputCount; ++i) {
+			const VDStringA& srcName = ent->mSources[i];
+
+			if (srcName == "$prev")
+				inputSrcs[i] = state.prevInput;
+			else {
+				NamedInputs::const_iterator it(state.namedInputs.find(srcName));
+
+				if (it == state.namedInputs.end()) {
+					// We cannot throw out of this routine, so we use the previous
+					// input instead.
+					inputSrcs[i] = state.prevInput;
+				} else
+					inputSrcs[i] = it->second;
+			}
+		}
+	}
+
+	// check if the pin count is correct; if it is not, we need to fudge
+	if (inputCount < (fdef->mSourceCountLowMinus1 + 1) || inputCount > (fdef->mSourceCountHighMinus1 + 1)) {
+		inputSrcs.resize(fdef->mSourceCountLowMinus1 + 1, inputSrcs.empty() ? state.baseInput : inputSrcs.back());
+	}
+
+	// check if we need to blit
+	VDFilterPrepareInfo& prepareInfo = fa->mPrepareInfo;
+	VDFilterPrepareInfo2& prepareInfo2 = fa->mPrepareInfo2;
+
+	prepareInfo2.mStreams.resize(inputCount);
+	for(uint32 i=0; i<inputCount; ++i)
+		prepareInfo2.mStreams[i].mbConvertOnEntry = false;
+
+	vdvector<VFBitmapInternal> inputs;
+	inputs.clear();
+	inputs.resize(inputCount);
+
+	for(uint32 i = 0; i < inputCount; ++i)
+		inputs[i] = *inputSrcs[i];
+
+	const bool altFormatCheckRequired = fa->IsAltFormatCheckRequired();
+	if (altFormatCheckRequired) {
+		VFBitmapInternal& bmTemp = inputs.front();
+
+		if (bmTemp.mPixmapLayout.format != nsVDPixmap::kPixFormat_XRGB8888 || bmTemp.mPixmapLayout.pitch > 0
+			|| VDPixmapGetInfo(bmTemp.mPixmapLayout.format).palsize) {
+
+			VDPixmapCreateLinearLayout(bmTemp.mPixmapLayout, nsVDPixmap::kPixFormat_XRGB8888, bmTemp.w, bmTemp.h, alignReq);
+			VDPixmapLayoutFlipV(bmTemp.mPixmapLayout);
+			bmTemp.ConvertPixmapLayoutToBitmapLayout();
+
+			prepareInfo2.mStreams[0].mbConvertOnEntry = true;
+		}
+	}
+
+	fa->PrepareReset();
+
+	uint32 flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
+
+	if (flags == FILTERPARAM_NOT_SUPPORTED || (flags & FILTERPARAM_SUPPORTS_ALTFORMATS)) {
+		using namespace nsVDPixmap;
+
+		VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_XYUV64 + 1);
+
+		std::bitset<nsVDPixmap::kPixFormat_Max_Standard> formatMask;
+
+		formatMask.set(kPixFormat_XRGB1555);
+		formatMask.set(kPixFormat_RGB565);
+		formatMask.set(kPixFormat_RGB888);
+		formatMask.set(kPixFormat_XRGB8888);
+		formatMask.set(kPixFormat_Y8);
+		formatMask.set(kPixFormat_Y8_FR);
+		formatMask.set(kPixFormat_YUV422_UYVY);
+		formatMask.set(kPixFormat_YUV422_YUYV);
+		formatMask.set(kPixFormat_YUV444_Planar);
+		formatMask.set(kPixFormat_YUV422_Planar);
+		formatMask.set(kPixFormat_YUV420_Planar);
+		formatMask.set(kPixFormat_YUV420i_Planar);
+		formatMask.set(kPixFormat_YUV420it_Planar);
+		formatMask.set(kPixFormat_YUV420ib_Planar);
+		formatMask.set(kPixFormat_YUV411_Planar);
+		formatMask.set(kPixFormat_YUV410_Planar);
+		formatMask.set(kPixFormat_YUV422_UYVY_709);
+		formatMask.set(kPixFormat_YUV422_YUYV_709);
+		formatMask.set(kPixFormat_YUV444_Planar_709);
+		formatMask.set(kPixFormat_YUV422_Planar_709);
+		formatMask.set(kPixFormat_YUV420_Planar_709);
+		formatMask.set(kPixFormat_YUV420i_Planar_709);
+		formatMask.set(kPixFormat_YUV420it_Planar_709);
+		formatMask.set(kPixFormat_YUV420ib_Planar_709);
+		formatMask.set(kPixFormat_YUV411_Planar_709);
+		formatMask.set(kPixFormat_YUV410_Planar_709);
+		formatMask.set(kPixFormat_YUV422_UYVY_FR);
+		formatMask.set(kPixFormat_YUV422_YUYV_FR);
+		formatMask.set(kPixFormat_YUV444_Planar_FR);
+		formatMask.set(kPixFormat_YUV422_Planar_FR);
+		formatMask.set(kPixFormat_YUV420_Planar_FR);
+		formatMask.set(kPixFormat_YUV420i_Planar_FR);
+		formatMask.set(kPixFormat_YUV420it_Planar_FR);
+		formatMask.set(kPixFormat_YUV420ib_Planar_FR);
+		formatMask.set(kPixFormat_YUV411_Planar_FR);
+		formatMask.set(kPixFormat_YUV410_Planar_FR);
+		formatMask.set(kPixFormat_YUV422_UYVY_709_FR);
+		formatMask.set(kPixFormat_YUV422_YUYV_709_FR);
+		formatMask.set(kPixFormat_YUV444_Planar_709_FR);
+		formatMask.set(kPixFormat_YUV422_Planar_709_FR);
+		formatMask.set(kPixFormat_YUV420_Planar_709_FR);
+		formatMask.set(kPixFormat_YUV420i_Planar_709_FR);
+		formatMask.set(kPixFormat_YUV420it_Planar_709_FR);
+		formatMask.set(kPixFormat_YUV420ib_Planar_709_FR);
+		formatMask.set(kPixFormat_YUV411_Planar_709_FR);
+		formatMask.set(kPixFormat_YUV410_Planar_709_FR);
+		formatMask.set(kPixFormat_XRGB64);
+		formatMask.set(kPixFormat_YUV444_Planar16);
+		formatMask.set(kPixFormat_YUV422_Planar16);
+		formatMask.set(kPixFormat_YUV420_Planar16);
+		formatMask.set(kPixFormat_Y16);
+
+		static const int kStaticOrder[]={
+			kPixFormat_YUV444_Planar,
+			kPixFormat_YUV422_Planar,
+			kPixFormat_YUV422_UYVY,
+			kPixFormat_YUV422_YUYV,
+			kPixFormat_YUV420_Planar,
+			kPixFormat_YUV411_Planar,
+			kPixFormat_YUV410_Planar,
+			kPixFormat_XRGB8888
+		};
+
+		int staticOrderIndex = 0;
+
+		// test an invalid format and make sure the filter DOESN'T accept it
+		for(uint32 i = 0; i < inputCount; ++i)
+			inputs[i] = *inputSrcs[i];
+
+		inputs[0].mPixmapLayout.format = 255;
+
+		flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
+
+		inputs[0] = *inputSrcs[0];
+
+		int originalFormat = inputs[0].mPixmapLayout.format;
+		int format = originalFormat;
+		if (flags != FILTERPARAM_NOT_SUPPORTED) {
+			formatMask.reset();
+			VDASSERT(fa->GetInvalidFormatHandlingState());
+		} else {
+			bool conversionRequired = true;
+
+			if (accelEnabled && fa->IsAcceleratable()) {
+				static const int kFormats[]={
+					nsVDXPixmap::kPixFormat_VDXA_RGB,
+					nsVDXPixmap::kPixFormat_VDXA_YUV,
+					nsVDXPixmap::kPixFormat_VDXA_RGB
+				};
+
+				const int *formats = kFormats + 1;
+
+				switch(originalFormat) {
+					case nsVDXPixmap::kPixFormat_RGB565:
+					case nsVDXPixmap::kPixFormat_XRGB1555:
+					case nsVDXPixmap::kPixFormat_RGB888:
+					case nsVDXPixmap::kPixFormat_XRGB8888:
+					case nsVDXPixmap::kPixFormat_VDXA_RGB:
+						formats = kFormats;
+						break;
+				}
+
+				for(int i=0; i<2; ++i) {
+					format = formats[i];
+
+					bool conversionFound = false;
+					for(uint32 j = 0; j < inputCount; ++j) {
+						inputs[j] = *inputSrcs[j];
+
+						if (inputs[j].mPixmapLayout.format != format)
+							conversionFound = true;
+
+						VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, nsVDPixmap::kPixFormat_XRGB8888, inputs[j].w, inputs[j].h, alignReq);
+						inputs[j].mPixmapLayout.format = format;
+						inputs[j].ConvertPixmapLayoutToBitmapLayout();
+					}
+
+					flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
+
+					if (flags != FILTERPARAM_NOT_SUPPORTED) {
+						// clear the format mask so we don't try any more formats
+						formatMask.reset();
+
+						conversionRequired = conversionFound;
+						break;
+					}
+				}
+
+				if (formatMask.any()) {
+					// failed - restore original first format to try
+					format = originalFormat;
+				}
+			}
+
+			// check if the incoming format is VDXA and we haven't already handled the situation --
+			// if so we must convert it to the equivalent.
+			if (formatMask.any()) {
+				switch(originalFormat) {
+					case nsVDXPixmap::kPixFormat_VDXA_RGB:
+						format = nsVDXPixmap::kPixFormat_XRGB8888;
+						break;
+					case nsVDXPixmap::kPixFormat_VDXA_YUV:
+						format = nsVDXPixmap::kPixFormat_YUV444_Planar;
+						break;
+				}
+			}
+
+			while(format && formatMask.any()) {
+				if (formatMask.test(format)) {
+					if (format == originalFormat) {
+						for(uint32 j = 0; j < inputCount; ++j)
+							inputs[j] = *inputSrcs[j];
+
+						flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
+
+						if (flags != FILTERPARAM_NOT_SUPPORTED) {
+							conversionRequired = false;
+							break;
+						}
+					}
+
+					for(uint32 j = 0; j < inputCount; ++j) {
+						inputs[j] = *inputSrcs[j];
+
+						VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, format, inputs[j].w, inputs[j].h, alignReq);
+
+						if (altFormatCheckRequired && format == nsVDPixmap::kPixFormat_XRGB8888)
+							VDPixmapLayoutFlipV(inputs[j].mPixmapLayout);
+
+						inputs[j].ConvertPixmapLayoutToBitmapLayout();
+					}
+
+					flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
+
+					if (flags != FILTERPARAM_NOT_SUPPORTED)
+						break;
+
+					formatMask.reset(format);
+				}
+
+				switch(format) {
+				case kPixFormat_YUV422_UYVY:
+					if (formatMask.test(kPixFormat_YUV422_YUYV))
+						format = kPixFormat_YUV422_YUYV;
+					else
+						format = kPixFormat_YUV422_Planar;
+					break;
+
+				case kPixFormat_YUV422_YUYV:
+					if (formatMask.test(kPixFormat_YUV422_UYVY))
+						format = kPixFormat_YUV422_UYVY;
+					else
+						format = kPixFormat_YUV422_Planar;
+					break;
+
+				case kPixFormat_YUV422_UYVY_709:
+					if (formatMask.test(kPixFormat_YUV422_YUYV_709))
+						format = kPixFormat_YUV422_YUYV_709;
+					else
+						format = kPixFormat_YUV422_Planar_709;
+					break;
+
+				case kPixFormat_YUV422_YUYV_709:
+					if (formatMask.test(kPixFormat_YUV422_UYVY_709))
+						format = kPixFormat_YUV422_UYVY_709;
+					else
+						format = kPixFormat_YUV422_Planar_709;
+					break;
+
+				case kPixFormat_YUV422_UYVY_FR:
+					if (formatMask.test(kPixFormat_YUV422_YUYV_FR))
+						format = kPixFormat_YUV422_YUYV_FR;
+					else
+						format = kPixFormat_YUV422_Planar_FR;
+					break;
+
+				case kPixFormat_YUV422_YUYV_709_FR:
+					if (formatMask.test(kPixFormat_YUV422_UYVY_709_FR))
+						format = kPixFormat_YUV422_UYVY_709_FR;
+					else
+						format = kPixFormat_YUV422_Planar_709_FR;
+					break;
+
+				case kPixFormat_Y8:
+				case kPixFormat_YUV422_Planar:
+					format = kPixFormat_YUV444_Planar;
+					break;
+
+				case kPixFormat_YUV420_Planar:
+				case kPixFormat_YUV411_Planar:
+					format = kPixFormat_YUV422_Planar;
+					break;
+
+				case kPixFormat_YUV410_Planar:
+				case kPixFormat_YUV420_NV12:
+					format = kPixFormat_YUV420_Planar;
+					break;
+
+				case kPixFormat_YUV422_V210:
+					format = kPixFormat_YUV422_Planar16;
+					//format = kPixFormat_YUV422_Planar;
+					break;
+
+				case kPixFormat_XYUV64:
+					format = kPixFormat_YUV444_Planar16;
+					break;
+
+				case kPixFormat_Y8_FR:
+				case kPixFormat_YUV422_Planar_FR:
+					format = kPixFormat_YUV444_Planar_FR;
+					break;
+
+				case kPixFormat_YUV420_Planar_FR:
+				case kPixFormat_YUV411_Planar_FR:
+					format = kPixFormat_YUV422_Planar_FR;
+					break;
+
+				case kPixFormat_YUV410_Planar_FR:
+					format = kPixFormat_YUV420_Planar_FR;
+					break;
+
+				case kPixFormat_YUV422_Planar_709:
+					format = kPixFormat_YUV444_Planar_709;
+					break;
+
+				case kPixFormat_YUV420_Planar_709:
+				case kPixFormat_YUV411_Planar_709:
+					format = kPixFormat_YUV422_Planar_709;
+					break;
+
+				case kPixFormat_YUV410_Planar_709:
+					format = kPixFormat_YUV420_Planar_709;
+					break;
+
+				case kPixFormat_YUV422_Planar_709_FR:
+					format = kPixFormat_YUV444_Planar_709_FR;
+					break;
+
+				case kPixFormat_YUV420_Planar_709_FR:
+				case kPixFormat_YUV411_Planar_709_FR:
+					format = kPixFormat_YUV422_Planar_709_FR;
+					break;
+
+				case kPixFormat_YUV410_Planar_709_FR:
+					format = kPixFormat_YUV420_Planar_709_FR;
+					break;
+
+				case kPixFormat_XRGB1555:
+				case kPixFormat_RGB565:
+				case kPixFormat_RGB888:
+				case kPixFormat_XRGB64:
+					if (formatMask.test(kPixFormat_XRGB8888)) {
+						format = kPixFormat_XRGB8888;
+						break;
+					}
+
+					// fall through
+
+				default:
+					if (staticOrderIndex < sizeof(kStaticOrder)/sizeof(kStaticOrder[0]))
+						format = kStaticOrder[staticOrderIndex++];
+					else if (formatMask.test(kPixFormat_XRGB8888))
+						format = kPixFormat_XRGB8888;
+					else {
+						for(size_t i=1; i<nsVDPixmap::kPixFormat_Max_Standard; ++i) {
+							if (formatMask.test(i)) {
+								format = i;
+								break;
+							}
+						}
+					}
+					break;
+				}
+			}
+
+			if (conversionRequired) {
+				for(uint32 j = 0; j < inputCount; ++j)
+					prepareInfo2.mStreams[j].mbConvertOnEntry = true;
+			}
+		}
+	}
+
+	if (fa->GetInvalidFormatState()) {
+		for(uint32 j = 0; j < inputCount; ++j)
+			prepareInfo2.mStreams[j].mbConvertOnEntry = false;
+
+		flags = 0;
 	}
 }
 
@@ -911,9 +943,9 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 							VDPixmapLayout layout;
 
 							if (dstFormat == nsVDXPixmap::kPixFormat_VDXA_YUV)
-								VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_YUV444_Planar, extSrcLayout.w, extSrcLayout.h, 16);
+								VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_YUV444_Planar, extSrcLayout.w, extSrcLayout.h, vdxa_align);
 							else
-								VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_XRGB8888, extSrcLayout.w, extSrcLayout.h, 16);
+								VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_XRGB8888, extSrcLayout.w, extSrcLayout.h, vdxa_align);
 
 							AppendConversionFilter(tail, layout);
 						}
@@ -942,7 +974,7 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 							layout = extSrcLayout;
 							cpuConversionRequired = false;
 						} else
-							VDPixmapCreateLinearLayout(layout, targetFormat, prevLayout.w, prevLayout.h, 16);
+							VDPixmapCreateLinearLayout(layout, targetFormat, prevLayout.w, prevLayout.h, max_align);
 
 						AppendAccelDownloadFilter(tail, layout);
 					}
@@ -968,7 +1000,7 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 					AppendConversionFilter(tail, extSrcLayout, true);
 			}
 
-			if (streamInfo.mbAlignOnEntry) {
+			if (streamInfo.mAlignOnEntry) {
 				const VDFilterStreamDesc& croppedDesc = streamInfo.mExternalSrcCropped.GetStreamDesc();
 				const VDFilterStreamDesc& preAlignDesc = streamInfo.mExternalSrcPreAlign.GetStreamDesc();
 
@@ -1009,12 +1041,12 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 	const VDPixmapLayout& finalLayout = finalTail.mpSrc->GetOutputLayout();
 	if (finalLayout.format == nsVDXPixmap::kPixFormat_VDXA_RGB) {
 		VDPixmapLayout layout;
-		VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_XRGB8888, finalLayout.w, finalLayout.h, 16);
+		VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_XRGB8888, finalLayout.w, finalLayout.h, vdxa_align);
 
 		AppendAccelDownloadFilter(finalTail, layout);
 	} else if (finalLayout.format == nsVDXPixmap::kPixFormat_VDXA_YUV) {
 		VDPixmapLayout layout;
-		VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_YUV444_Planar, finalLayout.w, finalLayout.h, 16);
+		VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_YUV444_Planar, finalLayout.w, finalLayout.h, vdxa_align);
 
 		AppendAccelDownloadFilter(finalTail, layout);
 	}
@@ -1481,7 +1513,7 @@ void FilterSystem::AppendAccelUploadFilter(StreamTail& tail, const vdrect32& src
 	VDPixmapLayout srcLayout(tail.mpSrc->GetOutputLayout());
 
 	VDPixmapLayout layout;
-	VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_XRGB8888, srcRect.width(), srcRect.height(), 16);
+	VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_XRGB8888, srcRect.width(), srcRect.height(), vdxa_align);
 
 	bool isRGB = false;
 	if (srcLayout.format == nsVDXPixmap::kPixFormat_XRGB8888) {
@@ -1523,7 +1555,7 @@ void FilterSystem::AppendAccelConversionFilter(StreamTail& tail, int format) {
 	const VDPixmapLayout& prevLayout = tail.mpSrc->GetOutputLayout();
 
 	VDPixmapLayout layout;
-	VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_XRGB8888, prevLayout.w, prevLayout.h, 16);
+	VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_XRGB8888, prevLayout.w, prevLayout.h, vdxa_align);
 
 	layout.format = format;
 

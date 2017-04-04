@@ -19,6 +19,10 @@
 #include <vd2/system/error.h>
 #include "FilterFrameBufferMemory.h"
 
+namespace {
+	const uint32 max_align = 64;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 
 VDFilterFrameBufferMemory::VDFilterFrameBufferMemory()
@@ -40,7 +44,7 @@ void VDFilterFrameBufferMemory::Init(uint32 size) {
 		mpBuffer = VDAlignedVirtualAlloc(size);
 	} else {
 		mbVirtAlloc = false;
-		mpBuffer = VDAlignedMalloc(size, 16);
+		mpBuffer = VDAlignedMalloc(size, max_align);
 	}
 
 	if (!mpBuffer)

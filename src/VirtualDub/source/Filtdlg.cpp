@@ -1898,9 +1898,21 @@ void VDVideoFiltersDialog::FilterListItem::GetText(int subItem, VDStringW& s) co
 	switch(subItem) {
 	case 0:
 		if (fi->IsEnabled()) {
+			const wchar_t* opacity_tag = fi->IsOpacityEnabled() ? L"[B] " : L"";
+			const wchar_t* convert_tag = L"";
+			if (streamInfo2 && streamInfo2->mbConvertOnEntry)
+				convert_tag = L"[C] ";
+			else if (streamInfo && streamInfo->mAlignOnEntry) {
+				if (streamInfo->mAlignOnEntry==16)
+					convert_tag = L"[A16] ";
+				if (streamInfo->mAlignOnEntry==32)
+					convert_tag = L"[A32] ";
+				if (streamInfo->mAlignOnEntry==64)
+					convert_tag = L"[A64] ";
+			}
 			s.sprintf(L"%s%s%s%s"
-						, fi->IsOpacityEnabled() ? L"[B] " : L""
-						, streamInfo2 && streamInfo2->mbConvertOnEntry ? L"[C] " : streamInfo && streamInfo->mbAlignOnEntry ? L"[A]" : L""
+						, opacity_tag
+						, convert_tag
 						, fi->IsAccelerated() ? L"[3D]" : L""
 						, fi->IsForceSingleFBEnabled() ? L"[F]" : L""
 				);

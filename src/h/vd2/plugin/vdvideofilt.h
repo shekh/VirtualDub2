@@ -55,7 +55,13 @@ enum {
 	///		- an integral number of 16 byte vectors may be written, even if the last vector includes
 	///		  some bytes beyong the end of the scanline (their values are ignored)
 	///
-	FILTERPARAM_ALIGN_SCANLINES		= 0x00000008L,
+	FILTERPARAM_ALIGN_SCANLINES_16		= 0x00000008L,
+	FILTERPARAM_ALIGN_SCANLINES			= FILTERPARAM_ALIGN_SCANLINES_16,
+
+	///		- same with 32,64 bytes alignment
+	///
+	FILTERPARAM_ALIGN_SCANLINES_32		= 0x00000048L,
+	FILTERPARAM_ALIGN_SCANLINES_64		= 0x00000040L,
 
 	/// Filter's output is purely a function of configuration parameters and source image data, and not
 	/// source or output frame numbers. In other words, two output frames produced by a filter instance

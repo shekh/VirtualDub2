@@ -67,20 +67,21 @@ namespace {
 		return format == nsVDXPixmap::kPixFormat_VDXA_RGB || format == nsVDXPixmap::kPixFormat_VDXA_YUV;
 	}
 
-	bool VDPixmapIsLayoutVectorAligned(const VDPixmapLayout& layout) {
+	bool VDPixmapIsLayoutAligned(const VDPixmapLayout& layout, int align) {
 		const int bufcnt = VDPixmapGetInfo(layout.format).auxbufs;
+		int mask = align-1;
 
 		switch(bufcnt) {
 		case 2:
-			if ((layout.data3 | layout.pitch3) & 15)
+			if ((layout.data3 | layout.pitch3) & mask)
 				return false;
 			break;
 		case 1:
-			if ((layout.data2 | layout.pitch2) & 15)
+			if ((layout.data2 | layout.pitch2) & mask)
 				return false;
 			break;
 		case 0:
-			if ((layout.data | layout.pitch) & 15)
+			if ((layout.data | layout.pitch) & mask)
 				return false;
 			break;
 		}
@@ -1025,7 +1026,7 @@ void FilterInstance::PrepareReset() {
 	mbInvalidFormatHandling = false;
 }
 
-uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs, VDFilterPrepareInfo& prepareInfo) {
+uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs, VDFilterPrepareInfo& prepareInfo, uint32 exitAlign) {
 	SetSourceStreamCount(numInputs);
 
 	const VFBitmapInternal& input = inputs[0];
@@ -1035,6 +1036,7 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 
 	mbInvalidFormat	= false;
 	mbExcessiveFrameSize = false;
+	mAlignReq = 0;
 
 	// Init all of the strams.
 	prepareInfo.mStreams.resize(numInputs);
@@ -1107,7 +1109,7 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 		}
 
 		streamInfo.mExternalSrcPreAlign.ConvertPixmapLayoutToBitmapLayout();
-		streamInfo.mbAlignOnEntry = false;
+		streamInfo.mAlignOnEntry = 0;
 		streamInfo.mbNormalizeOnEntry = false;
 	}
 
@@ -1125,8 +1127,8 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 
 			src = streamInfo.mExternalSrcPreAlign;
 
-			if (streamInfo.mbAlignOnEntry) {
-				VDPixmapCreateLinearLayout(src.mPixmapLayout, src.mPixmapLayout.format, src.mPixmapLayout.w, src.mPixmapLayout.h, 16);
+			if (streamInfo.mAlignOnEntry) {
+				VDPixmapCreateLinearLayout(src.mPixmapLayout, src.mPixmapLayout.format, src.mPixmapLayout.w, src.mPixmapLayout.h, streamInfo.mAlignOnEntry);
 				src.ConvertPixmapLayoutToBitmapLayout();
 			}
 
@@ -1219,17 +1221,22 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 			break;
 		}
 
+		int aflags = flags & 0x00000048;
+		if (aflags == FILTERPARAM_ALIGN_SCANLINES_16) mAlignReq = 16;
+		if (aflags == FILTERPARAM_ALIGN_SCANLINES_32) mAlignReq = 32;
+		if (aflags == FILTERPARAM_ALIGN_SCANLINES_64) mAlignReq = 64;
+
 		// check if alignment is required
-		if (flags & FILTERPARAM_ALIGN_SCANLINES) {
+		if (mAlignReq) {
 			bool alignmentViolationDetected = false;
 
 			for(uint32 streamIndex = 0; streamIndex < numInputs; ++streamIndex) {
 				VDFilterPrepareStreamInfo& streamInfo = prepareInfo.mStreams[streamIndex];
 				VFBitmapInternal& src = streamIndex ? mSourceStreamArray[streamIndex - 1] : mRealSrc;
 
-				if (!VDIsVDXAFormat(src.mPixmapLayout.format) && !VDPixmapIsLayoutVectorAligned(src.mPixmapLayout)) {
-					VDASSERT(!streamInfo.mbAlignOnEntry);
-					streamInfo.mbAlignOnEntry = true;
+				if (!VDIsVDXAFormat(src.mPixmapLayout.format) && !VDPixmapIsLayoutAligned(src.mPixmapLayout,mAlignReq)) {
+					VDASSERT(streamInfo.mAlignOnEntry<mAlignReq);
+					streamInfo.mAlignOnEntry = mAlignReq;
 					alignmentViolationDetected = true;
 				}
 			}
@@ -1295,7 +1302,7 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 				mRealDst.mPixmapLayout.pitch2 = 0;
 				mRealDst.mPixmapLayout.pitch3 = 0;
 			} else {
-				VDPixmapCreateLinearLayout(mRealDst.mPixmapLayout, mRealDst.mPixmapLayout.format, mRealDst.mPixmapLayout.w, mRealDst.mPixmapLayout.h, 16);
+				VDPixmapCreateLinearLayout(mRealDst.mPixmapLayout, mRealDst.mPixmapLayout.format, mRealDst.mPixmapLayout.w, mRealDst.mPixmapLayout.h, exitAlign);
 
 				if (mRealDst.mPixmapLayout.format == nsVDPixmap::kPixFormat_XRGB8888)
 					VDPixmapLayoutFlipV(mRealDst.mPixmapLayout);
