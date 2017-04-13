@@ -58,6 +58,7 @@ struct VDThreadEventBlock {
 struct VDThreadEventInfo {
 	uint32 mEventCount;
 	uint32 mEventStartIndex;
+	uint32 mUsedFlags;
 	vdfastvector<VDThreadEventBlock *> mEventBlocks;
 };
 
@@ -93,12 +94,14 @@ protected:
 		EventBlock *mpCurrentBlock;
 		VDAtomicInt mCurrentIndex;
 		uint32		mStartIndex;
+		uint32		mUsedFlags;
 
 		PerThreadInfo()
 			: mThreadId(VDGetCurrentThreadID())
 			, mpCurrentBlock(NULL)
 			, mCurrentIndex(EventBlock::N)
 			, mStartIndex(0)
+			, mUsedFlags(0)
 		{
 		}
 	};
@@ -189,6 +192,7 @@ void VDEventProfilerW32::BeginScope(const char *name, uintptr *cache, uint32 dat
 	ev.mAncillaryData = data;
 
 	pti->mCurrentIndex = idx;
+	pti->mUsedFlags |= flags;
 }
 
 void VDEventProfilerW32::BeginDynamicScope(const char *name, uintptr *cache, uint32 data, uint32 flags) {
@@ -283,6 +287,7 @@ void VDEventProfilerW32::UpdateThreadInfo(uint32 threadIndex, VDThreadEventInfo&
 	info.mEventBlocks.clear();
 	info.mEventCount = 0;
 	info.mEventStartIndex = 0;
+	info.mUsedFlags = 0;
 
 	mMutex.Lock();
 	uint32 n = mThreads.size();
@@ -297,6 +302,7 @@ void VDEventProfilerW32::UpdateThreadInfo(uint32 threadIndex, VDThreadEventInfo&
 
 		info.mEventCount = VDThreadEventBlock::N * pti.mEventBlocks.size() - VDThreadEventBlock::N + pti.mCurrentIndex - pti.mStartIndex;
 		info.mEventStartIndex = pti.mStartIndex;
+		info.mUsedFlags = pti.mUsedFlags;
 	}
 	mMutex.Unlock();
 
@@ -426,6 +432,7 @@ public:
 	VDEventProfileThreadTracker(uint32 index);
 
 	vdspan<VDProfileTrackedEvent> GetEvents() const;
+	uint32 GetUsedFlags() const { return mThreadInfo.mUsedFlags; }
 
 	void Update();
 
@@ -1237,6 +1244,7 @@ void VDRTProfileDisplay2::UpdateSummary() {
 }
 
 void VDRTProfileDisplay2::UpdateList() {
+	SendMessage(mhwndList, WM_SETREDRAW, false, 0);
 	SendMessage(mhwndList, LB_RESETCONTENT, 0, 0);
 	int tabs[] = {50,90,130,200};
 	SendMessage(mhwndList, LB_SETTABSTOPS, 4, (LPARAM)tabs);
@@ -1246,6 +1254,7 @@ void VDRTProfileDisplay2::UpdateList() {
 
 	uint64 baseTime = 0;
 	bool baseTimeSet = false;
+	int list_max = 5000;
 	mSortedList.clear();
 
 	for(size_t i=0; i<threadCount; ++i) {
@@ -1272,8 +1281,10 @@ void VDRTProfileDisplay2::UpdateList() {
 					continue;
 
 				mSortedList.push_back(&ev);
+				if (mSortedList.size()>=list_max) break;
 			}
 		}
+		if (mSortedList.size()>=list_max) break;
 	}
 
 	std::sort(mSortedList.begin(), mSortedList.end(), EventSort());
@@ -1293,6 +1304,11 @@ void VDRTProfileDisplay2::UpdateList() {
 		SendMessage(mhwndList, LB_ADDSTRING, 0, (LPARAM)mTempStr.c_str());
 	}
 
+	if (mSortedList.size()>=list_max)
+		SendMessage(mhwndList, LB_ADDSTRING, 0, (LPARAM)"\t\t\t truncated...");
+
+	SendMessage(mhwndList, WM_SETREDRAW, true, 0);
+	InvalidateRect(mhwndList,0,true);
 	UpdateSummary();
 
 	list_event_count = event_count;
@@ -1313,12 +1329,16 @@ void VDRTProfileDisplay2::OnTimer() {
 	UpdateThreadProfiles();
 
 	if (event_count!=display_event_count){
+		VDPROFILEBEGINEX2("Profile1",0,vdprofiler_flag_profile);
 		InvalidateRect(mhwnd, NULL, TRUE);
 		UpdateWindow(mhwnd);
+		VDPROFILEEND();
 	}
 
 	if (event_count!=list_event_count){
+		VDPROFILEBEGINEX2("Profile2",0,vdprofiler_flag_profile);
 		UpdateList();
+		VDPROFILEEND();
 	}
 }
 
@@ -1422,7 +1442,10 @@ void VDRTProfileDisplay2::UpdateThreadProfiles() {
 		}
 
 		tracker->Update();
-		event_count += tracker->GetEvents().size();
+
+		// do not trigger refresh for own thread
+		if (!(tracker->GetUsedFlags() & vdprofiler_flag_profile))
+			event_count += tracker->GetEvents().size();
 	}
 
 	p->UpdateScopes(mScopes);

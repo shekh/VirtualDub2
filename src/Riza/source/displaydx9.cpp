@@ -37,6 +37,7 @@
 #include <vd2/system/time.h>
 #include <vd2/system/vdstl.h>
 #include <vd2/system/w32assist.h>
+#include <vd2/system/profile.h>
 #include <vd2/Kasumi/blitter.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmapops.h>
@@ -2915,7 +2916,9 @@ bool VDVideoUploadContextD3D9::Update(const VDPixmap& source, int fieldMask) {
 		if (dst.h > src.h)
 			dst.h = src.h;
 
+		VDPROFILEBEGINEX("V-BlitDisplay",int(src.info.frame_num));
 		mCachedBlitter.Blit(dst, src);
+		VDPROFILEEND();
 		mTexFmt.info = dst.info;
 	}
 
