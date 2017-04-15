@@ -21,11 +21,14 @@
 #include <vd2/VDDisplay/display.h>
 #include <vd2/VDDisplay/displaydrv.h>
 #include <vd2/system/w32assist.h>
+#include <vd2/plugin/vdvideofilt.h>
 
 #include "oshelper.h"
 
 #include "ClippingControl.h"
 #include "PositionControl.h"
+#include "gui.h"
+#include "resource.h"
 
 extern HINSTANCE g_hInst;
 
@@ -423,6 +426,9 @@ bool VDClippingControlOverlay::OnSetCursor(UINT htcode, UINT mousemsg) {
 
 	PoleHitTest(x, y);
 
+	if (mDragPoleX>=0) x = mDragPoleX;
+	if (mDragPoleY>=0) y = mDragPoleY;
+
 	static const LPCTSTR sCursor[3][3]={
 		{ IDC_ARROW,  IDC_SIZENS, IDC_SIZENS },
 		{ IDC_SIZEWE, IDC_SIZENWSE, IDC_SIZENESW },
@@ -460,6 +466,28 @@ void VDClippingControlOverlay::PoleHitTest(int& x, int& y) {
 
 	if (fabs(mYBounds[yi] - yf) * mHeight > 5)
 		yi = -1;
+
+	// also assume poles are on borders if unreachable otherwise (scrolled)
+	HWND parent = GetParent(mhwnd);
+	RECT r0;
+	GetClientRect(parent,&r0);
+	MapWindowPoints(parent,0,(POINT*)&r0,2);
+	RECT r1;
+	GetClientRect(mhwnd,&r1);
+	MapWindowPoints(mhwnd,0,(POINT*)&r1,2);
+
+	if (xi==-1) {
+		double x0 = (r0.left-r1.left+4) / double(mWidth);
+		double x1 = (r0.right-r1.left-12) / double(mWidth);
+		if(mXBounds[0]<x0 && fabs(x0-xf)*mWidth<=5) xi=0;
+		if(mXBounds[1]>x1 && fabs(x1-xf)*mWidth<=5) xi=1;
+	}
+	if (yi==-1) {
+		double y0 = (r0.top-r1.top+4) / double(mHeight);
+		double y1 = (r0.bottom-r1.top-12) / double(mHeight);
+		if(mYBounds[0]<y0 && fabs(y0-yf)*mHeight<=5) yi=0;
+		if(mYBounds[1]>y1 && fabs(y1-yf)*mHeight<=5) yi=1;
+	}
 
 	x = xi;
 	y = yi;
@@ -1037,4 +1065,145 @@ void VDClippingControl::OnSize(int w, int h) {
 	ShowWindow(hwndDisplay, SW_SHOWNA);
 	SetWindowPos(hwndDisplay, NULL, mOverlayX+4, mOverlayY+4, mDisplayWidth, mDisplayHeight, SWP_NOACTIVATE|SWP_NOCOPYBITS|SWP_NOZORDER);
 	ResetDisplayBounds();
+}
+
+VDClippingDialog2::VDClippingDialog2(int res_id)
+	: VDDialogFrameW32(res_id)
+{
+	mSourceWidth = 0;
+	mSourceHeight = 0;
+	fp2 = 0;
+	fmpreview = 0;
+	preview_flags = PreviewExInfo::thick_border | PreviewExInfo::custom_draw;
+	clip_flags = 0;
+}
+
+void VDClippingDialog2::init_crop() {
+	if(GetFocus()!=GetDlgItem(mhdlg,IDC_CLIP_X0)) SetDlgItemInt(mhdlg, IDC_CLIP_X0, x1, FALSE);
+	if(GetFocus()!=GetDlgItem(mhdlg,IDC_CLIP_X1)) SetDlgItemInt(mhdlg, IDC_CLIP_X1, x2, FALSE);
+	if(GetFocus()!=GetDlgItem(mhdlg,IDC_CLIP_Y0)) SetDlgItemInt(mhdlg, IDC_CLIP_Y0, y1, FALSE);
+	if(GetFocus()!=GetDlgItem(mhdlg,IDC_CLIP_Y1)) SetDlgItemInt(mhdlg, IDC_CLIP_Y1, y2, FALSE);
+}
+
+void VDClippingDialog2::init_size() {
+	int w = mSourceWidth - x1 - x2;
+	int h = mSourceHeight - y1 - y2;
+	if (w<0) w = 0;
+	if (h<0) h = 0;
+
+	SetControlTextF(IDC_CROP_SIZE, L"Size: %dx%u", w, h);
+}
+
+void VDClippingDialog2::ClipEditCallback(ClipEditInfo& info, void *pData) {
+	VDClippingDialog2* dlg = (VDClippingDialog2*)pData;
+	if (info.flags & info.init_size) {
+		dlg->mSourceWidth = info.w;
+		dlg->mSourceHeight = info.h;
+		SendMessage(GetDlgItem(dlg->mhdlg, IDC_CLIP_X0_SPIN), UDM_SETRANGE, 0, (LPARAM)MAKELONG(info.w,0));
+		SendMessage(GetDlgItem(dlg->mhdlg, IDC_CLIP_X1_SPIN), UDM_SETRANGE, 0, (LPARAM)MAKELONG(info.w,0));
+		SendMessage(GetDlgItem(dlg->mhdlg, IDC_CLIP_Y0_SPIN), UDM_SETRANGE, 0, (LPARAM)MAKELONG(info.h,0));
+		SendMessage(GetDlgItem(dlg->mhdlg, IDC_CLIP_Y1_SPIN), UDM_SETRANGE, 0, (LPARAM)MAKELONG(info.h,0));
+	}
+	if (info.flags & info.edit_update) {
+		dlg->x1 = info.x1;
+		dlg->y1 = info.y1;
+		dlg->x2 = info.x2;
+		dlg->y2 = info.y2;
+	}
+	dlg->init_crop();
+	dlg->init_size();
+	if (info.flags & info.edit_finish) dlg->apply_crop();
+}
+
+void VDClippingDialog2::SetClipEdit() {
+	ClipEditInfo clip;
+	clip.x1 = x1;
+	clip.y1 = y1;
+	clip.x2 = x2;
+	clip.y2 = y2;
+	clip.flags = clip_flags;
+	if (fmpreview)
+		fmpreview->SetClipEdit(clip);
+}
+
+bool VDClippingDialog2::OnLoaded() {
+	VDSetDialogDefaultIcons(mhdlg);
+	init_crop();
+
+	if (fmpreview) {
+		PreviewExInfo mode;
+		mode.flags = preview_flags;
+		fmpreview->SetClipEditCallback(ClipEditCallback, this);
+		fmpreview->DisplayEx((VDXHWND)mhdlg,mode);
+		SetClipEdit();
+	}
+	return true;
+}
+
+INT_PTR VDClippingDialog2::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
+	switch (message) {
+	case WM_COMMAND:
+		switch(LOWORD(wParam)) {
+		case IDOK:
+			EndDialog(mhdlg,0);
+			return TRUE;
+
+		case IDCANCEL:
+			EndDialog(mhdlg,1);
+			return TRUE;
+
+		case IDC_CLIP_X0:
+			if (HIWORD(wParam)==EN_CHANGE) {
+				x1 = GetDlgItemInt(mhdlg,IDC_CLIP_X0,0,false);
+				init_size();
+				SetClipEdit();
+				apply_crop();
+				return TRUE;
+			}
+			break;
+
+		case IDC_CLIP_X1:
+			if (HIWORD(wParam)==EN_CHANGE) {
+				x2 = GetDlgItemInt(mhdlg,IDC_CLIP_X1,0,false);
+				init_size();
+				SetClipEdit();
+				apply_crop();
+				return TRUE;
+			}
+			break;
+
+		case IDC_CLIP_Y0:
+			if (HIWORD(wParam)==EN_CHANGE) {
+				y1 = GetDlgItemInt(mhdlg,IDC_CLIP_Y0,0,false);
+				init_size();
+				SetClipEdit();
+				apply_crop();
+				return TRUE;
+			}
+			break;
+
+		case IDC_CLIP_Y1:
+			if (HIWORD(wParam)==EN_CHANGE) {
+				y2 = GetDlgItemInt(mhdlg,IDC_CLIP_Y1,0,false);
+				init_size();
+				SetClipEdit();
+				apply_crop();
+				return TRUE;
+			}
+			break;
+		}
+		break;
+
+	case WM_VSCROLL:
+		x1 = GetDlgItemInt(mhdlg,IDC_CLIP_X0,0,false);
+		x2 = GetDlgItemInt(mhdlg,IDC_CLIP_X1,0,false);
+		y1 = GetDlgItemInt(mhdlg,IDC_CLIP_Y0,0,false);
+		y2 = GetDlgItemInt(mhdlg,IDC_CLIP_Y1,0,false);
+		init_size();
+		SetClipEdit();
+		apply_crop();
+		break;
+	}
+
+	return VDDialogFrameW32::DlgProc(message, wParam, lParam);
 }

@@ -963,6 +963,10 @@
 #define IDS_HELP_ABOUT                  1539
 #define IDC_SAVE_DONOW                  1539
 #define IDC_SAVE_MAKEJOB                1540
+#define IDC_CLIP_X0_SPIN                1540
+#define IDC_CLIP_X1_SPIN                1541
+#define IDC_CLIP_Y0_SPIN                1542
+#define IDC_CLIP_Y1_SPIN                1543
 #define IDS_VIDEO_SEEK_START            1664
 #define IDS_VIDEO_SEEK_END              1665
 #define IDS_VIDEO_SEEK_PREV             1666
@@ -1526,7 +1530,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        310
 #define _APS_NEXT_COMMAND_VALUE         40591
-#define _APS_NEXT_CONTROL_VALUE         1540
+#define _APS_NEXT_CONTROL_VALUE         1541
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

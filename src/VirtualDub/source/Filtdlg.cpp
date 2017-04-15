@@ -31,6 +31,7 @@
 
 #include "resource.h"
 #include "FilterPreview.h"
+#include "ClippingControl.h"
 #include "projectui.h"
 
 #include "filtdlg.h"
@@ -494,72 +495,26 @@ void VDVideoFilterOutputNameDialog::OnDataExchange(bool write) {
 //
 ///////////////////////////////////////////////////////////////////////////
 
-class VDFilterClippingDialog2 : public VDDialogFrameW32 {
+class VDFilterClippingDialog2 : public VDClippingDialog2 {
 public:
 	FilterInstance *fa;
-	IVDXFilterPreview2 *fp2;
-	IFilterModPreview *fmpreview;
-	int x1,y1,x2,y2;
-	int mSourceWidth,mSourceHeight;
 
 	VDFilterClippingDialog2();
 	bool OnLoaded();
 
 	INT_PTR DlgProc(UINT msg, WPARAM wParam, LPARAM lParam);
-	void SetClipEdit();
-	void init_crop();
-	void init_size();
-	static void ClipEditCallback(ClipEditInfo& info, void *pData);
+	void apply_crop();
 };
 
 VDFilterClippingDialog2::VDFilterClippingDialog2()
-	: VDDialogFrameW32(IDD_FILTER_CLIPPING)
+	: VDClippingDialog2(IDD_FILTER_CLIPPING)
 {
-	mSourceWidth = 0;
-	mSourceHeight = 0;
+	preview_flags |= PreviewExInfo::display_source | PreviewExInfo::no_exit;
+	clip_flags = ClipEditInfo::fill_border;
 }
 
-void VDFilterClippingDialog2::init_crop() {
-	SetDlgItemInt(mhdlg, IDC_CLIP_X0, x1, FALSE);
-	SetDlgItemInt(mhdlg, IDC_CLIP_X1, x2, FALSE);
-	SetDlgItemInt(mhdlg, IDC_CLIP_Y0, y1, FALSE);
-	SetDlgItemInt(mhdlg, IDC_CLIP_Y1, y2, FALSE);
-}
-
-void VDFilterClippingDialog2::init_size() {
-	int w = mSourceWidth - x1 - x2;
-	int h = mSourceHeight - y1 - y2;
-	if (w<0) w = 0;
-	if (h<0) h = 0;
-
-	SetControlTextF(IDC_CROP_SIZE, L"Size: %dx%u", w, h);
-}
-
-void VDFilterClippingDialog2::ClipEditCallback(ClipEditInfo& info, void *pData) {
-	VDFilterClippingDialog2* dlg = (VDFilterClippingDialog2*)pData;
-	if (info.flags & info.init_size) {
-		dlg->mSourceWidth = info.w;
-		dlg->mSourceHeight = info.h;
-	}
-	if (info.flags & info.edit_update) {
-		dlg->x1 = info.x1;
-		dlg->y1 = info.y1;
-		dlg->x2 = info.x2;
-		dlg->y2 = info.y2;
-	}
-	dlg->init_crop();
-	dlg->init_size();
-}
-
-void VDFilterClippingDialog2::SetClipEdit() {
-	ClipEditInfo clip;
-	clip.x1 = x1;
-	clip.y1 = y1;
-	clip.x2 = x2;
-	clip.y2 = y2;
-	clip.flags = clip.fill_border;
-	if (fmpreview)
-		fmpreview->SetClipEdit(clip);
+void VDFilterClippingDialog2::apply_crop() {
+	fp2->RedoFrame();
 }
 
 bool VDFilterClippingDialog2::OnLoaded() {
@@ -568,69 +523,26 @@ bool VDFilterClippingDialog2::OnLoaded() {
 	y1 = r.top;
 	x2 = r.right;
 	y2 = r.bottom;
-	VDSetDialogDefaultIcons(mhdlg);
-	init_crop();
 
 	bool precise = fa->IsPreciseCroppingEnabled();
 	CheckButton(IDC_CROP_PRECISE, precise);
 	CheckButton(IDC_CROP_FAST, !precise);
 
-	if (fmpreview) {
-		PreviewExInfo mode;
-		mode.flags = mode.thick_border | mode.custom_draw | mode.display_source | mode.no_exit;
-		fmpreview->SetClipEditCallback(ClipEditCallback, this);
-		fmpreview->DisplayEx((VDXHWND)mhdlg,mode);
-		SetClipEdit();
-	}
-	return true;
+	return VDClippingDialog2::OnLoaded();
 }
 
 INT_PTR VDFilterClippingDialog2::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
-	switch (message)
-	{
-		case WM_COMMAND:
+	switch (message) {
+	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
 		case IDOK:
 			fa->SetCrop(x1, y1, x2, y2, IsButtonChecked(IDC_CROP_PRECISE));
-			EndDialog(mhdlg,0);
-			return TRUE;
-
-		case IDCANCEL:
-			EndDialog(mhdlg,1);
-			return TRUE;
-
-		case IDC_CLIP_X0:
-			x1 = GetDlgItemInt(mhdlg,IDC_CLIP_X0,0,false);
-			init_size();
-			SetClipEdit();
-			fp2->RedoFrame();
-			return TRUE;
-
-		case IDC_CLIP_X1:
-			x2 = GetDlgItemInt(mhdlg,IDC_CLIP_X1,0,false);
-			init_size();
-			SetClipEdit();
-			fp2->RedoFrame();
-			return TRUE;
-
-		case IDC_CLIP_Y0:
-			y1 = GetDlgItemInt(mhdlg,IDC_CLIP_Y0,0,false);
-			init_size();
-			SetClipEdit();
-			fp2->RedoFrame();
-			return TRUE;
-
-		case IDC_CLIP_Y1:
-			y2 = GetDlgItemInt(mhdlg,IDC_CLIP_Y1,0,false);
-			init_size();
-			SetClipEdit();
-			fp2->RedoFrame();
-			return TRUE;
+			break;
 		}
 		break;
 	}
 
-	return VDDialogFrameW32::DlgProc(message, wParam, lParam);
+	return VDClippingDialog2::DlgProc(message, wParam, lParam);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -639,13 +551,9 @@ INT_PTR VDFilterClippingDialog2::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 //
 ///////////////////////////////////////////////////////////////////////////
 
-class VDFilterBlendingDialog : public VDDialogFrameW32 {
+class VDFilterBlendingDialog : public VDClippingDialog2 {
 public:
 	FilterInstance *fa;
-	IVDXFilterPreview2 *fp2;
-	IFilterModPreview *fmpreview;
-	int x1,y1,x2,y2;
-	int mSourceWidth,mSourceHeight;
 	vdrect32 r0;
 	vdrefptr<VDParameterCurve> curve;
 
@@ -653,35 +561,14 @@ public:
 	bool OnLoaded();
 
 	INT_PTR DlgProc(UINT msg, WPARAM wParam, LPARAM lParam);
-	void SetClipEdit();
-	void init_crop();
-	void init_size();
 	void apply_crop();
 	void apply_curve(bool v);
-	static void ClipEditCallback(ClipEditInfo& info, void *pData);
 };
 
 VDFilterBlendingDialog::VDFilterBlendingDialog()
-	: VDDialogFrameW32(IDD_FILTER_BLENDING)
+	: VDClippingDialog2(IDD_FILTER_BLENDING)
 {
-	mSourceWidth = 0;
-	mSourceHeight = 0;
-}
-
-void VDFilterBlendingDialog::init_crop() {
-	SetDlgItemInt(mhdlg, IDC_CLIP_X0, x1, FALSE);
-	SetDlgItemInt(mhdlg, IDC_CLIP_X1, x2, FALSE);
-	SetDlgItemInt(mhdlg, IDC_CLIP_Y0, y1, FALSE);
-	SetDlgItemInt(mhdlg, IDC_CLIP_Y1, y2, FALSE);
-}
-
-void VDFilterBlendingDialog::init_size() {
-	int w = mSourceWidth - x1 - x2;
-	int h = mSourceHeight - y1 - y2;
-	if (w<0) w = 0;
-	if (h<0) h = 0;
-
-	SetControlTextF(IDC_CROP_SIZE, L"Size: %dx%u", w, h);
+	preview_flags |= PreviewExInfo::no_exit;
 }
 
 void VDFilterBlendingDialog::apply_crop() {
@@ -718,33 +605,6 @@ void VDFilterBlendingDialog::apply_curve(bool v) {
 	}
 }
 
-void VDFilterBlendingDialog::ClipEditCallback(ClipEditInfo& info, void *pData) {
-	VDFilterBlendingDialog* dlg = (VDFilterBlendingDialog*)pData;
-	if (info.flags & info.init_size) {
-		dlg->mSourceWidth = info.w;
-		dlg->mSourceHeight = info.h;
-	}
-	if (info.flags & info.edit_update) {
-		dlg->x1 = info.x1;
-		dlg->y1 = info.y1;
-		dlg->x2 = info.x2;
-		dlg->y2 = info.y2;
-	}
-	dlg->init_crop();
-	dlg->init_size();
-	if (info.flags & info.edit_finish) dlg->apply_crop();
-}
-
-void VDFilterBlendingDialog::SetClipEdit() {
-	ClipEditInfo clip;
-	clip.x1 = x1;
-	clip.y1 = y1;
-	clip.x2 = x2;
-	clip.y2 = y2;
-	if (fmpreview)
-		fmpreview->SetClipEdit(clip);
-}
-
 bool VDFilterBlendingDialog::OnLoaded() {
 	const vdrect32& r = fa->GetOpacityCropInsets();
 	r0 = r;
@@ -752,74 +612,34 @@ bool VDFilterBlendingDialog::OnLoaded() {
 	y1 = r.top;
 	x2 = r.right;
 	y2 = r.bottom;
-	VDSetDialogDefaultIcons(mhdlg);
-	init_crop();
 
 	curve = fa->GetAlphaParameterCurve();
 	CheckButton(IDC_BLEND_CURVE,curve!=0);
 
-	if (fmpreview) {
-		PreviewExInfo mode;
-		mode.flags = mode.thick_border | mode.custom_draw | mode.no_exit;
-		fmpreview->SetClipEditCallback(ClipEditCallback, this);
-		fmpreview->DisplayEx((VDXHWND)mhdlg,mode);
-		SetClipEdit();
-	}
-	return true;
+  return VDClippingDialog2::OnLoaded();
 }
 
 INT_PTR VDFilterBlendingDialog::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
-	switch (message)
-	{
-		case WM_COMMAND:
+	switch (message) {
+	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
 		case IDOK:
 			fa->SetOpacityCrop(x1, y1, x2, y2);
-			EndDialog(mhdlg,0);
-			return TRUE;
+			break;
 
 		case IDCANCEL:
 			fa->SetOpacityCrop(r0.left, r0.top, r0.right, r0.bottom);
 			fa->SetAlphaParameterCurve(curve);
-			EndDialog(mhdlg,1);
-			return TRUE;
+			break;
 
 		case IDC_BLEND_CURVE:
 			apply_curve(IsButtonChecked(IDC_BLEND_CURVE));
-			return TRUE;
-
-		case IDC_CLIP_X0:
-			x1 = GetDlgItemInt(mhdlg,IDC_CLIP_X0,0,false);
-			init_size();
-			SetClipEdit();
-			apply_crop();
-			return TRUE;
-
-		case IDC_CLIP_X1:
-			x2 = GetDlgItemInt(mhdlg,IDC_CLIP_X1,0,false);
-			init_size();
-			SetClipEdit();
-			apply_crop();
-			return TRUE;
-
-		case IDC_CLIP_Y0:
-			y1 = GetDlgItemInt(mhdlg,IDC_CLIP_Y0,0,false);
-			init_size();
-			SetClipEdit();
-			apply_crop();
-			return TRUE;
-
-		case IDC_CLIP_Y1:
-			y2 = GetDlgItemInt(mhdlg,IDC_CLIP_Y1,0,false);
-			init_size();
-			SetClipEdit();
-			apply_crop();
 			return TRUE;
 		}
 		break;
 	}
 
-	return VDDialogFrameW32::DlgProc(message, wParam, lParam);
+	return VDClippingDialog2::DlgProc(message, wParam, lParam);
 }
 
 ///////////////////////////////////////////////////////////////////////////

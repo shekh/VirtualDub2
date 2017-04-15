@@ -22,6 +22,7 @@
 
 #include <vd2/system/vectors.h>
 #include <vd2/VDDisplay/display.h>
+#include <vd2/VDLib/Dialog.h>
 
 struct VDPixmap;
 
@@ -106,6 +107,30 @@ private:
 	double	mXBounds[2], mYBounds[2];
 
 	int	mDragPoleX, mDragPoleY;
+};
+
+class IVDXFilterPreview2;
+class IFilterModPreview;
+struct ClipEditInfo;
+
+class VDClippingDialog2 : public VDDialogFrameW32 {
+public:
+	int x1,y1,x2,y2;
+	int mSourceWidth,mSourceHeight;
+	IVDXFilterPreview2 *fp2;
+	IFilterModPreview *fmpreview;
+	int preview_flags;
+	int clip_flags;
+
+	VDClippingDialog2(int res_is);
+	bool OnLoaded();
+
+	INT_PTR DlgProc(UINT msg, WPARAM wParam, LPARAM lParam);
+	void SetClipEdit();
+	void init_crop();
+	void init_size();
+	virtual void apply_crop(){}
+	static void ClipEditCallback(ClipEditInfo& info, void *pData);
 };
 
 #endif
