@@ -1172,6 +1172,12 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 				flags = filter->paramProc(AsVDXFilterActivation(), &g_VDFilterCallbacks);
 			}
 
+			if(mFilterName==L"Deshaker v3.0" || mFilterName==L"Deshaker v3.1") {
+				VDStringA buf;
+				GetSettingsString(buf);
+				if(buf==" (Pass 1)") flags |= FILTERPARAM_TERMINAL;
+			}
+
 			// Remove flags banned starting with V16+
 			if (mAPIVersion >= 16 && flags != FILTERPARAM_NOT_SUPPORTED) {
 				if (flags & FILTERPARAM_NEEDS_LAST) {
@@ -1202,11 +1208,6 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 			}
 		} else {
 			mFilterModFlags = 0;
-			if(mFilterName==L"Deshaker v3.0" || mFilterName==L"Deshaker v3.1") {
-				VDStringA buf;
-				GetSettingsString(buf);
-				if(buf==" (Pass 1)") mFilterModFlags |= FILTERMODPARAM_TERMINAL;
-			}
 		}
 
 		if (invalidCrop)
@@ -2604,7 +2605,7 @@ bool FilterInstance::IsFadedOut(sint64 outputFrame) const {
 }
 
 bool FilterInstance::IsTerminal() const {
-	return (mFilterModFlags & FILTERMODPARAM_TERMINAL)!=0;
+	return (mFlags & FILTERPARAM_TERMINAL)!=0;
 }
 
 bool FilterInstance::GetDirectMapping(sint64 outputFrame, sint64& sourceFrame, int& sourceIndex) {

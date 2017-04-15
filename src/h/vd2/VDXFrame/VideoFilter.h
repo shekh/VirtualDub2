@@ -66,6 +66,8 @@ public:
 	virtual bool OnEvent(uint32 event, const void *eventData);
 	virtual bool OnInvalidateCaches();
 
+	virtual uint32 GetFilterModParams(){ return 0; }
+
 	static void __cdecl FilterDeinit   (VDXFilterActivation *fa, const VDXFilterFunctions *ff);
 	static int  __cdecl FilterRun      (const VDXFilterActivation *fa, const VDXFilterFunctions *ff);
 	static long __cdecl FilterParam    (VDXFilterActivation *fa, const VDXFilterFunctions *ff);
@@ -85,8 +87,12 @@ public:
 	static bool StaticAbout(VDXHWND parent);
 	static bool StaticConfigure(VDXHWND parent);
 
+	static void __cdecl FilterModActivate(FilterModActivation *fma, const VDXFilterFunctions *ff);
+	static long __cdecl FilterModParam(VDXFilterActivation *fa, const VDXFilterFunctions *ff);
+
 	// member variables
 	VDXFilterActivation *fa;
+	FilterModActivation *fma;
 	const VDXFilterFunctions *ff;
 
 	static const VDXScriptFunctionDef sScriptMethods[];
@@ -97,11 +103,13 @@ public:
 	};
 
 	static void SetAPIVersion(uint32 apiVersion);
+	static void SetFilterModVersion(uint32 version);
 
 protected:
 	void SafePrintf(char *buf, int maxbuf, const char *format, ...);
 
 	static uint32 sAPIVersion;
+	static uint32 FilterModVersion;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -159,7 +167,7 @@ const VDXScriptObject VDXVideoFilterScriptObjectAdapter<T>::sScriptObject = {
 	NULL, (T::sScriptMethods == VDXVideoFilter::sScriptMethods) ? NULL : (VDXScriptFunctionDef *)static_cast<const VDXScriptFunctionDef *>(T::sScriptMethods), NULL
 };
 
-template<bool (*T_Routine)(VDXHWND)>
+template<bool (&T_Routine)(VDXHWND)>
 static bool VDXAPIENTRY VDXStaticAboutConfigureAdapter(VDXHWND parent) {
 	return T_Routine(parent);
 }
@@ -170,8 +178,13 @@ static bool VDXAPIENTRY VDXStaticAboutConfigureAdapter(VDXHWND parent) {
 ///	This template creates the FilterDefinition structure for you based on
 ///	your filter class.
 ///
+
+struct VDXFilterDefinition2: public VDXFilterDefinition{
+	FilterModDefinition filterMod;
+};
+
 template<class T>
-class VDXVideoFilterDefinition : public VDXFilterDefinition {
+class VDXVideoFilterDefinition : public VDXFilterDefinition2 {
 public:
 	VDXVideoFilterDefinition(const char *pszAuthor, const char *pszName, const char *pszDescription) {
 		_next			= NULL;
@@ -214,6 +227,9 @@ public:
 
 		mpStaticAboutProc = T::StaticAbout == VDXVideoFilter::StaticAbout ? NULL : VDXStaticAboutConfigureAdapter<T::StaticAbout>;
 		mpStaticConfigureProc = T::StaticConfigure == VDXVideoFilter::StaticConfigure ? NULL :VDXStaticAboutConfigureAdapter<T::StaticConfigure>;
+
+		filterMod.activateProc = T::FilterModActivate;
+		filterMod.paramProc = T::FilterModParam;
 	}
 
 private:

@@ -300,6 +300,10 @@
 				RelativePath=".\source\VideoFilterDialog.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\source\VideoFilterEntry.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -316,6 +320,10 @@
 			</File>
 			<File
 				RelativePath="..\h\vd2\VDXFrame\VideoFilterDialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\h\vd2\VDXFrame\VideoFilterEntry.h"
 				>
 			</File>
 		</Filter>

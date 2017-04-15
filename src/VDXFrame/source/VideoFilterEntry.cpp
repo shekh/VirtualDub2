@@ -22,25 +22,35 @@
 //	3.	This notice may not be removed or altered from any source
 //		distribution.
 
-#ifndef f_VD2_VDXFRAME_VIDEOFILTERDIALOG_H
-#define f_VD2_VDXFRAME_VIDEOFILTERDIALOG_H
+#include "stdafx.h"
+#include <vd2/VDXFrame/VideoFilterEntry.h>
+#include <vd2/VDXFrame/VideoFilter.h>
 
-#include <windows.h>
 
-class VDXVideoFilterDialog {
-public:
-	VDXVideoFilterDialog();
+VDXFilterDefinition2 *VDXGetVideoFilterDefinition(int index);
 
-protected:
-	HWND	mhdlg;
+int VDXVideoFilterModuleInit2(struct VDXFilterModule *fm, const VDXFilterFunctions *ff, int vdfd_ver) {
+  for(int i=0; ; ++i){
+    VDXFilterDefinition2* def = VDXGetVideoFilterDefinition(i);
+    if(!def) break;
+    ff->addFilter(fm, def, sizeof(VDXFilterDefinition));
+  }
 
-	LRESULT Show(HINSTANCE hInst, LPCSTR templName, HWND parent);
-	LRESULT Show(HINSTANCE hInst, LPCWSTR templName, HWND parent);
-	HWND ShowModeless(HINSTANCE hInst, LPCSTR templName, HWND parent);
-	HWND ShowModeless(HINSTANCE hInst, LPCWSTR templName, HWND parent);
+  VDXVideoFilter::SetAPIVersion(vdfd_ver);
+  
+  return 0;
+}
 
-	static INT_PTR CALLBACK StaticDlgProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam);
-	virtual INT_PTR DlgProc(UINT msg, WPARAM wParam, LPARAM lParam);
-};
+int VDXVideoFilterModuleInitFilterMod(struct VDXFilterModule *fm, const FilterModInitFunctions *ff, int vdfd_ver, int mod_ver) {
+  for(int i=0; ; ++i){
+    VDXFilterDefinition2* def = VDXGetVideoFilterDefinition(i);
+    if(!def) break;
+    ff->addFilter(fm, def, sizeof(VDXFilterDefinition), &def->filterMod, sizeof(FilterModDefinition));
+  }
 
-#endif
+  VDXVideoFilter::SetAPIVersion(vdfd_ver);
+  VDXVideoFilter::SetFilterModVersion(mod_ver);
+  
+  return 0;
+}
+

@@ -49,18 +49,32 @@ VDXVideoFilterDialog::VDXVideoFilterDialog()
 {
 }
 
-LRESULT VDXVideoFilterDialog::Show(HINSTANCE hInst, LPCTSTR templName, HWND parent) {
+LRESULT VDXVideoFilterDialog::Show(HINSTANCE hInst, LPCSTR templName, HWND parent) {
 	if (!hInst)
 		hInst = GetLocalHInstance();
 
-	return DialogBoxParam(hInst, templName, parent, StaticDlgProc, (LPARAM)this);
+	return DialogBoxParamA(hInst, templName, parent, StaticDlgProc, (LPARAM)this);
 }
 
-HWND VDXVideoFilterDialog::ShowModeless(HINSTANCE hInst, LPCTSTR templName, HWND parent) {
+LRESULT VDXVideoFilterDialog::Show(HINSTANCE hInst, LPCWSTR templName, HWND parent) {
 	if (!hInst)
 		hInst = GetLocalHInstance();
 
-	return CreateDialogParam(hInst, templName, parent, StaticDlgProc, (LPARAM)this);
+	return DialogBoxParamW(hInst, templName, parent, StaticDlgProc, (LPARAM)this);
+}
+
+HWND VDXVideoFilterDialog::ShowModeless(HINSTANCE hInst, LPCSTR templName, HWND parent) {
+	if (!hInst)
+		hInst = GetLocalHInstance();
+
+	return CreateDialogParamA(hInst, templName, parent, StaticDlgProc, (LPARAM)this);
+}
+
+HWND VDXVideoFilterDialog::ShowModeless(HINSTANCE hInst, LPCWSTR templName, HWND parent) {
+	if (!hInst)
+		hInst = GetLocalHInstance();
+
+	return CreateDialogParamW(hInst, templName, parent, StaticDlgProc, (LPARAM)this);
 }
 
 INT_PTR CALLBACK VDXVideoFilterDialog::StaticDlgProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam) {

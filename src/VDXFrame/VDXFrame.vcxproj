@@ -152,6 +152,7 @@
   <ItemGroup>
     <ClCompile Include="source\VideoFilter.cpp" />
     <ClCompile Include="source\VideoFilterDialog.cpp" />
+    <ClCompile Include="source\VideoFilterEntry.cpp" />
     <ClCompile Include="source\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdafx.h</PrecompiledHeaderFile>
@@ -167,6 +168,7 @@
     <ClInclude Include="..\h\vd2\VDXFrame\Unknown.h" />
     <ClInclude Include="..\h\vd2\VDXFrame\VideoFilter.h" />
     <ClInclude Include="..\h\vd2\VDXFrame\VideoFilterDialog.h" />
+    <ClInclude Include="..\h\vd2\VDXFrame\VideoFilterEntry.h" />
     <ClInclude Include="include\stdafx.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

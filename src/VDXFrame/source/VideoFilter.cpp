@@ -24,12 +24,15 @@
 
 #include "stdafx.h"
 #include <vd2/VDXFrame/VideoFilter.h>
+#include <stdio.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
 uint32 VDXVideoFilter::sAPIVersion;
+uint32 VDXVideoFilter::FilterModVersion;
 
 VDXVideoFilter::VDXVideoFilter() {
+	fma = 0;
 }
 
 VDXVideoFilter::~VDXVideoFilter() {
@@ -42,6 +45,10 @@ void VDXVideoFilter::SetHooks(VDXFilterActivation *fa, const VDXFilterFunctions 
 
 void VDXVideoFilter::SetAPIVersion(uint32 apiVersion) {
 	sAPIVersion = apiVersion;
+}
+
+void VDXVideoFilter::SetFilterModVersion(uint32 version) {
+	FilterModVersion = version;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -246,6 +253,20 @@ bool VDXVideoFilter::StaticAbout(VDXHWND parent) {
 
 bool VDXVideoFilter::StaticConfigure(VDXHWND parent) {
 	return false;
+}
+
+void  __cdecl VDXVideoFilter::FilterModActivate(FilterModActivation *fma, const VDXFilterFunctions *ff) {
+	VDXVideoFilter *pThis = *reinterpret_cast<VDXVideoFilter **>(fma->filter_data);
+
+	pThis->fma = fma;
+}
+
+long __cdecl VDXVideoFilter::FilterModParam(VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
+	VDXVideoFilter *pThis = *reinterpret_cast<VDXVideoFilter **>(fa->filter_data);
+
+	pThis->fa		= fa;
+
+	return pThis->GetFilterModParams();
 }
 
 void VDXVideoFilter::SafePrintf(char *buf, int maxbuf, const char *format, ...) {

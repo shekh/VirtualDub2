@@ -60,8 +60,8 @@ enum {
 
 	///		- same with 32,64 bytes alignment
 	///
-	FILTERPARAM_ALIGN_SCANLINES_32		= 0x00000048L,
-	FILTERPARAM_ALIGN_SCANLINES_64		= 0x00000040L,
+	FILTERPARAM_ALIGN_SCANLINES_32		= 0x00000048L,  // v19
+	FILTERPARAM_ALIGN_SCANLINES_64		= 0x00000040L,  // v19
 
 	/// Filter's output is purely a function of configuration parameters and source image data, and not
 	/// source or output frame numbers. In other words, two output frames produced by a filter instance
@@ -85,7 +85,11 @@ enum {
 	/// Filter cannot support the requested source format. Note that this sets all bits, so the meaning
 	/// of other bits is ignored. The one exception is that FILTERPARAM_SUPPORTS_ALTFORMATS is assumed
 	/// to be implicitly set.
-	FILTERPARAM_NOT_SUPPORTED		= (long)0xFFFFFFFF
+	FILTERPARAM_NOT_SUPPORTED		= (long)0xFFFFFFFF,
+
+	/// Filter requires that image is not modified further and cpu time is not wasted.
+	/// Intended for "analyzis" filters.
+	FILTERPARAM_TERMINAL	= 0x00000080L,  // v19
 };
 
 /// The filter has a delay from source to output. For instance, a lag of 3 indicates that the
@@ -96,12 +100,6 @@ enum {
 /// to request additional frames to try to produce the correct requested output frames.
 ///
 #define FILTERPARAM_HAS_LAG(frames) ((int)(frames) << 16)
-
-enum {
-  /// Filter requires that image is not modified further and cpu time is not wasted.
-  /// Intended for "analyzis" filters.
-  FILTERMODPARAM_TERMINAL = 0x1,
-};
 
 ///////////////////
 
@@ -311,7 +309,7 @@ public:
 
 enum {
 	// This is the highest API version supported by this header file.
-	VIRTUALDUB_FILTERDEF_VERSION		= 18,
+	VIRTUALDUB_FILTERDEF_VERSION		= 19,
 
 	// This is the absolute lowest API version supported by this header file.
 	// Note that V4 is rather old, corresponding to VirtualDub 1.2.
@@ -322,8 +320,10 @@ enum {
 	// version that has copy constructor support. You may still need to
 	// declare a higher vdfd_compat version in your module init if you
 	// need features beyond V9 (VirtualDub 1.4.12).
-	VIRTUALDUB_FILTERDEF_COMPATIBLE_COPYCTOR = 9
+	VIRTUALDUB_FILTERDEF_COMPATIBLE_COPYCTOR = 9,
 
+	// API V17 was last before vdubFM
+	VIRTUALDUB_OFFICIAL		= 17,
 };
 
 // v3: added lCurrentSourceFrame to FrameStateInfo
@@ -340,6 +340,9 @@ enum {
 // v14 (1.9.1): added copyProc2, prefetchProc2, input/output frame arrays
 // v15 (1.9.3): added VDXA support
 // v16 (1.10.x): added multi-source support, feature deprecation
+// v17: added mpStaticAboutProc
+// v18: added FilterModActivation
+// v19: added flags
 
 struct VDXFilterDefinition {
 	void *_next;		// deprecated - set to NULL
