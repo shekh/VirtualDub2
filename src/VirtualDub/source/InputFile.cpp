@@ -148,7 +148,12 @@ void VDInitInputDrivers() {
 	g_VDInputDriversByLegacyIndex.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverImages()));
 	g_VDInputDriversByLegacyIndex.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverASF()));
 
-	g_VDInputDrivers = g_VDInputDriversByLegacyIndex;
+	g_VDInputDrivers.clear();
+	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverAVI1()));
+	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverAVI2()));
+	//g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverMPEG()));
+	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverImages()));
+	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverASF()));
 
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverANIM()));
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverFLM()));
