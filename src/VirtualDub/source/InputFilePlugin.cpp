@@ -1299,6 +1299,8 @@ void VDInputFilePlugin::Init(const wchar_t *szFile) {
 	vdwithinputplugin(mpContext) {
 		mpXObject->Init(szFile, mpXOptions);
 	}
+
+	AddFilename(szFile);
 }
 
 bool VDInputFilePlugin::Append(const wchar_t *szFile) {
@@ -1307,6 +1309,8 @@ bool VDInputFilePlugin::Append(const wchar_t *szFile) {
 	vdwithinputplugin(mpContext) {
 		appended = mpXObject->Append(szFile);
 	}
+
+	if (appended && szFile) AddFilename(szFile);
 
 	return appended;
 }

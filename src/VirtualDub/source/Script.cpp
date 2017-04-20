@@ -79,6 +79,7 @@ extern const char *VDGetStartupArgument(int index);
 static VDScriptValue RootHandler(IVDScriptInterpreter *isi, char *szName, void *lpData);
 
 extern bool VDPreferencesGetBatchShowStatusWindow();
+extern IVDInputDriver *VDCreateInputDriverTest();
 
 ///////////////////////////////////////////////
 
@@ -1979,9 +1980,11 @@ static void func_VirtualDub_Open(IVDScriptInterpreter *, VDScriptValue *arglist,
 	VDStringW filename(VDTextU8ToW(VDStringA(*arglist[0].asString())));
 	IVDInputDriver *pDriver = NULL;
 	bool extopen = false;
+	VDStringW signature;
 	
 	if (arg_count > 1) {
-		pDriver = VDGetInputDriverByName(VDTextAToW(*arglist[1].asString()).c_str());
+		signature = VDTextAToW(*arglist[1].asString());
+		pDriver = VDGetInputDriverByName(signature.c_str());
 
 		if (arg_count > 2)
 			extopen = !!arglist[2].asInt();
@@ -1993,14 +1996,19 @@ static void func_VirtualDub_Open(IVDScriptInterpreter *, VDScriptValue *arglist,
 
 		l = memunbase64(buf.data(), *arglist[3].asString(), l);
 
+		vdrefptr<IVDInputDriver> pTest;
+		if (filename.empty() && !pDriver) {
+			pTest = VDCreateInputDriverTest();
+			if (signature==pTest->GetSignatureName())
+			pDriver = pTest;
+		}
+
 		g_project->Open(filename.c_str(), pDriver, extopen, true, false, buf.data(), l);
 	} else
 		g_project->Open(filename.c_str(), pDriver, extopen, true, false);
 }
 
 static void func_VirtualDub_intOpenTest(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
-	extern IVDInputDriver *VDCreateInputDriverTest();
-
 	vdrefptr<IVDInputDriver> pDriver(VDCreateInputDriverTest());
 
 	g_project->Open(L"", pDriver, false);
