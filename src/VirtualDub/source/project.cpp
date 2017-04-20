@@ -439,6 +439,11 @@ void VDProject::Detach() {
 		mpSceneDetector = NULL;
 	}
 
+	if (mpDubStatus) {
+		delete mpDubStatus;
+		mpDubStatus = 0;
+	}
+
 	mhwnd = NULL;
 }
 
@@ -2406,6 +2411,7 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 
 		// Create dub status window
 
+		delete mpDubStatus;
 		mpDubStatus = CreateDubStatusHandler();
 
 		if (opts->fMoveSlider) {
@@ -2509,8 +2515,14 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 	if (g_dubber)
 		g_dubber->SetStatusHandler(NULL);
 
-	delete mpDubStatus;
-	mpDubStatus = NULL;
+	if (mpDubStatus) {
+		if (!fError || !mpDubStatus->IsNormalWindow()){
+			delete mpDubStatus;
+			mpDubStatus = NULL;
+		} else {
+			mpDubStatus->DeferDestroy((void**)&mpDubStatus);
+		}
+	}
 
 	_CrtCheckMemory();
 

@@ -97,6 +97,7 @@ private:
 	int					mProgress;
 
 	ModelessDlgNode		mModelessDialogNode;
+	void** thisRef;
 
 	static INT_PTR CALLBACK StatusMainDlgProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam );
 	static INT_PTR CALLBACK StatusVideoDlgProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam );
@@ -118,6 +119,7 @@ public:
 		DubOptions			*opt);
 	HWND Display(HWND hwndParent, int iInitialPriority);
 	void Destroy();
+	void DeferDestroy(void** ref){ thisRef=ref; }
 	void DumpStatus();
 	bool ToggleStatus();
 	void SetPositionCallback(DubPositionCallback dpc, void *cookie);
@@ -129,6 +131,8 @@ public:
 	bool isFrameVisible(bool fOutput);
 	bool ToggleFrame(bool fOutput);
 	void OnBackgroundStateUpdated();
+	HWND GetHwnd();
+	bool IsNormalWindow();
 };
 
 IDubStatusHandler *CreateDubStatusHandler() {
@@ -208,6 +212,7 @@ DubStatus::DubStatus()
 	, fFrozen(false)
 	, mpPositionCallback(NULL)
 	, mProgress(0)
+	, thisRef(0)
 {
 	memset(mFrameSizes, 0, sizeof mFrameSizes);
 	memset(mSamplePoints, 0, sizeof mSamplePoints);
@@ -215,6 +220,17 @@ DubStatus::DubStatus()
 
 DubStatus::~DubStatus() {
 	Destroy();
+}
+
+HWND DubStatus::GetHwnd() {
+	return hwndStatus;
+}
+
+bool DubStatus::IsNormalWindow() {
+	if (!hwndStatus) return false;
+	if (IsIconic(hwndStatus)) return false;
+	if (!IsWindowVisible(hwndStatus)) return false;
+	return true;
 }
 
 void DubStatus::InitLinks(	DubAudioStreamInfo	*painfo,
@@ -286,6 +302,8 @@ void DubStatus::Destroy() {
 ///////////////////////////////////////////////////////////////////////////
 
 void DubStatus::StatusTimerProc(HWND hWnd) {
+  if (!pvinfo) return;
+
 	sint64 nProjSize;
 	char buf[256];
 
@@ -940,6 +958,11 @@ INT_PTR CALLBACK DubStatus::StatusDlgProc( HWND hdlg, UINT message, WPARAM wPara
 				break;
 
 			case IDC_ABORT:
+				if (thisPtr->fFrozen){
+					_RPT0(0,"Received cancel\n");
+					thisPtr->ToggleStatus();
+					break;
+				}
 				extern bool VDPreferencesIsRenderAbortConfirmEnabled();
 
 				if (thisPtr->pDubber->IsPreviewing() || !VDPreferencesIsRenderAbortConfirmEnabled() ||
@@ -1066,6 +1089,8 @@ namespace {
 }
 
 void DubStatus::DumpStatus() {
+	if (!pDubber) return;
+
 	VectorStream vs;
 	VDTextOutputStream out(&vs);
 
@@ -1078,6 +1103,11 @@ void DubStatus::DumpStatus() {
 }
 
 bool DubStatus::ToggleStatus() {
+	if (thisRef) {
+		*thisRef = 0;
+		delete this;
+		return false;
+	}
 
 	fShowStatusWindow = !fShowStatusWindow;
 
@@ -1117,6 +1147,22 @@ void DubStatus::SetLastPosition(VDPosition pos, bool fast_update) {
 
 void DubStatus::Freeze() {
 	fFrozen = true;
+	painfo = 0;
+	pvinfo = 0;
+	audioStreamSource = 0;
+	pDubber = 0;
+	opt = 0;
+	mpPositionCallback = 0;
+	if (hwndStatus) {
+		EnableWindow(GetDlgItem(hwndStatus,IDC_PRIORITY),false);
+		EnableWindow(GetDlgItem(hwndStatus,IDC_DRAW_DOUTPUT),false);
+		EnableWindow(GetDlgItem(hwndStatus,IDC_DRAW_OUTPUT),false);
+		EnableWindow(GetDlgItem(hwndStatus,IDC_DRAW_INPUT),false);
+		EnableWindow(GetDlgItem(hwndStatus,IDC_BACKGROUND),false);
+		EnableWindow(GetDlgItem(hwndStatus,IDC_LIMIT),false);
+		SendMessage(hwndStatus, WM_SETTEXT, 0, (LPARAM)"Error...");
+		SendMessage(GetDlgItem(hwndStatus,IDC_ABORT), WM_SETTEXT, 0, (LPARAM)"Close");
+	}
 }
 
 bool DubStatus::isVisible() {

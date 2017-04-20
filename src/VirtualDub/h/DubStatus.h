@@ -41,6 +41,7 @@ public:
 	virtual void NotifyNewFrame(uint32 size, bool isKey)=0;
 	virtual HWND Display(HWND hwndParent, int iInitialPriority)=0;
 	virtual void Destroy()=0;
+	virtual void DeferDestroy(void** ref)=0;
 	virtual void SetPositionCallback(DubPositionCallback dpc, void *cookie)=0;
 	virtual bool ToggleStatus()=0;
 	virtual void SetLastPosition(VDPosition pos, bool fast_update)=0;
@@ -50,6 +51,8 @@ public:
 	virtual bool isFrameVisible(bool)=0;
 	virtual bool ToggleFrame(bool)=0;
 	virtual void OnBackgroundStateUpdated()=0;
+	virtual HWND GetHwnd()=0;
+	virtual bool IsNormalWindow()=0;
 };
 
 IDubStatusHandler *CreateDubStatusHandler();

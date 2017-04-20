@@ -2529,7 +2529,9 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 		}
 	} catch(const MyError& e) {
-		e.post((HWND)mhwnd, g_szError);
+		HWND parent = (HWND)mhwnd;
+		if (mpDubStatus && mpDubStatus->IsNormalWindow()) parent = mpDubStatus->GetHwnd();
+		e.post(parent, g_szError);
 	}
 
 	if (!bJobActive) {

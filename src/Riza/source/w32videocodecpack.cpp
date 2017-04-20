@@ -985,7 +985,10 @@ int EncoderHIC::compressMatrixInfo(const VDPixmapLayout* pxsrc) {
 	return -1;
 }
 
+void VDLog_s(int severity, const wchar_t *s) { VDLog(severity,s); }
+
 int EncoderHIC::compressBegin(BITMAPINFO* b1, BITMAPINFO* b2, const VDPixmapLayout* pxsrc) {
+	if(vdproc) vdproc(obj,0,VDICM_LOGPROC,(LPARAM)VDLog_s,0);
 	if(vdproc && pxsrc && pxsrc->format) {
 		return vdproc(obj,0,VDICM_COMPRESS_BEGIN,(LPARAM)pxsrc,(LPARAM)b2);
 	}
