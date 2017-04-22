@@ -108,8 +108,9 @@ void VDVideoCompressorDescVCM::CreateInstance(IVDVideoCompressor **comp) {
 
 class VDVideoCompressorVCM : public IVDVideoCompressor {
 public:
-	VDVideoCompressorVCM(EncoderHIC* driver, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle);
+	VDVideoCompressorVCM();
 	~VDVideoCompressorVCM();
+	void SetDriver(EncoderHIC* driver, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle);
 
 	bool IsKeyFrameOnly();
 	virtual int QueryInputFormat(FilterModPixmapInfo* info) {
@@ -153,6 +154,7 @@ private:
 	void GetState(vdfastvector<uint8>& data);
 
 	EncoderHIC*	driver;
+	bool		mbOwnHandle;
 	DWORD		dwFlags;
 	DWORD		mVFWExtensionMessageID;
 	vdstructex<BITMAPINFOHEADER>	mInputFormat;
@@ -176,7 +178,6 @@ private:
 
 	bool		mbKeyframeOnly;
 	bool		mbCompressionRestarted;
-	const bool	mbOwnHandle;
 
 	// crunch emulation
 	sint32		mQualityLo;
@@ -191,17 +192,30 @@ private:
 };
 
 IVDVideoCompressor *VDCreateVideoCompressorVCM(EncoderHIC *pHIC, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle) {
-	return new VDVideoCompressorVCM(pHIC, kilobytesPerSecond, quality, keyrate, ownHandle);
+	VDVideoCompressorVCM* r = new VDVideoCompressorVCM();
+	r->SetDriver(pHIC, kilobytesPerSecond, quality, keyrate, ownHandle);
+	return r;
 }
 
-VDVideoCompressorVCM::VDVideoCompressorVCM(EncoderHIC* driver, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle)
-	: mbOwnHandle(ownHandle)
-{
+VDVideoCompressorVCM::VDVideoCompressorVCM() {
 	pPrevBuffer		= NULL;
 	pConfigData		= NULL;
 	fCompressionStarted = false;
 	mbCompressionRestarted = false;
+}
 
+VDVideoCompressorVCM::~VDVideoCompressorVCM() {
+	Stop();
+
+	if (mbOwnHandle)
+		delete driver;
+
+	delete pConfigData;
+	delete pPrevBuffer;
+}
+
+void VDVideoCompressorVCM::SetDriver(EncoderHIC* driver, uint32 kilobytesPerSecond, long quality, long keyrate, bool ownHandle) {
+	mbOwnHandle = ownHandle;
 	this->driver = driver;
 	lDataRate = kilobytesPerSecond;
 	lKeyRate = keyrate;
@@ -220,16 +234,6 @@ VDVideoCompressorVCM::VDVideoCompressorVCM(EncoderHIC* driver, uint32 kilobytesP
 		if (info.dwFlags & (VIDCF_TEMPORAL | VIDCF_FASTTEMPORALC))
 			mbKeyframeOnly = false;
 	}
-}
-
-VDVideoCompressorVCM::~VDVideoCompressorVCM() {
-	Stop();
-
-	if (mbOwnHandle)
-		delete driver;
-
-	delete[] (char *)pConfigData;
-	delete pPrevBuffer;
 }
 
 bool VDVideoCompressorVCM::IsKeyFrameOnly() {
@@ -367,6 +371,7 @@ void VDVideoCompressorVCM::internalStart(const void *outputFormat, uint32 output
 	// actual worst case values are 43 and 51.  We'll compute the
 	// 43/51 value, and use the higher of the two.
 
+	//if (isEqualFOURCC(info.fccHandler, 'UYFH')) {
 	if ((info.fccHandler & 0xdfdfdfdf) == 'UYFH') {
 		long lRealMaxPackedSize = mInputFormat->biWidth * abs(mInputFormat->biHeight);
 
@@ -757,8 +762,12 @@ bool VDVideoCompressorVCM::CompressFrame(void *dst, const void *src, bool& keyfr
 
 crunch_complete:
 		;
+
+//		VDDEBUG("VideoSequenceCompressor: Packed frame %5d to %6u bytes; target=%d bytes / %d bytes, iterations = %d, range = [%5d, %5d, %5d]\n", lFrameNum, bytes, lAllowableFrameSize, lMaxFrameSize, packs, mQualityLo, mQualityLast, mQualityHi);
 	} else {	// No crunching or crunch directly supported
 		PackFrameInternal(dst, lAllowableFrameSize, lQuality, src, dwFlagsIn, dwFlagsOut, bytes);
+
+//		VDDEBUG("VideoSequenceCompressor: Packed frame %5d to %6u bytes; target=%d bytes / %d bytes\n", lFrameNum, bytes, lAllowableFrameSize, lMaxFrameSize);
 	}
 
 	// Flag a warning if the codec is improperly modifying its input buffer.
