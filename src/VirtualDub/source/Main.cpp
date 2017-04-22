@@ -102,7 +102,7 @@ static const char g_szRegKeyPersistence[]="Persistence";
 static const char g_szRegKeyAutoAppendByName[]="Auto-append by name";
 
 extern COMPVARS2 g_Vcompression;
-extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
+extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars);
 
 ///////////////////////////
 
@@ -900,7 +900,7 @@ INT_PTR VDSaveVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 		switch(LOWORD(wParam)) {
 		case IDC_COMPRESSION_CHANGE:
 			{
-				ChooseCompressor(mhdlg,&g_Vcompression,0);
+				ChooseCompressor(mhdlg,&g_Vcompression);
 				InitCodec();
 			}
 			break;

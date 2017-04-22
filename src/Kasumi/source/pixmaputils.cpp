@@ -118,6 +118,38 @@ int VDPixmapFormatMatrixType(sint32 format) {
 	return 0;
 }
 
+int VDPixmapFormatNextSimilar(VDPixmapFormatEx src) {
+	using namespace nsVDPixmap;
+	int f1 = VDPixmapFormatNormalize(src);
+	if (f1!=src) return f1;
+
+	if (src.format==kPixFormat_YUV422_YUYV) return kPixFormat_YUV422_Planar;
+	if (src.format==kPixFormat_YUV422_UYVY) return kPixFormat_YUV422_Planar;
+	if (src.format==kPixFormat_YUV422_Planar) return kPixFormat_YUV422_YUYV;
+
+	if (src.format==kPixFormat_YUV422_V210) return kPixFormat_YUV422_Planar16;
+	if (src.format==kPixFormat_YUV422_Planar16) return kPixFormat_YUV422_V210;
+
+	if (src.format==kPixFormat_XRGB1555) return kPixFormat_RGB888;
+	if (src.format==kPixFormat_RGB565) return kPixFormat_RGB888;
+	if (src.format==kPixFormat_XRGB8888) return kPixFormat_RGB888;
+	if (src.format==kPixFormat_RGB888) return kPixFormat_XRGB8888;
+
+	return src.format;
+}
+
+// for now only resolve some obvious equal formats
+int VDPixmapFormatDifference(VDPixmapFormatEx src, VDPixmapFormatEx dst) {
+	src = VDPixmapFormatNormalize(src);
+	dst = VDPixmapFormatNormalize(dst);
+	if (src.format==dst.format) return 0;
+
+	src = VDPixmapFormatNextSimilar(src);
+
+	if (src.format==dst.format) return 0;
+	return 1;
+}
+
 // derive base format if possible,
 // and expand mode flags
 VDPixmapFormatEx VDPixmapFormatNormalize(VDPixmapFormatEx format) {

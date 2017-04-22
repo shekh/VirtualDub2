@@ -970,6 +970,7 @@
 #define IDC_DRIVER                      1541
 #define IDC_CLIP_Y0_SPIN                1542
 #define IDC_CLIP_Y1_SPIN                1543
+#define IDC_SHOW_FILTERED               1544
 #define IDC_DRIVER_OPTIONS              1544
 #define IDC_DRIVER_INFO                 1545
 #define IDC_OPEN_SINGLE                 1546
