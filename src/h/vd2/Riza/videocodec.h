@@ -24,14 +24,29 @@
 #include <vd2/system/fraction.h>
 #include <vd2/system/vdstl.h>
 #include <vd2/system/VDString.h>
+#include <vd2/plugin/vdinputdriver.h>
 #include <windows.h>
 #include <vfw.h>
 
 struct tagBITMAPINFOHEADER;
 struct FilterModPixmapInfo;
 struct VDPixmapLayout;
+struct VDPacketInfo;
 
 class IVDVideoCompressor;
+
+struct VDPacketInfo {
+	bool	keyframe;
+	sint64 pts;
+	sint64 dts;
+	sint64 duration;
+
+	VDPacketInfo() {
+		pts = VDX_NOPTS_VALUE;
+		dts = VDX_NOPTS_VALUE;
+		duration = 0;
+	}
+};
 
 class IVDVideoCompressorDesc : public IVDRefUnknown {
 public:
@@ -59,7 +74,7 @@ public:
 	virtual void Restart() = 0;
 	virtual void SkipFrame() = 0;
 	virtual void DropFrame() = 0;
-	virtual bool CompressFrame(void *dst, const void *src, bool& keyframe, uint32& size) = 0;
+	virtual bool CompressFrame(void *dst, const void *src, uint32& size, VDPacketInfo& packetInfo) = 0;
 	virtual void Stop() = 0;
 
 	virtual void Clone(IVDVideoCompressor **vc) = 0;
@@ -161,6 +176,7 @@ struct EncoderHIC{
 		DWORD               dwQuality,
 		LPBITMAPINFOHEADER  lpbiPrev,
 		LPVOID              lpPrev,
+		VDPacketInfo&       packetInfo,
 		const VDPixmapLayout* pxsrc=0
 	);
 

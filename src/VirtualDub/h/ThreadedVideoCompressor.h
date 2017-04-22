@@ -184,7 +184,7 @@ public:
 	virtual int Release();
 
 	uint32	mOutputSize;
-	bool	mbOutputIsKey;
+	VDPacketInfo packetInfo;
 	vdfastvector<char>	mOutputBuffer;
 
 protected:

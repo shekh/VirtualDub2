@@ -391,7 +391,7 @@ void VideoSequenceCompressor::dropFrame() {
 	++lFrameDone;
 }
 
-bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyframe, uint32& size) {
+bool VideoSequenceCompressor::packFrame(void *dst, const void *src, uint32& size, VDPacketInfo& packetInfo) {
 	DWORD dwFlagsOut=0, dwFlagsIn = ICCOMPRESS_KEYFRAME;
 	long lAllowableFrameSize=0;//xFFFFFF;	// yes, this is illegal according
 											// to the docs (see below)
@@ -452,7 +452,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 		sint32 maxDelta = lMaxFrameSize/20 + 1;
 		int packs = 0;
 
-		PackFrameInternal(dst, 0, mQualityLast, src, dwFlagsIn, dwFlagsOut, bytes);
+		PackFrameInternal(dst, 0, mQualityLast, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 		++packs;
 
 		// Don't do crunching for key frames to keep consistent quality.
@@ -460,7 +460,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 			goto crunch_complete;
 
 		if (bytes < lAllowableFrameSize) {		// too low -- squeeze [mid, hi]
-			PackFrameInternal(dst, 0, mQualityHi, src, dwFlagsIn, dwFlagsOut, bytes);
+			PackFrameInternal(dst, 0, mQualityHi, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 			++packs;
 
 			if (abs(bytes - lAllowableFrameSize) <= maxDelta) {
@@ -482,7 +482,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 			while(lo <= hi) {
 				q = (lo+hi)>>1;
 
-				PackFrameInternal(dst, 0, q, src, dwFlagsIn, dwFlagsOut, bytes);
+				PackFrameInternal(dst, 0, q, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 				++packs;
 
 				sint32 delta = (bytes - lAllowableFrameSize);
@@ -509,7 +509,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 			mQualityLast = q;
 
 		} else {							// too low -- squeeze [lo, mid]
-			PackFrameInternal(dst, 0, mQualityLo, src, dwFlagsIn, dwFlagsOut, bytes);
+			PackFrameInternal(dst, 0, mQualityLo, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 			++packs;
 
 			if (abs(bytes - lAllowableFrameSize)*20 <= lAllowableFrameSize) {
@@ -531,7 +531,7 @@ bool VideoSequenceCompressor::packFrame(void *dst, const void *src, bool& keyfra
 			while(lo <= hi) {
 				q = (lo+hi)>>1;
 
-				PackFrameInternal(dst, 0, q, src, dwFlagsIn, dwFlagsOut, bytes);
+				PackFrameInternal(dst, 0, q, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 				++packs;
 
 				sint32 delta = (bytes - lAllowableFrameSize);
@@ -563,7 +563,7 @@ crunch_complete:
 
 //		VDDEBUG("VideoSequenceCompressor: Packed frame %5d to %6u bytes; target=%d bytes / %d bytes, iterations = %d, range = [%5d, %5d, %5d]\n", lFrameNum, bytes, lAllowableFrameSize, lMaxFrameSize, packs, mQualityLo, mQualityLast, mQualityHi);
 	} else {	// No crunching or crunch directly supported
-		PackFrameInternal(dst, lAllowableFrameSize, lQuality, src, dwFlagsIn, dwFlagsOut, bytes);
+		PackFrameInternal(dst, lAllowableFrameSize, lQuality, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 
 //		VDDEBUG("VideoSequenceCompressor: Packed frame %5d to %6u bytes; target=%d bytes / %d bytes\n", lFrameNum, bytes, lAllowableFrameSize, lMaxFrameSize);
 	}
@@ -642,16 +642,16 @@ crunch_complete:
 	// Was it a keyframe?
 
 	if (dwFlagsOut & AVIIF_KEYFRAME) {
-		keyframe = true;
+		packetInfo.keyframe = true;
 		lKeyRateCounter = lKeyRate;
 	} else {
-		keyframe = false;
+		packetInfo.keyframe = false;
 	}
 
 	return true;
 }
 
-void VideoSequenceCompressor::PackFrameInternal(void* dst, DWORD frameSize, DWORD q, const void *src, DWORD dwFlagsIn, DWORD& dwFlagsOut, sint32& bytes) {
+void VideoSequenceCompressor::PackFrameInternal(void* dst, DWORD frameSize, DWORD q, const void *src, DWORD dwFlagsIn, DWORD& dwFlagsOut, VDPacketInfo& packetInfo, sint32& bytes) {
 	DWORD dwChunkId = 0;
 	DWORD res;
 
@@ -673,6 +673,7 @@ void VideoSequenceCompressor::PackFrameInternal(void* dst, DWORD frameSize, DWOR
 				q,
 				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : mInputFormat.data(),
 				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : pPrevBuffer,
+				packetInfo,
 				&mInputLayout);
 	}
 

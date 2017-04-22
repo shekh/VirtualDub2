@@ -282,6 +282,7 @@ namespace nsVDXPixmap {
 		kPixFormat_YUV420_Planar			= 15,
 		kPixFormat_YUV411_Planar			= 16,
 		kPixFormat_YUV410_Planar			= 17,
+		kPixFormat_YUV422_V210				= 21,
 		kPixFormat_YUV422_UYVY_709			= 22,
 		kPixFormat_Y8_FR					= 24,
 		kPixFormat_YUV422_YUYV_709			= 25,
@@ -359,6 +360,7 @@ enum {
 	VDICM_COMPRESS_MATRIX_INFO = 7,
 	VDICM_ENUMFORMATS = 8,
 	VDICM_LOGPROC = 9,
+	VDICM_COMPRESS2 = 10,
 };
 
 enum {

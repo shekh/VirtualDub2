@@ -467,7 +467,6 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 		}
 	}
 
-	bool isKey;
 	uint32 packedSize;
 	bool valid;
 
@@ -491,7 +490,7 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 		if (frameTrackingQueue && frameNumber >= 0)
 			frameTrackingQueue->push_back(frameNumber);
 
-		valid = pCompressor->CompressFrame(pOutputBuffer->mOutputBuffer.data(), dst, isKey, packedSize);
+		valid = pCompressor->CompressFrame(pOutputBuffer->mOutputBuffer.data(), dst, packedSize, pOutputBuffer->packetInfo);
 
 		if (!valid) {
 			vdsynchronized(mMutex) {
@@ -505,7 +504,7 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 		}
 
 		// check if we got a delta frame in multithreaded mode
-		if (!isKey && mThreadCount > 1 && packedSize > 0)
+		if (!pOutputBuffer->packetInfo.keyframe && mThreadCount > 1 && packedSize > 0)
 			throw MyError("The video compressor was unable to produce a key frame only sequence. Multithreaded compression must be disabled for this video codec and current compression settings.");
 
 		VDPROFILEEND();
@@ -528,7 +527,6 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 		}
 
 		pOutputBuffer->mOutputSize = packedSize;
-		pOutputBuffer->mbOutputIsKey = isKey;
 
 		vdsynchronized(mMutex) {
 			mFramesBufferedInFlush = 0;

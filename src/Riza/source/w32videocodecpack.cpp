@@ -138,7 +138,7 @@ public:
 	void Restart();
 	void SkipFrame();
 	void DropFrame();
-	bool CompressFrame(void *dst, const void *src, bool& keyframe, uint32& size);
+	bool CompressFrame(void *dst, const void *src, uint32& size, VDPacketInfo& packetInfo);
 	void Stop();
 
 	void Clone(IVDVideoCompressor **vcRet);
@@ -150,7 +150,7 @@ public:
 	}
 
 private:
-	void PackFrameInternal(void *dst, DWORD frameSize, DWORD q, const void *pBits, DWORD dwFlagsIn, DWORD& dwFlagsOut, sint32& bytes);
+	void PackFrameInternal(void *dst, DWORD frameSize, DWORD q, const void *pBits, DWORD dwFlagsIn, DWORD& dwFlagsOut, VDPacketInfo& packetInfo, sint32& bytes);
 	void GetState(vdfastvector<uint8>& data);
 
 	EncoderHIC*	driver;
@@ -593,7 +593,7 @@ void VDVideoCompressorVCM::Restart() {
 		throw MyICError(res, "Cannot restart video compression:\n\n%%s\n(error code %d)", (int)res);
 }
 
-bool VDVideoCompressorVCM::CompressFrame(void *dst, const void *src, bool& keyframe, uint32& size) {
+bool VDVideoCompressorVCM::CompressFrame(void *dst, const void *src, uint32& size, VDPacketInfo& packetInfo) {
 	DWORD dwFlagsOut=0, dwFlagsIn = ICCOMPRESS_KEYFRAME;
 	long lAllowableFrameSize=0;//xFFFFFF;	// yes, this is illegal according
 											// to the docs (see below)
@@ -654,7 +654,7 @@ bool VDVideoCompressorVCM::CompressFrame(void *dst, const void *src, bool& keyfr
 		sint32 maxDelta = lMaxFrameSize/20 + 1;
 		int packs = 0;
 
-		PackFrameInternal(dst, 0, mQualityLast, src, dwFlagsIn, dwFlagsOut, bytes);
+		PackFrameInternal(dst, 0, mQualityLast, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 		++packs;
 
 		// Don't do crunching for key frames to keep consistent quality.
@@ -662,7 +662,7 @@ bool VDVideoCompressorVCM::CompressFrame(void *dst, const void *src, bool& keyfr
 			goto crunch_complete;
 
 		if (bytes < lAllowableFrameSize) {		// too low -- squeeze [mid, hi]
-			PackFrameInternal(dst, 0, mQualityHi, src, dwFlagsIn, dwFlagsOut, bytes);
+			PackFrameInternal(dst, 0, mQualityHi, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 			++packs;
 
 			if (abs(bytes - lAllowableFrameSize) <= maxDelta) {
@@ -684,7 +684,7 @@ bool VDVideoCompressorVCM::CompressFrame(void *dst, const void *src, bool& keyfr
 			while(lo <= hi) {
 				q = (lo+hi)>>1;
 
-				PackFrameInternal(dst, 0, q, src, dwFlagsIn, dwFlagsOut, bytes);
+				PackFrameInternal(dst, 0, q, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 				++packs;
 
 				sint32 delta = (bytes - lAllowableFrameSize);
@@ -711,7 +711,7 @@ bool VDVideoCompressorVCM::CompressFrame(void *dst, const void *src, bool& keyfr
 			mQualityLast = q;
 
 		} else {							// too low -- squeeze [lo, mid]
-			PackFrameInternal(dst, 0, mQualityLo, src, dwFlagsIn, dwFlagsOut, bytes);
+			PackFrameInternal(dst, 0, mQualityLo, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 			++packs;
 
 			if (abs(bytes - lAllowableFrameSize)*20 <= lAllowableFrameSize) {
@@ -733,7 +733,7 @@ bool VDVideoCompressorVCM::CompressFrame(void *dst, const void *src, bool& keyfr
 			while(lo <= hi) {
 				q = (lo+hi)>>1;
 
-				PackFrameInternal(dst, 0, q, src, dwFlagsIn, dwFlagsOut, bytes);
+				PackFrameInternal(dst, 0, q, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 				++packs;
 
 				sint32 delta = (bytes - lAllowableFrameSize);
@@ -765,7 +765,7 @@ crunch_complete:
 
 //		VDDEBUG("VideoSequenceCompressor: Packed frame %5d to %6u bytes; target=%d bytes / %d bytes, iterations = %d, range = [%5d, %5d, %5d]\n", lFrameNum, bytes, lAllowableFrameSize, lMaxFrameSize, packs, mQualityLo, mQualityLast, mQualityHi);
 	} else {	// No crunching or crunch directly supported
-		PackFrameInternal(dst, lAllowableFrameSize, lQuality, src, dwFlagsIn, dwFlagsOut, bytes);
+		PackFrameInternal(dst, lAllowableFrameSize, lQuality, src, dwFlagsIn, dwFlagsOut, packetInfo, bytes);
 
 //		VDDEBUG("VideoSequenceCompressor: Packed frame %5d to %6u bytes; target=%d bytes / %d bytes\n", lFrameNum, bytes, lAllowableFrameSize, lMaxFrameSize);
 	}
@@ -844,16 +844,16 @@ crunch_complete:
 	// Was it a keyframe?
 
 	if (dwFlagsOut & AVIIF_KEYFRAME) {
-		keyframe = true;
+		packetInfo.keyframe = true;
 		lKeyRateCounter = lKeyRate;
 	} else {
-		keyframe = false;
+		packetInfo.keyframe = false;
 	}
 
 	return true;
 }
 
-void VDVideoCompressorVCM::PackFrameInternal(void *dst, DWORD frameSize, DWORD q, const void *src, DWORD dwFlagsIn, DWORD& dwFlagsOut, sint32& bytes) {
+void VDVideoCompressorVCM::PackFrameInternal(void *dst, DWORD frameSize, DWORD q, const void *src, DWORD dwFlagsIn, DWORD& dwFlagsOut, VDPacketInfo& packetInfo, sint32& bytes) {
 	DWORD dwChunkId = 0;
 	DWORD res;
 
@@ -875,6 +875,7 @@ void VDVideoCompressorVCM::PackFrameInternal(void *dst, DWORD frameSize, DWORD q
 				q,
 				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : mInputFormat.data(),
 				dwFlagsIn & ICCOMPRESS_KEYFRAME ? NULL : pPrevBuffer,
+				packetInfo,
 				&mInputLayout);
 	}
 
@@ -1061,6 +1062,7 @@ DWORD EncoderHIC::compress(
 	DWORD               dwQuality,
 	LPBITMAPINFOHEADER  lpbiPrev,
 	LPVOID              lpPrev,
+	VDPacketInfo&       packetInfo,
 	const VDPixmapLayout* pxsrc
 )
 {
@@ -1078,6 +1080,15 @@ DWORD EncoderHIC::compress(
 		c.dwQuality = dwQuality;
 		c.lpbiPrev = 0;
 		c.lpPrev = lpPrev;
+		VDXPictureCompress pc;
+		pc.px = (const VDXPixmapLayout*)pxsrc;
+		DWORD r = vdproc(obj,0,VDICM_COMPRESS2,(LPARAM)&c,(LPARAM)&pc);
+		if (r!=ICERR_UNSUPPORTED) {
+			packetInfo.pts = pc.pts;
+			packetInfo.dts = pc.dts;
+			packetInfo.duration = pc.duration;
+			return r;
+		}
 		return vdproc(obj,0,VDICM_COMPRESS,(LPARAM)&c,(LPARAM)pxsrc);
 	}
 	if(obj){

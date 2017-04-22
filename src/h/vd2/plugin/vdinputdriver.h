@@ -27,6 +27,7 @@
 #define f_VD2_PLUGIN_VDINPUTDRIVER_H
 
 #include "vdplugin.h"
+#include <string.h>
 
 /// Unsigned 32-bit fraction.
 struct VDXFraction {
@@ -383,6 +384,26 @@ struct VDXStreamInfo {
 	}
 };
 
+// same as AV_NOPTS_VALUE
+const sint64 VDX_NOPTS_VALUE = ((sint64)uint64(0x8000000000000000));
+
+struct VDXPictureCompress {
+	int version;
+	const VDXPixmapLayout* px;
+
+	sint64 pts;
+	sint64 dts;
+	sint64 duration;
+
+	VDXPictureCompress() {
+		px = 0;
+		version = 1;
+		pts = VDX_NOPTS_VALUE;
+		dts = VDX_NOPTS_VALUE;
+		duration = 0;
+	}
+};
+
 class IVDXOutputFile : public IVDXUnknown {
 public:
 	enum { kIID = VDXMAKEFOURCC('X', 'o', 'f', 'l') };
@@ -392,8 +413,15 @@ public:
 		uint32 samples;
 		sint64 pcm_samples;
 		sint64 pts;
+		sint64 dts;
 
-		PacketInfo(){ pcm_samples=-1; pts=-1; }
+		PacketInfo(){
+			flags = 0;
+			samples = 0;
+			pcm_samples = -1; 
+			pts = VDX_NOPTS_VALUE;
+			dts = VDX_NOPTS_VALUE;
+		}
 	};
 
 	virtual void	VDXAPIENTRY Init(const wchar_t *path, const char* format) = 0;

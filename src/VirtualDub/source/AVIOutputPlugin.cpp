@@ -131,7 +131,7 @@ public:
 	AVIOutputPluginStream(AVIOutputPlugin *pParent, int nStream);
 
 	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples);
-	void write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& info);
+	void write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& packetInfo, FilterModPixmapInfo* pxInfo);
 	void partialWriteBegin(uint32 flags, uint32 bytes, uint32 samples);
 	void partialWrite(const void *pBuffer, uint32 cbBuffer);
 	void partialWriteEnd();
@@ -154,12 +154,12 @@ void AVIOutputPluginStream::write(uint32 flags, const void *pBuffer, uint32 cbBu
 	IVDXOutputFile::PacketInfo info;
 	info.flags = flags;
 	info.samples = samples;
-	write(pBuffer,cbBuffer,info);
+	write(pBuffer,cbBuffer,info,0);
 }
 
-void AVIOutputPluginStream::write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& info) {
+void AVIOutputPluginStream::write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& packetInfo, FilterModPixmapInfo* pxInfo) {
 	vdwithoutputplugin(mpParent->mpContext) {
-		mpParent->outFile->Write(plugin_id,pBuffer,cbBuffer,info);
+		mpParent->outFile->Write(plugin_id,pBuffer,cbBuffer,packetInfo);
 	}
 	/*
 	partialWriteBegin(flags, cbBuffer, samples);

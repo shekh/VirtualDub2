@@ -660,7 +660,7 @@ public:
 	virtual void	updateStreamInfo(const VDXStreamInfo& hdr);
 
 	virtual void	write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples);
-	virtual void	write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples, FilterModPixmapInfo* info);
+	virtual void	write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& packetInfo, FilterModPixmapInfo* info);
 
 	virtual void	partialWriteBegin(uint32 flags, uint32 bytes, uint32 samples);
 	virtual void	partialWrite(const void *pBuffer, uint32 cbBuffer);
@@ -731,9 +731,9 @@ void VDMediaOutputStreamProxy::write(uint32 flags, const void *pBuffer, uint32 c
 	}
 }
 
-void VDMediaOutputStreamProxy::write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples, FilterModPixmapInfo* info) {
+void VDMediaOutputStreamProxy::write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& packetInfo, FilterModPixmapInfo* info) {
 	try {
-		mpStream->write(flags, pBuffer, cbBuffer, samples, info);
+		mpStream->write(pBuffer, cbBuffer, packetInfo, info);
 	} catch(const MyError& e) {
 		TranslateError(e);
 	}

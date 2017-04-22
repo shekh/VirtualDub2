@@ -1144,7 +1144,7 @@ bool VDDubVideoProcessor::CheckForThreadedCompressDone() {
 	if (!mpThreadedVideoCompressor->ExchangeBuffer(NULL, ~pOutBuffer))
 		return false;
 
-	WriteFinishedVideoFrame(pOutBuffer->mOutputBuffer.data(), pOutBuffer->mOutputSize, pOutBuffer->mbOutputIsKey, false, NULL);
+	WriteFinishedVideoFrame(pOutBuffer->mOutputBuffer.data(), pOutBuffer->mOutputSize, pOutBuffer->packetInfo, false, NULL);
 	return true;
 }
 
@@ -1270,7 +1270,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::WriteFinishedVideoFra
 
 	vdrefptr<VDRenderPostCompressionBuffer> pNewBuffer;
 	uint32 dwBytes;
-	bool isKey;
+	VDPacketInfo packetInfo;
 
 	if (mpVideoCompressor) {
 		bool gotFrame;
@@ -1301,12 +1301,12 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::WriteFinishedVideoFra
 
 		frameBuffer = pNewBuffer->mOutputBuffer.data();
 		dwBytes = pNewBuffer->mOutputSize;
-		isKey = pNewBuffer->mbOutputIsKey;
+		packetInfo = pNewBuffer->packetInfo;
 
 	} else {
 
 		dwBytes = pBuffer->mBuffer.size();
-		isKey = true;
+		packetInfo.keyframe = true;
 
 		if (mpVideoOut->isAVIFile()) {
 			VDPROFILEBEGIN("V-Format");
@@ -1326,17 +1326,19 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::WriteFinishedVideoFra
 		}
 	}
 
-	WriteFinishedVideoFrame(frameBuffer, dwBytes, isKey, true, pBuffer);
+	WriteFinishedVideoFrame(frameBuffer, dwBytes, packetInfo, true, pBuffer);
 	return kVideoWriteOK;
 }
 
 void VDDubVideoProcessor::WriteNullVideoFrame() {
-	WriteFinishedVideoFrame(NULL, 0, false, false, NULL);
+	VDPacketInfo packetInfo;
+	packetInfo.keyframe = false;
+	WriteFinishedVideoFrame(NULL, 0, packetInfo, false, NULL);
 }
 
-void VDDubVideoProcessor::WriteFinishedVideoFrame(const void *data, uint32 size, bool isKey, bool renderEnabled, VDRenderOutputBuffer *pBuffer) {
+void VDDubVideoProcessor::WriteFinishedVideoFrame(const void *data, uint32 size, VDPacketInfo& packetInfo, bool renderEnabled, VDRenderOutputBuffer *pBuffer) {
 	if (mpVideoCompressor) {
-		mpProcDisplay->UpdateDecompressedVideo(data, size, isKey);
+		mpProcDisplay->UpdateDecompressedVideo(data, size, packetInfo.keyframe);
 	}
 
 	////// WRITE VIDEO FRAME TO DISK
@@ -1348,7 +1350,12 @@ void VDDubVideoProcessor::WriteFinishedVideoFrame(const void *data, uint32 size,
 			mpVideoImageOut->WriteVideoImage(NULL);
 	} else {
 		VDDubAutoThreadLocation loc(*mppCurrentAction, "writing video frame to disk");
-		mpVideoOut->write(isKey ? AVIOutputStream::kFlagKeyFrame : 0, (char *)data, size, 1, &pBuffer->mPixmap.info);
+		IVDXOutputFile::PacketInfo packetInfo2;
+		packetInfo2.flags = packetInfo.keyframe ? AVIOutputStream::kFlagKeyFrame : 0;
+		packetInfo2.pts = packetInfo.pts;
+		packetInfo2.dts = packetInfo.dts;
+		packetInfo2.samples = 1;
+		mpVideoOut->write((char *)data, size, packetInfo2, &pBuffer->mPixmap.info);
 	}
 	mpVInfo->total_size += size + 24;
 
@@ -1380,7 +1387,7 @@ void VDDubVideoProcessor::WriteFinishedVideoFrame(const void *data, uint32 size,
 		}
 	}
 
-	NotifyCompletedFrame(size, isKey);
+	NotifyCompletedFrame(size, packetInfo.keyframe);
 }
 
 VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::DecodeVideoFrame(const VDRenderVideoPipeFrameInfo& frameInfo) {

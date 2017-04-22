@@ -3268,19 +3268,19 @@ void VDCaptureData::VideoCallbackWriteFrame(void *pFilteredData, uint32 dwBytesU
 	// have any frames preceding it!
 
 	if (mpVideoCompressor) {
-		bool isKey;
 		uint32 lBytes = 0;
+		VDPacketInfo packetInfo;
 
 		VDPROFILEBEGIN("V-Compress");
 		void* lpCompressedData = pOutputBuffer;
-		if (!mpVideoCompressor->packFrame(lpCompressedData, pFilteredData, isKey, lBytes))
+		if (!mpVideoCompressor->packFrame(lpCompressedData, pFilteredData, lBytes, packetInfo))
 			lpCompressedData = 0;
 		VDPROFILEEND();
 
 		if (mpOutput) {
 			VDPROFILEBEGIN("V-Write");
 			mpVideoOut->write(
-					isKey ? AVIOutputStream::kFlagKeyFrame : 0,
+					packetInfo.keyframe ? AVIOutputStream::kFlagKeyFrame : 0,
 					lpCompressedData,
 					lBytes, 1);
 			VDPROFILEEND();

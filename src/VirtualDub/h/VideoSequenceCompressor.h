@@ -21,8 +21,11 @@
 #include <windows.h>
 #include <vfw.h>
 #include <vd2/system/VDString.h>
+#include <vd2/system/Fraction.h>
+#include <vd2/Kasumi/pixmap.h>
 
 struct EncoderHIC;
+struct VDPacketInfo;
 
 class VideoSequenceCompressor {
 public:
@@ -46,7 +49,7 @@ public:
 	void Start(const VDPixmapLayout& layout, FilterModPixmapInfo& info, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);
 	void internalStart(const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);
 	void dropFrame();
-	bool packFrame(void *dst, const void *src, bool& keyframe, uint32& size);
+	bool packFrame(void *dst, const void *src, uint32& size, VDPacketInfo& packetInfo);
 	void Stop();
 
 	long getMaxSize() {
@@ -56,7 +59,7 @@ public:
 	void* createResultBuffer();
 
 private:
-	void PackFrameInternal(void* dst, DWORD frameSize, DWORD q, const void *src, DWORD dwFlagsIn, DWORD& dwFlagsOut, sint32& bytes);
+	void PackFrameInternal(void* dst, DWORD frameSize, DWORD q, const void *src, DWORD dwFlagsIn, DWORD& dwFlagsOut, VDPacketInfo& packetInfo, sint32& bytes);
 
 	EncoderHIC	*driver;
 	bool		mbOwnHandle;

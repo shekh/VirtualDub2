@@ -80,9 +80,12 @@ public:
 	~AVIVideoImageOutputStream();
 
 	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples) {
-		write(flags,pBuffer,cbBuffer,lSamples,0);
+		IVDXOutputFile::PacketInfo packetInfo;
+		packetInfo.flags = flags;
+		packetInfo.samples = lSamples;
+		write(pBuffer,cbBuffer,packetInfo,0);
 	}
-	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 samples, FilterModPixmapInfo* info);
+	void write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& packetInfo, FilterModPixmapInfo* info);
 	void WriteVideoImage(const VDPixmap *px);
 	void partialWriteBegin(uint32 flags, uint32 bytes, uint32 samples);
 	void partialWrite(const void *pBuffer, uint32 cbBuffer) {}
@@ -152,7 +155,7 @@ void AVIVideoImageOutputStream::WriteVideoImage(const VDPixmap *px) {
 	mFile.close();
 }
 
-void AVIVideoImageOutputStream::write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples, FilterModPixmapInfo* info) {
+void AVIVideoImageOutputStream::write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& packetInfo, FilterModPixmapInfo* info) {
 	wchar_t szFileName[MAX_PATH];
 
 	const BITMAPINFOHEADER& bih = *(const BITMAPINFOHEADER *)getFormat();
@@ -502,7 +505,9 @@ void AVIOutputImages::WriteSingleImage(const wchar_t *name, int format, int q, V
 	delete blt;
 
 	stream.setFormat(outputFormat.data(),outputFormat.size());
-	stream.write(0,buf.base(),buf.size(),1,&buf.info);
+	IVDXOutputFile::PacketInfo packetInfo;
+	packetInfo.samples = 1;
+	stream.write(buf.base(),buf.size(),packetInfo,&buf.info);
 }
 
 //////////////////////////////////

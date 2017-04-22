@@ -143,7 +143,7 @@ protected:
 	VideoWriteResult ProcessVideoFrame();
 	VideoWriteResult WriteFinishedVideoFrame(VDRenderOutputBuffer *pBuffer, bool holdFrame);
 	void WriteNullVideoFrame();
-	void WriteFinishedVideoFrame(const void *data, uint32 size, bool isKey, bool renderEnabled, VDRenderOutputBuffer *pBuffer);
+	void WriteFinishedVideoFrame(const void *data, uint32 size, VDPacketInfo& packetInfo, bool renderEnabled, VDRenderOutputBuffer *pBuffer);
 
 	void OnVideoPipeAdd(AVIPipe *pipe, const bool&);
 	void OnRequestQueueLowWatermark(VDDubFrameRequestQueue *queue, const bool&);
