@@ -1410,6 +1410,12 @@ bool Dubber::NegotiateFastFormat(int format) {
 	
 	const BITMAPINFOHEADER *pbih = (const BITMAPINFOHEADER *)mVideoSources.front()->getDecompressedFormat();
 
+	int s_variant;
+	int s_format = VDBitmapFormatToPixmapFormat((const VDAVIBitmapInfoHeader&)*pbih,s_variant);
+	// BRA[64] is not supported as output yet
+	if (s_format==nsVDPixmap::kPixFormat_XRGB64 && s_variant==1) return false;
+	if (s_format==nsVDPixmap::kPixFormat_XYUV64) return false;
+
 	if (mpVideoCompressor->Query(pbih)) {
 		VDString buf;
 
