@@ -148,6 +148,7 @@ struct EncoderHIC{
 	int getInfo(ICINFO& info);
 	int compressQuery(void* src, void* dst, const VDPixmapLayout* pxsrc=0);
 	int queryInputFormat(FilterModPixmapInfo* info);
+	int inputFormatInfo(const VDPixmapLayout* pxsrc);
 	int sendMessage(int msg, LPARAM p1, LPARAM p2);
 	void close();
 	void configure(HWND hwnd);

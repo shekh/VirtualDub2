@@ -28,6 +28,8 @@
 #include <vd2/system/w32assist.h>
 #include <vd2/VDLib/Dialog.h>
 #include <windows.h>
+#include <Ks.h>
+#include <Ksmedia.h>
 #include <vector>
 #include "cap_screen.h"
 #include "resource.h"
@@ -677,6 +679,53 @@ void VDCaptureDriverScreen::GetAvailableAudioFormats(std::list<vdstructex<WAVEFO
 					aformats.push_back(vdstructex<WAVEFORMATEX>(&wfex, sizeof wfex));
 				}
 			}
+
+	 GetExtraFormats(aformats);
+}
+
+void VDCaptureDriverScreen::GetExtraFormats(std::list<vdstructex<WAVEFORMATEX> >& aformats) {
+	static const int kSamplingRates[]={
+		48000,
+		96000,
+		192000
+	};
+
+	static const int kChannelCounts[]={
+		4,
+		6,
+		8
+	};
+
+	static const int kSampleDepths[]={
+		16
+	};
+
+	for(int sridx=0; sridx < sizeof kSamplingRates / sizeof kSamplingRates[0]; ++sridx)
+		for(int chidx=0; chidx < sizeof kChannelCounts / sizeof kChannelCounts[0]; ++chidx)
+			for(int sdidx=0; sdidx < sizeof kSampleDepths / sizeof kSampleDepths[0]; ++sdidx) {
+				WAVEFORMATEXTENSIBLE wfex={
+					WAVE_FORMAT_EXTENSIBLE,
+					kChannelCounts[chidx],
+					kSamplingRates[sridx],
+					0,
+					0,
+					kSampleDepths[sdidx],
+					0
+				};
+
+				wfex.Format.nBlockAlign = wfex.Format.nChannels * (wfex.Format.wBitsPerSample >> 3);
+				wfex.Format.nAvgBytesPerSec = wfex.Format.nBlockAlign * wfex.Format.nSamplesPerSec;
+				wfex.Samples.wValidBitsPerSample = wfex.Format.wBitsPerSample;
+				wfex.SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+				wfex.Format.cbSize = sizeof(WAVEFORMATEXTENSIBLE)-sizeof(WAVEFORMATEX);
+
+				int r1 = WAVERR_BADFORMAT;
+				int r = waveInOpen(NULL, WAVE_MAPPER, (WAVEFORMATEX*)&wfex, 0, 0, WAVE_FORMAT_QUERY | WAVE_FORMAT_DIRECT);
+
+				if (r==MMSYSERR_NOERROR) {
+					aformats.push_back(vdstructex<WAVEFORMATEX>((WAVEFORMATEX*)&wfex, sizeof wfex));
+				}
+			}
 }
 
 bool VDCaptureDriverScreen::GetAudioFormat(vdstructex<WAVEFORMATEX>& aformat) {
@@ -815,7 +864,7 @@ void VDCaptureDriverScreen::ReceiveAudioDataWASAPI() {
 }
 
 void VDCaptureDriverScreen::SyncCaptureStop() {
-	if (VDINLINEASSERT(mbCaptureSetup)) {
+	if (mbCaptureSetup) {
 		mCaptureTimer.Shutdown();
 		mbCapturing = false;
 		mbCaptureSetup = false;
@@ -1036,6 +1085,9 @@ bool VDCaptureDriverScreen::InitWaveCapture() {
 }
 
 void VDCaptureDriverScreen::ShutdownWaveCapture() {
+	// prevent receiving data message
+	mbAudioMessagePosted = 0;
+
 	if (mpAudioGrabberWASAPI) {
 		mpAudioGrabberWASAPI->Shutdown();
 		delete mpAudioGrabberWASAPI;

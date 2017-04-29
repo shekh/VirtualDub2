@@ -384,17 +384,18 @@ void VDUIDialogChooseVideoCompressorW32::OnHelp() {
 }
 
 enum {
-	format_ok = 0,
-	format_no_compress = 1,
-	format_no_convert = 2,
+	format_supported = 1,
+	format_compress_ready = 3,
 };
 
 int VDUIDialogChooseVideoCompressorW32::testFormat(EncoderHIC* plugin, const char* debug_id) {
+	int flags = 0;
+
 	vdprotected1("querying video codec \"%.64s\"", const char *, debug_id) {
 		if (mpSrcFormat) {
 			// try unknown vfw
 			if (plugin->compressQuery(mpSrcFormat, NULL)==ICERR_OK)
-				return format_ok;
+				return format_compress_ready;
 		}
 		if (filter_format) {
 			int w = 320;
@@ -404,27 +405,33 @@ int VDUIDialogChooseVideoCompressorW32::testFormat(EncoderHIC* plugin, const cha
 			VDPixmapLayout layout;
 			VDPixmapCreateLinearLayout(layout,filter_format,w,h,0);
 			if (plugin->compressQuery(NULL, NULL, &layout)==ICERR_OK)
-				return format_ok;
+				return format_compress_ready;
 
 			int codec_format = plugin->queryInputFormat(0);
 			if (codec_format && VDPixmapFormatDifference(filter_format,codec_format)==0) {
 				// it is already selected but test anyway
 				VDPixmapCreateLinearLayout(layout,codec_format,w,h,0);
 				if (plugin->compressQuery(NULL, NULL, &layout)==ICERR_OK)
-					return format_ok;
+					return format_compress_ready;
 			}
 
-			// try known vfw
 			int test = filter_format;
 			vdfastvector<int> track;
 			while (1) {
 				track.push_back(test);
+
+				// try known plugin
+				VDPixmapCreateLinearLayout(layout,test,0,0,0);
+				int r = plugin->inputFormatInfo(&layout);
+				if (r!=-1 && r!=0) flags |= format_supported;
+
+				// try known vfw
 				int n = VDGetPixmapToBitmapVariants(test);
 				for(int variant=0; variant<n; variant++){
 					vdstructex<VDAVIBitmapInfoHeader> bm;
 					if (VDMakeBitmapFormatFromPixmapFormat(bm,test,variant,w,h)) {
 						if (plugin->compressQuery(bm.data(), NULL)==ICERR_OK)
-							return format_ok;
+							return format_compress_ready;
 					}
 				}
 
@@ -434,7 +441,7 @@ int VDUIDialogChooseVideoCompressorW32::testFormat(EncoderHIC* plugin, const cha
 		}
 	}
 
-	return format_no_compress;
+	return flags;
 }
 
 void VDUIDialogChooseVideoCompressorW32::EnumerateCodecs() {
@@ -472,7 +479,7 @@ void VDUIDialogChooseVideoCompressorW32::EnumerateCodecs() {
 				  if (plugin.getInfo(ici))
 						VDTextWToA(namebuf, sizeof namebuf, ici.szDescription, -1);
 
-					bool formatSupported = testFormat(&plugin,namebuf)==format_ok;
+					bool formatSupported = testFormat(&plugin,namebuf)!=0;
 
 					CodecInfo *pii = new CodecInfo;
 					static_cast<ICINFO&>(*pii) = ici;
@@ -514,7 +521,7 @@ void VDUIDialogChooseVideoCompressorW32::EnumeratePluginCodecs() {
 				if (plugin->getInfo(ici))
 					VDTextWToA(namebuf, sizeof namebuf, ici.szDescription, -1);
 
-				bool formatSupported = testFormat(plugin,namebuf)==format_ok;
+				bool formatSupported = testFormat(plugin,namebuf)!=0;
 
 				CodecInfo *pii = new CodecInfo;
 				static_cast<ICINFO&>(*pii) = ici;
@@ -964,8 +971,10 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 		s += VDPixmapFormatPrintSpec(format);
 	}
 
-	if (filter_mode==0 && mhCodec && testFormat(mhCodec,"selected")!=format_ok) {
-		s = "Incompatible!";
+	if (filter_mode==0 && mhCodec) {
+		int test = testFormat(mhCodec,"selected");
+			if((test & format_compress_ready)!=format_compress_ready)
+				s = "Incompatible!";
 	}
 
 	SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());

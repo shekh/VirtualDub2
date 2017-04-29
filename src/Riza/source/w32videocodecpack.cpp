@@ -1189,6 +1189,11 @@ int EncoderHIC::queryInputFormat(FilterModPixmapInfo* info) {
 	return 0;
 }
 
+int EncoderHIC::inputFormatInfo(const VDPixmapLayout* pxsrc) {
+	if (vdproc) return vdproc(obj,0,VDICM_COMPRESS_INPUT_INFO,(LPARAM)pxsrc,0);
+	return -1;
+}
+
 void FreeCompressor(COMPVARS2 *pCompVars) {
 	if (!(pCompVars->dwFlags & ICMF_COMPVARS_VALID))
 		return;
