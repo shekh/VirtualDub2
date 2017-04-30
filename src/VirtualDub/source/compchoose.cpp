@@ -41,10 +41,12 @@
 #include "plugins.h"
 #include "dub.h"
 #include "videoSource.h"
+#include "optdlg.h"
 
 extern HINSTANCE g_hInst;
 extern std::list<class VDExternalModule *>		g_pluginModules;
 extern DubOptions			g_dubOpts;
+extern VDPixmapFormatEx g_compformat;
 extern vdrefptr<IVDVideoSource> inputVideo;
 
 const wchar_t g_szNo[]=L"No";
@@ -239,7 +241,7 @@ bool VDUIDialogChooseVideoCompressorW32::OnLoaded() {
 		CheckButton(IDC_USE_DATARATE, BST_UNCHECKED);
 
 	SetFocusToControl(IDC_COMP_LIST);
-	EnableControl(IDC_PIXELFORMAT,!mCapture && (g_dubOpts.video.mode > DubVideoOptions::M_FASTREPACK));
+	EnableControl(IDC_PIXELFORMAT, (g_dubOpts.video.mode > DubVideoOptions::M_FASTREPACK));
 	return true;
 }
 
@@ -943,8 +945,9 @@ void VDUIDialogChooseVideoCompressorW32::OnCodecSelectionChanged(VDUIProxyListBo
 
 void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	VDPixmapFormatEx format = 0;
-	if (mpSrcFormat) {
-		format = VDBitmapFormatToPixmapFormat(*(VDAVIBitmapInfoHeader*)mpSrcFormat);
+	if (mCapture) {
+		format = g_compformat;
+		if (format==0 || !mhCodec) format = filter_format;
 	} else {
 		format = g_dubOpts.video.mOutputFormat;
 		if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) format = 0;
@@ -974,24 +977,26 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	if (filter_mode==0 && mhCodec) {
 		int test = testFormat(mhCodec,"selected");
 			if((test & format_compress_ready)!=format_compress_ready)
-				s = "Incompatible!";
+				s = VDString("(!) ") + s;
 	}
 
 	SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
 }
 
 void VDUIDialogChooseVideoCompressorW32::SetVideoDepthOptionsAsk() {
-	extern bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts, bool input, int lockFormat);
-
 	int lockFormat = -1;
 	if (mhCodec) {
 		int codec_format = mhCodec->queryInputFormat(0);
 		if (codec_format) lockFormat = codec_format;
+	} else {
+		if (mCapture) lockFormat = 0;
 	}
 
-	VDPixmapFormatEx outputFormatOld = g_dubOpts.video.mOutputFormat;
-	VDDisplayVideoDepthDialog((VDGUIHandle)mhdlg, g_dubOpts, false, lockFormat);
-	bool changed = !outputFormatOld.fullEqual(g_dubOpts.video.mOutputFormat);
+	VDPixmapFormatEx* target = mCapture ? &g_compformat : &g_dubOpts.video.mOutputFormat;
+	int type = mCapture ? DepthDialog_cap_output : DepthDialog_output;
+	VDPixmapFormatEx outputFormatOld = *target;
+	VDDisplayVideoDepthDialog((VDGUIHandle)mhdlg, *target, type, lockFormat);
+	bool changed = !outputFormatOld.fullEqual(*target);
 	if (changed) {
 		SelectCompressor(mpCurrent);
 		UpdateFormat();

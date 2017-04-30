@@ -881,6 +881,21 @@ static void func_VDVideo_GetCompression(IVDScriptInterpreter *, VDScriptValue *a
 	arglist[0] = VDScriptValue(0);
 }
 
+EncoderHIC* load_plugin_codec(const VDStringW& fileName, DWORD type, DWORD handler) {
+	std::list<class VDExternalModule *>::const_iterator it(g_pluginModules.begin()),
+			itEnd(g_pluginModules.end());
+
+	for(; it!=itEnd; ++it) {
+		VDExternalModule *pModule = *it;
+		const VDStringW& path = pModule->GetFilename();
+		const wchar_t* name = VDFileSplitPath(path.c_str());
+		if (_wcsicmp(name,fileName.c_str())!=0) continue;
+		return EncoderHIC::load(path, type, handler, ICMODE_COMPRESS);
+	}
+
+	return 0;
+}
+
 static void func_VDVideo_SetCompression(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 //	ICCompressorFree(&g_Vcompression);
 	FreeCompressor(&g_Vcompression);
@@ -906,18 +921,7 @@ static void func_VDVideo_SetCompression(IVDScriptInterpreter *, VDScriptValue *a
 
 	if (arg_count==5) {
 		VDStringW fileName(VDTextU8ToW(VDStringA(*arglist[4].asString())));
-
-		std::list<class VDExternalModule *>::const_iterator it(g_pluginModules.begin()),
-				itEnd(g_pluginModules.end());
-
-		for(; it!=itEnd; ++it) {
-			VDExternalModule *pModule = *it;
-			const VDStringW& path = pModule->GetFilename();
-			const wchar_t* name = VDFileSplitPath(path.c_str());
-			if (_wcsicmp(name,fileName.c_str())!=0) continue;
-			g_Vcompression.driver = EncoderHIC::load(path, g_Vcompression.fccType, g_Vcompression.fccHandler, ICMODE_COMPRESS);
-			break;
-		}
+		g_Vcompression.driver = load_plugin_codec(fileName, g_Vcompression.fccType, g_Vcompression.fccHandler);
 	} else {
 		g_Vcompression.driver = EncoderHIC::open(g_Vcompression.fccType, g_Vcompression.fccHandler, ICMODE_COMPRESS);
 	}

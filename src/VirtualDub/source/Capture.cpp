@@ -289,9 +289,11 @@ public:
 
 	IVDCaptureFilterSystem *mpFilterSys;
 	VDPixmapLayout			mInputLayout;
+	VDPixmapLayout			mOutputLayout;
 	vdautoptr<IVDPixmapBlitter>	mpOutputBlitter;
 	VDPixmapBuffer repack_buffer;
 	VDPixmapLayout driverLayout;
+	VDPixmapLayout vfwLayout;
 	void *pOutputBuffer;
 
 	VDStringW		mCaptureRoot;
@@ -306,6 +308,7 @@ public:
 		PostThreadMessage(getThreadID(), VDCM_EXIT, 0, 0);
 	}
 
+	void createOutputBlitter();
 	bool VideoCallback(const void *data, uint32 size, sint64 timestamp, bool key, sint64 global_clock);
 	void VideoCallbackWriteFrame(void *data, uint32 size, bool key);
 	bool WaveCallback(const void *data, uint32 size, sint64 global_clock);
@@ -408,6 +411,7 @@ static const char g_szWarnTiming1			[]="Warn Timing1";
 ///////////////////////////////////////////////////////////////////////////
 
 COMPVARS2 g_compression;
+VDPixmapFormatEx g_compformat;
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -1894,6 +1898,30 @@ unknown_PCM_format:
 		}
 
 		icd.mInputLayout = mFilterInputLayout;
+		VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.mOutputLayout);
+		icd.vfwLayout.format = 0;
+
+		// initialize final conversion
+		vdstructex<VDAVIBitmapInfoHeader> convertedFormat;
+		if (g_compformat!=0 && g_compression.driver) {
+			//! compchoose does not let to select uncompressed format
+			// explicit: convert to selected as "Pixel Format"
+			if (icd.mOutputLayout.format!=g_compformat) {
+				VDMakeBitmapFormatFromPixmapFormat(convertedFormat, g_compformat, 0, bmiToFile->biWidth, bmiToFile->biHeight);
+				bmiToFile = &*convertedFormat;
+				biSizeToFile = convertedFormat.size();
+				VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.vfwLayout);
+			}
+		} else {
+			// auto: convert back to capture format
+			int format2 = VDBitmapFormatToPixmapFormat(*bmiInput);
+			if (icd.mOutputLayout.format!=format2) {
+				VDMakeBitmapFormatFromPixmapFormat(convertedFormat, format2, 0, bmiToFile->biWidth, bmiToFile->biHeight);
+				bmiToFile = &*convertedFormat;
+				biSizeToFile = convertedFormat.size();
+				VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.vfwLayout);
+			}
+		}
 
 		// initialize video compression
 		vdstructex<BITMAPINFOHEADER> bmiOutput;
@@ -1927,14 +1955,18 @@ unknown_PCM_format:
 				icd.mpVideoCompressor->GetOutputFormat(&icd.driverLayout, bmiOutput);
 				icd.mpVideoCompressor->Start(icd.driverLayout, outputFormatInfo, bmiOutput.data(), bmiOutput.size(), scaledRate, 0x0FFFFFFF);
 				icd.mpVideoCompressor->GetOutputFormat(&icd.driverLayout, bmiOutput);
+				icd.createOutputBlitter();
 			} else {
 				icd.mpVideoCompressor->GetOutputFormat(bmiToFile, bmiOutput);
 				icd.mpVideoCompressor->Start(bmiToFile, biSizeToFile, bmiOutput.data(), bmiOutput.size(), scaledRate, 0x0FFFFFFF);
+				icd.createOutputBlitter();
 			}
 			icd.pOutputBuffer = icd.mpVideoCompressor->createResultBuffer();
 
 			bmiToFile = (VDAVIBitmapInfoHeader *)bmiOutput.data();
 			biSizeToFile = bmiOutput.size();
+		} else {
+			icd.createOutputBlitter();
 		}
 
 		// set up output file headers and formats
@@ -3143,59 +3175,6 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 			}
 		}
 
-		if (driverLayout.format) {
-			VDPROFILEBEGIN("V-BlitOut");
-			VDPixmap pxsrc(VDPixmapFromLayout(mInputLayout, pFilteredData));
-			if (!mpOutputBlitter) {
-				FilterModPixmapInfo out_info;
-				out_info.ref_r = 0xFFFF;
-				out_info.ref_g = 0xFFFF;
-				out_info.ref_b = 0xFFFF;
-				out_info.ref_a = 0xFFFF;
-				int format = 0;
-				if (mpVideoCompressor) {
-					format = mpVideoCompressor->GetInputFormat(&out_info);
-				}
-				if (!format) {
-					throw MyError("bad path");
-				}
-
-				IVDPixmapExtraGen* extraDst = 0;
-				switch (format) {
-				case nsVDPixmap::kPixFormat_XRGB8888:
-					{
-						ExtraGen_X8R8G8B8_Normalize* normalize = new ExtraGen_X8R8G8B8_Normalize;
-						extraDst = normalize;
-					}
-					break;
-				case nsVDPixmap::kPixFormat_XRGB64:
-					{
-						ExtraGen_X16R16G16B16_Normalize* normalize = new ExtraGen_X16R16G16B16_Normalize;
-						normalize->max_value = out_info.ref_r;
-						extraDst = normalize;
-					}
-					break;
-				case nsVDPixmap::kPixFormat_YUV420_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_Planar16:
-				case nsVDPixmap::kPixFormat_YUV444_Planar16:
-					{
-						ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
-						normalize->max_value = out_info.ref_r;
-						extraDst = normalize;
-					}
-					break;
-				}
-				repack_buffer.init(driverLayout);
-				mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc, extraDst);
-				delete extraDst;
-			}
-
-			mpOutputBlitter->Blit(repack_buffer, pxsrc);
-			pFilteredData = repack_buffer.base();
-			dwBytesUsed = repack_buffer.size();
-			VDPROFILEEND();
-		}
-
 		if (!frameProduced)
 			break;
 
@@ -3205,7 +3184,15 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 			mpProject->DispatchAnalysis(px);
 		}
 
-		VideoCallbackWriteFrame(pFilteredData, dwBytesUsed, key);
+		if (mpOutputBlitter) {
+			VDPROFILEBEGIN("V-BlitOut");
+			mpOutputBlitter->Blit(repack_buffer, px);
+			VDPROFILEEND();
+
+			VideoCallbackWriteFrame(repack_buffer.base(), repack_buffer.size(), key);
+		} else {
+			VideoCallbackWriteFrame(pFilteredData, dwBytesUsed, key);
+		}
 
 		if (!filterSystemActive)
 			break;
@@ -3283,6 +3270,65 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 	};
 
 	return true;
+}
+
+void VDCaptureData::createOutputBlitter() {
+	if (driverLayout.format) {
+		VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
+		FilterModPixmapInfo out_info;
+		out_info.ref_r = 0xFFFF;
+		out_info.ref_g = 0xFFFF;
+		out_info.ref_b = 0xFFFF;
+		out_info.ref_a = 0xFFFF;
+		int format = 0;
+		if (mpVideoCompressor) {
+			format = mpVideoCompressor->GetInputFormat(&out_info);
+		}
+		if (!format) {
+			throw MyError("bad path");
+		}
+
+		IVDPixmapExtraGen* extraDst = 0;
+		switch (format) {
+		case nsVDPixmap::kPixFormat_XRGB8888:
+			{
+				ExtraGen_X8R8G8B8_Normalize* normalize = new ExtraGen_X8R8G8B8_Normalize;
+				extraDst = normalize;
+			}
+			break;
+		case nsVDPixmap::kPixFormat_XRGB64:
+			{
+				ExtraGen_X16R16G16B16_Normalize* normalize = new ExtraGen_X16R16G16B16_Normalize;
+				normalize->max_value = out_info.ref_r;
+				extraDst = normalize;
+			}
+			break;
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+			{
+				ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
+				normalize->max_value = out_info.ref_r;
+				extraDst = normalize;
+			}
+			break;
+		}
+		repack_buffer.init(driverLayout);
+		VDPixmapFormatEx fmt = VDPixmapFormatCombine(driverLayout.format,VDPixmapFormatNormalize(pxsrc.format));
+		repack_buffer.format = fmt.format;
+		repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
+		repack_buffer.info.colorRangeMode = fmt.colorRangeMode;
+		mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc, extraDst);
+		delete extraDst;
+	} else if (vfwLayout.format) {
+		VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
+		repack_buffer.init(vfwLayout);
+		VDPixmapFormatEx fmt = VDPixmapFormatCombine(driverLayout.format,VDPixmapFormatNormalize(pxsrc.format));
+		repack_buffer.format = fmt.format;
+		repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
+		repack_buffer.info.colorRangeMode = fmt.colorRangeMode;
+		mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc);
+	}
 }
 
 void VDCaptureData::VideoCallbackWriteFrame(void *pFilteredData, uint32 dwBytesUsed, bool key) {

@@ -1613,10 +1613,8 @@ void VDProjectUI::SetVideoFramerateOptionsAsk() {
 }
 
 void VDProjectUI::SetVideoDepthOptionsAsk() {
-	extern bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, DubOptions& opts, bool input, int lockFormat);
-
 	VDPixmapFormatEx inputFormatOld = g_dubOpts.video.mInputFormat;
-	VDDisplayVideoDepthDialog(mhwnd, g_dubOpts, true, -1);
+	VDDisplayVideoDepthDialog(mhwnd, g_dubOpts.video.mInputFormat, DepthDialog_input, -1);
 	bool changed = !inputFormatOld.fullEqual(g_dubOpts.video.mInputFormat);
 
 	if (changed && inputVideo) {

@@ -91,6 +91,8 @@ static const char g_szAudioFormat			[]="Audio Format";
 static const char g_szAudioCompFormat		[]="Audio Comp Format";
 static const char g_szAudioCompHint			[]="Audio Comp Hint";
 static const char g_szVideoFormat			[]="Video Format";
+static const char g_szVideoOutput			[]="Video Output";
+static const char g_szVideoCompPlugin		[]="Video Comp Plugin";
 static const char g_szVideoCompFormat		[]="Video Comp Format";
 static const char g_szVideoCompFormatData	[]="Video Comp Format Data";
 extern const char g_szChunkSize				[]="Chunk size";
@@ -173,6 +175,7 @@ extern const char g_szWarning[];
 static char g_szStripeFile[MAX_PATH];
 
 extern COMPVARS2 g_compression;
+extern VDPixmapFormatEx g_compformat;
 
 extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *pwfexOld, WAVEFORMATEX *pwfexSrc, VDStringA& shortNameHint, vdblock<char>& config);
 extern void ChooseCaptureCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
@@ -1219,21 +1222,31 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 		FreeCompressor(&g_compression);
 
 		g_compression.clear();
+		g_compformat = 0;
 
 		if (cs.fccType != 'CDIV' || !cs.fccHandler) {
 			// err... bad config data.
 
 			devkey.removeValue(g_szVideoCompFormat);
 			devkey.removeValue(g_szVideoCompFormatData);
+			devkey.removeValue(g_szVideoOutput);
+			devkey.removeValue(g_szVideoCompPlugin);
 		} else {
 			g_compression.cbSize		= sizeof(COMPVARS);
 			g_compression.dwFlags		= ICMF_COMPVARS_VALID;
-			g_compression.driver			= EncoderHIC::open(cs.fccType, cs.fccHandler, ICMODE_COMPRESS);
 			g_compression.fccType		= cs.fccType;
 			g_compression.fccHandler	= cs.fccHandler;
 			g_compression.lKey			= cs.lKey;
 			g_compression.lDataRate		= cs.lDataRate;
 			g_compression.lQ			= cs.lQ;
+
+			VDStringW name;
+			if (devkey.getString(g_szVideoCompPlugin, name)) {
+				extern EncoderHIC* load_plugin_codec(const VDStringW& fileName, DWORD type, DWORD handler);
+				g_compression.driver = load_plugin_codec(name, ICTYPE_VIDEO, cs.fccHandler);
+			} else {
+				g_compression.driver = EncoderHIC::open(cs.fccType, cs.fccHandler, ICMODE_COMPRESS);
+			}
 
 			if (g_compression.driver) {
 				int len = devkey.getBinaryLength(g_szVideoCompFormatData);
@@ -1251,6 +1264,8 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 				}
 			} else
 				g_compression.dwFlags = 0;
+
+			g_compformat = devkey.getInt(g_szVideoOutput,0);
 		}
 	}
 
@@ -1425,9 +1440,20 @@ void VDCaptureProjectUI::SaveDeviceSettings(uint32 mask) {
 
 			} else
 				devkey.removeValue(g_szVideoCompFormatData);
+
+			if (g_compression.driver && !g_compression.driver->path.empty()) {
+				VDStringW name = VDFileSplitPathRight(g_compression.driver->path);
+				devkey.setString(g_szVideoCompPlugin,name.c_str());
+			} else {
+				devkey.removeValue(g_szVideoCompPlugin);
+			}
+
+			devkey.setInt(g_szVideoOutput,g_compformat);
 		} else {
 			devkey.removeValue(g_szVideoCompFormat);
 			devkey.removeValue(g_szVideoCompFormatData);
+			devkey.removeValue(g_szVideoOutput);
+ 			devkey.removeValue(g_szVideoCompPlugin);
 		}
 	}
 
