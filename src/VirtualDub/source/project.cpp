@@ -1955,7 +1955,14 @@ void VDProject::SetVideoMode(int mode) {
 }
 
 void VDProject::CopySourceFrameToClipboard() {
-	if (!inputVideo || !mpCurrentInputFrame)
+	if (!inputVideo)
+		return;
+
+	mLastDisplayedInputFrame = -1;
+	mLastDisplayedTimelineFrame = -1;
+	DisplayFrame();
+
+	if (!mpCurrentInputFrame)
 		return;
 
 	VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
@@ -1966,6 +1973,13 @@ void VDProject::CopySourceFrameToClipboard() {
 }
 
 void VDProject::CopyOutputFrameToClipboard() {
+	if (!inputVideo)
+		return;
+
+	mLastDisplayedInputFrame = -1;
+	mLastDisplayedTimelineFrame = -1;
+	DisplayFrame();
+
 	if (!filters.isRunning() || !mpCurrentOutputFrame)
 		return;
 

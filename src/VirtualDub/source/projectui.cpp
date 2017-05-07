@@ -75,6 +75,7 @@ namespace {
 		kFileDialog_GIFOut			= 'gifo',
 		kFileDialog_PNGOut			= 'pngo',
 		kFileDialog_ExtOut			= 'exto',
+		kFileDialog_Project 		= 'proj',
 	};
 
 	enum {
@@ -1019,21 +1020,28 @@ void VDProjectUI::SaveImageSequenceAsk(bool batchMode) {
 void VDProjectUI::SaveImageAsk() {
 	VDPosition frame = GetCurrentFrame();
 
-	if (filters.isRunning() && mpCurrentOutputFrame) {
-		VDFilterFrameBuffer *buf = mpCurrentOutputFrame->GetResultBuffer();
-		VDPixmap px = VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead());
-		px.info = buf->info;
-		buf->Unlock();
+	mLastDisplayedInputFrame = -1;
+	mLastDisplayedTimelineFrame = -1;
+	DisplayFrame();
 
-		SaveImage((HWND)mhwnd, frame, &px);
+	if (mpOutputDisplay) {
+		if (filters.isRunning() && mpCurrentOutputFrame) {
+			VDFilterFrameBuffer *buf = mpCurrentOutputFrame->GetResultBuffer();
+			VDPixmap px = VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead());
+			px.info = buf->info;
+			buf->Unlock();
 
-	} else if (inputVideo && mpCurrentInputFrame) {
-		VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
-		VDPixmap px = VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)buf->LockRead());
-		px.info = buf->info;
-		buf->Unlock();
+			SaveImage((HWND)mhwnd, frame, &px);
+		}
+	} else if (mpInputDisplay) {
+		if (inputVideo && mpCurrentInputFrame) {
+			VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
+			VDPixmap px = VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)buf->LockRead());
+			px.info = buf->info;
+			buf->Unlock();
 
-		SaveImage((HWND)mhwnd, frame, &px);
+			SaveImage((HWND)mhwnd, frame, &px);
+		}
 	}
 }
 
@@ -2804,8 +2812,8 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_CLIPPING			, inputVideo != 0);
 
-	VDEnableMenuItemW32(hMenu,ID_VIDEO_COPYSOURCEFRAME		, inputVideo && inputVideo->isFrameBufferValid());
-	VDEnableMenuItemW32(hMenu,ID_VIDEO_COPYOUTPUTFRAME		, inputVideo && filters.isRunning());
+	VDEnableMenuItemW32(hMenu,ID_VIDEO_COPYSOURCEFRAME		, inputVideo != 0);
+	VDEnableMenuItemW32(hMenu,ID_VIDEO_COPYOUTPUTFRAME		, inputVideo != 0);
 	VDEnableMenuItemW32(hMenu,ID_VIDEO_COPYSOURCEFRAMENUMBER		, inputVideo != 0);
 	VDEnableMenuItemW32(hMenu,ID_VIDEO_COPYOUTPUTFRAMENUMBER		, inputVideo != 0);
 	VDEnableMenuItemW32(hMenu,ID_VIDEO_SCANFORERRORS		, inputVideo != 0);
@@ -4218,6 +4226,8 @@ void VDProjectUI::UISourceFileUpdated() {
 
 		VDSetLastLoadSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (fileName + L".avi").c_str());
 		VDSetLastLoadSaveFileName(kFileDialog_WAVAudioOut, (fileName + L".wav").c_str());
+		VDSetLastLoadSaveFileName(kFileDialog_Project, (fileName + L".vdproject").c_str());
+		VDSetLastLoadSaveFileName(VDFSPECKEY_SAVEIMAGEFILE, (fileName + L".png").c_str());
 
 		bool isMP3 = inputAudio && inputAudio->getWaveFormat()->mTag == 0x55;
 		VDSetLastLoadSaveFileName(kFileDialog_RawAudioOut, (fileName + (isMP3 ? L".mp3" : L".bin")).c_str());

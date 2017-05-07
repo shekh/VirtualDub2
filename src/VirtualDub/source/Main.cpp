@@ -1267,7 +1267,6 @@ INT_PTR VDSaveImageDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 static const char g_szRegKeyImageFormat[]="Image: format";
 static const char g_szRegKeyImageQuality[]="Image: quality";
 static const char g_szRegKeyImageQuickCompress[]="Image: quick compress";
-static const char g_szRegKeyImageDirectory[]="Image: directory";
 
 UINT_PTR CALLBACK SaveImageProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -1334,41 +1333,25 @@ void SaveImage(HWND hwnd, VDPosition frame, VDPixmap* px) {
 	fn.lpfnHook = SaveImageProc;
 	fn.lCustData = (LONG_PTR)&dlg;
 
-	VDStringW dir;
-	if (key.getString(g_szRegKeyImageDirectory, dir))
-		fn.lpstrInitialDir	= dir.c_str();
-	else
-		fn.lpstrInitialDir	= NULL;
-
-	wchar_t wszFile[MAX_PATH];
-	wszFile[0] = 0;
-
-	fn.lpstrFilter	= L"Images\0*.bmp;*.tga;*.jpg;*.jpeg;*.png;*.tif;*.tiff\0";
-	fn.lpstrFile	= wszFile;
-	fn.nMaxFile		= MAX_PATH;
+	const wchar_t* filter = L"Images\0*.bmp;*.tga;*.jpg;*.jpeg;*.png;*.tif;*.tiff\0";
 
 	VDStringW title;
 	if (frame==-1)
 		title = L"Save Image";
 	else
 		title.sprintf(L"Save Image: frame %lld", frame);
-	fn.lpstrTitle = title.c_str();
 
-	BOOL result = GetSaveFileNameW(&fn);
+	const VDFileDialogOption opts[]={
+		{ VDFileDialogOption::kSelectedFilter_always, 0, NULL, 0, 0},
+		{0}
+	};
 
-	// If the last path is no longer valid the dialog may fail to initialize, so if it's not
-	// a cancel we retry with no preset filename.
-	if (!result && CommDlgExtendedError()) {
-		wszFile[0] = 0;
-		fn.lpstrInitialDir = NULL;
-		result = GetSaveFileNameW(&fn);
-	}
+	int optvals[]={ 1 };
 
-	if (result) {
-		VDStringW name(wszFile);
-		dir = VDFileSplitPathLeft(name);
-		key.setString(g_szRegKeyImageDirectory, dir.c_str());
-		int format = FormatFromName(wszFile);
+	VDStringW name = VDGetSaveFileName(VDFSPECKEY_SAVEIMAGEFILE, (VDGUIHandle)hwnd, title.c_str(), filter, ExtFromFormat(dlg.mFormat)+1, opts, optvals, &fn);
+
+	if (!name.empty()) {
+		int format = FormatFromName(name.c_str());
 		if (format==-1)
 			name = VDFileSplitExtLeft(name) + ExtFromFormat(dlg.mFormat);
 
