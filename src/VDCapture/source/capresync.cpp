@@ -674,7 +674,6 @@ protected:
 	MovingAverage<double, 8>	mAudioStartAverage;
 
 	int			mProfileSyncError;
-	VDRTProfileChannel	mProfileChannel;
 };
 
 VDCaptureResyncFilter::VDCaptureResyncFilter()
@@ -702,7 +701,6 @@ VDCaptureResyncFilter::VDCaptureResyncFilter()
 	, mpAudioDecoder16(NULL)
 	, mpAudioEncoder16(NULL)
 	, mBytesPerInputSample(0)
-	, mProfileChannel("Resynchronizer")
 {
 }
 
@@ -1060,9 +1058,9 @@ void VDCaptureResyncFilter::ResampleAndDispatchAudio(const void *data, uint32 si
 
 		const int chans = mChannels;
 
-		mProfileChannel.Begin(0xc0e0ff, "A-Copy");
+		VDPROFILEBEGIN("A-Copy");
 		UnpackSamples(mInputBuffer.data() + base, 4096*sizeof(mInputBuffer[0]), data, tc, chans);
-		mProfileChannel.End();
+		VDPROFILEEND();
 
 		if ((uint32)mInputLevel >= (mAccum>>16) + 8) {
 			limit = ((mInputLevel << 16)-0x70000-mAccum + (inc-1)) / inc;
@@ -1071,7 +1069,7 @@ void VDCaptureResyncFilter::ResampleAndDispatchAudio(const void *data, uint32 si
 
 			uint32 accum0 = mAccum;
 
-			mProfileChannel.Begin(0xffe0c0, "A-Filter");
+			VDPROFILEBEGIN("A-Filter");
 			for(int chan=0; chan<chans; ++chan) {
 				const sint16 *src = mInputBuffer.data() + 4096*chan;
 				sint16 *dst = mOutputBuffer.data() + chan;
@@ -1083,7 +1081,7 @@ void VDCaptureResyncFilter::ResampleAndDispatchAudio(const void *data, uint32 si
 				if (pos <= mInputLevel)
 					memmove(&mInputBuffer[4096*chan], &mInputBuffer[4096*chan + pos], (mInputLevel - pos)*2);
 			}
-			mProfileChannel.End();
+			VDPROFILEEND();
 		}
 
 		int shift = mAccum >> 16;

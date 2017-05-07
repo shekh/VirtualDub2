@@ -21,6 +21,7 @@
 #include <vd2/system/filesys.h>
 #include <vd2/system/file.h>
 #include <vd2/system/error.h>
+#include <vd2/system/time.h>
 #include <vd2/Dita/controls.h>
 #include <vd2/Dita/interface.h>
 #include <vd2/Dita/resources.h>
@@ -32,6 +33,7 @@
 #include "resource.h"
 #include "capture.h"
 #include "capdialogs.h"
+#include "capvumeter.h"
 
 #include <vfw.h>
 
@@ -845,6 +847,204 @@ int VDShowCaptureRawAudioFormatDialog(VDGUIHandle h, const std::list<vdstructex<
 	peer->Shutdown();
 
 	return result;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//	channels mask
+//
+//////////////////////////////////////////////////////////////////////////////
+
+int mask_ids[] = {
+	IDC_MASK_0,
+	IDC_MASK_1,
+	IDC_MASK_2,
+	IDC_MASK_3,
+	IDC_MASK_4,
+	IDC_MASK_5,
+	IDC_MASK_6,
+	IDC_MASK_7,
+};
+
+int peak_ids[] = {
+	IDC_PEAK_0,
+	IDC_PEAK_1,
+	IDC_PEAK_2,
+	IDC_PEAK_3,
+	IDC_PEAK_4,
+	IDC_PEAK_5,
+	IDC_PEAK_6,
+	IDC_PEAK_7,
+};
+
+class VDDialogAudioMask : public VDDialogBaseW32, public IVDUICaptureVumeter {
+public:
+	int mask;
+	int channels;
+	HBRUSH	mhbrFill;
+	HBRUSH	mhbrErase;
+
+	int peak_count;
+	uint64	mLastPeak[16];
+	float	mFrac[16];
+	float	mPeak[16];
+
+	VDDialogAudioMask(int id): VDDialogBaseW32(id){
+		mhbrFill = CreateSolidBrush(RGB(0,128,192));
+		mhbrErase = CreateSolidBrush(RGB(0,0,0));
+		{for(int i=0; i<16; i++){
+			mLastPeak[i] = 0;
+			mPeak[i] = 0;
+			mFrac[i] = 0.5;
+		}}
+		peak_count = 0;
+	}
+
+	virtual void SetPeakLevels(int count, float* peak, int mask) {
+		const float invLn10_4 = 0.2171472409516259138255644594583f;
+		peak_count = count;
+		{for(int i=0; i<count; i++){
+			if (peak[i] < 1e-4f)
+				mFrac[i] = 0;
+			else
+				mFrac[i] = 1.0f + (float)(log(peak[i]) * invLn10_4);
+
+			if (mFrac[i] < 0)
+				mFrac[i] = 0;
+		}}
+
+		RECT r0;
+		RECT r1;
+
+		GetWindowRect(GetDlgItem(mhdlg,peak_ids[0]), &r0);
+		GetWindowRect(GetDlgItem(mhdlg,peak_ids[channels-1]), &r1);
+		r0.bottom = r1.bottom;
+		MapWindowPoints(0,mhdlg,(POINT*)&r0,2);
+		InvalidateRect(mhdlg, &r0, false);
+	}
+
+	~VDDialogAudioMask() {
+		if (mhbrFill)
+			DeleteObject(mhbrFill);
+		if (mhbrErase)
+			DeleteObject(mhbrErase);
+	}
+
+	void initMask(){
+		{for(int i=0; i<8; i++){
+			int id = mask_ids[i];
+			bool on = (mask & (1<<i))!=0;
+			EnableWindow(GetDlgItem(mhdlg,id), i<channels);
+			if(i>=channels) 
+				CheckDlgButton(mhdlg,id,BST_UNCHECKED);
+			else
+				CheckDlgButton(mhdlg,id,on ? BST_CHECKED:BST_UNCHECKED);
+		}}
+
+		CheckDlgButton(mhdlg,IDC_MASK_ALL,mask==-1 ? BST_CHECKED:BST_UNCHECKED);
+	}
+
+	void saveMask(){
+		int m1 = 0;
+		{for(int i=0; i<channels; i++){
+			int id = mask_ids[i];
+			if (IsDlgButtonChecked(mhdlg,id)) m1 |= 1<<i;
+		}}
+
+		if (IsDlgButtonChecked(mhdlg,IDC_MASK_ALL)) m1 = -1;
+		mask = m1;
+	}
+
+	INT_PTR DlgProc(UINT msg, WPARAM wParam, LPARAM lParam) {
+		switch(msg) {
+		case WM_INITDIALOG:
+			initMask();
+			return TRUE;
+		case WM_COMMAND:
+			switch(LOWORD(wParam)) {
+			case IDOK:
+				saveMask();
+				End(TRUE);
+				return TRUE;
+			case IDCANCEL:
+				End(FALSE);
+				return TRUE;
+			case IDC_MASK_ALL:
+				if (IsDlgButtonChecked(mhdlg,IDC_MASK_ALL)) {
+					for(int i=0; i<channels; i++)
+						CheckDlgButton(mhdlg,mask_ids[i],BST_CHECKED);
+				}
+				return TRUE;
+			}
+
+			{for(int i=0; i<channels; i++){
+				int id = mask_ids[i];
+				if(LOWORD(wParam)==id){ 
+					CheckDlgButton(mhdlg,IDC_MASK_ALL,BST_UNCHECKED);
+					break;
+				}
+			}}
+			break;
+
+		case WM_PAINT:
+			onPaint();
+			return TRUE;
+		}
+
+		return FALSE;
+	}
+
+	void onPaint() {
+		PAINTSTRUCT ps;
+
+		// compute peak falloff
+		uint64 t = VDGetAccurateTick();
+		double invfreq = 0.1 / 1000.0;
+
+		struct local {
+			static double sq(double x) { return x*x; }
+		};
+
+		if (HDC hdc = BeginPaint(mhdlg, &ps)) {
+			{for(int i=0; i<channels; i++){
+				RECT r;
+				GetWindowRect(GetDlgItem(mhdlg,peak_ids[i]), &r);
+				MapWindowPoints(0,mhdlg,(POINT*)&r,2);
+
+				//FillRect(hdc, &r, mhbrErase);
+
+				if (!mLastPeak[i])
+					mLastPeak[i] = t;
+
+				float peak = mPeak[i] - (float)local::sq((t - mLastPeak[i]) * invfreq);
+				if (peak < mFrac[i]) {
+					mPeak[i] = peak = mFrac[i];
+					mLastPeak[i] = t;
+				}
+
+				int x = VDRoundToIntFast(mFrac[i] * (r.right-r.left));
+
+				RECT r2 = {r.left,r.top,r.left+x,r.bottom};
+				FillRect(hdc, &r2, mhbrFill);
+				r2.left = r2.right;
+				r2.right = r.right;
+				FillRect(hdc, &r2, mhbrErase);
+			}}
+		}
+
+		EndPaint(mhdlg, &ps);
+	}
+};
+
+int VDShowCaptureChannelsDialog(VDGUIHandle h, const vdstructex<VDWaveFormat>& format, int mask, IVDUICaptureVumeter** thunk) {
+	VDDialogAudioMask dlg(IDD_CAPTURE_AUDIO_MASK);
+	dlg.channels = format->mChannels;
+	dlg.mask = mask;
+	*thunk = &dlg;
+	dlg.ActivateDialog(h);
+	*thunk = 0;
+
+	return dlg.mask;
 }
 
 //////////////////////////////////////////////////////////////////////////////

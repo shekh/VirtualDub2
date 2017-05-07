@@ -9,7 +9,7 @@ class VDINTERFACE IVDUICaptureVumeter {
 public:
 	enum { kTypeID = 'cpvu' };
 
-	virtual void SetPeakLevels(int count, float* peak) = 0;
+	virtual void SetPeakLevels(int count, float* peak, int mask) = 0;
 };
 
 #endif

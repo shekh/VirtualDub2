@@ -88,6 +88,7 @@ static const char g_szDefaultCaptureFile	[]="Capture File";
 static const char g_szCompression			[]="Compression";
 static const char g_szCompressorData		[]="Compressor Data";
 static const char g_szAudioFormat			[]="Audio Format";
+static const char g_szAudioMask				[]="Audio Channel Mask";
 static const char g_szAudioCompFormat		[]="Audio Comp Format";
 static const char g_szAudioCompHint			[]="Audio Comp Hint";
 static const char g_szVideoFormat			[]="Video Format";
@@ -177,7 +178,7 @@ static char g_szStripeFile[MAX_PATH];
 extern COMPVARS2 g_compression;
 extern VDPixmapFormatEx g_compformat;
 
-extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *pwfexOld, WAVEFORMATEX *pwfexSrc, VDStringA& shortNameHint, vdblock<char>& config);
+extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *pwfexOld, WAVEFORMATEX *pwfexSrc, VDStringA& shortNameHint, vdblock<char>& config, bool enable_plugin=false);
 extern void ChooseCaptureCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
 
 static INT_PTR CALLBACK CaptureCustomVidSizeDlgProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -548,6 +549,7 @@ protected:
 	vdautoptr<IVDUIWindow>	mpVideoHistogram;
 	vdautoptr<IVDUIWindow>	mpVumeter;
 	vdautoptr<IVDUIWindow>	mpGraph;
+	IVDUICaptureVumeter*    mpVumeter2;
 
 	VDUIPeerW32		mUIPeer;
 
@@ -604,6 +606,7 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 	mLastMouseMovePoint.y = 0;
 	memset(peak,0,sizeof(peak));
 	peak_count = 0;
+	mpVumeter2 = 0;
 }
 
 VDCaptureProjectUI::~VDCaptureProjectUI() {
@@ -1327,6 +1330,8 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 			mpProject->SetAudioFormat(*(const VDWaveFormat *)buf.data(), buf.size());
 	}
 
+	mpProject->SetAudioMask(devkey.getInt(g_szAudioMask,-1));
+
 	// reload audio compression format
 	len = devkey.getBinaryLength(g_szAudioCompFormat);
 	if (len >= 0) {
@@ -1484,6 +1489,8 @@ void VDCaptureProjectUI::SaveDeviceSettings(uint32 mask) {
 
 		if (mpProject->GetAudioFormat(wfex))
 			devkey.setBinary(g_szAudioFormat, (const char *)&*wfex, wfex.size());
+
+		devkey.setInt(g_szAudioMask, mpProject->GetAudioMask());
 	}
 
 	if (mask & kSaveDevAudioComp) {
@@ -2072,11 +2079,28 @@ void VDCaptureProjectUI::UICaptureAudioFormatUpdated() {
 
 		if (mpProject->GetAudioFormat(wf)) {
 			if (is_audio_pcm(wf.data()) || is_audio_float(wf.data())) {
-				if(wf->mChannels>2){
-					sprintf(bufa, "%dK/%d/%dch", (wf->mSamplingRate+500)/1000, wf->mSampleBits, wf->mChannels);
+
+				int cn = wf->mChannels;
+				int cn2 = 0;
+				int mask = mpProject->GetAudioMask();
+				{for(int i=0; i<wf->mChannels; i++)
+					if ((1<<i) & mask) cn2++; }
+
+				sprintf(bufa, "%dK/%d/", (wf->mSamplingRate+500)/1000, wf->mSampleBits);
+
+				char buf2[64];
+				if(cn2<cn){
+					sprintf(buf2, "(%d of %d)", cn2, cn);
 				} else {
-					sprintf(bufa, "%dK/%d/%c", (wf->mSamplingRate+500)/1000, wf->mSampleBits, wf->mChannels>1?'s':'m');
+					if(cn>2){
+						sprintf(buf2, "%dch", cn);
+					} else {
+						sprintf(buf2, "%c", cn>1?'s':'m');
+					}
 				}
+
+				strcat(bufa,buf2);
+
 			} else {
 				sprintf(bufa, "%.3fKHz", wf->mSamplingRate / 1000.0);
 			}
@@ -2870,7 +2894,7 @@ void VDCaptureProjectUI::OnSize() {
 		aWidth[nParts-2] = xCoord;
 
 		for(i=nParts-3; i>=0; i--) {
-			xCoord -= 60;
+			xCoord -= 100;
 			aWidth[i] = xCoord;
 		}
 		aWidth[nParts-1] = -1;
@@ -3218,10 +3242,21 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 				}
 			}
 			break;
+		case ID_AUDIO_CHANNELS:
+			if (mpProject->IsDriverConnected()) {
+				extern int VDShowCaptureChannelsDialog(VDGUIHandle h, const vdstructex<VDWaveFormat>& format, int mask, IVDUICaptureVumeter** thunk);
+				vdstructex<VDWaveFormat> currentFormat;
+				mpProject->GetAudioFormat(currentFormat);
+				int mask = mpProject->GetAudioMask();
+				mask = VDShowCaptureChannelsDialog(mhwnd, currentFormat, mask, &mpVumeter2);
+				mpProject->SetAudioMask(mask);
+			}
+			break;
 		case ID_AUDIO_COMPRESSION:
 			{
 				vdstructex<VDWaveFormat> wfex;
 				vdstructex<VDWaveFormat> wfexSrc;
+				vdstructex<VDWaveFormat> wfexSrc2;
 				VDWaveFormat *pwfexSrc = NULL;
 				VDWaveFormat *pwfexOld = NULL;
 				VDStringA hint;
@@ -3233,8 +3268,11 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 					memcpy(pwfexOld, wfex.data(), len);
 				}
 				
-				if (mpProject->GetAudioFormat(wfexSrc))
-					pwfexSrc = wfexSrc.data();
+				if (mpProject->GetAudioFormat(wfexSrc)) {
+					extern void GetMaskedAudioFormat(vdstructex<VDWaveFormat>& dst, const vdstructex<VDWaveFormat>& wfexInput, int mask);
+					GetMaskedAudioFormat(wfexSrc2, wfexSrc, mpProject->GetAudioMask());
+					pwfexSrc = wfexSrc2.data();
+				}
 
 				// pwfexOld is freed by AudioChooseCompressor
 				WAVEFORMATEX *pwfexNew = AudioChooseCompressor((HWND)mhwnd, (WAVEFORMATEX *)pwfexOld, (WAVEFORMATEX *)pwfexSrc, hint, config);
@@ -3631,10 +3669,14 @@ void VDCaptureProjectUI::SyncAudioSourceToVideoSource() {
 }
 
 void VDCaptureProjectUI::OnUpdateVumeter() {
+	int mask = mpProject->GetAudioMask();
 	if (mpVumeter) {
 		IVDUICaptureVumeter *pVumeter = vdpoly_cast<IVDUICaptureVumeter *>(mpVumeter);
 
-		pVumeter->SetPeakLevels(peak_count, peak);
+		pVumeter->SetPeakLevels(peak_count, peak, mask);
+	}
+	if (mpVumeter2) {
+		mpVumeter2->SetPeakLevels(peak_count, peak, mask);
 	}
 }
 

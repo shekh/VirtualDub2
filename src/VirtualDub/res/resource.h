@@ -242,6 +242,7 @@
 #define IDR_TOOLS_MENU                  309
 #define IDD_SAVEVIDEO_FORMAT            309
 #define IDD_OPENVIDEO                   310
+#define IDD_CAPTURE_AUDIO_MASK          311
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -969,7 +970,9 @@
 #define IDC_CLIP_X1_SPIN                1541
 #define IDC_DRIVER                      1541
 #define IDC_CLIP_Y0_SPIN                1542
+#define IDC_MASK_ALL                    1542
 #define IDC_CLIP_Y1_SPIN                1543
+#define IDC_MASK_0                      1543
 #define IDC_SHOW_FILTERED               1544
 #define IDC_DRIVER_OPTIONS              1544
 #define IDC_DRIVER_INFO                 1545
@@ -977,6 +980,21 @@
 #define IDC_OPEN_SEGMENTS               1547
 #define IDC_OPEN_SEQUENCE               1548
 #define IDC_INFO_MSG                    1549
+#define IDC_MASK_1                      1544
+#define IDC_MASK_2                      1545
+#define IDC_MASK_3                      1546
+#define IDC_MASK_4                      1547
+#define IDC_MASK_5                      1548
+#define IDC_MASK_6                      1549
+#define IDC_MASK_7                      1550
+#define IDC_PEAK_0                      1551
+#define IDC_PEAK_1                      1552
+#define IDC_PEAK_2                      1553
+#define IDC_PEAK_3                      1554
+#define IDC_PEAK_4                      1555
+#define IDC_PEAK_5                      1556
+#define IDC_PEAK_6                      1557
+#define IDC_PEAK_7                      1558
 #define IDS_VIDEO_SEEK_START            1664
 #define IDS_VIDEO_SEEK_END              1665
 #define IDS_VIDEO_SEEK_PREV             1666
@@ -1485,6 +1503,7 @@
 #define ID_VIEW_MAXIMIZE                40590
 #define ID_AUDIO_CAPTUREFILTER          40591
 #define ID_OPTIONS_DROPSEEKING          40592
+#define ID_AUDIO_CHANNELS               40593
 #define ID_AUDIOMODE_11KHZ_8MONO        41000
 #define ID_AUDIOMODE_11KHZ_8STEREO      41001
 #define ID_AUDIOMODE_11KHZ_16MONO       41002
@@ -1540,9 +1559,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        310
-#define _APS_NEXT_COMMAND_VALUE         40593
-#define _APS_NEXT_CONTROL_VALUE         1550
+#define _APS_NEXT_RESOURCE_VALUE        312
+#define _APS_NEXT_COMMAND_VALUE         40594
+#define _APS_NEXT_CONTROL_VALUE         1560
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

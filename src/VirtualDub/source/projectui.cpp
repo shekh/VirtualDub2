@@ -146,7 +146,7 @@ extern IVDPositionControlCallback *VDGetPositionControlCallbackTEMP() {
 extern char PositionFrameTypeCallback(HWND hwnd, void *pvData, long pos);
 
 extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars);
-extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *, WAVEFORMATEX *, VDString& shortNameHint, vdblock<char>& config);
+extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *, WAVEFORMATEX *, VDString& shortNameHint, vdblock<char>& config, bool enable_plugin=true);
 extern void VDDisplayLicense(HWND hwndParent, bool conditional);
 
 extern void OpenInput(bool append=false, bool audio=false);

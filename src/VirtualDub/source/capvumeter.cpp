@@ -78,7 +78,7 @@ public:
 
 	void SetArea(const vduirect& r);
 
-	void SetPeakLevels(int count, float* peak);
+	void SetPeakLevels(int count, float* peak, int mask);
 
 protected:
 	LRESULT WndProc(UINT msg, WPARAM wParam, LPARAM lParam);
@@ -134,11 +134,19 @@ void VDUICaptureVumeterW32::SetArea(const vduirect& r) {
 	InvalidateRect(mhwnd, NULL, TRUE);
 }
 
-void VDUICaptureVumeterW32::SetPeakLevels(int count, float* peak) {
+void VDUICaptureVumeterW32::SetPeakLevels(int count, float* src_peak, int mask) {
 	const float invLn10_4 = 0.2171472409516259138255644594583f;
 
-	peak_count = count;
+	float peak[16];
+	peak_count = 0;
 	{for(int i=0; i<count; i++){
+		if((1<<i) & mask){
+			peak[peak_count] = src_peak[i];
+			peak_count++;
+		}
+	}}
+
+	{for(int i=0; i<peak_count; i++){
 		if (peak[i] < 1e-4f)
 			mFrac[i] = 0;
 		else

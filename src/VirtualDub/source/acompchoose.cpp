@@ -119,6 +119,7 @@ struct ACMChooserData {
 	WAVEFORMATEX *pwfex, *pwfexSrc;
 	VDStringA *pHint;
 	vdblock<char> *pConfig;
+	bool enable_plugin;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -401,7 +402,7 @@ static INT_PTR CALLBACK AudioChooseCompressionDlgProc(HWND hdlg, UINT msg, WPARA
 
 			tVDAudioEncList drivers;
 			VDGetAudioEncList(drivers);
-			{for(int i=0; i<drivers.size(); i++){
+			if(thisPtr->enable_plugin){for(int i=0; i<drivers.size(); i++){
 				IVDAudioEnc *driver = drivers[i];
 				const wchar_t* name = driver->GetName();
 				int idx = SendDlgItemMessageW(hdlg, IDC_FORMATTAG, LB_INSERTSTRING, i, (LPARAM)name);
@@ -653,13 +654,14 @@ redisplay_formats:
 	return FALSE;
 }
 
-WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *pwfexOld, WAVEFORMATEX *pwfexSrc, VDStringA& shortNameHint, vdblock<char>& config) {
+WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *pwfexOld, WAVEFORMATEX *pwfexSrc, VDStringA& shortNameHint, vdblock<char>& config, bool enable_plugin) {
 	ACMChooserData data;
 
 	data.pwfex = pwfexOld;
 	data.pwfexSrc = pwfexSrc;
 	data.pHint = &shortNameHint;
 	data.pConfig = &config;
+	data.enable_plugin = enable_plugin;
 
 	if (!DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_AUDIOCOMPRESSION), hwndParent, AudioChooseCompressionDlgProc, (LPARAM)&data))
 		return pwfexOld;

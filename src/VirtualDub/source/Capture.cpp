@@ -109,6 +109,127 @@ extern void VDPreferencesGetAVIIndexingLimits(uint32& superindex, uint32& subind
 
 class VDCaptureProject;
 
+class VDCapturePeaks : public IVDCaptureDriverCallback {
+public:
+	IVDCaptureProjectCallback	*projectCB;
+
+	VDCapturePeaks(){
+		mpCB = 0;
+		projectCB = 0;
+	}
+
+	void Init(IVDCaptureDriverCallback *pCB, const WAVEFORMATEX *pwfex){
+		mpCB = pCB;
+		cn = pwfex->nChannels;
+		nBlockAlign = pwfex->nBlockAlign;
+		wBitsPerSample = pwfex->wBitsPerSample;
+	}
+
+	void CapBegin(sint64 global_clock){ mpCB->CapBegin(global_clock); }
+	void CapEnd(const MyError *pError){ mpCB->CapEnd(pError); }
+	bool CapEvent(DriverEvent event, int data){ return mpCB->CapEvent(event,data); }
+	void CapProcessData(int stream, const void *data, uint32 size, sint64 timestamp, bool key, sint64 global_clock);
+
+protected:
+	IVDCaptureDriverCallback *mpCB;
+	int cn;
+	int wBitsPerSample;
+	int nBlockAlign;
+};
+
+void VDCapturePeaks::CapProcessData(int stream, const void *data, uint32 size, sint64 timestamp, bool key, sint64 global_clock) {
+	if(stream==1){
+		float peak[16];
+		VDComputeWavePeaks(data, wBitsPerSample, cn, size / nBlockAlign, peak);
+		if (projectCB)
+			projectCB->UICaptureAudioPeaksUpdated(cn, peak);
+	}
+
+	mpCB->CapProcessData(stream,data,size,timestamp,key,global_clock);
+}
+
+class VDCaptureMaskFilter : public IVDCaptureDriverCallback {
+public:
+	VDCaptureMaskFilter(){
+		mpCB = 0;
+	}
+
+	void Init(IVDCaptureDriverCallback *pCB, const WAVEFORMATEX *pwfex, int mask){
+		mpCB = pCB;
+		this->mask = mask;
+		cn = pwfex->nChannels;
+		ssize = pwfex->nBlockAlign/pwfex->nChannels;
+		cn2 = 0;
+		{for(int i=0; i<cn; i++)
+			if((1<<i) & mask) cn2++; }
+		mBuffer.resize(cn2*4096*ssize);
+	}
+
+	void CapBegin(sint64 global_clock){ mpCB->CapBegin(global_clock); }
+	void CapEnd(const MyError *pError){ mpCB->CapEnd(pError); }
+	bool CapEvent(DriverEvent event, int data){ return mpCB->CapEvent(event,data); }
+	void CapProcessData(int stream, const void *data, uint32 size, sint64 timestamp, bool key, sint64 global_clock);
+
+protected:
+	IVDCaptureDriverCallback *mpCB;
+	int mask;
+	int cn;
+	int cn2;
+	int ssize;
+	vdblock<char>	mBuffer;
+
+	void pack8(char* dst, const char* src, int count);
+	void pack16(int16* dst, const int16* src, int count);
+};
+
+void VDCaptureMaskFilter::pack8(char* dst, const char* src, int count) {
+	{for(int i=0; i<count; i++){
+		*dst = *src;
+		dst += cn2;
+		src += cn;
+	}}
+}
+
+void VDCaptureMaskFilter::pack16(int16* dst, const int16* src, int count) {
+	{for(int i=0; i<count; i++){
+		*dst = *src;
+		dst += cn2;
+		src += cn;
+	}}
+}
+
+void VDCaptureMaskFilter::CapProcessData(int stream, const void *data, uint32 size, sint64 timestamp, bool key, sint64 global_clock) {
+	if(stream==1){
+		VDPROFILEBEGIN("A-Mask");
+		const char* p = (const char*)data;
+		int buf_samples = mBuffer.size()/(ssize*cn2);
+		int src_samples = size/(ssize*cn);
+		while(src_samples) {
+			int n = src_samples<buf_samples ? src_samples : buf_samples;
+
+			const char* src = p;
+			char* dst = mBuffer.data();
+			{for(int i=0; i<cn; i++){
+				if((1<<i) & mask){
+					if(ssize==1) pack8(dst, src, n);
+					if(ssize==2) pack16((int16*)dst, (const int16*)src, n);
+					dst += ssize;
+				}
+				src += ssize;
+			}}
+
+			mpCB->CapProcessData(stream, mBuffer.data(), n*ssize*cn2, timestamp, key, global_clock);
+			src_samples -= n;
+			p += n*ssize*cn;
+		}
+		VDPROFILEEND();
+		return;
+	}
+
+	mpCB->CapProcessData(stream,data,size,timestamp,key,global_clock);
+}
+
+
 class VDCaptureStatsFilter : public IVDCaptureDriverCallback {
 public:
 	VDCaptureStatsFilter();
@@ -598,6 +719,9 @@ public:
 	bool	GetAudioFormat(vdstructex<VDWaveFormat>& wfex);
 	void	ValidateAudioFormat();
 
+	void	SetAudioMask(int mask);
+	int		GetAudioMask(){ return audioMask; }
+
 	void	SetAudioCompFormat();
 	void	SetAudioCompFormat(const VDWaveFormat& wfex, uint32 cbwfex, const char *pShortNameHint);
 	bool	GetAudioCompFormat(vdstructex<VDWaveFormat>& wfex, VDStringA& hint);
@@ -703,6 +827,7 @@ protected:
 	vdstructex<VDWaveFormat>	mAudioCompFormat;
 	VDStringA					mAudioCompFormatHint;
 	vdstructex<WAVEFORMATEX>	mAudioAnalysisFormat;
+	int audioMask;
 
 	vdautoptr<IVDCaptureVideoHistogram>	mpVideoHistogram;
 	VDCriticalSection		mVideoAnalysisLock;
@@ -1199,7 +1324,7 @@ void VDCaptureProject::SetAudioVumeterEnabled(bool b) {
 			vdstructex<WAVEFORMATEX> wfex;
 			if (mpDriver->GetAudioFormat(wfex)) {
 				if (is_audio_pcm((VDWaveFormat*)wfex.data())) {
-					mAudioAnalysisFormat = wfex;
+					mAudioAnalysisFormat.assign(wfex.data(),wfex.size());
 					mpDriver->SetAudioAnalysisEnabled(true);
 
 					vdstructex<WAVEFORMATEX> wfex2;
@@ -1207,7 +1332,7 @@ void VDCaptureProject::SetAudioVumeterEnabled(bool b) {
 						if (mpCB)
 							mpCB->UICaptureAudioFormatUpdated();
 						if(wfex2!=wfex){
-							mAudioAnalysisFormat = wfex2;
+							mAudioAnalysisFormat.assign(wfex2.data(),wfex2.size());
 							mbEnableAudioVumeter = false;
 							SetAudioVumeterEnabled(true);
 						}
@@ -1422,6 +1547,23 @@ bool VDCaptureProject::SetAudioFormat(const VDWaveFormat& wfex, LONG cbwfex) {
 	SetAudioVumeterEnabled(bVumeter);
 
 	return success;
+}
+
+void VDCaptureProject::SetAudioMask(int mask) {
+	if (!mpDriver)
+		return;
+
+	if (mask==0) mask = 1;
+	if (mask==audioMask) return;
+
+	bool bVumeter = mbEnableAudioVumeter;
+
+	SetAudioVumeterEnabled(false);
+	audioMask = mask;
+	if (mpCB)
+		mpCB->UICaptureAudioFormatUpdated();
+
+	SetAudioVumeterEnabled(bVumeter);
 }
 
 bool VDCaptureProject::GetVideoFormat(vdstructex<VDAVIBitmapInfoHeader>& bih) {
@@ -1752,6 +1894,26 @@ int VDCaptureProject::GetConnectedDriverIndex() {
 	return mDriverIndex;
 }
 
+void GetMaskedAudioFormat(vdstructex<VDWaveFormat>& dst, const vdstructex<VDWaveFormat>& wfexInput, int mask) {
+	dst.assign(wfexInput.data(),wfexInput.size());
+	if (is_audio_pcm(wfexInput.data()) && mask!=-1) {
+		// repack format
+		int cn = wfexInput->mChannels;
+		int cn2 = 0;
+		{for(int i=0; i<cn; i++)
+			if ((1<<i) & mask) cn2++; }
+		dst->mChannels = (uint16)cn2;
+		dst->mDataRate = wfexInput->mDataRate / cn * cn2;
+		dst->mBlockSize = (uint16)(wfexInput->mBlockSize / cn * cn2);
+
+		if (cn2<=2) {
+			dst->mTag = VDWaveFormat::kTagPCM;
+			dst->mExtraSize = 0;
+			dst.resize(sizeof(VDWaveFormat));
+		}
+	}
+}
+
 void VDCaptureProject::Capture(bool fTest) {
 	if (!mpDriver)
 		return;
@@ -1769,6 +1931,8 @@ void VDCaptureProject::Capture(bool fTest) {
 
 	vdautoptr<AVIStripeSystem> pStripeSystem;
 
+	VDCapturePeaks peakFilt;
+	VDCaptureMaskFilter maskFilt;
 	VDCaptureStatsFilter statsFilt;
 	vdautoptr<IVDCaptureResyncFilter> pResyncFilter(VDCreateCaptureResyncFilter());
 	vdautoptr<IVDCaptureAudioCompFilter> pAudioCompFilter(VDCreateCaptureAudioCompFilter());
@@ -1837,7 +2001,8 @@ void VDCaptureProject::Capture(bool fTest) {
 
 		// initialize audio
 		vdstructex<VDWaveFormat> wfexInput;
-		vdstructex<VDWaveFormat>& wfexOutput = mAudioCompFormat.empty() ? wfexInput : mAudioCompFormat;
+		vdstructex<VDWaveFormat> wfexInput2;
+		vdstructex<VDWaveFormat>& wfexOutput = mAudioCompFormat.empty() ? wfexInput2 : mAudioCompFormat;
 
 		pResyncFilter->SetVideoRate(inputFrameRate.asDouble());
 		pResyncFilter->EnableVideoDrops(mTimingSetup.mbAllowEarlyDrops);
@@ -1863,13 +2028,16 @@ void VDCaptureProject::Capture(bool fTest) {
 //#pragma vdpragma_TODO("Should probably give user feedback when audio capture isn't available.")
 				bCaptureAudio = false;
 			} else {
-				pResyncFilter->SetAudioRate(wfexInput->mDataRate);
-				pResyncFilter->SetAudioChannels(wfexInput->mChannels);
+
+				GetMaskedAudioFormat(wfexInput2, wfexInput, audioMask);
+
+				pResyncFilter->SetAudioRate(wfexInput2->mDataRate);
+				pResyncFilter->SetAudioChannels(wfexInput2->mChannels);
 
 				if (mTimingSetup.mbResyncWithIntegratedAudio || !mpDriver->IsAudioDeviceIntegrated(mpDriver->GetAudioDeviceIndex())) {
 					switch(mTimingSetup.mSyncMode) {
 					case VDCaptureTimingSetup::kSyncAudioToVideo:
-						if (wfexInput->mTag == WAVE_FORMAT_PCM) {
+						if (is_audio_pcm(wfexInput.data())) {
 							switch(wfexInput->mSampleBits) {
 							case 8:
 								pResyncFilter->SetAudioFormat(kVDAudioSampleType8U);
@@ -2061,15 +2229,26 @@ unknown_PCM_format:
 			icd.mpAudioCompFilter = pAudioCompFilter;
 			pAudioCompFilter->SetChildCallback(pCurrentCB);
 			pCurrentCB = pAudioCompFilter;
-			pAudioCompFilter->SetSourceSplit(!mAudioAnalysisFormat.empty());
-			pAudioCompFilter->Init((const WAVEFORMATEX *)wfexInput.data(), (const WAVEFORMATEX *)wfexOutput.data(), mAudioCompFormatHint.c_str());
+			//pAudioCompFilter->SetSourceSplit(!mAudioAnalysisFormat.empty());
+			pAudioCompFilter->Init((const WAVEFORMATEX *)wfexInput2.data(), (const WAVEFORMATEX *)wfexOutput.data(), mAudioCompFormatHint.c_str());
 		}
 
 		pResyncFilter->SetChildCallback(pCurrentCB);
 		pCurrentCB = pResyncFilter;
 
-		statsFilt.Init(pCurrentCB, bCaptureAudio ? (const WAVEFORMATEX *)wfexInput.data() : NULL);
+		statsFilt.Init(pCurrentCB, bCaptureAudio ? (const WAVEFORMATEX *)wfexInput2.data() : NULL);
 		pCurrentCB = &statsFilt;
+
+		if (bCaptureAudio && wfexInput2->mChannels<wfexInput->mChannels) {
+			maskFilt.Init(pCurrentCB, (const WAVEFORMATEX *)wfexInput.data(), audioMask);
+			pCurrentCB = &maskFilt;
+		}
+
+		if (bCaptureAudio && is_audio_pcm(wfexInput.data()) && !mAudioAnalysisFormat.empty()) {
+			peakFilt.Init(pCurrentCB, (const WAVEFORMATEX *)wfexInput.data());
+			peakFilt.projectCB = mpCB;
+			pCurrentCB = &peakFilt;
+		}
 
 		// setup log filter
 
@@ -2079,7 +2258,7 @@ unknown_PCM_format:
 			mpLogFilter = NULL;
 
 		if (mpLogFilter) {
-			mpLogFilter->SetChildCallback(&statsFilt);
+			mpLogFilter->SetChildCallback(pCurrentCB);
 			pCurrentCB = mpLogFilter;
 		}
 
@@ -2507,19 +2686,6 @@ void VDCaptureProject::CapProcessData2(int stream, const void *data, uint32 size
 
 	if (stream > 0) {
 		success = icd->WaveCallback(data, size, global_clock);
-
-		if (!icd->mpAudioCompFilter && !mAudioAnalysisFormat.empty() && is_audio_pcm((VDWaveFormat*)mAudioAnalysisFormat.data())) {
-			float peak[16];
-			int n = mAudioAnalysisFormat->nChannels;
-			vdstructex<WAVEFORMATEX> wfex;
-			mpDriver->GetAudioFormat(wfex);
-			if(wfex==mAudioAnalysisFormat)
-				VDComputeWavePeaks(data, mAudioAnalysisFormat->wBitsPerSample, mAudioAnalysisFormat->nChannels, size / mAudioAnalysisFormat->nBlockAlign, peak);
-			else
-				n = 0;
-			if (mpCB)
-				mpCB->UICaptureAudioPeaksUpdated(n, peak);
-		}
 	} else {
 		if (!stream)
 			success = icd->VideoCallback(data, size, timestamp, key, global_clock);

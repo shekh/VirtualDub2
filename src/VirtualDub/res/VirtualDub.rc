@@ -412,6 +412,7 @@ BEGIN
         MENUITEM "Volume meter\tV",             ID_AUDIO_PEAKMETER
         MENUITEM SEPARATOR
         MENUITEM "Raw capture format...",       ID_AUDIO_RAWCAPTUREFORMAT
+        MENUITEM "Channel mask...",             ID_AUDIO_CHANNELS
         MENUITEM "&Compression...\tA",          ID_AUDIO_COMPRESSION
         MENUITEM "Capture filter...",           ID_AUDIO_CAPTUREFILTER
         MENUITEM "Windows &mixer...",           ID_AUDIO_WINMIXER
@@ -2699,6 +2700,32 @@ BEGIN
     CONTROL         "Sequence",IDC_OPEN_SEQUENCE,"Button",BS_AUTORADIOBUTTON | BS_NOTIFY,304,39,136,10
 END
 
+IDD_CAPTURE_AUDIO_MASK DIALOGEX 0, 0, 154, 150
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Channels mask"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    PUSHBUTTON      "Save",IDOK,42,129,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,97,129,50,14
+    CONTROL         "keep all channels",IDC_MASK_ALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,83,10
+    CONTROL         "keep channel #0",IDC_MASK_0,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,20,67,10
+    CONTROL         "keep channel #1",IDC_MASK_1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,33,67,10
+    CONTROL         "keep channel #2",IDC_MASK_2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,46,67,10
+    CONTROL         "keep channel #3",IDC_MASK_3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,59,67,10
+    CONTROL         "keep channel #4",IDC_MASK_4,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,72,67,10
+    CONTROL         "keep channel #5",IDC_MASK_5,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,85,67,10
+    CONTROL         "keep channel #6",IDC_MASK_6,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,98,67,10
+    CONTROL         "keep channel #7",IDC_MASK_7,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,111,67,10
+    LTEXT           "",IDC_PEAK_0,85,22,62,6,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "",IDC_PEAK_1,85,35,62,6,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "",IDC_PEAK_2,85,48,62,6,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "",IDC_PEAK_3,85,61,62,6,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "",IDC_PEAK_4,85,74,62,6,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "",IDC_PEAK_5,85,87,62,6,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "",IDC_PEAK_6,85,100,62,6,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "",IDC_PEAK_7,85,113,62,6,NOT WS_VISIBLE | WS_BORDER
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3627,6 +3654,14 @@ BEGIN
         RIGHTMARGIN, 449
         TOPMARGIN, 7
         BOTTOMMARGIN, 55
+    END
+    
+    IDD_CAPTURE_AUDIO_MASK, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 147
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 143
     END
 END
 #endif    // APSTUDIO_INVOKED
