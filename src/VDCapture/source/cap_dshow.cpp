@@ -1194,6 +1194,10 @@ public:
 
 	bool	Init(VDGUIHandle hParent);
 	void	Shutdown();
+	void	LoadVideoConfig(VDRegistryAppKey& key);
+	void	SaveVideoConfig(VDRegistryAppKey& key);
+	void	LoadAudioConfig(VDRegistryAppKey& key);
+	void	SaveAudioConfig(VDRegistryAppKey& key);
 
 	void	SetCallback(IVDCaptureDriverCallback *pCB);
 
@@ -4337,4 +4341,94 @@ IVDCaptureDriver *VDCaptureSystemDS::CreateDriver(int index) {
 		return NULL;
 
 	return new VDCaptureDriverDS(mVideoDevices[index].first);
+}
+
+class SimpleStream: public IStream{
+public:
+	vdfastvector<char> memory;
+	int rpos;
+
+	SimpleStream(){ rpos=0; }
+
+	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void __RPC_FAR *__RPC_FAR *ppvObject){ *ppvObject = 0; return 0; }
+	virtual ULONG STDMETHODCALLTYPE AddRef(void){ return 0; }
+	virtual ULONG STDMETHODCALLTYPE Release(void){ return 0; }
+	virtual HRESULT STDMETHODCALLTYPE Seek(LARGE_INTEGER dlibMove, DWORD dwOrigin, ULARGE_INTEGER *plibNewPosition){ return 0; }
+	virtual HRESULT STDMETHODCALLTYPE SetSize(ULARGE_INTEGER libNewSize){ return 0; }
+	virtual HRESULT STDMETHODCALLTYPE CopyTo(IStream *pstm, ULARGE_INTEGER cb, ULARGE_INTEGER *pcbRead, ULARGE_INTEGER *pcbWritten){ return 0; }
+	virtual HRESULT STDMETHODCALLTYPE Commit(DWORD grfCommitFlags){ return 0; }
+	virtual HRESULT STDMETHODCALLTYPE Revert( void){ return 0; }
+	virtual HRESULT STDMETHODCALLTYPE LockRegion(ULARGE_INTEGER libOffset, ULARGE_INTEGER cb, DWORD dwLockType){ return 0; }
+	virtual HRESULT STDMETHODCALLTYPE UnlockRegion(ULARGE_INTEGER libOffset, ULARGE_INTEGER cb, DWORD dwLockType){ return 0; }
+	virtual HRESULT STDMETHODCALLTYPE Stat(__RPC__out STATSTG *pstatstg, DWORD grfStatFlag){ return 0; }
+	virtual HRESULT STDMETHODCALLTYPE Clone(__RPC__deref_out_opt IStream **ppstm){ return 0; }
+
+	virtual HRESULT STDMETHODCALLTYPE Read(void *pv, ULONG cb, ULONG *pcbRead) { 
+		int s1 = memory.size()-rpos;
+		if((int)cb<s1) s1 = cb;
+		memcpy(pv,memory.data()+rpos,s1);
+		rpos+=s1;
+		if(pcbRead) *pcbRead = s1;
+		return S_OK;
+	}
+	
+	virtual HRESULT STDMETHODCALLTYPE Write(const void *pv, ULONG cb, ULONG *pcbWritten) {
+		int pos = memory.size();
+		memory.resize(pos+cb);
+		memcpy(memory.data()+pos,pv,cb);
+		if(pcbWritten) *pcbWritten = cb;
+		return S_OK;
+	}
+};
+
+void VDCaptureDriverDS::SaveVideoConfig(VDRegistryAppKey& key) {
+	if(!mpCapFilt) return;
+	IPersistStream* str;
+	mpCapFilt->QueryInterface(IID_IPersistStream, (void**)&str);
+	if(!str) return;
+	SimpleStream d;
+	str->Save(&d,false);
+	str->Release();
+	key.setBinary("VideoCapConfig",d.memory.data(),d.memory.size());
+}
+
+void VDCaptureDriverDS::LoadVideoConfig(VDRegistryAppKey& key) {
+	if(!mpCapFilt) return;
+	IPersistStream* str;
+	mpCapFilt->QueryInterface(IID_IPersistStream, (void**)&str);
+	if(!str) return;
+
+	SimpleStream d;
+	int n = key.getBinaryLength("VideoCapConfig");
+	if(n!=-1){
+		d.memory.resize(n);
+		key.getBinary("VideoCapConfig",d.memory.data(),d.memory.size());
+		str->Load(&d);
+	}
+}
+
+void VDCaptureDriverDS::SaveAudioConfig(VDRegistryAppKey& key) {
+	if(!mpAudioCapFilt) return;
+	IPersistStream* str;
+	mpAudioCapFilt->QueryInterface(IID_IPersistStream, (void**)&str);
+	if(!str) return;
+	SimpleStream d;
+	str->Save(&d,false);
+	str->Release();
+	key.setBinary("AudioCapConfig",d.memory.data(),d.memory.size());
+}
+
+void VDCaptureDriverDS::LoadAudioConfig(VDRegistryAppKey& key) {
+	if(!mpAudioCapFilt) return;
+	IPersistStream* str;
+	mpAudioCapFilt->QueryInterface(IID_IPersistStream, (void**)&str);
+	if(!str) return;
+
+	SimpleStream d;
+	int n = key.getBinaryLength("AudioCapConfig");
+	if(n!=-1){
+		d.memory.resize(n);
+		key.getBinary("AudioCapConfig",d.memory.data(),d.memory.size());
+		str->Load(&d);
+	}
 }

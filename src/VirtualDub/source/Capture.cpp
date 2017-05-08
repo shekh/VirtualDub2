@@ -576,6 +576,19 @@ public:
 
 	uint32	GetPreviewFrameCount();
 
+	void  LoadVideoConfig(VDRegistryAppKey& key) {
+		if (mpDriver) mpDriver->LoadVideoConfig(key);
+	}
+	void  SaveVideoConfig(VDRegistryAppKey& key) {
+		if (mpDriver) mpDriver->SaveVideoConfig(key);
+	}
+	void  LoadAudioConfig(VDRegistryAppKey& key) {
+		if (mpDriver) mpDriver->LoadAudioConfig(key);
+	}
+	void  SaveAudioConfig(VDRegistryAppKey& key) {
+		if (mpDriver) mpDriver->SaveAudioConfig(key);
+	}
+
 	bool	SetVideoFormat(const VDAVIBitmapInfoHeader& bih, LONG cbih);
 	bool	GetVideoFormat(vdstructex<VDAVIBitmapInfoHeader>& bih);
 

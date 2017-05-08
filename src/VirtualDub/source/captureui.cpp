@@ -1205,6 +1205,8 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 
 	mpProject->LockUpdates();
 
+	mpProject->LoadVideoConfig(devkey);
+
 	len = devkey.getBinaryLength(g_szVideoFormat);
 	if (len >= 0 && len >= sizeof(VDAVIBitmapInfoHeader)) {
 		vdblock<char> buf(len);
@@ -1314,6 +1316,8 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 			mpProject->SetAudioDevice(audioDevIdx);
 	}
 
+	mpProject->LoadAudioConfig(devkey);
+
 	// reload audio format
 	len = devkey.getBinaryLength(g_szAudioFormat);
 	if (len >= 0) {
@@ -1410,6 +1414,8 @@ void VDCaptureProjectUI::SaveDeviceSettings(uint32 mask) {
 	VDRegistryCapDeviceKey devkey(mpProject->GetConnectedDriverName());
 
 	if (mask & kSaveDevVideo) {
+		mpProject->SaveVideoConfig(devkey);
+
 		vdstructex<VDAVIBitmapInfoHeader> bih;
 
 		if (mpProject->GetVideoFormat(bih))
@@ -1472,6 +1478,8 @@ void VDCaptureProjectUI::SaveDeviceSettings(uint32 mask) {
 	}
 
 	if (mask & kSaveDevAudio) {
+		mpProject->SaveAudioConfig(devkey);
+
 		vdstructex<VDWaveFormat> wfex;
 
 		if (mpProject->GetAudioFormat(wfex))

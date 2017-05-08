@@ -33,6 +33,7 @@
 
 struct VDPixmap;
 class VDFraction;
+class VDRegistryAppKey;
 
 #define	CAPSTOP_TIME			(0x00000001L)
 #define	CAPSTOP_FILESIZE		(0x00000002L)
@@ -321,6 +322,11 @@ public:
 	virtual const VDCaptureDiskSettings& GetDiskSettings() = 0;
  
 	virtual uint32	GetPreviewFrameCount() = 0;
+
+	virtual void  LoadVideoConfig(VDRegistryAppKey& key) = 0;
+	virtual void  SaveVideoConfig(VDRegistryAppKey& key) = 0;
+	virtual void  LoadAudioConfig(VDRegistryAppKey& key) = 0;
+	virtual void  SaveAudioConfig(VDRegistryAppKey& key) = 0;
 
 	virtual bool	SetVideoFormat(const VDAVIBitmapInfoHeader& bih, LONG cbih) = 0;
 	virtual bool	GetVideoFormat(vdstructex<VDAVIBitmapInfoHeader>& bih) = 0;

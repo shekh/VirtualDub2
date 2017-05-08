@@ -29,6 +29,7 @@
 #include <mmsystem.h>
 
 class MyError;
+class VDRegistryAppKey;
 
 namespace nsVDCapture {
 	enum DisplayMode {
@@ -129,6 +130,10 @@ public:
 	virtual ~IVDCaptureDriver() {}
 
 	virtual bool	Init(VDGUIHandle hParent) = 0;
+	virtual void  LoadVideoConfig(VDRegistryAppKey& key){}
+	virtual void  SaveVideoConfig(VDRegistryAppKey& key){}
+	virtual void  LoadAudioConfig(VDRegistryAppKey& key){}
+	virtual void  SaveAudioConfig(VDRegistryAppKey& key){}
 
 	virtual void	SetCallback(IVDCaptureDriverCallback *pCB) = 0;
 
