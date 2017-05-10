@@ -1603,7 +1603,8 @@ static void func_VDAudio_SetSource(IVDScriptInterpreter *, VDScriptValue *arglis
 
 static void func_VDAudio_SetSourceExternal(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 	IVDInputDriver *pDriver = NULL;
-	VDStringW fileName(VDTextU8ToW(VDStringA(*arglist[0].asString())));
+	VDStringW s(VDTextU8ToW(VDStringA(*arglist[0].asString())));
+	VDStringW fileName(g_project->ExpandProjectPath(s.c_str()));
 
 	if (arg_count >= 2) {
 		const VDStringW driverName(VDTextU8ToW(*arglist[1].asString(), -1));

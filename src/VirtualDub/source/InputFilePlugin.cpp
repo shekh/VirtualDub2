@@ -1052,6 +1052,7 @@ public:
 	// DubSource
 	int _read(VDPosition lStart, uint32 lCount, void *lpBuffer, uint32 cbBuffer, uint32 *lBytesRead, uint32 *lSamplesRead);
 	void SetTargetFormat(const VDWaveFormat* format);
+	void streamAppendReinit();
 
 	VBRMode GetVBRMode() const { return mVBRMode; }
 	VDPosition	TimeToPositionVBR(VDTime us) const;
@@ -1131,6 +1132,19 @@ VDAudioSourcePlugin::VDAudioSourcePlugin(IVDXAudioSource *pAS, VDInputDriverCont
 	mVBRMode = (mSSInfo.mFlags & VDXStreamSourceInfoV3::kFlagVariableSizeSamples) ? kVBRModeVariableFrames : isVBR ? kVBRModeTimestamped : kVBRModeNone;
 	if (mVBRMode == kVBRModeVariableFrames)
 		streamInfo.dwSampleSize = 0;
+}
+
+void VDAudioSourcePlugin::streamAppendReinit() {
+	vdwithinputplugin(mpContext) {
+		IVDXStreamSourceV3 *xssv3 = (IVDXStreamSourceV3 *)mpXS->AsInterface(IVDXStreamSourceV3::kIID);
+		if (xssv3)
+			xssv3->GetStreamSourceInfoV3(mSSInfo);
+		else
+			mpXS->GetStreamSourceInfo(mSSInfo.mInfo);
+	}
+
+	mSampleLast = mSSInfo.mInfo.mSampleCount;
+	streamInfo.dwLength	= VDClampToUint32(mSSInfo.mInfo.mSampleCount);
 }
 
 void VDAudioSourcePlugin::SetTargetFormat(const VDWaveFormat* target) {

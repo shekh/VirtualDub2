@@ -44,6 +44,7 @@ public:
 		return (const VDWaveFormat *)src_format;
 	}
 	virtual void SetTargetFormat(const VDWaveFormat* format){}
+	virtual void streamAppendReinit(){}
 };
 
 AudioSource *VDCreateAudioSourceWAV(const wchar_t *fn, uint32 inputBufferSize);

@@ -91,8 +91,11 @@ void AppendAVI(const wchar_t *pszFile) {
 	if (inputAVI) {
 		IVDStreamSource *pVSS = inputVideo->asStream();
 		VDPosition lTail = pVSS->getEnd();
+		VDStringW filename(g_project->ExpandProjectPath(pszFile));
 
-		if (inputAVI->Append(pszFile)) {
+		if (inputAVI->Append(filename.c_str())) {
+			inputVideo->streamAppendReinit();
+			if (inputAudio) inputAudio->streamAppendReinit();
 			g_project->BeginTimelineUpdate();
 			FrameSubset& s = g_project->GetTimeline().GetSubset();
 
@@ -129,6 +132,7 @@ void AppendAVIAutoscan(const wchar_t *pszFile) {
 				break;
 
 			inputVideo->streamAppendReinit();
+			if (inputAudio) inputAudio->streamAppendReinit();
 
 			++count;
 

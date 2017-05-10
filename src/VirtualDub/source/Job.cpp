@@ -178,7 +178,7 @@ namespace {
 	};
 }
 
-void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditListMode editListMode = kVDJobEditListMode_Include, bool bIncludeTextInfo = true) {
+void JobCreateScript(JobScriptOutput& output, bool project_relative, const DubOptions *opt, VDJobEditListMode editListMode = kVDJobEditListMode_Include, bool bIncludeTextInfo = true) {
 	char *mem= NULL;
 
 	int audioSourceMode = g_project->GetAudioSourceMode();
@@ -188,7 +188,9 @@ void JobCreateScript(JobScriptOutput& output, const DubOptions *opt, VDJobEditLi
 
 	case kVDAudioSourceMode_External:
 		{
-			const VDStringA& encodedFileName = VDEncodeScriptString(VDStringW(g_szInputWAVFile));
+			VDStringW s(g_szInputWAVFile);
+			if (project_relative) s = g_project->BuildProjectPath(g_szInputWAVFile);
+			const VDStringA& encodedFileName = VDEncodeScriptString(s);
 			const VDStringA& encodedDriverName = VDEncodeScriptString(VDTextWToU8(g_project->GetAudioSourceDriverName(), -1));
 
 			// check if we have options to write out
@@ -628,7 +630,7 @@ void JobAddConfigurationInputs(JobScriptOutput& output, const VDProject* project
 		if (ifn = ifn->NextFromHead())
 			while(ifn_next = ifn->NextFromHead()) {
 				VDStringW s(ifn->name);
-				//if (project) s = project->BuildProjectPath(ifn->name);
+				if (project) s = project->BuildProjectPath(ifn->name);
 				output.addf("VirtualDub.Append(\"%s\");", strCify(VDTextWToU8(s).c_str()));
 				ifn = ifn_next;
 			}
@@ -696,7 +698,7 @@ void JobAddConfiguration(const VDProject* project, const DubOptions *opt, const 
 	JobSaveProjectData(project,dataSubdir);
 
 	JobAddConfigurationInputs(output, 0, szFileInput, pszInputDriver, pListAppended);
-	JobCreateScript(output, opt, bIncludeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
+	JobCreateScript(output, false, opt, bIncludeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
 	JobAddReloadMarker(output);
 
 	// Add actual run option
@@ -716,7 +718,7 @@ void JobAddConfigurationImages(const VDProject* project, const DubOptions *opt, 
 	JobSaveProjectData(project,dataSubdir);
 
 	JobAddConfigurationInputs(output, 0, szFileInput, pszInputDriver, pListAppended);
-	JobCreateScript(output, opt);
+	JobCreateScript(output, false, opt);
 	JobAddReloadMarker(output);
 
 	// Add actual run option
@@ -738,7 +740,7 @@ void JobAddConfigurationSaveAudio(const VDProject* project, const DubOptions *op
 	JobSaveProjectData(project,dataSubdir);
 
 	JobAddConfigurationInputs(output, 0, srcFile, srcInputDriver, pListAppended);
-	JobCreateScript(output, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
+	JobCreateScript(output, false, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
 	JobAddReloadMarker(output);
 
 	// Add actual run option
@@ -756,7 +758,7 @@ void JobAddConfigurationSaveVideo(const VDProject* project, const DubOptions *op
 	JobSaveProjectData(project,dataSubdir);
 
 	JobAddConfigurationInputs(output, 0, srcFile, srcInputDriver, pListAppended);
-	JobCreateScript(output, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
+	JobCreateScript(output, false, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
 	JobAddReloadMarker(output);
 
 	// Add actual run option
@@ -779,7 +781,7 @@ void JobAddConfigurationExportViaEncoder(const VDProject* project, const DubOpti
 	JobSaveProjectData(project,dataSubdir);
 
 	JobAddConfigurationInputs(output, 0, srcFile, srcInputDriver, pListAppended);
-	JobCreateScript(output, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
+	JobCreateScript(output, false, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
 	JobAddReloadMarker(output);
 
 	// Add actual run option
@@ -799,7 +801,7 @@ void JobAddConfigurationRunVideoAnalysisPass(const VDProject* project, const Dub
 	JobSaveProjectData(project,dataSubdir);
 
 	JobAddConfigurationInputs(output, 0, srcFile, srcInputDriver, pListAppended);
-	JobCreateScript(output, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
+	JobCreateScript(output, false, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
 	JobAddReloadMarker(output);
 
 	// Add actual run option
@@ -821,7 +823,7 @@ void JobWriteProjectScript(VDFile& f, const VDProject* project, bool project_rel
 	output.adds("");
 
 	if (srcFile) JobAddConfigurationInputs(output, project_relative ? project:0, srcFile, srcInputDriver, pListAppended);
-	JobCreateScript(output, opt, kVDJobEditListMode_Include, true);
+	JobCreateScript(output, project_relative, opt, kVDJobEditListMode_Include, true);
 
 	output.adds("");
 	output.adds("// $endjob");
@@ -833,7 +835,7 @@ void JobWriteConfiguration(const wchar_t *filename, DubOptions *opt, bool bInclu
 	JobScriptOutput output;
 
 	JobFlushFilterConfig();
-	JobCreateScript(output, opt, bIncludeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Omit, bIncludeTextInfo);
+	JobCreateScript(output, false, opt, bIncludeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Omit, bIncludeTextInfo);
 
 	VDFile f(filename, nsVDFile::kWrite | nsVDFile::kDenyAll | nsVDFile::kCreateAlways);
 	f.write(output.data(), output.size());
