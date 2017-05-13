@@ -237,6 +237,9 @@ void VDUISaveWindowPlacementW32(HWND hwnd, const char *name) {
 	WINDOWPLACEMENT wp = {sizeof(WINDOWPLACEMENT)};
 
 	if (GetWindowPlacement(hwnd, &wp)) {
+		// main window is minimized when running job
+		// cant think when we want to keep this saved
+		if (wp.showCmd == SW_SHOWMINIMIZED) return;
 		VDUISavedWindowPlacement sp = {0};
 		sp.mLeft	= wp.rcNormalPosition.left;
 		sp.mTop		= wp.rcNormalPosition.top;

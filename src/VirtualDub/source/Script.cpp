@@ -47,6 +47,7 @@
 #include "project.h"
 #include "filters.h"
 #include "FilterInstance.h"
+#include "AVIOutputPlugin.h"
 
 #include "command.h"
 #include "dub.h"
@@ -2064,7 +2065,30 @@ static void func_VirtualDub_SaveAVI(IVDScriptInterpreter *, VDScriptValue *argli
 	DubOptions opts(g_dubOpts);
 	InitBatchOptions(opts);
 
-	SaveAVI(filename.c_str(), true, &opts, false);
+	if (g_FileOutDriver.empty()) {
+		SaveAVI(filename.c_str(), true, &opts, false);
+		return;
+	}
+
+	IVDOutputDriver *driver = VDGetOutputDriverByName(g_FileOutDriver.c_str());
+	if (!driver) {
+		VDString drv = VDTextWToA(g_FileOutDriver);
+		throw MyError("Cannot save video with '%s': no such driver loaded", drv.c_str());
+	}
+	for(int i=0; ; i++){
+		wchar_t filter[128];
+		wchar_t ext[128];
+		char name[128];
+		if (!driver->GetDriver()->EnumFormats(i,filter,ext,name)) {
+			VDString drv = VDTextWToA(g_FileOutDriver);
+			throw MyError("Cannot save video with '%s / %s': no such format supported by driver", drv.c_str(), g_FileOutFormat.c_str());
+		}
+
+		if (g_FileOutFormat == name) {
+			SavePlugin(filename.c_str(), driver, name, &opts);
+			return;
+		}
+	}
 }
 
 static void func_VirtualDub_SaveCompatibleAVI(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
