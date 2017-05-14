@@ -1011,6 +1011,10 @@ void Dubber::InitAudioConversionChain() {
 
 void Dubber::InitOutputFile() {
 
+	VDXStreamControl sc;
+	if (mpOutputSystem)
+		mpOutputSystem->GetStreamControl(sc);
+
 	// Do audio.
 
 	if (mbDoAudio) {
@@ -1205,6 +1209,8 @@ void Dubber::InitOutputFile() {
 		vdstructex<VDAVIBitmapInfoHeader>	outputFormat;
 
 		if (mpVideoCompressor) {
+			mpVideoCompressor->SetStreamControl(sc);
+
 			vdstructex<BITMAPINFOHEADER> outputFormatW32;
 			if (driverLayout.format)
 				mpVideoCompressor->GetOutputFormat(&driverLayout, outputFormatW32);
@@ -1236,6 +1242,7 @@ void Dubber::InitOutputFile() {
 				mpVideoCompressor->Start(&*mpCompressorVideoFormat, mpCompressorVideoFormat.size(), &*outputFormat, outputFormat.size(), vInfo.mFrameRate, vInfo.end_proc_dst);
 			}
 
+			mpVideoCompressor->GetStreamInfo(si);
 			lVideoSizeEstimate = mpVideoCompressor->GetMaxOutputSize();
 		} else {
 			if (mOptions.video.mode == DubVideoOptions::M_NONE) {

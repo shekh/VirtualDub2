@@ -72,10 +72,13 @@ public:
 	virtual void Start(const void *inputFormat, uint32 inputFormatSize, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) = 0;
 	virtual void Start(const VDPixmapLayout& inputFormat, FilterModPixmapInfo& info, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount) = 0;
 	virtual void Restart() = 0;
+	virtual void Truncate() = 0;
 	virtual void SkipFrame() = 0;
 	virtual void DropFrame() = 0;
 	virtual bool CompressFrame(void *dst, const void *src, uint32& size, VDPacketInfo& packetInfo) = 0;
 	virtual void Stop() = 0;
+	virtual void SetStreamControl(VDXStreamControl& sc) = 0;
+	virtual void GetStreamInfo(VDXStreamInfo& si) = 0;
 
 	virtual void Clone(IVDVideoCompressor **vc) = 0;
 };

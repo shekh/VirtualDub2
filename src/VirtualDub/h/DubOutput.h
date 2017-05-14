@@ -50,6 +50,7 @@ public:
 	virtual bool IsCompressedAudioAllowed() = 0;
 	virtual bool GetInterleavingOverride(DubAudioOptions& opt) = 0;
 	virtual bool IsNull() = 0;
+	virtual bool GetStreamControl(VDXStreamControl& sc){ return true; }
 };
 
 class VDDubberOutputSystem : public IVDDubberOutputSystem {
@@ -172,6 +173,7 @@ public:
 		this->driver = driver;
 		this->format = format;
 	}
+	bool GetStreamControl(VDXStreamControl& sc);
 
 private:
 	VDStringW	mFilename;

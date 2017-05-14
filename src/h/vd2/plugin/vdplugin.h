@@ -340,31 +340,4 @@ public:
 	virtual void *VDXAPIENTRY AsInterface(uint32 iid) = 0;
 };
 
-// same as kVDLogInfo .. kVDLogError
-enum {
-	VD_LOG_INFO,
-	VD_LOG_MARKER,
-	VD_LOG_WARNING,
-	VD_LOG_ERROR
-};
-
-typedef void (*VDLogProc)(int severity, const wchar_t *format);
-
-enum {
-	VDICM_COMPRESS_INPUT_FORMAT = 1,  // query which format to use as input
-	VDICM_COMPRESS_QUERY = 2,         // same as compress_query but src is PixmapLayout
-	VDICM_COMPRESS_GET_FORMAT = 3,
-	VDICM_COMPRESS_GET_SIZE = 4,
-	VDICM_COMPRESS_BEGIN = 5,
-	VDICM_COMPRESS = 6,
-	VDICM_COMPRESS_MATRIX_INFO = 7,
-	VDICM_ENUMFORMATS = 8,
-	VDICM_LOGPROC = 9,
-	VDICM_COMPRESS2 = 10,
-};
-
-enum {
-	VDCOMPRESS_WAIT = 0x10000000L,
-};
-
 #endif

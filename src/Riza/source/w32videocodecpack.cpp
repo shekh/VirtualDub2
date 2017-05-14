@@ -136,10 +136,13 @@ public:
 	void Start(const VDPixmapLayout& layout, FilterModPixmapInfo& info, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);
 	void internalStart(const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);
 	void Restart();
+	void Truncate();
 	void SkipFrame();
 	void DropFrame();
 	bool CompressFrame(void *dst, const void *src, uint32& size, VDPacketInfo& packetInfo);
 	void Stop();
+	void SetStreamControl(VDXStreamControl& sc);
+	void GetStreamInfo(VDXStreamInfo& si);
 
 	void Clone(IVDVideoCompressor **vcRet);
 
@@ -520,6 +523,36 @@ void VDVideoCompressorVCM::Stop() {
 	if (cbConfigData && pConfigData) {
 		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
 		driver->setState(pConfigData, cbConfigData);
+	}
+}
+
+void VDVideoCompressorVCM::SetStreamControl(VDXStreamControl& sc) {
+	if (fCompressionStarted)
+		return;
+
+	{
+		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
+		if(driver->vdproc) driver->vdproc(driver->obj,0,VDICM_STREAMCONTROL,(LPARAM)&sc,0);
+	}
+}
+
+void VDVideoCompressorVCM::GetStreamInfo(VDXStreamInfo& si) {
+	if (!fCompressionStarted)
+		return;
+
+	{
+		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
+		if(driver->vdproc) driver->vdproc(driver->obj,0,VDICM_GETSTREAMINFO,(LPARAM)&si,0);
+	}
+}
+
+void VDVideoCompressorVCM::Truncate() {
+	if (!fCompressionStarted)
+		return;
+
+	{
+		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
+		if(driver->vdproc) driver->vdproc(driver->obj,0,VDICM_COMPRESS_TRUNCATE,0,0);
 	}
 }
 

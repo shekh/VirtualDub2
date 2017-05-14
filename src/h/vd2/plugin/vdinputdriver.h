@@ -362,12 +362,59 @@ struct VDXAVIStreamHeader {
 	} rcFrame;
 };
 
+struct VDXStreamControl {
+	int version; // this struct version
+
+	// AVFMT_GLOBALHEADER
+	bool global_header;
+
+	VDXStreamControl() {
+		version = 1;
+		global_header = false;
+	}
+};
+
 struct VDXStreamInfo {
 	VDXAVIStreamHeader aviHeader;
 
+	int version; // this struct version
+
 	int avcodec_version; // LIBAVCODEC_VERSION_INT
 
-	// fields bellow correspond to AVCodecParameters
+	// fields below correspond to AVCodecParameters
+	// all enum codes, meaning and default values match those of AVCodecParameters
+
+	// not used: set explicitly
+	//enum AVMediaType codec_type; 
+
+	// not used: derived from bitmap (maybe needed for avi-incompatible formats)
+	//enum AVCodecID   codec_id;
+	//uint32_t         codec_tag;
+	//uint8_t *extradata;
+	//int      extradata_size;
+
+	int format;
+	sint64 bit_rate;
+	int bits_per_coded_sample;
+	int bits_per_raw_sample;
+	int profile;
+	int level;
+
+	// not used: derived from bitmap
+	//int width;
+	//int height;
+
+	// video only
+	int sar_width;
+	int sar_height;
+	int field_order;
+	int color_range;
+	int color_primaries;
+	int color_trc;
+	int color_space;
+	int chroma_location;
+	int video_delay;
+
 	// audio only
 	int frame_size;
 	int block_align;
@@ -376,7 +423,25 @@ struct VDXStreamInfo {
 
 	VDXStreamInfo() {
 		memset(&aviHeader,0,sizeof(aviHeader));
+		version = 1;
 		avcodec_version = 0;
+
+		format = -1;
+		bit_rate = 0;
+		bits_per_coded_sample = 0;
+		bits_per_raw_sample = 0;
+		profile = -99;
+		level = -99;
+		sar_width = 0;
+		sar_height = 1;
+		field_order = 0;
+		color_range = 0;
+		color_primaries = 2;
+		color_trc = 2;
+		color_space = 2;
+		chroma_location = 0;
+		video_delay = 0;
+
 		frame_size = 0;
 		block_align = 0;
 		initial_padding = 0;
@@ -441,6 +506,7 @@ public:
 
 	virtual bool	VDXAPIENTRY CreateOutputFile(IVDXOutputFile **ppFile) = 0;
 	virtual bool	VDXAPIENTRY EnumFormats(int i, wchar_t* filter, wchar_t* ext, char* name) = 0; // all buffers are 128 chars
+	virtual bool	VDXAPIENTRY GetStreamControl(const wchar_t *path, const char* format, VDXStreamControl& sc){ return true; }
 };
 
 typedef bool (VDXAPIENTRY *VDXOutputDriverCreateProc)(const VDXInputDriverContext *pContext, IVDXOutputFileDriver **);
@@ -510,6 +576,40 @@ struct VDXAudioEncDefinition {
 enum {
 	// V1 (FilterMod): Initial version
 	kVDXPlugin_AudioEncAPIVersion = 1
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// video encoding - on top of vfw model
+
+// same as kVDLogInfo .. kVDLogError
+enum {
+	VD_LOG_INFO,
+	VD_LOG_MARKER,
+	VD_LOG_WARNING,
+	VD_LOG_ERROR
+};
+
+typedef void (*VDLogProc)(int severity, const wchar_t *format);
+
+enum {
+	VDICM_COMPRESS_INPUT_FORMAT = 1,  // query which format to use as input
+	VDICM_COMPRESS_QUERY = 2,         // same as compress_query but src is PixmapLayout
+	VDICM_COMPRESS_GET_FORMAT = 3,
+	VDICM_COMPRESS_GET_SIZE = 4,
+	VDICM_COMPRESS_BEGIN = 5,
+	VDICM_COMPRESS = 6,
+	VDICM_COMPRESS_MATRIX_INFO = 7,   // set vui options
+	VDICM_ENUMFORMATS = 8,            // list included fourcc codes
+	VDICM_LOGPROC = 9,                // attach log output
+	VDICM_COMPRESS2 = 10,             // same as compress but with more room to return extra data
+	VDICM_COMPRESS_INPUT_INFO = 11,   // test if format is known to encoder, irrespective of current settings
+	VDICM_GETSTREAMINFO = 12,         // fill values in VDXStreamInfo
+	VDICM_STREAMCONTROL = 13,         // adjust encoding options for given container
+	VDICM_COMPRESS_TRUNCATE = 14,     // do not receive more frames, just flush delayed
+};
+
+enum {
+	VDCOMPRESS_WAIT = 0x10000000L,
 };
 
 #endif

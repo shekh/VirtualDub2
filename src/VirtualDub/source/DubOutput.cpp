@@ -360,6 +360,10 @@ bool VDAVIOutputPluginSystem::GetInterleavingOverride(DubAudioOptions& opt) {
 	return true;
 }
 
+bool VDAVIOutputPluginSystem::GetStreamControl(VDXStreamControl& sc) {
+	return driver->GetDriver()->GetStreamControl(mFilename.c_str(),format.c_str(),sc);
+}
+
 IVDMediaOutput *VDAVIOutputPluginSystem::CreateSegment() {
 	vdautoptr<IVDMediaOutputPlugin> pOutput(VDCreateMediaOutputPlugin(driver,format.c_str()));
 
