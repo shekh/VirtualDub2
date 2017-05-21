@@ -142,7 +142,11 @@ namespace {
 					if (lpvMem = GlobalLock(hMem)) {
 						memcpy(lpvMem, bih.data(), headerSize);
 
-						VDPixmapBlt(VDPixmapFromLayout(layout, (char *)lpvMem + headerSize), px);
+						VDPixmap dst = VDPixmapFromLayout(layout, (char *)lpvMem + headerSize);
+						//VDPixmapBlt(dst, px);
+						IVDPixmapBlitter* blt = VDPixmapCreateBlitter(dst,px);
+						blt->Blit(dst,px);
+						delete blt;
 
 						GlobalUnlock(lpvMem);
 						SetClipboardData(CF_DIB, hMem);
