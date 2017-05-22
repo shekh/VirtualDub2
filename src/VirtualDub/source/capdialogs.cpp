@@ -877,9 +877,32 @@ int peak_ids[] = {
 	IDC_PEAK_7,
 };
 
+int ch_ids[] = {
+	IDC_CH_0,
+	IDC_CH_1,
+	IDC_CH_2,
+	IDC_CH_3,
+	IDC_CH_4,
+	IDC_CH_5,
+	IDC_CH_6,
+	IDC_CH_7,
+};
+
+int ch_spin_ids[] = {
+	IDC_CH_SPIN0,
+	IDC_CH_SPIN1,
+	IDC_CH_SPIN2,
+	IDC_CH_SPIN3,
+	IDC_CH_SPIN4,
+	IDC_CH_SPIN5,
+	IDC_CH_SPIN6,
+	IDC_CH_SPIN7,
+};
+
 class VDDialogAudioMask : public VDDialogBaseW32, public IVDUICaptureVumeter {
 public:
 	int mask;
+	int mix[16];
 	int channels;
 	HBRUSH	mhbrFill;
 	HBRUSH	mhbrErase;
@@ -896,6 +919,7 @@ public:
 			mLastPeak[i] = 0;
 			mPeak[i] = 0;
 			mFrac[i] = 0.5;
+			mix[i] = 0;
 		}}
 		peak_count = 0;
 	}
@@ -955,10 +979,35 @@ public:
 		mask = m1;
 	}
 
+	void initMixMask(){
+		{for(int i=0; i<8; i++){
+			HWND c0 = GetDlgItem(mhdlg,ch_ids[i]);
+			HWND c1 = GetDlgItem(mhdlg,ch_spin_ids[i]);
+			SendMessage(c1, UDM_SETRANGE, 0, (LPARAM)MAKELONG(3,0));
+			SendMessage(c1, UDM_SETPOS, 0, mix[i]);
+			if (i>=channels) {
+				ShowWindow(c0, SW_HIDE);
+				ShowWindow(c1, SW_HIDE);
+			} else {
+				changeMixMask(i);
+			}
+		}}
+	}
+
+	void changeMixMask(int i){
+		HWND c0 = GetDlgItem(mhdlg,ch_ids[i]);
+		const char* s="off";
+		if(mix[i]==1) s="left";
+		if(mix[i]==2) s="right";
+		if(mix[i]==3) s="L+R";
+		SetWindowText(c0,s);
+	}
+
 	INT_PTR DlgProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 		switch(msg) {
 		case WM_INITDIALOG:
 			initMask();
+			initMixMask();
 			return TRUE;
 		case WM_COMMAND:
 			switch(LOWORD(wParam)) {
@@ -973,6 +1022,9 @@ public:
 				if (IsDlgButtonChecked(mhdlg,IDC_MASK_ALL)) {
 					for(int i=0; i<channels; i++)
 						CheckDlgButton(mhdlg,mask_ids[i],BST_CHECKED);
+				} else {
+					for(int i=0; i<channels; i++)
+						CheckDlgButton(mhdlg,mask_ids[i],BST_UNCHECKED);
 				}
 				return TRUE;
 			}
@@ -984,6 +1036,24 @@ public:
 					break;
 				}
 			}}
+			break;
+
+		case WM_NOTIFY:
+			{
+				NMUPDOWN* p = (NMUPDOWN*)lParam;
+				if (p->hdr.code==UDN_DELTAPOS) {
+					{for(int i=0; i<channels; i++){
+						if ((int)p->hdr.idFrom==ch_spin_ids[i]) {
+							int v = mix[i] + p->iDelta;
+							if (v<0) v = 0;
+							if (v>3) v = 3;
+							mix[i] = v;
+							changeMixMask(i);
+							break;
+						}
+					}}
+				}
+			}
 			break;
 
 		case WM_PAINT:
@@ -1036,15 +1106,17 @@ public:
 	}
 };
 
-int VDShowCaptureChannelsDialog(VDGUIHandle h, const vdstructex<VDWaveFormat>& format, int mask, IVDUICaptureVumeter** thunk) {
+void VDShowCaptureChannelsDialog(VDGUIHandle h, const vdstructex<VDWaveFormat>& format, VDAudioMaskParam& param, IVDUICaptureVumeter** thunk) {
 	VDDialogAudioMask dlg(IDD_CAPTURE_AUDIO_MASK);
 	dlg.channels = format->mChannels;
-	dlg.mask = mask;
+	dlg.mask = param.mask;
+	memcpy(dlg.mix,param.mix,sizeof(param.mix));
 	*thunk = &dlg;
 	dlg.ActivateDialog(h);
 	*thunk = 0;
 
-	return dlg.mask;
+	param.mask = dlg.mask;
+	memcpy(param.mix,dlg.mix,sizeof(param.mix));
 }
 
 //////////////////////////////////////////////////////////////////////////////

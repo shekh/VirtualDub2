@@ -337,8 +337,8 @@ public:
 	virtual bool	GetAudioFormat(vdstructex<VDWaveFormat>& wfex) = 0;
 	virtual void	ValidateAudioFormat() = 0;
 
-	virtual void	SetAudioMask(int mask) = 0;
-	virtual int		GetAudioMask() = 0;
+	virtual void	SetAudioMask(VDAudioMaskParam& param) = 0;
+	virtual void	GetAudioMask(VDAudioMaskParam& param) = 0;
 
 	virtual void	SetAudioCompFormat() = 0;
 	virtual void	SetAudioCompFormat(const VDWaveFormat& wfex, uint32 cbwfex, const char *shortNameHint) = 0;

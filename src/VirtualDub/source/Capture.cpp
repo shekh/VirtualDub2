@@ -719,8 +719,8 @@ public:
 	bool	GetAudioFormat(vdstructex<VDWaveFormat>& wfex);
 	void	ValidateAudioFormat();
 
-	void	SetAudioMask(int mask);
-	int		GetAudioMask(){ return audioMask; }
+	void	SetAudioMask(VDAudioMaskParam& param);
+	void	GetAudioMask(VDAudioMaskParam& param){ param = audioMask; }
 
 	void	SetAudioCompFormat();
 	void	SetAudioCompFormat(const VDWaveFormat& wfex, uint32 cbwfex, const char *pShortNameHint);
@@ -827,7 +827,7 @@ protected:
 	vdstructex<VDWaveFormat>	mAudioCompFormat;
 	VDStringA					mAudioCompFormatHint;
 	vdstructex<WAVEFORMATEX>	mAudioAnalysisFormat;
-	int audioMask;
+	VDAudioMaskParam audioMask;
 
 	vdautoptr<IVDCaptureVideoHistogram>	mpVideoHistogram;
 	VDCriticalSection		mVideoAnalysisLock;
@@ -1319,6 +1319,7 @@ void VDCaptureProject::SetAudioVumeterEnabled(bool b) {
 
 	if (mpDriver) {
 		mpDriver->SetAudioAnalysisEnabled(false);
+		mpDriver->SetAudioMask(audioMask);
 
 		if (b) {
 			vdstructex<WAVEFORMATEX> wfex;
@@ -1549,17 +1550,17 @@ bool VDCaptureProject::SetAudioFormat(const VDWaveFormat& wfex, LONG cbwfex) {
 	return success;
 }
 
-void VDCaptureProject::SetAudioMask(int mask) {
+void VDCaptureProject::SetAudioMask(VDAudioMaskParam& param) {
 	if (!mpDriver)
 		return;
 
-	if (mask==0) mask = 1;
-	if (mask==audioMask) return;
+	if (param.mask==0) param.mask = 1;
+	if (param==audioMask) return;
 
 	bool bVumeter = mbEnableAudioVumeter;
 
 	SetAudioVumeterEnabled(false);
-	audioMask = mask;
+	audioMask = param;
 	if (mpCB)
 		mpCB->UICaptureAudioFormatUpdated();
 
@@ -2029,7 +2030,7 @@ void VDCaptureProject::Capture(bool fTest) {
 				bCaptureAudio = false;
 			} else {
 
-				GetMaskedAudioFormat(wfexInput2, wfexInput, audioMask);
+				GetMaskedAudioFormat(wfexInput2, wfexInput, audioMask.mask);
 
 				pResyncFilter->SetAudioRate(wfexInput2->mDataRate);
 				pResyncFilter->SetAudioChannels(wfexInput2->mChannels);
@@ -2240,7 +2241,7 @@ unknown_PCM_format:
 		pCurrentCB = &statsFilt;
 
 		if (bCaptureAudio && wfexInput2->mChannels<wfexInput->mChannels) {
-			maskFilt.Init(pCurrentCB, (const WAVEFORMATEX *)wfexInput.data(), audioMask);
+			maskFilt.Init(pCurrentCB, (const WAVEFORMATEX *)wfexInput.data(), audioMask.mask);
 			pCurrentCB = &maskFilt;
 		}
 

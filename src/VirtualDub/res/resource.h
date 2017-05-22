@@ -995,6 +995,22 @@
 #define IDC_PEAK_5                      1556
 #define IDC_PEAK_6                      1557
 #define IDC_PEAK_7                      1558
+#define IDC_CH_SPIN0                    1560
+#define IDC_CH_0                        1561
+#define IDC_CH_1                        1562
+#define IDC_CH_SPIN1                    1563
+#define IDC_CH_2                        1564
+#define IDC_CH_SPIN2                    1565
+#define IDC_CH_3                        1570
+#define IDC_CH_SPIN3                    1571
+#define IDC_CH_4                        1572
+#define IDC_CH_SPIN4                    1573
+#define IDC_CH_5                        1576
+#define IDC_CH_SPIN5                    1577
+#define IDC_CH_6                        1578
+#define IDC_CH_SPIN6                    1579
+#define IDC_CH_7                        1580
+#define IDC_CH_SPIN7                    1581
 #define IDS_VIDEO_SEEK_START            1664
 #define IDS_VIDEO_SEEK_END              1665
 #define IDS_VIDEO_SEEK_PREV             1666
@@ -1561,7 +1577,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        312
 #define _APS_NEXT_COMMAND_VALUE         40594
-#define _APS_NEXT_CONTROL_VALUE         1560
+#define _APS_NEXT_CONTROL_VALUE         1562
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

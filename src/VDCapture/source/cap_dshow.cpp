@@ -38,6 +38,8 @@
 #include <dvdmedia.h>		// VIDEOINFOHEADER2
 #include <ks.h>
 #include <ksmedia.h>
+#include <streams.h>
+#include <initguid.h>
 #include <vector>
 
 using namespace nsVDCapture;
@@ -1179,6 +1181,300 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////
 //
+//	DirectShow audio mask
+//
+///////////////////////////////////////////////////////////////////////////
+
+class VDAudioMaskFilter: public CTransformFilter{
+public:
+	int mask0;
+	int mask1;
+
+	DECLARE_IUNKNOWN;
+	STDMETHODIMP NonDelegatingQueryInterface(REFIID riid, void ** ppv);
+	VDAudioMaskFilter();
+	void SetParam(VDAudioMaskParam& param);
+
+	// CTransformFilter
+	HRESULT Transform(IMediaSample *pIn, IMediaSample *pOut);
+	HRESULT CheckInputType(const CMediaType *mtIn);
+	HRESULT CheckTransform(const CMediaType *mtIn, const CMediaType *mtOut);
+	HRESULT DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pProperties);
+	HRESULT GetMediaType(int iPosition, CMediaType *pMediaType);
+
+private:
+	CMediaType m_mt;
+
+	BOOL CanPerformTransform(const CMediaType *pMediaType) const;
+	HRESULT Copy(IMediaSample *pSource, IMediaSample *pDest) const;
+};
+
+// {49143D5E-8D36-4255-954C-C235B169810A}
+DEFINE_GUID(CLSID_AudioMaskFilter, 
+0x49143d5e, 0x8d36, 0x4255, 0x95, 0x4c, 0xc2, 0x35, 0xb1, 0x69, 0x81, 0xa);
+
+VDAudioMaskFilter::VDAudioMaskFilter()
+	: CTransformFilter("mask", 0, CLSID_AudioMaskFilter)
+{
+	mask0 = 1;
+	mask1 = 2;
+}
+
+void VDAudioMaskFilter::SetParam(VDAudioMaskParam& param) {
+	mask0 = 0;
+	mask1 = 0;
+	for(int i=0; i<16; i++) {
+		int m = param.mix[i];
+		int f = 1<<i;
+		if (m & 1) mask0 |= f;
+		if (m & 2) mask1 |= f;
+	}
+}
+
+STDMETHODIMP VDAudioMaskFilter::NonDelegatingQueryInterface(REFIID riid, void **ppv)
+{
+	CheckPointer(ppv,E_POINTER);
+	return CTransformFilter::NonDelegatingQueryInterface(riid, ppv);
+}
+
+HRESULT VDAudioMaskFilter::Transform(IMediaSample *pIn, IMediaSample *pOut)
+{
+	HRESULT hr = S_OK;
+	// input
+	AM_MEDIA_TYPE* pTypeIn = &m_pInput->CurrentMediaType();
+	WAVEFORMATEX *pihIn = (WAVEFORMATEX *)pTypeIn->pbFormat;
+	unsigned char *pSrc = 0;
+	pIn->GetPointer((unsigned char **)&pSrc);
+
+	// output
+	AM_MEDIA_TYPE *pTypeOut = &m_pOutput->CurrentMediaType();
+	WAVEFORMATEX *pihOut = (WAVEFORMATEX *)pTypeOut->pbFormat;
+	short *pDst = 0;
+	pOut->GetPointer((unsigned char **)&pDst);
+
+	hr = Copy(pIn, pOut);
+	if (hr != S_OK) return hr;
+	return NOERROR;
+}
+
+HRESULT VDAudioMaskFilter::CheckInputType(const CMediaType *mtIn)
+{
+	// check this is a VIDEOINFOHEADER type
+	if (*mtIn->FormatType() != FORMAT_WaveFormatEx) {
+		return E_INVALIDARG;
+	}
+
+	// Can we transform this type
+	if (CanPerformTransform(mtIn)) {
+		CopyMediaType(&m_mt, mtIn);
+		return NOERROR;
+	}
+	return E_FAIL;
+}
+
+HRESULT VDAudioMaskFilter::CheckTransform(const CMediaType *mtIn, const CMediaType *mtOut)
+{
+	if (CanPerformTransform(mtIn)) {
+		return S_OK;
+	}
+	return VFW_E_TYPE_NOT_ACCEPTED;
+}
+
+HRESULT VDAudioMaskFilter::DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pProperties)
+{
+	if (m_pInput->IsConnected() == FALSE) {
+		return E_UNEXPECTED;
+	}
+
+	ASSERT(pAlloc);
+	ASSERT(pProperties);
+	HRESULT hr = NOERROR;
+
+	// get input dimensions
+	CMediaType inMediaType = m_pInput->CurrentMediaType();
+	WAVEFORMATEX *pwfx = (WAVEFORMATEX *)m_mt.Format();
+	pProperties->cBuffers = 1;
+	int size = pwfx->nAvgBytesPerSec / 2;
+	pProperties->cbBuffer = size; // same as input pin
+	ASSERT(pProperties->cbBuffer);
+
+	// Ask the allocator to reserve us some sample memory, NOTE the function
+	// can succeed (that is return NOERROR) but still not have allocated the
+	// memory that we requested, so we must check we got whatever we wanted
+
+	ALLOCATOR_PROPERTIES Actual;
+	hr = pAlloc->SetProperties(pProperties,&Actual);
+	if (FAILED(hr)) {
+		return hr;
+	}
+
+	ASSERT( Actual.cBuffers == 1 );
+
+	if (pProperties->cBuffers > Actual.cBuffers || pProperties->cbBuffer > Actual.cbBuffer) {
+		return E_FAIL;
+	}
+	return NOERROR;
+}
+
+HRESULT VDAudioMaskFilter::GetMediaType(int iPosition, CMediaType *pMediaType)
+{
+	// Is the input pin connected
+	if (m_pInput->IsConnected() == FALSE)
+		return E_UNEXPECTED;
+
+	// This should never happen
+	if (iPosition < 0)
+		return E_INVALIDARG;
+
+	// Do we have more items to offer
+	if (iPosition > 0)
+		return VFW_S_NO_MORE_ITEMS;
+
+	WAVEFORMATEX *pwfxin = (WAVEFORMATEX *)m_mt.pbFormat;
+
+	if (0) {
+		WAVEFORMATEXTENSIBLE *pwfx = (WAVEFORMATEXTENSIBLE *)pMediaType->AllocFormatBuffer(sizeof(WAVEFORMATEXTENSIBLE));
+		pwfx->Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+		pwfx->Format.cbSize = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
+		//pwfx->Format.nChannels = pwfxin->nChannels;
+		pwfx->Format.nChannels = 2;
+		pwfx->Format.nSamplesPerSec = pwfxin->nSamplesPerSec;
+		pwfx->Format.wBitsPerSample = pwfxin->wBitsPerSample;
+		pwfx->Format.nAvgBytesPerSec = pwfx->Format.nSamplesPerSec * pwfx->Format.wBitsPerSample * pwfx->Format.nChannels / 8;
+		pwfx->Format.nBlockAlign = pwfx->Format.wBitsPerSample * pwfx->Format.nChannels / 8;
+		pwfx->dwChannelMask = (1 << pwfx->Format.nChannels) - 1;
+		pwfx->Samples.wValidBitsPerSample = pwfx->Format.wBitsPerSample;
+		pwfx->SubFormat = MEDIASUBTYPE_PCM;
+		pMediaType->SetFormat((BYTE*)pwfx, sizeof(WAVEFORMATEXTENSIBLE));
+		pMediaType->SetSampleSize(pwfx->Format.nBlockAlign);
+	} else {
+		WAVEFORMATEX *pwfx = (WAVEFORMATEX *)pMediaType->AllocFormatBuffer(sizeof(WAVEFORMATEX));
+		pwfx->wFormatTag = WAVE_FORMAT_PCM;
+		pwfx->cbSize = 0;
+		pwfx->nChannels = 2;
+		pwfx->nSamplesPerSec = pwfxin->nSamplesPerSec;
+		pwfx->wBitsPerSample = pwfxin->wBitsPerSample;
+		pwfx->nAvgBytesPerSec = pwfx->nSamplesPerSec * pwfx->wBitsPerSample * pwfx->nChannels / 8;
+		pwfx->nBlockAlign = pwfx->wBitsPerSample * pwfx->nChannels / 8;
+		pMediaType->SetFormat((BYTE*)pwfx, sizeof(WAVEFORMATEX));
+		pMediaType->SetSampleSize(pwfx->nBlockAlign);
+	}
+
+	pMediaType->SetType(&MEDIATYPE_Audio);
+	pMediaType->SetFormatType(&FORMAT_WaveFormatEx);
+	pMediaType->SetTemporalCompression(FALSE);
+
+	// Work out the GUID for the subtype from the header info.
+	GUID SubTypeGUID = MEDIASUBTYPE_PCM;
+	pMediaType->SetSubtype(&SubTypeGUID);
+
+	return NOERROR;
+}
+
+BOOL VDAudioMaskFilter::CanPerformTransform(const CMediaType *pMediaType) const
+{
+	if (IsEqualGUID(*pMediaType->Type(), MEDIATYPE_Audio)) {
+		GUID SubTypeGUID = MEDIASUBTYPE_PCM;
+		if (IsEqualGUID(*pMediaType->Subtype(), SubTypeGUID)) {
+			WAVEFORMATEX *pwfx = (WAVEFORMATEX *) pMediaType->Format();
+			if (pwfx->wBitsPerSample!=16)
+				return FALSE;
+			return TRUE;
+		}
+	}
+	return FALSE;
+} 
+
+HRESULT VDAudioMaskFilter::Copy(IMediaSample *pSource, IMediaSample *pDest) const
+{
+	WAVEFORMATEX *pwfxin = (WAVEFORMATEX *)m_mt.pbFormat;
+
+	long size = pSource->GetActualDataLength();
+	long dst_size	= pDest->GetSize();
+	int sample_size = 2;
+	int cn = pwfxin->nChannels;
+	int n = size/(sample_size*cn);
+	long out_size = n*sample_size*2;
+
+	ASSERT(dst_size>=out_size);
+
+	int16* src;
+	int16* dst;
+	pSource->GetPointer((BYTE**)&src);
+	pDest->GetPointer((BYTE**)&dst);
+
+	int mask0 = this->mask0;
+	int mask1 = this->mask1;
+
+	{for(int i=0; i<n; i++){
+		int v0 = 0;
+		int v1 = 0;
+		{for(int c=0; c<cn; c++){
+			if((1<<c) & mask0) v0 += *src;
+			if((1<<c) & mask1) v1 += *src;
+			src++;
+		}}
+		if(v0<-32768) v0=-32768;
+		if(v0>32767) v0=32767;
+		if(v1<-32768) v1=-32768;
+		if(v1>32767) v1=32767;
+		dst[0] = v0;
+		dst[1] = v1;
+		dst+=2;
+	}}
+
+	pDest->SetActualDataLength(out_size);
+
+	// Copy the sample times
+
+	REFERENCE_TIME TimeStart, TimeEnd;
+	if (NOERROR == pSource->GetTime(&TimeStart, &TimeEnd)) {
+		pDest->SetTime(&TimeStart, &TimeEnd);
+	}
+
+	LONGLONG MediaStart, MediaEnd;
+	if (pSource->GetMediaTime(&MediaStart,&MediaEnd) == NOERROR) {
+		pDest->SetMediaTime(&MediaStart,&MediaEnd);
+	}
+
+	// Copy the Sync point property
+
+	HRESULT hr = pSource->IsSyncPoint();
+	if (hr == S_OK) {
+		pDest->SetSyncPoint(TRUE);
+	} else if (hr == S_FALSE) {
+		pDest->SetSyncPoint(FALSE);
+	} else {  // an unexpected error has occured...
+		return E_UNEXPECTED;
+	}
+
+	// Copy the preroll property
+
+	hr = pSource->IsPreroll();
+	if (hr == S_OK) {
+		pDest->SetPreroll(TRUE);
+	} else if (hr == S_FALSE) {
+		pDest->SetPreroll(FALSE);
+	} else {  // an unexpected error has occured...
+		return E_UNEXPECTED;
+	}
+
+	// Copy the discontinuity property
+
+	hr = pSource->IsDiscontinuity();
+	if (hr == S_OK) {
+		pDest->SetDiscontinuity(TRUE);
+	} else if (hr == S_FALSE) {
+		pDest->SetDiscontinuity(FALSE);
+	} else {  // an unexpected error has occured...
+		return E_UNEXPECTED;
+	}
+
+	return NOERROR;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//
 //	capture driver: DirectShow
 //
 ///////////////////////////////////////////////////////////////////////////
@@ -1260,6 +1556,7 @@ public:
 	void	SetAudioCaptureEnabled(bool b);
 	void	SetAudioAnalysisEnabled(bool b);
 	void	SetAudioPlaybackEnabled(bool b);
+	void	SetAudioMask(VDAudioMaskParam& param){ audioMask=param; }
 
 	void	GetAvailableAudioFormats(std::list<vdstructex<WAVEFORMATEX> >& aformats);
 
@@ -1339,6 +1636,8 @@ protected:
 	IPinPtr				mpRealAudioPin;			// the one on the cap filt
 	IPinPtr				mpCapFiltVideoPortPin;	// on cap filt
 	IPinPtr				mpAudioPin;
+	VDAudioMaskFilter*  mpAudioMask;
+	VDAudioMaskParam	audioMask;
 	IAMAnalogVideoDecoderPtr mpAnalogVideoDecoder;
 	IAMCrossbarPtr		mpCrossbar;
 	IAMCrossbarPtr		mpCrossbar2;
@@ -1453,6 +1752,7 @@ VDCaptureDriverDS::VDCaptureDriverDS(IMoniker *pVideoDevice)
 	, mCurrentAudioInput(-1)
 	, mpAudioCrossbar(NULL)
 	, mpVideoCrossbar(NULL)
+	, mpAudioMask(NULL)
 	, mVideoCallback(this)
 	, mAudioCallback(this)
 	, mGraphStateLock(2)
@@ -3763,7 +4063,21 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 		VDASSERT(!VDIsPinConnectedDShow(pAudioPin));
 
 		if (mbAudioPlaybackEnabled) {
-			HRESULT hrRender = mpGraphBuilder->Render(pAudioPin);
+			//HRESULT hrRender = mpGraphBuilder->Render(pAudioPin);
+			mpAudioMask = new VDAudioMaskFilter;
+			mpAudioMask->AddRef();
+			mpAudioMask->SetParam(audioMask);
+			IUnknown* pMask;
+			mpAudioMask->QueryInterface(IID_IUnknown,(void**)&pMask);
+			IPinPtr pPinMIn;
+			IPinPtr pPinMOut;
+			DS_VERIFY(mpGraphBuilder->AddFilter(mpAudioMask, L"Audio mask"), "add audio mask");
+			DS_VERIFY(mpCapGraphBuilder2->FindPin(pMask, PINDIR_INPUT, NULL, NULL, TRUE, 0, ~pPinMIn), "find audio mask input");
+			DS_VERIFY(mpGraphBuilder->Connect(pAudioPin, pPinMIn), "connect audio mask");
+			mExtraFilters.push_back(mpAudioMask);
+			DS_VERIFY(mpCapGraphBuilder2->FindPin(pMask, PINDIR_OUTPUT, NULL, NULL, TRUE, 0, ~pPinMOut), "find audio mask output");
+			HRESULT hrRender = mpGraphBuilder->Render(pPinMOut);
+			pMask->Release();
 
 			// Reset the filter graph clock. We have to do this because when we
 			// create a capture graph a different filter may end up being the
@@ -3862,6 +4176,11 @@ void VDCaptureDriverDS::TearDownGraph() {
 	}
 
 	mpAudioGrabber = NULL;
+
+	if (mpAudioMask) {
+		mpAudioMask->Release();
+		mpAudioMask = NULL;
+	}
 
 	// reset capture clock
 	IMediaFilterPtr pGraphMF;

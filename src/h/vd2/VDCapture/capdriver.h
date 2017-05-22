@@ -30,6 +30,7 @@
 
 class MyError;
 class VDRegistryAppKey;
+struct VDAudioMaskParam;
 
 namespace nsVDCapture {
 	enum DisplayMode {
@@ -87,6 +88,20 @@ namespace nsVDCapture {
 		kPropGain,
 		kPropCount
 	};
+};
+
+struct VDAudioMaskParam {
+	int mask;
+	int mix[16];
+
+	VDAudioMaskParam() {
+		mask = -1;
+		for(int i=0; i<16; i++) mix[i]=0;
+		mix[0] = 1;
+		mix[1] = 2;
+	}
+
+	bool operator==(const VDAudioMaskParam& a) const { return memcmp(this,&a,sizeof(a))==0; }
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -196,6 +211,7 @@ public:
 	virtual void	SetAudioCaptureEnabled(bool b) = 0;
 	virtual void	SetAudioAnalysisEnabled(bool b) = 0;
 	virtual void	SetAudioPlaybackEnabled(bool b) = 0;
+	virtual void	SetAudioMask(VDAudioMaskParam& param){}
 
 	virtual void	GetAvailableAudioFormats(std::list<vdstructex<WAVEFORMATEX> >& aformats) = 0;
 

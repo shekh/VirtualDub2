@@ -18,6 +18,8 @@
 #ifndef f_CAPDIALOGS_H
 #define f_CAPDIALOGS_H
 
+#include <vd2/system/vdstl.h>
+
 enum {
 	kVDCapDevOptSaveCurrentAudioFormat = 1,
 	kVDCapDevOptSaveCurrentAudioCompFormat = 2,
@@ -38,9 +40,12 @@ struct VDCaptureSettings {
 	bool	mbDisplayPrerollDialog;
 };
 
+class IVDUICaptureVumeter;
+
 bool VDShowCaptureSettingsDialog(VDGUIHandle hwndParent, VDCaptureSettings& parms);
 bool VDShowCapturePreferencesDialog(VDGUIHandle h, VDCapturePreferences& prefs);
 void VDCaptureLoadPreferences(VDCapturePreferences& prefs);
 void VDCaptureSavePreferences(const VDCapturePreferences& prefs);
+void VDShowCaptureChannelsDialog(VDGUIHandle h, const vdstructex<VDWaveFormat>& format, VDAudioMaskParam& param, IVDUICaptureVumeter** thunk);
 
 #endif

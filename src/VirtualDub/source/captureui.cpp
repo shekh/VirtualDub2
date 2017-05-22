@@ -89,6 +89,7 @@ static const char g_szCompression			[]="Compression";
 static const char g_szCompressorData		[]="Compressor Data";
 static const char g_szAudioFormat			[]="Audio Format";
 static const char g_szAudioMask				[]="Audio Channel Mask";
+static const char g_szAudioMix				[]="Audio Preview Mix";
 static const char g_szAudioCompFormat		[]="Audio Comp Format";
 static const char g_szAudioCompHint			[]="Audio Comp Hint";
 static const char g_szVideoFormat			[]="Video Format";
@@ -1330,7 +1331,12 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 			mpProject->SetAudioFormat(*(const VDWaveFormat *)buf.data(), buf.size());
 	}
 
-	mpProject->SetAudioMask(devkey.getInt(g_szAudioMask,-1));
+	VDAudioMaskParam audioMask;
+	audioMask.mask = devkey.getInt(g_szAudioMask,-1);
+	len = devkey.getBinaryLength(g_szAudioMix);
+	if (len == sizeof(audioMask.mix))
+		devkey.getBinary(g_szAudioMix, (char*)audioMask.mix, len);
+	mpProject->SetAudioMask(audioMask);
 
 	// reload audio compression format
 	len = devkey.getBinaryLength(g_szAudioCompFormat);
@@ -1490,7 +1496,10 @@ void VDCaptureProjectUI::SaveDeviceSettings(uint32 mask) {
 		if (mpProject->GetAudioFormat(wfex))
 			devkey.setBinary(g_szAudioFormat, (const char *)&*wfex, wfex.size());
 
-		devkey.setInt(g_szAudioMask, mpProject->GetAudioMask());
+		VDAudioMaskParam audioMask;
+		mpProject->GetAudioMask(audioMask);
+		devkey.setInt(g_szAudioMask, audioMask.mask);
+		devkey.setBinary(g_szAudioMix, (const char *)audioMask.mix, sizeof(audioMask.mix));
 	}
 
 	if (mask & kSaveDevAudioComp) {
@@ -2082,7 +2091,9 @@ void VDCaptureProjectUI::UICaptureAudioFormatUpdated() {
 
 				int cn = wf->mChannels;
 				int cn2 = 0;
-				int mask = mpProject->GetAudioMask();
+				VDAudioMaskParam audioMask;
+				mpProject->GetAudioMask(audioMask);
+				int mask = audioMask.mask;
 				{for(int i=0; i<wf->mChannels; i++)
 					if ((1<<i) & mask) cn2++; }
 
@@ -3244,12 +3255,12 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 			break;
 		case ID_AUDIO_CHANNELS:
 			if (mpProject->IsDriverConnected()) {
-				extern int VDShowCaptureChannelsDialog(VDGUIHandle h, const vdstructex<VDWaveFormat>& format, int mask, IVDUICaptureVumeter** thunk);
 				vdstructex<VDWaveFormat> currentFormat;
 				mpProject->GetAudioFormat(currentFormat);
-				int mask = mpProject->GetAudioMask();
-				mask = VDShowCaptureChannelsDialog(mhwnd, currentFormat, mask, &mpVumeter2);
-				mpProject->SetAudioMask(mask);
+				VDAudioMaskParam param;
+				mpProject->GetAudioMask(param);
+				VDShowCaptureChannelsDialog(mhwnd, currentFormat, param, &mpVumeter2);
+				mpProject->SetAudioMask(param);
 			}
 			break;
 		case ID_AUDIO_COMPRESSION:
@@ -3270,7 +3281,9 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 				
 				if (mpProject->GetAudioFormat(wfexSrc)) {
 					extern void GetMaskedAudioFormat(vdstructex<VDWaveFormat>& dst, const vdstructex<VDWaveFormat>& wfexInput, int mask);
-					GetMaskedAudioFormat(wfexSrc2, wfexSrc, mpProject->GetAudioMask());
+					VDAudioMaskParam param;
+					mpProject->GetAudioMask(param);
+					GetMaskedAudioFormat(wfexSrc2, wfexSrc, param.mask);
 					pwfexSrc = wfexSrc2.data();
 				}
 
@@ -3669,7 +3682,9 @@ void VDCaptureProjectUI::SyncAudioSourceToVideoSource() {
 }
 
 void VDCaptureProjectUI::OnUpdateVumeter() {
-	int mask = mpProject->GetAudioMask();
+	VDAudioMaskParam param;
+	mpProject->GetAudioMask(param);
+	int mask = param.mask;
 	if (mpVumeter) {
 		IVDUICaptureVumeter *pVumeter = vdpoly_cast<IVDUICaptureVumeter *>(mpVumeter);
 
