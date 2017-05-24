@@ -44,7 +44,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName=".\../out/Release/vdremote.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -56,8 +55,6 @@
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile=".\../obj/Release/vdremote/vdremote.pch"
-				AssemblerListingLocation=".\../obj/Release/vdremote/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -78,7 +75,6 @@
 				AdditionalDependencies="winmm.lib vfw32.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../lib/Release,..\out\Release"
 				GenerateManifest="false"
 				ModuleDefinitionFile=".\vdremote.def"
 				GenerateDebugInformation="true"
@@ -100,11 +96,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Release/vdremote.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -142,7 +133,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName=".\../out/Debug/vdremote.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -152,8 +142,6 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
-				PrecompiledHeaderFile=".\../obj/Debug/vdremote/vdremote.pch"
-				AssemblerListingLocation=".\../obj/Debug/vdremote/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -175,7 +163,6 @@
 				AdditionalDependencies="winmm.lib vfw32.lib"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../lib/Debug,..\out\Debug"
 				GenerateManifest="false"
 				ModuleDefinitionFile=".\vdremote.def"
 				GenerateDebugInformation="true"
@@ -194,11 +181,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Debug/vdremote.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -236,7 +218,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName=".\../out/Release/vdremote.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -248,8 +229,6 @@
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile=".\../obj/Release/vdremote/vdremote.pch"
-				AssemblerListingLocation=".\../obj/Release/vdremote/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -271,7 +250,6 @@
 				OutputFile="$(OutDir)\vdremote64.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../lib/Release,..\out\Release"
 				ModuleDefinitionFile=".\vdremote.def"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
@@ -289,11 +267,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Release/vdremote.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -334,7 +307,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName=".\../out/Debug/vdremote.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -344,8 +316,6 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
-				PrecompiledHeaderFile=".\../obj/Debug/vdremote/vdremote.pch"
-				AssemblerListingLocation=".\../obj/Debug/vdremote/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -368,7 +338,6 @@
 				OutputFile="$(OutDir)\vdremote64.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="../lib/Debug,..\out\Debug"
 				ModuleDefinitionFile=".\vdremote.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -383,11 +352,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Debug/vdremote.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"

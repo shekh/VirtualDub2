@@ -82,11 +82,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\lib\Debug/Meia.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -153,11 +148,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\lib\Release/Meia.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -228,11 +218,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\lib\Debug/Meia.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -300,11 +285,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\lib\Release/Meia.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"

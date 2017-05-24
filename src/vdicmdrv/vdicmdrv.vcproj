@@ -45,7 +45,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName=".\../out/Debug/vdicmdrv.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -56,8 +55,6 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				PrecompiledHeaderFile=".\../obj/Debug/vdicmdrv/vdicmdrv.pch"
-				AssemblerListingLocation=".\../obj/Debug/vdicmdrv/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -79,7 +76,6 @@
 				AdditionalDependencies="winmm.lib"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\out\Debug"
 				GenerateManifest="false"
 				ModuleDefinitionFile=".\vdicmdrv.def"
 				GenerateDebugInformation="true"
@@ -97,11 +93,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Debug/vdicmdrv.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -140,7 +131,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName=".\../out/Release/vdicmdrv.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -152,8 +142,6 @@
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile=".\../obj/Release/vdicmdrv/vdicmdrv.pch"
-				AssemblerListingLocation=".\../obj/Release/vdicmdrv/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 			/>
@@ -173,7 +161,6 @@
 				AdditionalDependencies="winmm.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\out\Release"
 				GenerateManifest="false"
 				ModuleDefinitionFile=".\vdicmdrv.def"
 				GenerateDebugInformation="true"
@@ -194,11 +181,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Release/vdicmdrv.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -237,7 +219,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName=".\../out/Debug/vdicmdrv.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -248,8 +229,6 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				PrecompiledHeaderFile=".\../obj/Debug/vdicmdrv/vdicmdrv.pch"
-				AssemblerListingLocation=".\../obj/Debug/vdicmdrv/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -271,7 +250,6 @@
 				AdditionalDependencies="winmm.lib"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\out\Debug"
 				ModuleDefinitionFile=".\vdicmdrv.def"
 				GenerateDebugInformation="true"
 				ImportLibrary="$(VDLibPath)\$(ProjectName).lib"
@@ -285,11 +263,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Debug/vdicmdrv.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -331,7 +304,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName=".\../out/Release/vdicmdrv.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -343,8 +315,6 @@
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile=".\../obj/Release/vdicmdrv/vdicmdrv.pch"
-				AssemblerListingLocation=".\../obj/Release/vdicmdrv/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 			/>
@@ -364,7 +334,6 @@
 				AdditionalDependencies="winmm.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\out\Release"
 				ModuleDefinitionFile=".\vdicmdrv.def"
 				GenerateDebugInformation="true"
 				GenerateMapFile="true"
@@ -381,11 +350,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Release/vdicmdrv.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"

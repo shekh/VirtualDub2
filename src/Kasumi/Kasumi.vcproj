@@ -85,11 +85,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\lib\Release/Kasumi.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -157,11 +152,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\lib\Debug/Kasumi.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -233,11 +223,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\lib\Release/Kasumi.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -304,11 +289,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\lib\Debug/Kasumi.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"

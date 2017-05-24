@@ -52,15 +52,6 @@
         Name="VCWebServiceProxyGeneratorTool"
       />
       <Tool
-        Name="VCMIDLTool"
-        PreprocessorDefinitions="_DEBUG"
-        MkTypLibCompatible="true"
-        SuppressStartupBanner="true"
-        TargetEnvironment="1"
-        TypeLibraryName=".\../out/Debug/VirtualDub.tlb"
-        HeaderFileName=""
-      />
-      <Tool
         Name="VCCLCompilerTool"
         Optimization="0"
         AdditionalIncludeDirectories=".\h,.\res,..\h,..\vdsvrlnk,..\sylia,autogen"
@@ -116,11 +107,6 @@
         Name="VCXDCMakeTool"
       />
       <Tool
-        Name="VCBscMakeTool"
-        SuppressStartupBanner="true"
-        OutputFile=".\../out/Debug/VirtualDub.bsc"
-      />
-      <Tool
         Name="VCFxCopTool"
       />
       <Tool
@@ -158,15 +144,6 @@
       />
       <Tool
         Name="VCWebServiceProxyGeneratorTool"
-      />
-      <Tool
-        Name="VCMIDLTool"
-        PreprocessorDefinitions="NDEBUG"
-        MkTypLibCompatible="true"
-        SuppressStartupBanner="true"
-        TargetEnvironment="1"
-        TypeLibraryName=".\../out/Release/VirtualDub.tlb"
-        HeaderFileName=""
       />
       <Tool
         Name="VCCLCompilerTool"
@@ -224,11 +201,6 @@
         Name="VCXDCMakeTool"
       />
       <Tool
-        Name="VCBscMakeTool"
-        SuppressStartupBanner="true"
-        OutputFile=".\../out/Release/VirtualDub.bsc"
-      />
-      <Tool
         Name="VCFxCopTool"
       />
       <Tool
@@ -266,15 +238,6 @@
       />
       <Tool
         Name="VCWebServiceProxyGeneratorTool"
-      />
-      <Tool
-        Name="VCMIDLTool"
-        PreprocessorDefinitions="_DEBUG"
-        MkTypLibCompatible="true"
-        SuppressStartupBanner="true"
-        TargetEnvironment="3"
-        TypeLibraryName=".\../out/Debug/VirtualDub.tlb"
-        HeaderFileName=""
       />
       <Tool
         Name="VCCLCompilerTool"
@@ -329,11 +292,6 @@
         Name="VCXDCMakeTool"
       />
       <Tool
-        Name="VCBscMakeTool"
-        SuppressStartupBanner="true"
-        OutputFile=".\../out/Debug/VirtualDub.bsc"
-      />
-      <Tool
         Name="VCFxCopTool"
       />
       <Tool
@@ -374,15 +332,6 @@
       />
       <Tool
         Name="VCWebServiceProxyGeneratorTool"
-      />
-      <Tool
-        Name="VCMIDLTool"
-        PreprocessorDefinitions="NDEBUG"
-        MkTypLibCompatible="true"
-        SuppressStartupBanner="true"
-        TargetEnvironment="3"
-        TypeLibraryName=".\../out/Release/VirtualDub.tlb"
-        HeaderFileName=""
       />
       <Tool
         Name="VCCLCompilerTool"
@@ -436,11 +385,6 @@
       />
       <Tool
         Name="VCXDCMakeTool"
-      />
-      <Tool
-        Name="VCBscMakeTool"
-        SuppressStartupBanner="true"
-        OutputFile=".\../out/Release/VirtualDub.bsc"
       />
       <Tool
         Name="VCFxCopTool"

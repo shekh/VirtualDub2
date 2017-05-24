@@ -14,6 +14,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <dvdmedia.h>
+#include <algorithm>
+
+using std::max;
 
 #ifdef DEBUG
 #ifdef UNICODE

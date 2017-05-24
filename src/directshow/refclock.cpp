@@ -9,6 +9,10 @@
 
 #include <streams.h>
 #include <limits.h>
+#include <algorithm>
+
+using std::max;
+using std::min;
 
 #ifdef DXMPERF
 #include "dxmperf.h"

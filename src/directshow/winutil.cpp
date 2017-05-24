@@ -12,6 +12,10 @@
 #include <dvdmedia.h>
 #include <strsafe.h>
 #include <checkbmi.h>
+#include <algorithm>
+
+using std::max;
+using std::min;
 
 static UINT MsgDestroy;
 

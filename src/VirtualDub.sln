@@ -61,6 +61,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "zlib\zlib.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libav_tiff", "libav_tiff\libav_tiff.vcxproj", "{5E347AEF-8712-47A5-93C6-13CCA58DD09C}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "strmbasd", "directshow\baseclasses.vcxproj", "{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -376,6 +378,18 @@ Global
 		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Release|Win32.Build.0 = Release|Win32
 		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Release|x64.ActiveCfg = Release|x64
 		{5E347AEF-8712-47A5-93C6-13CCA58DD09C}.Release|x64.Build.0 = Release|x64
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Debug|Win32.Build.0 = Debug|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Debug|x64.ActiveCfg = Debug|x64
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Debug|x64.Build.0 = Debug|x64
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Helpfile|Win32.ActiveCfg = Release|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Helpfile|Win32.Build.0 = Release|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Helpfile|x64.ActiveCfg = Release|x64
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Helpfile|x64.Build.0 = Release|x64
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Release|Win32.ActiveCfg = Release|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Release|Win32.Build.0 = Release|Win32
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Release|x64.ActiveCfg = Release|x64
+		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

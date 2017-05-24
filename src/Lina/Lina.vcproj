@@ -40,11 +40,6 @@
 				Name="VCWebServiceProxyGeneratorTool"
 			/>
 			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\..\out\Debug/Lina.tlb"
-				HeaderFileName=""
-			/>
-			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="h"
@@ -92,11 +87,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\out\Debug/Lina.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -126,11 +116,6 @@
 			/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TypeLibraryName=".\..\out\Release/Lina.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -181,11 +166,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\out\Release/Lina.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -215,12 +195,6 @@
 			/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-				TypeLibraryName=".\..\out\Debug/Lina.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -264,11 +238,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\out\Debug/Lina.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -305,12 +274,6 @@
 				Name="VCWebServiceProxyGeneratorTool"
 			/>
 			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-				TypeLibraryName=".\..\out\Release/Lina.tlb"
-				HeaderFileName=""
-			/>
-			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
@@ -353,11 +316,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\out\Release/Lina.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"

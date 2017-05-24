@@ -44,7 +44,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName=".\../out/Release/vdsvrlnk.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -96,11 +95,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Release/vdsvrlnk.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -136,7 +130,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName=".\../out/Debug/vdsvrlnk.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -183,11 +176,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Debug/vdsvrlnk.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -223,7 +211,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName=".\../out/Release/vdsvrlnk.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -270,11 +257,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Release/vdsvrlnk.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -315,7 +297,6 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="3"
-				TypeLibraryName=".\../out/Debug/vdsvrlnk.tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -357,11 +338,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Debug/vdsvrlnk.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"

@@ -39,15 +39,6 @@
 				Name="VCWebServiceProxyGeneratorTool"
 			/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="1"
-				TypeLibraryName=".\../out/Release/Setup.tlb"
-				HeaderFileName=""
-			/>
-			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
@@ -93,11 +84,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Release/Setup.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -126,15 +112,6 @@
 			/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="1"
-				TypeLibraryName=".\../out/Debug/Setup.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -182,11 +159,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Debug/Setup.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -215,15 +187,6 @@
 			/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="3"
-				TypeLibraryName=".\../out/Release/Setup.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -267,11 +230,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Release/Setup.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -303,15 +261,6 @@
 			/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="3"
-				TypeLibraryName=".\../out/Debug/Setup.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
@@ -353,11 +302,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\../out/Debug/Setup.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"

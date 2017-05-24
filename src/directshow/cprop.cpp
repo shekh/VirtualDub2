@@ -8,6 +8,10 @@
 
 
 #include <streams.h>
+#include <algorithm>
+
+using std::max;
+using std::min;
 
 // Constructor for the base property page class. As described in the header
 // file we must be initialised with dialog and title resource identifiers.

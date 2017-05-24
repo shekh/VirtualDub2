@@ -14,6 +14,10 @@
 
 #include <streams.h>
 #include <mmreg.h>
+#include <algorithm>
+
+using std::max;
+using std::min;
 
 CMediaType::~CMediaType(){
     FreeMediaType(*this);

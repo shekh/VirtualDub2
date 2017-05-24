@@ -35,15 +35,6 @@
 				Name="VCWebServiceProxyGeneratorTool"
 			/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\out\Debug/samplefilter.tlb"
-				HeaderFileName=""
-			/>
-			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="h,res,..\h"
@@ -52,8 +43,6 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				PrecompiledHeaderFile=".\..\obj\Debug\samplefilter/samplefilter.pch"
-				AssemblerListingLocation=".\..\obj\Debug\samplefilter/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -89,11 +78,6 @@
 				Name="VCXDCMakeTool"
 			/>
 			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\out\Debug/samplefilter.bsc"
-			/>
-			<Tool
 				Name="VCFxCopTool"
 			/>
 			<Tool
@@ -109,7 +93,6 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(VDOutputPath)"
-			IntermediateDirectory=".\..\obj\Release\samplefilter"
 			ConfigurationType="2"
 			InheritedPropertySheets="..\VirtualDub-VC2005-IX86.vsprops;..\VirtualDub-VC2005-Release.vsprops;..\VirtualDub-VC2005.vsprops"
 			UseOfMFC="0"
@@ -128,15 +111,6 @@
 				Name="VCWebServiceProxyGeneratorTool"
 			/>
 			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\out\Release/samplefilter.tlb"
-				HeaderFileName=""
-			/>
-			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
@@ -146,8 +120,6 @@
 				MinimalRebuild="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile=".\..\obj\Release\samplefilter/samplefilter.pch"
-				AssemblerListingLocation=".\..\obj\Release\samplefilter/"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -181,11 +153,6 @@
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
-				OutputFile=".\..\out\Release/samplefilter.bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
