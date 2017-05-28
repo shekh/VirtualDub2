@@ -1973,9 +1973,9 @@ static void func_VirtualDub_OpenOld(IVDScriptInterpreter *, VDScriptValue *argli
 
 		l = memunbase64(buf.data(), *arglist[3].asString(), l);
 
-		g_project->Open(filename.c_str(), pDriver, !!arglist[2].asInt(), true, false, buf.data(), l);
+		g_project->Open(filename.c_str(), pDriver, !!arglist[2].asInt(), true, 0, buf.data(), l);
 	} else
-		g_project->Open(filename.c_str(), pDriver, !!arglist[2].asInt(), true, false);
+		g_project->Open(filename.c_str(), pDriver, !!arglist[2].asInt(), true, 0);
 }
 
 static void func_VirtualDub_Open(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
@@ -2005,9 +2005,9 @@ static void func_VirtualDub_Open(IVDScriptInterpreter *, VDScriptValue *arglist,
 			pDriver = pTest;
 		}
 
-		g_project->Open(filename.c_str(), pDriver, extopen, true, false, buf.data(), l);
+		g_project->Open(filename.c_str(), pDriver, extopen, true, 0, buf.data(), l);
 	} else
-		g_project->Open(filename.c_str(), pDriver, extopen, true, false);
+		g_project->Open(filename.c_str(), pDriver, extopen, true, 0);
 }
 
 static void func_VirtualDub_intOpenTest(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {

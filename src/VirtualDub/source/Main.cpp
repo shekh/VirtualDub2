@@ -84,6 +84,7 @@ extern vdrefptr<VDProjectUI> g_projectui;
 vdrefptr<IVDCaptureProject> g_capProject;
 vdrefptr<IVDCaptureProjectUI> g_capProjectUI;
 extern vdrefptr<AudioSource>	inputAudio;
+extern InputFileOptions	*g_pInputOpts;
 
 wchar_t g_szInputAVIFile[MAX_PATH];
 wchar_t g_szInputWAVFile[MAX_PATH];
@@ -105,7 +106,6 @@ extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOH
 extern bool Init(HINSTANCE hInstance, int nCmdShow, VDCommandLine& cmdLine);
 extern void Deinit();
 
-void OpenAVI(int index, bool extended_opt);
 void SaveAVI(HWND, bool);
 void SaveSegmentedAVI(HWND);
 void SaveImageSeq(HWND);
@@ -272,43 +272,383 @@ static const wchar_t fileFiltersSaveProject[]=
 		L"All files (*.*)\0"						L"*.*\0"
 		;
 
+class VDOpenVideoDialogW32 {
+public:
+	VDOpenVideoDialogW32() {
+		nFilterIndex = 0;
+		select_mode = 1;
+	}
 
-  
-void OpenAVI(bool ext_opt) {
-	bool fExtendedOpen = false;
-	bool fAutoscan = false;
+	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
+	void ChangeFilename();
+	bool UpdateFilename();
+	void ChangeDriver();
+	void SetOptions(InputFileOptions* opt);
+	void ChangeOptions();
+	void ChangeSelection();
+	void ChangeInfo();
+	void ShowFileInfo();
+	void ForceUseDriver(int i);
+	bool FileOk();
+	void InitSelectMode();
 
-	IVDInputDriver *pDriver = 0;
-
-	std::vector<int> xlat;
+	HWND mhdlg;
+	vdrefptr<IVDInputDriver> driver;
+	VDString driver_options;
+	VDStringW filename;
+	VDStringW init_driver;
+	VDXMediaInfo info;
 	tVDInputDrivers inputDrivers;
+	tVDInputDrivers detectList;
+	std::vector<int> xlat;
+	int nFilterIndex;
+	int select_mode;
+};
 
-	VDGetInputDrivers(inputDrivers, IVDInputDriver::kF_Video);
+void VDOpenVideoDialogW32::ChangeFilename() {
+	VDStringW opt_driver;
+	if (driver) opt_driver = driver->GetSignatureName();
+	driver = 0;
+	detectList.clear();
+	int x = nFilterIndex ? xlat[nFilterIndex-1] : -1;
+	if (x==-1) {
+		try {
+			int d0 = VDAutoselectInputDriverForFile(filename.c_str(), IVDInputDriver::kF_Video, detectList);
+			if (d0!=-1) {
+				if (!init_driver.empty()) {
+					opt_driver = init_driver;
+					tVDInputDrivers::const_iterator it(detectList.begin()), itEnd(detectList.end());
+					for(int i=0; it!=itEnd; ++it,i++) {
+						IVDInputDriver *pDriver = *it;
+						if (pDriver->GetSignatureName()==init_driver) {
+							d0 = i;
+							break;
+						}
+					}
+				}
 
-	VDStringW fileFilters(VDMakeInputDriverFileFilter(inputDrivers, xlat));
+				driver = detectList[d0];
+				detectList.erase(detectList.begin()+d0);
+				detectList.insert(detectList.begin(),driver);
+			}
+		} catch (const MyError&) {
+		}
+	} else {
+		driver = inputDrivers[x];
+	}
 
-	static const VDFileDialogOption sOptions[]={
-		{ VDFileDialogOption::kBool, 0, L"Ask for e&xtended options after this dialog", 0, 0 },
-		{ VDFileDialogOption::kBool, 1, L"Automatically load linked segments", 0, 0 },
-		{ VDFileDialogOption::kSelectedFilter, 2, 0, 0, 0 },
-		{0}
-	};
+	init_driver.clear();
+	VDStringW opt_driver2;
+	if (driver) opt_driver2 = driver->GetSignatureName();
+	if (opt_driver2!=opt_driver)
+		driver_options.clear();
 
-	int optVals[3]={0,1,0};
+	HWND w1 = GetDlgItem(mhdlg,IDC_DRIVER);
+	SendMessage(w1,CB_RESETCONTENT,0,0);
+	int select_count = 0;
+	if (driver) {
+		SendMessageW(w1,CB_ADDSTRING,0,(LPARAM)driver->GetSignatureName());
+		select_count++;
 
-	VDStringW fname(VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, (VDGUIHandle)g_hWnd, L"Open video file", fileFilters.c_str(), NULL, sOptions, optVals));
+		tVDInputDrivers::const_iterator it(detectList.begin()), itEnd(detectList.end());
+		for(; it!=itEnd; ++it) {
+			IVDInputDriver *pDriver = *it;
+			if (pDriver==driver) continue;
+			SendMessageW(w1,CB_ADDSTRING,0,(LPARAM)pDriver->GetSignatureName());
+			select_count++;
+		}
+
+		SendMessage(w1,CB_SETCURSEL,0,0);
+	}
+	EnableWindow(w1,select_count>1);
+	ChangeDriver();
+	ChangeSelection();
+}
+
+void VDOpenVideoDialogW32::ChangeDriver() {
+	if (driver_options.empty())
+		SetDlgItemTextW(mhdlg,IDC_DRIVER_OPTIONS,L"Options...");
+	else
+		SetDlgItemTextW(mhdlg,IDC_DRIVER_OPTIONS,L"Options (+)");
+
+	bool extOpen = (driver && (driver->GetFlags() & IVDInputDriver::kF_SupportsOpts));
+	EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_OPTIONS), extOpen && !filename.empty());
+	EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_INFO), driver && !filename.empty());
+	SetDlgItemText(mhdlg,IDC_INFO_MSG,0);
+
+	if (driver && !filename.empty()) try {
+		VDXMediaInfo info;
+		wcsncpy(info.format_name,driver->GetFilenamePattern(),100);
+		IVDInputDriver::DetectionConfidence result = VDTestInputDriverForFile(info,filename.c_str(),driver);
+		this->info = info;
+		if (result==IVDInputDriver::kDC_None)
+			SetDlgItemText(mhdlg,IDC_INFO_MSG,"Not detected");
+		else
+			ChangeInfo();
+	} catch (const MyError&) {
+	}
+}
+
+void VDOpenVideoDialogW32::ChangeInfo() {
+	VDStringW msg;
+	int d=0;
+	if (info.format_name[0]) {
+		msg += info.format_name;
+		d = 1;
+	}
+	if (info.vcodec_name[0]) {
+		if (d==1) msg += L" - ";
+		msg += info.vcodec_name;
+		d = 1;
+	}
+
+	if (info.width && info.height) {
+		if (d==1) msg += L" ";
+		msg.append_sprintf(L"%d x %d",info.width,info.height);
+		if (info.pixmapFormat) {
+			msg += L", ";
+			msg += VDTextAToW(VDPixmapFormatPrintSpec(info.pixmapFormat));
+		}
+	}
+	SetDlgItemTextW(mhdlg,IDC_INFO_MSG,msg.c_str());
+}
+
+void VDOpenVideoDialogW32::ForceUseDriver(int i) {
+	driver_options.clear();
+	driver = detectList[i];
+	ChangeDriver();
+}
+
+void VDOpenVideoDialogW32::SetOptions(InputFileOptions* opt) {
+	int len = opt->write(0,0);
+	driver_options.resize(len);
+	opt->write(&driver_options[0],len);
+}
+
+void VDOpenVideoDialogW32::ChangeOptions() {
+	if (!driver) return;
+	vdrefptr<InputFile> inputAVI;
+	inputAVI = driver->CreateInputFile(0);
+	InputFileOptions* opt = inputAVI->promptForOptions((VDGUIHandle)mhdlg);
+	if (opt) {
+		SetOptions(opt);
+		delete opt;
+		SetDlgItemTextW(mhdlg,IDC_DRIVER_OPTIONS,L"Options (+)");
+	}
+}
+
+bool VDOpenVideoDialogW32::UpdateFilename() {
+	wchar_t buf[MAX_PATH];
+	CommDlg_OpenSave_GetSpec(GetParent(mhdlg),buf,MAX_PATH);
+	VDStringW s(buf);
+	if (s!=filename) {
+		filename = s;
+		ChangeFilename();
+		return true;
+	}
+	return false;
+}
+
+bool VDOpenVideoDialogW32::FileOk() {
+	if (!driver) return false;
+	if ((driver->GetFlags() & IVDInputDriver::kF_PromptForOpts) && driver_options.empty()) {
+		ChangeOptions();
+		if (driver_options.empty()) return false;
+	}
+	return true;
+}
+
+void VDOpenVideoDialogW32::ShowFileInfo() {
+	if (!driver) return;
+	vdrefptr<InputFile> inputAVI;
+	inputAVI = driver->CreateInputFile(0);
+	if (!driver_options.empty()) {
+		InputFileOptions* opt = inputAVI->createOptions(driver_options.c_str(), driver_options.length());
+		inputAVI->setOptions(opt);
+		delete opt;
+	}
+	try {
+		inputAVI->Init(filename.c_str());
+		IVDVideoSource* vs=0;
+		AudioSource* as=0;
+		inputAVI->GetVideoSource(0,&vs);
+		inputAVI->GetAudioSource(0,&as);
+
+		if (vs) {
+			vs->setTargetFormat(0);
+			VDAVIBitmapInfoHeader* f = vs->getImageFormat();
+			info.width = f->biWidth;
+			info.height = f->biHeight;
+
+			const VDPixmap& fmt = vs->getTargetFormat();
+			if (fmt.format) info.pixmapFormat = fmt.format;
+			ChangeInfo();
+			inputAVI->InfoDialog((VDGUIHandle)mhdlg);
+		} else {
+			wcscpy(info.format_name,L"no video");
+			ChangeInfo();
+		}
+
+		if(vs) vs->Release();
+		if(as) as->Release();
+	} catch (const MyError& e){
+		SetDlgItemTextA(mhdlg,IDC_INFO_MSG,e.gets());
+	}
+}
+
+void VDOpenVideoDialogW32::InitSelectMode() {
+	CheckDlgButton(mhdlg,IDC_OPEN_SINGLE, select_mode==0 ? BST_CHECKED:BST_UNCHECKED);
+	CheckDlgButton(mhdlg,IDC_OPEN_SEGMENTS, select_mode==1 ? BST_CHECKED:BST_UNCHECKED);
+	CheckDlgButton(mhdlg,IDC_OPEN_SEQUENCE, select_mode==2 ? BST_CHECKED:BST_UNCHECKED);
+}
+
+void VDOpenVideoDialogW32::ChangeSelection() {
+	VDStringW msg(L"Sequence");
+	if (select_mode==2 && !filename.empty()) {
+		int count = AppendAVIAutoscanEnum(filename.c_str());
+		if (count%10==1)
+			msg.append_sprintf(L": %d file", count);
+		else
+			msg.append_sprintf(L": %d files", count);
+	}
+	SetDlgItemTextW(mhdlg,IDC_OPEN_SEQUENCE, msg.c_str());
+}
+
+INT_PTR VDOpenVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
+	switch(message) {
+	case WM_INITDIALOG:
+		EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_OPTIONS),false);
+		EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_INFO),false);
+		InitSelectMode();
+		return TRUE;
+
+	case WM_COMMAND:
+		switch(LOWORD(wParam)) {
+		case IDC_DRIVER_OPTIONS:
+			ChangeOptions();
+			return TRUE;
+		case IDC_DRIVER_INFO:
+			ShowFileInfo();
+			return TRUE;
+		case IDC_DRIVER:
+			if(HIWORD(wParam) == CBN_SELCHANGE){
+				int i = SendMessage(GetDlgItem(mhdlg,IDC_DRIVER),CB_GETCURSEL,0,0);
+				ForceUseDriver(i);
+			}
+			return TRUE;
+		case IDC_OPEN_SINGLE:
+			if (IsDlgButtonChecked(mhdlg,IDC_OPEN_SINGLE)) select_mode = 0;
+			ChangeSelection();
+			if(HIWORD(wParam) == BN_DBLCLK)
+				PostMessage(GetParent(mhdlg),WM_COMMAND,IDOK,0);
+			return TRUE;
+		case IDC_OPEN_SEGMENTS:
+			if (IsDlgButtonChecked(mhdlg,IDC_OPEN_SEGMENTS)) select_mode = 1;
+			ChangeSelection();
+			if(HIWORD(wParam) == BN_DBLCLK)
+				PostMessage(GetParent(mhdlg),WM_COMMAND,IDOK,0);
+			return TRUE;
+		case IDC_OPEN_SEQUENCE:
+			if (IsDlgButtonChecked(mhdlg,IDC_OPEN_SEQUENCE)) select_mode = 2;
+			ChangeSelection();
+			if(HIWORD(wParam) == BN_DBLCLK)
+				PostMessage(GetParent(mhdlg),WM_COMMAND,IDOK,0);
+			return TRUE;
+		}
+		break;
+	}
+
+	return FALSE;
+}
+
+UINT_PTR CALLBACK OpenVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch(msg){
+	case WM_INITDIALOG:
+		{
+			OPENFILENAMEW* fn = (OPENFILENAMEW*)lParam;
+			VDOpenVideoDialogW32* dlg = (VDOpenVideoDialogW32*)fn->lCustData;
+			SetWindowLongPtr(hdlg, DWLP_USER, (LONG_PTR)dlg);
+			dlg->mhdlg = hdlg;
+			dlg->filename = fn->lpstrFile;
+			dlg->DlgProc(msg,wParam,lParam);
+			dlg->ChangeFilename();
+			SetTimer(hdlg,1,200,0);
+			return TRUE;
+		}
+
+	case WM_SIZE:
+	case WM_COMMAND:
+		{
+			VDOpenVideoDialogW32* dlg = (VDOpenVideoDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
+			dlg->DlgProc(msg,wParam,lParam);
+			return TRUE;
+		}
+
+	case WM_TIMER:
+		{
+			VDOpenVideoDialogW32* dlg = (VDOpenVideoDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
+			dlg->UpdateFilename();
+			return TRUE;
+		}
+
+	case WM_NOTIFY:
+		VDOpenVideoDialogW32* dlg = (VDOpenVideoDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
+		OFNOTIFY* data = (OFNOTIFY*)lParam;
+		if(data->hdr.code==CDN_SELCHANGE){
+			dlg->UpdateFilename();
+		}
+		if(data->hdr.code==CDN_TYPECHANGE){
+			dlg->nFilterIndex = data->lpOFN->nFilterIndex;
+			dlg->ChangeFilename();
+		}
+		if(data->hdr.code==CDN_FILEOK){
+			dlg->UpdateFilename();
+			if (dlg->FileOk()) {
+				return 0;
+			} else {
+				SetWindowLong(hdlg,DWL_MSGRESULT,1);
+				return 1;
+			}
+		}
+		break;
+	}
+
+	return FALSE;
+}
+
+void OpenAVI() {
+	VDOpenVideoDialogW32 dlg;
+	VDGetInputDrivers(dlg.inputDrivers, IVDInputDriver::kF_Video);
+	VDStringW fileFilters(VDMakeInputDriverFileFilter(dlg.inputDrivers, dlg.xlat));
+
+	OPENFILENAMEW fn = {sizeof(fn),0};
+	fn.Flags = OFN_ENABLETEMPLATE | OFN_ENABLEHOOK;
+	fn.hInstance = GetModuleHandle(0);
+	fn.lpTemplateName = MAKEINTRESOURCEW(IDD_OPENVIDEO);
+	fn.lpfnHook = OpenVideoProc;
+	fn.lCustData = (LONG_PTR)&dlg;
+	if (inputAVI && g_szInputAVIFile[0]) {
+		fn.lpstrFile = g_szInputAVIFile;
+		dlg.init_driver = g_project->mInputDriverName;
+		if (g_pInputOpts)
+			dlg.SetOptions(g_pInputOpts);
+	}
+
+	VDStringW fname(VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, (VDGUIHandle)g_hWnd, L"Open video file", fileFilters.c_str(), NULL, 0, 0, &fn));
 
 	if (fname.empty())
 		return;
 
-	fExtendedOpen = !!optVals[0];
-	fAutoscan = !!optVals[1];
-
-	if (xlat[optVals[2]-1] >= 0)
-		pDriver = inputDrivers[xlat[optVals[2]-1]];
+	const char* opt = 0;
+	int opt_len = 0;
+	if (!dlg.driver_options.empty()) {
+		opt = dlg.driver_options.c_str();
+		opt_len = dlg.driver_options.length();
+	}
 
 	VDAutoLogDisplay logDisp;
-	g_project->Open(fname.c_str(), pDriver, fExtendedOpen, false, fAutoscan);
+	g_project->Open(fname.c_str(), dlg.driver, false, false, dlg.select_mode, opt, opt_len);
 	logDisp.Post((VDGUIHandle)g_hWnd);
 }
 

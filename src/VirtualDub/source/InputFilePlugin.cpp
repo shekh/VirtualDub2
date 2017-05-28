@@ -1283,6 +1283,11 @@ public:
 		}
 	}
 
+	virtual int GetFileFlags() {
+		if (mpContext->max_api_version>=8) return mpXObject->GetFileFlags();
+		return -1;
+	}
+
 protected:
 	vdrefptr<IVDXInputFile> mpXObject;
 	vdrefptr<IVDXInputOptions> mpXOptions;
@@ -1417,7 +1422,11 @@ public:
 	uint32			GetFlags();
 	const wchar_t *	GetFilenamePattern();
 	bool			DetectByFilename(const wchar_t *pszFilename);
-	DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize);
+	DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+		VDXMediaInfo info;
+		return DetectBySignature2(info, pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
+	}
+	DetectionConfidence DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize);
 	InputFile *		CreateInputFile(uint32 flags);
 
 protected:
@@ -1489,6 +1498,9 @@ uint32 VDInputDriverPlugin::GetFlags() {
 	if (xflags & VDXInputDriverDefinition::kFlagForceByName)
 		flags |= kF_ForceByName;
 
+	if (xflags & VDXInputDriverDefinition::kFlagDuplicate)
+		flags |= kF_Duplicate;
+
 	return flags;
 }
 
@@ -1516,7 +1528,7 @@ bool VDInputDriverPlugin::DetectByFilename(const wchar_t *pszFilename) {
 	return VDFileWildMatch(sig, pszFilename);
 }
 
-VDInputDriverPlugin::DetectionConfidence VDInputDriverPlugin::DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+VDInputDriverPlugin::DetectionConfidence VDInputDriverPlugin::DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
 	const uint8 *sig = (const uint8 *)mpShadowedDef->mpSignature;
 
 	if (sig) {
@@ -1541,16 +1553,21 @@ VDInputDriverPlugin::DetectionConfidence VDInputDriverPlugin::DetectBySignature(
 
 	LoadPlugin();
 
-	int retval = -1;
+	DetectionConfidence retval = kDC_None;
 	if (mpXObject) {
 		vdwithinputplugin(mpContext) {
-			retval = mpXObject->DetectBySignature(pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
+			if (mpContext->max_api_version>=8)
+				retval = (DetectionConfidence)mpXObject->DetectBySignature2(info, pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
+			else {
+				int r = mpXObject->DetectBySignature(pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
+				retval = r < 0 ? kDC_None : r > 0 ? kDC_High : kDC_Moderate;
+			}
 		}
 	}
 
 	UnloadPlugin();
 
-	return retval < 0 ? kDC_None : retval > 0 ? kDC_High : kDC_Moderate;
+	return retval;
 }
 
 InputFile *VDInputDriverPlugin::CreateInputFile(uint32 flags) {

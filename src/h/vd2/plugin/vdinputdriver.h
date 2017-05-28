@@ -274,6 +274,25 @@ public:
 
 	virtual bool	VDXAPIENTRY GetVideoSource(int index, IVDXVideoSource **ppVS) = 0;
 	virtual bool	VDXAPIENTRY GetAudioSource(int index, IVDXAudioSource **ppAS) = 0;
+
+	// V8
+	virtual int VDXAPIENTRY GetFileFlags(){ return -1; }
+};
+
+struct VDXMediaInfo {
+	int width;
+	int height;
+	int pixmapFormat;
+	wchar_t format_name[100];
+	wchar_t vcodec_name[100];
+
+	VDXMediaInfo() {
+		width = 0;
+		height = 0;
+		pixmapFormat = 0;
+		format_name[0] = 0;
+		vcodec_name[0] = 0;
+	}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -283,8 +302,25 @@ class IVDXInputFileDriver : public IVDXUnknown {
 public:
 	enum { kIID = VDXMAKEFOURCC('X', 'i', 'f', 'd') };
 
+	enum DetectionConfidence {
+		kDC_None,
+		kDC_VeryLow,
+		kDC_Low,
+		kDC_Moderate,
+		kDC_High
+	};
+
 	virtual int		VDXAPIENTRY DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) = 0;
 	virtual bool	VDXAPIENTRY CreateInputFile(uint32 flags, IVDXInputFile **ppFile) = 0;
+	
+	// V8
+	// Signature2 return value is different: enum DetectionConfidence
+	virtual int		VDXAPIENTRY DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+		int r = DetectBySignature(pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
+		if (r<0) return kDC_None;
+		if (r==0) return kDC_Moderate;
+		return kDC_High;
+	}
 };
 
 struct VDXInputDriverContext {
@@ -302,6 +338,7 @@ struct VDXInputDriverDefinition {
 		kFlagNoOptions			= 0x00000004,	// (V4+)
 		kFlagCustomSignature	= 0x00010000,
 		kFlagForceByName		= 0x00020000,
+		kFlagDuplicate			= 0x00040000,
 		kFlagAll				= 0xFFFFFFFF
 	};
 	uint32		mSize;				// size of this structure in bytes
@@ -328,7 +365,8 @@ enum {
 	// V5 (FilterMod): Extended StreamSource interface
 	// V6 (FilterMod): Extended IFilterModFileTool interface
 	// V7 (FilterMod): Extended IVDXAudioSource interface
-	kVDXPlugin_InputDriverAPIVersion = 7
+	// V8 (FilterMod): Extended IVDXInputFile interface
+	kVDXPlugin_InputDriverAPIVersion = 8
 };
 
 ///////////////////////////////////////////////////////////////////////////////

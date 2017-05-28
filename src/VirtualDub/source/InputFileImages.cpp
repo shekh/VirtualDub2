@@ -27,7 +27,8 @@
 extern const char g_szError[];
 extern HWND g_hWnd;
 
-VDInputFileImages::VDInputFileImages() {
+VDInputFileImages::VDInputFileImages(uint32 flags) {
+	single_file_mode = (flags & IVDInputDriver::kOF_SingleFile)!=0;
 }
 
 VDInputFileImages::~VDInputFileImages() {
@@ -71,7 +72,7 @@ void VDInputFileImages::Init(const wchar_t *szFile) {
 		throw MyError("File \"%ls\" does not exist.", namebuf.data());
 
 	// Stat as many files as we can until we get an error.
-	if (mLastDigitPos >= 0) {
+	if (mLastDigitPos >= 0 && !single_file_mode) {
 		vdfastvector<wchar_t> namebuf;
 
 		ProgressDialog pd(g_hWnd, "Image import filter", "Scanning for images", 0x3FFFFFFF, true);
@@ -226,8 +227,13 @@ public:
 		return kDC_None;
 	}
 
+	DetectionConfidence DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+		wcscpy(info.format_name, L"Image");
+		return DetectBySignature(pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
+	}
+
 	InputFile *CreateInputFile(uint32 flags) {
-		return new VDInputFileImages;
+		return new VDInputFileImages(flags);
 	}
 };
 

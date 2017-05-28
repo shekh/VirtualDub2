@@ -26,7 +26,7 @@ class VDInputFileImages : public InputFile {
 private:
 	static INT_PTR APIENTRY _InfoDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 public:
-	VDInputFileImages();
+	VDInputFileImages(uint32 flags);
 	~VDInputFileImages();
 
 	void Init(const wchar_t *szFile);
@@ -36,6 +36,7 @@ public:
 
 	bool GetVideoSource(int index, IVDVideoSource **ppSrc);
 	bool GetAudioSource(int index, AudioSource **ppSrc);
+	int GetFileFlags(){ return IVDInputDriver::kFF_Sequence; }
 
 public:
 	VDPosition	GetFrameCount() const { return mFrames; }
@@ -45,6 +46,7 @@ protected:
 	VDStringW	mBaseName;
 	int			mLastDigitPos;
 	VDPosition	mFrames;
+	bool single_file_mode;
 };
 
 #endif

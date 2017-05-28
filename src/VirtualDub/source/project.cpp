@@ -1356,7 +1356,7 @@ VDStringW VDProject::ExpandProjectPath(const wchar_t* path) const {
 	return VDGetFullPath(path);
 }
 
-void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, bool fExtendedOpen, bool fQuiet, bool fAutoscan, const char *pInputOpts, uint32 inputOptsLen) {
+void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, bool fExtendedOpen, bool fQuiet, int fAutoscan, const char *pInputOpts, uint32 inputOptsLen) {
 	Close();
 
 	try {
@@ -1373,19 +1373,27 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 
 		// open file
 
-		inputAVI = pSelectedDriver->CreateInputFile((fQuiet?IVDInputDriver::kOF_Quiet:0) + (fAutoscan?IVDInputDriver::kOF_AutoSegmentScan:0));
+		int flags = 0;
+		if (fQuiet) flags |= IVDInputDriver::kOF_Quiet;
+		if (fAutoscan==1) flags |= IVDInputDriver::kOF_AutoSegmentScan;
+		if (fAutoscan==0) flags |= IVDInputDriver::kOF_SingleFile;
+
+		inputAVI = pSelectedDriver->CreateInputFile(flags);
 		if (!inputAVI) throw MyMemoryError();
 
 		// Extended open?
 		if (!(pSelectedDriver->GetFlags() & IVDInputDriver::kF_SupportsOpts))
 			fExtendedOpen = false;
 
-		if (fExtendedOpen || (pSelectedDriver->GetFlags() & IVDInputDriver::kF_PromptForOpts)) {
+		if (pInputOpts) {
+			g_pInputOpts = inputAVI->createOptions(pInputOpts, inputOptsLen);
+			if (!g_pInputOpts)
+				throw MyError("Options to input driver are invalid.");
+		} else if (fExtendedOpen || (pSelectedDriver->GetFlags() & IVDInputDriver::kF_PromptForOpts)) {
 			g_pInputOpts = inputAVI->promptForOptions(mhwnd);
 			if (!g_pInputOpts)
 				throw MyUserAbortError();
-		} else if (pInputOpts)
-			g_pInputOpts = inputAVI->createOptions(pInputOpts, inputOptsLen);
+		}
 
 		if (g_pInputOpts)
 			inputAVI->setOptions(g_pInputOpts);
@@ -1423,8 +1431,16 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 				pnode = pnode_next;
 			}
 
+			guiSetStatus("", 255);
+
 			if (nFiles > 1)
 				guiSetStatus("Autoloaded %d segments (last was \"%ls\")", 255, nFiles, pnode->NextFromTail()->name);
+
+			if (nFiles==1 && fAutoscan==2) {
+				int flags = inputAVI->GetFileFlags();
+				if (flags!=-1 && !(flags & IVDInputDriver::kFF_Sequence))
+					AppendAVIAutoscan(filename.c_str(), true);
+			}
 		}
 
 		// Retrieve info text

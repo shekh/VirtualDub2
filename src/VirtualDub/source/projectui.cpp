@@ -149,7 +149,7 @@ extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOH
 extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *, WAVEFORMATEX *, VDString& shortNameHint, vdblock<char>& config);
 extern void VDDisplayLicense(HWND hwndParent, bool conditional);
 
-extern void OpenAVI(bool extended_opt);
+extern void OpenAVI();
 extern void SaveAVI(HWND, bool, bool queueAsBatch);
 extern void SaveSegmentedAVI(HWND, bool queueAsBatch);
 extern void OpenImageSeq(HWND hwnd);
@@ -968,7 +968,7 @@ bool VDProjectUI::IsInputPaneUsed() {
 }
 
 void VDProjectUI::OpenAsk() {
-	OpenAVI(false);
+	OpenAVI();
 }
 
 void VDProjectUI::AppendAsk() {
@@ -2527,7 +2527,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 					const bool bExtendedOpen = (signed short)GetAsyncKeyState(VK_SHIFT) < 0;
 
 					VDAutoLogDisplay logDisp;
-					g_project->Open(name.c_str(), NULL, bExtendedOpen, false, true);
+					g_project->Open(name.c_str(), NULL, bExtendedOpen, false, 1);
 					logDisp.Post(mhwnd);
 				}
 				break;

@@ -339,7 +339,55 @@ VDStringW VDMakeInputDriverFileFilter(const tVDInputDrivers& l, std::vector<int>
 	return finalfilter;
 }
 
-IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) {
+IVDInputDriver::DetectionConfidence VDTestInputDriverForFile(VDXMediaInfo& info, const wchar_t *fn, IVDInputDriver *pDriver) {
+	char buf[1024];
+	char endbuf[64];
+	int dwBegin;
+	int dwEnd;
+
+	memset(buf, 0, sizeof buf);
+	memset(endbuf, 0, sizeof endbuf);
+
+	VDFile file(fn);
+
+	dwBegin = file.readData(buf, sizeof buf);
+
+	if (dwBegin < sizeof endbuf) {
+		dwEnd = dwBegin;
+		memcpy(endbuf, buf, dwEnd);
+	} else {
+		dwEnd = sizeof endbuf;
+		file.seek(-dwEnd, nsVDFile::kSeekEnd);
+		file.read(endbuf, dwEnd);
+	}
+
+	sint64 fileSize = file.size();
+
+	// The Avisynth script:
+	//
+	//	Version
+	//
+	// is only 9 bytes...
+
+	if (!dwBegin)
+		throw MyError("Can't open \"%ls\": The file is empty.", fn);
+
+	file.closeNT();
+
+	// attempt detection
+
+	IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature2(info, buf, dwBegin, endbuf, dwEnd, fileSize);
+
+	if (result == IVDInputDriver::kDC_None && pDriver->DetectByFilename(fn)) {
+		result = IVDInputDriver::kDC_Low;
+		if (pDriver->GetFlags() & IVDInputDriver::kF_ForceByName)
+			result = IVDInputDriver::kDC_High;
+	}
+
+	return result;
+}
+
+int VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags, tVDInputDrivers& list) {
 	char buf[1024];
 	char endbuf[64];
 	int dwBegin;
@@ -382,10 +430,12 @@ IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) 
 	tVDInputDrivers::const_iterator it(inputDrivers.begin()), itEnd(inputDrivers.end());
 
 	IVDInputDriver::DetectionConfidence fitquality = IVDInputDriver::kDC_None;
-	IVDInputDriver *pSelectedDriver = NULL;
+	int selectedDriver = -1;
 
 	for(; it!=itEnd; ++it) {
 		IVDInputDriver *pDriver = *it;
+		if (pDriver->GetFlags() & IVDInputDriver::kF_Duplicate)
+			continue;
 
 		IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature(buf, dwBegin, endbuf, dwEnd, fileSize);
 
@@ -395,16 +445,27 @@ IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) 
 				result = IVDInputDriver::kDC_High;
 		}
 
+		if (result == IVDInputDriver::kDC_None)
+			continue;
+
 		if (result > fitquality) {
-			pSelectedDriver = pDriver;
+			selectedDriver = list.size();
 			fitquality = result;
 		}
+
+		list.push_back(*it);
 	}
 
-	if (!pSelectedDriver)
-		throw MyError("The file \"%ls\" is of an unknown or unsupported file type.", fn);
+	return selectedDriver;
+}
 
-	return pSelectedDriver;
+IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) {
+	tVDInputDrivers list;
+	int x = VDAutoselectInputDriverForFile(fn,flags,list);
+	if (x==-1)
+		throw MyError("The file \"%ls\" is of an unknown or unsupported file type.", fn);
+  
+	return list[x];
 }
 
 void VDOpenMediaFile(const wchar_t *filename, uint32 flags, InputFile **pFile) {

@@ -105,10 +105,50 @@ void AppendAVI(const wchar_t *pszFile) {
 	}
 }
 
-void AppendAVIAutoscan(const wchar_t *pszFile) {
+int AppendAVIAutoscanEnum(const wchar_t *pszFile) {
 	wchar_t buf[MAX_PATH];
 	wchar_t *s = buf, *t;
 	int count = 0;
+
+	wcscpy(buf, pszFile);
+
+	t = VDFileSplitExt(VDFileSplitPath(s));
+
+	if (t>buf)
+		--t;
+
+	for(;;) {
+		if (!VDDoesPathExist(buf))
+			break;
+		
+		++count;
+
+		s = t;
+
+		for(;;) {
+			if (s<buf || !isdigit(*s)) {
+				memmove(s+2, s+1, sizeof(wchar_t) * wcslen(s));
+				s[1] = L'1';
+				++t;
+			} else {
+				if (*s == L'9') {
+					*s-- = L'0';
+					continue;
+				}
+				++*s;
+			}
+			break;
+		}
+	}
+
+  return count;
+}
+
+void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first) {
+	wchar_t buf[MAX_PATH];
+	wchar_t *s = buf, *t;
+	int count = 0;
+	VDStringW last;
 
 	if (!inputAVI)
 		return;
@@ -128,14 +168,17 @@ void AppendAVIAutoscan(const wchar_t *pszFile) {
 			if (!VDDoesPathExist(buf))
 				break;
 			
-			if (!inputAVI->Append(buf))
-				break;
+			if (!skip_first) {
+				if (!inputAVI->Append(buf))
+					break;
 
-			inputVideo->streamAppendReinit();
-			if (inputAudio) inputAudio->streamAppendReinit();
+			last = buf;
+				inputVideo->streamAppendReinit();
+				if (inputAudio) inputAudio->streamAppendReinit();
+				++count;
+			}
 
-			++count;
-
+			skip_first = false;
 			s = t;
 
 			for(;;) {
@@ -162,7 +205,7 @@ void AppendAVIAutoscan(const wchar_t *pszFile) {
 		VDLog(kVDLogWarning, VDTextAToW(e.gets()));
 	}
 
-	guiSetStatus("Appended %d segments (stopped at \"%s\")", 255, count, VDTextWToA(buf).c_str());
+	guiSetStatus("Appended %d segments (last was \"%s\")", 255, count, VDTextWToA(last).c_str());
 
 	if (count) {
 		FrameSubset& s = g_project->GetTimeline().GetSubset();

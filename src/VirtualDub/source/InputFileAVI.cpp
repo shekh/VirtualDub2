@@ -45,6 +45,7 @@
 #include "prefs.h"
 #include "misc.h"
 #include <vd2/VDLib/Dialog.h>
+#include <aviriff.h>
 
 #include "resource.h"
 
@@ -63,6 +64,65 @@ namespace {
 		kVDM_Type1DVNoSound,		// AVI: Type-1 DV file detected -- VirtualDub cannot extract audio from this type of interleaved stream.
 		kVDM_InvalidBlockAlign		// AVI: An invalid nBlockAlign value of zero in the audio stream format was fixed.
 	};
+}
+
+int detect_avi(VDXMediaInfo& info, const void *pHeader, int32 nHeaderSize)
+{
+	if(nHeaderSize<64) return -1;
+	uint8* data = (uint8*)pHeader;
+	int rsize = nHeaderSize;
+
+	RIFFCHUNK ch;
+	memcpy(&ch,data,sizeof(ch)); data+=sizeof(ch); rsize-=sizeof(ch);
+	if(ch.fcc!=0x46464952) return -1; //RIFF
+	DWORD fmt;
+	memcpy(&fmt,data,4); data+=4; rsize-=4;
+	if(fmt!=0x20495641) return -1; //AVI
+	memcpy(&ch,data,sizeof(ch)); data+=sizeof(ch); rsize-=sizeof(ch);
+	if(ch.fcc!=0x5453494C) return -1; //LIST
+	memcpy(&fmt,data,4); data+=4; rsize-=4;
+	if(fmt!=0x6C726468) return -1; //hdrl
+
+	memcpy(&ch,data,sizeof(ch));
+	if(ch.fcc!=ckidMAINAVIHEADER) return -1; //avih
+
+	if(rsize<sizeof(AVIMAINHEADER)){
+		AVIMAINHEADER mh = {0};
+		memcpy(&mh,data,rsize); data+=rsize; rsize=0;
+		return 1;
+	}
+
+	AVIMAINHEADER mh;
+	memcpy(&mh,data,sizeof(mh)); data+=sizeof(mh); rsize-=sizeof(mh);
+	info.width = mh.dwWidth;
+	info.height = mh.dwHeight;
+	wcscpy(info.format_name,L"AVI");
+
+	if(rsize<sizeof(ch)) return 1;
+	memcpy(&ch,data,sizeof(ch)); data+=sizeof(ch); rsize-=sizeof(ch);
+	if(ch.fcc!=0x5453494C) return -1; //LIST
+
+	if(rsize<sizeof(fmt)) return 1;
+	memcpy(&fmt,data,4); data+=4; rsize-=4;
+	if(fmt!=ckidSTREAMLIST) return -1; //strl
+
+	if(rsize<sizeof(AVISTREAMHEADER)) return 1;
+	AVISTREAMHEADER sh;
+	memcpy(&sh,data,sizeof(sh)); data+=sizeof(sh); rsize-=sizeof(sh);
+	if(sh.fcc!=ckidSTREAMHEADER) return -1; //strh
+
+	// reject if there is unsupported video codec
+	if(sh.fccType==streamtypeVIDEO){
+		DWORD h1 = sh.fccHandler;
+		char* ch2 = (char*)(&h1);
+		{for(int i=0; i<4; i++){
+			int v = ch2[i];
+			info.vcodec_name[i] = (wchar_t)v;
+			info.vcodec_name[i+1] = 0;
+		}}
+	}
+
+	return 1;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -110,6 +170,11 @@ public:
 		}
 
 		return kDC_None;
+	}
+
+	DetectionConfidence DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+		detect_avi(info, pHeader, nHeaderSize);
+		return DetectBySignature(pHeader,nHeaderSize,pFooter,nFooterSize,nFileSize);
 	}
 
 	InputFile *CreateInputFile(uint32 flags) {

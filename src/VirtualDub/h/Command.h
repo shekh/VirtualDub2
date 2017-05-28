@@ -60,7 +60,8 @@ extern bool				g_showStatusWindow;
 ///////////////////////////
 
 void AppendAVI(const wchar_t *pszFile);
-void AppendAVIAutoscan(const wchar_t *pszFile);
+int AppendAVIAutoscanEnum(const wchar_t *pszFile);
+void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first=false);
 void SaveWAV(const wchar_t *szFilename, bool fProp = false, DubOptions *quick_opts=NULL);
 void SaveAVI(const wchar_t *szFilename, bool fProp = false, DubOptions *quick_opts=NULL, bool fCompatibility=false, bool removeAudio=false);
 void SavePlugin(const wchar_t *szFilename, IVDOutputDriver* driver, const char* format, DubOptions *quick_opts=NULL, bool removeAudio=false);

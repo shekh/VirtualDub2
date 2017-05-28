@@ -386,6 +386,12 @@ struct VDGetFileNameHook {
 	int *mpOptVals;
 };
 
+//--------------------------------------------------------------------------------------------------------------
+// hookOptions is not used for actual API call, any relevant fields are just copied from it:
+//   flags
+//   template, hook and stuff
+//   filename
+
 static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle, const wchar_t *pszFilters, const wchar_t *pszExt, const VDFileDialogOption *pOptions, int *pOptVals, OPENFILENAMEW *hookOptions) {
 	FilespecEntry fsent;
 	tFilespecMap::iterator it;
@@ -496,26 +502,31 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 		}
 	}
 
+	VDStringW init_filename(fsent.szFile);
+
 	if (hookOptions) {
 		ofn.w.Flags		|= hookOptions->Flags;
 		ofn.w.hInstance = hookOptions->hInstance;
 		ofn.w.lpTemplateName = hookOptions->lpTemplateName;
 		ofn.w.lpfnHook	= hookOptions->lpfnHook;
 		ofn.w.lCustData	= hookOptions->lCustData;
+
+		if (hookOptions->lpstrFile)
+			init_filename = hookOptions->lpstrFile;
 	}
 
 	bool existingFileName = false;
-	if (fsent.szFile[0]) {
-		wchar_t lastChar = fsent.szFile[wcslen(fsent.szFile) - 1];
+	if (!init_filename.empty()) {
+		wchar_t lastChar = init_filename.end()[-1];
 
 		if (lastChar != '\\' && lastChar != ':')
 			existingFileName = true;
 
 		if (selectedFilterAlways) {
-			wchar_t* ext = VDFileSplitExt(fsent.szFile);
+			const wchar_t* ext = VDFileSplitExt(init_filename.c_str());
 			if (ext) {
-				ext[1] = 0;
-				wcscat(ext,pszExt);
+				init_filename.erase(ext-init_filename.c_str()+1);
+				init_filename += pszExt;
 			}
 		}
 	}
@@ -541,10 +552,10 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 		char szFile[MAX_PATH];
 
 		if (existingFileName) {
-			VDTextWToA(szFile, sizeof szFile, fsent.szFile, -1);
+			VDTextWToA(szFile, sizeof szFile, init_filename.c_str(), -1);
 		} else {
 			szFile[0] = 0;
-			VDTextWToA(szInitialPath, sizeof szInitialPath, fsent.szFile, -1);
+			VDTextWToA(szInitialPath, sizeof szInitialPath, init_filename.c_str(), -1);
 		}
 
 		ofn.a.lpstrFilter		= strFilters.c_str();
@@ -572,7 +583,7 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 		wchar_t wszFile[MAX_PATH];
 
 		if (existingFileName)
-			wcsncpyz(wszFile, fsent.szFile, MAX_PATH);
+			wcsncpyz(wszFile, init_filename.c_str(), MAX_PATH);
 		else
 			wszFile[0] = 0;
 
@@ -581,7 +592,7 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 		ofn.w.nMaxFile			= MAX_PATH;
 		ofn.w.lpstrTitle		= pszTitle;
 		ofn.w.lpstrDefExt		= pszExt;
-		ofn.w.lpstrInitialDir	= existingFileName ? NULL : fsent.szFile;
+		ofn.w.lpstrInitialDir	= existingFileName ? NULL : init_filename.c_str();
 
 		BOOL (WINAPI *pfn)(OPENFILENAMEW *) = (bSaveAs ? GetSaveFileNameW : GetOpenFileNameW);
 		BOOL result = pfn(&ofn.w);

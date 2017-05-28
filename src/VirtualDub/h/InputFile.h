@@ -79,6 +79,7 @@ public:
 
 	virtual void GetFileTool(IFilterModFileTool **pp){ *pp=0; } 
 	virtual int GetInputDriverApiVersion(){ return -1; }
+	virtual int GetFileFlags(){ return -1; }
 
 protected:
 	void AddFilename(const wchar_t *lpszFile);
@@ -93,6 +94,7 @@ public:
 		kF_PromptForOpts	= 4,
 		kF_SupportsOpts		= 8,
 		kF_ForceByName		= 16,
+		kF_Duplicate		= 32,
 		KF_Max				= 0xFFFFFFFFUL
 	};
 
@@ -100,7 +102,12 @@ public:
 		kOF_None			= 0,
 		kOF_Quiet			= 1,
 		kOF_AutoSegmentScan	= 2,
+		kOF_SingleFile	= 4,
 		kOF_Max				= 0xFFFFFFFFUL
+	};
+
+	enum FileFlags {
+		kFF_Sequence = 1,
 	};
 
 	enum DetectionConfidence {
@@ -118,6 +125,9 @@ public:
 	virtual bool			DetectByFilename(const wchar_t *pszFilename) = 0;
 	virtual DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) = 0;
 	virtual InputFile *		CreateInputFile(uint32 flags) = 0;
+	virtual DetectionConfidence DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+		return DetectBySignature(pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
+	}
 };
 
 typedef std::vector<vdrefptr<IVDInputDriver> > tVDInputDrivers;
@@ -130,6 +140,8 @@ IVDInputDriver *VDGetInputDriverForLegacyIndex(int idx);
 void VDGetInputDriverFilePatterns(uint32 flags, vdvector<VDStringW>& patterns);
 VDStringW VDMakeInputDriverFileFilter(const tVDInputDrivers& l, std::vector<int>& xlat);
 
+IVDInputDriver::DetectionConfidence VDTestInputDriverForFile(VDXMediaInfo& info, const wchar_t *fn, IVDInputDriver *pDriver);
+int VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags, tVDInputDrivers& list);
 IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags);
 void VDOpenMediaFile(const wchar_t *filename, uint32 flags, InputFile **pFile);
 
