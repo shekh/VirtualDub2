@@ -97,6 +97,7 @@ extern const char g_szWarning[]="VirtualDub Warning";
 extern const wchar_t g_szWarningW[]=L"VirtualDub Warning";
 
 static const char g_szRegKeyPersistence[]="Persistence";
+static const char g_szRegKeyAutoAppendByName[]="Auto-append by name";
 
 extern COMPVARS2 g_Vcompression;
 extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOHEADER *bihInput);
@@ -277,6 +278,7 @@ public:
 	VDOpenVideoDialogW32() {
 		nFilterIndex = 0;
 		select_mode = 1;
+		append_mode = false;
 	}
 
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
@@ -306,16 +308,19 @@ public:
 	std::vector<int> xlat;
 	int nFilterIndex;
 	int select_mode;
+	bool append_mode;
 };
 
 void VDOpenVideoDialogW32::ChangeFilename() {
 	VDStringW opt_driver;
 	if (driver) opt_driver = driver->GetSignatureName();
-	driver = 0;
 	detectList.clear();
 	format_id.clear();
 	int x = nFilterIndex ? xlat[nFilterIndex-1] : -1;
-	if (x==-1) {
+	if (append_mode) {
+		// just keep existing driver
+	} else if (x==-1) {
+		driver = 0;
 		try {
 			int d0 = VDAutoselectInputDriverForFile(filename.c_str(), IVDInputDriver::kF_Video, detectList);
 			if (d0!=-1) {
@@ -395,7 +400,7 @@ void VDOpenVideoDialogW32::ChangeDriver() {
 		SetDlgItemTextW(mhdlg,IDC_DRIVER_OPTIONS,L"Options (+)");
 
 	bool extOpen = (driver && (driver->GetFlags() & IVDInputDriver::kF_SupportsOpts));
-	EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_OPTIONS), extOpen && !filename.empty());
+	EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_OPTIONS), extOpen && !filename.empty() && !append_mode);
 	EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_INFO), driver && !filename.empty());
 	SetDlgItemText(mhdlg,IDC_INFO_MSG,0);
 
@@ -548,6 +553,7 @@ INT_PTR VDOpenVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 	case WM_INITDIALOG:
 		EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_OPTIONS),false);
 		EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_INFO),false);
+		EnableWindow(GetDlgItem(mhdlg,IDC_OPEN_SEGMENTS),!append_mode);
 		InitSelectMode();
 		return TRUE;
 
@@ -646,7 +652,7 @@ UINT_PTR CALLBACK OpenVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 	return FALSE;
 }
 
-void OpenAVI() {
+void OpenAVI(bool append) {
 	VDOpenVideoDialogW32 dlg;
 	VDGetInputDrivers(dlg.inputDrivers, IVDInputDriver::kF_Video);
 	VDStringW fileFilters(VDMakeInputDriverFileFilter(dlg.inputDrivers, dlg.xlat));
@@ -664,7 +670,17 @@ void OpenAVI() {
 			dlg.SetOptions(g_pInputOpts);
 	}
 
-	VDStringW fname(VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, (VDGUIHandle)g_hWnd, L"Open video file", fileFilters.c_str(), NULL, 0, 0, &fn));
+	const wchar_t* title = L"Open video file";
+	
+	VDRegistryAppKey key(g_szRegKeyPersistence);
+	if (append) {
+		dlg.select_mode = key.getBool(g_szRegKeyAutoAppendByName, true) ? 2:0;
+		dlg.append_mode = true;
+		dlg.driver = VDGetInputDriverByName(g_project->mInputDriverName.c_str());
+		title = L"Append video segment";
+	}
+
+	VDStringW fname(VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, (VDGUIHandle)g_hWnd, title, fileFilters.c_str(), NULL, 0, 0, &fn));
 
 	if (fname.empty())
 		return;
@@ -686,7 +702,17 @@ void OpenAVI() {
 	}
 
 	VDAutoLogDisplay logDisp;
-	g_project->Open(fname.c_str(), dlg.driver, false, false, dlg.select_mode, opt, opt_len);
+
+	if (append) {
+		key.setBool(g_szRegKeyAutoAppendByName, dlg.select_mode==2);
+		if (dlg.select_mode==2)
+			AppendAVIAutoscan(fname.c_str());
+		else
+			AppendAVI(fname.c_str());
+	} else {
+		g_project->Open(fname.c_str(), dlg.driver, false, false, dlg.select_mode, opt, opt_len);
+	}
+
 	logDisp.Post((VDGUIHandle)g_hWnd);
 }
 

@@ -135,7 +135,6 @@ extern void VDCPUTest();
 
 // need to do this directly in Dita....
 extern const char g_szRegKeyPersistence[]="Persistence";
-static const char g_szRegKeyAutoAppendByName[]="Auto-append by name";
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -149,7 +148,7 @@ extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOH
 extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *, WAVEFORMATEX *, VDString& shortNameHint, vdblock<char>& config);
 extern void VDDisplayLicense(HWND hwndParent, bool conditional);
 
-extern void OpenAVI();
+extern void OpenAVI(bool append=false);
 extern void SaveAVI(HWND, bool, bool queueAsBatch);
 extern void SaveSegmentedAVI(HWND, bool queueAsBatch);
 extern void OpenImageSeq(HWND hwnd);
@@ -975,33 +974,7 @@ void VDProjectUI::AppendAsk() {
 	if (!inputAVI)
 		return;
 
-	static const VDFileDialogOption sOptions[]={
-		{ VDFileDialogOption::kBool, 0, L"&Autodetect additional segments by filename", 0, 0 },
-		{0}
-	};
-
-	VDRegistryAppKey key(g_szRegKeyPersistence);
-	int optVals[1]={
-		key.getBool(g_szRegKeyAutoAppendByName, true)
-	};
-
-	wchar_t filters[1024];
-	inputAVI->getAppendFilters(filters,1024);
-	VDStringW fname(VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, mhwnd, L"Append video segment", filters, NULL, sOptions, optVals));
-
-	if (fname.empty())
-		return;
-
-	key.setBool(g_szRegKeyAutoAppendByName, !!optVals[0]);
-
-	VDAutoLogDisplay logDisp;
-
-	if (optVals[0])
-		AppendAVIAutoscan(fname.c_str());
-	else
-		AppendAVI(fname.c_str());
-
-	logDisp.Post(mhwnd);
+	OpenAVI(true);
 }
 
 void VDProjectUI::SaveAVIAsk(bool batchMode) {
