@@ -474,7 +474,7 @@ IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) 
 
 	if (!format_id.empty()) {
 		VDStringW force_driver;
-		VDRegistryAppKey key("File formats");
+		VDRegistryAppKey key(flags==IVDInputDriver::kF_Audio ? "File formats (audio)" : "File formats");
 		key.getString(format_id.c_str(), force_driver);
 
 		if (!force_driver.empty()) {

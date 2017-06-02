@@ -63,6 +63,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 enum {
+	kFileDialog_WAVAudioIn		= 'wavi',
 	kFileDialog_Config			= 'conf',
 	kFileDialog_ImageDst		= 'imgd',
 	kFileDialog_Project 		= 'proj'
@@ -279,6 +280,7 @@ public:
 		nFilterIndex = 0;
 		select_mode = 1;
 		append_mode = false;
+		audio_mode = false;
 	}
 
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
@@ -309,6 +311,7 @@ public:
 	int nFilterIndex;
 	int select_mode;
 	bool append_mode;
+	bool audio_mode;
 };
 
 void VDOpenVideoDialogW32::ChangeFilename() {
@@ -322,7 +325,7 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 	} else if (x==-1) {
 		driver = 0;
 		try {
-			int d0 = VDAutoselectInputDriverForFile(filename.c_str(), IVDInputDriver::kF_Video, detectList);
+			int d0 = VDAutoselectInputDriverForFile(filename.c_str(), audio_mode ? IVDInputDriver::kF_Audio : IVDInputDriver::kF_Video, detectList);
 			if (d0!=-1) {
 				driver = detectList[d0];
 				detectList.erase(detectList.begin()+d0);
@@ -338,7 +341,7 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 					force_driver = init_driver;
 					opt_driver = init_driver;
 				} else if(!format_id.empty()) {
-					VDRegistryAppKey key("File formats");
+					VDRegistryAppKey key(audio_mode ? "File formats (audio)" : "File formats");
 					key.getString(format_id.c_str(), force_driver);
 				}
 				if (format_id==last_override_format) {
@@ -519,8 +522,9 @@ void VDOpenVideoDialogW32::ShowFileInfo() {
 			ChangeInfo();
 			inputAVI->InfoDialog((VDGUIHandle)mhdlg);
 		} else {
-			wcscpy(info.format_name,L"no video");
+			wcscpy(info.vcodec_name,L"no video");
 			ChangeInfo();
+			if (audio_mode) inputAVI->InfoDialog((VDGUIHandle)mhdlg);
 		}
 
 		if(vs) vs->Release();
@@ -553,7 +557,9 @@ INT_PTR VDOpenVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 	case WM_INITDIALOG:
 		EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_OPTIONS),false);
 		EnableWindow(GetDlgItem(mhdlg,IDC_DRIVER_INFO),false);
-		EnableWindow(GetDlgItem(mhdlg,IDC_OPEN_SEGMENTS),!append_mode);
+		EnableWindow(GetDlgItem(mhdlg,IDC_OPEN_SEGMENTS),!append_mode && !audio_mode);
+		EnableWindow(GetDlgItem(mhdlg,IDC_OPEN_SINGLE),!audio_mode);
+		EnableWindow(GetDlgItem(mhdlg,IDC_OPEN_SEQUENCE),!audio_mode);
 		InitSelectMode();
 		return TRUE;
 
@@ -652,9 +658,9 @@ UINT_PTR CALLBACK OpenVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 	return FALSE;
 }
 
-void OpenAVI(bool append) {
+void OpenInput(bool append, bool audio) {
 	VDOpenVideoDialogW32 dlg;
-	VDGetInputDrivers(dlg.inputDrivers, IVDInputDriver::kF_Video);
+  VDGetInputDrivers(dlg.inputDrivers, audio ? IVDInputDriver::kF_Audio : IVDInputDriver::kF_Video);
 	VDStringW fileFilters(VDMakeInputDriverFileFilter(dlg.inputDrivers, dlg.xlat));
 
 	OPENFILENAMEW fn = {sizeof(fn),0};
@@ -663,7 +669,14 @@ void OpenAVI(bool append) {
 	fn.lpTemplateName = MAKEINTRESOURCEW(IDD_OPENVIDEO);
 	fn.lpfnHook = OpenVideoProc;
 	fn.lCustData = (LONG_PTR)&dlg;
-	if (inputAVI && g_szInputAVIFile[0]) {
+
+	if (audio) {
+		fn.lpstrFile = g_szInputWAVFile;
+		dlg.init_driver = g_project->mAudioInputDriverName;
+		if (g_project->mpAudioInputOptions)
+			dlg.SetOptions(g_project->mpAudioInputOptions);
+
+	} else if (inputAVI && g_szInputAVIFile[0]) {
 		fn.lpstrFile = g_szInputAVIFile;
 		dlg.init_driver = g_project->mInputDriverName;
 		if (g_pInputOpts)
@@ -671,23 +684,29 @@ void OpenAVI(bool append) {
 	}
 
 	const wchar_t* title = L"Open video file";
+	int fskey = VDFSPECKEY_LOADVIDEOFILE;
 	
 	VDRegistryAppKey key(g_szRegKeyPersistence);
-	if (append) {
+	if (audio) {
+		dlg.select_mode = 0;
+		dlg.audio_mode = true;
+		title = L"Open audio file";
+		fskey = kFileDialog_WAVAudioIn;
+	} else if (append) {
 		dlg.select_mode = key.getBool(g_szRegKeyAutoAppendByName, true) ? 2:0;
 		dlg.append_mode = true;
 		dlg.driver = VDGetInputDriverByName(g_project->mInputDriverName.c_str());
 		title = L"Append video segment";
 	}
 
-	VDStringW fname(VDGetLoadFileName(VDFSPECKEY_LOADVIDEOFILE, (VDGUIHandle)g_hWnd, title, fileFilters.c_str(), NULL, 0, 0, &fn));
+	VDStringW fname(VDGetLoadFileName(fskey, (VDGUIHandle)g_hWnd, title, fileFilters.c_str(), NULL, 0, 0, &fn));
 
 	if (fname.empty())
 		return;
 
 	// remember override on confirmed open
 	if (!dlg.format_id.empty()) {
-		VDRegistryAppKey key("File formats");
+		VDRegistryAppKey key(audio ? "File formats (audio)" : "File formats");
 		if (dlg.driver==dlg.detectList[0])
 			key.removeValue(dlg.format_id.c_str());
 		else
@@ -703,7 +722,9 @@ void OpenAVI(bool append) {
 
 	VDAutoLogDisplay logDisp;
 
-	if (append) {
+	if (audio) {
+		g_project->OpenWAV(fname.c_str(), dlg.driver, false, false, opt, opt_len);
+	} else if (append) {
 		key.setBool(g_szRegKeyAutoAppendByName, dlg.select_mode==2);
 		if (dlg.select_mode==2)
 			AppendAVIAutoscan(fname.c_str());

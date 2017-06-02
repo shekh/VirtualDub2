@@ -148,7 +148,7 @@ extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars, BITMAPINFOH
 extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *, WAVEFORMATEX *, VDString& shortNameHint, vdblock<char>& config);
 extern void VDDisplayLicense(HWND hwndParent, bool conditional);
 
-extern void OpenAVI(bool append=false);
+extern void OpenInput(bool append=false, bool audio=false);
 extern void SaveAVI(HWND, bool, bool queueAsBatch);
 extern void SaveSegmentedAVI(HWND, bool queueAsBatch);
 extern void OpenImageSeq(HWND hwnd);
@@ -967,14 +967,14 @@ bool VDProjectUI::IsInputPaneUsed() {
 }
 
 void VDProjectUI::OpenAsk() {
-	OpenAVI();
+	OpenInput();
 }
 
 void VDProjectUI::AppendAsk() {
 	if (!inputAVI)
 		return;
 
-	OpenAVI(true);
+	OpenInput(true);
 }
 
 void VDProjectUI::SaveAVIAsk(bool batchMode) {
@@ -1732,34 +1732,7 @@ void VDProjectUI::SetAudioVolumeOptionsAsk() {
 }
 
 void VDProjectUI::SetAudioSourceWAVAsk() {
-	IVDInputDriver *pDriver = 0;
-
-	std::vector<int> xlat;
-	tVDInputDrivers inputDrivers;
-
-	VDGetInputDrivers(inputDrivers, IVDInputDriver::kF_Audio);
-
-	VDStringW fileFilters(VDMakeInputDriverFileFilter(inputDrivers, xlat));
-
-	static const VDFileDialogOption sOptions[]={
-		{ VDFileDialogOption::kSelectedFilter, 0, 0, 0, 0 },
-		{ VDFileDialogOption::kBool, 1, L"Ask for e&xtended options after this dialog", 0, 0 },
-		{0}
-	};
-
-	int optVals[2]={0,0};
-
-	VDStringW fname(VDGetLoadFileName(kFileDialog_WAVAudioIn, mhwnd, L"Open audio file", fileFilters.c_str(), NULL, sOptions, optVals));
-
-	if (fname.empty())
-		return;
-
-	if (xlat[optVals[0]-1] >= 0)
-		pDriver = inputDrivers[xlat[optVals[0]-1]];
-
-	VDAutoLogDisplay logDisp;
-	OpenWAV(fname.c_str(), pDriver, false, optVals[1] != 0);
-	logDisp.Post(mhwnd);
+	OpenInput(false, true);
 }
 
 void VDProjectUI::SetAudioErrorModeAsk() {

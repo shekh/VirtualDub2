@@ -266,6 +266,7 @@ public:
 	VDStringA mProjectName;
 	VDStringW mInputDriverName;
 	VDStringW mAudioInputDriverName;
+	vdautoptr<InputFileOptions>	mpAudioInputOptions;
 	bool mProjectReadonly;
 	bool mProjectLoading;
 
@@ -365,8 +366,6 @@ protected:
 	typedef std::vector<vdrefptr<AudioSource> > AudioSources;
 	AudioSources 			mInputAudioSources;
 	vdrefptr<AudioSource>	mpInputAudioExt;
-
-	vdautoptr<InputFileOptions>	mpAudioInputOptions;
 
 	VDDelegate		mStoppedDelegate;
 };
