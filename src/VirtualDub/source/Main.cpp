@@ -297,6 +297,9 @@ public:
 	VDString driver_options;
 	VDStringW filename;
 	VDStringW init_driver;
+	VDString format_id;
+	VDString last_override_format;
+	VDStringW last_override_driver;
 	VDXMediaInfo info;
 	tVDInputDrivers inputDrivers;
 	tVDInputDrivers detectList;
@@ -310,26 +313,47 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 	if (driver) opt_driver = driver->GetSignatureName();
 	driver = 0;
 	detectList.clear();
+	format_id.clear();
 	int x = nFilterIndex ? xlat[nFilterIndex-1] : -1;
 	if (x==-1) {
 		try {
 			int d0 = VDAutoselectInputDriverForFile(filename.c_str(), IVDInputDriver::kF_Video, detectList);
 			if (d0!=-1) {
+				driver = detectList[d0];
+				detectList.erase(detectList.begin()+d0);
+				detectList.insert(detectList.begin(),driver);
+
+				VDStringW force_driver;
+				VDXMediaInfo info;
+				wcsncpy(info.format_name,driver->GetFilenamePattern(),100);
+				VDTestInputDriverForFile(info,filename.c_str(),driver);
+				format_id = VDTextWToA(info.format_name);
+
 				if (!init_driver.empty()) {
+					force_driver = init_driver;
 					opt_driver = init_driver;
+				} else if(!format_id.empty()) {
+					VDRegistryAppKey key("File formats");
+					key.getString(format_id.c_str(), force_driver);
+				}
+				if (format_id==last_override_format) {
+					force_driver = last_override_driver;
+				} else {
+					last_override_format = format_id;
+					last_override_driver = force_driver;
+				}
+
+				if (!force_driver.empty()) {
 					tVDInputDrivers::const_iterator it(detectList.begin()), itEnd(detectList.end());
 					for(int i=0; it!=itEnd; ++it,i++) {
 						IVDInputDriver *pDriver = *it;
-						if (pDriver->GetSignatureName()==init_driver) {
-							d0 = i;
+						if (pDriver->GetSignatureName()==force_driver) {
+							driver = pDriver;
 							break;
 						}
 					}
 				}
 
-				driver = detectList[d0];
-				detectList.erase(detectList.begin()+d0);
-				detectList.insert(detectList.begin(),driver);
 			}
 		} catch (const MyError&) {
 		}
@@ -345,22 +369,21 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 
 	HWND w1 = GetDlgItem(mhdlg,IDC_DRIVER);
 	SendMessage(w1,CB_RESETCONTENT,0,0);
-	int select_count = 0;
 	if (driver) {
-		SendMessageW(w1,CB_ADDSTRING,0,(LPARAM)driver->GetSignatureName());
-		select_count++;
+		int select = 0;
+		if (detectList.empty())
+			SendMessageW(w1,CB_ADDSTRING,0,(LPARAM)driver->GetSignatureName());
 
 		tVDInputDrivers::const_iterator it(detectList.begin()), itEnd(detectList.end());
-		for(; it!=itEnd; ++it) {
+		for(int i=0; it!=itEnd; ++it, i++) {
 			IVDInputDriver *pDriver = *it;
-			if (pDriver==driver) continue;
+			if (pDriver==driver) select = i;
 			SendMessageW(w1,CB_ADDSTRING,0,(LPARAM)pDriver->GetSignatureName());
-			select_count++;
 		}
 
-		SendMessage(w1,CB_SETCURSEL,0,0);
+		SendMessage(w1,CB_SETCURSEL,select,0);
 	}
-	EnableWindow(w1,select_count>1);
+	EnableWindow(w1,detectList.size()>1);
 	ChangeDriver();
 	ChangeSelection();
 }
@@ -414,6 +437,12 @@ void VDOpenVideoDialogW32::ChangeInfo() {
 }
 
 void VDOpenVideoDialogW32::ForceUseDriver(int i) {
+	if (!format_id.empty()) {
+		last_override_format = format_id;
+		last_override_driver.clear();
+		if (i>0) last_override_driver = detectList[i]->GetSignatureName();
+	}
+
 	driver_options.clear();
 	driver = detectList[i];
 	ChangeDriver();
@@ -639,6 +668,15 @@ void OpenAVI() {
 
 	if (fname.empty())
 		return;
+
+	// remember override on confirmed open
+	if (!dlg.format_id.empty()) {
+		VDRegistryAppKey key("File formats");
+		if (dlg.driver==dlg.detectList[0])
+			key.removeValue(dlg.format_id.c_str());
+		else
+			key.setString(dlg.format_id.c_str(), dlg.driver->GetSignatureName());
+	}
 
 	const char* opt = 0;
 	int opt_len = 0;

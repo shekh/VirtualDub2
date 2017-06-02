@@ -1489,6 +1489,7 @@ void VDProject::Reopen() {
 	// attempt to determine input file type
 
 	VDStringW filename(VDGetFullPath(g_szInputAVIFile));
+	VDString options;
 
 	IVDInputDriver *pSelectedDriver;
 	if (mInputDriverName.empty()) {
@@ -1497,6 +1498,11 @@ void VDProject::Reopen() {
 		pSelectedDriver = VDGetInputDriverByName(mInputDriverName.c_str());
 		if (!pSelectedDriver)
 			throw MyError("The input driver \"%ls\" is no more available.", mInputDriverName);
+		if (g_pInputOpts) {
+			int len = g_pInputOpts->write(0,0);
+			options.resize(len);
+			g_pInputOpts->write(&options[0],len);
+		}
 	}
 
 	// open file
@@ -1507,8 +1513,11 @@ void VDProject::Reopen() {
 
 	// Extended open?
 
-	if (g_pInputOpts)
-		newInput->setOptions(g_pInputOpts);
+	InputFileOptions* newOptions = 0;
+	if (!options.empty()) {
+		newOptions = newInput->createOptions(options.c_str(),options.length());
+		newInput->setOptions(newOptions);
+	}
 
 	// Open new source
 
@@ -1556,6 +1565,9 @@ void VDProject::Reopen() {
 	}
 
 	// Swap the sources.
+
+	if (g_pInputOpts) delete g_pInputOpts;
+	g_pInputOpts = newOptions;
 
 	inputAudio = NULL;
 	inputAVI = newInput;

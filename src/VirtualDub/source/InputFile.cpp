@@ -24,6 +24,7 @@
 #include <vd2/system/error.h>
 #include <vd2/system/VDString.h>
 #include <vd2/system/file.h>
+#include <vd2/system/registry.h>
 
 extern const char g_szError[];
 extern const wchar_t fileFiltersAppendAll[];
@@ -464,8 +465,31 @@ IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) 
 	int x = VDAutoselectInputDriverForFile(fn,flags,list);
 	if (x==-1)
 		throw MyError("The file \"%ls\" is of an unknown or unsupported file type.", fn);
-  
-	return list[x];
+	
+	IVDInputDriver* driver = list[x];
+	VDXMediaInfo info;
+	wcsncpy(info.format_name,driver->GetFilenamePattern(),100);
+	VDTestInputDriverForFile(info,fn,driver);
+	VDString format_id = VDTextWToA(info.format_name);
+
+	if (!format_id.empty()) {
+		VDStringW force_driver;
+		VDRegistryAppKey key("File formats");
+		key.getString(format_id.c_str(), force_driver);
+
+		if (!force_driver.empty()) {
+			tVDInputDrivers::const_iterator it(list.begin()), itEnd(list.end());
+			for(int i=0; it!=itEnd; ++it,i++) {
+				IVDInputDriver *pDriver = *it;
+				if (pDriver->GetSignatureName()==force_driver) {
+					driver = pDriver;
+					break;
+				}
+			}
+		}
+	}
+
+	return driver;
 }
 
 void VDOpenMediaFile(const wchar_t *filename, uint32 flags, InputFile **pFile) {
