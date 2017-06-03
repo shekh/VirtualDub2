@@ -94,6 +94,8 @@ public:
 		mResult.mbDialogAccepted = false;
 		mResult.mbChangeDetected = false;
 		mResult.mbRescaleRequested = false;
+		mOldFrameRate = VDFraction(0,0);
+		mOldFrameCount = 0;
 	}
 
 	void Init(IVDVideoSource *pVS, VDPosition initialTime);
@@ -145,9 +147,6 @@ void FiltersEditor::Init(IVDVideoSource *pVS, VDPosition initialTime) {
 	mInputPixelAspect = pVS->getPixelAspectRatio();
 	mInputLength	= pSS->getLength();
 	mInitialTimeUS	= initialTime;
-
-	mOldFrameRate	= filters.GetOutputFrameRate();
-	mOldFrameCount	= filters.GetOutputFrameCount();
 }
 
 void FiltersEditor::Init(int w, int h, int format, const VDFraction& rate, sint64 length, VDPosition initialTime) {
@@ -158,9 +157,6 @@ void FiltersEditor::Init(int w, int h, int format, const VDFraction& rate, sint6
 	mInputRate		= rate;
 	mInputLength	= length;
 	mInitialTimeUS	= initialTime;
-
-	mOldFrameRate	= filters.GetOutputFrameRate();
-	mOldFrameCount	= filters.GetOutputFrameCount();
 }
 
 void FiltersEditor::SetResult() {
@@ -804,6 +800,9 @@ bool VDVideoFiltersDialog::OnLoaded() {
 		filters.DeallocateBuffers();
 		LoadGlobalChainCopy();
 		RedoFilters();
+
+		editor->mOldFrameRate	= editor->mFiltSys.GetOutputFrameRate();
+		editor->mOldFrameCount	= editor->mFiltSys.GetOutputFrameCount();
 	}
 
 	mhContextMenus = LoadMenu(NULL, MAKEINTRESOURCE(IDR_FILTER_LIST_CONTEXT));
