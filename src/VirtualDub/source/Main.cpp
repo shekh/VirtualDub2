@@ -281,6 +281,7 @@ public:
 		select_mode = 1;
 		append_mode = false;
 		audio_mode = false;
+		is_auto = false;
 	}
 
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
@@ -312,6 +313,7 @@ public:
 	int select_mode;
 	bool append_mode;
 	bool audio_mode;
+	bool is_auto;
 };
 
 void VDOpenVideoDialogW32::ChangeFilename() {
@@ -330,6 +332,7 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 				driver = detectList[d0];
 				detectList.erase(detectList.begin()+d0);
 				detectList.insert(detectList.begin(),driver);
+				is_auto = true;
 
 				VDStringW force_driver;
 				VDXMediaInfo info;
@@ -356,7 +359,10 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 					for(int i=0; it!=itEnd; ++it,i++) {
 						IVDInputDriver *pDriver = *it;
 						if (pDriver->GetSignatureName()==force_driver) {
-							driver = pDriver;
+							if (driver!=pDriver) {
+								driver = pDriver;
+								is_auto = false;
+							}
 							break;
 						}
 					}
@@ -367,6 +373,7 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 		}
 	} else {
 		driver = inputDrivers[x];
+		is_auto = false;
 	}
 
 	init_driver.clear();
@@ -660,7 +667,7 @@ UINT_PTR CALLBACK OpenVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 void OpenInput(bool append, bool audio) {
 	VDOpenVideoDialogW32 dlg;
-  VDGetInputDrivers(dlg.inputDrivers, audio ? IVDInputDriver::kF_Audio : IVDInputDriver::kF_Video);
+	VDGetInputDrivers(dlg.inputDrivers, audio ? IVDInputDriver::kF_Audio : IVDInputDriver::kF_Video);
 	VDStringW fileFilters(VDMakeInputDriverFileFilter(dlg.inputDrivers, dlg.xlat));
 
 	OPENFILENAMEW fn = {sizeof(fn),0};
@@ -724,6 +731,7 @@ void OpenInput(bool append, bool audio) {
 
 	if (audio) {
 		g_project->OpenWAV(fname.c_str(), dlg.driver, false, false, opt, opt_len);
+		if (dlg.is_auto && !opt) g_project->mAudioInputDriverName.clear();
 	} else if (append) {
 		key.setBool(g_szRegKeyAutoAppendByName, dlg.select_mode==2);
 		if (dlg.select_mode==2)
@@ -732,6 +740,7 @@ void OpenInput(bool append, bool audio) {
 			AppendAVI(fname.c_str());
 	} else {
 		g_project->Open(fname.c_str(), dlg.driver, false, false, dlg.select_mode, opt, opt_len);
+		if (dlg.is_auto && !opt) g_project->mInputDriverName.clear();
 	}
 
 	logDisp.Post((VDGUIHandle)g_hWnd);
