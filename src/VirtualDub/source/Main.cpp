@@ -656,7 +656,7 @@ UINT_PTR CALLBACK OpenVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 			if (dlg->FileOk()) {
 				return 0;
 			} else {
-				SetWindowLong(hdlg,DWL_MSGRESULT,1);
+				SetWindowLong(hdlg,DWLP_MSGRESULT,1);
 				return 1;
 			}
 		}

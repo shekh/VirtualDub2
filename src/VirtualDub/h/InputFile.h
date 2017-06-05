@@ -35,6 +35,7 @@ class IAVIReadStream;
 class AudioSource;
 class IVDVideoSource;
 class IFilterModFileTool;
+struct VDXMediaInfo;
 
 class VDStringA;
 
