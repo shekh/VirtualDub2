@@ -235,6 +235,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Sync to audio",               ID_OPTIONS_SYNCTOAUDIO, CHECKED
         MENUITEM "Drop frames when behind",     ID_OPTIONS_DROPFRAMES
+        MENUITEM "Drop frames when seeking",    ID_OPTIONS_DROPSEEKING
         MENUITEM "Allow video overlays",        ID_OPTIONS_ENABLEDIRECTDRAW
         POPUP "Preview field mode"
         BEGIN

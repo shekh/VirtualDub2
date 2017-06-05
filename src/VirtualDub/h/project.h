@@ -215,7 +215,7 @@ public:
 
 	void SetAudioMode(int mode);
 	void SetAudioErrorMode(int errorMode);
-	void MoveToFrame(VDPosition pos);
+	void MoveToFrame(VDPosition pos, int sync_mode=0);
 	void MoveToStart();
 	void MoveToPrevious();
 	void MoveToNext();
@@ -310,6 +310,7 @@ protected:
 
 	IDubStatusHandler	*mpDubStatus;
 
+	int			mposSyncMode;
 	VDPosition	mposCurrentFrame;
 	VDPosition	mposSelectionStart;
 	VDPosition	mposSelectionEnd;

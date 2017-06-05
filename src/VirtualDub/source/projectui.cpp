@@ -121,6 +121,7 @@ extern DubSource::ErrorMode	g_videoErrorMode;
 extern DubSource::ErrorMode	g_audioErrorMode;
 
 extern bool				g_fDropFrames;
+extern bool				g_fDropSeeking;
 extern bool				g_fSwapPanes;
 extern bool				g_bExit;
 
@@ -380,6 +381,7 @@ namespace {
 		{ ID_OPTIONS_SYNCTOAUDIO,		"Options.ToggleSyncToAudio" },
 		{ ID_OPTIONS_ENABLEDIRECTDRAW,	"Options.ToggleVideoOverlay" },
 		{ ID_OPTIONS_DROPFRAMES,		"Options.ToggleFrameDropping" },
+		{ ID_OPTIONS_DROPSEEKING,		"Options.ToggleSeekDropping" },
 		{ ID_OPTIONS_SWAPPANES,			"View.ToggleSwapPanes" },
 		{ ID_OPTIONS_PREVIEWPROGRESSIVE,	"View.SetPreviewProgressive" },
 		{ ID_OPTIONS_PREVIEWWEAVETFF,	"View.SetPreviewWeaveTFF" },
@@ -2384,6 +2386,9 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_OPTIONS_DROPFRAMES:
 			g_fDropFrames = !g_fDropFrames;
 			break;
+		case ID_OPTIONS_DROPSEEKING:
+			g_fDropSeeking = !g_fDropSeeking;
+			break;
 		case ID_OPTIONS_SWAPPANES:
 			g_fSwapPanes = !g_fSwapPanes;
 			RepositionPanes();
@@ -2573,6 +2578,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDCheckMenuItemW32(hMenu, ID_OPTIONS_SYNCTOAUDIO,				g_dubOpts.video.fSyncToAudio);
 	VDCheckMenuItemW32(hMenu, ID_OPTIONS_ENABLEDIRECTDRAW,			g_dubOpts.perf.useDirectDraw);
 	VDCheckMenuItemW32(hMenu, ID_OPTIONS_DROPFRAMES,				g_fDropFrames);
+	VDCheckMenuItemW32(hMenu, ID_OPTIONS_DROPSEEKING,				g_fDropSeeking);
 	VDCheckMenuItemW32(hMenu, ID_OPTIONS_SWAPPANES,					g_fSwapPanes);
 
 	const bool bAVISourceExists = (inputAVI && inputAVI->Append(NULL));
@@ -4595,6 +4601,7 @@ void VDProjectUI::LoadSettings() {
 	g_drawDecompressedFrame				= key.getBool("Show decompressed frame", g_drawDecompressedFrame);
 	g_fSwapPanes						= key.getBool("Swap panes", g_fSwapPanes);
 	g_fDropFrames						= key.getBool("Preview frame skipping", g_fDropFrames);
+	g_fDropSeeking						= key.getBool("Seek frame skipping", g_fDropSeeking);
 	g_showStatusWindow					= key.getBool("Show status window", g_showStatusWindow);
 	g_dubOpts.video.fShowInputFrame		= key.getBool("Update input pane", g_dubOpts.video.fShowInputFrame);
 	g_dubOpts.video.fShowOutputFrame	= key.getBool("Update output pane", g_dubOpts.video.fShowOutputFrame);
@@ -4624,6 +4631,7 @@ void VDProjectUI::SaveSettings() {
 	key.setBool("Show decompressed frame", g_drawDecompressedFrame);
 	key.setBool("Swap panes", g_fSwapPanes);
 	key.setBool("Preview frame skipping", g_fDropFrames);
+	key.setBool("Seek frame skipping", g_fDropSeeking);
 	key.setBool("Show status window", g_showStatusWindow);
 	key.setBool("Update input pane", g_dubOpts.video.fShowInputFrame);
 	key.setBool("Update output pane", g_dubOpts.video.fShowOutputFrame);

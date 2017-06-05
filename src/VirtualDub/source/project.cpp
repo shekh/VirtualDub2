@@ -99,6 +99,7 @@ DubSource::ErrorMode	g_audioErrorMode			= DubSource::kErrorModeReportAll;
 vdrefptr<AudioSource>	inputAudio;
 
 extern bool				g_fDropFrames;
+extern bool				g_fDropSeeking;
 extern bool				g_fSwapPanes;
 extern bool				g_bExit;
 
@@ -2182,17 +2183,20 @@ void VDProject::SetMarker(VDPosition pos) {
 	}
 }
 
-void VDProject::MoveToFrame(VDPosition frame) {
+void VDProject::MoveToFrame(VDPosition frame, int sync_mode) {
 	if (inputVideo) {
+		if (sync_mode==1 && mposSyncMode==1 && !g_fDropSeeking) {
+			if (UpdateFrame()) return;
+		}
+
 		frame = std::max<VDPosition>(0, std::min<VDPosition>(frame, mTimeline.GetLength()));
 
+		mposSyncMode = sync_mode;
 		mposCurrentFrame = frame;
 		mbPositionCallbackEnabled = false;
 
-		if (!g_dubber && !mProjectLoading) {
+		if (!g_dubber && !mProjectLoading)
 			DisplayFrame();
-			while(UpdateFrame());
-		}
 
 		if (mpCB)
 			mpCB->UICurrentPositionUpdated();
@@ -2206,12 +2210,12 @@ void VDProject::MoveToStart() {
 
 void VDProject::MoveToPrevious() {
 	if (inputVideo)
-		MoveToFrame(GetCurrentFrame() - 1);
+		MoveToFrame(GetCurrentFrame() - 1, 1);
 }
 
 void VDProject::MoveToNext() {
 	if (inputVideo)
-		MoveToFrame(GetCurrentFrame() + 1);
+		MoveToFrame(GetCurrentFrame() + 1, 1);
 }
 
 void VDProject::MoveToEnd() {
@@ -2242,7 +2246,7 @@ void VDProject::MoveToNearestKey(VDPosition pos) {
 		return;
 
 
-	MoveToFrame(mTimeline.GetNearestKey(pos));
+	MoveToFrame(mTimeline.GetNearestKey(pos), 1);
 }
 
 void VDProject::MoveToNearestKeyNext(VDPosition pos) {
@@ -2250,7 +2254,7 @@ void VDProject::MoveToNearestKeyNext(VDPosition pos) {
 		return;
 
 
-	MoveToFrame(mTimeline.GetNearestKeyNext(pos));
+	MoveToFrame(mTimeline.GetNearestKeyNext(pos), 1);
 }
 
 void VDProject::MoveToPreviousKey() {
@@ -2262,7 +2266,7 @@ void VDProject::MoveToPreviousKey() {
 	if (pos < 0)
 		pos = 0;
 
-	MoveToFrame(pos);
+	MoveToFrame(pos, 1);
 }
 
 void VDProject::MoveToNextKey() {
@@ -2274,17 +2278,17 @@ void VDProject::MoveToNextKey() {
 	if (pos < 0)
 		pos = mTimeline.GetEnd();
 
-	MoveToFrame(pos);
+	MoveToFrame(pos, 1);
 }
 
 void VDProject::MoveBackSome() {
 	if (inputVideo)
-		MoveToFrame(GetCurrentFrame() - 50);
+		MoveToFrame(GetCurrentFrame() - 50, 1);
 }
 
 void VDProject::MoveForwardSome() {
 	if (inputVideo)
-		MoveToFrame(GetCurrentFrame() + 50);
+		MoveToFrame(GetCurrentFrame() + 50, 1);
 }
 
 void VDProject::StartSceneShuttleReverse() {

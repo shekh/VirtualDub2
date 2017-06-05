@@ -345,6 +345,8 @@ VDPosition VDPositionControlW32::GetPosition() {
 
 void VDPositionControlW32::SetPosition(VDPosition pos) {
 	InternalSetPosition(pos, VDPositionControlEventData::kEventJump);
+	if (mhwnd)
+		UpdateWindow(mhwnd);
 }
 
 void VDPositionControlW32::InternalSetPosition(VDPosition pos, VDPositionControlEventData::EventType eventType) {

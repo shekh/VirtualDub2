@@ -76,6 +76,7 @@ HWND		g_hWnd =NULL;
 int			g_returnCode;
 
 bool				g_fDropFrames			= false;
+bool				g_fDropSeeking			= true;
 bool				g_fSwapPanes			= false;
 bool				g_bExit					= false;
 
