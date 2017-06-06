@@ -39,6 +39,8 @@ class VDExternalModule;
 
 class FilterDefinitionInstance : public ListNode2<FilterDefinitionInstance> {
 public:
+	int tag;
+
 	FilterDefinitionInstance(VDExternalModule *pfm);
 	~FilterDefinitionInstance();
 

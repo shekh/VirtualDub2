@@ -61,6 +61,7 @@ FilterDefinitionInstance::FilterDefinitionInstance(VDExternalModule *pfm)
 	, mbHasStaticAbout(false)
 	, mbHasStaticConfigure(false)
 {
+	tag = 0;
 }
 
 FilterDefinitionInstance::~FilterDefinitionInstance() {
