@@ -28,6 +28,7 @@
 #include <vd2/Dita/services.h>
 #include <vd2/system/registry.h>
 #include <vd2/system/fileasync.h>
+#include <vd2/system/cpuaccel.h>
 #include <vd2/VDDisplay/display.h>
 
 #include "resource.h"
@@ -247,22 +248,41 @@ public:
 	VDPreferences2& mPrefs;
 	VDDialogPreferencesCPU(VDPreferences2& p) : mPrefs(p) {}
 
+	void loadOptions() {
+		long exts = mPrefs.mEnabledCPUFeatures;
+		if (!(mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_FORCE))
+			exts = CPUCheckForExtensions();
+
+		SetValue(100, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_FORCE));
+		SetValue(200, 0 != (exts & PreferencesMain::OPTF_FPU));
+		SetValue(201, 0 != (exts & PreferencesMain::OPTF_MMX));
+		SetValue(202, 0 != (exts & PreferencesMain::OPTF_INTEGER_SSE));
+		SetValue(203, 0 != (exts & PreferencesMain::OPTF_SSE));
+		SetValue(204, 0 != (exts & PreferencesMain::OPTF_SSE2));
+		SetValue(205, 0 != (exts & PreferencesMain::OPTF_3DNOW));
+		SetValue(206, 0 != (exts & PreferencesMain::OPTF_3DNOW_EXT));
+		SetValue(207, 0 != (exts & PreferencesMain::OPTF_SSE3));
+		SetValue(208, 0 != (exts & PreferencesMain::OPTF_SSSE3));
+		SetValue(209, 0 != (exts & PreferencesMain::OPTF_SSE4_1));
+		SetValue(210, 0 != (exts & PreferencesMain::OPTF_AVX));
+		SetValue(211, 0 != (exts & CPUF_SUPPORTS_SSE42));
+		SetValue(212, 0 != (exts & CPUF_SUPPORTS_AVX2));
+		SetValue(213, 0 != (exts & CPUF_SUPPORTS_AVX512F));
+	}
+
 	bool HandleUIEvent(IVDUIBase *pBase, IVDUIWindow *pWin, uint32 id, eEventType type, int item) {
 		switch(type) {
+		case kEventSelect:
+			if (id==100) {
+				if (!GetValue(100)) {
+					mPrefs.mEnabledCPUFeatures &= ~PreferencesMain::OPTF_FORCE;
+					loadOptions();
+				}
+			}
+			return true;
 		case kEventAttach:
 			mpBase = pBase;
-			SetValue(100, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_FORCE));
-			SetValue(200, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_FPU));
-			SetValue(201, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_MMX));
-			SetValue(202, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_INTEGER_SSE));
-			SetValue(203, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_SSE));
-			SetValue(204, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_SSE2));
-			SetValue(205, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_3DNOW));
-			SetValue(206, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_3DNOW_EXT));
-			SetValue(207, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_SSE3));
-			SetValue(208, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_SSSE3));
-			SetValue(209, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_SSE4_1));
-			SetValue(210, 0 != (mPrefs.mEnabledCPUFeatures & PreferencesMain::OPTF_AVX));
+			loadOptions();
 			pBase->ExecuteAllLinks();
 			return true;
 		case kEventSync:
@@ -280,6 +300,9 @@ public:
 			if (GetValue(208)) mPrefs.mEnabledCPUFeatures |= PreferencesMain::OPTF_SSSE3;
 			if (GetValue(209)) mPrefs.mEnabledCPUFeatures |= PreferencesMain::OPTF_SSE4_1;
 			if (GetValue(210)) mPrefs.mEnabledCPUFeatures |= PreferencesMain::OPTF_AVX;
+			if (GetValue(211)) mPrefs.mEnabledCPUFeatures |= CPUF_SUPPORTS_SSE42;
+			if (GetValue(212)) mPrefs.mEnabledCPUFeatures |= CPUF_SUPPORTS_AVX2;
+			if (GetValue(213)) mPrefs.mEnabledCPUFeatures |= CPUF_SUPPORTS_AVX512F;
 
 			mPrefs.mOldPrefs.main.fOptimizations = (char)mPrefs.mEnabledCPUFeatures;
 			return true;

@@ -26,17 +26,9 @@
 		segment	.text
 
 ;--------------------------------------------------------------------------
-		global	VDIsAVXSupportedByOS
-VDIsAVXSupportedByOS:
+		global	get_xcr0
+get_xcr0:
 		xor		ecx, ecx
 		xgetbv
-		and		al, 6
-		cmp		al, 6
-		jnz		.notsupported
-		mov		eax, 1
 		ret
-.notsupported:
-		xor		eax, eax
-		ret
-
 		end

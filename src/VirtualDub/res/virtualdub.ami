@@ -439,10 +439,13 @@ dialog 1013, "" : fill, child {
 				checkbox 207, "SSE3";
 				checkbox 208, "SSSE3";
 				checkbox 209, "SSE4.1";
-				checkbox 210, "AVX";
+				checkbox 211, "SSE4.2";
 				nextrow;
 				checkbox 205, "3DNow!";
 				checkbox 206, "3DNow! 2";
+				checkbox 210, "AVX";
+				checkbox 212, "AVX2";
+				checkbox 213, "AVX512";
 			}
 		}
 	}

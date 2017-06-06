@@ -36,122 +36,128 @@ extern "C" {
 	bool FPU_enabled, MMX_enabled, SSE_enabled, ISSE_enabled, SSE2_enabled;
 };
 
+#define IS_BIT_SET(bitfield, bit) ((bitfield) & (1<<(bit)) ? true : false)
+
 #if (!defined(VD_CPU_X86) && !defined(VD_CPU_AMD64)) || defined(__MINGW32__)
 long CPUCheckForExtensions() {
 	return 0;
 }
 #else
 
-namespace {
-#ifdef _M_IX86
-	bool VDIsAVXSupportedByOS() {
-		uint32 xfeature_enabled_mask;
-
-		__asm {
-			xor ecx, ecx
-			__emit 0x0f		;xgetbv
-			__emit 0x01
-			__emit 0xd0
-			mov dword ptr xfeature_enabled_mask, eax
-		}
-
-		return (xfeature_enabled_mask & 0x06) == 0x06;
-	}
-#else
-	extern "C" bool VDIsAVXSupportedByOS();
-#endif
+#if defined(_MSC_VER) && (_MSC_FULL_VER >= 160040219)
+unsigned __int64 get_xcr0(){
+	return _xgetbv(0);  // VS2010 SP1 required.
 }
-
-// This code used to use IsProcessorFeaturePresent(), but this function is somewhat
-// suboptimal in Win64 -- for one thing, it doesn't return true for MMX, at least
-// on Vista 64.
-long CPUCheckForExtensions() {
-	// check for CPUID (x86 only)
-#ifdef _M_IX86
-	uint32 id;
+#elif defined(_M_IX86)
+unsigned __int64 __cdecl get_xcr0(){
+		uint32 r0;
+		uint32 r1;
 	__asm {
-		pushfd
-		or		dword ptr [esp], 00200000h	;set the ID bit
-		popfd
-		pushfd					;flags -> EAX
-		pop		dword ptr id
+		xor ecx, ecx
+		__emit 0x0f		;xgetbv
+		__emit 0x01
+		__emit 0xd0
+		mov dword ptr r0, eax
+		mov dword ptr r1, edx
 	}
-
-	if (!(id & 0x00200000)) {
-		// if we don't have CPUID, we probably won't want to try FPU optimizations
-		// (80486).
-		return 0;
-	}
+	return (((unsigned __int64)r1) << 32) | r0;
+}
+#else
+extern "C" bool get_xcr0();
 #endif
 
-	// check for features register
-	long flags = CPUF_SUPPORTS_FPU | CPUF_SUPPORTS_CPUID;
+long CPUCheckForExtensions() {
+	long result = 0;
+	int cpuinfo[4];
 
-	int cpuInfo[4];
-	__cpuid(cpuInfo, 0);
-	if (cpuInfo[0] == 0)
-		return flags;
-
-	__cpuid(cpuInfo, 1);
-
-	if (cpuInfo[3] & (1 << 23))
-		flags |= CPUF_SUPPORTS_MMX;
-
-	if (cpuInfo[3] & (1 << 25)) {
-		// Check if SSE is actually supported.
-		bool sseSupported = true;
-
-#ifdef _M_IX86
-		__try {
-			__asm andps xmm0,xmm0
-		} __except(EXCEPTION_EXECUTE_HANDLER) {
-			if (_exception_code() == STATUS_ILLEGAL_INSTRUCTION)
-				sseSupported = false;
+	__cpuid(cpuinfo, 1);
+	if (IS_BIT_SET(cpuinfo[3], 0))
+		result |= CPUF_SUPPORTS_FPU;
+	if (IS_BIT_SET(cpuinfo[3], 23))
+		result |= CPUF_SUPPORTS_MMX;
+	if (IS_BIT_SET(cpuinfo[3], 25))
+		result |= CPUF_SUPPORTS_SSE | CPUF_SUPPORTS_INTEGER_SSE;
+	if (IS_BIT_SET(cpuinfo[3], 26))
+		result |= CPUF_SUPPORTS_SSE2;
+	if (IS_BIT_SET(cpuinfo[2], 0))
+		result |= CPUF_SUPPORTS_SSE3;
+	if (IS_BIT_SET(cpuinfo[2], 9))
+		result |= CPUF_SUPPORTS_SSSE3;
+	if (IS_BIT_SET(cpuinfo[2], 19))
+		result |= CPUF_SUPPORTS_SSE41;
+	if (IS_BIT_SET(cpuinfo[2], 20))
+		result |= CPUF_SUPPORTS_SSE42;
+	if (IS_BIT_SET(cpuinfo[2], 22))
+		result |= CPUF_SUPPORTS_MOVBE;
+	if (IS_BIT_SET(cpuinfo[2], 23))
+		result |= CPUF_SUPPORTS_POPCNT;
+	if (IS_BIT_SET(cpuinfo[2], 25))
+		result |= CPUF_SUPPORTS_AES;
+	if (IS_BIT_SET(cpuinfo[2], 29))
+		result |= CPUF_SUPPORTS_F16C;
+	// AVX
+	bool xgetbv_supported = IS_BIT_SET(cpuinfo[2], 27);
+	bool avx_supported = IS_BIT_SET(cpuinfo[2], 28);
+	if (xgetbv_supported && avx_supported)
+	{
+		unsigned long long xgetbv0 = get_xcr0();
+		if ((xgetbv0 & 0x6ull) == 0x6ull) {
+			result |= CPUF_SUPPORTS_AVX;
+			if (IS_BIT_SET(cpuinfo[2], 12))
+				result |= CPUF_SUPPORTS_FMA3;
+			__cpuid(cpuinfo, 7);
+			if (IS_BIT_SET(cpuinfo[1], 5))
+				result |= CPUF_SUPPORTS_AVX2;
 		}
-#endif
-		
-		if (sseSupported) {
-			flags |= CPUF_SUPPORTS_SSE | CPUF_SUPPORTS_INTEGER_SSE;
-
-			if (cpuInfo[3] & (1 << 26))
-				flags |= CPUF_SUPPORTS_SSE2;
-
-			if (cpuInfo[2] & 0x00000001)
-				flags |= CPUF_SUPPORTS_SSE3;
-
-			if (cpuInfo[2] & 0x00000200)
-				flags |= CPUF_SUPPORTS_SSSE3;
-
-			if (cpuInfo[2] & 0x00080000)
-				flags |= CPUF_SUPPORTS_SSE41;
-
-			if (cpuInfo[2] & 0x00100000)
-				flags |= CPUF_SUPPORTS_SSE42;
-
-			// check OSXSAVE and AVX bits
-			if ((cpuInfo[2] & ((1 << 27) | (1 << 28))) == ((1 << 27) | (1 << 28))) {
-				if (VDIsAVXSupportedByOS())
-					flags |= CPUF_SUPPORTS_AVX;
-			}
+		if((xgetbv0 & (0x7ull << 5)) && // OPMASK: upper-256 enabled by OS
+			 (xgetbv0 & (0x3ull << 1))) { // XMM/YMM enabled by OS
+			// Verify that XCR0[7:5] = ‘111b’ (OPMASK state, upper 256-bit of ZMM0-ZMM15 and
+			// ZMM16-ZMM31 state are enabled by OS)
+			// and that XCR0[2:1] = ‘11b’ (XMM state and YMM state are enabled by OS).
+			__cpuid(cpuinfo, 7);
+			if (IS_BIT_SET(cpuinfo[1], 16))
+				result |= CPUF_SUPPORTS_AVX512F;
+			if (IS_BIT_SET(cpuinfo[1], 17))
+				result |= CPUF_SUPPORTS_AVX512DQ;
+			if (IS_BIT_SET(cpuinfo[1], 21))
+				result |= CPUF_SUPPORTS_AVX512IFMA;
+			if (IS_BIT_SET(cpuinfo[1], 26))
+				result |= CPUF_SUPPORTS_AVX512PF;
+			if (IS_BIT_SET(cpuinfo[1], 27))
+				result |= CPUF_SUPPORTS_AVX512ER;
+			if (IS_BIT_SET(cpuinfo[1], 28))
+				result |= CPUF_SUPPORTS_AVX512CD;
+			if (IS_BIT_SET(cpuinfo[1], 30))
+				result |= CPUF_SUPPORTS_AVX512BW;
+			if (IS_BIT_SET(cpuinfo[1], 31))
+				result |= CPUF_SUPPORTS_AVX512VL;
+			if (IS_BIT_SET(cpuinfo[2], 1)) // [2]!
+				result |= CPUF_SUPPORTS_AVX512VBMI;
 		}
 	}
 
-	// check for 3DNow!, 3DNow! extensions
-	__cpuid(cpuInfo, 0x80000000);
-	if ((unsigned)cpuInfo[0] >= 0x80000001U) {
-		__cpuid(cpuInfo, 0x80000001);
+	// 3DNow!, 3DNow!, ISSE, FMA4
+	__cpuid(cpuinfo, 0x80000000);   
+	if (cpuinfo[0] >= 0x80000001)
+	{
+		__cpuid(cpuinfo, 0x80000001);
 
-		if (cpuInfo[3] & (1 << 31))
-			flags |= CPUF_SUPPORTS_3DNOW;
+		if (IS_BIT_SET(cpuinfo[3], 31))
+			result |= CPUF_SUPPORTS_3DNOW;
 
-		if (cpuInfo[3] & (1 << 30))
-			flags |= CPUF_SUPPORTS_3DNOW_EXT;
+		if (IS_BIT_SET(cpuinfo[3], 30))
+			result |= CPUF_SUPPORTS_3DNOW_EXT;
 
-		if (cpuInfo[3] & (1 << 22))
-			flags |= CPUF_SUPPORTS_INTEGER_SSE;
+		if (IS_BIT_SET(cpuinfo[3], 22))
+			result |= CPUF_SUPPORTS_INTEGER_SSE;
+
+		if (result & CPUF_SUPPORTS_AVX) {
+			if (IS_BIT_SET(cpuinfo[2], 16))
+				result |= CPUF_SUPPORTS_FMA4;
+		}
 	}
 
-	return flags;
+	return result;	
 }
 #endif
 
