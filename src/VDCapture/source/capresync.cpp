@@ -1117,9 +1117,9 @@ void VDCaptureResyncFilter::ResampleAndDispatchAudio(const void *data, uint32 si
 
 namespace {
 	void strided_copy_16(sint16 *dst, ptrdiff_t dstStride, const sint16 *src, uint32 samples, uint32 channels) {
+		dstStride -= samples * sizeof(sint16);
 		for(uint32 ch=0; ch<channels; ++ch) {
 			const sint16 *src2 = src++;
-			dstStride -= samples*sizeof(sint16);
 
 			for(uint32 s=0; s<samples; ++s) {
 				*dst++ = *src2;
