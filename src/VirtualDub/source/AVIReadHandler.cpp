@@ -1288,10 +1288,11 @@ void AVIReadHandler::_parseFile(List2<AVIStreamNode>& streamlist) {
 
 			case 'mges':			// VirtualDub segment hint block
 				delete pSegmentHint;
-				if (!(pSegmentHint = new char[dwLength]))
+				if (!(pSegmentHint = new char[dwLength+1]))
 					throw MyMemoryError();
 
 				mpCurrentFile->mFile.read(pSegmentHint, dwLength);
+				pSegmentHint[dwLength] = 0;
 
 				if (dwLength&1)
 					mpCurrentFile->mFile.skip(1);
