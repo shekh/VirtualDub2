@@ -58,6 +58,7 @@ extern DubSource::ErrorMode	g_videoErrorMode;
 extern DubSource::ErrorMode	g_audioErrorMode;
 
 vdrefptr<InputFile>		inputAVI;
+VDStringW g_inputDriver;
 InputFileOptions	*g_pInputOpts			= NULL;
 
 vdrefptr<IVDVideoSource>	inputVideo;

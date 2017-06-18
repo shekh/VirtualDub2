@@ -703,7 +703,7 @@ void OpenInput(bool append, bool audio) {
 	} else if (append) {
 		dlg.select_mode = key.getBool(g_szRegKeyAutoAppendByName, true) ? 2:0;
 		dlg.append_mode = true;
-		dlg.driver = VDGetInputDriverByName(g_project->mInputDriverName.c_str());
+		dlg.driver = VDGetInputDriverByName(g_inputDriver.c_str());
 		title = L"Append video segment";
 	}
 

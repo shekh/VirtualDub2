@@ -1381,6 +1381,7 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 
 		inputAVI = pSelectedDriver->CreateInputFile(flags);
 		if (!inputAVI) throw MyMemoryError();
+		g_inputDriver = pSelectedDriver->GetSignatureName();
 
 		// Extended open?
 		if (!(pSelectedDriver->GetFlags() & IVDInputDriver::kF_SupportsOpts))
@@ -1439,7 +1440,7 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 
 			if (nFiles==1 && fAutoscan==2) {
 				int flags = inputAVI->GetFileFlags();
-				if (flags!=-1 && !(flags & IVDInputDriver::kFF_Sequence))
+				if (flags==-1 || !(flags & IVDInputDriver::kFF_Sequence))
 					AppendAVIAutoscan(filename.c_str(), true);
 			}
 		}
@@ -1854,6 +1855,7 @@ void VDProject::CloseAVI() {
 
 	inputVideo = NULL;
 	inputAVI = NULL;
+	g_inputDriver.clear();
 
 	mTextInfo.clear();
 
@@ -2929,6 +2931,7 @@ void VDProject::SetAudioSource() {
 	}
 
 	if (inputAudio) {
+		inputAudio->streamAppendReinit();
 		const VDWaveFormat *fmt = inputAudio->getWaveFormat();
 		bool convert = false;
 		if (g_dubOpts.audio.newChannels!=DubAudioOptions::C_NOCHANGE) convert = true;

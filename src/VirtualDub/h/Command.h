@@ -39,6 +39,7 @@ class FrameSubset;
 struct VDAudioFilterGraph;
 
 extern vdrefptr<InputFile>		inputAVI;
+extern VDStringW  g_inputDriver;
 
 extern vdrefptr<IVDVideoSource>	inputVideo;
 
