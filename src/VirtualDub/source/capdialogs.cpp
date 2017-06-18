@@ -800,7 +800,7 @@ public:
 				const wchar_t *chstr	= wfex.mChannels == 2 ? L"stereo" : L"mono";
 				const wchar_t *lineformat;
 
-				if (wfex.mTag == VDWaveFormat::kTagPCM) {
+				if (is_audio_pcm(&wfex)) {
 					if (wfex.mChannels > 2)
 						lineformat = L"PCM: %uHz, %uch, %[3]u-bit";
 					else

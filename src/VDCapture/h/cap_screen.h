@@ -109,6 +109,7 @@ public:
 	void	SetAudioPlaybackEnabled(bool b) {}
 
 	void	GetAvailableAudioFormats(std::list<vdstructex<WAVEFORMATEX> >& aformats);
+	void	GetExtraFormats(std::list<vdstructex<WAVEFORMATEX> >& aformats);
 
 	bool	GetAudioFormat(vdstructex<WAVEFORMATEX>& aformat);
 	bool	SetAudioFormat(const WAVEFORMATEX *pwfex, uint32 size);

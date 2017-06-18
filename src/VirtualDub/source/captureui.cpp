@@ -431,7 +431,7 @@ protected:
 	void	UICaptureVideoHistoBegin();
 	void	UICaptureVideoHisto(const float data[256]);
 	void	UICaptureVideoHistoEnd();
-	void	UICaptureAudioPeaksUpdated(float l, float r);
+	void	UICaptureAudioPeaksUpdated(int count, float* peak);
 	void	UICaptureStart(bool test);
 	bool	UICapturePreroll();
 	void	UICaptureStatusUpdated(VDCaptureStatus&);
@@ -542,7 +542,8 @@ protected:
 	UINT			mUpdateTimer;
 	uint32			mLastPreviewFrameCount;
 
-	volatile float	mPeakL, mPeakR;
+	float peak[16];
+	int peak_count;
 
 	vdautoptr<IVDUIWindow>	mpVideoHistogram;
 	vdautoptr<IVDUIWindow>	mpVumeter;
@@ -596,13 +597,13 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 	, mNextChannel(-1)
 	, mUpdateTimer(0)
 	, mLastPreviewFrameCount(0)
-	, mPeakL(0.f)
-	, mPeakR(0.f)
 	, mDisplayProfileChannel("Display")
 	, mRefCount(0)
 {
 	mLastMouseMovePoint.x = 0;
 	mLastMouseMovePoint.y = 0;
+	memset(peak,0,sizeof(peak));
+	peak_count = 0;
 }
 
 VDCaptureProjectUI::~VDCaptureProjectUI() {
@@ -2062,10 +2063,14 @@ void VDCaptureProjectUI::UICaptureAudioFormatUpdated() {
 		vdstructex<VDWaveFormat> wf;
 
 		if (mpProject->GetAudioFormat(wf)) {
-			if (wf->mTag != VDWaveFormat::kTagPCM) {
-				wsprintf(bufa, "%.3fKHz", wf->mSamplingRate / 1000.0);
+			if (is_audio_pcm(wf.data()) || is_audio_float(wf.data())) {
+				if(wf->mChannels>2){
+					sprintf(bufa, "%dK/%d/%dch", (wf->mSamplingRate+500)/1000, wf->mSampleBits, wf->mChannels);
+				} else {
+					sprintf(bufa, "%dK/%d/%c", (wf->mSamplingRate+500)/1000, wf->mSampleBits, wf->mChannels>1?'s':'m');
+				}
 			} else {
-				wsprintf(bufa, "%dK/%d/%c", (wf->mSamplingRate+500)/1000, wf->mSampleBits, wf->mChannels>1?'s':'m');
+				sprintf(bufa, "%.3fKHz", wf->mSamplingRate / 1000.0);
 			}
 		}
 	}
@@ -2266,10 +2271,10 @@ void VDCaptureProjectUI::UICaptureAnalyzeEnd() {
 	ShowWindow(mhwndDisplay, SW_HIDE);
 }
 
-void VDCaptureProjectUI::UICaptureAudioPeaksUpdated(float l, float r) {
+void VDCaptureProjectUI::UICaptureAudioPeaksUpdated(int count, float* peak) {
 	// This message arrives asynchronously so we must repost.
-	mPeakL = l;
-	mPeakR = r;
+	peak_count = count;
+	memcpy(this->peak,peak,count*sizeof(float));
 
 	PostMessage((HWND)mhwnd, WM_APP+1, 0, 0);
 }
@@ -3621,7 +3626,7 @@ void VDCaptureProjectUI::OnUpdateVumeter() {
 	if (mpVumeter) {
 		IVDUICaptureVumeter *pVumeter = vdpoly_cast<IVDUICaptureVumeter *>(mpVumeter);
 
-		pVumeter->SetPeakLevels(mPeakL, mPeakR);
+		pVumeter->SetPeakLevels(peak_count, peak);
 	}
 }
 

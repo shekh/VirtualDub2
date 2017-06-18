@@ -450,7 +450,7 @@ void VDCaptureProjectBaseCallback::UICaptureAnalyzeEnd() {}
 void VDCaptureProjectBaseCallback::UICaptureVideoHistoBegin() {}
 void VDCaptureProjectBaseCallback::UICaptureVideoHisto(const float data[256]) {}
 void VDCaptureProjectBaseCallback::UICaptureVideoHistoEnd() {}
-void VDCaptureProjectBaseCallback::UICaptureAudioPeaksUpdated(float l, float r) {}
+void VDCaptureProjectBaseCallback::UICaptureAudioPeaksUpdated(int count, float* peak) {}
 void VDCaptureProjectBaseCallback::UICaptureStart(bool fTest) {}
 bool VDCaptureProjectBaseCallback::UICapturePreroll() { return true; }
 void VDCaptureProjectBaseCallback::UICaptureStatusUpdated(VDCaptureStatus&) {}
@@ -689,7 +689,7 @@ protected:
 
 	vdstructex<VDWaveFormat>	mAudioCompFormat;
 	VDStringA					mAudioCompFormatHint;
-	WAVEFORMATEX	mAudioAnalysisFormat;
+	vdstructex<WAVEFORMATEX>	mAudioAnalysisFormat;
 
 	vdautoptr<IVDCaptureVideoHistogram>	mpVideoHistogram;
 	VDCriticalSection		mVideoAnalysisLock;
@@ -730,8 +730,6 @@ VDCaptureProject::VDCaptureProject()
 	, mbLoggingEnabled(false)
 	, mRefCount(0)
 {
-	mAudioAnalysisFormat.wFormatTag		= 0;
-
 	mTimingSetup.mSyncMode				= VDCaptureTimingSetup::kSyncAudioToVideo;
 	mTimingSetup.mbAllowEarlyDrops		= true;
 	mTimingSetup.mbAllowLateInserts		= true;
@@ -1030,6 +1028,9 @@ const wchar_t *VDCaptureProject::GetAudioDeviceName(int idx) {
 
 void VDCaptureProject::SetAudioDevice(int idx) {
 	if (mpDriver) {
+		bool bVumeter = mbEnableAudioVumeter;
+		SetAudioVumeterEnabled(false);
+
 		mpDriver->SetAudioDevice(idx);
 
 		if (mpCB) {
@@ -1038,6 +1039,8 @@ void VDCaptureProject::SetAudioDevice(int idx) {
 			mpCB->UICaptureAudioSourceChanged(mpDriver->GetAudioSourceIndex());
 			mpCB->UICaptureAudioFormatUpdated();
 		}
+
+		SetAudioVumeterEnabled(bVumeter);
 	}
 }
 
@@ -1182,16 +1185,28 @@ void VDCaptureProject::SetAudioVumeterEnabled(bool b) {
 		if (b) {
 			vdstructex<WAVEFORMATEX> wfex;
 			if (mpDriver->GetAudioFormat(wfex)) {
-				if (wfex->wFormatTag == WAVE_FORMAT_PCM) {
-					mAudioAnalysisFormat = *wfex;
+				if (is_audio_pcm((VDWaveFormat*)wfex.data())) {
+					mAudioAnalysisFormat = wfex;
 					mpDriver->SetAudioAnalysisEnabled(true);
+
+					vdstructex<WAVEFORMATEX> wfex2;
+					if (mpDriver->GetAudioFormat(wfex2)) {
+						if (mpCB)
+							mpCB->UICaptureAudioFormatUpdated();
+						if(wfex2!=wfex){
+							mAudioAnalysisFormat = wfex2;
+							mbEnableAudioVumeter = false;
+							SetAudioVumeterEnabled(true);
+						}
+					}
+
 				}
 			}
 		}
 	}
 
 	if (!b)
-		mAudioAnalysisFormat.wFormatTag = 0;
+		mAudioAnalysisFormat.clear();
 }
 
 bool VDCaptureProject::IsAudioVumeterEnabled() {
@@ -2033,7 +2048,7 @@ unknown_PCM_format:
 			icd.mpAudioCompFilter = pAudioCompFilter;
 			pAudioCompFilter->SetChildCallback(pCurrentCB);
 			pCurrentCB = pAudioCompFilter;
-			pAudioCompFilter->SetSourceSplit(mAudioAnalysisFormat.wFormatTag != 0);
+			pAudioCompFilter->SetSourceSplit(!mAudioAnalysisFormat.empty());
 			pAudioCompFilter->Init((const WAVEFORMATEX *)wfexInput.data(), (const WAVEFORMATEX *)wfexOutput.data(), mAudioCompFormatHint.c_str());
 		}
 
@@ -2120,6 +2135,13 @@ unknown_PCM_format:
 			if (!mpDriver->CaptureStart()) {
 				icd.mpError = new_nothrow MyError("Unable to start video capture.");
 			} else {
+
+				vdstructex<WAVEFORMATEX> wfex;
+				if (mpDriver->GetAudioFormat(wfex)) {
+					if (mpCB)
+						mpCB->UICaptureAudioFormatUpdated();
+				}
+
 				VDSamplingAutoProfileScope autoVTProfile;
 
 				MSG msg;
@@ -2440,11 +2462,17 @@ void VDCaptureProject::CapProcessData2(int stream, const void *data, uint32 size
 					}
 				}
 			} else {
-				if (mAudioAnalysisFormat.wFormatTag == WAVE_FORMAT_PCM) {
-					float l=0, r=0;
-					VDComputeWavePeaks(data, mAudioAnalysisFormat.wBitsPerSample, mAudioAnalysisFormat.nChannels, size / mAudioAnalysisFormat.nBlockAlign, l, r);
+				if (!mAudioAnalysisFormat.empty() && is_audio_pcm((VDWaveFormat*)mAudioAnalysisFormat.data())) {
+					float peak[16];
+					int n = mAudioAnalysisFormat->nChannels;
+					vdstructex<WAVEFORMATEX> wfex;
+					mpDriver->GetAudioFormat(wfex);
+					if(wfex==mAudioAnalysisFormat)
+						VDComputeWavePeaks(data, mAudioAnalysisFormat->wBitsPerSample, mAudioAnalysisFormat->nChannels, size / mAudioAnalysisFormat->nBlockAlign, peak);
+					else
+						n = 0;
 					if (mpCB)
-						mpCB->UICaptureAudioPeaksUpdated(l, r);
+						mpCB->UICaptureAudioPeaksUpdated(n, peak);
 				}
 			}
 		}
@@ -2467,11 +2495,17 @@ void VDCaptureProject::CapProcessData2(int stream, const void *data, uint32 size
 	if (stream > 0) {
 		success = icd->WaveCallback(data, size, global_clock);
 
-		if (!icd->mpAudioCompFilter && mAudioAnalysisFormat.wFormatTag == WAVE_FORMAT_PCM) {
-			float l=0, r=0;
-			VDComputeWavePeaks(data, mAudioAnalysisFormat.wBitsPerSample, mAudioAnalysisFormat.nChannels, size / mAudioAnalysisFormat.nBlockAlign, l, r);
+		if (!icd->mpAudioCompFilter && !mAudioAnalysisFormat.empty() && is_audio_pcm((VDWaveFormat*)mAudioAnalysisFormat.data())) {
+			float peak[16];
+			int n = mAudioAnalysisFormat->nChannels;
+			vdstructex<WAVEFORMATEX> wfex;
+			mpDriver->GetAudioFormat(wfex);
+			if(wfex==mAudioAnalysisFormat)
+				VDComputeWavePeaks(data, mAudioAnalysisFormat->wBitsPerSample, mAudioAnalysisFormat->nChannels, size / mAudioAnalysisFormat->nBlockAlign, peak);
+			else
+				n = 0;
 			if (mpCB)
-				mpCB->UICaptureAudioPeaksUpdated(l, r);
+				mpCB->UICaptureAudioPeaksUpdated(n, peak);
 		}
 	} else {
 		if (!stream)

@@ -3,13 +3,13 @@
 
 #include <vd2/system/vdtypes.h>
 
-void VDComputeWavePeaks(const void *p, unsigned depth, unsigned channels, unsigned count, float& l, float& r);
+void VDComputeWavePeaks(const void *p, unsigned depth, unsigned channels, unsigned count, float* peak);
 
 class VDINTERFACE IVDUICaptureVumeter {
 public:
 	enum { kTypeID = 'cpvu' };
 
-	virtual void SetPeakLevels(float l, float r) = 0;
+	virtual void SetPeakLevels(int count, float* peak) = 0;
 };
 
 #endif

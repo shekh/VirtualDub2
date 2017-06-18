@@ -29,83 +29,39 @@
 
 ///////////////////////////////////////////////////////////////////////////
 namespace {
-	void ComputeWavePeaks_8M(const uint8 *p, unsigned count, float& l, float& r) {
-		int v=0;
-
-		do {
-			int c = abs((sint8)(*p++ ^ 0x80));
-
-			if (v < c)
-				v = c;
-		} while(--count);
-
-		l = r = (v * (1.0f / 128.0f));
+	void ComputeWavePeaks_8(const uint8 *data, unsigned count, int channels, float* peak) {
+		{for(int ch=0; ch<channels; ch++){
+			const uint8* p = data+ch;
+			int v = 0;
+			{for(int i=0; i<count; i++){
+				int c = abs((sint8)(*p ^ 0x80));
+				if (v < c) v = c;
+				p += channels;
+			}}
+			peak[ch] = (v * (1.0f / 128.0f));
+		}}
 	}
 
-	void ComputeWavePeaks_8S(const uint8 *p, unsigned count, float& l, float& r) {
-		int vL=0;
-		int vR=0;
-
-		do {
-			int cL = abs((sint8)(p[0] ^ 0x80));
-			int cR = abs((sint8)(p[1] ^ 0x80));
-			p += 2;
-
-			if (vL < cL)
-				vL = cL;
-			if (vR < cR)
-				vR = cR;
-		} while(--count);
-
-		l = (vL * (1.0f / 128.0f));
-		r = (vR * (1.0f / 128.0f));
-	}
-
-	void ComputeWavePeaks_16M(const sint16 *p, unsigned count, float& l, float& r) {
-		int v=0;
-
-		do {
-			int c = abs((int)*p++);
-
-			if (v < c)
-				v = c;
-		} while(--count);
-
-		l = r = (v * (1.0f / 32768.0f));
-	}
-
-	void ComputeWavePeaks_16S(const sint16 *p, unsigned count, float& l, float& r) {
-		int vL=0;
-		int vR=0;
-
-		do {
-			int cL = abs((int)p[0]);
-			int cR = abs((int)p[1]);
-			p += 2;
-
-			if (vL < cL)
-				vL = cL;
-			if (vR < cR)
-				vR = cR;
-		} while(--count);
-
-		l = (vL * (1.0f / 32768.0f));
-		r = (vR * (1.0f / 32768.0f));
+	void ComputeWavePeaks_16(const sint16 *data, unsigned count, int channels, float* peak) {
+		{for(int ch=0; ch<channels; ch++){
+			const sint16* p = data+ch;
+			int v = 0;
+			{for(int i=0; i<count; i++){
+				int c = abs((int)(*p));
+				if (v < c) v = c;
+				p += channels;
+			}}
+			peak[ch] = (v * (1.0f / 32768.0f));
+		}}
 	}
 }
 
-void VDComputeWavePeaks(const void *p, unsigned depth, unsigned channels, unsigned count, float& l, float& r) {
-	l = r = 0;
+void VDComputeWavePeaks(const void *p, unsigned depth, unsigned channels, unsigned count, float* peak) {
+	{for(int i=0; i<channels; i++) peak[i] = 0; }
 
 	if (count) {
-		if (depth == 8 && channels == 1)
-			ComputeWavePeaks_8M((const uint8 *)p, count, l, r);
-		else if (depth == 8 && channels == 2)
-			ComputeWavePeaks_8S((const uint8 *)p, count, l, r);
-		else if (depth == 16 && channels == 1)
-			ComputeWavePeaks_16M((const sint16 *)p, count, l, r);
-		else if (depth == 16 && channels == 2)
-			ComputeWavePeaks_16S((const sint16 *)p, count, l, r);
+		if(depth==8) ComputeWavePeaks_8((const uint8 *)p, count, channels, peak);
+		if(depth==16) ComputeWavePeaks_16((const sint16 *)p, count, channels, peak);
 	}
 }
 
@@ -122,15 +78,16 @@ public:
 
 	void SetArea(const vduirect& r);
 
-	void SetPeakLevels(float l, float r);
+	void SetPeakLevels(int count, float* peak);
 
 protected:
 	LRESULT WndProc(UINT msg, WPARAM wParam, LPARAM lParam);
 	void OnPaint();
 
-	uint64	mLastPeakL, mLastPeakR;
-	float	mFracL, mFracR;
-	float	mPeakL, mPeakR;
+	int peak_count;
+	uint64	mLastPeak[16];
+	float	mFrac[16];
+	float	mPeak[16];
 	HBRUSH	mhbrFillL;
 	HBRUSH	mhbrFillR;
 	HBRUSH	mhbrErase;
@@ -140,17 +97,17 @@ protected:
 extern IVDUIWindow *VDCreateUICaptureVumeter() { return new VDUICaptureVumeterW32; }
 
 VDUICaptureVumeterW32::VDUICaptureVumeterW32()
-	: mLastPeakL(0)
-	, mLastPeakR(0)
-	, mPeakL(0)
-	, mPeakR(0)
-	, mFracL(0.5f)
-	, mFracR(0.5f)
-	, mhbrFillL(CreateSolidBrush(RGB(0,128,192)))
+	: mhbrFillL(CreateSolidBrush(RGB(0,128,192)))
 	, mhbrFillR(CreateSolidBrush(RGB(0,0,255)))
 	, mhbrErase(CreateSolidBrush(RGB(0,0,0)))
 	, mhbrPeak(CreateSolidBrush(RGB(255,0,0)))
 {
+	{for(int i=0; i<16; i++){
+		mLastPeak[i] = 0;
+		mPeak[i] = 0;
+		mFrac[i] = 0.5;
+	}}
+	peak_count = 0;
 }
 
 VDUICaptureVumeterW32::~VDUICaptureVumeterW32() {
@@ -177,24 +134,19 @@ void VDUICaptureVumeterW32::SetArea(const vduirect& r) {
 	InvalidateRect(mhwnd, NULL, TRUE);
 }
 
-void VDUICaptureVumeterW32::SetPeakLevels(float l, float r) {
+void VDUICaptureVumeterW32::SetPeakLevels(int count, float* peak) {
 	const float invLn10_4 = 0.2171472409516259138255644594583f;
 
-	if (l < 1e-4f)
-		mFracL = 0;
-	else
-		mFracL = 1.0f + (float)(log(l) * invLn10_4);
+	peak_count = count;
+	{for(int i=0; i<count; i++){
+		if (peak[i] < 1e-4f)
+			mFrac[i] = 0;
+		else
+			mFrac[i] = 1.0f + (float)(log(peak[i]) * invLn10_4);
 
-	if (r < 1e-4f)
-		mFracR = 0;
-	else
-		mFracR = 1.0f + (float)(log(r) * invLn10_4);
-
-	if (mFracL < 0)
-		mFracL = 0;
-
-	if (mFracR < 0)
-		mFracR = 0;
+		if (mFrac[i] < 0)
+			mFrac[i] = 0;
+	}}
 
 	RECT rClient;
 
@@ -234,57 +186,46 @@ void VDUICaptureVumeterW32::OnPaint() {
 		uint64 t = VDGetAccurateTick();
 		double invfreq = 0.1 / 1000.0;
 
-		if (!mLastPeakL)
-			mLastPeakL = t;
-
-		if (!mLastPeakR)
-			mLastPeakR = t;
-
 		struct local {
 			static double sq(double x) { return x*x; }
 		};
 
-		float peakL = mPeakL - (float)local::sq((t - mLastPeakL) * invfreq);
-		float peakR = mPeakR - (float)local::sq((t - mLastPeakR) * invfreq);
+		int peakx[16];
+		int y2 = r.bottom >> 1;
 
-		if (peakL < mFracL) {
-			mPeakL = peakL = mFracL;
-			mLastPeakL = t;
+		if (!peak_count) {
+			RECT r2 = {0,0,r.right,y2};
+			FillRect(hdc, &r2, mhbrErase);
 		}
 
-		if (peakR < mFracR) {
-			mPeakR = peakR = mFracR;
-			mLastPeakR = t;
-		}
+		{for(int i=0; i<peak_count; i++){
+			if (!mLastPeak[i])
+				mLastPeak[i] = t;
 
-		int xL = VDRoundToIntFast(mFracL * r.right);
-		int xR = VDRoundToIntFast(mFracR * r.right);
+			float peak = mPeak[i] - (float)local::sq((t - mLastPeak[i]) * invfreq);
+			if (peak < mFrac[i]) {
+				mPeak[i] = peak = mFrac[i];
+				mLastPeak[i] = t;
+			}
 
-		const int y0 = 0;
-		const int y1 = r.bottom >> 2;
-		const int y2 = r.bottom >> 1;
+			int x = VDRoundToIntFast(mFrac[i] * r.right);
+			peakx[i] = VDRoundToIntFast(peak * (r.right-1));
 
-		RECT r2L = {0,y0,xL,y1};
-		RECT r2R = {0,y1,xR,y2};
+			int y0 = y2*i/peak_count;
+			int y1 = y2*(i+1)/peak_count;
+			RECT r2 = {0,y0,x,y1};
+			FillRect(hdc, &r2, (i%2==0) ? mhbrFillL:mhbrFillR);
+			r2.left = x;
+			r2.right = r.right;
+			FillRect(hdc, &r2, mhbrErase);
+		}}
 
-		FillRect(hdc, &r2L, mhbrFillL);
-		FillRect(hdc, &r2R, mhbrFillR);
-
-		r2L.left = xL;
-		r2L.right = r.right;
-		r2R.left = xR;
-		r2R.right = r.right;
-		FillRect(hdc, &r2L, mhbrErase);
-		FillRect(hdc, &r2R, mhbrErase);
-
-		int peakxL = VDRoundToIntFast(peakL * (r.right-1));
-		int peakxR = VDRoundToIntFast(peakR * (r.right-1));
-
-		RECT rPeakL = {peakxL, y0, peakxL+1, y1 };
-		RECT rPeakR = {peakxR, y1, peakxR+1, y2 };
-
-		FillRect(hdc, &rPeakL, mhbrPeak);
-		FillRect(hdc, &rPeakR, mhbrPeak);
+		{for(int i=0; i<peak_count; i++){
+			int y0 = y2*i/peak_count;
+			int y1 = y2*(i+1)/peak_count;
+			RECT rPeak = {peakx[i], y0, peakx[i]+1, y1 };
+			FillRect(hdc, &rPeak, mhbrPeak);
+		}}
 
 		// determine the -10db, -6db, and -3db points; the -20db and 0db points
 		// are defined as the ends, which makes this easier

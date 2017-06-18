@@ -181,7 +181,7 @@ public:
 	virtual void UICaptureVideoHistoBegin() = 0;
 	virtual void UICaptureVideoHisto(const float data[256]) = 0;
 	virtual void UICaptureVideoHistoEnd() = 0;
-	virtual void UICaptureAudioPeaksUpdated(float l, float r) = 0;
+	virtual void UICaptureAudioPeaksUpdated(int count, float* peak) = 0;
 	virtual void UICaptureStart(bool test) = 0;
 	virtual bool UICapturePreroll() = 0;
 	virtual void UICaptureStatusUpdated(VDCaptureStatus&) = 0;
@@ -211,7 +211,7 @@ public:
 	virtual void UICaptureVideoHistoBegin();
 	virtual void UICaptureVideoHisto(const float data[256]);
 	virtual void UICaptureVideoHistoEnd();
-	virtual void UICaptureAudioPeaksUpdated(float l, float r);
+	virtual void UICaptureAudioPeaksUpdated(int count, float* peak);
 	virtual void UICaptureStart(bool test);
 	virtual bool UICapturePreroll();
 	virtual void UICaptureStatusUpdated(VDCaptureStatus&);
