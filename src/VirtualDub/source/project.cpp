@@ -1695,10 +1695,10 @@ void VDProject::CloseWAV() {
 	}
 }
 
-void VDProject::PreviewInput() {
+void VDProject::PreviewInput(VDPosition* restart) {
 	UpdateTimelineRate();
 
-	VDPosition start = GetCurrentFrame();
+	VDPosition start = restart ? *restart : GetCurrentFrame();
 	DubOptions dubOpt(g_dubOpts);
 
 	LONG preload = inputAudio && inputAudio->getWaveFormat()->mTag != WAVE_FORMAT_PCM ? 1000 : 500;
@@ -1740,10 +1740,10 @@ void VDProject::PreviewInput() {
 	}
 }
 
-void VDProject::PreviewOutput() {
+void VDProject::PreviewOutput(VDPosition* restart) {
 	UpdateTimelineRate();
 
-	VDPosition start = GetCurrentFrame();
+	VDPosition start = restart ? *restart : GetCurrentFrame();
 	DubOptions dubOpt(g_dubOpts);
 
 	const VDPixmapLayout& layout = (dubOpt.video.mode == DubVideoOptions::M_FULL) ? filters.GetOutputLayout() : filters.GetInputLayout();
@@ -1773,23 +1773,29 @@ void VDProject::PreviewOutput() {
 	}
 }
 
-void VDProject::PreviewAll() {
+void VDProject::PreviewAll(VDPosition* restart) {
+	DubOptions dubOpt(g_dubOpts);
+
+	if (restart) {
+		dubOpt.video.mSelectionStart.mOffset = *restart;
+		if (*restart>=dubOpt.video.mSelectionEnd.mOffset)
+			dubOpt.video.mSelectionEnd.mOffset = mTimeline.GetLength();
+	}
+
+	dubOpt.video.fShowDecompressedFrame = g_drawDecompressedFrame;
+	dubOpt.fShowStatus = !!g_showStatusWindow;
+	dubOpt.fMoveSlider = true;
+
 	mPreviewRestartMode = kPreviewRestart_All;
-	Preview(NULL);
+	Preview(&dubOpt);
 }
 
 void VDProject::Preview(DubOptions *options) {
 	if (!inputVideo)
 		throw MyError("No input video stream to process.");
 
-	DubOptions opts(options ? *options : g_dubOpts);
+	DubOptions opts(*options);
 	opts.audio.enabled = true;
-
-	if (!options) {
-		opts.video.fShowDecompressedFrame = g_drawDecompressedFrame;
-		opts.fShowStatus = !!g_showStatusWindow;
-		opts.fMoveSlider = true;
-	}
 
 	VDAVIOutputPreviewSystem outpreview;
 	RunOperation(&outpreview, false, &opts, g_prefs.main.iPreviewPriority, true, 0, 0);
@@ -1802,13 +1808,13 @@ void VDProject::PreviewRestart() {
 
 		switch(restartMode) {
 			case kPreviewRestart_Input:
-				PreviewInput();
+				PreviewInput(&mPreviewRestartPosition);
 				break;
 			case kPreviewRestart_Output:
-				PreviewOutput();
+				PreviewOutput(&mPreviewRestartPosition);
 				break;
 			case kPreviewRestart_All:
-				PreviewAll();
+				PreviewAll(&mPreviewRestartPosition);
 				break;
 		}
 	}
@@ -2601,6 +2607,16 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 void VDProject::AbortOperation() {
 	if (g_dubber)
 		g_dubber->Abort();
+}
+
+bool VDProject::AbortPreviewing() {
+	if (!g_dubber)
+		return true;
+	if (!g_dubber->IsPreviewing()) 
+		return false;
+	g_dubber->Abort();
+	mPreviewRestartMode = kPreviewRestart_None;
+	return true;
 }
 
 void VDProject::StopFilters() {

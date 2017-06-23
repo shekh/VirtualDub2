@@ -55,6 +55,7 @@ public:
 
 enum {
 	kVDProjectCmd_Null,
+	kVDProjectCmd_GoToAsk,
 	kVDProjectCmd_GoToStart,
 	kVDProjectCmd_GoToEnd,
 	kVDProjectCmd_GoToPrevFrame,
@@ -65,6 +66,8 @@ enum {
 	kVDProjectCmd_GoToNextKey,
 	kVDProjectCmd_GoToPrevDrop,
 	kVDProjectCmd_GoToNextDrop,
+	kVDProjectCmd_GoToPrevRange,
+	kVDProjectCmd_GoToNextRange,
 	kVDProjectCmd_GoToSelectionStart,
 	kVDProjectCmd_GoToSelectionEnd,
 	kVDProjectCmd_ScrubBegin,
@@ -177,9 +180,9 @@ public:
 	void Reopen();
 	void OpenWAV(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver = NULL, bool automated = false, bool extOpts = false, const void *optdata = NULL, int optlen = 0);
 	void CloseWAV();
-	void PreviewInput();
-	void PreviewOutput();
-	void PreviewAll();
+	void PreviewInput(VDPosition* restart=0);
+	void PreviewOutput(VDPosition* restart=0);
+	void PreviewAll(VDPosition* restart=0);
 	void Preview(DubOptions *options);
 	void PreviewRestart();
 	void RunNullVideoPass();
@@ -238,6 +241,7 @@ public:
 	void ResetTimelineWithConfirmation();
 	void ScanForErrors();
 	void AbortOperation();
+	bool AbortPreviewing();
 
 	// hack
 	void StopFilters();
@@ -349,6 +353,7 @@ protected:
 		kPreviewRestart_Output,
 		kPreviewRestart_All
 	} mPreviewRestartMode;
+	VDPosition mPreviewRestartPosition;
 
 	vdblock<char>	mVideoSampleBuffer;
 

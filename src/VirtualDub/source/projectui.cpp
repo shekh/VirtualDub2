@@ -721,7 +721,6 @@ void VDProjectUI::UpdateAccelPreview() {
 		ID_VIDEO_FILTERS,
 		ID_OPTIONS_SHOWPROFILER,
 
-		ID_EDIT_JUMPTO,
 		ID_VIDEO_SEEK_NEXTSCENE,
 		ID_VIDEO_SEEK_PREVSCENE,
 		ID_VIDEO_SEEK_STOP,
@@ -736,6 +735,7 @@ void VDProjectUI::UpdateAccelPreview() {
 		ID_VIDEO_SEEK_SELSTART,
 		ID_VIDEO_SEEK_SELEND,
 
+		ID_EDIT_JUMPTO,
 		ID_EDIT_PREVRANGE,
 		ID_EDIT_NEXTRANGE,
 		ID_EDIT_SETMARKER,
@@ -769,8 +769,11 @@ void VDProjectUI::UpdateAccelDub() {
 		ID_VIDEO_SEEK_SELSTART,
 		ID_VIDEO_SEEK_SELEND,
 
+		ID_EDIT_JUMPTO,
 		ID_EDIT_SETSELEND,
 		ID_EDIT_SETSELSTART,
+		ID_EDIT_PREVRANGE,
+		ID_EDIT_NEXTRANGE,
 		ID_EDIT_SETMARKER,
 	};
 
@@ -1836,8 +1839,6 @@ void VDProjectUI::QueueCommand(int cmd) {
 		if (!g_dubber->IsPreviewing())
 			return;
 
-		g_dubber->Abort(false);
-
 		switch(cmd) {
 		case kVDProjectCmd_GoToStart:
 		case kVDProjectCmd_GoToEnd:
@@ -1846,18 +1847,31 @@ void VDProjectUI::QueueCommand(int cmd) {
 		case kVDProjectCmd_ScrubBegin:
 		case kVDProjectCmd_ScrubEnd:
 		case kVDProjectCmd_ScrubUpdate:
+		case kVDProjectCmd_GoToNextUnit:
+		case kVDProjectCmd_GoToNextKey:
+		case kVDProjectCmd_GoToNextRange:
+			// allow restart
+			g_dubber->Abort(false);
 			SetPositionCallbackEnabled(false);
+			break;
+		default:
+			AbortPreviewing();
 			break;
 		}
 
+		mPreviewRestartPosition = mpPosition->GetPosition();
 		mPendingCommands.push_back(cmd);
 	} else {
+		SceneShuttleStop();
 		ExecuteCommand(cmd);
 	}
 }
 
 void VDProjectUI::ExecuteCommand(int cmd) {
 	switch(cmd) {
+		case kVDProjectCmd_GoToAsk:
+			JumpToFrameAsk();
+			break;
 		case kVDProjectCmd_GoToStart:
 			MoveToStart();
 			break;
@@ -1890,6 +1904,12 @@ void VDProjectUI::ExecuteCommand(int cmd) {
 		case kVDProjectCmd_GoToNextDrop:
 			MoveToNextDrop();
 			break;
+		case kVDProjectCmd_GoToPrevRange:
+			MoveToPreviousRange();
+			break;
+		case kVDProjectCmd_GoToNextRange:
+			MoveToNextRange();
+			break;
 		case kVDProjectCmd_GoToSelectionStart:
 			MoveToSelectionStart();
 			break;
@@ -1918,6 +1938,7 @@ void VDProjectUI::ExecuteCommand(int cmd) {
 			SetSelectionEnd();
 			break;
 	}
+	mPreviewRestartPosition = mpPosition->GetPosition();
 }
 
 bool VDProjectUI::MenuHit(UINT id) {
@@ -1969,19 +1990,19 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_FILE_APPENDSEGMENT:				AppendAsk();					break;
 		case ID_FILE_PREVIEWINPUT:
 			if (g_dubber) {
-				if (g_dubber->IsPreviewing())
-					AbortOperation();
+				AbortPreviewing();
 			} else {
 				SceneShuttleStop();
+				mPreviewRestartPosition = mpPosition->GetPosition();
 				PreviewInput();
 			}
 			break;
 		case ID_FILE_PREVIEWOUTPUT:
 			if (g_dubber) {
-				if (g_dubber->IsPreviewing())
-					AbortOperation();
+				AbortPreviewing();
 			} else {
 				SceneShuttleStop();
+				mPreviewRestartPosition = mpPosition->GetPosition();
 				PreviewOutput();
 			}
 			break;
@@ -2178,34 +2199,29 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_VIDEO_SEEK_SELEND:				QueueCommand(kVDProjectCmd_GoToSelectionEnd);	break;
 		case ID_VIDEO_SEEK_PREVDROP:			QueueCommand(kVDProjectCmd_GoToPrevDrop);		break;
 		case ID_VIDEO_SEEK_NEXTDROP:			QueueCommand(kVDProjectCmd_GoToNextDrop);		break;
+		case ID_EDIT_PREVRANGE:					QueueCommand(kVDProjectCmd_GoToPrevRange);		break;
+		case ID_EDIT_NEXTRANGE:					QueueCommand(kVDProjectCmd_GoToNextRange);		break;
+		case ID_EDIT_JUMPTO:					QueueCommand(kVDProjectCmd_GoToAsk);			break;
 		case ID_VIDEO_SEEK_STOP:
 			SceneShuttleStop();
-			if (g_dubber && g_dubber->IsPreviewing())
-				AbortOperation();
+			AbortPreviewing();
 			break;
 		case ID_VIDEO_SEEK_PREVSCENE:
 			if (IsSceneShuttleRunning())
 				SceneShuttleStop();
 			else {
-				if (g_dubber && g_dubber->IsPreviewing())
-					AbortOperation();
-				StartSceneShuttleReverse();
+				if (AbortPreviewing()) StartSceneShuttleReverse();
 			}
 			break;
 		case ID_VIDEO_SEEK_NEXTSCENE:
 			if (IsSceneShuttleRunning())
 				SceneShuttleStop();
 			else {
-				if (g_dubber && g_dubber->IsPreviewing())
-					AbortOperation();
-				StartSceneShuttleForward();
+				if (AbortPreviewing()) StartSceneShuttleForward();
 			}
 			break;
 		case ID_VIDEO_SCANFORERRORS:			ScanForErrors();			break;
-		case ID_EDIT_JUMPTO:					JumpToFrameAsk();			break;
 		case ID_EDIT_RESET:						ResetTimelineWithConfirmation();		break;
-		case ID_EDIT_PREVRANGE:					MoveToPreviousRange();		break;
-		case ID_EDIT_NEXTRANGE:					MoveToNextRange();			break;
 
 		case ID_VIDEO_FILTERS:					SetVideoFiltersAsk();				break;
 		case ID_VIDEO_FRAMERATE:				SetVideoFramerateOptionsAsk();		break;
@@ -2847,19 +2863,60 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 				if (inputVideo) {
 					try {
 						switch(HIWORD(wParam)) {
-						case PCN_PLAY:				PreviewInput();				break;
-						case PCN_PLAYPREVIEW:		PreviewOutput();				break;
-						case PCN_MARKIN:			SetSelectionStart();			break;
-						case PCN_MARKOUT:			SetSelectionEnd();				break;
-						case PCN_START:				MoveToStart();					break;
-						case PCN_BACKWARD:			MoveToPrevious();				break;
-						case PCN_FORWARD:			MoveToNext();					break;
-						case PCN_END:				MoveToEnd();					break;
-						case PCN_KEYPREV:			MoveToPreviousKey();			break;
-						case PCN_KEYNEXT:			MoveToNextKey();				break;
-						case PCN_SCENEREV:			StartSceneShuttleReverse();	break;
-						case PCN_SCENEFWD:			StartSceneShuttleForward();	break;
+						case PCN_PLAY:
+							if (g_dubber) {
+								AbortPreviewing();
+							} else {
+								SceneShuttleStop();
+								mPreviewRestartPosition = mpPosition->GetPosition();
+								PreviewInput();
+							}
+							break;
+						case PCN_PLAYPREVIEW:
+							if (g_dubber) {
+								AbortPreviewing();
+							} else {
+								SceneShuttleStop();
+								mPreviewRestartPosition = mpPosition->GetPosition();
+								PreviewOutput();
+							}
+							break;
+						case PCN_MARKIN:
+							MenuHit(ID_EDIT_SETSELSTART);
+							break;
+						case PCN_MARKOUT:
+							MenuHit(ID_EDIT_SETSELEND);
+							break;
+						case PCN_START:
+							MenuHit(ID_VIDEO_SEEK_START);
+							break;
+						case PCN_BACKWARD:
+							MenuHit(ID_VIDEO_SEEK_PREV);
+							break;
+						case PCN_FORWARD:
+							MenuHit(ID_VIDEO_SEEK_PREV);
+							break;
+						case PCN_END:
+							MenuHit(ID_VIDEO_SEEK_END);
+							break;
+						case PCN_KEYPREV:
+							MenuHit(ID_VIDEO_SEEK_KEYPREV);
+							break;
+						case PCN_KEYNEXT:
+							MenuHit(ID_VIDEO_SEEK_KEYNEXT);
+							break;
+						case PCN_SCENEREV:
+							if (!AbortPreviewing()) return -1;
+							StartSceneShuttleReverse();
+							break;
+						case PCN_SCENEFWD:
+							if (!AbortPreviewing()) return -1;
+							StartSceneShuttleForward();
+							break;
 						case PCN_STOP:
+							AbortOperation();
+							SceneShuttleStop();
+							break;
 						case PCN_SCENESTOP:
 							SceneShuttleStop();
 							break;
@@ -2868,7 +2925,7 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 						e.post((HWND)mhwnd, g_szError);
 					}
 				}
-				break;
+				return 0;
 			}
 		} else if (MenuHit(LOWORD(wParam)))
 			return 0;
@@ -3032,11 +3089,7 @@ LRESULT VDProjectUI::DubWndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		if (lParam) {
 			switch(LOWORD(wParam)) {
 			case IDC_POSITION:
-				switch(HIWORD(wParam)) {
-				case PCN_STOP:
-					g_dubber->Abort();
-				}
-				break;
+				return MainWndProc(msg,wParam,lParam);
 			}
 		} else if (!MenuHit(LOWORD(wParam)))
 			return VDUIFrame::GetFrame((HWND)mhwnd)->DefProc((HWND)mhwnd, msg, wParam, lParam);
@@ -3321,6 +3374,7 @@ void VDProjectUI::OnPositionNotify(int code) {
 	case PCN_ENDTRACK:
 		//guiSetStatus("", 255);
 		UINotifySelection();
+		mPreviewRestartPosition = mpPosition->GetPosition();
 		mpPosition->SetAutoPositionUpdate(true);
 		mbLockPreviewRestart = false;
 		break;

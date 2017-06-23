@@ -616,7 +616,13 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 				return 0;
 			}
 
-			SendMessage(GetParent(mhwnd), WM_COMMAND, MAKELONG(GetWindowLong(mhwnd, GWL_ID), cmd), (LPARAM)mhwnd);
+			LRESULT r = SendMessage(GetParent(mhwnd), WM_COMMAND, MAKELONG(GetWindowLong(mhwnd, GWL_ID), cmd), (LPARAM)mhwnd);
+			if(r==-1) switch(LOWORD(wParam)) {
+			case IDC_SCENEREV:
+			case IDC_SCENEFWD:
+				CheckDlgButton(mhwnd,LOWORD(wParam),BST_UNCHECKED);
+				break;
+			}
 		}
 		break;
 
