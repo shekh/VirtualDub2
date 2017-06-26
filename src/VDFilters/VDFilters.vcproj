@@ -395,6 +395,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\source\VFDrawText.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\source\VFFieldBob.cpp"
 				>
 			</File>

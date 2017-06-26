@@ -169,6 +169,7 @@
     <ClCompile Include="source\VFChromaSmoother.cpp" />
     <ClCompile Include="source\VFConvertFormat.cpp" />
     <ClCompile Include="source\VFDeinterlace.cpp" />
+    <ClCompile Include="source\VFDrawText.cpp" />
     <ClCompile Include="source\VFFieldBob.cpp" />
     <ClCompile Include="source\VFFieldBob2.cpp" />
     <ClCompile Include="source\VFFieldDelay.cpp" />

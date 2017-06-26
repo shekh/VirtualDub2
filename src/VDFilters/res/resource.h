@@ -22,6 +22,7 @@
 #define IDD_FILTER_INTERLACE            282
 #define IDD_FILTER_IVTC                 283
 #define IDD_FILTER_GAMMACORRECT         290
+#define IDD_FILTER_DRAWTEXT             311
 #define IDC_BLEND_MODE                  1001
 #define IDC_MODE_Y                      1002
 #define IDC_AMOUNT                      1002
@@ -29,10 +30,17 @@
 #define IDC_STATIC_AMOUNT               1003
 #define IDC_MODE_Q                      1004
 #define IDC_MODE_IQAVERAGE3             1005
+#define IDC_TEXT                        1005
 #define IDC_MODE_IQAVERAGE5             1006
+#define IDC_COLOR1                      1006
 #define IDC_MODE_IQAV5TMP               1007
+#define IDC_COLOR0                      1007
 #define IDC_MODE_CHROMAUP               1008
+#define IDC_FONT                        1008
 #define IDC_MODE_CHROMADOWN             1009
+#define IDC_ALIGN_LEFT                  1009
+#define IDC_ALIGN_CENTER                1010
+#define IDC_ALIGN_RIGHT                 1011
 #define IDC_FRAMERATE_TARGET            1023
 #define IDC_SLIDER                      1066
 #define IDC_BRIGHTNESS                  1068
@@ -42,12 +50,20 @@
 #define IDC_EDIT_SCALE                  1152
 #define IDC_ANGLE                       1152
 #define IDC_PHASE                       1152
+#define IDC_CLIP_X0                     1152
 #define IDC_EDIT_TARGET                 1153
+#define IDC_CLIP_X1                     1153
+#define IDC_CLIP_Y0                     1154
+#define IDC_CLIP_Y1                     1155
+#define IDC_SHADOW_EDIT                 1156
 #define IDC_EXPANDBOUNDS                1184
 #define IDC_UNPROJECT                   1184
 #define IDC_SHOW_GRADIENT               1184
 #define IDC_PREFILTER                   1184
+#define IDC_PICK_COLOR1                 1195
 #define IDC_COLOR                       1196
+#define IDC_PICK_COLOR0                 1196
+#define IDC_PICK_FONT                   1197
 #define IDC_VALUE                       1240
 #define IDC_PICKCOLOR                   1282
 #define IDC_MODE_INTERP_YADIF           1291
@@ -131,6 +147,11 @@
 #define IDC_CR_FULL                     1497
 #define IDC_STATIC_COLORSPACE           1498
 #define IDC_BLEND_WEIGHTING             1522
+#define IDC_CLIP_X0_SPIN                1540
+#define IDC_CLIP_X1_SPIN                1541
+#define IDC_CLIP_Y0_SPIN                1542
+#define IDC_CLIP_Y1_SPIN                1543
+#define IDC_SHADOW_SPIN                 1544
 #define IDD_FILTER_ALIASFORMAT          2001
 #define IDD_FILTER_TV                   2002
 #define IDD_FILTER_ROTATE               2003
@@ -146,7 +167,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        2007
 #define _APS_NEXT_COMMAND_VALUE         55001
-#define _APS_NEXT_CONTROL_VALUE         1005
+#define _APS_NEXT_CONTROL_VALUE         1011
 #define _APS_NEXT_SYMED_VALUE           2001
 #endif
 #endif
