@@ -309,7 +309,7 @@ public:
 
 enum {
 	// This is the highest API version supported by this header file.
-	VIRTUALDUB_FILTERDEF_VERSION		= 19,
+	VIRTUALDUB_FILTERDEF_VERSION		= 20,
 
 	// This is the absolute lowest API version supported by this header file.
 	// Note that V4 is rather old, corresponding to VirtualDub 1.2.
@@ -343,6 +343,8 @@ enum {
 // v17: added mpStaticAboutProc
 // v18: added FilterModActivation
 // v19: added flags
+
+struct FilterModDefinition;
 
 struct VDXFilterDefinition {
 	void *_next;		// deprecated - set to NULL
@@ -391,6 +393,9 @@ struct VDXFilterDefinition {
 	// NEW - V17 / 1.10.2
 	VDXShowStaticAboutProc		mpStaticAboutProc;
 	VDXShowStaticConfigureProc	mpStaticConfigureProc;
+
+	// NEW - V20
+	FilterModDefinition* fm;
 };
 
 struct FilterModDefinition {

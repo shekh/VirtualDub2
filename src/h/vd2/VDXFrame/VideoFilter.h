@@ -181,6 +181,17 @@ static bool VDXAPIENTRY VDXStaticAboutConfigureAdapter(VDXHWND parent) {
 
 struct VDXFilterDefinition2: public VDXFilterDefinition{
 	FilterModDefinition filterMod;
+
+	VDXFilterDefinition2() {
+		fm = 0;
+	}
+
+	VDXFilterDefinition2(const VDXFilterDefinition2& a)
+		:VDXFilterDefinition(a)
+	{
+		filterMod = a.filterMod;
+		fm = &filterMod;
+	}
 };
 
 template<class T>

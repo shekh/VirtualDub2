@@ -180,6 +180,7 @@ void FilterAddBuiltin(const FilterDefinition *pfd) {
 
 	vdautoptr<FilterDefinitionInstance> fdi(new FilterDefinitionInstance(NULL));
 	fdi->Assign(*pfd, sizeof(FilterDefinition));
+	if (pfd->fm) fdi->AssignFilterMod(*pfd->fm, sizeof(FilterModDefinition));
 
 	g_filterDefs.AddTail(fdi.release());
 }
