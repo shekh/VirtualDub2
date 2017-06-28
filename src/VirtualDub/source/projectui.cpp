@@ -2195,8 +2195,14 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_VIDEO_SEEK_NEXTONESEC:			QueueCommand(kVDProjectCmd_GoToNextUnit); break;
 		case ID_VIDEO_SEEK_KEYPREV:				QueueCommand(kVDProjectCmd_GoToPrevKey); break;
 		case ID_VIDEO_SEEK_KEYNEXT:				QueueCommand(kVDProjectCmd_GoToNextKey); break;
-		case ID_VIDEO_SEEK_SELSTART:			QueueCommand(kVDProjectCmd_GoToSelectionStart);	break;
-		case ID_VIDEO_SEEK_SELEND:				QueueCommand(kVDProjectCmd_GoToSelectionEnd);	break;
+		case ID_VIDEO_SEEK_SELSTART:
+			if (IsSelectionPresent())
+				QueueCommand(kVDProjectCmd_GoToSelectionStart);	
+			break;
+		case ID_VIDEO_SEEK_SELEND:
+			if (IsSelectionPresent())
+				QueueCommand(kVDProjectCmd_GoToSelectionEnd);
+			break;
 		case ID_VIDEO_SEEK_PREVDROP:			QueueCommand(kVDProjectCmd_GoToPrevDrop);		break;
 		case ID_VIDEO_SEEK_NEXTDROP:			QueueCommand(kVDProjectCmd_GoToNextDrop);		break;
 		case ID_EDIT_PREVRANGE:					QueueCommand(kVDProjectCmd_GoToPrevRange);		break;
@@ -2894,7 +2900,7 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 							MenuHit(ID_VIDEO_SEEK_PREV);
 							break;
 						case PCN_FORWARD:
-							MenuHit(ID_VIDEO_SEEK_PREV);
+							MenuHit(ID_VIDEO_SEEK_NEXT);
 							break;
 						case PCN_END:
 							MenuHit(ID_VIDEO_SEEK_END);
@@ -4011,7 +4017,7 @@ void VDProjectUI::UISetDubbingMode(bool bActive, bool bIsPreview) {
 	mbDubActive = bActive;
 
 	if (bActive) {
-  	if (!bIsPreview) mpPosition->SetMessage(L"(dub in progress)");
+		if (!bIsPreview) mpPosition->SetMessage(L"(dub in progress)");
 		UpdateVideoFrameLayout();
 
 		mpInputDisplay->SetAccelerationMode(IVDVideoDisplay::kAccelResetInForeground);
@@ -4033,7 +4039,7 @@ void VDProjectUI::UISetDubbingMode(bool bActive, bool bIsPreview) {
 		pFrame->SetAccelTable(mhAccelDub);
 
 		mpWndProc = &VDProjectUI::DubWndProc;
-	} else {
+	} else if (mPreviewRestartMode==kPreviewRestart_None) {
 		SetMenu((HWND)mhwnd, mhMenuNormal);
 		UpdateMRUList();
 
@@ -4057,6 +4063,13 @@ void VDProjectUI::UISetDubbingMode(bool bActive, bool bIsPreview) {
 		mpOutputDisplay->SetAccelerationMode(IVDVideoDisplay::kAccelOnlyInForeground);
 		DisplayFrame();
 		UICurrentPositionUpdated(false);
+	} else {
+		mpWndProc = &VDProjectUI::MainWndProc;
+		mLastDisplayedInputFrame = -1;
+		mLastDisplayedTimelineFrame = -1;
+		mpInputDisplay->SetAccelerationMode(IVDVideoDisplay::kAccelOnlyInForeground);
+		mpOutputDisplay->SetAccelerationMode(IVDVideoDisplay::kAccelOnlyInForeground);
+		DisplayFrame();
 	}
 }
 
