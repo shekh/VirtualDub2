@@ -149,7 +149,7 @@ protected:
 	void UpdateString(VDPosition pos=-1);
 	void RecomputeMetrics();
 	void RecalcThumbRect(VDPosition pos, bool update = true);
-	void Notify(UINT code, VDPositionControlEventData::EventType eventType);
+	bool Notify(UINT code, VDPositionControlEventData::EventType eventType);
 
 	inline int FrameToPixel(VDPosition pos) {
 		return VDFloorToInt(mPixelToFrameBias + mPixelsPerFrame * pos);
@@ -639,19 +639,27 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 				mDragMode = kDragThumbFast;
 				SetCapture(mhwnd);
 
-				Notify(PCN_BEGINTRACK, VDPositionControlEventData::kEventNone);
-				InvalidateRect(mhwnd, &mThumbRect, TRUE);
+				if (Notify(PCN_BEGINTRACK, VDPositionControlEventData::kEventNone)) {
+					InvalidateRect(mhwnd, &mThumbRect, TRUE);
+				} else {
+					mDragMode = kDragNone;
+					ReleaseCapture();
+				}
 			} else if (PtInRect(&mPositionArea, pt)) {
+				VDPosition prev = mPosition;
 				mPosition = (sint64)floor((pt.x - mTrack.left) * mFramesPerPixel + 0.5);
 				if (mPosition < mRangeStart)
 					mPosition = mRangeStart;
 				if (mPosition > mRangeEnd)
 					mPosition = mRangeEnd;
-				if (mbAutoFrame)
-					UpdateString();
-				RecalcThumbRect(mPosition);
-				Notify(PCN_THUMBPOSITION, VDPositionControlEventData::kEventJump);
-				InvalidateRect(mhwnd, &mThumbRect, TRUE);
+				if (Notify(PCN_THUMBPOSITION, VDPositionControlEventData::kEventJump)) {
+					if (mbAutoFrame)
+						UpdateString();
+					RecalcThumbRect(mPosition);
+					InvalidateRect(mhwnd, &mThumbRect, TRUE);
+				} else {
+					mPosition = prev;
+				}
 			}
 		}
 		break;
@@ -673,11 +681,15 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 				mDragAccum = 0;
 				SetCapture(mhwnd);
 
-				Notify(PCN_BEGINTRACK, VDPositionControlEventData::kEventNone);
-				InvalidateRect(mhwnd, &mThumbRect, TRUE);
+				if (Notify(PCN_BEGINTRACK, VDPositionControlEventData::kEventNone)) {
+					InvalidateRect(mhwnd, &mThumbRect, TRUE);
 
-				if (hideCursor)
-					ShowCursor(FALSE);
+					if (hideCursor)
+						ShowCursor(FALSE);
+				} else {
+					mDragMode = kDragNone;
+					ReleaseCapture();
+				}
 			}
 		}
 		break;
@@ -1250,12 +1262,13 @@ void VDPositionControlW32::RecalcThumbRect(VDPosition pos, bool update) {
 	}
 }
 
-void VDPositionControlW32::Notify(UINT code, VDPositionControlEventData::EventType eventType) {
+bool VDPositionControlW32::Notify(UINT code, VDPositionControlEventData::EventType eventType) {
 	NMHDR nm;
 	nm.hwndFrom = mhwnd;
 	nm.idFrom	= GetWindowLong(mhwnd, GWL_ID);
 	nm.code		= code;
-	SendMessage(GetParent(mhwnd), WM_NOTIFY, nm.idFrom, (LPARAM)&nm);
+	int r = SendMessage(GetParent(mhwnd), WM_NOTIFY, nm.idFrom, (LPARAM)&nm);
+	if (r==-1) return false;
 
 	if (eventType) {
 		VDPositionControlEventData eventData;
@@ -1263,4 +1276,6 @@ void VDPositionControlW32::Notify(UINT code, VDPositionControlEventData::EventTy
 		eventData.mEventType = eventType;
 		mPositionUpdatedEvent.Raise(this, eventData);
 	}
+
+	return true;
 }

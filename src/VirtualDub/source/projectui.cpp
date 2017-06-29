@@ -1834,10 +1834,10 @@ void VDProjectUI::OpenPreviousNext(bool next) {
 		Open(fileToOpen.c_str());
 }
 
-void VDProjectUI::QueueCommand(int cmd) {
+bool VDProjectUI::QueueCommand(int cmd) {
 	if (g_dubber) {
 		if (!g_dubber->IsPreviewing())
-			return;
+			return false;
 
 		switch(cmd) {
 		case kVDProjectCmd_GoToStart:
@@ -1865,6 +1865,8 @@ void VDProjectUI::QueueCommand(int cmd) {
 		SceneShuttleStop();
 		ExecuteCommand(cmd);
 	}
+
+	return true;
 }
 
 void VDProjectUI::ExecuteCommand(int cmd) {
@@ -3140,22 +3142,22 @@ LRESULT VDProjectUI::DubWndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 			case IDC_POSITION:
 				switch(nmh->code) {
 				case PCN_BEGINTRACK:
-					QueueCommand(kVDProjectCmd_ScrubBegin);
+					if (!QueueCommand(kVDProjectCmd_ScrubBegin)) return -1;
 					break;
 				case PCN_ENDTRACK:
-					QueueCommand(kVDProjectCmd_ScrubEnd);
+					if (!QueueCommand(kVDProjectCmd_ScrubEnd)) return -1;
 					break;
 				case PCN_THUMBPOSITION:
 				case PCN_THUMBTRACK:
 				case PCN_PAGELEFT:
 				case PCN_PAGERIGHT:
-					QueueCommand(kVDProjectCmd_ScrubUpdate);
+					if (!QueueCommand(kVDProjectCmd_ScrubUpdate)) return -1;
 					break;
 				case PCN_THUMBPOSITIONPREV:
-					QueueCommand(kVDProjectCmd_ScrubUpdatePrev);
+					if (!QueueCommand(kVDProjectCmd_ScrubUpdatePrev)) return -1;
 					break;
 				case PCN_THUMBPOSITIONNEXT:
-					QueueCommand(kVDProjectCmd_ScrubUpdateNext);
+					if (!QueueCommand(kVDProjectCmd_ScrubUpdateNext)) return -1;
 					break;
 				}
 

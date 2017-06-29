@@ -110,7 +110,7 @@ public:
 protected:
 	void OpenPreviousNext(bool next);
 
-	void QueueCommand(int cmd);
+	bool QueueCommand(int cmd);
 	void ExecuteCommand(int cmd);
 
 	LRESULT WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
