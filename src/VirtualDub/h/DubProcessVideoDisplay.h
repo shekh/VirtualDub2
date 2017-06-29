@@ -65,10 +65,11 @@ public:
 	void UpdateDecompressedVideo(const void *data, uint32 size, bool isKey);
 
 protected:
-	static bool AsyncReinitDisplayCallback(int pass, void *pThisAsVoid, void *, bool aborting);
-	static bool AsyncUpdateCallback(int pass, void *pDisplayAsVoid, void *pInterlaced, bool aborting);
-	static bool StaticAsyncUpdateOutputCallback(int pass, void *pThisAsVoid, void *pBuffer, bool aborting);
-	bool AsyncUpdateOutputCallback(int pass, VDRenderOutputBuffer *pBuffer, bool aborting);
+	static bool AsyncReinitDisplayCallback(int pass, sint64 timelinePos, void *pThisAsVoid, void *, bool aborting);
+	static bool StaticAsyncUpdateInputCallback(int pass, sint64 timelinePos, void *pThisAsVoid, void*, bool aborting);
+	static bool StaticAsyncUpdateOutputCallback(int pass, sint64 timelinePos, void *pThisAsVoid, void *pBuffer, bool aborting);
+	bool AsyncUpdateInputCallback(int pass, VDPosition pos, bool aborting);
+	bool AsyncUpdateOutputCallback(int pass, VDPosition pos, VDRenderOutputBuffer *pBuffer, bool aborting);
 
 	const DubOptions	*mpOptions;
 	IVDVideoCompressor	*mpVideoCompressor;
@@ -89,6 +90,9 @@ protected:
 	bool				mbVideoDecompressorPending;
 	bool				mbVideoDecompressorErrored;
 	VDPixmapBuffer		mVideoDecompBuffer;
+
+public:
+	IDubStatusHandler	*mpStatusHandler;
 };
 
 #endif	// f_VD2_DUBPROCESSVIDEODISPLAY_H

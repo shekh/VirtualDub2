@@ -45,7 +45,7 @@ public:
 	virtual void SetPositionCallback(DubPositionCallback dpc, void *cookie)=0;
 	virtual bool ToggleStatus()=0;
 	virtual void SetLastPosition(VDPosition pos, bool fast_update)=0;
-	virtual void NotifyPositionChange()=0;
+	virtual void NotifyPositionChange(VDPosition pos)=0;
 	virtual void Freeze()=0;
 	virtual bool isVisible()=0;
 	virtual bool isFrameVisible(bool)=0;

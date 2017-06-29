@@ -28,46 +28,10 @@
 #include "ThreadedVideoCompressor.h"
 #include "VideoSource.h"
 #include "prefs.h"
+#include "DubStatus.h"
 
 bool VDPreferencesIsPreferInternalVideoDecodersEnabled();
 IVDVideoDecompressor *VDFindVideoDecompressorEx(uint32 fccHandler, const VDAVIBitmapInfoHeader *hdr, uint32 hdrlen, bool preferInternal);
-
-bool VDDubVideoProcessorDisplay::AsyncUpdateCallback(int pass, void *pDisplayAsVoid, void *pInterlaced, bool aborting) {
-	if (aborting)
-		return false;
-
-	VDDubVideoProcessorDisplay *pProc = (VDDubVideoProcessorDisplay*)pDisplayAsVoid;
-
-	IVDVideoDisplay *pVideoDisplay = pProc->mpInputDisplay;
-	int nFieldMode = *(int *)pInterlaced;
-
-	const VDPixmap& px = pProc->mpVideoSource->getTargetFormat();
-	pVideoDisplay->SetSource(false, px, NULL, 0, true, nFieldMode>0);
-
-	uint32 baseFlags = IVDVideoDisplay::kVisibleOnly;
-
-	if (g_prefs.fDisplay & Preferences::kDisplayEnableVSync)
-		baseFlags |= IVDVideoDisplay::kVSync;
-
-	if (nFieldMode) {
-		if ((nFieldMode - 1) & 1) {
-			if (pass)
-				pVideoDisplay->Update(IVDVideoDisplay::kEvenFieldOnly | baseFlags);
-			else
-				pVideoDisplay->Update(IVDVideoDisplay::kOddFieldOnly | IVDVideoDisplay::kFirstField | baseFlags);
-		} else {
-			if (pass)
-				pVideoDisplay->Update(IVDVideoDisplay::kOddFieldOnly | baseFlags);
-			else
-				pVideoDisplay->Update(IVDVideoDisplay::kEvenFieldOnly | IVDVideoDisplay::kFirstField | baseFlags);
-		}
-
-		return !pass;
-	} else {
-		pVideoDisplay->Update(IVDVideoDisplay::kAllFields | baseFlags);
-		return false;
-	}
-}
 
 namespace {
 	enum {
@@ -82,7 +46,7 @@ namespace {
 		BUFFERID_OUTPUT = 2
 	};
 
-	bool AsyncDecompressorFailedCallback(int pass, void *pDisplayAsVoid, void *, bool aborting) {
+	bool AsyncDecompressorFailedCallback(int pass, sint64 timelinePos, void *pDisplayAsVoid, void *, bool aborting) {
 		if (aborting)
 			return false;
 
@@ -92,7 +56,7 @@ namespace {
 		return false;
 	}
 
-	bool AsyncDecompressorSuccessfulCallback(int pass, void *pDisplayAsVoid, void *, bool aborting) {
+	bool AsyncDecompressorSuccessfulCallback(int pass, sint64 timelinePos, void *pDisplayAsVoid, void *, bool aborting) {
 		if (aborting)
 			return false;
 
@@ -102,7 +66,7 @@ namespace {
 		return false;
 	}
 
-	bool AsyncDecompressorErrorCallback(int pass, void *pDisplayAsVoid, void *, bool aborting) {
+	bool AsyncDecompressorErrorCallback(int pass, sint64 timelinePos, void *pDisplayAsVoid, void *, bool aborting) {
 		if (aborting)
 			return false;
 
@@ -112,7 +76,7 @@ namespace {
 		return false;
 	}
 
-	bool AsyncDecompressorUpdateCallback(int pass, void *pDisplayAsVoid, void *pPixmapAsVoid, bool aborting) {
+	bool AsyncDecompressorUpdateCallback(int pass, sint64 timelinePos, void *pDisplayAsVoid, void *pPixmapAsVoid, bool aborting) {
 		if (aborting)
 			return false;
 
@@ -217,9 +181,15 @@ void VDDubVideoProcessorDisplay::UnlockAndDisplay(bool forceDisplay, VDRenderOut
 	bool renderInputFrame = renderFrame && mpInputDisplay && mpOptions->video.fShowInputFrame;
 	bool renderOutputFrame = (renderFrame || mbVideoDecompressorEnabled) && mpOutputDisplay && mpOptions->video.mode == DubVideoOptions::M_FULL && mpOptions->video.fShowOutputFrame && outputValid;
 	bool renderAnyFrame = renderFrame && mpOutputDisplay && (mpOptions->video.fShowInputFrame || mpOptions->video.fShowOutputFrame) && outputValid;
+	VDPosition input_frame = -1;
+	VDPosition output_frame = -1;
+	if (renderInputFrame && !renderOutputFrame)
+		input_frame = pBuffer->mTimelineFrame;
+	else
+		output_frame = pBuffer->mTimelineFrame;
 
 	if (renderInputFrame) {
-		mpBlitter->postAPC(BUFFERID_INPUT, AsyncUpdateCallback, this, (void *)&mpOptions->video.previewFieldMode);
+		mpBlitter->postAPC(BUFFERID_INPUT, input_frame, StaticAsyncUpdateInputCallback, this, 0);
 	} else
 		mpBlitter->unlock(BUFFERID_INPUT);
 
@@ -229,21 +199,21 @@ void VDDubVideoProcessorDisplay::UnlockAndDisplay(bool forceDisplay, VDRenderOut
 		if (mbVideoDecompressorEnabled) {
 			if (mpVideoDecompressor && !mbVideoDecompressorErrored && !mbVideoDecompressorPending) {
 				mpBlitter->lock(BUFFERID_OUTPUT);
-				mpBlitter->postAPC(BUFFERID_OUTPUT, AsyncDecompressorUpdateCallback, mpOutputDisplay, &mVideoDecompBuffer);
+				mpBlitter->postAPC(BUFFERID_OUTPUT, output_frame, AsyncDecompressorUpdateCallback, mpOutputDisplay, &mVideoDecompBuffer);
 			}
 		} else {
 			mpLoopThrottle->BeginWait();
 			mpBlitter->lock(BUFFERID_OUTPUT);
 			mpLoopThrottle->EndWait();
 			pBuffer->AddRef();
-			mpBlitter->postAPC(BUFFERID_OUTPUT, StaticAsyncUpdateOutputCallback, this, pBuffer);
+			mpBlitter->postAPC(BUFFERID_OUTPUT, output_frame, StaticAsyncUpdateOutputCallback, this, pBuffer);
 		}
-  } else if (renderAnyFrame && !renderInputFrame) {
+	} else if (renderAnyFrame && !renderInputFrame) {
 		mpLoopThrottle->BeginWait();
 		mpBlitter->lock(BUFFERID_OUTPUT);
 		mpLoopThrottle->EndWait();
 		pBuffer->AddRef();
-		mpBlitter->postAPC(BUFFERID_OUTPUT, StaticAsyncUpdateOutputCallback, this, pBuffer);
+		mpBlitter->postAPC(BUFFERID_OUTPUT, output_frame, StaticAsyncUpdateOutputCallback, this, pBuffer);
 	} else
 		mpBlitter->unlock(BUFFERID_OUTPUT);
 }
@@ -281,7 +251,7 @@ void VDDubVideoProcessorDisplay::CheckForDecompressorSwitch() {
 					mpLoopThrottle->BeginWait();
 					mpBlitter->lock(BUFFERID_OUTPUT);
 					mpLoopThrottle->EndWait();
-					mpBlitter->postAPC(BUFFERID_OUTPUT, AsyncDecompressorSuccessfulCallback, mpOutputDisplay, NULL);					
+					mpBlitter->postAPC(BUFFERID_OUTPUT, -1, AsyncDecompressorSuccessfulCallback, mpOutputDisplay, NULL);					
 
 					int format = mpVideoDecompressor->GetTargetFormat();
 					int variant = mpVideoDecompressor->GetTargetFormatVariant();
@@ -300,7 +270,7 @@ void VDDubVideoProcessorDisplay::CheckForDecompressorSwitch() {
 			mpLoopThrottle->BeginWait();
 			mpBlitter->lock(BUFFERID_OUTPUT);
 			mpLoopThrottle->EndWait();
-			mpBlitter->postAPC(BUFFERID_OUTPUT, AsyncDecompressorFailedCallback, mpOutputDisplay, NULL);
+			mpBlitter->postAPC(BUFFERID_OUTPUT, -1, AsyncDecompressorFailedCallback, mpOutputDisplay, NULL);
 		}
 	} else {
 		if (mpVideoDecompressor) {
@@ -311,7 +281,7 @@ void VDDubVideoProcessorDisplay::CheckForDecompressorSwitch() {
 			mpVideoDecompressor->Stop();
 			mpVideoDecompressor = NULL;
 		}
-		mpBlitter->postAPC(0, AsyncReinitDisplayCallback, this, NULL);
+		mpBlitter->postAPC(0, -1, AsyncReinitDisplayCallback, this, NULL);
 	}
 }
 
@@ -338,7 +308,7 @@ void VDDubVideoProcessorDisplay::UpdateDecompressedVideo(const void *data, uint3
 			if(mVideoDecompBuffer.format==nsVDPixmap::kPixFormat_XYUV64)
 				VDPixmap_bitmap_to_XYUV64(mVideoDecompBuffer,mVideoDecompBuffer,variant);
 		} catch(const MyError&) {
-			mpBlitter->postAPC(0, AsyncDecompressorErrorCallback, mpOutputDisplay, NULL);
+			mpBlitter->postAPC(0, -1, AsyncDecompressorErrorCallback, mpOutputDisplay, NULL);
 			mbVideoDecompressorErrored = true;
 		}
 	}
@@ -346,7 +316,7 @@ void VDDubVideoProcessorDisplay::UpdateDecompressedVideo(const void *data, uint3
 	VDPROFILEEND();
 }
 
-bool VDDubVideoProcessorDisplay::AsyncReinitDisplayCallback(int pass, void *pThisAsVoid, void *, bool aborting) {
+bool VDDubVideoProcessorDisplay::AsyncReinitDisplayCallback(int pass, sint64 timelinePos, void *pThisAsVoid, void *, bool aborting) {
 	if (aborting)
 		return false;
 
@@ -355,17 +325,24 @@ bool VDDubVideoProcessorDisplay::AsyncReinitDisplayCallback(int pass, void *pThi
 	return false;
 }
 
-bool VDDubVideoProcessorDisplay::StaticAsyncUpdateOutputCallback(int pass, void *pThisAsVoid, void *pBuffer, bool aborting) {
-	return ((VDDubVideoProcessorDisplay *)pThisAsVoid)->AsyncUpdateOutputCallback(pass, (VDRenderOutputBuffer *)pBuffer, aborting);
+bool VDDubVideoProcessorDisplay::StaticAsyncUpdateOutputCallback(int pass, sint64 timelinePos, void *pThisAsVoid, void *pBuffer, bool aborting) {
+	return ((VDDubVideoProcessorDisplay *)pThisAsVoid)->AsyncUpdateOutputCallback(pass, timelinePos, (VDRenderOutputBuffer *)pBuffer, aborting);
 }
 
-bool VDDubVideoProcessorDisplay::AsyncUpdateOutputCallback(int pass, VDRenderOutputBuffer *pBuffer, bool aborting) {
+bool VDDubVideoProcessorDisplay::StaticAsyncUpdateInputCallback(int pass, sint64 timelinePos, void *pThisAsVoid, void *pos, bool aborting) {
+	return ((VDDubVideoProcessorDisplay *)pThisAsVoid)->AsyncUpdateInputCallback(pass, timelinePos, aborting);
+}
+
+bool VDDubVideoProcessorDisplay::AsyncUpdateOutputCallback(int pass, VDPosition timelinePos, VDRenderOutputBuffer *pBuffer, bool aborting) {
 	if (aborting) {
 		if (pBuffer)
 			pBuffer->Release();
 
 		return false;
 	}
+
+	if (timelinePos!=-1)
+		mpStatusHandler->NotifyPositionChange(timelinePos);
 
 	IVDVideoDisplay *pVideoDisplay = mpOutputDisplay;
 	int nFieldMode = mpOptions->video.previewFieldMode;
@@ -435,3 +412,42 @@ bool VDDubVideoProcessorDisplay::AsyncUpdateOutputCallback(int pass, VDRenderOut
 		return false;
 	}
 }
+
+bool VDDubVideoProcessorDisplay::AsyncUpdateInputCallback(int pass, VDPosition timelinePos, bool aborting) {
+	if (aborting)
+		return false;
+
+	if (timelinePos!=-1)
+		mpStatusHandler->NotifyPositionChange(timelinePos);
+
+	IVDVideoDisplay *pVideoDisplay = mpInputDisplay;
+	int nFieldMode = mpOptions->video.previewFieldMode;
+
+	const VDPixmap& px = mpVideoSource->getTargetFormat();
+	pVideoDisplay->SetSource(false, px, NULL, 0, true, nFieldMode>0);
+
+	uint32 baseFlags = IVDVideoDisplay::kVisibleOnly;
+
+	if (g_prefs.fDisplay & Preferences::kDisplayEnableVSync)
+		baseFlags |= IVDVideoDisplay::kVSync;
+
+	if (nFieldMode) {
+		if ((nFieldMode - 1) & 1) {
+			if (pass)
+				pVideoDisplay->Update(IVDVideoDisplay::kEvenFieldOnly | baseFlags);
+			else
+				pVideoDisplay->Update(IVDVideoDisplay::kOddFieldOnly | IVDVideoDisplay::kFirstField | baseFlags);
+		} else {
+			if (pass)
+				pVideoDisplay->Update(IVDVideoDisplay::kOddFieldOnly | baseFlags);
+			else
+				pVideoDisplay->Update(IVDVideoDisplay::kEvenFieldOnly | IVDVideoDisplay::kFirstField | baseFlags);
+		}
+
+		return !pass;
+	} else {
+		pVideoDisplay->Update(IVDVideoDisplay::kAllFields | baseFlags);
+		return false;
+	}
+}
+

@@ -35,6 +35,7 @@ void VDRenderOutputBufferTracker::Init(int count, const VDPixmapLayout& layout) 
 VDRenderOutputBuffer::VDRenderOutputBuffer(VDRenderOutputBufferTracker *tracker)
 	: mpTracker(tracker)
 {
+	mTimelineFrame = -1;
 }
 
 VDRenderOutputBuffer::~VDRenderOutputBuffer() {

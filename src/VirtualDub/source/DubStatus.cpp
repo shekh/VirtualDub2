@@ -125,7 +125,10 @@ public:
 	void SetPositionCallback(DubPositionCallback dpc, void *cookie);
 	void NotifyNewFrame(uint32 size, bool isKey);
 	void SetLastPosition(VDPosition pos, bool fast_update);
-	void NotifyPositionChange(){ PostMessage(hwndStatus, MYWM_NOTIFY_POSITION_CHANGE,0,0); }
+	void NotifyPositionChange(VDPosition pos) {
+		pvinfo->cur_proc_src = pos;
+		PostMessage(hwndStatus, MYWM_NOTIFY_POSITION_CHANGE,0,0); 
+	}
 	void Freeze();
 	bool isVisible();
 	bool isFrameVisible(bool fOutput);

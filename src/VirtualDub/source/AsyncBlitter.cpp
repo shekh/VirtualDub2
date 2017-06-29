@@ -73,8 +73,8 @@ public:
 	void nextFrame(long adv=1);
 	long getFrameDelta();
 	void sendAFC(uint32 id, AFC pFunc, void *pData);
-	void postAPC(uint32 id, APC pFunc, void *pData1, void *pData2);
-	void postAPC(uint32 id, uint32 t, APC pFunc, void *pData1, void *pData2);
+	void postAPC(uint32 id, sint64 timelinePos, APC pFunc, void *pData1, void *pData2);
+	void postAPC(uint32 id, sint64 timelinePos, uint32 t, APC pFunc, void *pData1, void *pData2);
 	void abort();
 	void beginFlush();
 
@@ -96,6 +96,7 @@ private:
 		APC		pFunc;
 		int		pass;
 		void *pData1, *pData2;
+		sint64 timelinePos;
 	};
 
 	class AsyncBlitRequest {
@@ -336,20 +337,20 @@ void VDAsyncBlitter::sendAFC(uint32 id, AFC pFunc, void *pData) {
 	unlock(id);
 }
 
-void VDAsyncBlitter::postAPC(uint32 id, APC pFunc, void *pData1, void *pData2) {
-	postAPC(id, dwDrawFrame, pFunc, pData1, pData2);
+void VDAsyncBlitter::postAPC(uint32 id, sint64 timelinePos, APC pFunc, void *pData1, void *pData2) {
+	postAPC(id, timelinePos, dwDrawFrame, pFunc, pData1, pData2);
 }
 
-void VDAsyncBlitter::postAPC(uint32 id, uint32 time, APC pFunc, void *pData1, void *pData2) {
+void VDAsyncBlitter::postAPC(uint32 id, sint64 timelinePos, uint32 time, APC pFunc, void *pData1, void *pData2) {
 	int i;
 
 	if (fAbort) {
-		pFunc(0, pData1, pData2, true);
+		pFunc(0, timelinePos, pData1, pData2, true);
 		return;
 	}
 
 	if (!mRequests) {
-		for(int pass = 0; pFunc(pass, pData1, pData2, false); ++pass)
+		for(int pass = 0; pFunc(pass, timelinePos, pData1, pData2, false); ++pass)
 			;
 
 		return;
@@ -377,6 +378,7 @@ void VDAsyncBlitter::postAPC(uint32 id, uint32 time, APC pFunc, void *pData1, vo
 	mRequests[i].apc.pass		= 0;
 	mRequests[i].apc.pData1		= pData1;
 	mRequests[i].apc.pData2		= pData2;
+	mRequests[i].apc.timelinePos = timelinePos;
 
 	mRequests[i].framenum	= time;
 	mRequests[i].bufferID	= id;		// must be last!!!!
@@ -412,7 +414,7 @@ bool VDAsyncBlitter::DoRequest(AsyncBlitRequest *req) {
 		break;
 
 	case AsyncBlitRequest::REQTYPE_APC:
-		return req->apc.pFunc(req->apc.pass++, req->apc.pData1, req->apc.pData2, false);
+		return req->apc.pFunc(req->apc.pass++, req->apc.timelinePos, req->apc.pData1, req->apc.pData2, false);
 	}
 
 	return false;
@@ -433,7 +435,7 @@ bool VDAsyncBlitter::ServiceRequests(bool fWait) {
 					req->afc.pFunc(req->afc.pData);		// can't flush these
 					break;
 				case AsyncBlitRequest::REQTYPE_APC:
-					req->apc.pFunc(req->apc.pass, req->apc.pData1, req->apc.pData2, true);	// request a quick exit
+					req->apc.pFunc(req->apc.pass, req->apc.timelinePos, req->apc.pData1, req->apc.pData2, true);	// request a quick exit
 					break;
 				}
 
@@ -515,7 +517,7 @@ void VDAsyncBlitter::ThreadRun() {
 				req->afc.pFunc(req->afc.pData);		// can't flush these
 				break;
 			case AsyncBlitRequest::REQTYPE_APC:
-				req->apc.pFunc(req->apc.pass, req->apc.pData1, req->apc.pData2, true);	// request a quick exit
+				req->apc.pFunc(req->apc.pass, req->apc.timelinePos, req->apc.pData1, req->apc.pData2, true);	// request a quick exit
 				break;
 			}
 			release(req->bufferID);

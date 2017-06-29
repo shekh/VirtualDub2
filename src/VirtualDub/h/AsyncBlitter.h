@@ -24,7 +24,7 @@ class VDINTERFACE IVDAsyncBlitter {
 public:
 	typedef int (*PulseCallback)(void *context, uint32 frame);
 	typedef void (*AFC)(void *context);
-	typedef bool (*APC)(int pass, void *data1, void *data2, bool aborting);
+	typedef bool (*APC)(int pass, sint64 timelinePos, void *data1, void *data2, bool aborting);
 
 	enum {
 		PCR_OKAY,
@@ -44,8 +44,8 @@ public:
 	virtual void nextFrame(long adv=1) = 0;
 	virtual long getFrameDelta() = 0;
 	virtual void sendAFC(uint32 id, AFC, void *context) = 0;
-	virtual void postAPC(uint32 id, APC func, void *pData1, void *pData2) = 0;
-	virtual void postAPC(uint32 id, uint32 t, APC func, void *pData1, void *pData2) = 0;
+	virtual void postAPC(uint32 id, sint64 timelinePos, APC func, void *pData1, void *pData2) = 0;
+	virtual void postAPC(uint32 id, sint64 timelinePos, uint32 t, APC func, void *pData1, void *pData2) = 0;
 	virtual void abort() = 0;
 	virtual void beginFlush() = 0;
 

@@ -145,6 +145,7 @@ void VDDubVideoProcessor::SetCallback(IVDDubVideoProcessorCallback *cb) {
 
 void VDDubVideoProcessor::SetStatusHandler(IDubStatusHandler *handler) {
 	mpStatusHandler = handler;
+	mpProcDisplay->mpStatusHandler = handler;
 }
 
 void VDDubVideoProcessor::SetOptions(const DubOptions *opts) {
@@ -1183,6 +1184,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	if (getOutputResult != kVideoWriteOK)
 		return getOutputResult;
 
+	pBuffer->mTimelineFrame = nextOutputFrame.mTimelineFrame;
 	VDPROFILEBEGINEX("V-BlitOut",(uint32)nextOutputFrame.mTimelineFrame);
 	const VDPixmapLayout& layout = (mpOptions->video.mode == DubVideoOptions::M_FULL) ? mpVideoFilters->GetOutputLayout() : mpVideoFilters->GetInputLayout();
 	VDFilterFrameBuffer *buf = pOutputReq->GetResultBuffer();
@@ -1253,8 +1255,8 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	buf->Unlock();
 	VDPROFILEEND();
 
-	mpVInfo->cur_proc_src = nextOutputFrame.mTimelineFrame;
-	mpStatusHandler->NotifyPositionChange();
+	if (!mbPreview)
+		mpStatusHandler->NotifyPositionChange(nextOutputFrame.mTimelineFrame);
 
 	pOutputReq->Release();
 

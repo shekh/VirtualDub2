@@ -165,6 +165,7 @@ public:
 public:
 	const vdrefptr<VDRenderOutputBufferTracker> mpTracker;
 	VDPixmapBuffer mBuffer;
+	VDPosition mTimelineFrame;
 };
 
 ///////////////////////////////////////////////////////////////////////////
