@@ -155,7 +155,7 @@ void VDInitInputDrivers() {
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverAVI2()));
 	//g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverMPEG()));
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverImages()));
-	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverASF()));
+	//g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverASF()));
 
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverANIM()));
 	g_VDInputDrivers.push_back(vdrefptr<IVDInputDriver>(VDCreateInputDriverFLM()));
@@ -436,6 +436,10 @@ int VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags, tVDInputDriv
 
 	for(; it!=itEnd; ++it) {
 		IVDInputDriver *pDriver = *it;
+		const wchar_t* name = pDriver->GetSignatureName();
+		if (!name)
+			continue;
+
 		if (pDriver->GetFlags() & IVDInputDriver::kF_Duplicate)
 			continue;
 
