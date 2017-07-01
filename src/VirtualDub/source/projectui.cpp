@@ -2285,6 +2285,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 
 		case ID_AUDIO_ADVANCEDFILTERING:
 			g_dubOpts.audio.bUseAudioFilterGraph = !g_dubOpts.audio.bUseAudioFilterGraph;
+			SetAudioSource();
 			break;
 
 		case ID_AUDIO_FILTERS:					SetAudioFiltersAsk();				break;

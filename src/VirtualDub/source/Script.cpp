@@ -1751,6 +1751,7 @@ static void func_VDAudio_GetVolume(IVDScriptInterpreter *, VDScriptValue *arglis
 
 static void func_VDAudio_EnableFilterGraph(IVDScriptInterpreter *isi, VDScriptValue *arglist, int arg_count) {
 	g_dubOpts.audio.bUseAudioFilterGraph = (arglist[0].asInt() != 0);
+	g_project->SetAudioSource();
 }
 
 static VDScriptFunctionDef obj_VDAudio_functbl[]={

@@ -87,15 +87,17 @@ uint32 VDAudioFilterInput::Prepare() {
 	mpDecompressor = NULL;
 
 	if (mbDecompressionAllowed) {
-		if (pwfex->mTag != WAVE_FORMAT_PCM) {
+		if (!is_audio_pcm(pwfex) && !is_audio_float(pwfex)) {
 			mpDecompressor = VDLocateAudioDecompressor((const VDWaveFormat *)pwfex, NULL, VDPreferencesIsPreferInternalAudioDecodersEnabled());
 			pwfex = mpDecompressor->GetOutputFormat();
 		}
 
-		VDASSERT(pwfex->mTag == WAVE_FORMAT_PCM);
+		//VDASSERT(pwfex->mTag == WAVE_FORMAT_PCM);
 	}
 
-	VDXWaveFormat *pwf = mpContext->mpAudioCallbacks->AllocCustomWaveFormat(0);
+	int extra = pwfex->mTag == WAVE_FORMAT_PCM ? 0 : pwfex->mExtraSize;
+
+	VDXWaveFormat *pwf = mpContext->mpAudioCallbacks->AllocCustomWaveFormat(extra);
 
 	if (!pwf) {
 		mpContext->mpServices->SetErrorOutOfMemory();

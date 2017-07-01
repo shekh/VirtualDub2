@@ -2952,6 +2952,7 @@ void VDProject::SetAudioSource() {
 		bool convert = false;
 		if (g_dubOpts.audio.newChannels!=DubAudioOptions::C_NOCHANGE) convert = true;
 		if (g_dubOpts.audio.newPrecision!=DubAudioOptions::P_NOCHANGE) convert = true;
+		if (g_dubOpts.audio.bUseAudioFilterGraph) convert = true;
 		if (g_dubOpts.audio.mode==DubAudioOptions::M_NONE) convert = false;
 		if ((is_audio_pcm(fmt) || is_audio_float(fmt)) && convert) {
 			VDWaveFormat target = *fmt;
@@ -2976,6 +2977,13 @@ void VDProject::SetAudioSource() {
 			default:
 				target.mSampleBits = 0;
 			}
+
+			//! filters do not support anything else now
+			if (g_dubOpts.audio.bUseAudioFilterGraph) {
+				target.mSampleBits = 16;
+				target.mChannels = 0;
+			}
+
 			inputAudio->SetTargetFormat(&target);
 		} else {
 			inputAudio->SetTargetFormat(0);
