@@ -136,7 +136,7 @@ public:
 protected:
 	void	UpdateDisplayMode();
 	void	CloseInputFile();
-	void	OpenInputFile(const wchar_t *fn);
+	void	OpenInputFile(const wchar_t *fn, IVDInputDriver* pDriver);
 	void	TimerCallback();
 	void	OnTick();
 
@@ -251,7 +251,7 @@ bool VDCaptureDriverEmulation::Init(VDGUIHandle hParent) {
 	if (GetAsyncKeyState(VK_SHIFT) >= 0) {
 		if (key.getString("Emulation file", filename)) {
 			try {
-				OpenInputFile(filename.c_str());
+				OpenInputFile(filename.c_str(), 0);
 			} catch(const MyError&) {
 				// silently eat the error
 			}
@@ -335,6 +335,7 @@ bool VDCaptureDriverEmulation::GetVideoFormat(vdstructex<BITMAPINFOHEADER>& vfor
 		return true;
 	} else {
 		const BITMAPINFOHEADER *format = (const BITMAPINFOHEADER *)mpVideo->getDecompressedFormat();
+		if (!format) return false;
 
 		vformat.assign(format, VDGetSizeOfBitmapHeaderW32(format));
 		return true;
@@ -477,12 +478,25 @@ void VDCaptureDriverEmulation::DisplayDriverDialog(DriverDialog dlg) {
 		VDGetInputDrivers(inDrivers, IVDInputDriver::kF_Video);
 		VDStringW fileFilters(VDMakeInputDriverFileFilter(inDrivers, xlat));
 
-		const VDStringW fn(VDGetLoadFileName('cpem', (VDGUIHandle)mhwndParent, L"Load video capture emulation clip", fileFilters.c_str(), NULL, NULL, NULL));
+		static const VDFileDialogOption sOptions[]={
+			{ VDFileDialogOption::kForceTemplate,  0, 0, 0, 0 },
+			{ VDFileDialogOption::kSelectedFilter, 1, 0, 0, 0 },
+			{0}
+		};
+
+		int optVals[2]={1,0};
+
+		const VDStringW fn(VDGetLoadFileName('cpem', (VDGUIHandle)mhwndParent, L"Load video capture emulation clip", fileFilters.c_str(), NULL, sOptions, optVals));
 
 		if (!fn.empty()) {
 			CloseInputFile();
+
+			IVDInputDriver *pDriver = 0;
+			if (xlat[optVals[1]-1] >= 0)
+				pDriver = inDrivers[xlat[optVals[1]-1]];
+
 			try {
-				OpenInputFile(fn.c_str());
+				OpenInputFile(fn.c_str(), pDriver);
 
 				VDRegistryAppKey key("Capture");
 
@@ -579,8 +593,9 @@ void VDCaptureDriverEmulation::CloseInputFile() {
 	mpVideo = NULL;
 }
 
-void VDCaptureDriverEmulation::OpenInputFile(const wchar_t *fn) {
-	IVDInputDriver *pDriver = VDAutoselectInputDriverForFile(fn, IVDInputDriver::kF_Video);
+void VDCaptureDriverEmulation::OpenInputFile(const wchar_t *fn, IVDInputDriver* pDriver) {
+	if (!pDriver)
+		pDriver = VDAutoselectInputDriverForFile(fn, IVDInputDriver::kF_Video);
 
 	mpInputFile = pDriver->CreateInputFile(0);
 	if (!mpInputFile)
@@ -606,9 +621,19 @@ void VDCaptureDriverEmulation::OpenInputFile(const wchar_t *fn) {
 	}
 
 	if (mpAudio) {
-		const WAVEFORMATEX *pwfex = (WAVEFORMATEX *)mpAudio->getWaveFormat();
+		WAVEFORMATEX *pwfex = (WAVEFORMATEX *)mpAudio->getWaveFormat();
 
-		if (pwfex->wFormatTag == WAVE_FORMAT_PCM) {
+		if (!is_audio_pcm((VDWaveFormat*)pwfex)) {
+			VDWaveFormat target = *(VDWaveFormat*)pwfex;
+			target.mTag = VDWaveFormat::kTagPCM;
+			target.mChannels = 0;
+			target.mSampleBits = 16;
+			mpAudio->SetTargetFormat(&target);
+		}
+
+		pwfex = (WAVEFORMATEX *)mpAudio->getWaveFormat();
+
+		if (is_audio_pcm((VDWaveFormat*)pwfex)) {
 			sint32 audioSamplesPerBlock = (pwfex->nAvgBytesPerSec / 5 + pwfex->nBlockAlign - 1) / pwfex->nBlockAlign;
 			sint32 bytesPerBlock = audioSamplesPerBlock * pwfex->nBlockAlign;
 

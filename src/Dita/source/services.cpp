@@ -451,6 +451,7 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 
 	if (pOptions) {
 		int y = 0;
+		bool force_template = false;
 
 		for(int nOpts = 0; pOptions[nOpts].mType; ++nOpts) {
 			const VDFileDialogOption& opt = pOptions[nOpts];
@@ -491,10 +492,13 @@ static const VDStringW VDGetFileName(bool bSaveAs, long nKey, VDGUIHandle ctxPar
 				if (!pOptVals[opt.mDstIdx])
 					ofn.w.Flags &= ~OFN_OVERWRITEPROMPT;
 				break;
+			case VDFileDialogOption::kForceTemplate:
+				force_template = pOptVals[opt.mDstIdx]!=0;
+				break;
 			}
 		}
 
-		if (y > 0) {
+		if (y > 0 || force_template) {
 			ofn.w.Flags		|= OFN_ENABLETEMPLATEHANDLE | OFN_ENABLEHOOK;
 			ofn.w.hInstance = (HINSTANCE)&builder.data.front();
 			ofn.w.lpfnHook	= VDGetFileNameHook::HookFn;
