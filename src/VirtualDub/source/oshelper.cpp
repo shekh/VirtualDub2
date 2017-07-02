@@ -595,7 +595,7 @@ VDCPUUsageReader::~VDCPUUsageReader() {
 }
 
 void VDCPUUsageReader::Init() {
-	FILETIME ftCreate, ftExit;
+	FILETIME ftCreate, ftExit, ftIdle;
 
 	hkeyKernelCPU = NULL;
 	fNTMethod = false;
@@ -603,7 +603,7 @@ void VDCPUUsageReader::Init() {
 	if (GetProcessTimes(GetCurrentProcess(), &ftCreate, &ftExit, (FILETIME *)&kt_last, (FILETIME *)&ut_last)) {
 
 		// Using Windows NT/2000 method
-		GetSystemTimeAsFileTime((FILETIME *)&st_last);
+		GetSystemTimes(&ftIdle, (FILETIME *)&skt_last, (FILETIME *)&sut_last);
 
 		fNTMethod = true;
 
@@ -642,21 +642,24 @@ int VDCPUUsageReader::read() {
 		
 		return -1;
 	} else if (fNTMethod) {
-		FILETIME ftCreate, ftExit;
-		unsigned __int64 kt, st, ut;
+		FILETIME ftCreate, ftExit, ftIdle;
+		unsigned __int64 kt, ut, skt, sut;
 		int cpu;
 
 		GetProcessTimes(GetCurrentProcess(), &ftCreate, &ftExit, (FILETIME *)&kt, (FILETIME *)&ut);
-		GetSystemTimeAsFileTime((FILETIME *)&st);
+		GetSystemTimes(&ftIdle, (FILETIME *)&skt, (FILETIME *)&sut);
 
-		if (st == st_last)
+		unsigned __int64 sd = (skt - skt_last) + (sut - sut_last);
+
+		if (sd==0)
 			return 100;
 		else
-			cpu = (int)((100 * (kt + ut - kt_last - ut_last) + (st - st_last)/2) / (st - st_last));
+			cpu = (int)((100 * (kt + ut - kt_last - ut_last) + sd/2) / sd);
 
 		kt_last = kt;
 		ut_last = ut;
-		st_last = st;
+		skt_last = skt;
+		sut_last = sut;
 
 		return cpu;
 	}

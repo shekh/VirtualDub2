@@ -69,7 +69,8 @@ private:
 
 	uint64 kt_last;
 	uint64 ut_last;
-	uint64 st_last;
+	uint64 skt_last;
+	uint64 sut_last;
 };
 
 void VDEnableSampling(bool bEnable);

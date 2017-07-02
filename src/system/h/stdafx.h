@@ -10,8 +10,8 @@
 #else
 #define VER_PRODUCTBUILD 6001
 #endif
-#if VER_PRODUCTBUILD > 6000
-#define _WIN32_WINNT 0x0500
+#if VER_PRODUCTBUILD >= 6000
+#define _WIN32_WINNT 0x0501
 #else
 #define _WIN32_WINNT 0x0410
 #endif
@@ -27,7 +27,3 @@
 #include <stdarg.h>
 #include <math.h>
 #include <ctype.h>
-
-#if _MSC_VER <= 1500
-const int MIIM_FTYPE = 0x100;
-#endif
