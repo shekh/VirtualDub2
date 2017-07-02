@@ -115,10 +115,19 @@ stringset 8 {		// kVDST_CaptureUI
 	message 122, "Relative latency";
 	message 123, "Current error";
 
+	// mode
+	message 124, "Convert format";
+	message 125, "Cropping";
+	message 126, "Filter chain";
+	message 127, "Drop/Insert frames";
+	message 128, "Channel mask";
+	message 129, "Resample";
+	
 	////////// capture group names
 	message 201, "Video";
 	message 202, "Audio";
 	message 203, "Sync";
+	message 204, "Processing tasks";
 }
 
 stringset 9 {		// kVDST_Project

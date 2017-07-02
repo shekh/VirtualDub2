@@ -407,6 +407,8 @@ public:
 	bool			mbDoSwitch;
 	bool			mbAllFull;
 	bool			mbNTSC;
+	bool			mbDoResample;
+	bool			mbDoConversion;
 
 	IVDCaptureFilterSystem *mpFilterSys;
 	VDPixmapLayout			mInputLayout;
@@ -487,6 +489,8 @@ VDCaptureData::VDCaptureData()
 	, mbDoSwitch(0)
 	, mbAllFull(0)
 	, mbNTSC(0)
+	, mbDoResample(0)
+	, mbDoConversion(0)
 	, mpFilterSys(NULL)
 {
 }
@@ -749,6 +753,7 @@ public:
 
 	void	Capture(bool bTest);
 	void	CaptureStop();
+	bool	IsModeActive(int info);
 
 protected:
 	int		GetByName(int count, const wchar_t *(VDCaptureProject::*pGetNameRout)(int), const wchar_t *name);
@@ -1915,6 +1920,17 @@ void GetMaskedAudioFormat(vdstructex<VDWaveFormat>& dst, const vdstructex<VDWave
 	}
 }
 
+bool VDCaptureProject::IsModeActive(int info) {
+	if (!mpCaptureData) return false;
+	switch (info){
+	case kVDCaptureInfo_AudioResample:
+		return mpCaptureData->mbDoResample;
+	case kVDCaptureInfo_VideoConvertFormat:
+		return mpCaptureData->mbDoConversion;
+	}
+	return false;
+}
+
 void VDCaptureProject::Capture(bool fTest) {
 	if (!mpDriver)
 		return;
@@ -2051,6 +2067,7 @@ void VDCaptureProject::Capture(bool fTest) {
 							}
 
 							pResyncFilter->SetResyncMode(IVDCaptureResyncFilter::kModeResampleAudio);
+							icd.mbDoResample = true;
 							break;
 						}
 						// fall through -- format isn't PCM so we can't resample it
@@ -2329,11 +2346,8 @@ unknown_PCM_format:
 				icd.mpError = new_nothrow MyError("Unable to start video capture.");
 			} else {
 
-				vdstructex<WAVEFORMATEX> wfex;
-				if (mpDriver->GetAudioFormat(wfex)) {
-					if (mpCB)
-						mpCB->UICaptureAudioFormatUpdated();
-				}
+				if (mpCB)
+					mpCB->UICaptureAudioFormatUpdated();
 
 				VDSamplingAutoProfileScope autoVTProfile;
 
@@ -2474,6 +2488,9 @@ VDDEBUG("Capture has stopped.\n");
 		}
 	}
 #endif
+
+	if (mpCB)
+		mpCB->UICaptureAudioFormatUpdated();
 }
 
 void VDCaptureProject::CaptureStop() {
@@ -3534,6 +3551,7 @@ void VDCaptureData::createOutputBlitter() {
 		repack_buffer.info.colorRangeMode = fmt.colorRangeMode;
 		mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc, extraDst);
 		delete extraDst;
+		mbDoConversion = pxsrc.format!=repack_buffer.format;
 	} else if (vfwLayout.format) {
 		VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
 		repack_buffer.init(vfwLayout);
@@ -3542,6 +3560,7 @@ void VDCaptureData::createOutputBlitter() {
 		repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
 		repack_buffer.info.colorRangeMode = fmt.colorRangeMode;
 		mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc);
+		mbDoConversion = pxsrc.format!=repack_buffer.format;
 	}
 }
 

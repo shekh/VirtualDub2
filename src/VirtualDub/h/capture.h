@@ -149,7 +149,14 @@ enum VDCaptureInfoId {
 	kVDCaptureInfo_AudioResamplingFactor,
 	kVDCaptureInfo_SyncVideoTimingAdjust,
 	kVDCaptureInfo_SyncRelativeLatency,
-	kVDCaptureInfo_SyncCurrentLatency
+	kVDCaptureInfo_SyncCurrentLatency,
+
+	kVDCaptureInfo_VideoConvertFormat,
+	kVDCaptureInfo_VideoCropping,
+	kVDCaptureInfo_VideoFilters,
+	kVDCaptureInfo_VideoDropFrames,
+	kVDCaptureInfo_AudioChannelMask,
+	kVDCaptureInfo_AudioResample,
 };
 
 struct VDCapturePreferences {
@@ -372,6 +379,7 @@ public:
 
 	virtual void	Capture(bool bTest) = 0;
 	virtual void	CaptureStop() = 0;
+	virtual bool	IsModeActive(int info) = 0;
 };
 
 IVDCaptureProject *VDCreateCaptureProject();
