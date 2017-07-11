@@ -229,13 +229,13 @@ void SaveWAV(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SavePlugin(const wchar_t *szFilename, IVDOutputDriver* driver, const char* format, DubOptions *quick_opts, bool removeAudio) {
+void SavePlugin(const wchar_t *szFilename, IVDOutputDriver* driver, const char* format, bool fProp, DubOptions *quick_opts, bool removeAudio) {
 	VDAVIOutputPluginSystem fileout(szFilename);
 
 	fileout.SetDriver(driver,format);
 	fileout.SetTextInfo(g_project->GetTextInfo());
 
-	g_project->RunOperation(&fileout, removeAudio ? 3:FALSE, quick_opts, g_prefs.main.iDubPriority, false, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	g_project->RunOperation(&fileout, removeAudio ? 3:FALSE, quick_opts, g_prefs.main.iDubPriority, fProp, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 void SaveAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, bool fCompatibility, bool removeAudio) {

@@ -2086,7 +2086,7 @@ static void func_VirtualDub_SaveAVI(IVDScriptInterpreter *, VDScriptValue *argli
 		}
 
 		if (g_FileOutFormat == name) {
-			SavePlugin(filename.c_str(), driver, name, &opts);
+			SavePlugin(filename.c_str(), driver, name, true, &opts);
 			return;
 		}
 	}
