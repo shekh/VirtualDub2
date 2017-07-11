@@ -3114,8 +3114,8 @@ LRESULT VDProjectUI::DubWndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 			g_dubber->Abort();
 			g_bExit = true;
 		} else {
-			if (!g_showStatusWindow)
-				MenuHit(ID_OPTIONS_SHOWSTATUSWINDOW);
+			if (mpDubStatus && !mpDubStatus->isVisible())
+				mpDubStatus->ToggleStatus();
 
 			if (IDYES == MessageBox((HWND)mhwnd,
 					"A dub operation is currently in progress. Forcing VirtualDub to abort "

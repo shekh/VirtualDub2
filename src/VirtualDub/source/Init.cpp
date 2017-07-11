@@ -137,6 +137,7 @@ extern wchar_t g_szFile[MAX_PATH];
 
 extern const char g_szError[];
 
+bool g_exitOnDone = false;
 bool g_bAutoTest = false;
 bool g_fWine = false;
 bool g_bEnableVTuneProfiling;
@@ -760,10 +761,36 @@ bool InitInstance( HANDLE hInstance, int nCmdShow, bool topmost) {
 
 ///////////////////////////////////////////////////////////////////////////
 
+struct ProcessCommandLine {
+	bool fExitOnDone;
+	bool forceAutoRecoverScan;
+	bool captureMode;
+	VDStringW captureFile;
+	VDStringW openFile;
+
+	ProcessCommandLine() {
+		fExitOnDone = false;
+		forceAutoRecoverScan = false;
+		captureMode = false;
+	}
+	int scan(const VDCommandLine& cmdLine, bool execute);
+};
+
 int VDProcessCommandLine(const VDCommandLine& cmdLine) {
+	g_szFile[0] = 0;
+
+	ProcessCommandLine cmd;
+	int rc = cmd.scan(cmdLine, false);
+	if (rc>=0) return rc;
+
+	if (cmd.fExitOnDone)
+		g_exitOnDone = true;
+	rc = cmd.scan(cmdLine, true);
+	return rc;
+}
+
+int ProcessCommandLine::scan(const VDCommandLine& cmdLine, bool execute) {
 	static const wchar_t seps[] = L" \t\n\r";
-	bool fExitOnDone = false;
-	bool forceAutoRecoverScan = false;
 
 	// parse cmdline looking for switches
 	//
@@ -776,8 +803,6 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 	//	/h						disable crash handler
 	//	/fsck					test crash handler
 	//	/vtprofile				enable VTune profiling
-
-	g_szFile[0] = 0;
 
 	int argsFound = 0;
 	int rc = -1;
@@ -795,10 +820,17 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 			++argsFound;
 
 			if (!isSwitch) {
-				if (g_capProjectUI)
-					g_capProjectUI->SetCaptureFile(token);
-				else
-					g_project->CmdOpen(token);
+				if (execute) {
+					if (g_capProjectUI)
+						g_capProjectUI->SetCaptureFile(token);
+					else
+						g_project->CmdOpen(token);
+				} else {
+					if (captureMode)
+						captureFile = token;
+					else
+						openFile = token;
+				}
 			} else {
 				// parse out the switch name
 				++token;
@@ -854,7 +886,7 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 					forceAutoRecoverScan = true;
 				}
 				else if (!wcscmp(token, L"autotest")) {
-					g_bAutoTest = true;
+					if (execute) g_bAutoTest = true;
 				}
 				else if (!wcscmp(token, L"b")) {
 					const wchar_t *path2;
@@ -862,32 +894,37 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token) || !cmdLine.GetNextNonSwitchArgument(it, path2))
 						throw MyError("Command line error: syntax is /b <src_dir> <dst_dir>");
 
-					JobAddBatchDirectory(token, path2);
+					if (execute) JobAddBatchDirectory(token, path2);
 				}
 				else if (!wcscmp(token, L"blockDebugOutput")) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /blockDebugOutput <filter>");
 					
-					VDInitDebugOutputFilterW32(VDTextWToA(token).c_str());
+					if (execute) VDInitDebugOutputFilterW32(VDTextWToA(token).c_str());
 				}
 				else if (!wcscmp(token, L"c")) {
-					JobClearList();
+					if (execute) JobClearList();
 				}
 				else if (!wcscmp(token, L"capture")) {
-					VDUIFrame *pFrame = VDUIFrame::GetFrame(g_hWnd);
-					pFrame->SetNextMode(1);
+					if (execute) {
+						VDUIFrame *pFrame = VDUIFrame::GetFrame(g_hWnd);
+						pFrame->SetNextMode(1);
+						if (!g_capProjectUI)
+							throw MyError("Command line error: not in capture mode");
+					}
+					captureMode = true;
 				}
 				else if (!wcscmp(token, L"capaudiorec")) {
-					if (!g_capProjectUI)
+					if (!captureMode)
 						throw MyError("Command line error: not in capture mode");
 
 					bool recognized = false;
 					if (cmdLine.GetNextNonSwitchArgument(it, token)) {
 						if (!wcscmp(token, L"on") || !wcscmp(token, L"true") || !wcscmp(token, L"yes")) {
-							g_capProjectUI->SetAudioCaptureEnabled(true);
+							if (execute) g_capProjectUI->SetAudioCaptureEnabled(true);
 							recognized = true;
 						} else if (!wcscmp(token, L"off") || !wcscmp(token, L"false") || !wcscmp(token, L"no")) {
-							g_capProjectUI->SetAudioCaptureEnabled(false);
+							if (execute) g_capProjectUI->SetAudioCaptureEnabled(false);
 							recognized = true;
 						}
 					}
@@ -896,16 +933,16 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 						throw MyError("Command line error: syntax is /capaudiorec on|off");
 				}
 				else if (!wcscmp(token, L"capaudioplay")) {
-					if (!g_capProjectUI)
+					if (!captureMode)
 						throw MyError("Command line error: not in capture mode");
 
 					bool recognized = false;
 					if (cmdLine.GetNextNonSwitchArgument(it, token)) {
 						if (!wcscmp(token, L"on") || !wcscmp(token, L"true") || !wcscmp(token, L"yes")) {
-							g_capProjectUI->SetAudioPlaybackEnabled(true);
+							if (execute) g_capProjectUI->SetAudioPlaybackEnabled(true);
 							recognized = true;
 						} else if (!wcscmp(token, L"off") || !wcscmp(token, L"false") || !wcscmp(token, L"no")) {
-							g_capProjectUI->SetAudioPlaybackEnabled(false);
+							if (execute) g_capProjectUI->SetAudioPlaybackEnabled(false);
 							recognized = true;
 						}
 					}
@@ -914,56 +951,60 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 						throw MyError("Command line error: syntax is /capaudioplay on|off");
 				}
 				else if (!wcscmp(token, L"capchannel")) {
-					if (!g_capProjectUI)
+					if (!captureMode)
 						throw MyError("Command line error: not in capture mode");
 
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /capchannel [antenna:|cable:]<channel>");
 
 					if (!wcsncmp(token, L"antenna:", 8)) {
-						g_capProjectUI->SetTunerInputMode(false);
+						if (execute) g_capProjectUI->SetTunerInputMode(false);
 						token += 8;
 					} else if (!wcsncmp(token, L"cable:", 6)) {
-						g_capProjectUI->SetTunerInputMode(true);
+						if (execute) g_capProjectUI->SetTunerInputMode(true);
 						token += 6;
 					}
 
-					g_capProjectUI->SetTunerChannel(_wtoi(token));
+					if (execute) g_capProjectUI->SetTunerChannel(_wtoi(token));
 
 					if (cmdLine.GetNextNonSwitchArgument(it, token))
-						g_capProjectUI->SetTunerExactFrequency(VDRoundToInt(wcstod(token, NULL) * 1000000));
+						if (execute) g_capProjectUI->SetTunerExactFrequency(VDRoundToInt(wcstod(token, NULL) * 1000000));
 				}
 				else if (!wcscmp(token, L"capdevice")) {
-					if (!g_capProjectUI)
+					if (!captureMode)
 						throw MyError("Command line error: not in capture mode");
 
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /capdevice <device>");
 
-					if (!g_capProjectUI->SetDriver(token))
+					if (execute && !g_capProjectUI->SetDriver(token))
 						throw MyError("Unable to initialize capture device: %ls\n", token);
 				}
 				else if (!wcscmp(token, L"capfile")) {
-					if (!g_capProjectUI)
+					if (!captureMode)
 						throw MyError("Command line error: not in capture mode");
 
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /capfile <filename>");
 
-					g_capProjectUI->SetCaptureFile(token);
+					captureFile = token;
+					if (execute) g_capProjectUI->SetCaptureFile(token);
 				}
 				else if (!wcscmp(token, L"capfileinc")) {
-					if (!g_capProjectUI)
+					if (!captureMode)
 						throw MyError("Command line error: not in capture mode");
 
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /capfileinc <filename>");
 
-					g_capProjectUI->SetCaptureFile(token);
-					g_capProject->IncrementFileIDUntilClear();
+					captureFile = token;
+					if (execute) {
+						g_capProjectUI->SetCaptureFile(token);
+						g_capProject->IncrementFileIDUntilClear();
+					}
 				}
 				else if (!wcscmp(token, L"capfilealloc")) {
-					if (!g_capProjectUI)
+					if (!captureMode)
 						throw MyError("Command line error: not in capture mode");
 
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
@@ -974,10 +1015,10 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 					if (!mbsize)
 						throw MyError("Command line error: invalid size '%ls' for preallocating capture file.", token);
 
-					g_capProject->PreallocateCaptureFile((sint64)mbsize << 20);
+					if (execute) g_capProject->PreallocateCaptureFile((sint64)mbsize << 20);
 				}
 				else if (!wcscmp(token, L"capstart")) {
-					if (!g_capProjectUI)
+					if (!captureMode)
 						throw MyError("Command line error: not in capture mode");
 
 					if (cmdLine.GetNextNonSwitchArgument(it, token)) {
@@ -988,13 +1029,13 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 
 						int limit = multiplier*_wtoi(token);
 
-						g_capProjectUI->SetTimeLimit(limit);
+						if (execute) g_capProjectUI->SetTimeLimit(limit);
 					}
 
-					g_capProjectUI->Capture();
+					if (execute) g_capProjectUI->Capture();
 				}
 				else if (!wcscmp(token, L"changelog")) {
-					VDDumpChangeLog();
+					if (execute) VDDumpChangeLog();
 				}
 				else if (!wcscmp(token, L"cmd")) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
@@ -1005,42 +1046,43 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 						if (token2[i] == '\'')
 							token2[i] = '"';
 					token2 += L';';
-					RunScriptMemory((char *)VDTextWToA(token2).c_str());
+					if (execute) RunScriptMemory((char *)VDTextWToA(token2).c_str());
 				}
 				else if (!wcscmp(token, L"fsck")) {
-					crash();
+					if (execute) crash();
 				}
 				else if (!wcscmp(token, L"F")) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /F <filter>");
-
-					VDAddPluginModule(token);
-					VDInitInputDrivers();
-					VDInitOutputDrivers();
-					VDInitAudioEnc();
-					VDInitTools();
-
-					guiSetStatus("Loaded external module: %s", 255, VDTextWToA(token).c_str());
+					if (execute) {
+						VDAddPluginModule(token);
+						VDInitInputDrivers();
+						VDInitOutputDrivers();
+						VDInitAudioEnc();
+						VDInitTools();
+	
+						guiSetStatus("Loaded external module: %s", 255, VDTextWToA(token).c_str());
+					}
 				}
 				else if (!wcscmp(token, L"edit")) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /edit <instance>");
-					if (g_projectui) g_projectui->edit_token = token;
+					if (execute && g_projectui) g_projectui->edit_token = token;
 				}
 				else if (!wcscmp(token, L"h")) {
-					SetUnhandledExceptionFilter(NULL);
+					if (execute) SetUnhandledExceptionFilter(NULL);
 				}
 				else if (!wcscmp(token, L"hexedit")) {
 					if (cmdLine.GetNextNonSwitchArgument(it, token))
-						HexEdit(NULL, token, false);
+						if (execute) HexEdit(NULL, token, false);
 					else
-						HexEdit(NULL, NULL, false);
+						if (execute) HexEdit(NULL, NULL, false);
 				}
 				else if (!wcscmp(token, L"hexview")) {
 					if (cmdLine.GetNextNonSwitchArgument(it, token))
-						HexEdit(NULL, token, true);
+						if (execute) HexEdit(NULL, token, true);
 					else
-						HexEdit(NULL, NULL, true);
+						if (execute) HexEdit(NULL, NULL, true);
 				}
 				else if (!wcscmp(token, L"i")) {
 					const wchar_t *filename;
@@ -1048,11 +1090,15 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, filename))
 						throw MyError("Command line error: syntax is /i <script> [<args>...]");
 
-					g_VDStartupArguments.clear();
-					while(cmdLine.GetNextNonSwitchArgument(it, token))
-						g_VDStartupArguments.push_back(VDTextWToA(token));
+					if (execute) {
+						g_VDStartupArguments.clear();
+						while(cmdLine.GetNextNonSwitchArgument(it, token))
+							g_VDStartupArguments.push_back(VDTextWToU8(VDStringW(token)));
 
-					RunScript(filename);
+						RunScript(filename);
+					} else {
+						while(cmdLine.GetNextNonSwitchArgument(it, token));
+					}
 				}
 				else if (!wcscmp(token, L"lockd3d")) {
 					// PerfHUD doesn't like it when you keep loading and unloading the device.
@@ -1073,30 +1119,34 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 					protected:
 						VDD3D9Manager *mpMgr;
 					};
-					static D3DLock sD3DLock;
+					if (execute) {
+						static D3DLock sD3DLock;
+					}
 				}
 				else if (!wcscmp(token, L"master")) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /master <queue-file>");
 
-					JobSetQueueFile(token, true, false);
+					if (execute) JobSetQueueFile(token, true, false);
 				}
 				else if (!wcscmp(token, L"noStupidAntiDebugChecks")) {
 					// Note that this actually screws our ability to call IsDebuggerPresent() as well,
 					// not that we care.
 
-					HMODULE hmodKernel32 = GetModuleHandleA("kernel32");
-					FARPROC fpIDP = GetProcAddress(hmodKernel32, "IsDebuggerPresent");
+					if (execute) {
+						HMODULE hmodKernel32 = GetModuleHandleA("kernel32");
+						FARPROC fpIDP = GetProcAddress(hmodKernel32, "IsDebuggerPresent");
 
-					DWORD oldProtect;
-					if (VirtualProtect(fpIDP, 3, PAGE_EXECUTE_READWRITE, &oldProtect)) {
-						static const uint8 patch[]={
-							0x33, 0xC0,				// XOR EAX, EAX
-							0xC3,					// RET
-						};
-						memcpy(fpIDP, patch, 3);
-						VirtualProtect(fpIDP, 3, oldProtect, &oldProtect);
-					}					
+						DWORD oldProtect;
+						if (VirtualProtect(fpIDP, 3, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+							static const uint8 patch[]={
+								0x33, 0xC0,				// XOR EAX, EAX
+								0xC3,					// RET
+							};
+							memcpy(fpIDP, patch, 3);
+							VirtualProtect(fpIDP, 3, oldProtect, &oldProtect);
+						}
+					}
 				}
 				else if (!wcscmp(token, L"p")) {
 					const wchar_t *path2;
@@ -1104,44 +1154,50 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token) || !cmdLine.GetNextNonSwitchArgument(it, path2))
 						throw MyError("Command line error: syntax is /p <src_file> <dst_file>");
 
-					JobAddBatchFile(token, path2);
+					if (execute) JobAddBatchFile(token, path2);
 				}
 				else if (!wcscmp(token, L"priority")) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /priority <priority>");
 
+					DWORD priority = NORMAL_PRIORITY_CLASS;
 					if (!wcscmp(token, L"normal"))
-						SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
+						priority = NORMAL_PRIORITY_CLASS;
 					else if (!wcscmp(token, L"aboveNormal"))
-						SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
+						priority = ABOVE_NORMAL_PRIORITY_CLASS;
 					else if (!wcscmp(token, L"belowNormal"))
-						SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
+						priority = BELOW_NORMAL_PRIORITY_CLASS;
 					else if (!wcscmp(token, L"high"))
-						SetPriorityClass(GetCurrentProcess(),  HIGH_PRIORITY_CLASS);
+						priority = HIGH_PRIORITY_CLASS;
 					else if (!wcscmp(token, L"low"))
-						SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
+						priority = IDLE_PRIORITY_CLASS;
 					else if (!wcscmp(token, L"realtime"))
-						SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
+						priority = REALTIME_PRIORITY_CLASS;
 					else
 						throw MyError("Command line error: unknown priority '%ls'", token);
+
+					if (execute) SetPriorityClass(GetCurrentProcess(), priority);
+
 				}
 				else if (!wcscmp(token, L"queryVersion")) {
 					rc = version_num;
 					break;
 				}
 				else if (!wcscmp(token, L"r")) {
-					JobUnlockDubber();
-					bool success = JobRunList();
-					JobLockDubber();
+					if (execute) {
+						JobUnlockDubber();
+						bool success = JobRunList();
+						JobLockDubber();
 
-					if (!success)
-						break;
+						if (!success)
+							break;
+					}
 				}
 				else if (!wcscmp(token, L"s")) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /s <script>");
 
-					RunScript(token);
+					if (execute) RunScript(token);
 				}
 				else if (!wcscmp(token, L"safecpu")) {
 					// already handled elsewhere
@@ -1150,28 +1206,30 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
 						throw MyError("Command line error: syntax is /slave <queue-file>");
 
-					JobSetQueueFile(token, true, true);
+					if (execute) {
+						JobSetQueueFile(token, true, true);
 
-					if (!g_consoleMode) {
-						OpenJobWindow();
-						ShowWindow(g_hWnd, SW_SHOWMINNOACTIVE);
-					} else {
-						VDLog(kVDLogInfo, VDswprintf(L"Joining shared job queue in slave mode: %ls", 1, &token));
+						if (!g_consoleMode) {
+							OpenJobWindow();
+							ShowWindow(g_hWnd, SW_SHOWMINNOACTIVE);
+						} else {
+							VDLog(kVDLogInfo, VDswprintf(L"Joining shared job queue in slave mode: %ls", 1, &token));
+						}
 					}
 
 					fExitOnDone = false;
 				}
 				else if (!wcscmp(token, L"vtprofile")) {
-					g_bEnableVTuneProfiling = true;
+					if (execute) g_bEnableVTuneProfiling = true;
 				}
 				else if (!wcscmp(token, L"w")) {
-					g_fWine = true;
+					if (execute) g_fWine = true;
 				}
 				else if (!wcscmp(token, L"vdxadebug")) {
-					VDPreferencesSetFilterAccelVisualDebugEnabled(true);
+					if (execute) VDPreferencesSetFilterAccelVisualDebugEnabled(true);
 				}
 				else if (!wcscmp(token, L"limitmem")) {
-					for(int i=0; i<6; ++i)
+					if (execute) for(int i=0; i<6; ++i)
 						VirtualAlloc(NULL, 256 * 1024 * 1024, MEM_RESERVE, PAGE_READWRITE);
 				}
 				else if (!wcscmp(token, L"x")) {
@@ -1199,6 +1257,10 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 			VDLog(kVDLogInfo, VDStringW(L"Operation was aborted by user."));
 
 			rc = 1;
+		} else if (g_exitOnDone) {
+			// WM_CLOSE behavior: terminate in unsafe way and exit with code 1000
+			// normal abort way: terminate safely and return 1
+			rc = 1;
 		}
 	} catch(const MyError& e) {
 		if (g_consoleMode) {
@@ -1215,6 +1277,9 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 
 	if (rc >= 0)
 		return rc;
+
+	if (!execute)
+		return -1;
 
 	if (fExitOnDone)
 		return 0;
