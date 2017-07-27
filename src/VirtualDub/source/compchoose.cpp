@@ -569,50 +569,38 @@ static int g_yres[]={
 
 static int g_depths[]={
 	16, 24, 32,
-	48,
-	48,
-	64,
-	64,
+	48,	48,
+	64,	64,
 	12,
-	16,
-	16,
-	16,
+	16,	16,	16,
 	24,
+	24, 24,
 	30,
-	32,
-	32
+	32,	32
 };
 
 static int g_depths_fcc[]={
 	0, 0, 0,
-	VDMAKEFOURCC('b', '4', '8', 'r'),
-	VDMAKEFOURCC('B', 'G', 'R', 48),
-	VDMAKEFOURCC('b', '6', '4', 'a'),
-	VDMAKEFOURCC('B', 'R', 'A', 64),
+	VDMAKEFOURCC('b', '4', '8', 'r'),	VDMAKEFOURCC('B', 'G', 'R', 48),
+	VDMAKEFOURCC('b', '6', '4', 'a'),	VDMAKEFOURCC('B', 'R', 'A', 64),
 	VDMAKEFOURCC('Y', 'V', '1', '2'),
-	VDMAKEFOURCC('Y', 'V', '1', '6'),
-	VDMAKEFOURCC('Y', 'U', 'Y', '2'),
-	VDMAKEFOURCC('H', 'D', 'Y', 'C'),
+	VDMAKEFOURCC('Y', 'V', '1', '6'),	VDMAKEFOURCC('Y', 'U', 'Y', '2'),	VDMAKEFOURCC('H', 'D', 'Y', 'C'),
 	VDMAKEFOURCC('Y', 'V', '2', '4'),
+	VDMAKEFOURCC('P', '0', '1', '0'),	VDMAKEFOURCC('P', '0', '1', '6'),
 	VDMAKEFOURCC('v', '2', '1', '0'),
-	VDMAKEFOURCC('P', '2', '1', '0'),
-	VDMAKEFOURCC('P', '2', '1', '6')
+	VDMAKEFOURCC('P', '2', '1', '0'),	VDMAKEFOURCC('P', '2', '1', '6')
 };
 
 static const wchar_t* g_depths_id[]={
-  L"rgb16", L"rgb", L"rgba",
-  L"b48r",
-  L"BGR[48]",
-  L"b64a",
-  L"BRA[64]",
-  L"YV12",
-  L"YV16",
-  L"YUY2",
-  L"HDYC",
-  L"YV24",
-  L"v210",
-  L"P210",
-  L"P216"
+	L"rgb16", L"rgb", L"rgba",
+	L"b48r",  L"BGR[48]",
+	L"b64a",  L"BRA[64]",
+	L"YV12",
+	L"YV16",  L"YUY2",  L"HDYC",
+	L"YV24",
+	L"P010",  L"P016",
+	L"v210",
+	L"P210",  L"P216"
 };
 
 

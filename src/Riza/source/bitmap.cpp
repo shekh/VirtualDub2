@@ -54,6 +54,9 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr) {
 	return VDBitmapFormatToPixmapFormat(hdr, variant);
 }
 
+// see libavcodec\raw.c for some defined FOURCC's
+// see libavformat\riff.c, libavformat\isom.c for some more
+
 int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant) {
 	using namespace nsVDPixmap;
 
@@ -138,8 +141,36 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 	case VDMAKEFOURCC('Y', '8', '0', '0'):
 		return kPixFormat_Y8;
 
+	// 420_Planar16
+
+	case VDMAKEFOURCC('Y', '3', 11, 16):
+		return kPixFormat_YUV420_Planar16;
+
+	case VDMAKEFOURCC('Y', '3', 11, 10):
+		variant = 2;
+		return kPixFormat_YUV420_Planar16;
+
+	case VDMAKEFOURCC('P', '0', '1', '6'):
+		variant = 3;
+		return kPixFormat_YUV420_Planar16;
+
+	case VDMAKEFOURCC('P', '0', '1', '0'):
+		variant = 4;
+		return kPixFormat_YUV420_Planar16;
+
+	// v210
+
 	case VDMAKEFOURCC('v', '2', '1', '0'):
 		return kPixFormat_YUV422_V210;
+
+	// 422_Planar16
+
+	case VDMAKEFOURCC('Y', '3', 10, 16):
+		return kPixFormat_YUV422_Planar16;
+
+	case VDMAKEFOURCC('Y', '3', 10, 10):
+		variant = 2;
+		return kPixFormat_YUV422_Planar16;
 
 	case VDMAKEFOURCC('P', '2', '1', '6'):
 		variant = 3;
@@ -149,12 +180,7 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 		variant = 4;
 		return kPixFormat_YUV422_Planar16;
 
-	case VDMAKEFOURCC('Y', '3', 10, 10):
-		variant = 2;
-		return kPixFormat_YUV422_Planar16;
-
-	case VDMAKEFOURCC('Y', '3', 10, 16):
-		return kPixFormat_YUV422_Planar16;
+	// ----
 
 	case VDMAKEFOURCC('Y', '4', '1', '6'):
 		return kPixFormat_XYUV64;
@@ -184,6 +210,9 @@ int VDGetPixmapToBitmapVariants(int format) {
 
 	if (format == nsVDPixmap::kPixFormat_XRGB64)
 		return 2;
+
+	if (format == nsVDPixmap::kPixFormat_YUV420_Planar16)
+		return 4;
 
 	if (format == nsVDPixmap::kPixFormat_YUV422_Planar16)
 		return 4;
@@ -348,6 +377,25 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biCompression	= VDMAKEFOURCC('Y', '4', '1', '6');
 		dst->biBitCount		= 64;
 		dst->biSizeImage	= w*8 * h;
+		break;
+	case kPixFormat_YUV420_Planar16:
+		switch(variant) {
+		case 2:
+			dst->biCompression	= VDMAKEFOURCC('Y', '3', 11, 10);
+			break;
+		case 3:
+			dst->biCompression	= VDMAKEFOURCC('P', '0', '1', '6');
+			break;
+		case 4:
+			dst->biCompression	= VDMAKEFOURCC('P', '0', '1', '0');
+			break;
+		case 1:
+		default:
+			dst->biCompression	= VDMAKEFOURCC('Y', '3', 11, 16);
+			break;
+		}
+		dst->biBitCount		= 24;
+		dst->biSizeImage	= w*h*2 + ((w+1)>>1)*((h+1)>>1)*4;
 		break;
 	case kPixFormat_YUV422_Planar16:
 		switch(variant) {

@@ -2214,6 +2214,8 @@ const void *VideoSourceAVI::streamGetFrame(const void *inputBuffer, uint32 data_
 	if(mpDecompressor->GetAlpha()) mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaMask;
 	if(mTargetFormat.format==nsVDPixmap::kPixFormat_XRGB64)
 		VDPixmap_bitmap_to_X16R16G16B16(mTargetFormat,mTargetFormat,mTargetFormatVariant);
+	if(mTargetFormat.format==nsVDPixmap::kPixFormat_YUV420_Planar16)
+		VDPixmap_bitmap_to_YUV420_Planar16(mTargetFormat,mTargetFormat,mTargetFormatVariant);
 	if(mTargetFormat.format==nsVDPixmap::kPixFormat_YUV422_Planar16)
 		VDPixmap_bitmap_to_YUV422_Planar16(mTargetFormat,mTargetFormat,mTargetFormatVariant);
 	if(mTargetFormat.format==nsVDPixmap::kPixFormat_XYUV64)

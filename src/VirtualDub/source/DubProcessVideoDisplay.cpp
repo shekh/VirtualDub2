@@ -303,6 +303,8 @@ void VDDubVideoProcessorDisplay::UpdateDecompressedVideo(const void *data, uint3
 			int variant = mpVideoDecompressor->GetTargetFormatVariant();
 			if(mVideoDecompBuffer.format==nsVDPixmap::kPixFormat_XRGB64)
 				VDPixmap_bitmap_to_X16R16G16B16(mVideoDecompBuffer,mVideoDecompBuffer,variant);
+			if(mVideoDecompBuffer.format==nsVDPixmap::kPixFormat_YUV420_Planar16)
+				VDPixmap_bitmap_to_YUV420_Planar16(mVideoDecompBuffer,mVideoDecompBuffer,variant);
 			if(mVideoDecompBuffer.format==nsVDPixmap::kPixFormat_YUV422_Planar16)
 				VDPixmap_bitmap_to_YUV422_Planar16(mVideoDecompBuffer,mVideoDecompBuffer,variant);
 			if(mVideoDecompBuffer.format==nsVDPixmap::kPixFormat_XYUV64)

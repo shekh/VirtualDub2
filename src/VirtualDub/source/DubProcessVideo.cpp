@@ -1218,6 +1218,11 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 				mpVideoCompressor->GetInputBitmapFormat(bm);
 				int variant;
 				VDBitmapFormatToPixmapFormat((VDAVIBitmapInfoHeader&)*bm.data(),variant);
+				if(pBuffer->mPixmap.format==nsVDPixmap::kPixFormat_YUV420_Planar16) {
+					// ffmpeg, 10 bit
+					if (variant==2) out_info.ref_r = 0x3FF;
+					if (variant>2) throw MyError("Output format is not implemented");
+				}
 				if(pBuffer->mPixmap.format==nsVDPixmap::kPixFormat_YUV422_Planar16) {
 					// ffmpeg, 10 bit
 					if (variant==2) out_info.ref_r = 0x3FF;

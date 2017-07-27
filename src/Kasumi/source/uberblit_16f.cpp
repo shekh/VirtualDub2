@@ -297,23 +297,42 @@ void VDPixmap_YUV_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc, uint32 max_v
 	}}
 }
 
+void VDPixmap_bitmap_to_YUV420_Planar16(VDPixmap& dst, const VDPixmap& src, int variant) {
+	dst.info.ref_r = 0xFFFF;
+
+	if (variant==2) {
+		// ffmpeg, 10 bit
+		dst.info.ref_r = 0x3FF;
+	}
+
+	if (variant==3 || variant==4) {
+		// P016/P010, msb aligned
+		dst.info.ref_r = 0xFF00;
+		// next blitter should deinterleave it
+		dst.ext.format_swizzle = 3;
+		dst.pitch2 = src.pitch;
+		dst.pitch3 = 0;
+		dst.data3 = 0;
+	}
+}
+
 void VDPixmap_bitmap_to_YUV422_Planar16(VDPixmap& dst, const VDPixmap& src, int variant) {
 	dst.info.ref_r = 0xFFFF;
 
-  if (variant==2) {
-    // ffmpeg, 10 bit
-  	dst.info.ref_r = 0x3FF;
-  }
+	if (variant==2) {
+		// ffmpeg, 10 bit
+		dst.info.ref_r = 0x3FF;
+	}
 
-  if (variant==3 || variant==4) {
-    // P216/P210, msb aligned
-  	dst.info.ref_r = 0xFF00;
-    // next blitter should deinterleave it
-    dst.ext.format_swizzle = 3;
-    dst.pitch2 = src.pitch;
-    dst.pitch3 = 0;
-    dst.data3 = 0;
-  }
+	if (variant==3 || variant==4) {
+		// P216/P210, msb aligned
+		dst.info.ref_r = 0xFF00;
+		// next blitter should deinterleave it
+		dst.ext.format_swizzle = 3;
+		dst.pitch2 = src.pitch;
+		dst.pitch3 = 0;
+		dst.data3 = 0;
+	}
 }
 
 void VDPixmap_bitmap_to_XYUV64(VDPixmap& dst, const VDPixmap& src, int variant) {

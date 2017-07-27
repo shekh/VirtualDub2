@@ -1002,6 +1002,17 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 			int w2 = -(-w >> cxbits);
 			int h2 = -(-h >> cybits);
 
+			if (src.format==nsVDPixmap::kPixFormat_YUV420_Planar16 && src_swizzle==3) {
+				gen.ldsrc(0, 1, 0, 0, w2, h2, cbtoken, w2 * 4);
+				gen.dup();
+				gen.extract_16in32(1, w2, h2);
+				gen.swap(1);
+				gen.extract_16in32(0, w2, h2);
+				gen.ldsrc(0, 0, 0, 0, w, h, ytoken, w*2);
+				gen.swap(1);
+				break;
+			}
+
 			if (src.format==nsVDPixmap::kPixFormat_YUV422_Planar16 && src_swizzle==3) {
 				gen.ldsrc(0, 1, 0, 0, w2, h2, cbtoken, w2 * 4);
 				gen.dup();
