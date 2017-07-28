@@ -432,7 +432,11 @@ uint32 VDVFilterDrawText::GetParams() {
 		case nsVDXPixmap::kPixFormat_XRGB8888:
 		case nsVDXPixmap::kPixFormat_XRGB64:
 		case nsVDPixmap::kPixFormat_YUV444_Planar:
+		case nsVDPixmap::kPixFormat_YUV422_Planar:
+		case nsVDPixmap::kPixFormat_YUV420_Planar:
 		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
 			pxldst.data = pxlsrc.data;
 			pxldst.pitch = pxlsrc.pitch;
 			return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_NORMALIZE16;
@@ -480,7 +484,6 @@ void VDVFilterDrawText::Start() {
 	SetBkColor(hdc,0x000000);
 	SetBkMode(hdc,TRANSPARENT);
 
-	wchar_t* test = L"Hello, World!";
 	BeginPath(hdc);
 	RECT rect;
 	rect.left = long(param.x0*64);
@@ -530,7 +533,11 @@ void VDVFilterDrawText::Run() {
 
 	switch(pxdst.format) {
 	case nsVDPixmap::kPixFormat_YUV444_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_Planar:
+	case nsVDPixmap::kPixFormat_YUV420_Planar:
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Planar16:
 		{
 			color1 = VDConvertRGBToYCbCr(param.color, false, false);
 			color0 = VDConvertRGBToYCbCr(param.shadow_color, false, false);
