@@ -793,8 +793,10 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 		"Channel levels (YCbCr FR)",
 	};
 
+	const char* mode_name = mMode<sizeof(kModeNames)/sizeof(char*) ? kModeNames[mMode] : "Unknown mode";
+
 	VDStringA buf;
-	buf.sprintf("%s - frame %d (%s)", kModeNames[mMode], (int)frame_num, mpFormatInfo->mpName);
+	buf.sprintf("%s - frame %d (%s)", mode_name, (int)frame_num, mpFormatInfo->mpName);
 
 	mTextRasterizer.Clear();
 	VDPixmapConvertTextToPath(mTextRasterizer, NULL, 24.0f * 64.0f, 20.0f * 64.0f, 460.0f * 64.0f, buf.c_str());
