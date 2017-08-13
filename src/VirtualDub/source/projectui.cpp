@@ -2400,7 +2400,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 		case ID_OPTIONS_VERTICALDISPLAY:
 			g_vertical = !g_vertical;
-			RepositionPanes();
+			RepositionPanes(true);
 			break;
 		case ID_OPTIONS_SYNCTOAUDIO:
 			g_dubOpts.video.fSyncToAudio = !g_dubOpts.video.fSyncToAudio;
@@ -2416,7 +2416,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 		case ID_OPTIONS_SWAPPANES:
 			g_fSwapPanes = !g_fSwapPanes;
-			RepositionPanes();
+			RepositionPanes(true);
 			break;
 
 		case ID_OPTIONS_PREVIEWPROGRESSIVE:	g_dubOpts.video.previewFieldMode = DubVideoOptions::kPreviewFieldsProgressive; break;

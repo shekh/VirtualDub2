@@ -329,7 +329,7 @@ namespace {
 
 	static BOOL CALLBACK ValidateEnumerator(HWND hwnd, LPARAM pData) {
 		VDUIControlDialogW32ValidateData& data = *(VDUIControlDialogW32ValidateData *)pData;
-		HBRUSH hbrBackground = (HBRUSH)GetClassLong(hwnd, GCLP_HBRBACKGROUND);
+		HBRUSH hbrBackground = (HBRUSH)GetClassLongPtr(hwnd, GCLP_HBRBACKGROUND);
 
 		if (hbrBackground) {
 			RECT r;
