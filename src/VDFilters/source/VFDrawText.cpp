@@ -428,7 +428,9 @@ uint32 VDVFilterDrawText::GetParams() {
 	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
 	VDXPixmapLayout& pxldst = *fa->dst.mpPixmapLayout;
 
-	switch(pxlsrc.format) {
+	int base_format = ExtractBaseFormat(pxldst.format);
+
+	switch(base_format) {
 		case nsVDXPixmap::kPixFormat_XRGB8888:
 		case nsVDXPixmap::kPixFormat_XRGB64:
 		case nsVDPixmap::kPixFormat_YUV444_Planar:
@@ -526,12 +528,17 @@ void VDVFilterDrawText::End() {
 }
 
 void VDVFilterDrawText::Run() {
+	using namespace nsVDXPixmap;
 	const VDXPixmap& pxdst = *fa->dst.mpPixmap;
+
+	int base_format = ExtractBaseFormat(pxdst.format);
+	int colorSpace = ExtractColorSpace(&pxdst);
+	int colorRange = ExtractColorRange(&pxdst);
 
 	uint32 color1 = param.color;
 	uint32 color0 = param.shadow_color;
 
-	switch(pxdst.format) {
+	switch(base_format) {
 	case nsVDPixmap::kPixFormat_YUV444_Planar:
 	case nsVDPixmap::kPixFormat_YUV422_Planar:
 	case nsVDPixmap::kPixFormat_YUV420_Planar:
@@ -539,8 +546,8 @@ void VDVFilterDrawText::Run() {
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
 		{
-			color1 = VDConvertRGBToYCbCr(param.color, false, false);
-			color0 = VDConvertRGBToYCbCr(param.shadow_color, false, false);
+			color1 = VDConvertRGBToYCbCr(param.color,        colorSpace==kColorSpaceMode_709, colorRange==kColorRangeMode_Full);
+			color0 = VDConvertRGBToYCbCr(param.shadow_color, colorSpace==kColorSpaceMode_709, colorRange==kColorRangeMode_Full);
 			break;
 		}
 	}

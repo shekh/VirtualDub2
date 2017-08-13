@@ -53,6 +53,161 @@ void VDXVideoFilter::SetFilterModVersion(uint32 version) {
 
 ///////////////////////////////////////////////////////////////////////////
 
+nsVDXPixmap::VDXPixmapFormat VDXVideoFilter::ExtractBaseFormat(sint32 format) {
+	using namespace nsVDXPixmap;
+
+	switch (format) {
+	case kPixFormat_Y8_FR:
+		return kPixFormat_Y8;
+
+	case kPixFormat_YUV444_Planar_709_FR:
+	case kPixFormat_YUV444_Planar_FR:
+	case kPixFormat_YUV444_Planar_709:
+		return kPixFormat_YUV444_Planar;
+
+	case kPixFormat_YUV422_Planar_709_FR:
+	case kPixFormat_YUV422_Planar_FR:
+	case kPixFormat_YUV422_Planar_709:
+		return kPixFormat_YUV422_Planar;
+
+	case kPixFormat_YUV420_Planar_709_FR:
+	case kPixFormat_YUV420_Planar_FR:
+	case kPixFormat_YUV420_Planar_709:
+		return kPixFormat_YUV420_Planar;
+
+	case kPixFormat_YUV410_Planar_709_FR:
+	case kPixFormat_YUV410_Planar_FR:
+	case kPixFormat_YUV410_Planar_709:
+		return kPixFormat_YUV410_Planar;
+
+	case kPixFormat_YUV411_Planar_709_FR:
+	case kPixFormat_YUV411_Planar_FR:
+	case kPixFormat_YUV411_Planar_709:
+		return kPixFormat_YUV411_Planar;
+
+	case kPixFormat_YUV422_YUYV_709_FR:
+	case kPixFormat_YUV422_YUYV_FR:
+	case kPixFormat_YUV422_YUYV_709:
+		return kPixFormat_YUV422_YUYV;
+
+	case kPixFormat_YUV422_UYVY_709_FR:
+	case kPixFormat_YUV422_UYVY_FR:
+	case kPixFormat_YUV422_UYVY_709:
+		return kPixFormat_YUV422_UYVY;
+
+	case kPixFormat_YUV420i_Planar_FR:
+	case kPixFormat_YUV420i_Planar_709:
+	case kPixFormat_YUV420i_Planar_709_FR:
+		return kPixFormat_YUV420i_Planar;
+
+	case kPixFormat_YUV420it_Planar_FR:
+	case kPixFormat_YUV420it_Planar_709:
+	case kPixFormat_YUV420it_Planar_709_FR:
+		return kPixFormat_YUV420it_Planar;
+
+	case kPixFormat_YUV420ib_Planar_FR:
+	case kPixFormat_YUV420ib_Planar_709:
+	case kPixFormat_YUV420ib_Planar_709_FR:
+		return kPixFormat_YUV420ib_Planar;
+	}
+
+	return (nsVDXPixmap::VDXPixmapFormat)format;
+}
+
+nsVDXPixmap::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(const VDXPixmap* pixmap) {
+	using namespace nsVDXPixmap;
+
+	if (fma && fma->fmpixmap) {
+		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(pixmap);
+		if (info->colorSpaceMode!=kColorSpaceMode_None) return info->colorSpaceMode;
+	}
+
+	switch (pixmap->format) {
+	case kPixFormat_XRGB1555:
+	case kPixFormat_RGB565:
+	case kPixFormat_RGB888:
+	case kPixFormat_XRGB8888:
+	case kPixFormat_XRGB64:
+		return kColorSpaceMode_None;
+
+	case kPixFormat_Y8:
+	case kPixFormat_Y8_FR:
+	case kPixFormat_Y16:
+		return kColorSpaceMode_None;
+
+	case kPixFormat_YUV444_Planar_709_FR:
+	case kPixFormat_YUV444_Planar_709:
+	case kPixFormat_YUV422_Planar_709_FR:
+	case kPixFormat_YUV422_Planar_709:
+	case kPixFormat_YUV420_Planar_709_FR:
+	case kPixFormat_YUV420_Planar_709:
+	case kPixFormat_YUV410_Planar_709_FR:
+	case kPixFormat_YUV410_Planar_709:
+	case kPixFormat_YUV411_Planar_709_FR:
+	case kPixFormat_YUV411_Planar_709:
+	case kPixFormat_YUV422_YUYV_709_FR:
+	case kPixFormat_YUV422_YUYV_709:
+	case kPixFormat_YUV422_UYVY_709_FR:
+	case kPixFormat_YUV422_UYVY_709:
+	case kPixFormat_YUV420i_Planar_709:
+	case kPixFormat_YUV420i_Planar_709_FR:
+	case kPixFormat_YUV420it_Planar_709:
+	case kPixFormat_YUV420it_Planar_709_FR:
+	case kPixFormat_YUV420ib_Planar_709:
+	case kPixFormat_YUV420ib_Planar_709_FR:
+		return kColorSpaceMode_709;
+	}
+
+	return kColorSpaceMode_601;
+}
+
+nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(const VDXPixmap* pixmap) {
+	using namespace nsVDXPixmap;
+
+	if (fma && fma->fmpixmap) {
+		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(pixmap);
+		if (info->colorRangeMode!=kColorRangeMode_None) return info->colorRangeMode;
+	}
+
+	switch (pixmap->format) {
+	case kPixFormat_XRGB1555:
+	case kPixFormat_RGB565:
+	case kPixFormat_RGB888:
+	case kPixFormat_XRGB8888:
+	case kPixFormat_XRGB64:
+		return kColorRangeMode_None;
+
+	case kPixFormat_Y8_FR:
+		return kColorRangeMode_Full;
+
+	case kPixFormat_YUV444_Planar_709_FR:
+	case kPixFormat_YUV444_Planar_FR:
+	case kPixFormat_YUV422_Planar_709_FR:
+	case kPixFormat_YUV422_Planar_FR:
+	case kPixFormat_YUV420_Planar_709_FR:
+	case kPixFormat_YUV420_Planar_FR:
+	case kPixFormat_YUV410_Planar_709_FR:
+	case kPixFormat_YUV410_Planar_FR:
+	case kPixFormat_YUV411_Planar_709_FR:
+	case kPixFormat_YUV411_Planar_FR:
+	case kPixFormat_YUV422_YUYV_709_FR:
+	case kPixFormat_YUV422_YUYV_FR:
+	case kPixFormat_YUV422_UYVY_709_FR:
+	case kPixFormat_YUV422_UYVY_FR:
+	case kPixFormat_YUV420i_Planar_FR:
+	case kPixFormat_YUV420i_Planar_709_FR:
+	case kPixFormat_YUV420it_Planar_FR:
+	case kPixFormat_YUV420it_Planar_709_FR:
+	case kPixFormat_YUV420ib_Planar_FR:
+	case kPixFormat_YUV420ib_Planar_709_FR:
+		return kColorRangeMode_Full;
+	}
+
+	return kColorRangeMode_Limited;
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 bool VDXVideoFilter::Init() {
 	return true;
 }
