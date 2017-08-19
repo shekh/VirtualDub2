@@ -96,6 +96,10 @@ public:
 	void conv_16_to_8();
 	void conv_V210_to_32F();
 	void conv_V210_to_P16();
+	void conv_V410_to_32F();
+	void conv_V410_to_P16();
+	void conv_Y410_to_32F();
+	void conv_Y410_to_P16();
 
 	void conv_8888_to_555();
 	void conv_8888_to_565();
@@ -105,6 +109,8 @@ public:
 	void conv_32F_to_16F();
 	void conv_32F_to_16();
 	void conv_32F_to_V210();
+	void conv_32F_to_V410();
+	void conv_32F_to_Y410();
 
 	void convd_8888_to_555();
 	void convd_8888_to_565();

@@ -23,6 +23,10 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+uint32 VDPixmapGen_32F_To_V210::GetType(uint32 output) const {
+	return (mpSrcG->GetType(mSrcIndexG) & ~kVDPixType_Mask) | kVDPixType_V210;
+}
+
 void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 	uint32 *dst = (uint32 *)dst0;
 	const float *srcR = (const float *)mpSrcR->GetRow(y, mSrcIndexR);
@@ -270,5 +274,205 @@ void VDPixmapGen_V210_To_P16::Compute(void *dst0, sint32 y) {
 		dstR += 3;
 		dstG += 6;
 		dstB += 3;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint32 VDPixmapGen_32F_To_V410::GetType(uint32 output) const {
+	return (mpSrcG->GetType(mSrcIndexG) & ~kVDPixType_Mask) | kVDPixType_V410;
+}
+
+void VDPixmapGen_32F_To_V410::Compute(void *dst0, sint32 y) {
+	uint32 *dst = (uint32 *)dst0;
+	const float *srcR = (const float *)mpSrcR->GetRow(y, mSrcIndexR);
+	const float *srcG = (const float *)mpSrcG->GetRow(y, mSrcIndexG);
+	const float *srcB = (const float *)mpSrcB->GetRow(y, mSrcIndexB);
+
+	VDCPUCleanupExtensions();
+
+	for(sint32 i=0; i<mWidth; ++i) {
+		float r0 = srcR[0];
+		srcR++;
+
+		float b0 = srcB[0];
+		srcB++;
+
+		float g0 = srcG[0];
+		srcG++;
+
+		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 1.0f) r0 = 1.0f;
+		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 1.0f) g0 = 1.0f;
+		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 1.0f) b0 = 1.0f;
+
+		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * 1023.0f);
+		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * 1023.0f);
+		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * 1023.0f);
+
+		// dword: Cr Y Cb XX
+		dst[0] = (ir0 << 22) + (ig0 << 12) + (ib0 << 2);
+		dst++;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VDPixmapGen_V410_To_32F::Start() {
+	StartWindow(mWidth * sizeof(float), 3);
+}
+
+const void *VDPixmapGen_V410_To_32F::GetRow(sint32 y, uint32 index) {
+	return (const uint8 *)VDPixmapGenWindowBasedOneSource::GetRow(y, index) + mWindowPitch * index;
+}
+
+uint32 VDPixmapGen_V410_To_32F::GetType(uint32 output) const {
+	return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_32F_LE;
+}
+
+void VDPixmapGen_V410_To_32F::Compute(void *dst0, sint32 y) {
+	float *dstR = (float *)dst0;
+	float *dstG = (float *)((char *)dstR + mWindowPitch);
+	float *dstB = (float *)((char *)dstG + mWindowPitch);
+	const uint32 *src = (const uint32 *)mpSrc->GetRow(y, mSrcIndex);
+
+	VDCPUCleanupExtensions();
+
+	// dword: Cr Y Cb XX
+
+	for(int i=0; i<mWidth; ++i) {
+		const uint32 w0 = src[0];
+		src++;
+
+		dstB[0] = (float)((w0 >> 2)  & 0x3ff) / 1023.0f;
+		dstG[0] = (float)((w0 >> 12) & 0x3ff) / 1023.0f;
+		dstR[0] = (float)((w0 >> 22) & 0x3ff) / 1023.0f;
+
+		dstR++;
+		dstG++;
+		dstB++;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VDPixmapGen_V410_To_P16::Start() {
+	StartWindow(mWidth * sizeof(uint16), 3);
+}
+
+const void *VDPixmapGen_V410_To_P16::GetRow(sint32 y, uint32 index) {
+	return (const uint8 *)VDPixmapGenWindowBasedOneSource::GetRow(y, index) + mWindowPitch * index;
+}
+
+uint32 VDPixmapGen_V410_To_P16::GetType(uint32 output) const {
+	return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16_LE;
+}
+
+void VDPixmapGen_V410_To_P16::Compute(void *dst0, sint32 y) {
+	uint16 *dstR = (uint16 *)dst0;
+	uint16 *dstG = (uint16 *)((char *)dstR + mWindowPitch);
+	uint16 *dstB = (uint16 *)((char *)dstG + mWindowPitch);
+	const uint32 *src = (const uint32 *)mpSrc->GetRow(y, mSrcIndex);
+
+	// dword: Cr Y Cb XX
+
+	for(int i=0; i<mWidth; ++i) {
+		const uint32 w0 = src[0];
+		src++;
+
+		dstB[0] = (w0 >> 2)  & 0x3ff;
+		dstG[0] = (w0 >> 12) & 0x3ff;
+		dstR[0] = (w0 >> 22) & 0x3ff;
+
+		dstR++;
+		dstG++;
+		dstB++;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint32 VDPixmapGen_32F_To_Y410::GetType(uint32 output) const {
+	return (mpSrcG->GetType(mSrcIndexG) & ~kVDPixType_Mask) | kVDPixType_Y410;
+}
+
+void VDPixmapGen_32F_To_Y410::Compute(void *dst0, sint32 y) {
+	uint32 *dst = (uint32 *)dst0;
+	const float *srcR = (const float *)mpSrcR->GetRow(y, mSrcIndexR);
+	const float *srcG = (const float *)mpSrcG->GetRow(y, mSrcIndexG);
+	const float *srcB = (const float *)mpSrcB->GetRow(y, mSrcIndexB);
+
+	VDCPUCleanupExtensions();
+
+	for(sint32 i=0; i<mWidth; ++i) {
+		float r0 = srcR[0];
+		srcR++;
+
+		float b0 = srcB[0];
+		srcB++;
+
+		float g0 = srcG[0];
+		srcG++;
+
+		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 1.0f) r0 = 1.0f;
+		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 1.0f) g0 = 1.0f;
+		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 1.0f) b0 = 1.0f;
+
+		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * 1023.0f);
+		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * 1023.0f);
+		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * 1023.0f);
+
+		// dword: XX Cr Y Cb
+		dst[0] = (ir0 << 20) + (ig0 << 10) + ib0;
+		dst++;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VDPixmapGen_Y410_To_32F::Compute(void *dst0, sint32 y) {
+	float *dstR = (float *)dst0;
+	float *dstG = (float *)((char *)dstR + mWindowPitch);
+	float *dstB = (float *)((char *)dstG + mWindowPitch);
+	const uint32 *src = (const uint32 *)mpSrc->GetRow(y, mSrcIndex);
+
+	VDCPUCleanupExtensions();
+
+	// dword: XX Cr Y Cb
+
+	for(int i=0; i<mWidth; ++i) {
+		const uint32 w0 = src[0];
+		src++;
+
+		dstB[0] = (float)(w0         & 0x3ff) / 1023.0f;
+		dstG[0] = (float)((w0 >> 10) & 0x3ff) / 1023.0f;
+		dstR[0] = (float)((w0 >> 20) & 0x3ff) / 1023.0f;
+
+		dstR++;
+		dstG++;
+		dstB++;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VDPixmapGen_Y410_To_P16::Compute(void *dst0, sint32 y) {
+	uint16 *dstR = (uint16 *)dst0;
+	uint16 *dstG = (uint16 *)((char *)dstR + mWindowPitch);
+	uint16 *dstB = (uint16 *)((char *)dstG + mWindowPitch);
+	const uint32 *src = (const uint32 *)mpSrc->GetRow(y, mSrcIndex);
+
+	// dword: XX Cr Y Cb
+
+	for(int i=0; i<mWidth; ++i) {
+		const uint32 w0 = src[0];
+		src++;
+
+		dstB[0] = w0         & 0x3ff;
+		dstG[0] = (w0 >> 10) & 0x3ff;
+		dstR[0] = (w0 >> 20) & 0x3ff;
+
+		dstR++;
+		dstG++;
+		dstB++;
 	}
 }

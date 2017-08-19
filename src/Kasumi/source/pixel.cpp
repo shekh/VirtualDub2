@@ -379,6 +379,38 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV444_V410:
+		{
+			int ref = 1023;
+			VDPixmapFormatEx f = px.format;
+			f.colorRangeMode = px.info.colorRangeMode;
+			f.colorSpaceMode = px.info.colorSpaceMode;
+			const uint32* s = (const uint32*)(size_t(px.data) + px.pitch*y + x*4);
+			uint32 pcb = (s[0] >> 2)  & 0x3ff;
+			uint32 py =  (s[0] >> 12) & 0x3ff;
+			uint32 pcr = (s[0] >> 22) & 0x3ff;
+			float r,g,b;
+			VDConvertYCbCrToRGB(py,pcb,pcr,ref,f,r,g,b);
+			return VDPackRGB(r,g,b);
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV444_Y410:
+		{
+			int ref = 1023;
+			VDPixmapFormatEx f = px.format;
+			f.colorRangeMode = px.info.colorRangeMode;
+			f.colorSpaceMode = px.info.colorSpaceMode;
+			const uint32* s = (const uint32*)(size_t(px.data) + px.pitch*y + x*4);
+			uint32 pcb = s[0]         & 0x3ff;
+			uint32 py =  (s[0] >> 10) & 0x3ff;
+			uint32 pcr = (s[0] >> 20) & 0x3ff;
+			float r,g,b;
+			VDConvertYCbCrToRGB(py,pcb,pcr,ref,f,r,g,b);
+			return VDPackRGB(r,g,b);
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 		{
 			int ref = px.info.ref_r;

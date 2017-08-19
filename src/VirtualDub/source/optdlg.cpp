@@ -437,6 +437,8 @@ bool VDDialogSelectVideoFormatW32::OnLoaded() {
 		nsVDPixmap::kPixFormat_YUV422_Planar_Centered,
 		nsVDPixmap::kPixFormat_YUV420_Planar_Centered,
 		nsVDPixmap::kPixFormat_YUV422_V210,
+		nsVDPixmap::kPixFormat_YUV444_V410,
+		nsVDPixmap::kPixFormat_YUV444_Y410,
 		nsVDPixmap::kPixFormat_YUV422_UYVY_709,
 		nsVDPixmap::kPixFormat_YUV420_NV12,
 		nsVDPixmap::kPixFormat_YUV422_YUYV_709,
@@ -518,7 +520,7 @@ bool VDDialogSelectVideoFormatW32::OnErase(VDZHDC hdc) {
 
 void VDDialogSelectVideoFormatW32::FormatItem::Init(int format) {
 	mFormat = format;
-	VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == nsVDPixmap::kPixFormat_XYUV64 + 1);
+	VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == nsVDPixmap::kPixFormat_YUV444_Y410 + 1);
 }
 
 void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s) const {
@@ -547,6 +549,8 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
 				case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
 				case nsVDPixmap::kPixFormat_YUV422_V210:
+				case nsVDPixmap::kPixFormat_YUV444_V410:
+				case nsVDPixmap::kPixFormat_YUV444_Y410:
 				case nsVDPixmap::kPixFormat_YUV420_NV12:
 				case nsVDPixmap::kPixFormat_YUV422_UYVY_FR:
 				case nsVDPixmap::kPixFormat_YUV422_YUYV_FR:
@@ -623,6 +627,8 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 					break;
 				case nsVDPixmap::kPixFormat_Y8:
 				case nsVDPixmap::kPixFormat_YUV422_V210:
+				case nsVDPixmap::kPixFormat_YUV444_V410:
+				case nsVDPixmap::kPixFormat_YUV444_Y410:
 				case nsVDPixmap::kPixFormat_YUV444_Planar:
 				case nsVDPixmap::kPixFormat_YUV444_Planar_709:
 				case nsVDPixmap::kPixFormat_YUV422_UYVY:
@@ -732,7 +738,13 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 					s = L"4:2:2 (YUYV)";
 					break;
 				case nsVDPixmap::kPixFormat_YUV422_V210:
-					s = L"4:2:2 10-bit (V210)";
+					s = L"4:2:2 10-bit (v210)";
+					break;
+				case nsVDPixmap::kPixFormat_YUV444_V410:
+					s = L"4:4:4 10-bit (v410)";
+					break;
+				case nsVDPixmap::kPixFormat_YUV444_Y410:
+					s = L"4:4:4 10-bit (Y410)";
 					break;
 			}
 			break;
@@ -776,6 +788,8 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_YUV422_YUYV_FR:
 				case nsVDPixmap::kPixFormat_YUV422_YUYV_709_FR:
 				case nsVDPixmap::kPixFormat_YUV422_V210:
+				case nsVDPixmap::kPixFormat_YUV444_V410:
+				case nsVDPixmap::kPixFormat_YUV444_Y410:
 					s = L"-";
 					break;
 				case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:

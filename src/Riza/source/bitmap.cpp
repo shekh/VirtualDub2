@@ -180,6 +180,16 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 		variant = 4;
 		return kPixFormat_YUV422_Planar16;
 
+	// v410
+
+	case VDMAKEFOURCC('v', '4', '1', '0'):
+		return kPixFormat_YUV444_V410;
+
+	// Y410
+
+	case VDMAKEFOURCC('Y', '4', '1', '0'):
+		return kPixFormat_YUV444_Y410;
+
 	// ----
 
 	case VDMAKEFOURCC('Y', '4', '1', '6'):
@@ -474,6 +484,16 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biCompression	= VDMAKEFOURCC('v', '2', '1', '0');
 		dst->biBitCount		= 20;
 		dst->biSizeImage	= ((w + 47) / 48) * 128 * h;
+		break;
+	case kPixFormat_YUV444_V410:
+		dst->biCompression	= VDMAKEFOURCC('v', '4', '1', '0');
+		dst->biBitCount		= 32;
+		dst->biSizeImage	= w * 4 * h;
+		break;
+	case kPixFormat_YUV444_Y410:
+		dst->biCompression	= VDMAKEFOURCC('Y', '4', '1', '0');
+		dst->biBitCount		= 32;
+		dst->biSizeImage	= w * 4 * h;
 		break;
 	case kPixFormat_YUV422_UYVY_709:
 		dst->biCompression	= VDMAKEFOURCC('H', 'D', 'Y', 'C');
