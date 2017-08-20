@@ -815,6 +815,15 @@ namespace {
 		return (ir << 16) + (ig << 8) + ib;
 	}
 
+	void ConvertYCC72ToRGB(float y, float cb, float cr, float& r, float& g, float& b) {
+		//	!   1.1643836  - 5.599D-17    1.5960268  - 222.92157 !
+		//	!   1.1643836  - 0.3917623  - 0.8129676    135.57529 !
+		//	!   1.1643836    2.0172321  - 1.110D-16  - 276.83585 !
+		r = 1.1643836f*y + 1.5960268f*cr - (222.92157f / 255.0f);
+		g = 1.1643836f*y - 0.3917623f*cb - 0.8129676f*cr + (135.57529f / 255.0f);
+		b = 1.1643836f*y + 2.0172321f*cb - (276.83585f / 255.0f);
+	}
+
 	uint32 ConvertYCC72ToRGB24_FR(sint32 iy, sint32 icb, sint32 icr) {
 		float y  = (float)iy;
 		float cb = (float)icb;
@@ -823,11 +832,20 @@ namespace {
 		//	1.    0.           1.402      - 179.456    
 		//	1.  - 0.3441363  - 0.7141363    135.45889 
 		//	1.    1.772      - 2.220D-16  - 226.816    
- 		uint32 ir = VDClampedRoundFixedToUint8Fast((1.0f/65536.0f/255.0f)*y + (1.4020000f/65536.0f/255.0f)*cr - (179.456f / 255.0f));
+		uint32 ir = VDClampedRoundFixedToUint8Fast((1.0f/65536.0f/255.0f)*y + (1.4020000f/65536.0f/255.0f)*cr - (179.456f / 255.0f));
 		uint32 ig = VDClampedRoundFixedToUint8Fast((1.0f/65536.0f/255.0f)*y - (0.3441363f/65536.0f/255.0f)*cb - (0.7141363f/65536.0f/255.0f)*cr + (135.45889f / 255.0f));
 		uint32 ib = VDClampedRoundFixedToUint8Fast((1.0f/65536.0f/255.0f)*y + (1.7720000f/65536.0f/255.0f)*cb - (226.816f / 255.0f));
 
 		return (ir << 16) + (ig << 8) + ib;
+	}
+
+	void ConvertYCC72ToRGB_FR(float y, float cb, float cr, float& r, float& g, float& b) {
+		//	1.    0.           1.402      - 179.456    
+		//	1.  - 0.3441363  - 0.7141363    135.45889 
+		//	1.    1.772      - 2.220D-16  - 226.816    
+		r = y + 1.4020000f*cr - (179.456f / 255.0f);
+		g = y - 0.3441363f*cb - 0.7141363f*cr + (135.45889f / 255.0f);
+		b = y + 1.7720000f*cb - (226.816f / 255.0f);
 	}
 
 	uint32 ConvertYCC72ToRGB24_709(sint32 iy, sint32 icb, sint32 icr) {
@@ -845,6 +863,15 @@ namespace {
 		return (ir << 16) + (ig << 8) + ib;
 	}
 
+	void ConvertYCC72ToRGB_709(float y, float cb, float cr, float& r, float& g, float& b) {
+		//	!   1.1643836  - 2.932D-17    1.7927411  - 248.10099 !
+		//	!   1.1643836  - 0.2132486  - 0.5329093    76.87808  !
+		//	!   1.1643836    2.1124018  - 5.551D-17  - 289.01757 !
+		r = 1.1643836f*y + 1.7927411f*cr - (248.10099f / 255.0f);
+		g = 1.1643836f*y - 0.2132486f*cb - 0.5329093f*cr + (76.87808f / 255.0f);
+		b = 1.1643836f*y + 2.1124018f*cb - (289.01757f / 255.0f);
+	}
+
 	uint32 ConvertYCC72ToRGB24_709_FR(sint32 iy, sint32 icb, sint32 icr) {
 		float y  = (float)iy;
 		float cb = (float)icb;
@@ -853,11 +880,20 @@ namespace {
 		//	    1.    0.           1.5748     - 201.5744   
 		//	    1.  - 0.1873243  - 0.4681243    83.897414  
 		//	    1.    1.8556       0.         - 237.5168   
- 		uint32 ir = VDClampedRoundFixedToUint8Fast((1.0f/65536.0f/255.0f)*y + (1.5748f/65536.0f/255.0f)*cr - (201.5744f / 255.0f));
+		uint32 ir = VDClampedRoundFixedToUint8Fast((1.0f/65536.0f/255.0f)*y + (1.5748f/65536.0f/255.0f)*cr - (201.5744f / 255.0f));
 		uint32 ig = VDClampedRoundFixedToUint8Fast((1.0f/65536.0f/255.0f)*y - (0.1873243f/65536.0f/255.0f)*cb - (0.4681243f/65536.0f/255.0f)*cr + (83.897414f / 255.0f));
 		uint32 ib = VDClampedRoundFixedToUint8Fast((1.0f/65536.0f/255.0f)*y + (1.8556f/65536.0f/255.0f)*cb - (237.5168f / 255.0f));
 
 		return (ir << 16) + (ig << 8) + ib;
+	}
+
+	void ConvertYCC72ToRGB_709_FR(float y, float cb, float cr, float& r, float& g, float& b) {
+		//	    1.    0.           1.5748     - 201.5744   
+		//	    1.  - 0.1873243  - 0.4681243    83.897414  
+		//	    1.    1.8556       0.         - 237.5168   
+		r = 1.0f*y + 1.5748f*cr - (201.5744f / 255.0f);
+		g = 1.0f*y - 0.1873243f*cb - 0.4681243f*cr + (83.897414f / 255.0f);
+		b = 1.0f*y + 1.8556f*cb - (237.5168f / 255.0f);
 	}
 
 	uint32 InterpPlanarYCC888(const VDPixmap& px, sint32 x1, sint32 y1, sint32 x23, sint32 y23, uint32 w23, uint32 h23) {
@@ -1277,6 +1313,7 @@ uint32 VDPixmapInterpolateSampleRGB24(const VDPixmap& px, sint32 x_256, sint32 y
 }
 
 uint32 VDConvertYCbCrToRGB(uint8 y0, uint8 cb0, uint8 cr0, bool use709, bool useFullRange) {
+	//! this code is not fully used and seems wrong
 	sint32  y =  y0;
 	sint32 cb = cb0 - 128;
 	sint32 cr = cr0 - 128;
@@ -1322,39 +1359,24 @@ uint32 VDConvertYCbCrToRGB(uint8 y0, uint8 cb0, uint8 cr0, bool use709, bool use
 
 void VDConvertYCbCrToRGB(int y0, int cb0, int cr0, int ref, VDPixmapFormatEx& format, float& r, float& g, float& b) {
 	using namespace nsVDXPixmap;
-	float  y =  float(y0*255.0/ref);
-	float cb = float(cb0*255.0/ref) - 128;
-	float cr = float(cr0*255.0/ref) - 128;
+	float  y =  float(y0)/ref;
+	float cb = float(cb0)/ref;
+	float cr = float(cr0)/ref;
 
 	if (format.colorSpaceMode==kColorSpaceMode_709) {
 		if (format.colorRangeMode==kColorRangeMode_Full) {
-			float y2 = y * 0x10000;
-			r = y2 + cr * 103206;
-			g = y2 + cr * -30679 + cb * -12276;
-			b = y2 + cb * 121609;
+			ConvertYCC72ToRGB_709_FR(y,cb,cr,r,g,b);
 		} else {
-			float y2 = (y - 16) * 76309;
-			r = y2 + cr * 117489;
-			g = y2 + cr * -34925 + cb * -13975;
-			b = y2 + cb * 138438;
+			ConvertYCC72ToRGB_709(y,cb,cr,r,g,b);
 		}
 	} else {
 		if (format.colorRangeMode==kColorRangeMode_Full) {
-			float y2 = y * 0x10000;
-			r = y2 + cr * 91181;
-			g = y2 + cr * -46802 + cb * -22554;
-			b = y2 + cb * 166130;
+			ConvertYCC72ToRGB_FR(y,cb,cr,r,g,b);
 		} else {
-			float y2 = (y - 16) * 76309;
-			r = y2 + cr * 104597;
-			g = y2 + cr * -53279 + cb * -25674;
-			b = y2 + cb * 132201;
+			ConvertYCC72ToRGB(y,cb,cr,r,g,b);
 		}
 	}
 
-	r /= 0xFF0000;
-	g /= 0xFF0000;
-	b /= 0xFF0000;
 	if (r<0) r = 0;
 	if (g<0) g = 0;
 	if (b<0) b = 0;
