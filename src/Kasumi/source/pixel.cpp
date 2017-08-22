@@ -362,6 +362,44 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_R210:
+		{
+			uint32 c = *(const uint32*)(size_t(px.data) + px.pitch*y + x*4);
+			c = _byteswap_ulong(c);
+			uint32 r = (c>>20) & 0x3FF;
+			uint32 g = (c>>10) & 0x3FF;
+			uint32 b = c & 0x3FF;
+			r=(r*0xFF0/0x3FF+8)>>4;
+			g=(g*0xFF0/0x3FF+8)>>4;
+			b=(b*0xFF0/0x3FF+8)>>4;
+
+			uint32 ir = r << 16;
+			uint32 ig = g << 8;
+			uint32 ib = b;
+
+			return ir + ig + ib;
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_R10K:
+		{
+			uint32 c = *(const uint32*)(size_t(px.data) + px.pitch*y + x*4);
+			c = _byteswap_ulong(c);
+			uint32 r = (c>>22) & 0x3FF;
+			uint32 g = (c>>12) & 0x3FF;
+			uint32 b = (c>>2) & 0x3FF;
+			r=(r*0xFF0/0x3FF+8)>>4;
+			g=(g*0xFF0/0x3FF+8)>>4;
+			b=(b*0xFF0/0x3FF+8)>>4;
+
+			uint32 ir = r << 16;
+			uint32 ig = g << 8;
+			uint32 ib = b;
+
+			return ir + ig + ib;
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_XYUV64:
 		{
 			int ref = px.info.ref_r;

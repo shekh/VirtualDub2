@@ -472,7 +472,7 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 	if (flags == FILTERPARAM_NOT_SUPPORTED || (flags & FILTERPARAM_SUPPORTS_ALTFORMATS)) {
 		using namespace nsVDPixmap;
 
-		VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_YUV444_Y410 + 1);
+		VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_R10K + 1);
 
 		std::bitset<nsVDPixmap::kPixFormat_Max_Standard> formatMask;
 
@@ -765,6 +765,11 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 					format = kPixFormat_YUV420_Planar_709_FR;
 					break;
 
+				case kPixFormat_R210:
+				case kPixFormat_R10K:
+					format = kPixFormat_XRGB64;
+					break;
+
 				case kPixFormat_XRGB1555:
 				case kPixFormat_RGB565:
 				case kPixFormat_RGB888:
@@ -928,6 +933,20 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 			const VDPixmapLayout& srcLayout0 = tail.mpSrc->GetOutputLayout();
 			const VDPixmapLayout& extSrcLayout = streamInfo.mExternalSrc.mPixmapLayout;
 			int srcFormat = srcLayout0.format;
+
+			bool normalizeRequired = false;
+			if (streamInfo.mbNormalizeOnEntry) {
+				int dstFormat = extSrcLayout.format;
+				switch (dstFormat) {
+				case nsVDPixmap::kPixFormat_XRGB64:
+				case nsVDPixmap::kPixFormat_YUV420_Planar16:
+				case nsVDPixmap::kPixFormat_YUV422_Planar16:
+				case nsVDPixmap::kPixFormat_YUV444_Planar16:
+					normalizeRequired = true;
+					break;
+				}
+			}
+
 			if (streamInfo2.mbConvertOnEntry || (IsVDXAFormat(srcFormat) && fa->IsCroppingEnabled())) {
 				int dstFormat = extSrcLayout.format;
 
@@ -982,24 +1001,10 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 					}
 
 					if (cpuConversionRequired)
-						AppendConversionFilter(tail, extSrcLayout);
+						AppendConversionFilter(tail, extSrcLayout, normalizeRequired);
 				}
-			} else if (streamInfo.mbNormalizeOnEntry) {
-				// assume in all cases when usual conversion is applied the bitmap is normalized anyway
-			
-				bool normalizeRequired = false;
-				int dstFormat = extSrcLayout.format;
-				switch (dstFormat) {
-				case nsVDPixmap::kPixFormat_XRGB64:
-				case nsVDPixmap::kPixFormat_YUV420_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_Planar16:
-				case nsVDPixmap::kPixFormat_YUV444_Planar16:
-					normalizeRequired = true;
-					break;
-				}
-
-				if (normalizeRequired)
-					AppendConversionFilter(tail, extSrcLayout, true);
+			} else if (normalizeRequired) {
+				AppendConversionFilter(tail, extSrcLayout, true);
 			}
 
 			if (streamInfo.mAlignOnEntry) {

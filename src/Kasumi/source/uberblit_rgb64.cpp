@@ -159,6 +159,76 @@ void VDPixmapGen_X16R16G16B16_To_X8R8G8B8::Compute(void *dst0, sint32 y) {
 	}
 }
 
+void VDPixmapGen_X16R16G16B16_To_R210::Compute(void *dst0, sint32 y) {
+	const uint8* src = (const uint8*)mpSrc->GetRow(y, mSrcIndex);
+	uint8 *dst = (uint8 *)dst0;
+
+	for(sint32 i=0; i<mWidth; ++i) {
+		uint16 r = ((uint16*)src)[2];
+		uint16 g = ((uint16*)src)[1];
+		uint16 b = ((uint16*)src)[0];
+		src += 8;
+
+		uint32 c = b + (g<<10) + (r<<20);
+		*(uint32*)dst = _byteswap_ulong(c);
+		dst+=4;
+	}
+}
+
+void VDPixmapGen_X16R16G16B16_To_R10K::Compute(void *dst0, sint32 y) {
+	const uint8* src = (const uint8*)mpSrc->GetRow(y, mSrcIndex);
+	uint8 *dst = (uint8 *)dst0;
+
+	for(sint32 i=0; i<mWidth; ++i) {
+		uint16 r = ((uint16*)src)[2];
+		uint16 g = ((uint16*)src)[1];
+		uint16 b = ((uint16*)src)[0];
+		src += 8;
+
+		uint32 c = (b<<2) + (g<<12) + (r<<22);
+		*(uint32*)dst = _byteswap_ulong(c);
+		dst+=4;
+	}
+}
+
+void VDPixmapGen_R210_To_X16R16G16B16::Compute(void *dst0, sint32 y) {
+	uint16 *dst = (uint16 *)dst0;
+	const uint32 *src = (const uint32 *)mpSrc->GetRow(y, mSrcIndex);
+
+	{for(int i=0; i<mWidth; i++){
+		uint32 c = _byteswap_ulong(*src);
+		uint32 r = (c>>20) & 0x3FF;
+		uint32 g = (c>>10) & 0x3FF;
+		uint32 b = c & 0x3FF;
+
+		dst[0] = b;
+		dst[1] = g;
+		dst[2] = r;
+		dst[3] = 0;
+		dst += 4;
+		src++;
+	}}
+}
+
+void VDPixmapGen_R10K_To_X16R16G16B16::Compute(void *dst0, sint32 y) {
+	uint16 *dst = (uint16 *)dst0;
+	const uint32 *src = (const uint32 *)mpSrc->GetRow(y, mSrcIndex);
+
+	{for(int i=0; i<mWidth; i++){
+		uint32 c = _byteswap_ulong(*src);
+		uint32 r = (c>>22) & 0x3FF;
+		uint32 g = (c>>12) & 0x3FF;
+		uint32 b = (c>>2) & 0x3FF;
+
+		dst[0] = b;
+		dst[1] = g;
+		dst[2] = r;
+		dst[3] = 0;
+		dst += 4;
+		src++;
+	}}
+}
+
 void VDPixmapGen_X16R16G16B16_Normalize::Compute(void *dst0, sint32 y) {
 	if (do_normalize)
 		ComputeAll(dst0,y);

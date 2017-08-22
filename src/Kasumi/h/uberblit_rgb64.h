@@ -154,6 +154,88 @@ protected:
 	void Compute(void *dst0, sint32 y);
 };
 
+class VDPixmapGen_X16R16G16B16_To_R210 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	void Start() {
+		StartWindow(mWidth * 4);
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_R210;
+	}
+
+protected:
+	
+	void Compute(void *dst0, sint32 y);
+};
+
+class VDPixmapGen_X16R16G16B16_To_R10K : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	void Start() {
+		StartWindow(mWidth * 4);
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_R10K;
+	}
+
+protected:
+	
+	void Compute(void *dst0, sint32 y);
+};
+
+class VDPixmapGen_R210_To_X16R16G16B16 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo buf;
+		mpSrc->TransformPixmapInfo(src,buf);
+		dst.copy_frame(buf);
+		dst.ref_r = 0x3FF;
+		dst.ref_g = 0x3FF;
+		dst.ref_b = 0x3FF;
+		dst.ref_a = 0xFFFF;
+	}
+
+	void Start() {
+		StartWindow(mWidth * 8);
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
+	}
+
+protected:
+	void Compute(void *dst0, sint32 y);
+};
+
+class VDPixmapGen_R10K_To_X16R16G16B16 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo buf;
+		mpSrc->TransformPixmapInfo(src,buf);
+		dst.copy_frame(buf);
+		dst.ref_r = 0x3FF;
+		dst.ref_g = 0x3FF;
+		dst.ref_b = 0x3FF;
+		dst.ref_a = 0xFFFF;
+	}
+
+	void Start() {
+		StartWindow(mWidth * 8);
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
+	}
+
+protected:
+	void Compute(void *dst0, sint32 y);
+};
+
 class VDPixmapGen_X16R16G16B16_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
 	VDPixmapGen_X16R16G16B16_Normalize(){ max_value=0xFFFF; }

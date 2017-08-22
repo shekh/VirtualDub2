@@ -800,7 +800,7 @@ const wchar_t *VDVideoDecompressorDIB::GetName() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-bool VDPixmapIsYCbCrFormat(int format) {
+bool VDPixmapIsFCCFormat(int format) {
 	switch(format) {
 		case 0:
 		case nsVDPixmap::kPixFormat_Pal1:
@@ -832,7 +832,7 @@ IVDVideoDecompressor *VDFindVideoDecompressorEx(uint32 fccHandler, const VDAVIBi
 	int format = VDBitmapFormatToPixmapFormat(*hdr, variant);
 
 	if (!VDPreferencesIsDirectYCbCrInputEnabled()) {
-		if (VDPixmapIsYCbCrFormat(format))
+		if (VDPixmapIsFCCFormat(format))
 			format = 0;
 	}
 
@@ -1358,7 +1358,7 @@ bool VideoSourceAVI::_construct(int streamIndex) {
 	mSourceLayout.format = VDBitmapFormatToPixmapFormat(*(const VDAVIBitmapInfoHeader *)bmih, mSourceVariant);
 
 	if (!VDPreferencesIsDirectYCbCrInputEnabled()) {
-		if (VDPixmapIsYCbCrFormat(mSourceLayout.format))
+		if (VDPixmapIsFCCFormat(mSourceLayout.format))
 			mSourceLayout.format = 0;
 	}
 

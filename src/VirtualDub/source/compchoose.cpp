@@ -569,6 +569,7 @@ static int g_yres[]={
 
 static int g_depths[]={
 	16, 24, 32,
+	32, 32,
 	48,	48,
 	64,	64,
 	12,
@@ -582,6 +583,7 @@ static int g_depths[]={
 
 static int g_depths_fcc[]={
 	0, 0, 0,
+	VDMAKEFOURCC('r', '2', '1', '0'),	VDMAKEFOURCC('R', '1', '0', 'k'),
 	VDMAKEFOURCC('b', '4', '8', 'r'),	VDMAKEFOURCC('B', 'G', 'R', 48),
 	VDMAKEFOURCC('b', '6', '4', 'a'),	VDMAKEFOURCC('B', 'R', 'A', 64),
 	VDMAKEFOURCC('Y', 'V', '1', '2'),
@@ -595,6 +597,7 @@ static int g_depths_fcc[]={
 
 static const wchar_t* g_depths_id[]={
 	L"rgb16", L"rgb", L"rgba",
+	L"r210",  L"R10k",
 	L"b48r",  L"BGR[48]",
 	L"b64a",  L"BRA[64]",
 	L"YV12",

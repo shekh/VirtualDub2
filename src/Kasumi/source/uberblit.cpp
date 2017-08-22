@@ -90,6 +90,8 @@ uint32 VDPixmapGetFormatTokenFromFormat(int format) {
 	case kPixFormat_XYUV64:				return kVDPixType_16x4_LE | kVDPixSamp_444 | kVDPixSpace_YCC_601;
 	case kPixFormat_YUV444_V410:		return kVDPixType_V410 | kVDPixSamp_444 | kVDPixSpace_YCC_601;
 	case kPixFormat_YUV444_Y410:		return kVDPixType_Y410 | kVDPixSamp_444 | kVDPixSpace_YCC_601;
+	case kPixFormat_R210:				return kVDPixType_R210 | kVDPixSamp_444 | kVDPixSpace_BGR;
+	case kPixFormat_R10K:				return kVDPixType_R10K | kVDPixSamp_444 | kVDPixSpace_BGR;
 	default:
 		VDASSERT(false);
 		return 0;
@@ -142,6 +144,8 @@ namespace {
 			case kVDPixType_8_B8R8:
 			case kVDPixType_B8R8:
 			case kVDPixType_16x4_LE:
+			case kVDPixType_R210:
+			case kVDPixType_R10K:
 			default:
 				return 0;
 
@@ -442,6 +446,10 @@ namespace {
 							gen.conv_X16_to_8888();
 							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8888;
 							break;
+						case kVDPixType_R210:
+						case kVDPixType_R10K:
+							targetType = kVDPixType_16x4_LE;
+							goto type_reconvert;
 						default:
 							VDASSERT(false);
 							break;
@@ -957,6 +965,30 @@ namespace {
 					}
 					break;
 
+				case kVDPixType_R210:
+					switch(srcType) {
+						case kVDPixType_16x4_LE:
+							gen.conv_X16_to_R210();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_R210;
+							break;
+						default:
+							targetType = kVDPixType_16x4_LE;
+							goto type_reconvert;
+					}
+					break;
+
+				case kVDPixType_R10K:
+					switch(srcType) {
+						case kVDPixType_16x4_LE:
+							gen.conv_X16_to_R10K();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_R10K;
+							break;
+						default:
+							targetType = kVDPixType_16x4_LE;
+							goto type_reconvert;
+					}
+					break;
+
 				default:
 					VDASSERT(false);
 					break;
@@ -1149,6 +1181,18 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 	case kVDPixType_V410:
 	case kVDPixType_Y410:
 		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w * 4);
+		break;
+
+	case kVDPixType_R210:
+		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w * 4);
+		gen.conv_R210_to_X16();
+		srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
+		break;
+
+	case kVDPixType_R10K:
+		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w * 4);
+		gen.conv_R10K_to_X16();
+		srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
 		break;
 
 	case kVDPixType_8_B8R8:

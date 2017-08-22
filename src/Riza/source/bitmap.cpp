@@ -190,6 +190,16 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 	case VDMAKEFOURCC('Y', '4', '1', '0'):
 		return kPixFormat_YUV444_Y410;
 
+	// r210
+
+	case VDMAKEFOURCC('r', '2', '1', '0'):
+		return kPixFormat_R210;
+
+	// R10k
+
+	case VDMAKEFOURCC('R', '1', '0', 'k'):
+		return kPixFormat_R10K;
+
 	// ----
 
 	case VDMAKEFOURCC('Y', '4', '1', '6'):
@@ -370,6 +380,16 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biBitCount		= 32;
 		dst->biSizeImage	= w*4 * h;
 		break;
+	case kPixFormat_R210:
+		dst->biCompression	= VDMAKEFOURCC('r', '2', '1', '0');
+		dst->biBitCount		= 32;
+		dst->biSizeImage	= w * 4 * h;
+		break;
+	case kPixFormat_R10K:
+		dst->biCompression	= VDMAKEFOURCC('R', '1', '0', 'k');
+		dst->biBitCount		= 32;
+		dst->biSizeImage	= w * 4 * h;
+		break;
 	case kPixFormat_XRGB64:
 		switch(variant) {
 		case 2:
@@ -539,6 +559,8 @@ uint32 VDMakeBitmapCompatiblePixmapLayout(VDPixmapLayout& layout, sint32 w, sint
 	if (format == kPixFormat_YUV422_V210) {
 		// V210 requires 128 _byte_ (NOT bit!) alignment.
 		alignment = 128;
+	} else if (format == kPixFormat_R210) {
+		alignment = 256;
 	} else if (VDPixmapGetInfo(format).auxbufs > 1)
 		alignment = 1;
 

@@ -1773,7 +1773,7 @@ void VDVideoFiltersDialog::FilterListItem::GetText(int subItem, VDStringW& s) co
 						"YUV422C",
 						"YUV420C",
 						"YUV422-16F",
-						"V210",
+						"v210",
 						"UYVY-709",
 						"NV12",
 						"I8",
@@ -1815,8 +1815,10 @@ void VDVideoFiltersDialog::FilterListItem::GetText(int subItem, VDStringW& s) co
 						"YUV420P16",
 						"I16",
 						"YUV(A)64",
-						"V410",
+						"v410",
 						"Y410",
+						"r210",
+						"R10k",
 					};
 
 					VDASSERTCT(sizeof(kFormatNames)/sizeof(kFormatNames[0]) == nsVDPixmap::kPixFormat_Max_Standard);

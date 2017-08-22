@@ -90,6 +90,8 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
 	/* YUV64 */						{ "XYUV64",			false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
 	/* YUV444_V410 */				{ "v410",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
 	/* YUV444_Y410 */				{ "Y410",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
+	/* r210 */						{ "r210",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
+	/* r10k */						{ "R10k",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
 };
 
 int VDPixmapFormatMatrixType(sint32 format) {

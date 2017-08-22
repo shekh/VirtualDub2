@@ -1390,6 +1390,66 @@ void VDPixmapUberBlitterGenerator::conv_X16_to_X32F() {
 	args[0] = StackEntry(src, 0);
 }
 
+void VDPixmapUberBlitterGenerator::conv_X16_to_R210() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_X16R16G16B16_Normalize *narg = new VDPixmapGen_X16R16G16B16_Normalize;
+	narg->max_value = 0x3FF;
+	narg->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(narg);
+	MarkDependency(narg, args[0].mpSrc);
+	args[0] = StackEntry(narg, 0);
+
+	VDPixmapGen_X16R16G16B16_To_R210 *src = new VDPixmapGen_X16R16G16B16_To_R210;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
+void VDPixmapUberBlitterGenerator::conv_X16_to_R10K() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_X16R16G16B16_Normalize *narg = new VDPixmapGen_X16R16G16B16_Normalize;
+	narg->max_value = 0x3FF;
+	narg->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(narg);
+	MarkDependency(narg, args[0].mpSrc);
+	args[0] = StackEntry(narg, 0);
+
+	VDPixmapGen_X16R16G16B16_To_R10K *src = new VDPixmapGen_X16R16G16B16_To_R10K;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
+void VDPixmapUberBlitterGenerator::conv_R210_to_X16() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_R210_To_X16R16G16B16 *src = new VDPixmapGen_R210_To_X16R16G16B16;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
+void VDPixmapUberBlitterGenerator::conv_R10K_to_X16() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_R10K_To_X16R16G16B16 *src = new VDPixmapGen_R10K_To_X16R16G16B16;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
 void VDPixmapUberBlitterGenerator::conv_32F_to_16F() {
 	StackEntry *args = &mStack.back();
 	VDPixmapGen_32F_To_16F *src = new VDPixmapGen_32F_To_16F;
