@@ -1140,62 +1140,81 @@ void Dubber::InitOutputFile() {
 				mpCompressorVideoFormat.assign(pSrcFormat, srcFormatLen);
 
 			} else {
-				restart_variants:
 				// For full recompression mode, we allow any format variant that the codec can accept.
 				// Try to find a variant that works.
-				const int variants = VDGetPixmapToBitmapVariants(outputFormatID);
-				int variant;
-
-				const VDAVIBitmapInfoHeader *pSrcFormat = vSrc->getDecompressedFormat();
-				const uint32 srcFormatLen = vSrc->getDecompressedFormatLen();
-				vdstructex<VDAVIBitmapInfoHeader> srcFormat;
-				srcFormat.assign(pSrcFormat, srcFormatLen);
+				vdfastvector<VDPixmapFormatEx> test_list;
+				test_list.push_back(outputFormatID);
+				// try to drop qualifiers and use proxy format (the only exception is HDYC)
+				// color is still converted as originally requested
+				VDPixmapFormatEx f = VDPixmapFormatNormalize(outputFormatID);
+				int proxy_index = -1;
+				if (f.format!=outputFormatID) {
+					test_list.push_back(f.format);
+					proxy_index = 1;
+				}
+				if (outputFormatID==nsVDPixmap::kPixFormat_XRGB64) {
+					test_list.push_back(VDPixmapFormatCombine(nsVDPixmap::kPixFormat_R10K, outputFormatID));
+					test_list.push_back(VDPixmapFormatCombine(nsVDPixmap::kPixFormat_R210, outputFormatID));
+				}
+				if (outputFormatID==nsVDPixmap::kPixFormat_YUV444_Planar16) {
+					test_list.push_back(VDPixmapFormatCombine(nsVDPixmap::kPixFormat_YUV444_V410, outputFormatID));
+					test_list.push_back(VDPixmapFormatCombine(nsVDPixmap::kPixFormat_YUV444_Y410, outputFormatID));
+				}
+				if (outputFormatID==nsVDPixmap::kPixFormat_YUV422_Planar16) {
+					test_list.push_back(VDPixmapFormatCombine(nsVDPixmap::kPixFormat_YUV422_V210, outputFormatID));
+				}
 
 				bool foundDibCompatibleFormat = false;
-				for(variant=1; variant <= variants; ++variant) {
-					// BRA[64] is more simple but is not supported as output yet
-					if (outputFormatID==nsVDPixmap::kPixFormat_XRGB64 && variant==1)
-						continue;
+				bool foundResult = false;
 
-					bool dibCompatible;
-					if (srcFormat.empty()) {
-						dibCompatible = VDMakeBitmapFormatFromPixmapFormat(mpCompressorVideoFormat, outputFormatID, variant, outputWidth, outputHeight);
-					} else {
-						dibCompatible = VDMakeBitmapFormatFromPixmapFormat(mpCompressorVideoFormat, srcFormat, outputFormatID, variant, outputWidth, outputHeight);
-					}
+				{for(int test=0; test<test_list.size(); test++){
+					VDPixmapFormatEx format = test_list[test];
+					const int variants = VDGetPixmapToBitmapVariants(format);
 
-					if (!dibCompatible) {
-						// If we have a video compressor, then we need a format that is DIB compatible. Otherwise,
-						// we can go ahead and use a pixmap-only format.
-						if (mpVideoCompressor)
+					const VDAVIBitmapInfoHeader *pSrcFormat = vSrc->getDecompressedFormat();
+					const uint32 srcFormatLen = vSrc->getDecompressedFormatLen();
+					vdstructex<VDAVIBitmapInfoHeader> srcFormat;
+					srcFormat.assign(pSrcFormat, srcFormatLen);
+
+					for(int variant=1; variant <= variants; ++variant) {
+						// BRA[64] is more simple but is not supported as output yet
+						if (format==nsVDPixmap::kPixFormat_XRGB64 && variant==1)
 							continue;
 
-						mpCompressorVideoFormat.clear();
-					} else {
-						foundDibCompatibleFormat = true;
+						bool dibCompatible;
+						if (srcFormat.empty()) {
+							dibCompatible = VDMakeBitmapFormatFromPixmapFormat(mpCompressorVideoFormat, format, variant, outputWidth, outputHeight);
+						} else {
+							dibCompatible = VDMakeBitmapFormatFromPixmapFormat(mpCompressorVideoFormat, srcFormat, format, variant, outputWidth, outputHeight);
+						}
+						foundDibCompatibleFormat |= dibCompatible;
+
+						// If we have a video compressor, then we need a format that is DIB compatible. Otherwise,
+						// we can go ahead and use a pixmap-only format.
+						if (mpVideoCompressor) {
+							if (dibCompatible)
+								foundResult = mpVideoCompressor->Query((LPBITMAPINFO)&*mpCompressorVideoFormat, NULL);
+						} else {
+							if (dibCompatible) {
+								foundResult = true;
+							} else {
+								mpCompressorVideoFormat.clear();
+								foundResult = mpOutputSystem->IsVideoImageOutputEnabled();
+							}
+						}
+
+						if (foundResult) {
+							outputFormatID = format;
+							outputVariantID = variant;
+							if (test!=proxy_index) outputFormatID0 = format;
+							break;
+						}
 					}
 
-					bool result = true;
-					
-					if (mpVideoCompressor)
-						result = mpVideoCompressor->Query((LPBITMAPINFO)&*mpCompressorVideoFormat, NULL);
+					if (foundResult) break;
+				}}
 
-					if (result) {
-						outputVariantID = variant;
-						break;
-					}
-				}
-
-				if (variant > variants) {
-					// try to drop qualifiers if its the only way to pack bitmap (the only exception is HDYC)
-					VDPixmapFormatEx f = VDPixmapFormatNormalize(outputFormatID);
-					if (f.format!=outputFormatID) {
-						outputFormatID = f.format;
-						goto restart_variants;
-					}
-				}
-
-				if (variant > variants) {
+				if (!foundResult) {
 					if (foundDibCompatibleFormat) {
 						throw MyError("Unable to initialize video compression. Check that the video codec is compatible with the output video frame size and that the settings are correct, or try a different one.");
 					} else {
