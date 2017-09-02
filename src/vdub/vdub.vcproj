@@ -150,7 +150,6 @@
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
-				OptimizeForWindows98="1"
 				EntryPointSymbol="WinMain"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -305,7 +304,6 @@
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
-				OptimizeForWindows98="1"
 				EntryPointSymbol="WinMain"
 				TargetMachine="17"
 			/>

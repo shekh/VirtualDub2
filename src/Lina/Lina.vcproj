@@ -150,7 +150,6 @@
 				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				SubSystem="1"
-				OptimizeForWindows98="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				TargetMachine="1"
@@ -305,7 +304,6 @@
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
 				SubSystem="1"
-				OptimizeForWindows98="1"
 				TargetMachine="17"
 			/>
 			<Tool
