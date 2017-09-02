@@ -2138,6 +2138,16 @@ bool VDCaptureDriverDS::SetVideoFormat(const BITMAPINFOHEADER *pbih, uint32 size
 	case MAKEFOURCC('Y', 'V', '1', '6'):
 	case MAKEFOURCC('Y', 'V', '1', '2'):
 	case MAKEFOURCC('Y', 'V', 'U', '9'):
+	case MAKEFOURCC('v', '2', '1', '0'):
+	case MAKEFOURCC('P', '2', '1', '0'):
+	case MAKEFOURCC('P', '2', '1', '6'):
+	case MAKEFOURCC('P', '0', '1', '0'):
+	case MAKEFOURCC('P', '0', '1', '6'):
+	case MAKEFOURCC('v', '4', '1', '0'):
+	case MAKEFOURCC('Y', '4', '1', '0'):
+	case MAKEFOURCC('Y', '4', '1', '6'):
+	case MAKEFOURCC('r', '2', '1', '0'):
+	case MAKEFOURCC('R', '1', '0', 'k'):
 		// The FOURCC encoding is already correct for these formats, but
 		// we also happen to know that these are uncompressed formats.
 		fixed = true;

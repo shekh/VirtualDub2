@@ -4058,9 +4058,11 @@ static INT_PTR CALLBACK CaptureCustomVidSizeDlgProc(HWND hdlg, UINT msg, WPARAM 
 		int bpp;
 		const char *name;
 	} s_formats[]={
-		{ BI_RGB,		16, "16-bit RGB" },
-		{ BI_RGB,		24, "24-bit RGB" },
-		{ BI_RGB,		32, "32-bit ARGB" },
+		{ BI_RGB,		16, "RGB565" },
+		{ BI_RGB,		24, "RGB24" },
+		{ BI_RGB,		32, "ARGB32" },
+		{ RV('r210'),	30, "r210\tRGB (10-bit)" },
+		{ RV('R10k'),	30, "R10k\tRGB (10-bit)" },
 		{ RV('CYUV'),	16, "CYUV\tInverted YUV 4:2:2" },
 		{ RV('UYVY'),	16, "UYVY\tYUV 4:2:2 interleaved" },
 		{ RV('YUYV'),	16, "YUYV\tYUV 4:2:2 interleaved" },
@@ -4069,11 +4071,15 @@ static INT_PTR CALLBACK CaptureCustomVidSizeDlgProc(HWND hdlg, UINT msg, WPARAM 
 		{ RV('I420'),	12, "I420\tYUV 4:2:0 planar" },
 		{ RV('IYUV'),	12, "IYUV\tYUV 4:2:0 planar" },
 		{ RV('Y41P'),	12, "Y41P\tYUV 4:1:1 planar" },
-		{ RV('YVU9'),	9,  "YVU9\t9-bit YUV planar" },
+		{ RV('YVU9'),	9,  "YVU9\tYUV 4:1:0 planar" },
 		{ RV('MJPG'),	16, "MJPG\tMotion JPEG" },
 		{ RV('dmb1'),	16, "dmb1\tMatrox MJPEG" },
 		{ RV('HDYC'),	16, "HDYC\tYUV 4:2:2 interleaved (Rec. 701)" },
 		{ RV('v210'),	20, "v210\tYUV 4:2:2 interleaved (10-bit)" },
+		{ RV('P210'),	20, "P210\tYUV 4:2:2 interleaved (10-bit)" },
+		{ RV('P010'),	15, "P010\tYUV 4:2:0 interleaved (10-bit)" },
+		{ RV('v410'),	30, "v410\tYUV 4:4:4 interleaved (10-bit)" },
+		{ RV('Y410'),	30, "Y410\tYUV 4:4:4 interleaved (10-bit)" },
 	};
 #undef RV
 
