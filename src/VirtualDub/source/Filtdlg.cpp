@@ -1751,84 +1751,14 @@ void VDVideoFiltersDialog::FilterListItem::GetText(int subItem, VDStringW& s) co
 				s.sprintf(L"%ux%u", layout.w, layout.h);
 
 				if (mpParent->mbShowFormats) {
-					const char *const kFormatNames[]={
-						"?",
-						"P1",
-						"P2",
-						"P4",
-						"P8",
-						"RGB15",
-						"RGB16",
-						"RGB24",
-						"RGB(A)32",
-						"Y8",
-						"UYVY",
-						"YUYV",
-						"YUV",
-						"YUV444",
-						"YUV422",
-						"YUV420",
-						"YUV411",
-						"YUV410",
-						"YUV422C",
-						"YUV420C",
-						"YUV422-16F",
-						"v210",
-						"UYVY-709",
-						"NV12",
-						"I8",
-						"YUYV-709",
-						"YUV444-709",
-						"YUV422-709",
-						"YUV420-709",
-						"YUV411-709",
-						"YUV410-709",
-						"UYVY-FR",
-						"YUYV-FR",
-						"YUV444-FR",
-						"YUV422-FR",
-						"YUV420-FR",
-						"YUV411-FR",
-						"YUV410-FR",
-						"UYVY-709-FR",
-						"YUYV-709-FR",
-						"YUV444-709-FR",
-						"YUV422-709-FR",
-						"YUV420-709-FR",
-						"YUV411-709-FR",
-						"YUV410-709-FR",
-						"YUV420i",
-						"YUV420i-FR",
-						"YUV420i-709",
-						"YUV420i-709-FR",
-						"YUV420it",
-						"YUV420it-FR",
-						"YUV420it-709",
-						"YUV420it-709-FR",
-						"YUV420ib",
-						"YUV420ib-FR",
-						"YUV420ib-709",
-						"YUV420ib-709-FR",
-						"RGB(A)64",
-						"YUV444P16",
-						"YUV422P16",
-						"YUV420P16",
-						"I16",
-						"YUV(A)64",
-						"v410",
-						"Y410",
-						"r210",
-						"R10k",
-					};
-
-					VDASSERTCT(sizeof(kFormatNames)/sizeof(kFormatNames[0]) == nsVDPixmap::kPixFormat_Max_Standard);
-
 					if (layout.format == nsVDXPixmap::kPixFormat_VDXA_RGB)
 						s += L" (RGB)";
 					else if (layout.format == nsVDXPixmap::kPixFormat_VDXA_YUV)
 						s += L" (YUV)";
-					else
-						s.append_sprintf(L" (%hs)", kFormatNames[layout.format]);
+					else {
+						const VDPixmapFormatInfo& info = VDPixmapGetInfo(layout.format);
+						s.append_sprintf(L" (%hs)", info.name);
+					}
 				}
 
 				if (mpParent->mbShowAspectRatios && subItem == 2) {

@@ -100,8 +100,8 @@ VDVFilterConvertFormatConfigDialog::VDVFilterConvertFormatConfigDialog(int forma
 }
 
 bool VDVFilterConvertFormatConfigDialog::OnLoaded() {
-	LBAddString(IDC_FORMATS, L"32-bit RGB");
-	LBAddString(IDC_FORMATS, L"64-bit RGB");
+	LBAddString(IDC_FORMATS, L"RGBA32");
+	LBAddString(IDC_FORMATS, L"RGBA64");
 
 	VDStringW s;
 	for(int i=0; i<4; ++i) {
@@ -202,11 +202,11 @@ void VDVFilterConvertFormat::GetSettingString(char *buf, int maxlen) {
 	switch(mFormat) {
 		case nsVDXPixmap::kPixFormat_XRGB8888:
 		default:
-			s = "RGB32";
+			s = "RGBA32";
 			break;
 
 		case nsVDPixmap::kPixFormat_XRGB64:
-			s = "RGB64";
+			s = "RGBA64";
 			break;
 
 		case nsVDXPixmap::kPixFormat_YUV444_Planar:

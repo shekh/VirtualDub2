@@ -532,11 +532,13 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_XRGB1555:
 				case nsVDPixmap::kPixFormat_RGB565:
 				case nsVDPixmap::kPixFormat_RGB888:
-				case nsVDPixmap::kPixFormat_XRGB8888:
-				case nsVDPixmap::kPixFormat_XRGB64:
 				case nsVDPixmap::kPixFormat_R210:
 				case nsVDPixmap::kPixFormat_R10K:
 					s = L"RGB";
+					break;
+				case nsVDPixmap::kPixFormat_XRGB8888:
+				case nsVDPixmap::kPixFormat_XRGB64:
+					s = L"RGBA";
 					break;
 				case nsVDPixmap::kPixFormat_Y8:
 				case nsVDPixmap::kPixFormat_Y8_FR:
@@ -666,25 +668,25 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 		case 2:
 			switch(mFormat) {
 				case nsVDPixmap::kPixFormat_XRGB1555:
-					s = L"16-bit (555)";
+					s = L"5-bit (XRGB1555)";
 					break;
 				case nsVDPixmap::kPixFormat_RGB565:
-					s = L"16-bit (565)";
+					s = L"5-bit (RGB565)";
 					break;
 				case nsVDPixmap::kPixFormat_RGB888:
-					s = L"24-bit (888)";
+					s = L"8-bit (RGB24)";
 					break;
 				case nsVDPixmap::kPixFormat_XRGB8888:
-					s = L"32-bit (8888)";
+					s = L"8-bit (RGBA32)";
 					break;
 				case nsVDPixmap::kPixFormat_XRGB64:
-					s = L"64-bit (16x4)";
+					s = L"16-bit (RGBA64)";
 					break;
 				case nsVDPixmap::kPixFormat_R210:
-					s = L"30-bit (r210)";
+					s = L"10-bit (r210)";
 					break;
 				case nsVDPixmap::kPixFormat_R10K:
-					s = L"30-bit (R10k)";
+					s = L"10-bit (R10k)";
 					break;
 				case nsVDPixmap::kPixFormat_Y8:
 				case nsVDPixmap::kPixFormat_Y8_FR:
@@ -894,8 +896,6 @@ protected:
 
 const VDDialogVideoDepthW32::FormatButtonMapping VDDialogVideoDepthW32::kFormatButtonMappings[] = {
 	{	nsVDPixmap::kPixFormat_Null,			IDC_INPUT_AUTOSELECT},
-	{	nsVDPixmap::kPixFormat_XRGB1555,		IDC_INPUT_XRGB1555},
-	{	nsVDPixmap::kPixFormat_RGB565,			IDC_INPUT_RGB565},
 	{	nsVDPixmap::kPixFormat_RGB888,			IDC_INPUT_RGB888},
 	{	nsVDPixmap::kPixFormat_XRGB8888,		IDC_INPUT_XRGB8888},
 	{	nsVDPixmap::kPixFormat_XRGB64,			IDC_INPUT_XRGB64},

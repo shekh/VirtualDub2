@@ -92,10 +92,10 @@ private:
 };
 
 const struct VDVideoSourceTest::FormatInfo VDVideoSourceTest::kFormatInfo[]={
-	{	nsVDPixmap::kPixFormat_XRGB1555,				false, false, true , "16-bit RGB (555)"	},
-	{	nsVDPixmap::kPixFormat_RGB565,					false, false, true , "16-bit RGB (565)"	},
-	{	nsVDPixmap::kPixFormat_RGB888,					false, false, true , "24-bit RGB"	},
-	{	nsVDPixmap::kPixFormat_XRGB8888,				false, false, true , "32-bit RGB"	},
+	{	nsVDPixmap::kPixFormat_XRGB1555,				false, false, true , "XRGB1555"	},
+	{	nsVDPixmap::kPixFormat_RGB565,					false, false, true , "RGB565"	},
+	{	nsVDPixmap::kPixFormat_RGB888,					false, false, true , "RGB24"	},
+	{	nsVDPixmap::kPixFormat_XRGB8888,				false, false, true , "RGBA32"	},
 	{	nsVDPixmap::kPixFormat_Y8,						false, false, false, "8-bit Y (16-235)"	},
 	{	nsVDPixmap::kPixFormat_Y8_FR,					false, false, true , "8-bit Y (0-255)"	},
 	{	nsVDPixmap::kPixFormat_YUV422_UYVY,				true , false, false, "4:2:2 YCbCr (UYVY)"	},
@@ -133,7 +133,7 @@ const struct VDVideoSourceTest::FormatInfo VDVideoSourceTest::kFormatInfo[]={
 	{	nsVDPixmap::kPixFormat_YUV420i_Planar_FR,		true , false, true , "4:2:0 YCbCr (interlaced, 0-255)"	},
 	{	nsVDPixmap::kPixFormat_YUV420i_Planar_709,		true , true , false, "4:2:0 YCbCr (interlaced, Rec. 709)"	},
 	{	nsVDPixmap::kPixFormat_YUV420i_Planar_709_FR,	true , true , true , "4:2:0 YCbCr (interlaced, Rec. 709, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_XRGB64,					false, false, true , "64-bit RGB"	},
+	{	nsVDPixmap::kPixFormat_XRGB64,					false, false, true , "RGBA64"	},
 	{	nsVDPixmap::kPixFormat_YUV444_Planar16,			true , false, false, "16-bit 4:4:4 YCbCr"	},
 	//{	nsVDPixmap::kPixFormat_YUV422_Planar16,			true , false, false, "16-bit 4:2:2 YCbCr"	},
 	//{	nsVDPixmap::kPixFormat_YUV420_Planar16,			true , false, false, "16-bit 4:2:0 YCbCr"	},
