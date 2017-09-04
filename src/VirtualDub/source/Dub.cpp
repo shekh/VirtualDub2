@@ -1084,6 +1084,8 @@ void Dubber::InitOutputFile() {
 		hdr.rcFrame.right	= (short)outputWidth;
 		hdr.rcFrame.bottom	= (short)outputHeight;
 
+		int stream_mode = 0;
+
 		// initialize compression
 
 		int last_format = vSrc->getTargetFormat().format;
@@ -1240,7 +1242,8 @@ void Dubber::InitOutputFile() {
 			// If we are using smart rendering, we have no choice but to match the source format.
 			if (mOptions.video.mbUseSmartRendering) {
 				IVDStreamSource *vsrcStream = vSrc->asStream();
-				vsrcStream->applyStreamMode(IVDXStreamSourceV5::kStreamModeDirectCopy|IVDXStreamSourceV5::kStreamModeUncompress);
+				stream_mode = IVDXStreamSourceV5::kStreamModeDirectCopy|IVDXStreamSourceV5::kStreamModeUncompress|IVDXStreamSourceV5::kStreamModePlayForward;
+				vsrcStream->applyStreamMode(stream_mode);
 				const VDAVIBitmapInfoHeader *srcFormat = vSrc->getImageFormat();
 				bool qresult;
 				if (driverLayout.format)
@@ -1267,7 +1270,8 @@ void Dubber::InitOutputFile() {
 			if (mOptions.video.mode == DubVideoOptions::M_NONE) {
 
 				IVDStreamSource *pVideoStream = vSrc->asStream();
-				pVideoStream->applyStreamMode(IVDXStreamSourceV5::kStreamModeDirectCopy);
+				stream_mode = IVDXStreamSourceV5::kStreamModeDirectCopy|IVDXStreamSourceV5::kStreamModePlayForward;
+				pVideoStream->applyStreamMode(stream_mode);
 
 				if (vSrc->getImageFormat()->biCompression == 0xFFFFFFFF)
 					throw MyError("The source video stream uses a compression algorithm which is not compatible with AVI files. "
@@ -1355,6 +1359,12 @@ void Dubber::InitOutputFile() {
 
 			if(mOptions.video.mode != DubVideoOptions::M_NONE && mOptions.video.mbUseSmartRendering)
 				VDLogAppMessage(kVDLogInfo, kVDST_Dub, 11);
+		}
+
+		if (!stream_mode) {
+			IVDStreamSource *pVideoStream = vSrc->asStream();
+			stream_mode = IVDXStreamSourceV5::kStreamModeUncompress|IVDXStreamSourceV5::kStreamModePlayForward;
+			pVideoStream->applyStreamMode(stream_mode);
 		}
 	}
 
