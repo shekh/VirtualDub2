@@ -805,6 +805,23 @@ dialog 3000, "Create test video" : aspect=140, maxw=350 {
 			column 0: minw=60;
 			column 1: affinity=1;
 
+			label 0, "Size";
+			grid 0 : spacing=0, align=left {
+				now align=left;
+				option 200, "640";
+				nextrow;
+				option 201, "1280";
+				nextrow;
+				option 202, "1920";
+				nextrow;
+				option 203, "2560";
+			}
+		}
+		grid 0 : spacing=2, align=fill {
+			now valign=top;
+			column 0: minw=60;
+			column 1: affinity=1;
+
 			label 0, "Video";
 			listbox 100 : minw=120, minh=100, sunken {
 				listitem "RGB color cube";
@@ -818,6 +835,7 @@ dialog 3000, "Create test video" : aspect=140, maxw=350 {
 				listitem "3:2 pulldown (BFF)";
 				listitem "Channel levels (YCbCr LR)";
 				listitem "Channel levels (YCbCr FR)";
+				listitem "Gradients";
 			}
 		}
 

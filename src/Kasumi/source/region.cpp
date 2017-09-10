@@ -595,20 +595,49 @@ namespace {
 			return;
 
 		// update dest pointer
-		uint32 *dstp = (uint32 *)vdptroffset(dst.data, dst.pitch * y);
+		uint8 *dstp = (uint8 *)vdptroffset(dst.data, dst.pitch * y);
 
-		const uint32 color_rb = color & 0x00FF00FF;
-		const uint32 color_g  = color & 0x0000FF00;
+		const uint32 color_r = (color & 0x00FF0000) >> 16;
+		const uint32 color_b = color & 0x000000FF;
+		const uint32 color_g  = (color & 0x0000FF00) >> 8;
 		do {
-			const uint32 px = *dstp;
-			const uint32 px_rb = px & 0x00FF00FF;
-			const uint32 px_g  = px & 0x0000FF00;
-			const sint32 a     = *alpha++;
+			const uint32 pb = dstp[0];
+			const uint32 pg = dstp[1];
+			const uint32 pr = dstp[2];
+			const uint32 pa = dstp[3];
+			const sint32 a  = *alpha++;
+			dstp[0] = (pb*(64-a) + color_b*a + 32) >> 6;
+			dstp[1] = (pg*(64-a) + color_g*a + 32) >> 6;
+			dstp[2] = (pr*(64-a) + color_r*a + 32) >> 6;
+			dstp[3] = 255-((255-pa)*(64-a) >> 6);
+			dstp+=4;
+		} while(--w);
+	}
 
-			const uint32 result_rb = (((px_rb << 6) + ((sint32)(color_rb - px_rb)*a + 0x00200020)) & 0x3FC03FC0);
-			const uint32 result_g  = (((px_g  << 6) + ((sint32)(color_g  - px_g )*a + 0x00002000)) & 0x003FC000);
+	void RenderABuffer64(const VDPixmap& dst, int y, const uint8 *alpha, uint32 w, uint32 color) {
+		if (!w)
+			return;
 
-			*dstp++ = (result_rb + result_g) >> 6;
+		// update dest pointer
+		uint16 *dstp = (uint16 *)vdptroffset(dst.data, dst.pitch * y);
+
+		uint32 color_r = (color & 0x00FF0000) >> 16;
+		uint32 color_b = color & 0x000000FF;
+		uint32 color_g  = (color & 0x0000FF00) >> 8;
+		color_r = color_r | (color_r<<8);
+		color_b = color_b | (color_b<<8);
+		color_g = color_g | (color_g<<8);
+		do {
+			const uint32 pb = dstp[0];
+			const uint32 pg = dstp[1];
+			const uint32 pr = dstp[2];
+			const uint32 pa = dstp[3];
+			const sint32 a  = *alpha++;
+			dstp[0] = (pb*(64-a) + color_b*a + 32) >> 6;
+			dstp[1] = (pg*(64-a) + color_g*a + 32) >> 6;
+			dstp[2] = (pr*(64-a) + color_r*a + 32) >> 6;
+			dstp[3] = 65535-((65535-pa)*(64-a) >> 6);
+			dstp+=4;
 		} while(--w);
 	}
 
@@ -625,6 +654,39 @@ namespace {
 
 			*dstp++ = px + (((sint32)(color - px) * a + 32) >> 6);
 		} while(--w);
+	}
+
+	void RenderABuffer16(const VDPixmap& dst, int y, const uint8 *alpha, uint32 w, uint32 color) {
+		if (!w)
+			return;
+
+		// update dest pointer
+		uint16 *dstp = (uint16 *)vdptroffset(dst.data, dst.pitch * y);
+
+		uint32 color16 = color | (color<<8);
+		do {
+			const uint32 px = *dstp;
+			const sint32 a = *alpha++;
+			dstp[0] = (px*(64-a) + color16*a + 32) >> 6;
+			dstp++;
+		} while(--w);
+	}
+
+	void RenderABuffer(const VDPixmap& dst, int y, const uint8 *alpha, uint32 w, uint32 color) {
+		switch (dst.format) {
+		case nsVDPixmap::kPixFormat_XRGB8888:
+			RenderABuffer32(dst, y, alpha, w, color);
+			return;
+		case nsVDPixmap::kPixFormat_XRGB64:
+			RenderABuffer64(dst, y, alpha, w, color);
+			return;
+		case nsVDPixmap::kPixFormat_Y8:
+			RenderABuffer8(dst, y, alpha, w, color);
+			return;
+		case nsVDPixmap::kPixFormat_Y16:
+			RenderABuffer16(dst, y, alpha, w, color);
+			return;
+		}
 	}
 
 	void RenderABuffer8_128(const VDPixmap& dst, int y, const uint8 *alpha, uint32 w, uint32 color) {
@@ -1027,6 +1089,9 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 	case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
 	case nsVDPixmap::kPixFormat_YUV410_Planar_709:
 	case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
+	case nsVDPixmap::kPixFormat_YUV444_Planar16:
+	//case nsVDPixmap::kPixFormat_YUV422_Planar16:
+	//case nsVDPixmap::kPixFormat_YUV420_Planar16:
 		{
 			VDPixmap pxY;
 			VDPixmap pxCb;
@@ -1050,6 +1115,16 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 			pxCr.w = dst.w;
 			pxCr.h = dst.h;
 
+			switch(dst.format) {
+			case nsVDPixmap::kPixFormat_YUV444_Planar16:
+			case nsVDPixmap::kPixFormat_YUV422_Planar16:
+			case nsVDPixmap::kPixFormat_YUV420_Planar16:
+				pxY.format = nsVDPixmap::kPixFormat_Y16;
+				pxCb.format = nsVDPixmap::kPixFormat_Y16;
+				pxCr.format = nsVDPixmap::kPixFormat_Y16;
+				break;
+			}
+
 			uint32 colorY = (color >> 8) & 0xff;
 			uint32 colorCb = (color >> 0) & 0xff;
 			uint32 colorCr = (color >> 16) & 0xff;
@@ -1072,6 +1147,7 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 			case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
 			case nsVDPixmap::kPixFormat_YUV420_Planar_709:
 			case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
+			case nsVDPixmap::kPixFormat_YUV420_Planar16:
 				pxCr.w = pxCb.w = dst.w >> 1;
 				pxCr.h = pxCb.h = dst.h >> 1;
 				x >>= 1;
@@ -1084,6 +1160,7 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 			case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
 			case nsVDPixmap::kPixFormat_YUV422_Planar_709:
 			case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
+			case nsVDPixmap::kPixFormat_YUV422_Planar16:
 				pxCr.w = pxCb.w = dst.w >> 1;
 				x >>= 1;
 				x += 2;
@@ -1094,6 +1171,7 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 			case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
 			case nsVDPixmap::kPixFormat_YUV444_Planar_709:
 			case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
+			case nsVDPixmap::kPixFormat_YUV444_Planar16:
 				VDPixmapFillRegionAntialiased8x(pxCb, region, x, y, colorCb);
 				VDPixmapFillRegionAntialiased8x(pxCr, region, x, y, colorCr);
 				return true;
@@ -1101,8 +1179,15 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 		}
 	}
 
-	if (dst.format != nsVDPixmap::kPixFormat_XRGB8888 && dst.format != nsVDPixmap::kPixFormat_Y8)
+	switch(dst.format) {
+	case nsVDPixmap::kPixFormat_XRGB8888:
+	case nsVDPixmap::kPixFormat_XRGB64:
+	case nsVDPixmap::kPixFormat_Y8:
+	case nsVDPixmap::kPixFormat_Y16:
+		break;
+	default:
 		return false;
+	}
 
 	// fast out
 	if (region.mSpans.empty())
@@ -1167,10 +1252,7 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 				if (lasty >= 0) {
 					// flush scanline
 
-					if (dst.format == nsVDPixmap::kPixFormat_XRGB8888)
-						RenderABuffer32(dst, lasty >> 3, abuffer.data(), dst.w, color);
-					else
-						RenderABuffer8(dst, lasty >> 3, abuffer.data(), dst.w, color);
+					RenderABuffer(dst, lasty >> 3, abuffer.data(), dst.w, color);
 				}
 
 				memset(abuffer.data(), 0, abuffer.size());
@@ -1210,10 +1292,7 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 	}
 
 	if (lasty >= 0) {
-		if (dst.format == nsVDPixmap::kPixFormat_XRGB8888)
-			RenderABuffer32(dst, lasty >> 3, abuffer.data(), dst.w, color);
-		else
-			RenderABuffer8(dst, lasty >> 3, abuffer.data(), dst.w, color);
+		RenderABuffer(dst, lasty >> 3, abuffer.data(), dst.w, color);
 	}
 
 	return true;

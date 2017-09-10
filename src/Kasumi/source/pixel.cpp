@@ -1346,8 +1346,8 @@ uint32 VDPackRGB(float r0, float g0, float b0) {
 	return (r & 0xff0000) + ((g & 0xff0000) >> 8) + (b >> 16);
 }
 
-uint32 VDConvertRGBToYCbCr(uint32 c) {
-	return VDConvertRGBToYCbCr((uint8)(c >> 16), (uint8)(c >> 8), (uint8)c, false, false);
+uint32 VDConvertRGBToYCbCr(uint32 c, bool use709, bool useFullRange) {
+	return VDConvertRGBToYCbCr((uint8)(c >> 16), (uint8)(c >> 8), (uint8)c, use709, useFullRange);
 }
 
 uint32 VDConvertRGBToYCbCr(uint8 r8, uint8 g8, uint8 b8, bool use709, bool useFullRange) {
