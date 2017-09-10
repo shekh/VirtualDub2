@@ -2916,7 +2916,7 @@ bool VDVideoUploadContextD3D9::Update(const VDPixmap& source, int fieldMask) {
 		if (dst.h > src.h)
 			dst.h = src.h;
 
-		VDPROFILEBEGINEX("V-BlitDisplay",int(src.info.frame_num));
+		VDPROFILEBEGINEX("V-BlitDisplay",src.info.frame_num==-1 ? 0:(uint32)src.info.frame_num);
 		mCachedBlitter.Blit(dst, src);
 		VDPROFILEEND();
 		mTexFmt.info = dst.info;

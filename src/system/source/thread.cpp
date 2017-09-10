@@ -231,7 +231,13 @@ void VDSignalBase::signal() {
 }
 
 void VDSignalBase::wait() {
+#ifdef _DEBUG
+	while(1){
+		if(WaitForSingleObject(hEvent, 1000)!=WAIT_TIMEOUT) break;
+	}
+#else
 	WaitForSingleObject(hEvent, INFINITE);
+#endif
 }
 
 bool VDSignalBase::check() {

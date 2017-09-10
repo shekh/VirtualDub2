@@ -799,7 +799,7 @@ bool VDDubVideoProcessor::RunPathReadFrame() {
 		const SourceFrameEntry& sfe = mPendingSourceFrames.front();
 		const OutputFrameEntry& ofe = mPendingOutputFrames.front();
 
-		if ((sint32)(sfe.mBatchNumber - ofe.mBatchNumber) > mFrameProcessAheadCount) {
+		if ((sfe.mBatchNumber > ofe.mBatchNumber) && (sfe.mBatchNumber - ofe.mBatchNumber > mFrameProcessAheadCount)) {
 			DeactivatePaths(kPath_ReadFrame);
 			mbSourceStageThrottled = true;
 			return false;

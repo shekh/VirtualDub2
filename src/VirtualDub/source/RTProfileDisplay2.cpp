@@ -1238,7 +1238,10 @@ void VDRTProfileDisplay2::UpdateSummary() {
 		if (da/n<0.1) continue;
 
 		const char *s = mScopes[id].name;
-		mTempStr.sprintf("%d \t %5.1fms \t %5.1fms \t %5.1fms \t %s", n, d0, da/n, sqrt(ds/n), s);
+		if (n>0)
+			mTempStr.sprintf("%d \t %5.1fms \t %5.1fms \t %5.1fms \t %s", n, d0, da/n, sqrt(ds/n), s);
+		else
+			mTempStr.sprintf("- \t - \t - \t - \t %s", s);
 		SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)mTempStr.c_str());
 	}
 }
