@@ -36,6 +36,7 @@ template<class T, class Allocator> class VDRingBuffer;
 class DubAudioStreamInfo;
 class DubVideoStreamInfo;
 class IDubberInternal;
+struct VDRenderVideoPipeFrameInfo;
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -89,6 +90,8 @@ public:
 	float GetActivityRatio() const { return mLoopThrottle.GetActivityRatio(); }
 
 	void Abort();
+
+	const VDRenderVideoPipeFrameInfo* SyncReadVideo();
 
 protected:
 	void ThreadRun();

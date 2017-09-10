@@ -85,6 +85,7 @@ public:
 	virtual VDPosition nextKey(VDPosition lSample) = 0;
 
 	virtual bool		isKeyframeOnly() = 0;
+	virtual bool		isSyncDecode() = 0;
 	virtual bool		isType1() = 0;
 
 	virtual VDPosition	streamToDisplayOrder(VDPosition sample_num) = 0;
@@ -184,6 +185,7 @@ public:
 	virtual VDPosition nextKey(VDPosition lSample);
 
 	virtual bool isKeyframeOnly();
+	virtual bool isSyncDecode();
 	virtual bool isType1();
 
 	virtual VDPosition	streamToDisplayOrder(VDPosition sample_num) { return sample_num; }

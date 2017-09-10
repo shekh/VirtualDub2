@@ -417,6 +417,7 @@ private:
 	int					mLiveLockMessages;
 
 	VDDubIOThread		*mpIOThread;
+	VDDubIOThread		*mpIODirect;
 	VDDubProcessThread	mProcessThread;
 	VDAtomicInt			mIOThreadCounter;
 
@@ -524,6 +525,7 @@ IDubber *CreateDubber(DubOptions *xopt) {
 
 Dubber::Dubber(DubOptions *xopt)
 	: mpIOThread(0)
+	, mpIODirect(0)
 	, mIOThreadCounter(0)
 	, mpAudioFilterGraph(NULL)
 	, mStopLock(0)
@@ -1859,12 +1861,28 @@ void Dubber::Go(int iPriority) {
 
 	mpVideoRequestQueue = new VDDubFrameRequestQueue;
 
+	if (!mVideoSources.empty() && mVideoSources[0]->isSyncDecode()) {
+		if (!(mpIODirect = new_nothrow VDDubIOThread(
+					this,
+					mVideoSources,
+					0,
+					mpVideoPipe,
+					NULL,
+					aInfo,
+					vInfo,
+					mIOThreadCounter,
+					mpVideoRequestQueue,
+					fPreview)))
+			throw MyMemoryError();
+	}
+
 	mProcessThread.SetAudioSourcePresent(!mAudioSources.empty() && mAudioSources[0]);
 	mProcessThread.SetVideoSources(mVideoSources.data(), mVideoSources.size());
 	mProcessThread.SetVideoFrameSource(mpVideoFrameSource);
 	mProcessThread.SetAudioCorrector(audioCorrector);
 	mProcessThread.SetVideoRequestQueue(mpVideoRequestQueue);
 	mProcessThread.SetVideoFilterSystem(&filters);
+	mProcessThread.SetIODirect(mpIODirect);
 	mProcessThread.Init(mOptions, &mVideoFrameMap, &vInfo, mpOutputSystem, mpVideoPipe, &mAudioPipe, &mInterleaver);
 	mProcessThread.ThreadStart();
 
@@ -1876,7 +1894,7 @@ void Dubber::Go(int iPriority) {
 				this,
 				mVideoSources,
 				audioStream,
-				mbDoVideo ? mpVideoPipe : NULL,
+				(mbDoVideo && !mpIODirect) ? mpVideoPipe : NULL,
 				mbDoAudio ? &mAudioPipe : NULL,
 				aInfo,
 				vInfo,
@@ -1974,6 +1992,9 @@ void Dubber::Stop() {
 	if (!fError && mpIOThread)
 		fError = mpIOThread->GetError(err);
 
+	if (!fError && mpIODirect)
+		fError = mpIODirect->GetError(err);
+
 	if (!fError)
 		fError = mProcessThread.GetError(err);
 
@@ -1981,6 +2002,9 @@ void Dubber::Stop() {
 	mpIOThread = 0;
 
 	mProcessThread.Shutdown();
+
+	delete mpIODirect;
+	mpIODirect = 0;
 
 	if (pStatusHandler)
 		pStatusHandler->Freeze();

@@ -82,6 +82,7 @@ VDDubVideoProcessor::VDDubVideoProcessor()
 	, mpVideoFrameSource(NULL)
 	, mpVideoRequestQueue(NULL)
 	, mpVideoPipe(NULL)
+	, mpIODirect(NULL)
 	, mbSourceStageThrottled(false)
 	, mbFilterStageThrottled(false)
 	, mpVideoFilters(NULL)
@@ -262,6 +263,10 @@ void VDDubVideoProcessor::SetVideoPipe(AVIPipe *pipe) {
 	mpVideoPipe = pipe;
 
 	pipe->OnBufferAdded() += mVideoPipeDelegate(this, &VDDubVideoProcessor::OnVideoPipeAdd);
+}
+
+void VDDubVideoProcessor::SetIODirect(VDDubIOThread *pIODirect) {
+	mpIODirect = pIODirect;
 }
 
 void VDDubVideoProcessor::SetVideoOutput(IVDMediaOutputStream *out, bool enableImageOutput) {
@@ -746,7 +751,10 @@ bool VDDubVideoProcessor::RunPathReadFrame() {
 
 	const VDRenderVideoPipeFrameInfo *pFrameInfo = NULL;
 
-	{
+	if (mpIODirect) {
+		VDDubAutoThreadLocation loc(*mppCurrentAction, "reading video data");
+		pFrameInfo = mpIODirect->SyncReadVideo();
+	} else {
 		VDDubAutoThreadLocation loc(*mppCurrentAction, "waiting for video frame from I/O thread");
 
 		mpLoopThrottle->BeginWait();

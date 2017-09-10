@@ -90,6 +90,7 @@ public:
 	void SetVideoRequestQueue(VDDubFrameRequestQueue *q);
 	void SetVideoFilterSystem(FilterSystem *fs);
 	void SetVideoPipe(AVIPipe *pipe);
+	void SetIODirect(VDDubIOThread *pIODirect);
 	void SetVideoOutput(IVDMediaOutputStream *out, bool enableImageOutput);
 	void SetPreviewClock(VDDubPreviewClock *clock);
 
@@ -180,6 +181,7 @@ protected:
 	IVDDubVideoProcessorCallback	*mpCB;
 
 	// video sourcing
+	VDDubIOThread *mpIODirect;
 	const VDRenderFrameMap	*mpVideoFrameMap;
 	VDFilterFrameManualSource	*mpVideoFrameSource;
 	VDDubFrameRequestQueue	*mpVideoRequestQueue;

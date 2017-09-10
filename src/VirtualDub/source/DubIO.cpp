@@ -241,6 +241,13 @@ restart_service_loop:
 		mpVideoPipe->finalize();
 }
 
+const VDRenderVideoPipeFrameInfo* VDDubIOThread::SyncReadVideo() {
+	const VDRenderVideoPipeFrameInfo* r = mpVideoPipe->TryReadBuffer();
+	if (r) return r; // last time frame was not consumed because of batch limit
+	if (!MainAddVideoFrame()) return 0;
+	return mpVideoPipe->TryReadBuffer();
+}
+
 bool VDDubIOThread::MainAddVideoFrame() {
 	const int srcIndex = 0;
 

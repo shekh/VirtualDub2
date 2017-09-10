@@ -166,6 +166,10 @@ void VDDubProcessThread::SetVideoRequestQueue(VDDubFrameRequestQueue *q) {
 	mVideoProcessor.SetVideoRequestQueue(q);
 }
 
+void VDDubProcessThread::SetIODirect(VDDubIOThread *pIODirect) {
+	mVideoProcessor.SetIODirect(pIODirect);
+}
+
 void VDDubProcessThread::SetPriority(int priority) {
 	ThreadSetPriority(priority);
 

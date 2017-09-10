@@ -207,6 +207,7 @@ struct VDXVideoSourceInfo {
 	enum Flags {
 		kFlagNone			= 0,
 		kFlagKeyframeOnly	= 0x00000001,
+		kFlagSyncDecode		= 0x00000002, ///< Driver cannot split read/decode in asynchronous way.
 		kFlagAll			= 0xFFFFFFFF
 	};
 

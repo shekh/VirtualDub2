@@ -70,6 +70,7 @@ public:
 	void SetVideoCompressor(IVDVideoCompressor *pCompressor, int maxThreads);
 	void SetVideoFilterSystem(FilterSystem *fs);
 	void SetVideoRequestQueue(VDDubFrameRequestQueue *q);
+	void SetIODirect(VDDubIOThread *pIODirect);
 
 	void SetPriority(int priority);
 

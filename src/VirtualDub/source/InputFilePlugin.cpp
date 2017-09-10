@@ -430,6 +430,7 @@ public:
 	VDPosition nextKey(VDPosition lSample);
 
 	bool isKeyframeOnly();
+	bool isSyncDecode();
 
 	VDPosition	streamToDisplayOrder(VDPosition sample_num);
 	VDPosition	displayToStreamOrder(VDPosition display_num);
@@ -982,6 +983,10 @@ VDPosition VDVideoSourcePlugin::nextKey(VDPosition frame) {
 
 bool VDVideoSourcePlugin::isKeyframeOnly() {
 	return 0 != (mVSInfo.mFlags & VDXVideoSourceInfo::kFlagKeyframeOnly);
+}
+
+bool VDVideoSourcePlugin::isSyncDecode() {
+	return 0 != (mVSInfo.mFlags & VDXVideoSourceInfo::kFlagSyncDecode);
 }
 
 VDPosition VDVideoSourcePlugin::streamToDisplayOrder(VDPosition sample_num) {

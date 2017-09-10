@@ -1147,6 +1147,10 @@ bool VideoSource::isKeyframeOnly() {
    return false;
 }
 
+bool VideoSource::isSyncDecode() {
+   return false;
+}
+
 bool VideoSource::isType1() {
    return false;
 }
