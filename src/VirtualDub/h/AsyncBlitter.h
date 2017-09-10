@@ -48,6 +48,7 @@ public:
 	virtual void postAPC(uint32 id, sint64 timelinePos, uint32 t, APC func, void *pData1, void *pData2) = 0;
 	virtual void abort() = 0;
 	virtual void beginFlush() = 0;
+	virtual void stop() = 0;
 
 	virtual bool ServiceRequests(bool fWait) = 0;
 

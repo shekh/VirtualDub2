@@ -77,6 +77,7 @@ public:
 	void postAPC(uint32 id, sint64 timelinePos, uint32 t, APC pFunc, void *pData1, void *pData2);
 	void abort();
 	void beginFlush();
+	void stop();
 
 	bool ServiceRequests(bool fWait);
 
@@ -128,6 +129,7 @@ private:
 	volatile bool	fAbort;
 	bool			fPulsed;
 	volatile bool	fFlush;
+	volatile bool	fStop;
 
 	PulseCallback	mpPulseCallback;
 	void			*mpPulseCallbackData;
@@ -152,6 +154,7 @@ VDAsyncBlitter::VDAsyncBlitter() : VDThread("VDAsyncBlitter") {
 	dwLockedBuffers		= 0;
 	fAbort				= false;
 	fFlush				= false;
+	fStop				= false;
 	fPulsed				= false;
 	mpPulseCallback		= NULL;
 	dwPulseFrame		= 0;
@@ -168,6 +171,7 @@ VDAsyncBlitter::VDAsyncBlitter(int maxreq) : VDThread("VDAsyncBlitter") {
 	dwLockedBuffers		= 0;
 	fAbort				= false;
 	fFlush				= false;
+	fStop				= false;
 	fPulsed				= false;
 	mpPulseCallback		= NULL;
 	dwPulseFrame		= 0;
@@ -399,12 +403,22 @@ void VDAsyncBlitter::abort() {
 	fAbort = true;
 }
 
+// request to abort procedures ASAP
 void VDAsyncBlitter::beginFlush() {
 	if (!mRequests)
 		return;
 
 	fFlush = true;
 	mEventDraw.signal();
+}
+
+// wait to complete normally
+void VDAsyncBlitter::stop() {
+	if (!mRequests)
+		return;
+
+	fStop = true;
+	ThreadWait();
 }
 
 bool VDAsyncBlitter::DoRequest(AsyncBlitRequest *req) {
@@ -505,6 +519,13 @@ void VDAsyncBlitter::ThreadRun() {
 			LOCK_SET(LOCK_ASYNC_EXIT);
 			mEventDraw.wait();
 			LOCK_CLEAR(LOCK_ASYNC_EXIT);
+		}
+
+		if (fStop) {
+			bool empty = true;
+			for(int i=0; i<max_requests; ++i)
+				if (mRequests[i].bufferID) empty = false;
+			if (empty) break;
 		}
 	}
 

@@ -401,8 +401,11 @@ abort_requested:
 	try {
 		// if preview mode, choke the audio
 
-		if (mpAudioOut && mpOutputSystem->IsRealTime())
-			static_cast<AVIAudioPreviewOutputStream *>(mpAudioOut)->stop();
+		if (mpOutputSystem->IsRealTime()) {
+			if (mpAudioOut)
+				static_cast<AVIAudioPreviewOutputStream *>(mpAudioOut)->stop();
+			mpBlitter->stop();
+		}
 
 		// finalize the output.. if it's not a preview...
 		if (!mpOutputSystem->IsRealTime()) {

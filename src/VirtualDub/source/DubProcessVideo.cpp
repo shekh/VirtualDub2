@@ -670,6 +670,10 @@ void VDDubVideoProcessor::RunPathSkipLatePreviewFrames() {
 		if (ofe.mbNullFrame)
 			continue;
 
+		bool protect = ofe.mTimelineFrame==mpVInfo->end_src-1; // skipping end frame is ugly
+		if (protect)
+			continue;
+
 		sint32 delta = (sint32)((uint32)ofe.mTimelineFrame*2 - clock);
 
 		if (delta >= 0)
@@ -876,6 +880,8 @@ bool VDDubVideoProcessor::RequestNextVideoFrame() {
 	}
 
 	const VDRenderFrameMap::FrameEntry& frameEntry = (*mpVideoFrameMap)[timelinePos];
+	bool protect = frameEntry.mTimelineFrame==mpVInfo->end_src-1; // skipping end frame is ugly
+	if (protect) drop = false;
 
 	if (frameEntry.mSourceFrame < 0 || drop) {
 		OutputFrameEntry outputEntry;

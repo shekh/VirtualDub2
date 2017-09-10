@@ -4120,7 +4120,20 @@ bool VDProjectUI::UIRunDubMessageLoop() {
 	}
 	*/
 
-	while(g_dubber->isRunning()) {
+	bool dubRunning = true;
+
+	while(1) {
+		if (dubRunning) {
+			dubRunning = g_dubber->isRunning();
+			// assuming if it is not running the messages still need to reach displays
+		} else {
+			bool finished = true;
+			if (mpInputDisplay->IsFramePending()) finished = false;
+			if (mpOutputDisplay->IsFramePending()) finished = false;
+			if (finished) break;
+			// process until posted buffers are actually painted on screen
+		}
+
 		if(!PeekMessage(&msg,0,0,0,PM_NOREMOVE)){
 			WaitMessage();
 		}

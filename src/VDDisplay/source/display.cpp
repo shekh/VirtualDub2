@@ -127,6 +127,12 @@ protected:
 			mpMiniDriver->Poll();
 	}
 
+	bool IsFramePending() {
+		if (mpMiniDriver)
+			return mpMiniDriver->IsFramePending();
+		return false;
+	}
+
 protected:
 	void ReleaseActiveFrame();
 	void RequestNextFrame();

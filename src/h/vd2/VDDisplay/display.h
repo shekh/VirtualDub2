@@ -126,6 +126,7 @@ public:
 	virtual float GetSyncDelta() const = 0;
 	virtual DisplayMode GetDisplayMode() = 0;
 	virtual void SetDisplayMode(DisplayMode) = 0;
+	virtual bool IsFramePending() = 0;
 };
 
 void VDVideoDisplaySetFeatures(bool enableDirectX, bool enableOverlays, bool enableTermServ, bool enableOpenGL, bool enableDirect3D, bool enableD3DFX, bool enableHighPrecision);
