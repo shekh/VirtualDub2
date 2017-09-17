@@ -818,7 +818,8 @@ namespace {
 							goto type_reconvert;
 
 						default:
-							VDASSERT(false);
+							targetType = kVDPixType_32F_32F_32F_LE;
+							goto type_reconvert;
 					}
 					break;
 
@@ -852,7 +853,8 @@ namespace {
 							goto type_reconvert;
 
 						default:
-							VDASSERT(false);
+							targetType = kVDPixType_32F_32F_32F_LE;
+							goto type_reconvert;
 					}
 					break;
 
@@ -886,7 +888,8 @@ namespace {
 							goto type_reconvert;
 
 						default:
-							VDASSERT(false);
+							targetType = kVDPixType_32F_32F_32F_LE;
+							goto type_reconvert;
 					}
 					break;
 
@@ -955,12 +958,20 @@ namespace {
 							gen.interleave_X16R16G16B16();
 							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
 							break;
+						case kVDPixType_1:
+						case kVDPixType_2:
+						case kVDPixType_4:
+						case kVDPixType_8:
+						case kVDPixType_555_LE:
+						case kVDPixType_565_LE:
+						case kVDPixType_1555_LE:
+						case kVDPixType_888:
+							targetType = kVDPixType_8888;
+							goto type_reconvert;
 						case kVDPixType_8_8_8:
 						case kVDPixType_32F_32F_32F_LE:
-							targetType = kVDPixType_16_16_16_LE;
-							goto type_reconvert;
 						default:
-							targetType = kVDPixType_32Fx4_LE;
+							targetType = kVDPixType_16_16_16_LE;
 							goto type_reconvert;
 					}
 					break;
