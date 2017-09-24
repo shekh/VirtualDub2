@@ -200,13 +200,13 @@ void VDCaptureMaskFilter::pack16(int16* dst, const int16* src, int count) {
 
 void VDCaptureMaskFilter::CapProcessData(int stream, const void *data, uint32 size, sint64 timestamp, bool key, sint64 global_clock) {
 	if(stream==1){
-		VDPROFILEBEGIN("A-Mask");
 		const char* p = (const char*)data;
 		int buf_samples = mBuffer.size()/(ssize*cn2);
 		int src_samples = size/(ssize*cn);
 		while(src_samples) {
 			int n = src_samples<buf_samples ? src_samples : buf_samples;
 
+			VDPROFILEBEGIN("A-Mask");
 			const char* src = p;
 			char* dst = mBuffer.data();
 			{for(int i=0; i<cn; i++){
@@ -217,12 +217,12 @@ void VDCaptureMaskFilter::CapProcessData(int stream, const void *data, uint32 si
 				}
 				src += ssize;
 			}}
+			VDPROFILEEND();
 
 			mpCB->CapProcessData(stream, mBuffer.data(), n*ssize*cn2, timestamp, key, global_clock);
 			src_samples -= n;
 			p += n*ssize*cn;
 		}
-		VDPROFILEEND();
 		return;
 	}
 
@@ -2640,6 +2640,7 @@ void VDCaptureProject::CapProcessData2(int stream, const void *data, uint32 size
 	if (stream < 0) {
 		if (mpCB) {
 			if (stream == -1) {
+				VDPROFILEBEGINEX2("V-In",0,vdprofiler_flag_event);
 				VDPixmap px(VDPixmapFromLayout(mFilterInputLayout, (void *)data));
 				bool firstFrame = true;
 
@@ -2672,6 +2673,7 @@ void VDCaptureProject::CapProcessData2(int stream, const void *data, uint32 size
 					}
 				}
 			} else {
+				VDPROFILEBEGINEX2("A-In",0,vdprofiler_flag_event);
 				if (!mAudioAnalysisFormat.empty() && is_audio_pcm((VDWaveFormat*)mAudioAnalysisFormat.data())) {
 					float peak[16];
 					int n = mAudioAnalysisFormat->nChannels;
@@ -2703,10 +2705,13 @@ void VDCaptureProject::CapProcessData2(int stream, const void *data, uint32 size
 	bool success;
 
 	if (stream > 0) {
+		VDPROFILEBEGINEX2("A-In",0,vdprofiler_flag_event);
 		success = icd->WaveCallback(data, size, global_clock);
 	} else {
-		if (!stream)
+		if (stream==0) {
+			VDPROFILEBEGINEX2("V-In (loop)", (uint32)mpCaptureData->mTotalFramesCaptured, vdprofiler_flag_loop);
 			success = icd->VideoCallback(data, size, timestamp, key, global_clock);
+		}
 	}
 }
 
@@ -3393,14 +3398,11 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 
 		vdsynchronized(mpProject->mVideoFilterLock) {
 			if (mpFilterSys) {
-				VDPROFILEBEGIN("V-Filter");
-
 				if (firstFrame)
 					mpFilterSys->ProcessIn(px);
 
 				frameProduced = mpFilterSys->ProcessOut(px, pFilteredData, dwBytesUsed);
 
-				VDPROFILEEND();
 				filterSystemActive = true;
 				key = true;
 			}

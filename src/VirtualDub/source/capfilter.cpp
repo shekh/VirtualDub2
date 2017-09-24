@@ -1083,6 +1083,7 @@ void VDCaptureFilterSystem::Init(VDPixmapLayout& pxl, const VDFraction& frameRat
 }
 
 void VDCaptureFilterSystem::ProcessIn(const VDPixmap& px0) {
+	VDPROFILEBEGIN("V-FilterIn");
 	tFilterChain::iterator it(mFilterChain.begin()), itEnd(mFilterChain.end());
 	VDPixmap px(px0);
 
@@ -1092,20 +1093,26 @@ void VDCaptureFilterSystem::ProcessIn(const VDPixmap& px0) {
 		VDCaptureFilter *pFilt = *it;
 
 		VDAssertValidPixmap(px);
-		if (!pFilt->Run(px))
+		if (!pFilt->Run(px)) {
+			VDPROFILEEND();
 			return;
+		}
 	}
 
 	VDAssertValidPixmap(px);
 
 	mLastFrameOutput = px;
 	mbLastFrameValid = true;
+	VDPROFILEEND();
 }
 
 bool VDCaptureFilterSystem::ProcessOut(VDPixmap& px, void*& outputData, uint32& outputSize) {
 	if (!mbLastFrameValid) {
-		if (!mFilterChain.empty())
+		if (!mFilterChain.empty()) {
+			VDPROFILEBEGIN("V-FilterOut");
 			mbLastFrameValid = mFilterChain.back()->ProcessOut(mLastFrameOutput);
+			VDPROFILEEND();
+		}
 
 		if (!mbLastFrameValid)
 			return false;
@@ -1116,9 +1123,11 @@ bool VDCaptureFilterSystem::ProcessOut(VDPixmap& px, void*& outputData, uint32& 
 
 	// Check if we have to linearize the bitmap.
 	if (mbCropEnable || mbChainEnable) {
+		VDPROFILEBEGIN("V-BlitFilterOut");
 		VDPixmap pxLinear(VDPixmapFromLayout(mLinearLayout, mLinearBuffer.data()));
 		VDPixmapBlt(pxLinear, px);
 		px = pxLinear;
+		VDPROFILEEND();
 	}
 
 	outputData = (char *)px.data - mBaseOffset;

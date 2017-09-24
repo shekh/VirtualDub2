@@ -1077,7 +1077,6 @@ public:
 	VDCapDevDSVideoCallback(IVDCaptureDSCallback *pCB)
 		: VDCapDevDSCallback(pCB)
 		, mChannel(0)
-		, mVCallback("DSVideo")
 	{
 	}
 
@@ -1092,13 +1091,13 @@ public:
 		if (mBlockSamples)
 			return S_OK;
 
-		mVCallback.Begin(0xe0e0e0, "VC");
+		VDPROFILEBEGIN("DSVideo");
 		if (mpCallback->CapTryEnterCriticalSection()) {
 			// retrieve sample pointer
 			hr = pSample->GetPointer(&pData);
 			if (FAILED(hr)) {
 				mpCallback->CapLeaveCriticalSection();
-				mVCallback.End();
+				VDPROFILEEND();
 				return hr;
 			}
 
@@ -1119,7 +1118,7 @@ public:
 
 			mpCallback->CapLeaveCriticalSection();
 		}
-		mVCallback.End();
+		VDPROFILEEND();
 
 		return S_OK;
 	}
@@ -1127,7 +1126,6 @@ public:
 protected:
 	int mChannel;
 	VDAtomicInt	mFrameCount;
-	VDRTProfileChannel mVCallback;
 };
 
 class VDCapDevDSAudioCallback : public VDCapDevDSCallback {
@@ -1135,7 +1133,6 @@ public:
 	VDCapDevDSAudioCallback(IVDCaptureDSCallback *pCB)
 		: VDCapDevDSCallback(pCB)
 		, mChannel(1)
-		, mACallback("DSAudio")
 	{
 	}
 
@@ -1148,13 +1145,13 @@ public:
 		if (mBlockSamples)
 			return S_OK;
 
-		mACallback.Begin(0xe0e0e0, "AC");
+		VDPROFILEBEGIN("DSAudio");
 		if (mpCallback->CapTryEnterCriticalSection()) {
 			// retrieve sample pointer
 			hr = pSample->GetPointer(&pData);
 			if (FAILED(hr)) {
 				mpCallback->CapLeaveCriticalSection();
-				mACallback.End();
+				VDPROFILEEND();
 				return hr;
 			}
 
@@ -1169,14 +1166,13 @@ public:
 			mpCallback->CapProcessData(mChannel, pData, pSample->GetActualDataLength(), t1, S_OK == pSample->IsSyncPoint());
 			mpCallback->CapLeaveCriticalSection();
 		}
-		mACallback.End();
+		VDPROFILEEND();
 
 		return S_OK;
 	}
 
 protected:
 	int mChannel;
-	VDRTProfileChannel mACallback;
 };
 
 ///////////////////////////////////////////////////////////////////////////

@@ -26,6 +26,7 @@
 #include <vd2/system/refcount.h>
 #include <vd2/system/registry.h>
 #include <vd2/system/time.h>
+#include <vd2/system/profile.h>
 #include <vd2/system/w32assist.h>
 #include <vd2/system/VDRingBuffer.h>
 #include <vd2/VDDisplay/display.h>
@@ -698,7 +699,9 @@ void VDCaptureDriverEmulation::OnTick() {
 	}
 
 	try {
+		VDPROFILEBEGINEX("getFrame", (uint32)mFrame);
 		mpVideo->getFrame(mFrame);
+		VDPROFILEEND();
 
 		if (mbCapturing && mLastCapturedFrame != mFrame) {
 			mLastCapturedFrame = mFrame;

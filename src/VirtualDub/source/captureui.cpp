@@ -559,7 +559,6 @@ protected:
 	VDCapturePreferences	mPreferences;
 
 //	VDOneShotTimer	mOneShotTimer;
-	VDRTProfileChannel	mDisplayProfileChannel;
 
 	VDAtomicInt		mRefCount;
 };
@@ -602,7 +601,6 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 	, mNextChannel(-1)
 	, mUpdateTimer(0)
 	, mLastPreviewFrameCount(0)
-	, mDisplayProfileChannel("Display")
 	, mRefCount(0)
 {
 	mLastMouseMovePoint.x = 0;

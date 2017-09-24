@@ -49,12 +49,10 @@ protected:
 	bool	mbSplitSource;
 
 	VDAudioCodecW32	mCodec;
-	VDRTProfileChannel	mProfileChannel;
 };
 
 VDCaptureAudioCompFilter::VDCaptureAudioCompFilter()
 	: mpCB(NULL)
-	, mProfileChannel("Audio compressor")
 {
 }
 
@@ -119,9 +117,9 @@ void VDCaptureAudioCompFilter::CapProcessData(int stream, const void *data, uint
 
 		mCodec.UnlockInputBuffer(bytes);
 
-		mProfileChannel.Begin(0xffe0e0, "Compress");
+		VDPROFILEBEGIN("A-Compress");
 		bool progressMade = mCodec.Convert(false, !bytes);
-		mProfileChannel.End();
+		VDPROFILEEND();
 		if (!progressMade)
 			break;
 
