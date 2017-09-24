@@ -339,7 +339,7 @@ BEGIN
             MENUITEM "Cable",                       ID_TUNERINPUTMODE_CABLE
         END
         MENUITEM SEPARATOR
-        MENUITEM "Disconnect",                  ID_VIDEO_DISCONNECT
+        MENUITEM "&Disconnect",                 ID_VIDEO_DISCONNECT
     END
     POPUP "&Video"
     BEGIN
@@ -349,9 +349,9 @@ BEGIN
         POPUP "Preview acceleration"
         BEGIN
             MENUITEM "Off",                         ID_CAPTURE_HWACCEL_NONE
+            MENUITEM "Progressive",                 ID_CAPTURE_HWACCEL_BOTH
             MENUITEM "Progressive - even field only", ID_CAPTURE_HWACCEL_TOP
             MENUITEM "Progressive - odd field only", ID_CAPTURE_HWACCEL_BOTTOM
-            MENUITEM "Progressive - both fields",   ID_CAPTURE_HWACCEL_BOTH
             MENUITEM "Interlaced - frames",         ID_CAPTURE_HWACCEL_INTERLACED
             MENUITEM "Interlaced - weave, even first", ID_CAPTURE_HWACCEL_EVENFIRST
             MENUITEM "Interlaced - weave, odd first", ID_CAPTURE_HWACCEL_ODDFIRST
@@ -433,12 +433,12 @@ BEGIN
         MENUITEM "Stop capture\tEsc",           ID_CAPTURE_STOP
         MENUITEM "Real-time profiler",          ID_CAPTURE_SHOWPROFILER
         MENUITEM SEPARATOR
-        MENUITEM "&Settings...\tF9",            ID_CAPTURE_SETTINGS
-        MENUITEM "&Preferences...\tF10",        ID_CAPTURE_PREFERENCES
+        MENUITEM "Capture &Settings...\tF9",    ID_CAPTURE_SETTINGS
         MENUITEM "Stop conditions...",          ID_CAPTURE_STOPCONDITIONS
         MENUITEM "Timing...",                   ID_CAPTURE_TIMING
         MENUITEM "Disk I/O...",                 ID_CAPTURE_DISKIO
         MENUITEM "Capture drives...",           ID_CAPTURE_SPILLSYSTEM
+        MENUITEM "Side &Panel and Hotkeys...\tF10", ID_CAPTURE_PREFERENCES
         MENUITEM SEPARATOR
         MENUITEM "Full screen\tAlt+Enter",      ID_CAPTURE_FULLSCREEN
         MENUITEM "&Hide display on capture",    ID_CAPTURE_HIDEONCAPTURE

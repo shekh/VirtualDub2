@@ -2011,6 +2011,8 @@ void VDCaptureProjectUI::UICaptureDriverChanged(int driver) {
 	for(int i=0; i<sizeof kIDToDialogMap / sizeof kIDToDialogMap[0]; ++i)
 		VDEnableMenuItemByCommandW32(hMenu, kIDToDialogMap[i].id, mpProject->IsDriverDialogSupported(kIDToDialogMap[i].dlg));
 
+	VDEnableMenuItemByCommandW32(hMenu, ID_AUDIO_CHANNELS, mpProject->IsDriverConnected());
+
 	CheckMenuRadioItem(hMenu, ID_VIDEO_CAPTURE_DRIVER, ID_VIDEO_CAPTURE_DRIVER+9, ID_VIDEO_CAPTURE_DRIVER+driver, MF_BYCOMMAND);
 
 	int channelMin, channelMax;

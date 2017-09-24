@@ -242,7 +242,7 @@
 #define IDR_TOOLS_MENU                  309
 #define IDD_SAVEVIDEO_FORMAT            309
 #define IDD_OPENVIDEO                   310
-#define IDD_CAPTURE_AUDIO_MASK          311
+#define IDD_CAPTURE_AUDIO_MASK          312
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002

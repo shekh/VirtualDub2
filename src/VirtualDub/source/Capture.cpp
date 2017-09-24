@@ -1090,7 +1090,8 @@ void VDCaptureProject::SetFrameTime(sint32 lFrameTime) {
 }
 
 sint32 VDCaptureProject::GetFrameTime() {
-	if (!VDINLINEASSERT(mpDriver))
+	//if (!VDINLINEASSERT(mpDriver))
+	if (!mpDriver)
 		return 10000000/15;
 
 	return mpDriver->GetFramePeriod();
