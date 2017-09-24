@@ -2977,9 +2977,13 @@ bool VDCaptureProjectUI::OnCaptureSafeCommand(UINT id) {
 	case ID_HELP_CONTENTS:
 		VDShowHelp((HWND)mhwnd);
 		break;
+	case ID_CAPTURE_SHOWPROFILER:
+		return OnCommand(id);
 	}
 	return 0;
 }
+
+extern void VDSetProfileMode(int mode);
 
 bool VDCaptureProjectUI::OnCommand(UINT id) {
 	try {
@@ -3330,6 +3334,7 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 
 		case ID_VIDEO_DISCONNECT:
 			mpProject->SelectDriver(-1);
+			VDSetProfileMode(0);
 			break;
 
 		case ID_CAPTURE_SETTINGS:
@@ -3404,8 +3409,8 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 			break;
 
 		case ID_CAPTURE_SHOWPROFILER:
-			extern void VDOpenProfileWindow();
-			VDOpenProfileWindow();
+			extern void VDOpenProfileWindow(int);
+			VDOpenProfileWindow(2);
 			break;
 
 		case ID_CAPTURE_HIDEONCAPTURE:
@@ -3472,8 +3477,10 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 			if (id >= ID_VIDEO_CAPTURE_DRIVER && id < ID_VIDEO_CAPTURE_DRIVER+50) {
 				int offset = id - ID_VIDEO_CAPTURE_DRIVER;
 
-				if (offset < mpProject->GetDriverCount())
+				if (offset < mpProject->GetDriverCount()) {
 					mpProject->SelectDriver(offset);
+					VDSetProfileMode(2);
+				}
 			} else if (id >= ID_AUDIO_CAPTURE_DRIVER && id < ID_AUDIO_CAPTURE_DRIVER+50) {
 				int offset = id - ID_AUDIO_CAPTURE_DRIVER;
 

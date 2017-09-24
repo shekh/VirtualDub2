@@ -139,6 +139,7 @@ public:
 	bool	dynamicShowDisassembly;
 	bool	useDirectDraw;
 	bool	fDropFrames;
+	bool	fBenchmark;
 };
 
 class DubOptions {

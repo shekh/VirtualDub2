@@ -173,6 +173,7 @@ DubOptions g_dubOpts = {
 		false,
 		false,					// directdraw,
 		true,					// drop frames
+		false,					// not benchmark
 	},
 
 	true,			// show status
@@ -1846,6 +1847,13 @@ void Dubber::Go(int iPriority) {
 	if (!iPriority)
 		iPriority = fNoProcessingPriority || !mpOutputSystem->IsRealTime() ? 5 : 6;
 
+	extern void VDSetProfileMode(int mode);
+	if (mOptions.perf.fBenchmark) {
+		VDSetProfileMode(1);
+	} else {
+		VDSetProfileMode(2);
+	}
+
 	// Initialize threads.
 	mProcessThread.PreInit();
 	mProcessThread.SetParent(this);
@@ -1982,6 +1990,11 @@ void Dubber::Stop() {
 
 			startTime = currentTime;
 		}
+	}
+
+	extern void VDSetProfileMode(int mode);
+	if (!mOptions.perf.fBenchmark) {
+		VDSetProfileMode(0);
 	}
 
 	if (quitQueued)

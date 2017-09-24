@@ -322,6 +322,11 @@ void VDDubProcessThread::ThreadRun() {
 	if (pOutAI)
 		mpInterleaver = NULL;
 
+	if (opt->perf.fBenchmark) {
+		VDPROFILEBEGINEX2("Benchmark start",1,vdprofiler_flag_mode);
+		VDPROFILEEND();
+	}
+
 	try {
 		mpCurrentAction = "running main loop";
 
@@ -432,6 +437,11 @@ abort_requested:
 			mError.TransferFrom(e);
 			mbError = true;
 		}
+	}
+
+	if (opt->perf.fBenchmark) {
+		VDPROFILEBEGINEX2("Benchmark stop",0,vdprofiler_flag_mode);
+		VDPROFILEEND();
 	}
 
 	mVideoProcessor.PreShutdown();

@@ -101,8 +101,9 @@ extern void VDOpenLogWindow() {
 class VDProfileWindowThread : public VDThread {
 public:
 	VDSignal mReady;
+	int start_mode;
 
-	VDProfileWindowThread() : VDThread("Profile Window") {}
+	VDProfileWindowThread() : VDThread("Profile Window") { start_mode=1; }
 
 	void ThreadRun() {
 		mReady.signal();
@@ -110,7 +111,7 @@ public:
 		// but that is not a big deal.
 		if (!g_hwndProfileWindow) {
 			VDInitProfilingSystem();
-			DialogBox(g_hInst, MAKEINTRESOURCE(IDD_PROFILER), NULL, ProfileDlgProc);
+			DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_PROFILER), NULL, ProfileDlgProc, start_mode);
 			g_hwndProfileWindow = 0;
 		} else
 			SetWindowPos(g_hwndProfileWindow, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE);
@@ -128,6 +129,7 @@ public:
 				SendMessage(w2,LB_SETCOLUMNWIDTH,400,0);
 				SendMessage(w1,WM_USER+600,0,(LPARAM)w2);
 				SendMessage(w1,WM_USER+603,0,(LPARAM)w3);
+				SendMessage(w1,WM_USER+604,0,lParam);
 				VDUIRestoreWindowPlacementW32(hdlg, "ProfileDisplay2", SW_SHOW);
 			}
 		case WM_SIZE:
@@ -181,8 +183,9 @@ public:
 
 static VDProfileWindowThread profwin;
 
-extern void VDOpenProfileWindow() {
+extern void VDOpenProfileWindow(int mode) {
 	profwin.ThreadDetach();
+	profwin.start_mode = mode;
 	profwin.ThreadStart();
 }
 
@@ -191,6 +194,16 @@ extern void VDCloseProfileWindow() {
 		PostThreadMessage(profwin.getThreadID(),WM_QUIT,0,0);
 		profwin.ThreadWait();
 	}
+}
+
+// 1 = normal
+// 0 = suspended
+// 2 = recycling
+// 3 = clear, then set normal
+extern void VDSetProfileMode(int mode) {
+	if (!g_hwndProfileWindow) return;
+	HWND w1 = GetDlgItem(g_hwndProfileWindow, IDC_PROFILE);
+	SendMessage(w1,WM_USER+604,0,mode);
 }
 
 INT_PTR CALLBACK ShowTextDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {

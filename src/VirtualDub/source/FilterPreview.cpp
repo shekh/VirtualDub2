@@ -1377,8 +1377,8 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		return true;
 
 	case ID_OPTIONS_SHOWPROFILER:
-		extern void VDOpenProfileWindow();
-		VDOpenProfileWindow();
+		extern void VDOpenProfileWindow(int);
+		VDOpenProfileWindow(1);
 		return true;
 
 	default:
@@ -2186,8 +2186,8 @@ bool PixmapView::OnCommand(UINT cmd) {
 		return true;
 
 	case ID_OPTIONS_SHOWPROFILER:
-		extern void VDOpenProfileWindow();
-		VDOpenProfileWindow();
+		extern void VDOpenProfileWindow(int);
+		VDOpenProfileWindow(1);
 		return true;
 	}
 

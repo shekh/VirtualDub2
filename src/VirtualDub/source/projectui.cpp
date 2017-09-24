@@ -734,12 +734,14 @@ void VDProjectUI::UpdateAccelPreview() {
 		ID_VIDEO_SEEK_PREVONESEC,
 		ID_VIDEO_SEEK_SELSTART,
 		ID_VIDEO_SEEK_SELEND,
+		ID_VIDEO_SEEK_PREVDROP,
+		ID_VIDEO_SEEK_NEXTDROP,
 
 		ID_EDIT_JUMPTO,
 		ID_EDIT_PREVRANGE,
 		ID_EDIT_NEXTRANGE,
 		ID_EDIT_SETMARKER,
-  };
+	};
 
 	HACCEL haccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_PREVIEW_KEYS));
 	VDAccelTableDefinition def;
@@ -754,6 +756,10 @@ void VDProjectUI::UpdateAccelDub() {
 	int merge_list[] = {
 		ID_FILE_PREVIEWINPUT,
 		ID_FILE_PREVIEWOUTPUT,
+		ID_OPTIONS_DISPLAYINPUTVIDEO,
+		ID_OPTIONS_DISPLAYOUTPUTVIDEO,
+		ID_OPTIONS_SHOWLOG,
+		ID_OPTIONS_SHOWPROFILER,
 
 		ID_VIDEO_SEEK_NEXTSCENE,
 		ID_VIDEO_SEEK_PREVSCENE,
@@ -768,6 +774,8 @@ void VDProjectUI::UpdateAccelDub() {
 		ID_VIDEO_SEEK_PREVONESEC,
 		ID_VIDEO_SEEK_SELSTART,
 		ID_VIDEO_SEEK_SELEND,
+		ID_VIDEO_SEEK_PREVDROP,
+		ID_VIDEO_SEEK_NEXTDROP,
 
 		ID_EDIT_JUMPTO,
 		ID_EDIT_SETSELEND,
@@ -2310,8 +2318,8 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 
 		case ID_OPTIONS_SHOWPROFILER:
-			extern void VDOpenProfileWindow();
-			VDOpenProfileWindow();
+			extern void VDOpenProfileWindow(int);
+			VDOpenProfileWindow(2);
 			break;
 
 		case ID_OPTIONS_PERFORMANCE:
@@ -2445,11 +2453,11 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 
 		case ID_TOOLS_BENCHMARKANALYZEPASS:
-			extern void VDOpenProfileWindow();
-			extern void VDCloseProfileWindow();
-			VDCloseProfileWindow();
-			VDOpenProfileWindow();
-			RunNullVideoPass();
+			extern void VDRestartEventProfiler();
+			extern void VDOpenProfileWindow(int);
+			VDRestartEventProfiler();
+			VDOpenProfileWindow(1);
+			RunNullVideoPass(true);
 			break;
 
 		case ID_TOOLS_CREATEPALETTIZEDAVI:

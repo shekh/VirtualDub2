@@ -1820,12 +1820,14 @@ void VDProject::PreviewRestart() {
 	}
 }
 
-void VDProject::RunNullVideoPass() {
+void VDProject::RunNullVideoPass(bool benchmark) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
 
+	DubOptions dubOpt(g_dubOpts);
+	dubOpt.perf.fBenchmark = benchmark;
 	VDAVIOutputNullVideoSystem nullout;
-	RunOperation(&nullout, FALSE, NULL, g_prefs.main.iDubPriority, true, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	RunOperation(&nullout, FALSE, &dubOpt, g_prefs.main.iDubPriority, true, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 void VDProject::QueueNullVideoPass() {

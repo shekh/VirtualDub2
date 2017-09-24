@@ -185,7 +185,7 @@ public:
 	void PreviewAll(VDPosition* restart=0);
 	void Preview(DubOptions *options);
 	void PreviewRestart();
-	void RunNullVideoPass();
+	void RunNullVideoPass(bool benchmark=false);
 	void QueueNullVideoPass();
 	void CloseAVI();			// to be removed later....
 	void Close();
