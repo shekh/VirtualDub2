@@ -99,7 +99,7 @@
 	#include "project.h"
 	#include "capture.h"
 	#include "captureui.h"
-	#include "resource.h"
+	//#include "resource.h"
 	#include "prefs.h"
 	#include "command.h"
 	#include "Dub.h"

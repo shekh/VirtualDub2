@@ -2061,6 +2061,9 @@ bool VideoSourceAVI::setDecompressedFormat(const VDAVIBitmapInfoHeader *pbih) {
 	mTargetFormat.format = 0;
 
 	if (mpDecompressor->SetTargetFormat(pbih)) {
+		int variant;
+		int format = VDBitmapFormatToPixmapFormat(*pbih,variant);
+		if (format)	VDVERIFY(VideoSource::setTargetFormatVariant(format, variant));
 		mpTargetFormatHeader.assign(pbih, sizeof(VDAVIBitmapInfoHeader));
 
 		invalidateFrameBuffer();

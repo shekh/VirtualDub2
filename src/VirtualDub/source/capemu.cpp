@@ -559,7 +559,8 @@ void VDCaptureDriverEmulation::UpdateDisplayMode() {
 	case kDisplayHardware:
 	case kDisplaySoftware:
 		if (mpVideo) {
-			mpDisplay->SetSourcePersistent(true, mpVideo->getTargetFormat());
+			//mpDisplay->SetSourcePersistent(true, mpVideo->getTargetFormat());
+			mpDisplay->SetSourceSolidColor(0);
 			ShowWindow(mhwnd, SW_SHOWNA);
 			break;
 		}
@@ -659,10 +660,13 @@ void VDCaptureDriverEmulation::OpenInputFile(const wchar_t *fn, IVDInputDriver* 
 		mpCB->CapEvent(kEventVideoFormatChanged, 0);
 		mpCB->CapEvent(kEventVideoFrameRateChanged, 0);
 	}
+
+	VDSetLastLoadSavePath('cpem', fn);
 }
 
 void VDCaptureDriverEmulation::TimerCallback() {
-	PostMessage(mhwndMessages, WM_APP, 0, 0);
+	//PostMessage(mhwndMessages, WM_APP, 0, 0);
+	SetTimer(mhwndMessages,100,0,0);
 }
 
 void VDCaptureDriverEmulation::OnTick() {
@@ -729,8 +733,10 @@ void VDCaptureDriverEmulation::OnTick() {
 			}
 		}
 
-		if (m == kDisplayHardware || m == kDisplaySoftware)
+		if (m == kDisplayHardware || m == kDisplaySoftware) {
+			mpDisplay->SetSourcePersistent(true, mpVideo->getTargetFormat());
 			mpDisplay->Update();
+		}
 	}
 }
 
@@ -744,6 +750,12 @@ LRESULT CALLBACK VDCaptureDriverEmulation::StaticMessageWndProc(HWND hwnd, UINT 
 		return 0;
 	} else if (msg == WM_TIMER) {
 		VDCaptureDriverEmulation *const pThis = (VDCaptureDriverEmulation *)GetWindowLongPtr(hwnd, 0);
+
+		if (wParam==100) {
+			KillTimer(hwnd,100);
+			pThis->OnTick();
+			return 0;
+		}
 
 		while(long availbytes = pThis->mpAudioOutput->GetAvailSpace()) {
 			char buf[8192];

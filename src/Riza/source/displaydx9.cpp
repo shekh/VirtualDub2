@@ -2855,6 +2855,9 @@ void VDVideoUploadContextD3D9::Shutdown() {
 }
 
 bool VDVideoUploadContextD3D9::Update(const VDPixmap& source, int fieldMask) {
+	if (!source.format)
+		return true;
+
 	if (mpD3DConversionTextures[1]) {
 		for(int i=mBufferCount - 2; i>=0; --i)
 			std::swap(mpD3DConversionTextures[i], mpD3DConversionTextures[i+1]);
