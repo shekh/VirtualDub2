@@ -452,6 +452,7 @@ protected:
 	bool	OnChar(int ch);
 	bool	OnKeyDown(int key);
 	void	OnSize();
+	void	UpdateMaximize(bool window_max);
 	bool	OnParentNotify(WPARAM wParam, LPARAM lParam);
 	bool	OnCommand(UINT id);
 	bool	OnCaptureSafeCommand(UINT id);
@@ -506,6 +507,7 @@ protected:
 	bool	mbAutoIncrementAfterCapture;
 	bool	mbDisplayPrerollDialog;
 	bool	mbFullScreen;
+	bool	mbMaximize;
 
 	uint32	mLastMouseMoveTime;
 	POINT	mLastMouseMovePoint;
@@ -582,6 +584,7 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 	, mbAutoIncrementAfterCapture(false)
 	, mbDisplayPrerollDialog(false)
 	, mbFullScreen(false)
+	, mbMaximize(false)
 	, mLastMouseMoveTime(0)
 	, mCurrentHotKeyStart(0)
 	, mCurrentHotKeyStop(0)
@@ -618,6 +621,9 @@ int VDCaptureProjectUI::Release() {
 bool VDCaptureProjectUI::Attach(VDGUIHandle hwnd, IVDCaptureProject *pProject) {
 	if (mhwnd == hwnd && mpProject == pProject)
 		return true;
+
+	VDRegistryAppKey key("Persistence");
+	mbMaximize = key.getBool("Maximize main layout", mbMaximize);
 
 	if (mhwnd)
 		Detach();
@@ -958,13 +964,15 @@ void VDCaptureProjectUI::SetFullScreen(bool fs) {
 		currentStyle |= WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 		SetWindowLong((HWND)mhwnd, GWL_STYLE, currentStyle);
 		SetWindowPos((HWND)mhwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-		ShowWindow((HWND)mhwnd, SW_RESTORE);
+		ShowWindow((HWND)mhwnd, mbMaximize ? SW_MAXIMIZE:SW_RESTORE);
 		SetMenu((HWND)mhwnd, mhMenuCapture);
 
 		if (mhwndPanel && mbInfoPanel)
 			ShowWindow(mhwndPanel, SW_SHOWNORMAL);
 		if (mhwndStatus && mbStatusBar)
 			ShowWindow(mhwndStatus, SW_SHOWNORMAL);
+
+		UpdateMaximize(true);
 	}
 }
 
@@ -2400,7 +2408,21 @@ LRESULT VDCaptureProjectUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 LRESULT VDCaptureProjectUI::CommonWndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
+		case WM_WINDOWPOSCHANGING:
+			// seems to fix borderless sizing issues
+			if(!(((WINDOWPOS*)lParam)->flags & SWP_NOSIZE)){
+				int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
+				SetWindowLong((HWND)mhwnd,GWL_STYLE,style | (WS_CAPTION|WS_SYSMENU));
+			}
+			break;
+
 		case WM_SIZE:
+			if(wParam==SIZE_MAXIMIZED && mbMaximize){
+				UpdateMaximize(true);
+			}
+			if(wParam==SIZE_RESTORED){
+				UpdateMaximize(false);
+			}
 			OnSize();
 			break;
 
@@ -2695,6 +2717,18 @@ bool VDCaptureProjectUI::OnKeyDown(int key) {
 	}
 
 	return false;
+}
+
+void VDCaptureProjectUI::UpdateMaximize(bool window_max) {
+	if(mbMaximize && window_max){
+		int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
+		SetWindowLong((HWND)mhwnd,GWL_STYLE,style & ~(WS_CAPTION|WS_SYSMENU));
+	} else {
+		int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
+		SetWindowLong((HWND)mhwnd,GWL_STYLE,style | (WS_CAPTION|WS_SYSMENU));
+	}
+	SetWindowPos((HWND)mhwnd,0,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOACTIVATE|SWP_NOZORDER|SWP_FRAMECHANGED);
+	OnSize();
 }
 
 void VDCaptureProjectUI::OnSize() {
@@ -4081,7 +4115,7 @@ static INT_PTR CALLBACK CaptureCustomVidSizeDlgProc(HWND hdlg, UINT msg, WPARAM 
 		{ RV('YVU9'),	9,  "YVU9\tYUV 4:1:0 planar" },
 		{ RV('MJPG'),	16, "MJPG\tMotion JPEG" },
 		{ RV('dmb1'),	16, "dmb1\tMatrox MJPEG" },
-		{ RV('HDYC'),	16, "HDYC\tYUV 4:2:2 interleaved (Rec. 701)" },
+		{ RV('HDYC'),	16, "HDYC\tYUV 4:2:2 interleaved (Rec. 709)" },
 		{ RV('v210'),	20, "v210\tYUV 4:2:2 interleaved (10-bit)" },
 		{ RV('P210'),	20, "P210\tYUV 4:2:2 interleaved (10-bit)" },
 		{ RV('P010'),	15, "P010\tYUV 4:2:0 interleaved (10-bit)" },
