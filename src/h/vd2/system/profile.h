@@ -190,6 +190,7 @@ enum {
 	vdprofiler_flag_loop=2,
 	vdprofiler_flag_profile=4,
 	vdprofiler_flag_mode=8,
+	vdprofiler_flag_event=16,
 };
 
 typedef uintptr VDProfileEventCache;

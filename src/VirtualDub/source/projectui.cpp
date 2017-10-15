@@ -2319,7 +2319,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 
 		case ID_OPTIONS_SHOWPROFILER:
 			extern void VDOpenProfileWindow(int);
-			VDOpenProfileWindow(2);
+			VDOpenProfileWindow(g_dubber!=0 ? 2:1);
 			break;
 
 		case ID_OPTIONS_PERFORMANCE:

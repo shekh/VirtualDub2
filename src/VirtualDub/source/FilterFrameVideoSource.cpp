@@ -118,8 +118,11 @@ VDFilterFrameVideoSource::RunResult VDFilterFrameVideoSource::RunRequests(const 
 		uint32 bufferSize = mBuffer.size();
 		int result = IVDStreamSource::kBufferTooSmall;
 
-		if (bufferSize && bufferSize >= mDecodePadding)
+		if (bufferSize && bufferSize >= mDecodePadding) {
+			VDPROFILEBEGINEX("V-Read", (uint32)mTargetSample);
 			result = ss->read(pos, 1, mBuffer.data(), bufferSize - mDecodePadding, &bytes, &samples);
+			VDPROFILEEND();
+		}
 
 		if (result == IVDStreamSource::kBufferTooSmall) {
 			ss->read(pos, 1, NULL, 0, &bytes, &samples);
@@ -129,13 +132,18 @@ VDFilterFrameVideoSource::RunResult VDFilterFrameVideoSource::RunRequests(const 
 
 			mBuffer.resize(bytes + mDecodePadding);
 
+			VDPROFILEBEGINEX("V-Read", (uint32)mTargetSample);
 			result = ss->read(pos, 1, mBuffer.data(), mBuffer.size() - mDecodePadding, &bytes, &samples);
+			VDPROFILEEND();
+
 			if (result)
 				throw MyAVIError("Video frame read", result);
 		}
 
 		mpVS->streamFillDecodePadding(mBuffer.data(), bytes);
+		VDPROFILEBEGINEX("V-Decode", (uint32)mTargetSample);
 		mpVS->streamGetFrame(mBuffer.data(), bytes, preroll, pos, mTargetSample);
+		VDPROFILEEND();
 		mbFirstSample = false;
 	} catch(const MyError& e) {
 		if (mpRequest) {

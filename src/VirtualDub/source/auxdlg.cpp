@@ -141,7 +141,7 @@ public:
 				HWND w3 = GetDlgItem(hdlg, IDC_PROFILE_SUMMARY);
 				RECT r3;
 				GetWindowRect(w3, &r3);
-				int x1 = r3.right-r3.left;
+				int x1 = r3.right-r3.left+4;
 				MINMAXINFO mmi;
 				SendMessage(w1,WM_GETMINMAXINFO,0,(LPARAM)&mmi);
 				int h1 = mmi.ptMaxTrackSize.y;
