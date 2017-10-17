@@ -122,6 +122,7 @@ stringset 8 {		// kVDST_CaptureUI
 	message 127, "Drop/Insert frames";
 	message 128, "Channel mask";
 	message 129, "Resample";
+	message 130, "CPU power";
 	
 	////////// capture group names
 	message 201, "Video";

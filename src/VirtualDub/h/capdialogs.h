@@ -38,6 +38,8 @@ struct VDCaptureSettings {
 	int		mAudioBufferCount;
 	int		mAudioBufferSize;
 	bool	mbDisplayPrerollDialog;
+	bool	mbMaxPower;
+	bool	mbEnablePower;
 };
 
 class IVDUICaptureVumeter;

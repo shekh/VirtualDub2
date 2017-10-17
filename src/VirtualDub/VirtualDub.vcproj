@@ -81,12 +81,13 @@
       />
       <Tool
         Name="VCLinkerTool"
-        AdditionalDependencies="winmm.lib vfw32.lib dxguid.lib msacm32.lib comctl32.lib shlwapi.lib $(IntDir)\verstub.obj priss.lib sylia.lib system.lib dita.lib meia.lib kasumi.lib"
+        AdditionalDependencies="winmm.lib vfw32.lib dxguid.lib msacm32.lib comctl32.lib shlwapi.lib powrprof.lib $(IntDir)\verstub.obj priss.lib sylia.lib system.lib dita.lib meia.lib kasumi.lib"
         LinkIncremental="2"
         SuppressStartupBanner="true"
         AdditionalLibraryDirectories="$(VDLibPath)"
         GenerateManifest="true"
         IgnoreDefaultLibraryNames="libc,libcmt"
+        DelayLoadDLLs="powrprof.dll"
         GenerateDebugInformation="true"
         GenerateMapFile="true"
         MapFileName="$(TargetDir)$(TargetName).map"
@@ -172,12 +173,13 @@
       />
       <Tool
         Name="VCLinkerTool"
-        AdditionalDependencies="winmm.lib vfw32.lib dxguid.lib msacm32.lib comctl32.lib shlwapi.lib $(IntDir)\verstub.obj priss.lib sylia.lib system.lib dita.lib meia.lib kasumi.lib"
+        AdditionalDependencies="winmm.lib vfw32.lib dxguid.lib msacm32.lib comctl32.lib shlwapi.lib powrprof.lib $(IntDir)\verstub.obj priss.lib sylia.lib system.lib dita.lib meia.lib kasumi.lib"
         LinkIncremental="1"
         SuppressStartupBanner="true"
         AdditionalLibraryDirectories="$(VDLibPath)"
         GenerateManifest="true"
         IgnoreDefaultLibraryNames="libc"
+        DelayLoadDLLs="powrprof.dll"
         GenerateDebugInformation="true"
         GenerateMapFile="true"
         MapFileName="$(TargetDir)$(TargetName).map"
@@ -268,12 +270,13 @@
       />
       <Tool
         Name="VCLinkerTool"
-        AdditionalDependencies="winmm.lib vfw32.lib dxguid.lib msacm32.lib comctl32.lib $(IntDir)\verstub.obj priss.lib sylia.lib system.lib dita.lib meia.lib kasumi.lib"
+        AdditionalDependencies="winmm.lib vfw32.lib dxguid.lib msacm32.lib comctl32.lib powrprof.lib $(IntDir)\verstub.obj priss.lib sylia.lib system.lib dita.lib meia.lib kasumi.lib"
         OutputFile="$(OutDir)\Veedub64.exe"
         LinkIncremental="2"
         SuppressStartupBanner="true"
         AdditionalLibraryDirectories="$(VDLibPath)"
         IgnoreDefaultLibraryNames="libc,libcmt"
+        DelayLoadDLLs="powrprof.dll"
         GenerateDebugInformation="true"
         GenerateMapFile="true"
         MapFileName="$(TargetDir)$(TargetName).map"
@@ -359,12 +362,13 @@
       />
       <Tool
         Name="VCLinkerTool"
-        AdditionalDependencies="winmm.lib vfw32.lib dxguid.lib msacm32.lib comctl32.lib $(IntDir)\verstub.obj priss.lib sylia.lib system.lib dita.lib meia.lib kasumi.lib"
+        AdditionalDependencies="winmm.lib vfw32.lib dxguid.lib msacm32.lib comctl32.lib powrprof.lib $(IntDir)\verstub.obj priss.lib sylia.lib system.lib dita.lib meia.lib kasumi.lib"
         OutputFile="$(OutDir)\Veedub64.exe"
         LinkIncremental="1"
         SuppressStartupBanner="true"
         AdditionalLibraryDirectories="$(VDLibPath)"
         IgnoreDefaultLibraryNames="libc"
+        DelayLoadDLLs="powrprof.dll"
         GenerateDebugInformation="true"
         GenerateMapFile="true"
         MapFileName="$(TargetDir)$(TargetName).map"

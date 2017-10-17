@@ -308,6 +308,8 @@ INT_PTR VDDialogCaptureSettings::DlgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 				SendMessage(GetDlgItem(mhdlg, IDC_CAPTURE_FRAMERATE), WM_SETTEXT, 0, (LPARAM)buf);
 
 				CheckDlgButton(mhdlg, IDC_CAPTURE_ON_OK, mParms.mbDisplayPrerollDialog ? 1 : 0);
+				CheckDlgButton(mhdlg, IDC_CAPTURE_CPU_POWER, mParms.mbMaxPower && mParms.mbEnablePower ? 1 : 0);
+				if (!mParms.mbEnablePower) EnableWindow(GetDlgItem(mhdlg, IDC_CAPTURE_CPU_POWER), false);
 			}	
 			return TRUE;
 
@@ -345,6 +347,7 @@ INT_PTR VDDialogCaptureSettings::DlgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 					mParms.mFramePeriod = (DWORD)(10000000.0 / dFrameRate);
 
 					mParms.mbDisplayPrerollDialog = !!IsDlgButtonChecked(mhdlg, IDC_CAPTURE_ON_OK);
+					mParms.mbMaxPower = !!IsDlgButtonChecked(mhdlg, IDC_CAPTURE_CPU_POWER);
 				}
 				End(true);
 				break;

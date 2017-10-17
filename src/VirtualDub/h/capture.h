@@ -157,6 +157,8 @@ enum VDCaptureInfoId {
 	kVDCaptureInfo_VideoDropFrames,
 	kVDCaptureInfo_AudioChannelMask,
 	kVDCaptureInfo_AudioResample,
+
+	kVDCaptureInfo_CPUPower,
 };
 
 struct VDCapturePreferences {

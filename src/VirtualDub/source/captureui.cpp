@@ -53,6 +53,12 @@
 #include "misc.h"
 #include <vd2/Kasumi/pixmaputils.h>
 
+#if NTDDI_VERSION<NTDDI_LONGHORN
+#undef NTDDI_VERSION
+#define NTDDI_VERSION NTDDI_LONGHORN
+#endif
+#include <PowrProf.h>
+
 using namespace nsVDCapture;
 
 namespace {
@@ -107,6 +113,7 @@ static const char g_szMultisegment			[]="Multisegment";
 static const char g_szAutoIncrement			[]="Auto-increment";
 static const char g_szStartOnLeft			[]="Start on left";
 static const char g_szDisplayPrerollDialog	[]="Display preroll dialog";
+static const char g_szMaxPower				[]="Maximize CPU power";
 static const char g_szHideOnCapture			[]="Hide on capture";
 static const char g_szDisplayLargeTimer		[]="Display large timer";
 static const char g_szShowVolumeMeter		[]="Show volume meter";
@@ -516,6 +523,11 @@ protected:
 	bool	mbFullScreen;
 	bool	mbMaximize;
 
+	bool	mbMaxPower;
+	bool	enable_power_scheme;
+	GUID*	mpPrevPower;
+	GUID*	mpNewPower;
+
 	uint32	mLastMouseMoveTime;
 	POINT	mLastMouseMovePoint;
 
@@ -591,6 +603,7 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 	, mbHideOnCapture(false)
 	, mbAutoIncrementAfterCapture(false)
 	, mbDisplayPrerollDialog(false)
+	, mbMaxPower(false)
 	, mbFullScreen(false)
 	, mbMaximize(false)
 	, mLastMouseMoveTime(0)
@@ -609,6 +622,9 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 	peak_count = 0;
 	mpVumeter2 = 0;
 	mhPanelFont2 = 0;
+	enable_power_scheme = VDIsAtLeastVistaW32();
+	mpPrevPower = 0;
+	mpNewPower = 0;
 }
 
 VDCaptureProjectUI::~VDCaptureProjectUI() {
@@ -1052,6 +1068,7 @@ void VDCaptureProjectUI::LoadLocalSettings() {
 	mbAutoIncrementAfterCapture = key.getBool(g_szAutoIncrement, mbAutoIncrementAfterCapture);
 	mbStartOnLeft = key.getBool(g_szStartOnLeft, mbStartOnLeft);
 	mbDisplayPrerollDialog = key.getBool(g_szDisplayPrerollDialog, mbDisplayPrerollDialog);
+	mbMaxPower = key.getBool(g_szMaxPower, mbMaxPower);
 	mbHideOnCapture = key.getBool(g_szHideOnCapture, mbHideOnCapture);
 	mbDisplayLargeTimer = key.getBool(g_szDisplayLargeTimer, mbDisplayLargeTimer);
 
@@ -1164,6 +1181,7 @@ void VDCaptureProjectUI::SaveLocalSettings() {
 	key.setBool(g_szAutoIncrement, mbAutoIncrementAfterCapture);
 	key.setBool(g_szStartOnLeft, mbStartOnLeft);
 	key.setBool(g_szDisplayPrerollDialog, mbDisplayPrerollDialog);
+	key.setBool(g_szMaxPower, mbMaxPower);
 	key.setBool(g_szHideOnCapture, mbHideOnCapture);
 	key.setBool(g_szDisplayLargeTimer, mbDisplayLargeTimer);
 	key.setBool(g_szShowVolumeMeter, mpVumeter != NULL);
@@ -2371,6 +2389,30 @@ void VDCaptureProjectUI::UICaptureStart(bool test) {
 
 	mCPUReader.Init();
 
+	if (mbMaxPower) {
+		GUID* pActiveScheme = 0;
+
+		if (PowerGetActiveScheme(NULL, &pActiveScheme)==0) {
+			DWORD min, max;
+			PowerReadACValueIndex(NULL, pActiveScheme, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, &min);
+			PowerReadACValueIndex(NULL, pActiveScheme, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MAXIMUM, &max);
+			if (min<max) {
+				GUID* pNewScheme = 0;
+				if (PowerDuplicateScheme(NULL, pActiveScheme, &pNewScheme)==0) {
+					VDStringW name(L"VirtualDub Capture");
+					PowerWriteFriendlyName(NULL, pNewScheme, NULL, NULL, (UCHAR*)name.c_str(), (name.length()+1)*2);
+					PowerWriteACValueIndex(NULL, pNewScheme, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, max);
+					PowerSetActiveScheme(NULL, pNewScheme);
+					mpPrevPower = pActiveScheme;
+					mpNewPower = pNewScheme;
+					pActiveScheme = 0;
+				}
+			}
+		}
+
+		if (pActiveScheme) LocalFree(pActiveScheme);
+	}
+
 	// reset preview rate status
 	SendMessage(mhwndStatus, SB_SETTEXT, 3, (LPARAM)L"");
 
@@ -2402,6 +2444,15 @@ void VDCaptureProjectUI::UICaptureEnd(bool success) {
 		VDLog(kVDLogInfo, VDStringW(L"Capture was completed successfully."));
 
 	mCPUReader.Shutdown();
+
+	if (mpPrevPower) {
+		PowerSetActiveScheme(NULL, mpPrevPower);
+		PowerDeleteScheme(NULL, mpNewPower);
+		LocalFree(mpPrevPower);
+		LocalFree(mpNewPower);
+		mpPrevPower = 0;
+		mpNewPower = 0;
+	}
 
 	if (mbHideOnCapture) {
 		mpProject->SetDisplayVisibility(true);
@@ -3492,10 +3543,13 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 				VDCaptureSettings cs;
 				cs.mFramePeriod = mpProject->GetFrameTime();
 				cs.mbDisplayPrerollDialog = mbDisplayPrerollDialog;
+				cs.mbMaxPower = mbMaxPower;
+				cs.mbEnablePower = enable_power_scheme;
 
 				if (VDShowCaptureSettingsDialog(mhwnd, cs)) {
 					mpProject->SetFrameTime(cs.mFramePeriod);
 					mbDisplayPrerollDialog = !!cs.mbDisplayPrerollDialog;
+					mbMaxPower = cs.mbMaxPower;
 				}
 
 				ResumeDisplay();
@@ -3842,6 +3896,9 @@ namespace {
 
 void VDCaptureProjectUI::GetPanelItems(VDCapturePreferences::InfoItems& items) {
 	items = mPreferences.mInfoItems;
+
+	if (enable_power_scheme) items.push_back(kVDCaptureInfo_CPUPower);
+
 	const VDCaptureFilterSetup& filtsetup = mpProject->GetFilterSetup();
 
 	if ( filtsetup.mbEnableFilterChain
@@ -4113,6 +4170,24 @@ void VDCaptureProjectUI::UpdatePanel(VDCaptureStatus& status) {
 
 					if (cpuUsage >= 0)
 						swprintf(buf, sizeof buf / sizeof buf[0], L"%d%%", cpuUsage);
+				}
+				break;
+
+			case kVDCaptureInfo_CPUPower:
+				{
+					GUID* pActiveScheme;
+					if (PowerGetActiveScheme(NULL, &pActiveScheme)==0) {
+						DWORD min, max;
+						PowerReadACValueIndex(NULL, pActiveScheme, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, &min);
+						PowerReadACValueIndex(NULL, pActiveScheme, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MAXIMUM, &max);
+						LocalFree(pActiveScheme);
+						if (min==100 && max==100)
+							swprintf(buf, sizeof buf / sizeof buf[0], L"100%%");
+						else
+							swprintf(buf, sizeof buf / sizeof buf[0], L"%d%% - %d%%", min, max);
+					} else {
+						swprintf(buf, sizeof buf / sizeof buf[0], L"error");
+					}
 				}
 				break;
 

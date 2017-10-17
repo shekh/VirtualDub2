@@ -425,6 +425,7 @@
 #define IDC_CAPTURE_LOCK_TO_AUDIO       1116
 #define IDC_CAPTURE_ON_OK               1117
 #define IDC_CAPTURE_MAX_INDEX           1118
+#define IDC_CAPTURE_CPU_POWER           1118
 #define IDC_CAPTURE_DROP_LIMIT          1119
 #define IDC_CAPTURE_VIDEO_BUFFERS       1120
 #define IDC_CAPTURE_AUDIO_BUFFERS       1121
