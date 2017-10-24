@@ -93,6 +93,6 @@ public:
 };
 
 IAVIReadHandler *CreateAVIReadHandler(IAVIFile *paf);
-IAVIReadHandler *CreateAVIReadHandler(const wchar_t *pszFile);
+IAVIReadHandler *CreateAVIReadHandler(const wchar_t *pszFile, bool disableIndex);
 
 #endif

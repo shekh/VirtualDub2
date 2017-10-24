@@ -454,6 +454,7 @@
 #define IDC_AVI_RECOMPUTELENGTH         1147
 #define IDC_AVI_COMPATIBILITYMODE       1147
 #define IDC_MPEG_I_FRAMES_ONLY          1148
+#define IDC_AVI_IGNIDX                  1148
 #define IDC_MPEG_IP_FRAMES_ONLY         1149
 #define IDC_MPEG_ALL_FRAMES             1150
 #define IDC_FINALS_SUCK                 1150

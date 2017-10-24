@@ -1483,39 +1483,40 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDCANCEL,88,56,50,14
 END
 
-IDD_EXTOPENOPTS_AVI DIALOG  0, 0, 280, 226
+IDD_EXTOPENOPTS_AVI DIALOG 0, 0, 280, 238
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_MINIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 CAPTION "Import options: AVI import filter"
 FONT 8, "MS Shell Dlg"
 BEGIN
-    GROUPBOX        "General AVI options",IDC_STATIC,7,7,266,81
-    CONTROL         "Re-derive keyframe flags",IDC_AVI_REKEY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,18,94,10
+    GROUPBOX        "General AVI options",IDC_STATIC,7,7,266,97
+    CONTROL         "Ignore index",IDC_AVI_IGNIDX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,21,94,10
+    CONTROL         "Re-derive keyframe flags",IDC_AVI_REKEY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,34,94,10
     CONTROL         "Disable optimized streaming I/O (saves memory)",IDC_AVI_DISABLEOPTIMIZEDIO,
-                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,147,18,118,22
+                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,147,34,118,22
     CONTROL         "Open in AVIFile compatibility mode",IDC_AVI_COMPATIBILITYMODE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,30,124,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,46,124,10
     CONTROL         "Force video format FOURCC code to",IDC_FORCE_FOURCC,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,43,132,10
-    EDITTEXT        IDC_FOURCC,146,41,30,12,ES_AUTOHSCROLL | WS_DISABLED
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,59,132,10
+    EDITTEXT        IDC_FOURCC,146,57,30,12,ES_AUTOHSCROLL | WS_DISABLED
     CONTROL         "Force video codec handler FOURCC code to",IDC_FORCE_HANDLER,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,56,158,10
-    EDITTEXT        IDC_FOURCC2,173,54,30,12,ES_AUTOHSCROLL | WS_DISABLED
-    CONTROL         "Force audio sampling rate to",IDC_FORCE_SAMPRATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,69,105,10
-    EDITTEXT        IDC_AUDIORATE,119,67,45,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER | WS_DISABLED
-    LTEXT           "Hz",IDC_STATIC,168,70,10,8
-    GROUPBOX        "Decoder options",IDC_STATIC_MJPEGOPTS,7,96,266,101
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,72,158,10
+    EDITTEXT        IDC_FOURCC2,173,70,30,12,ES_AUTOHSCROLL | WS_DISABLED
+    CONTROL         "Force audio sampling rate to",IDC_FORCE_SAMPRATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,85,105,10
+    EDITTEXT        IDC_AUDIORATE,119,83,45,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER | WS_DISABLED
+    LTEXT           "Hz",IDC_STATIC,168,86,10,8
+    GROUPBOX        "Decoder options",IDC_STATIC_MJPEGOPTS,7,109,266,101
     CONTROL         "Use internal decoders for Motion JPEG and DV",IDC_AVI_INTERNALDECODER,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,107,164,10
-    LTEXT           "Interlaced frame mode (Motion JPEG only):",IDC_STATIC_IFMODE,13,122,135,8
-    CONTROL         "Normal",IDC_IF_NORMAL,"Button",BS_AUTORADIOBUTTON,19,132,132,9
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,120,164,10
+    LTEXT           "Interlaced frame mode (Motion JPEG only):",IDC_STATIC_IFMODE,13,135,135,8
+    CONTROL         "Normal",IDC_IF_NORMAL,"Button",BS_AUTORADIOBUTTON,19,145,132,9
     CONTROL         "Split interlaced frames into two fields (unswapped) and double framerate",IDC_IF_SPLITNOSWAP,
-                    "Button",BS_AUTORADIOBUTTON,19,142,241,10
+                    "Button",BS_AUTORADIOBUTTON,19,155,241,10
     CONTROL         "Split interlaced frames into two fields (swapped) and double framerate",IDC_IF_SPLITSWAP,
-                    "Button",BS_AUTORADIOBUTTON,19,152,233,10
-    CONTROL         "Discard first field",IDC_IF_DISCARDFIRST,"Button",BS_AUTORADIOBUTTON,19,162,67,10
-    CONTROL         "Discard second field",IDC_IF_DISCARDSECOND,"Button",BS_AUTORADIOBUTTON,19,172,80,10
-    CONTROL         "Swap fields",IDC_IF_SWAP,"Button",BS_AUTORADIOBUTTON,19,182,52,10
-    PUSHBUTTON      "OK",IDCANCEL,113,205,50,14
+                    "Button",BS_AUTORADIOBUTTON,19,165,233,10
+    CONTROL         "Discard first field",IDC_IF_DISCARDFIRST,"Button",BS_AUTORADIOBUTTON,19,175,67,10
+    CONTROL         "Discard second field",IDC_IF_DISCARDSECOND,"Button",BS_AUTORADIOBUTTON,19,185,80,10
+    CONTROL         "Swap fields",IDC_IF_SWAP,"Button",BS_AUTORADIOBUTTON,19,195,52,10
+    PUSHBUTTON      "OK",IDCANCEL,113,217,50,14
 END
 
 IDD_JOBCONTROL DIALOGEX 0, 0, 351, 199
@@ -2998,7 +2999,7 @@ BEGIN
         RIGHTMARGIN, 273
         VERTGUIDE, 13
         TOPMARGIN, 7
-        BOTTOMMARGIN, 219
+        BOTTOMMARGIN, 231
     END
 
     IDD_JOBCONTROL, DIALOG

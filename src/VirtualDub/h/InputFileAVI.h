@@ -47,7 +47,7 @@ private:
 
 	bool fAutomated;
 
-	bool fCompatibilityMode, fRedoKeyFlags, fInternalDecoder, fDisableFastIO, fAcceptPartial, fAutoscanSegments;
+	bool fCompatibilityMode, fIgnoreIndex, fRedoKeyFlags, fInternalDecoder, fDisableFastIO, fAcceptPartial, fAutoscanSegments;
 	int iMJPEGMode;
 	FOURCC fccForceVideo;
 	FOURCC fccForceVideoHandler;

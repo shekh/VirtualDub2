@@ -278,7 +278,9 @@ InputFileAVI::InputFileAVI() {
 
 	pAVIFile = NULL;
 
-	fCompatibilityMode = fRedoKeyFlags = false;
+	fCompatibilityMode = false;
+	fIgnoreIndex = false;
+	fRedoKeyFlags = false;
 
 	fAutoscanSegments = false;
 }
@@ -301,7 +303,7 @@ public:
 
 		bool fCompatibilityMode;
 		bool fAcceptPartial;
-		bool fRedoKeyFlags;
+		char indexFlags;
 		bool fInternalDecoder;
 		bool fDisableFastIO;
 	} opts;
@@ -361,7 +363,8 @@ INT_PTR APIENTRY InputFileAVIOptions::SetupDlgProc( HWND hDlg, UINT message, WPA
 					thisPtr->opts.fAcceptPartial = !!IsDlgButtonChecked(hDlg, IDC_ACCEPTPARTIAL);
 
 				thisPtr->opts.fCompatibilityMode = !!IsDlgButtonChecked(hDlg, IDC_AVI_COMPATIBILITYMODE);
-				thisPtr->opts.fRedoKeyFlags = !!IsDlgButtonChecked(hDlg, IDC_AVI_REKEY);
+				thisPtr->opts.indexFlags = !!IsDlgButtonChecked(hDlg, IDC_AVI_REKEY);
+				if (IsDlgButtonChecked(hDlg, IDC_AVI_IGNIDX)) thisPtr->opts.indexFlags |= 2;
 				thisPtr->opts.fInternalDecoder = !!IsDlgButtonChecked(hDlg, IDC_AVI_INTERNALDECODER);
 				thisPtr->opts.fDisableFastIO = !!IsDlgButtonChecked(hDlg, IDC_AVI_DISABLEOPTIMIZEDIO);
 
@@ -445,7 +448,8 @@ void InputFileAVI::setOptions(InputFileOptions *_ifo) {
 
 	fCompatibilityMode	= ifo->opts.fCompatibilityMode;
 	fAcceptPartial		= ifo->opts.fAcceptPartial;
-	fRedoKeyFlags		= ifo->opts.fRedoKeyFlags;
+	fIgnoreIndex		= (ifo->opts.indexFlags & 2)!=0;
+	fRedoKeyFlags		= (ifo->opts.indexFlags & 1)!=0;
 	fInternalDecoder	= ifo->opts.fInternalDecoder;
 	fDisableFastIO		= ifo->opts.fDisableFastIO;
 	iMJPEGMode			= ifo->opts.iMJPEGMode;
@@ -523,7 +527,7 @@ void InputFileAVI::Init(const wchar_t *szFile) {
 			throw MyMemoryError();
 		}
 	} else {
-		if (!(pAVIFile = CreateAVIReadHandler(szFile)))
+		if (!(pAVIFile = CreateAVIReadHandler(szFile, fIgnoreIndex)))
 			throw MyMemoryError();
 	}
 

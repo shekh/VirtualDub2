@@ -287,7 +287,7 @@ class AVIStreamNode;
 
 class AVIReadHandler : public IAVIReadHandler, public IAVIReadCacheSource {
 public:
-	AVIReadHandler(const wchar_t *);
+	AVIReadHandler(const wchar_t *, bool);
 	~AVIReadHandler();
 
 	void AddRef();
@@ -341,6 +341,7 @@ private:
 	char *		pSegmentHint;
 
 	bool		fDisableFastIO;
+	bool		fDisableIndex;
 
 	// Whenever a file is aggressively recovered, do not allow streaming.
 
@@ -367,8 +368,8 @@ private:
 	char *		_StreamRead(long& bytes);
 };
 
-IAVIReadHandler *CreateAVIReadHandler(const wchar_t *pszFile) {
-	return new AVIReadHandler(pszFile);
+IAVIReadHandler *CreateAVIReadHandler(const wchar_t *pszFile, bool disableIndex) {
+	return new AVIReadHandler(pszFile, disableIndex);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -927,7 +928,7 @@ VDTime AVIReadStream::PositionToTime(VDPosition sample) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-AVIReadHandler::AVIReadHandler(const wchar_t *s)
+AVIReadHandler::AVIReadHandler(const wchar_t *s, bool disableIndex)
 	: mbFileIsDamaged(false)
 	, mTextInfoCodePage(0)
 	, mTextInfoCountryCode(0)
@@ -938,6 +939,7 @@ AVIReadHandler::AVIReadHandler(const wchar_t *s)
 	streams=0;
 	fStreamsActive = 0;
 	fDisableFastIO = false;
+	fDisableIndex = disableIndex;
 	streamBuffer = NULL;
 	nRealTime = 0;
 	nActiveStreamers = 0;
@@ -1401,15 +1403,17 @@ terminate_scan:
 	if (!hyperindexed && !index_found)
 		bScanRequired = true;
 
-	if (bScanRequired) {
+	if (bScanRequired)
 		VDLogAppMessage(kVDLogWarning, kVDST_AVIReadHandler, kVDM_IndexMissing);
 
+	if (bScanRequired || fDisableIndex) {
 		// It's possible that we were in the middle of reading an index when an error
 		// occurred, so we need to clear all of the indices for all streams.
 
 		pasn = streamlist.AtHead();
 
 		while(pasn_next = pasn->NextFromHead()) {
+			if (pasn->hdr.fccType==kAVIStreamTypeVideo && !pasn->keyframe_only) fFakeIndex = true;
 			pasn->mIndex.Clear();
 			pasn = pasn_next;
 		}
@@ -1428,8 +1432,6 @@ terminate_scan:
 		ProgressDialog pd(NULL, "AVI Import Filter", bAggressive ? "Reconstructing missing index block (aggressive mode)" : "Reconstructing missing index block", length, true);
 
 		pd.setValueFormat("%ldK of %ldK");
-
-		fFakeIndex = true;
 
 		mpCurrentFile->mFile.seek(i64ChunkMoviPos);
 
