@@ -1521,6 +1521,7 @@
 #define ID_AUDIO_CAPTUREFILTER          40591
 #define ID_OPTIONS_DROPSEEKING          40592
 #define ID_AUDIO_CHANNELS               40593
+#define ID_VIDEO_PREVIEW2               40594
 #define ID_AUDIOMODE_11KHZ_8MONO        41000
 #define ID_AUDIOMODE_11KHZ_8STEREO      41001
 #define ID_AUDIOMODE_11KHZ_16MONO       41002
@@ -1577,7 +1578,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        312
-#define _APS_NEXT_COMMAND_VALUE         40594
+#define _APS_NEXT_COMMAND_VALUE         40595
 #define _APS_NEXT_CONTROL_VALUE         1562
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

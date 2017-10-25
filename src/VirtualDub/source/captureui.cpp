@@ -590,7 +590,7 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 	, mDeviceDisplayOptions(0)
 	, mDisplayModeShadow(kDisplayNone)
 	, mbDisplayModeShadowed(false)
-	, mDisplayAccelMode(kDDP_Off)
+	, mDisplayAccelMode(kDDP_Progressive)
 	, mbDisplayAccelActive(false)
 	, mDisplayAccelUpdateCounter(0)
 	, mbSwitchSourcesTogether(true)
@@ -907,15 +907,15 @@ void VDCaptureProjectUI::SetDisplayAccelMode(DisplayAccelMode mode) {
 	if (mode == mDisplayAccelMode)
 		return;
 
-	bool wasActive = mDisplayAccelMode != kDDP_Off;
-	bool isActive = mode != kDDP_Off;
+	//bool wasActive = mDisplayAccelMode != kDDP_Off;
+	//bool isActive = mode != kDDP_Off;
 
 	vdsynchronized(mDisplayAccelImageLock) {
 		mDisplayAccelMode = mode;
 	}
 
-	if (wasActive != isActive)
-		UpdateDisplayMode();
+	//if (wasActive != isActive)
+	//	UpdateDisplayMode();
 }
 
 void VDCaptureProjectUI::SetPCMAudioFormat(sint32 sampling_rate, bool is_16bit, bool is_stereo) {
@@ -1318,6 +1318,7 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 	// load initial display (accel) modes, if saved
 	int mode = devkey.getInt(g_szDisplayAccelMode, mDisplayAccelMode);
 
+	if (mode==kDDP_Off) mode = kDDP_Progressive;
 	if ((unsigned)mode < kDDP_ModeCount)
 		mDisplayAccelMode = (DisplayAccelMode)mode;
 
@@ -1661,7 +1662,15 @@ void VDCaptureProjectUI::ResumeDisplay() {
 }
 
 void VDCaptureProjectUI::UpdateDisplayMode() {
+	/*
 	if ((mDisplayAccelMode || mpProject->IsVideoHistogramEnabled()) && mDisplayModeShadow == kDisplaySoftware) {
+		mpProject->SetVideoFrameTransferEnabled(true);
+		mpProject->SetDisplayMode(kDisplayAnalyze);
+		return;
+	}
+	*/
+
+	if (mDisplayModeShadow == kDisplayAnalyze) {
 		mpProject->SetVideoFrameTransferEnabled(true);
 		mpProject->SetDisplayMode(kDisplayAnalyze);
 		return;
@@ -2279,6 +2288,7 @@ void VDCaptureProjectUI::UICaptureAnalyzeFrame(const VDPixmap& format) {
 				bframe->mPixmap = bframe->mBuffer;
 
 				switch(mDisplayAccelMode) {
+					case kDDP_Off:
 					case kDDP_Top:
 					case kDDP_Bottom:
 					case kDDP_Progressive:
@@ -2727,6 +2737,7 @@ void VDCaptureProjectUI::OnInitMenu(HMENU hMenu) {
 	VDCheckMenuItemByCommandW32	(hMenu, ID_VIDEO_NODISPLAY,			mDisplayModeShadow == kDisplayNone);
 	VDCheckMenuItemByCommandW32	(hMenu, ID_VIDEO_OVERLAY,			mDisplayModeShadow == kDisplayHardware);
 	VDCheckMenuItemByCommandW32	(hMenu, ID_VIDEO_PREVIEW,			mDisplayModeShadow == kDisplaySoftware);
+	VDCheckMenuItemByCommandW32	(hMenu, ID_VIDEO_PREVIEW2,			mDisplayModeShadow == kDisplayAnalyze);
 	VDCheckMenuItemByCommandW32	(hMenu, ID_VIDEO_HISTOGRAM,			mpProject->IsVideoHistogramEnabled());
 
 	VDCheckMenuItemByCommandW32	(hMenu, ID_VIDEO_CLIPPING_SET,		filtsetup.mCropRect.width() || filtsetup.mCropRect.height());
@@ -2757,7 +2768,7 @@ void VDCaptureProjectUI::OnInitMenu(HMENU hMenu) {
 
 	VDCheckMenuItemByCommandW32	(hMenu, ID_CAPTURE_ENABLETIMINGLOG,	mpProject->IsLogEnabled());
 
-	VDCheckMenuItemByCommandW32	(hMenu, ID_CAPTURE_HWACCEL_NONE,	mDisplayAccelMode == kDDP_Off);
+	//VDCheckMenuItemByCommandW32	(hMenu, ID_CAPTURE_HWACCEL_NONE,	mDisplayAccelMode == kDDP_Off);
 	VDCheckMenuItemByCommandW32	(hMenu, ID_CAPTURE_HWACCEL_TOP,		mDisplayAccelMode == kDDP_Top);
 	VDCheckMenuItemByCommandW32	(hMenu, ID_CAPTURE_HWACCEL_BOTTOM,	mDisplayAccelMode == kDDP_Bottom);
 	VDCheckMenuItemByCommandW32	(hMenu, ID_CAPTURE_HWACCEL_BOTH,	mDisplayAccelMode == kDDP_Progressive);
@@ -3386,11 +3397,19 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 			else
 				SetDisplayMode(kDisplaySoftware);
 			break;
+		case ID_VIDEO_PREVIEW2:
+			if (GetDisplayMode() == kDisplayAnalyze)
+				SetDisplayMode(kDisplayNone);
+			else
+				SetDisplayMode(kDisplayAnalyze);
+			break;
 		case ID_VIDEO_HISTOGRAM:
 			if (mpProject->IsVideoHistogramEnabled())
 				ShutdownVideoHistogram();
-			else
+			else {
+				mDisplayModeShadow = kDisplayAnalyze;
 				InitVideoHistogram();
+			}
 			break;
 
 		case ID_VIDEO_FORMAT:
@@ -3637,9 +3656,11 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 			mpProject->SetSpillSystem(!mpProject->IsSpillEnabled());
 			break;
 
+		/*
 		case ID_CAPTURE_HWACCEL_NONE:
 			SetDisplayAccelMode(kDDP_Off);
 			break;
+		*/
 
 		case ID_CAPTURE_HWACCEL_TOP:
 			SetDisplayAccelMode(kDDP_Top);

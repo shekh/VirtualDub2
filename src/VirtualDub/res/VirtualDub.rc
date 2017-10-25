@@ -345,10 +345,10 @@ BEGIN
     BEGIN
         MENUITEM "No display",                  ID_VIDEO_NODISPLAY
         MENUITEM "&Overlay\tO",                 ID_VIDEO_OVERLAY, CHECKED
-        MENUITEM "&Preview\tP",                 ID_VIDEO_PREVIEW
-        POPUP "Preview acceleration"
+        MENUITEM "&Preview (system)\tP",        ID_VIDEO_PREVIEW
+        MENUITEM "Display with Filters",        ID_VIDEO_PREVIEW2
+        POPUP "Preview field mode"
         BEGIN
-            MENUITEM "Off",                         ID_CAPTURE_HWACCEL_NONE
             MENUITEM "Progressive",                 ID_CAPTURE_HWACCEL_BOTH
             MENUITEM "Progressive - even field only", ID_CAPTURE_HWACCEL_TOP
             MENUITEM "Progressive - odd field only", ID_CAPTURE_HWACCEL_BOTTOM
