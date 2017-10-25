@@ -52,10 +52,19 @@ extern HINSTANCE g_hInst;
 	#pragma warning(disable: 4355)		// warning C4355: 'this' : used in base member initializer list
 #endif
 
+namespace cap_dshow {
+	const char *GetDXErrorName(const HRESULT hr);
+};
+using namespace cap_dshow;
+
+void VDLogDS(const char* msg, HRESULT hr){
+	VDLogF(kVDLogWarning, L"CapDShow: Failed to build filter graph: %hs (error code: %08x, %hs)\n", msg, hr, GetDXErrorName(hr));
+}
+
 #ifdef _DEBUG
-	#define DS_VERIFY(exp, msg) if (FAILED(hr = (exp))) { VDDEBUG("Failed: " msg " [%08lx : %s]\n", hr, GetDXErrorName(hr)); VDDumpFilterGraphDShow(mpGraph); TearDownGraph(); return false; } else
+	#define DS_VERIFY(exp, msg) if (FAILED(hr = (exp))) { VDLogDS(msg,hr); VDDEBUG("Failed: " msg " [%08lx : %s]\n", hr, GetDXErrorName(hr)); VDDumpFilterGraphDShow(mpGraph); TearDownGraph(); return false; } else
 #else
-	#define DS_VERIFY(exp, msg) if (FAILED(hr = (exp))) { VDLogF(kVDLogWarning, L"CapDShow: Failed to build filter graph: " L##msg L"(error code: %08x)\n", hr); TearDownGraph(); return false; } else
+	#define DS_VERIFY(exp, msg) if (FAILED(hr = (exp))) { VDLogDS(msg,hr); TearDownGraph(); return false; } else
 #endif
 
 //#define VD_DSHOW_VERBOSE_LOGGING 1
@@ -272,8 +281,8 @@ namespace {
 	#undef I_HATE
 }
 
-namespace {
-	#ifdef _DEBUG
+namespace cap_dshow {
+	#if 1//def _DEBUG
 		const char *GetDXErrorName(const HRESULT hr) {
 #define X(err) case err: return #err
 			switch(hr) {
@@ -3545,7 +3554,8 @@ void VDCaptureDriverDS::UpdateDisplay() {
 
 		DS_VERBOSE_LOG("DShow: Entering UpdateDisplay().");
 
-		VDVERIFY(BuildPreviewGraph() && StartGraph());
+		if (BuildPreviewGraph()) StartGraph();
+		//VDVERIFY(BuildPreviewGraph() && StartGraph());
 
 		DS_VERBOSE_LOG("DShow: Exiting UpdateDisplay().");
 	}
@@ -3868,6 +3878,11 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 			DS_VERIFY(mpGraphBuilder->Render(pPreviewPin), "render preview pin (hardware display)");
 			pPreviewPin = NULL;
 			break;
+		} else {
+			// same as below
+			DS_VERIFY(mpGraphBuilder->Render(pCapturePin), "render capture pin (hardware display)");
+			pCapturePin = NULL;
+			break;
 		}
 	case kDisplaySoftware:
 		// In software mode we force the rendering path to use the same format that
@@ -3878,7 +3893,7 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 		// timestamps, this doesn't work since it causes the video to play at maximum speed,
 		// causing horrible stuttering on the PX-M402U.
 		//
-		DS_VERIFY(mpGraphBuilder->Render(pCapturePin), "render capture pin (hardware display)");
+		DS_VERIFY(mpGraphBuilder->Render(pCapturePin), "render capture pin (software display)");
 		pCapturePin = NULL;
 		break;
 	}
