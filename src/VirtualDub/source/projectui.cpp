@@ -2453,9 +2453,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 
 		case ID_TOOLS_BENCHMARKANALYZEPASS:
-			extern void VDRestartEventProfiler();
 			extern void VDOpenProfileWindow(int);
-			VDRestartEventProfiler();
 			VDOpenProfileWindow(1);
 			RunNullVideoPass(true);
 			break;

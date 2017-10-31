@@ -183,18 +183,6 @@ public:
 
 static VDProfileWindowThread profwin;
 
-extern void VDOpenProfileWindow(int mode) {
-	profwin.ThreadDetach();
-	profwin.start_mode = mode;
-	profwin.ThreadStart();
-}
-
-extern void VDCloseProfileWindow() {
-	if(profwin.isThreadAttached()){
-		PostThreadMessage(profwin.getThreadID(),WM_QUIT,0,0);
-		profwin.ThreadWait();
-	}
-}
 
 // 1 = normal
 // 0 = suspended
@@ -204,6 +192,25 @@ extern void VDSetProfileMode(int mode) {
 	if (!g_hwndProfileWindow) return;
 	HWND w1 = GetDlgItem(g_hwndProfileWindow, IDC_PROFILE);
 	SendMessage(w1,WM_USER+604,0,mode);
+}
+
+extern void VDOpenProfileWindow(int mode) {
+	if(profwin.isThreadAttached()){
+		extern void VDRestartEventProfiler();
+		VDRestartEventProfiler();
+		VDSetProfileMode(mode);
+	} else {
+		profwin.ThreadDetach();
+		profwin.start_mode = mode;
+		profwin.ThreadStart();
+	}
+}
+
+extern void VDCloseProfileWindow() {
+	if(profwin.isThreadAttached()){
+		PostThreadMessage(profwin.getThreadID(),WM_QUIT,0,0);
+		profwin.ThreadWait();
+	}
 }
 
 INT_PTR CALLBACK ShowTextDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
