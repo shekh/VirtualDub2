@@ -523,7 +523,13 @@ bool VDVideoDisplayMinidriverGDI::Init(HWND hwnd, HMONITOR hmonitor, const VDVid
 				case nsVDPixmap::kPixFormat_XRGB8888:
 					break;
 				case nsVDPixmap::kPixFormat_YUV422_YUYV:
+				case nsVDPixmap::kPixFormat_YUV422_YUYV_FR:
+				case nsVDPixmap::kPixFormat_YUV422_YUYV_709:
+				case nsVDPixmap::kPixFormat_YUV422_YUYV_709_FR:
 				case nsVDPixmap::kPixFormat_YUV422_UYVY:
+				case nsVDPixmap::kPixFormat_YUV422_UYVY_FR:
+				case nsVDPixmap::kPixFormat_YUV422_UYVY_709:
+				case nsVDPixmap::kPixFormat_YUV422_UYVY_709_FR:
 				case nsVDPixmap::kPixFormat_YUV444_Planar:
 				case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
 				case nsVDPixmap::kPixFormat_YUV444_Planar_709:
@@ -559,7 +565,6 @@ bool VDVideoDisplayMinidriverGDI::Init(HWND hwnd, HMONITOR hmonitor, const VDVid
 				case nsVDPixmap::kPixFormat_Y8:
 				case nsVDPixmap::kPixFormat_Y8_FR:
 				case nsVDPixmap::kPixFormat_YUV422_V210:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_709:
 				case nsVDPixmap::kPixFormat_YUV420_NV12:
 				case nsVDPixmap::kPixFormat_RGB565:
 				case nsVDPixmap::kPixFormat_XRGB64:

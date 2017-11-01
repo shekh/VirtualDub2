@@ -638,7 +638,7 @@ const VDPixmap& VDVideoSourcePlugin::getTargetFormat() {
 	vdwithinputplugin(mpContext) {
 		const VDXPixmap *px = &mpXVDec->GetFrameBuffer();
 		memcpy(&mTargetFormat,px,sizeof(VDXPixmap));
-		mSourceFormat = px->format;
+		VDPixmapFormatEx format = px->format;
 
 		mTargetFormat.info.clear();
 		if (mpFMVDec) {
@@ -646,9 +646,12 @@ const VDPixmap& VDVideoSourcePlugin::getTargetFormat() {
 			mTargetFormat.info.copy_frame(info);
 			mTargetFormat.info.copy_ref(info);
 			mTargetFormat.info.copy_alpha(info);
+			format.colorRangeMode = info.colorRangeMode;
+			format.colorSpaceMode = info.colorSpaceMode;
 			//! todo: return struct size to grab further fields
 		}
-		VDPixmapFormatEx format = VDPixmapFormatCombine(px->format,formatEx);
+		mSourceFormat = format;
+		format = VDPixmapFormatCombine(format,formatEx);
 		mTargetFormat.format = format;
 		mTargetFormat.info.colorRangeMode = format.colorRangeMode;
 		mTargetFormat.info.colorSpaceMode = format.colorSpaceMode;

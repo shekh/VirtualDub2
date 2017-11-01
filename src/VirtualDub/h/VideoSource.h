@@ -105,7 +105,7 @@ protected:
 	vdstructex<VDAVIBitmapInfoHeader> mpTargetFormatHeader;
 	VDPixmap	mTargetFormat;
 	int			mTargetFormatVariant;
-	int			mSourceFormat;
+	VDPixmapFormatEx	mSourceFormat;
 	VDPosition	stream_desired_frame;
 	VDPosition	stream_current_frame;
 
