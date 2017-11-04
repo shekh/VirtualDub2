@@ -828,7 +828,7 @@ dialog 3000, "Create test video" : aspect=140, maxw=350 {
 				listitem "RGB color cube (TFF)";
 				listitem "RGB color cube (BFF)";
 				listitem "Chroma subsampling offset";
-				listitem "Channel levels (RGB)";
+				listitem "Channel levels (RGBA)";
 				listitem "Checkerboard";
 				listitem "Zone plates";
 				listitem "3:2 pulldown (TFF)";

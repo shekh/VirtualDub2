@@ -588,19 +588,23 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 		static const int kIndices[6]={0,1,2,2,1,3};
 		VDTriColorVertex triv[4];
 
-		static const char *const kNames[2][3]={
-			{ "Red", "Green", "Blue" },
+		static const char *const kNames[2][4]={
+			{ "Red", "Green", "Blue", "Alpha" },
 			{ "Cr", "Y", "Cb" },
 		};
 
-		for(int channel = 0; channel < 3; ++channel) {
+		int n = 3;
+		float ch = 120.0f;
+		if (mMode==4) { n = 4; ch = 100.0f; }
+
+		for(int channel = 0; channel < n; ++channel) {
 			for(int v=0; v<4; ++v) {
-				triv[v].x = 90.0f + ((v&1) ? 512.0f : 0.0f);
-				triv[v].y = 40.0f + 120.0f * channel + ((v&2) ? 80.0f : 0.0f);
 				triv[v].z = 0;
 				triv[v].a = 1.0f;
 
 				if (mMode == 9 || mMode == 10) {
+					triv[v].x = 90.0f + ((v&1) ? 512.0f : 0.0f);
+					triv[v].y = 40.0f + ch * channel + ((v&2) ? 80.0f : 0.0f);
 					triv[v].r = 128.0f / 255.0f;
 					triv[v].g = 128.0f / 255.0f;
 					triv[v].b = 128.0f / 255.0f;
@@ -611,26 +615,36 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 						break;
 					case 1:
 						triv[v].g = v&1 ? 1.0f : 0.0f;
-						triv[v].y = 40.0f + 120.0f * channel + ((v&2) ? 80.0f : 60.0f);
+						triv[v].y = 40.0f + ch * channel + ((v&2) ? 80.0f : 60.0f);
 						break;
 					case 2:
 						triv[v].b = v&1 ? 1.0f : 0.0f;
 						break;
 					}
 				} else {
-					triv[v].r = 0;
-					triv[v].g = 0;
-					triv[v].b = 0;
+					triv[v].x = 90.0f + ((v&1) ? 528.0f : 0.0f);
+					triv[v].y = 40.0f + ch * channel + ((v&2) ? 60.0f : 0.0f);
+					float c0 = -4.0/255;
+					float c1 = 259.0/255;
+					triv[v].r = c0;
+					triv[v].g = c0;
+					triv[v].b = c0;
 
 					switch(channel) {
 					case 0:
-						triv[v].r = v&1 ? 1.0f : 0.0f;
+						triv[v].r = v&1 ? c1 : c0;
 						break;
 					case 1:
-						triv[v].g = v&1 ? 1.0f : 0.0f;
+						triv[v].g = v&1 ? c1 : c0;
 						break;
 					case 2:
-						triv[v].b = v&1 ? 1.0f : 0.0f;
+						triv[v].b = v&1 ? c1 : c0;
+						break;
+					case 3:
+						triv[v].r = v&1 ? c1 : c0;
+						triv[v].g = v&1 ? c1 : c0;
+						triv[v].b = v&1 ? c1 : c0;
+						triv[v].a = v&1 ? c1 : c0;
 						break;
 					}
 				}
@@ -639,7 +653,7 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 			VDPixmapTriFill(*dst, triv, 4, kIndices, 6, &ortho[0][0]);
 
 			VDPixmapPathRasterizer rast;
-			VDPixmapConvertTextToPath(rast, NULL, 24.0f * 64.0f * mScale, 10.0f * 64.0f * mScale, (60.0f + 120.0f * channel) * 64.0f * mScale, kNames[mMode == 9 || mMode == 10][channel]);
+			VDPixmapConvertTextToPath(rast, NULL, 24.0f * 64.0f * mScale, 10.0f * 64.0f * mScale, (60.0f + ch * channel) * 64.0f * mScale, kNames[mMode == 9 || mMode == 10][channel]);
 
 			VDPixmapRegion region;
 			VDPixmapRegion border;
@@ -846,7 +860,7 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 		"RGB color cube (TFF)",
 		"RGB color cube (BFF)",
 		"Chroma subsampling offset",
-		"Channel levels (RGB)",
+		"Channel levels (RGBA)",
 		"Checkerboard",
 		"Zone plates",
 		"3:2 pulldown (TFF)",
