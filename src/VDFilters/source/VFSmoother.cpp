@@ -934,7 +934,7 @@ static int smoother_run(const VDXFilterActivation *fa, const VDXFilterFunctions 
 		g_thresh = 1;
 
 	if (mfd->pBlurBitmap) {
-		mfd->effBlur->run(mfd->vbBlur, (VDPixmap&)pxsrc);
+		mfd->effBlur->run(mfd->vbBlur, VDPixmap::copy(pxsrc));
 		srcf = (uint32 *)mfd->vbBlur.data;
 		srcf_pitch = mfd->vbBlur.pitch;
 

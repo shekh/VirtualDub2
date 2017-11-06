@@ -125,6 +125,21 @@ struct VDPixmap {
 		info.clear();
 		ext.clear();
 	}
+
+	static VDPixmap copy(const VDXPixmap& a) {
+		VDPixmap b;
+		b.data = a.data;
+		b.palette = a.palette;
+		b.w = a.w;
+		b.h = a.h;
+		b.pitch = a.pitch;
+		b.format = a.format;
+		b.data2 = a.data2;
+		b.pitch2 = a.pitch2;
+		b.data3 = a.data3;
+		b.pitch3 = a.pitch3;
+		return b;
+	}
 };
 
 struct VDPixmapFormatEx {

@@ -124,8 +124,8 @@ static int perspective_init(VDXFilterActivation *fa, const VDXFilterFunctions *f
 
 static int perspective_run(const VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 	PerspectiveFilterData *mfd = (PerspectiveFilterData *)fa->filter_data;
-	VDPixmap pxsrc = (VDPixmap&)*fa->src.mpPixmap;
-	VDPixmap pxdst = (VDPixmap&)*fa->dst.mpPixmap;
+	VDPixmap pxsrc = VDPixmap::copy(*fa->src.mpPixmap);
+	VDPixmap pxdst = VDPixmap::copy(*fa->dst.mpPixmap);
 
 	VDPixmapTextureMipmapChain	mipmaps(pxsrc, false, mfd->filtermode == 3, mfd->filtermode ? 16 : 1);
 
@@ -466,7 +466,7 @@ namespace {
 		pxdst.data		= &pThis->mFrameBuffer[pxdst.w * (pxdst.h - 1)];
 
 		GdiFlush();
-		VDPixmapResample(pxdst, (VDPixmap&)*pf->mpPixmap, IVDPixmapResampler::kFilterLinear);
+		VDPixmapResample(pxdst, VDPixmap::copy(*pf->mpPixmap), IVDPixmapResampler::kFilterLinear);
 
 		InvalidateRect(pThis->mhdlg, &pThis->mFrame, FALSE);
 	}

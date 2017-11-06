@@ -385,8 +385,8 @@ bool VDVideoFilterResize::Init() {
 }
 
 void VDVideoFilterResize::Run() {
-	const VDXPixmap& pxdst = *fa->dst.mpPixmap;
-	const VDXPixmap& pxsrc = *fa->src.mpPixmap;
+	VDPixmap pxdst = VDPixmap::copy(*fa->dst.mpPixmap);
+	VDPixmap pxsrc = VDPixmap::copy(*fa->src.mpPixmap);
 
 	const float fx1 = 0.0f;
 	const float fy1 = 0.0f;
@@ -398,14 +398,14 @@ void VDVideoFilterResize::Run() {
 	const float fy4 = (float)pxdst.h;
 	
 	uint32 fill = mConfig.mFillColor;
-	VDPixmapRectFillRGB32((VDPixmap&)pxdst, vdrect32f(fx1, fy1, fx4, fy2), fill);
-	VDPixmapRectFillRGB32((VDPixmap&)pxdst, vdrect32f(fx1, fy2, fx2, fy3), fill);
-	VDPixmapRectFillRGB32((VDPixmap&)pxdst, vdrect32f(fx3, fy2, fx4, fy3), fill);
-	VDPixmapRectFillRGB32((VDPixmap&)pxdst, vdrect32f(fx1, fy3, fx4, fy4), fill);
+	VDPixmapRectFillRGB32(pxdst, vdrect32f(fx1, fy1, fx4, fy2), fill);
+	VDPixmapRectFillRGB32(pxdst, vdrect32f(fx1, fy2, fx2, fy3), fill);
+	VDPixmapRectFillRGB32(pxdst, vdrect32f(fx3, fy2, fx4, fy3), fill);
+	VDPixmapRectFillRGB32(pxdst, vdrect32f(fx1, fy3, fx4, fy4), fill);
 
 	if (mConfig.mbInterlaced) {
-		VDXPixmap pxdst1(pxdst);
-		VDXPixmap pxsrc1(pxsrc);
+		VDPixmap pxdst1(pxdst);
+		VDPixmap pxsrc1(pxsrc);
 		pxdst1.pitch += pxdst1.pitch;
 		pxdst1.pitch2 += pxdst1.pitch2;
 		pxdst1.pitch3 += pxdst1.pitch3;
@@ -415,8 +415,8 @@ void VDVideoFilterResize::Run() {
 		pxsrc1.pitch3 += pxsrc1.pitch3;
 		pxsrc1.h = (pxsrc1.h + 1) >> 1;
 
-		VDXPixmap pxdst2(pxdst);
-		VDXPixmap pxsrc2(pxsrc);
+		VDPixmap pxdst2(pxdst);
+		VDPixmap pxsrc2(pxsrc);
 		pxdst2.data = (char *)pxdst2.data + pxdst2.pitch;
 		pxdst2.data2 = (char *)pxdst2.data2 + pxdst2.pitch2;
 		pxdst2.data3 = (char *)pxdst2.data3 + pxdst2.pitch3;
@@ -432,10 +432,10 @@ void VDVideoFilterResize::Run() {
 		pxsrc2.pitch3 += pxsrc2.pitch3;
 		pxsrc2.h = (pxsrc2.h + 0) >> 1;
 
-		mpResampler ->Process((VDPixmap&)pxdst1, (VDPixmap&)pxsrc1);
-		mpResampler2->Process((VDPixmap&)pxdst2, (VDPixmap&)pxsrc2);
+		mpResampler ->Process(pxdst1, pxsrc1);
+		mpResampler2->Process(pxdst2, pxsrc2);
 	} else {
-		mpResampler->Process((VDPixmap&)pxdst, (VDPixmap&)pxsrc);
+		mpResampler->Process(pxdst, pxsrc);
 	}
 }
 

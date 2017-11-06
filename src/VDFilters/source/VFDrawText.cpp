@@ -553,9 +553,9 @@ void VDVFilterDrawText::Run() {
 	}
 
 	if (!mTextBorderRegion.mSpans.empty())
-		VDPixmapFillRegionAntialiased8x((VDPixmap&)pxdst, mTextBorderRegion, 0, 0, color0);
+		VDPixmapFillRegionAntialiased8x(VDPixmap::copy(pxdst), mTextBorderRegion, 0, 0, color0);
 
-	VDPixmapFillRegionAntialiased8x((VDPixmap&)pxdst, mTextRegion, 0, 0, color1);
+	VDPixmapFillRegionAntialiased8x(VDPixmap::copy(pxdst), mTextRegion, 0, 0, color1);
 }
 
 void VDVFilterDrawText::ScriptConfig(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc) {

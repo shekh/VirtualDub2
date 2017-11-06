@@ -646,9 +646,9 @@ void VDVFLogo::Run() {
 	const VDXPixmap& dst = *fa->dst.mpPixmap;
 
 	if (bAlphaBlendingRequired) {
-		AlphaBlt((VDPixmap&)dst, x, y, mLogoBuffer, 0, 0, fa->dst.w, fa->dst.h);
+		AlphaBlt(VDPixmap::copy(dst), x, y, mLogoBuffer, 0, 0, fa->dst.w, fa->dst.h);
 	} else
-		VDPixmapBlt((VDPixmap&)dst, x, y, mLogoBuffer, 0, 0, mLogoBuffer.w, mLogoBuffer.h);
+		VDPixmapBlt(VDPixmap::copy(dst), x, y, mLogoBuffer, 0, 0, mLogoBuffer.w, mLogoBuffer.h);
 }
 
 void VDVFLogo::Start() {

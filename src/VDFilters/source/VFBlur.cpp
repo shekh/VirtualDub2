@@ -64,7 +64,7 @@ void VDVFilterBlurBase::End() {
 
 void VDVFilterBlurBase::Run() {
 	if (mpEffect)
-		mpEffect->run((VDPixmap&)*fa->dst.mpPixmap);
+		mpEffect->run(VDPixmap::copy(*fa->dst.mpPixmap));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
