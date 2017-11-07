@@ -782,6 +782,8 @@ void VDVideoDisplayMinidriverOpenGL::Upload(const VDPixmap& source, VDVideoTextu
 	case nsVDPixmap::kPixFormat_XRGB8888:
 		mGL.glPixelStorei(GL_UNPACK_ROW_LENGTH, source.pitch >> 2);
 		break;
+	default:
+		mGL.glPixelStorei(GL_UNPACK_ROW_LENGTH, mConversionBuffer.pitch >> 2);
 	}
 
 	texPattern.Flip();

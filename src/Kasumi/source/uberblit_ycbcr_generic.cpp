@@ -127,9 +127,9 @@ void VDPixmapGenYCbCrToRGB32Generic::Compute(void *dst0, sint32 y) {
 			__m128i ra = _mm_unpacklo_epi8(r,zero);
 			__m128i bgr0 = _mm_unpacklo_epi16(bg,ra);
 			__m128i bgr1 = _mm_unpackhi_epi16(bg,ra);
-			_mm_store_si128((__m128i*)dst,bgr0);
+			_mm_storeu_si128((__m128i*)dst,bgr0);
 			dst += 16;
-			_mm_store_si128((__m128i*)dst,bgr1);
+			_mm_storeu_si128((__m128i*)dst,bgr1);
 			dst += 16;
 		}
 
@@ -169,9 +169,9 @@ void VDPixmapGenYCbCrToRGB32Generic::Compute(void *dst0, sint32 y) {
 			__m128i ra = _mm_unpacklo_epi8(r,zero);
 			__m128i bgr0 = _mm_unpacklo_epi16(bg,ra);
 			__m128i bgr1 = _mm_unpackhi_epi16(bg,ra);
-			_mm_store_si128((__m128i*)dst,bgr0);
+			_mm_storeu_si128((__m128i*)dst,bgr0);
 			dst += 16;
-			_mm_store_si128((__m128i*)dst,bgr1);
+			_mm_storeu_si128((__m128i*)dst,bgr1);
 			dst += 16;
 		}
 
