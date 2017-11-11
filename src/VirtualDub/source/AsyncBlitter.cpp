@@ -418,6 +418,7 @@ void VDAsyncBlitter::stop() {
 		return;
 
 	fStop = true;
+	mEventDraw.signal();
 	ThreadWait();
 }
 
