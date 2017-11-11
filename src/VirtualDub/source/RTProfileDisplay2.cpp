@@ -48,6 +48,7 @@ struct VDThreadEvent {
 struct VDThreadEventScope {
 	const char* name;
 	uint32 flags;
+	const char* comment;
 };
 
 struct VDThreadEventBlock {
@@ -74,6 +75,7 @@ public:
 
 	void BeginScope(const char *name, uintptr *cache, uint32 data, uint32 flags=0);
 	void BeginDynamicScope(const char *name, uintptr *cache, uint32 data, uint32 flags=0);
+	void SetComment(uintptr scopeId, const char* data);
 	void EndScope();
 	void ExitThread();
 
@@ -132,6 +134,7 @@ VDEventProfilerW32::VDEventProfilerW32()
 	VDThreadEventScope scope;
 	scope.name = "";
 	scope.flags = 0;
+	scope.comment = 0;
 	mScopes.push_back(scope);
 	reset_count = 0;
 }
@@ -163,6 +166,26 @@ void VDEventProfilerW32::Attach() {
 
 void VDEventProfilerW32::Detach() {
 	--mEnableCount;
+}
+
+void VDEventProfilerW32::SetComment(uintptr scopeId, const char* data) {
+	if (!mEnableCount)
+		return;
+
+	if (!data || !data[0])
+		return;
+
+	vdsynchronized(mMutex) {
+		VDThreadEventScope& scope = mScopes[scopeId];
+
+		if (!scope.comment) {
+			mDynScopeStrings.push_back();
+			char *dynData = _strdup(data);
+			mDynScopeStrings.back() = dynData;
+
+			scope.comment = dynData;
+		}
+	}
 }
 
 void VDEventProfilerW32::BeginScope(const char *name, uintptr *cache, uint32 data, uint32 flags) {
@@ -275,6 +298,11 @@ void VDEventProfilerW32::Clear() {
 		pti->mEventBlocks.push_back(pti->mpCurrentBlock);
 		pti->mStartIndex = pti->mCurrentIndex;
 	}
+
+	for(int i=0; i<mScopes.size(); i++) {
+		mScopes[i].comment = 0;
+	}
+
 	mMutex.Unlock();
 }
 
@@ -318,6 +346,11 @@ void VDEventProfilerW32::UpdateScopes(vdfastvector<VDThreadEventScope>& scopes) 
 
 	if (n1 < n2)
 		scopes.insert(scopes.end(), mScopes.begin() + n1, mScopes.end());
+
+	for(int i=0; i<mScopes.size(); i++) {
+		scopes[i].comment = mScopes[i].comment;
+	}
+	
 	mMutex.Unlock();
 }
 
@@ -331,6 +364,7 @@ uintptr VDEventProfilerW32::InitScope(const char *name, uint32 flags, uintptr *c
 			VDThreadEventScope scope;
 			scope.name = name;
 			scope.flags = flags;
+			scope.comment = 0;
 			mScopes.push_back(scope);
 			*cache = h;
 		}
@@ -354,6 +388,7 @@ uintptr VDEventProfilerW32::InitDynamicScope(const char *name, uint32 flags, uin
 			VDThreadEventScope scope;
 			scope.name = dynName;
 			scope.flags = flags;
+			scope.comment = 0;
 			mScopes.push_back(scope);
 			*cache = h;
 		}
@@ -1276,6 +1311,8 @@ void VDRTProfileDisplay2::UpdateSummary() {
 	SendMessage(wnd, LB_SETTABSTOPS, 4, (LPARAM)tabs);
 	SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)"num\t min\t average\t rms\t id");
 
+	std::vector<uint32> scope_comment;
+
 	for(size_t i=0; i<list.size();) {
 		uint32 id = list[i]->mScopeId;
 		bool loop = (mScopes[id].flags & vdprofiler_flag_loop)!=0;
@@ -1309,12 +1346,25 @@ void VDRTProfileDisplay2::UpdateSummary() {
 		else
 			mTempStr.sprintf("- \t - \t - \t - \t %s%s", s, s1);
 		SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)mTempStr.c_str());
+
+		if (mScopes[id].comment) scope_comment.push_back(id);
 	}
 
 	if (use_range_start && use_range_end) {
 		double d = (double)(range_end-range_start) * msPerTick;
 		mTempStr.sprintf("1 \t %5.1fms \t  \t  \t %s", d, "Benchmark total");
 		SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)mTempStr.c_str());
+	}
+
+	if (scope_comment.size()) {
+		SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)"");
+		for(size_t i=0; i<scope_comment.size(); i++) {
+			uint32 id = scope_comment[i];
+
+			const char *s = mScopes[id].name;
+			mTempStr.sprintf("* %s: %s", s, mScopes[id].comment);
+			SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)mTempStr.c_str());
+		}
 	}
 }
 

@@ -286,9 +286,15 @@ bool VDDubIOThread::MainAddVideoFrame() {
 		return false;
 	}
 
+	static uintptr sCache = NULL;
+	IVDStreamSource *ss = mVideoSources[srcIndex]->asStream();
+
 	// for the direct case, just read the frame and return
 	if (mVideoRequest.mbDirect) {
-		VDPROFILEBEGINEX("V-Read",(uint32)mVideoRequest.mSrcFrame);
+		if (g_pVDEventProfiler) {
+			g_pVDEventProfiler->BeginScope("V-Read", &sCache, (uint32)mVideoRequest.mSrcFrame, 0);
+			g_pVDEventProfiler->SetComment(sCache, ss->GetProfileComment());
+		}
 		ReadRawVideoFrame(srcIndex, mpVideoRequestSource->displayToStreamOrder(mVideoRequest.mSrcFrame), mVideoRequest.mSrcFrame, mVideoRequestTargetSample, false, true);
 		VDPROFILEEND();
 		mbVideoRequestActive = false;
@@ -298,7 +304,10 @@ bool VDDubIOThread::MainAddVideoFrame() {
 	// for the source frame case, read the next required frame and return
 	bool preroll;
 
-	VDPROFILEBEGINEX("V-Read",(uint32)mVideoRequest.mSrcFrame);
+	if (g_pVDEventProfiler) {
+		g_pVDEventProfiler->BeginScope("V-Read", &sCache, (uint32)mVideoRequest.mSrcFrame, 0);
+		g_pVDEventProfiler->SetComment(sCache, ss->GetProfileComment());
+	}
 	VDPosition pos = mpVideoRequestSource->streamGetNextRequiredFrame(preroll);
 	if (pos >= 0)
 		ReadRawVideoFrame(srcIndex, pos, mVideoRequest.mSrcFrame, mVideoRequestTargetSample, preroll, false);

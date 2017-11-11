@@ -1420,6 +1420,8 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 
 		IVDStreamSource *pVSS = inputVideo->asStream();
 		pVSS->setDecodeErrorMode(g_videoErrorMode);
+		if (!pVSS->GetProfileComment())
+			pVSS->SetProfileComment(VDTextWToA(pSelectedDriver->GetSignatureName()).c_str());
 
 		// How many items did we get?
 

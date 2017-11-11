@@ -118,8 +118,13 @@ VDFilterFrameVideoSource::RunResult VDFilterFrameVideoSource::RunRequests(const 
 		uint32 bufferSize = mBuffer.size();
 		int result = IVDStreamSource::kBufferTooSmall;
 
+		static uintptr sCache = NULL;
+
 		if (bufferSize && bufferSize >= mDecodePadding) {
-			VDPROFILEBEGINEX("V-Read", (uint32)mTargetSample);
+			if (g_pVDEventProfiler) {
+				g_pVDEventProfiler->BeginScope("V-Read", &sCache, (uint32)mTargetSample, 0);
+				g_pVDEventProfiler->SetComment(sCache, ss->GetProfileComment());
+			}
 			result = ss->read(pos, 1, mBuffer.data(), bufferSize - mDecodePadding, &bytes, &samples);
 			VDPROFILEEND();
 		}
@@ -132,7 +137,10 @@ VDFilterFrameVideoSource::RunResult VDFilterFrameVideoSource::RunRequests(const 
 
 			mBuffer.resize(bytes + mDecodePadding);
 
-			VDPROFILEBEGINEX("V-Read", (uint32)mTargetSample);
+			if (g_pVDEventProfiler) {
+				g_pVDEventProfiler->BeginScope("V-Read", &sCache, (uint32)mTargetSample, 0);
+				g_pVDEventProfiler->SetComment(sCache, ss->GetProfileComment());
+			}
 			result = ss->read(pos, 1, mBuffer.data(), mBuffer.size() - mDecodePadding, &bytes, &samples);
 			VDPROFILEEND();
 

@@ -26,6 +26,7 @@ class VDFilterFrameRequest;
 
 VDFilterFrameManualSource::VDFilterFrameManualSource() {
 	mLayout.format = 0;
+	filter_index = -1;
 }
 
 VDFilterFrameManualSource::~VDFilterFrameManualSource() {

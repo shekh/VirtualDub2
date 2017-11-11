@@ -771,22 +771,23 @@ bool VDVideoDisplayMinidriverGDI::Update(UpdateMode mode) {
 			}
 		}
 
-		VDPROFILEBEGINEX("V-BlitDisplay",source.info.frame_num==-1 ? 0:(uint32)source.info.frame_num);
-
 		VDPixmap dstbm = { dst, NULL, source.w, source.h, dstpitch, source.format };
 
 		if (mbPaletted) {
 			dstbm.format = nsVDPixmap::kPixFormat_Pal8;
 
+			VDPROFILEBEGINEX3("V-BlitDisplay",source.info.frame_num==-1 ? 0:(uint32)source.info.frame_num,0,"dither");
 			VDDitherImage(dstbm, source, mIdentTab);
+			VDPROFILEEND();
 		} else {
 			if (mbConvertToScreenFormat)
 				dstbm.format = mScreenFormat;
 
+			mCachedBlitter.Update(dstbm, source);
+			VDPROFILEBEGINEX3("V-BlitDisplay",source.info.frame_num==-1 ? 0:(uint32)source.info.frame_num,0,mCachedBlitter.profiler_comment.c_str());
 			mCachedBlitter.Blit(dstbm, source);
+			VDPROFILEEND();
 		}
-
-		VDPROFILEEND();
 
 		if (mbDisplayDebugInfo) {
 			int saveIndex = SaveDC(mhdc);

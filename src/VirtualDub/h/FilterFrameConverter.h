@@ -54,6 +54,7 @@ protected:
 
 	VDFilterFrameConverterNode* node;
 	int node_count;
+	uintptr scope;
 };
 
 #endif

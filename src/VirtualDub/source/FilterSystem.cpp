@@ -1492,6 +1492,7 @@ void FilterSystem::DeallocateBuffers() {
 void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout& dstLayout, bool normalize16) {
 	vdrefptr<VDFilterFrameConverter> conv(new VDFilterFrameConverter);
 
+	conv->filter_index = mFilters.size();
 	conv->Init(tail.mpSrc, dstLayout, NULL, normalize16);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 	conv->RegisterSourceAllocReqs(0, tail.mpProxy);
@@ -1505,6 +1506,7 @@ void FilterSystem::AppendConversionFilter(StreamTail& tail, const VDPixmapLayout
 void FilterSystem::AppendAlignmentFilter(StreamTail& tail, const VDPixmapLayout& dstLayout, const VDPixmapLayout& srcLayout) {
 	vdrefptr<VDFilterFrameConverter> conv(new VDFilterFrameConverter);
 
+	conv->filter_index = mFilters.size();
 	conv->Init(tail.mpSrc, dstLayout, &srcLayout, false);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);
 	conv->RegisterSourceAllocReqs(0, tail.mpProxy);

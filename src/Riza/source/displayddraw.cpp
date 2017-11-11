@@ -1635,14 +1635,17 @@ bool VDVideoDisplayMinidriverDirectDraw::Update(UpdateMode mode) {
 		}
 	}
 
-	VDPROFILEBEGINEX("V-BlitDisplay",source.info.frame_num==-1 ? 0:(uint32)source.info.frame_num);
 
-	if (dither)
+	if (dither) {
+		VDPROFILEBEGINEX3("V-BlitDisplay",source.info.frame_num==-1 ? 0:(uint32)source.info.frame_num,0,"dither");
 		VDDitherImage(dstbm, source, mpLogicalPalette);
-	else
+		VDPROFILEEND();
+	} else {
+		mCachedBlitter.Update(dstbm, source);
+		VDPROFILEBEGINEX3("V-BlitDisplay",source.info.frame_num==-1 ? 0:(uint32)source.info.frame_num,0,mCachedBlitter.profiler_comment.c_str());
 		mCachedBlitter.Blit(dstbm, source);
-
-	VDPROFILEEND();
+		VDPROFILEEND();
+	}
 	
 	hr = pTarget->Unlock(0);
 

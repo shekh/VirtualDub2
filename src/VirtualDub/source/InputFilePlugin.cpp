@@ -495,6 +495,7 @@ VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverCont
 	memset(&mSSInfo, 0, sizeof mSSInfo);
 	memset(&mVSInfo, 0, sizeof mVSInfo);
 	formatEx = 0;
+	profile_comment = VDTextWToA(pContext->mName);
 
 	vdwithinputplugin(mpContext) {
 		IVDXStreamSourceV3 *xssv3 = (IVDXStreamSourceV3 *)mpXS->AsInterface(IVDXStreamSourceV3::kIID);

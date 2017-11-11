@@ -33,6 +33,8 @@ class VDFilterFrameManualSource : public vdrefcounted<IVDFilterFrameSource> {
 	VDFilterFrameManualSource& operator=(const VDFilterFrameManualSource&);
 
 public:
+	int filter_index;
+
 	VDFilterFrameManualSource();
 	~VDFilterFrameManualSource();
 

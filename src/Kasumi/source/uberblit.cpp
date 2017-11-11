@@ -1936,7 +1936,9 @@ space_reconvert:
 	// check if we need a type change (possible with 16F)
 	srcToken = BlitterConvertType(gen, srcToken, dstToken, w, h);
 
-  if (extraDst) extraDst->Create(gen,dst);
+	if (extraDst) extraDst->Create(gen,dst);
 
-	return gen.create();
+	IVDPixmapBlitter* r = gen.create();
+	r->SetComment(dst,src);
+	return r;
 }

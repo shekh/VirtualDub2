@@ -2,6 +2,7 @@
 #define f_VD2_KASUMI_BLITTER_H
 
 #include <vd2/system/vectors.h>
+#include <vd2/system/vdstring.h>
 #include <vd2/kasumi/pixmap.h>
 
 struct VDPixmap;
@@ -11,9 +12,13 @@ class IVDPixmapExtraGen;
 
 class IVDPixmapBlitter {
 public:
+	VDString profiler_comment;
+
 	virtual ~IVDPixmapBlitter() {}
 	virtual void Blit(const VDPixmap& dst, const VDPixmap& src) = 0;
 	virtual void Blit(const VDPixmap& dst, const vdrect32 *rDst, const VDPixmap& src) = 0;
+	void SetComment(const VDPixmap& dst, const VDPixmap& src);
+	void SetComment(const VDPixmapLayout& dst, const VDPixmapLayout& src);
 };
 
 IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src, IVDPixmapExtraGen* extraDst=0);
@@ -23,9 +28,12 @@ class VDPixmapCachedBlitter {
 	VDPixmapCachedBlitter(const VDPixmapCachedBlitter&);
 	VDPixmapCachedBlitter& operator=(const VDPixmapCachedBlitter&);
 public:
+	VDString profiler_comment;
+
 	VDPixmapCachedBlitter();
 	~VDPixmapCachedBlitter();
 
+	void Update(const VDPixmap& dst, const VDPixmap& src);
 	void Blit(const VDPixmap& dst, const VDPixmap& src);
 	void Invalidate();
 

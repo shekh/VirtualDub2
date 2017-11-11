@@ -92,6 +92,8 @@ public:
 	virtual VBRMode GetVBRMode() const = 0;
 	virtual VDPosition TimeToPositionVBR(VDTime us) const = 0;
 	virtual VDTime PositionToTimeVBR(VDPosition samples) const = 0;
+	virtual const char* GetProfileComment() const { return 0; }
+	virtual void SetProfileComment(const char* s) {}
 };
 
 class DubSource : public vdrefcounted<IVDStreamSource> {
@@ -110,6 +112,11 @@ protected:
 	virtual ~DubSource();
 
 public:
+	VDString profile_comment;
+
+	virtual const char* GetProfileComment() const { return profile_comment.empty() ? 0:profile_comment.c_str(); }
+	virtual void SetProfileComment(const char* s) { profile_comment = s; }
+
 	virtual VDPosition getLength() {
 		return mSampleLast - mSampleFirst;
 	}

@@ -61,11 +61,15 @@ void VDPixmapGenerateFast(void *dst, ptrdiff_t pitch, sint32 height, IVDPixmapGe
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 IVDPixmapBlitter *VDCreatePixmapUberBlitterDirectCopy(const VDPixmap& dst, const VDPixmap& src) {
-	return new VDPixmapUberBlitterDirectCopy;
+	IVDPixmapBlitter* r = new VDPixmapUberBlitterDirectCopy;
+	r->profiler_comment = VDString("copy ") + VDPixmapFormatPrintSpec(src.format);
+	return r;
 }
 
 IVDPixmapBlitter *VDCreatePixmapUberBlitterDirectCopy(const VDPixmapLayout& dst, const VDPixmapLayout& src) {
-	return new VDPixmapUberBlitterDirectCopy;
+	IVDPixmapBlitter* r = new VDPixmapUberBlitterDirectCopy;
+	r->profiler_comment = VDString("copy ") + VDPixmapFormatPrintSpec(src.format);
+	return r;
 }
 
 VDPixmapUberBlitterDirectCopy::VDPixmapUberBlitterDirectCopy() {

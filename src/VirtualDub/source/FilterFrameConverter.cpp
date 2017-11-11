@@ -49,6 +49,7 @@ VDFilterFrameConverter::VDFilterFrameConverter()
 {
 	node = 0;
 	node_count = 0;
+	scope = 0;
 }
 
 VDFilterFrameConverter::~VDFilterFrameConverter() {
@@ -184,7 +185,12 @@ IVDFilterFrameSource::RunResult VDFilterFrameConverterNode::RunProcess() {
 	if (!mbRequestPending)
 		return IVDFilterFrameSource::kRunResult_Idle;
 
-	VDPROFILEBEGINEX("Convert", (uint32)mpRequest->GetTiming().mOutputFrame);
+	if (g_pVDEventProfiler) {
+		char buf[128];
+		sprintf(buf,"Convert:%d",source->filter_index);
+		g_pVDEventProfiler->BeginDynamicScope(buf, &source->scope, (uint32)mpRequest->GetTiming().mOutputFrame, 0);
+		g_pVDEventProfiler->SetComment(source->scope, mpBlitter->profiler_comment.c_str());
+	}
 	mpBlitter->Blit(mPixmapDst, mPixmapSrc);
 	VDPROFILEEND();
 

@@ -195,7 +195,7 @@ extern void VDSetProfileMode(int mode) {
 }
 
 extern void VDOpenProfileWindow(int mode) {
-	if(profwin.isThreadAttached()){
+	if(profwin.isThreadActive()){
 		extern void VDRestartEventProfiler();
 		VDRestartEventProfiler();
 		VDSetProfileMode(mode);
@@ -207,7 +207,7 @@ extern void VDOpenProfileWindow(int mode) {
 }
 
 extern void VDCloseProfileWindow() {
-	if(profwin.isThreadAttached()){
+	if(profwin.isThreadActive()){
 		PostThreadMessage(profwin.getThreadID(),WM_QUIT,0,0);
 		profwin.ThreadWait();
 	}

@@ -2907,11 +2907,17 @@ bool VDVideoUploadContextD3D9::Update(const VDPixmap& source, int fieldMask) {
 	}
 
 	if (mUploadMode == kUploadModeDirectV210) {
+		VDPROFILEBEGINEX3("V-BlitDisplay",src.info.frame_num==-1 ? 0:(uint32)src.info.frame_num,0,"DirectV210");
 		VDMemcpyRect(dst.data, dst.pitch, src.data, src.pitch, ((src.w + 5) / 6) * 16, src.h);
+		VDPROFILEEND();
 	} else if (mUploadMode == kUploadModeDirect16) {
+		VDPROFILEBEGINEX3("V-BlitDisplay",src.info.frame_num==-1 ? 0:(uint32)src.info.frame_num,0,"Direct16");
 		VDMemcpyRect(dst.data, dst.pitch, src.data, src.pitch, src.w * 2, src.h);
+		VDPROFILEEND();
 	} else if (mUploadMode == kUploadModeDirect8 || mUploadMode == kUploadModeDirect8Laced || mUploadMode == kUploadModeDirectNV12) {
+		VDPROFILEBEGINEX3("V-BlitDisplay",src.info.frame_num==-1 ? 0:(uint32)src.info.frame_num,0,"Direct8");
 		VDMemcpyRect(dst.data, dst.pitch, src.data, src.pitch, src.w, src.h);
+		VDPROFILEEND();
 	} else {
 		if (dst.w > src.w)
 			dst.w = src.w;
@@ -2919,7 +2925,8 @@ bool VDVideoUploadContextD3D9::Update(const VDPixmap& source, int fieldMask) {
 		if (dst.h > src.h)
 			dst.h = src.h;
 
-		VDPROFILEBEGINEX("V-BlitDisplay",src.info.frame_num==-1 ? 0:(uint32)src.info.frame_num);
+		mCachedBlitter.Update(dst, src);
+		VDPROFILEBEGINEX3("V-BlitDisplay",src.info.frame_num==-1 ? 0:(uint32)src.info.frame_num,0,mCachedBlitter.profiler_comment.c_str());
 		mCachedBlitter.Blit(dst, src);
 		VDPROFILEEND();
 		mTexFmt.info = dst.info;

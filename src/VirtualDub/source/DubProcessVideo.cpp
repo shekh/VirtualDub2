@@ -1061,7 +1061,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ReadVideoFrame(const 
 
 				VDPROFILEBEGINEX2("Dub Loop", (uint32)frameInfo.mDisplayFrame, vdprofiler_flag_loop);
 
-				VDPROFILEBEGINEX("V-BlitIn", (uint32)frameInfo.mDisplayFrame);
+				VDPROFILEBEGINEX3("V-BlitIn", (uint32)frameInfo.mDisplayFrame, 0, mpInputBlitter->profiler_comment.c_str());
 				mpInputBlitter->Blit(pxdst, pxsrc);
 				buf->info = pxdst.info;
 				VDPROFILEEND();
@@ -1106,11 +1106,11 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ReadVideoFrame(const 
 	const OutputFrameEntry& nextOutputFrame = mPendingOutputFrames.front();
 	VDASSERT(!nextOutputFrame.mpRequest);
 
-	VDPROFILEBEGIN("V-BlitOut");
 	const VDPixmap& pxsrc = vsrc->getTargetFormat();
 	if (!mpOutputBlitter)
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc);
 
+	VDPROFILEBEGINEX3("V-BlitOut",0,0,mpOutputBlitter->profiler_comment.c_str());
 	mpOutputBlitter->Blit(pBuffer->mPixmap, pxsrc);
 	VDPROFILEEND();
 
@@ -1199,7 +1199,6 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 		return getOutputResult;
 
 	pBuffer->mTimelineFrame = nextOutputFrame.mTimelineFrame;
-	VDPROFILEBEGINEX("V-BlitOut",(uint32)nextOutputFrame.mTimelineFrame);
 	const VDPixmapLayout& layout = (mpOptions->video.mode == DubVideoOptions::M_FULL) ? mpVideoFilters->GetOutputLayout() : mpVideoFilters->GetInputLayout();
 	VDFilterFrameBuffer *buf = pOutputReq->GetResultBuffer();
 	VDPixmap pxsrc = VDPixmapFromLayout(layout, (void *)buf->LockRead());
@@ -1270,6 +1269,7 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc);
 	}
 
+	VDPROFILEBEGINEX3("V-BlitOut",(uint32)nextOutputFrame.mTimelineFrame,0,mpOutputBlitter->profiler_comment.c_str());
 	mpOutputBlitter->Blit(pBuffer->mPixmap, pxsrc);
 	buf->Unlock();
 	VDPROFILEEND();

@@ -169,6 +169,7 @@ class IVDEventProfiler {
 public:
 	virtual void BeginScope(const char *name, uintptr *cache, uint32 data, uint32 flags) = 0;
 	virtual void BeginDynamicScope(const char *name, uintptr *cache, uint32 data, uint32 flags) = 0;
+	virtual void SetComment(uintptr scopeId, const char* data) = 0;
 	virtual void EndScope() = 0;
 	virtual void ExitThread() = 0;
 };
@@ -200,6 +201,7 @@ typedef uintptr VDProfileEventCache;
 #define VDPROFILEBEGIN(label) if (true) { static uintptr sCache = NULL; if (g_pVDEventProfiler) g_pVDEventProfiler->BeginScope((label), &sCache, 0, 0); } else ((void)0)
 #define VDPROFILEBEGINEX(label, data) if (true) { static uintptr sCache = NULL; if (g_pVDEventProfiler) g_pVDEventProfiler->BeginScope((label), &sCache, data, 0); } else ((void)0)
 #define VDPROFILEBEGINEX2(label, data, flags) if (true) { static uintptr sCache = NULL; if (g_pVDEventProfiler) g_pVDEventProfiler->BeginScope((label), &sCache, data, flags); } else ((void)0)
+#define VDPROFILEBEGINEX3(label, data, flags, comment) if (true) { static uintptr sCache = NULL; if (g_pVDEventProfiler){ g_pVDEventProfiler->BeginScope((label), &sCache, data, flags); if(comment) g_pVDEventProfiler->SetComment(sCache, comment); } } else ((void)0)
 #define VDPROFILEEND() if (g_pVDEventProfiler) g_pVDEventProfiler->EndScope(); else ((void)0)
 #define VDPROFILEAUTOEND() VDProfileEventAutoEndScope _autoEndScope
 #define VDPROFILESCOPE(label) VDPROFILEBEGIN(label); VDPROFILEAUTOEND()
