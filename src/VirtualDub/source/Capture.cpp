@@ -3419,7 +3419,7 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 		}
 
 		if (mpOutputBlitter) {
-			VDPROFILEBEGIN("V-BlitOut");
+			VDPROFILEBEGINEX3("V-BlitOut",0,0,mpOutputBlitter->profiler_comment.c_str());
 			mpOutputBlitter->Blit(repack_buffer, px);
 			VDPROFILEEND();
 
@@ -3507,6 +3507,10 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 }
 
 void VDCaptureData::createOutputBlitter() {
+	repack_buffer.clear();
+	mpOutputBlitter = 0;
+	mbDoConversion = false;
+
 	if (driverLayout.format) {
 		VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
 		FilterModPixmapInfo out_info;
@@ -3547,23 +3551,28 @@ void VDCaptureData::createOutputBlitter() {
 			}
 			break;
 		}
-		repack_buffer.init(driverLayout);
 		VDPixmapFormatEx fmt = VDPixmapFormatCombine(driverLayout.format,VDPixmapFormatNormalize(pxsrc.format));
-		repack_buffer.format = fmt.format;
-		repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
-		repack_buffer.info.colorRangeMode = fmt.colorRangeMode;
-		mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc, extraDst);
-		delete extraDst;
-		mbDoConversion = pxsrc.format!=repack_buffer.format;
+		if (pxsrc.format!=fmt.format || extraDst) {
+			repack_buffer.init(driverLayout);
+			repack_buffer.format = fmt.format;
+			repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
+			repack_buffer.info.colorRangeMode = fmt.colorRangeMode;
+			mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc, extraDst);
+			delete extraDst;
+			mbDoConversion = true;
+		}
+
 	} else if (vfwLayout.format) {
 		VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
-		repack_buffer.init(vfwLayout);
-		VDPixmapFormatEx fmt = VDPixmapFormatCombine(driverLayout.format,VDPixmapFormatNormalize(pxsrc.format));
-		repack_buffer.format = fmt.format;
-		repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
-		repack_buffer.info.colorRangeMode = fmt.colorRangeMode;
-		mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc);
-		mbDoConversion = pxsrc.format!=repack_buffer.format;
+		VDPixmapFormatEx fmt = VDPixmapFormatCombine(vfwLayout.format,VDPixmapFormatNormalize(pxsrc.format));
+		if (pxsrc.format!=fmt.format) {
+			repack_buffer.init(vfwLayout);
+			repack_buffer.format = fmt.format;
+			repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
+			repack_buffer.info.colorRangeMode = fmt.colorRangeMode;
+			mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc);
+			mbDoConversion = true;
+		}
 	}
 }
 
