@@ -124,7 +124,7 @@ yasm -g cv8 -f win32 -o "$(IntDir)verstub.obj" verstub.asm
 </Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;shlwapi.lib;powrprof.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;shlwapi.lib;powrprof.lib;dwmapi.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(VDLibPath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libc;libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -134,7 +134,7 @@ yasm -g cv8 -f win32 -o "$(IntDir)verstub.obj" verstub.asm
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
       <FixedBaseAddress>false</FixedBaseAddress>
-      <DelayLoadDLLs>powrprof.dll</DelayLoadDLLs>
+      <DelayLoadDLLs>powrprof.dll;dwmapi.dll</DelayLoadDLLs>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -186,7 +186,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
 </Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;powrprof.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;powrprof.lib;dwmapi.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(VDLibPath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libc;libcmt;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -195,7 +195,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
       <MapFileName>$(TargetDir)$(TargetName).map</MapFileName>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
-      <DelayLoadDLLs>powrprof.dll</DelayLoadDLLs>
+      <DelayLoadDLLs>powrprof.dll;dwmapi.dll</DelayLoadDLLs>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -245,7 +245,7 @@ yasm -g cv8 -f win32 -o "$(IntDir)verstub.obj" verstub.asm
 </Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;shlwapi.lib;powrprof.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;shlwapi.lib;powrprof.lib;dwmapi.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(VDLibPath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -257,7 +257,7 @@ yasm -g cv8 -f win32 -o "$(IntDir)verstub.obj" verstub.asm
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <SetChecksum>true</SetChecksum>
       <TargetMachine>MachineX86</TargetMachine>
-      <DelayLoadDLLs>powrprof.dll</DelayLoadDLLs>
+      <DelayLoadDLLs>powrprof.dll;dwmapi.dll</DelayLoadDLLs>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -307,7 +307,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
 </Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;powrprof.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;vfw32.lib;dxguid.lib;msacm32.lib;comctl32.lib;powrprof.lib;dwmapi.lib;$(IntDir)verstub.obj;priss.lib;sylia.lib;system.lib;dita.lib;meia.lib;kasumi.lib;%(AdditionalDependencies);zlib.lib;libav_tiff.lib</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(VDLibPath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -319,7 +319,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <SetChecksum>true</SetChecksum>
       <TargetMachine>MachineX64</TargetMachine>
-      <DelayLoadDLLs>powrprof.dll</DelayLoadDLLs>
+      <DelayLoadDLLs>powrprof.dll;dwmapi.dll</DelayLoadDLLs>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>

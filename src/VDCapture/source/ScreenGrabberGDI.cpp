@@ -27,6 +27,7 @@
 #include <vd2/VDCapture/ScreenGrabberGDI.h>
 #include <windows.h>
 #include <tchar.h>
+#include <dwmapi.h>
 
 namespace {
 	DWORD AutodetectCaptureBltMode() {
@@ -75,6 +76,7 @@ VDScreenGrabberGDI::VDScreenGrabberGDI()
 	, mCaptureHeight(240)
 	, mProfileChannel("Capture driver")
 {
+	mbExcludeSelf = true;
 }
 
 VDScreenGrabberGDI::~VDScreenGrabberGDI() {
@@ -250,15 +252,17 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 			srcy = 0;
 
 		BitBlt(mhdcOffscreen, 0, 0, w, h, hdc, srcx, srcy, sBitBltMode);
-		if (HDC hdcw = GetDC(mhwnd)) {
-			HRGN rgn0 = CreateRectRgn(0,0,0,0); 
-			GetRandomRgn(hdcw,rgn0,SYSRGN);
-			OffsetRgn(rgn0,-srcx,-srcy);
-			HBRUSH br = CreateSolidBrush(GetSysColor(COLOR_APPWORKSPACE));
-			FillRgn(mhdcOffscreen,rgn0,br);
-			DeleteObject(br);
-			DeleteObject(rgn0);
-			ReleaseDC(mhwnd, hdcw);
+		if (mbExcludeSelf) {
+			if (HDC hdcw = GetDC(mhwnd)) {
+				HRGN rgn0 = CreateRectRgn(0,0,0,0); 
+				GetRandomRgn(hdcw,rgn0,SYSRGN);
+				OffsetRgn(rgn0,-srcx,-srcy);
+				HBRUSH br = CreateSolidBrush(GetSysColor(COLOR_APPWORKSPACE));
+				FillRgn(mhdcOffscreen,rgn0,br);
+				DeleteObject(br);
+				DeleteObject(rgn0);
+				ReleaseDC(mhwnd, hdcw);
+			}
 		}
 
 		if (ci.hCursor)
@@ -306,30 +310,35 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 				if (srcy < 0)
 					srcy = 0;
 				
-				POINT p0 = {0,0};
-				MapWindowPoints(mhwnd,0,&p0,1);
+				if( mbExcludeSelf) {
+					POINT p0 = {0,0};
+					MapWindowPoints(mhwnd,0,&p0,1);
 
-				HRGN rgn0 = CreateRectRgn(0,0,0,0); 
-				HRGN rgn1 = CreateRectRgn(0,0,0,0); 
-				GetRandomRgn(hdc,rgn0,SYSRGN);
-				CombineRgn(rgn1,rgn0,0,RGN_COPY);
-				OffsetRgn(rgn0,-p0.x,-p0.y);
-				OffsetRgn(rgn1,-srcx,-srcy);
-				CombineRgn(rgn0,rgn0,rgn1,RGN_DIFF);
+					HRGN rgn0 = CreateRectRgn(0,0,0,0); 
+					HRGN rgn1 = CreateRectRgn(0,0,0,0); 
+					GetRandomRgn(hdc,rgn0,SYSRGN);
+					CombineRgn(rgn1,rgn0,0,RGN_COPY);
+					OffsetRgn(rgn0,-p0.x,-p0.y);
+					OffsetRgn(rgn1,-srcx,-srcy);
+					CombineRgn(rgn0,rgn0,rgn1,RGN_DIFF);
 
-				SelectClipRgn(hdc, rgn0);
-				BitBlt(hdc, 0, 0, w, h, hdcScreen, srcx, srcy, SRCCOPY);
+					SelectClipRgn(hdc, rgn0);
+					BitBlt(hdc, 0, 0, w, h, hdcScreen, srcx, srcy, SRCCOPY);
 
-				SelectClipRgn(hdc, rgn1);
-				RECT r;
-				GetClientRect(mhwnd,&r);
-				FillRect(hdc,&r,(HBRUSH)(COLOR_APPWORKSPACE+1));
+					SelectClipRgn(hdc, rgn1);
+					RECT r;
+					GetClientRect(mhwnd,&r);
+					FillRect(hdc,&r,(HBRUSH)(COLOR_APPWORKSPACE+1));
 
-				DeleteObject(rgn0);
-				DeleteObject(rgn1);
-				
-				ReleaseDC(mhwnd, hdc);
-				ValidateRect(mhwnd,0);
+					DeleteObject(rgn0);
+					DeleteObject(rgn1);
+					
+					ReleaseDC(mhwnd, hdc);
+					ValidateRect(mhwnd,0);
+				} else {
+					BitBlt(hdc, 0, 0, w, h, hdcScreen, srcx, srcy, SRCCOPY);
+					ReleaseDC(mhwnd, hdc);
+				}
 			}
 			ReleaseDC(NULL, hdcScreen);
 		}
@@ -364,6 +373,13 @@ bool VDScreenGrabberGDI::InitDisplay(HWND hwndParent, bool preview) {
 		return false;
 	}
 
+	mbExcludeSelf = true;
+	BOOL enabled = false;
+	if (VDIsAtLeastVistaW32()) {
+		// with composition enabled GetRandomRgn is useless.
+		DwmIsCompositionEnabled(&enabled);
+		if (enabled) mbExcludeSelf = false;
+	}
 	mbDisplayPreview = preview;
 	return true;
 }

@@ -67,6 +67,7 @@ protected:
 
 	bool	mbVisible;
 	bool	mbDisplayPreview;
+	bool	mbExcludeSelf;
 	vdrect32	mDisplayArea;
 
 	int		mTrackX;
