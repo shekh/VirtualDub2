@@ -1705,9 +1705,21 @@ space_reconvert:
 						goto space_reconvert;
 
 					case kVDPixSpace_YCC_709:
-						VDASSERT((srcToken & kVDPixType_Mask) == kVDPixType_8_8_8);
-						gen.ycbcr709_to_ycbcr601();
-						srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_601;
+						switch(srcToken & kVDPixType_Mask) {
+							case kVDPixType_8_8_8:
+								gen.ycbcr709_to_ycbcr601();
+								srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_601;
+								break;
+
+							case kVDPixType_32F_32F_32F_LE:
+								gen.ycbcr_to_ycbcr_generic(g_VDPixmapGenYCbCrBasis_601, true, g_VDPixmapGenYCbCrBasis_709, true, kVDPixSpace_YCC_601);
+								srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_601;
+								break;
+
+							default:
+								VDASSERT(false);
+								break;
+						}
 						break;
 
 					case kVDPixSpace_YCC_601_FR:
