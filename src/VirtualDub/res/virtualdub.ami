@@ -365,7 +365,7 @@ dialog 1011, "" : fill, child {
 				checkbox 107, "Use DirectX overlay surfaces";
 
 				// it is NOT a good idea to enable both Direct3D and OpenGL
-				checkbox 103, "Use Direct3D (requires DirectX 9)" : enable={@103 || (@101 && !@104 && !@112)};
+				checkbox 103, "Use Direct3D 9" : enable={@103 || (@101 && !@104 && !@112)};
 				set 200: spacing=3, marginl=40, enable={@103}, vertical, align=fill {
 					now valign=center, marginl=0;
 
@@ -379,7 +379,7 @@ dialog 1011, "" : fill, child {
 					textarea 0, "Effect file support requires d3dx_25.dll (April 2005 or newer version of DirectX 9.0c runtime)." : minh=20, readonly, fill;
 				}			
 				checkbox 104, "Use OpenGL" : enable={@104 || (@101 && !@103 && !@112)};
-				checkbox 112, "Use Direct3D 9/11 (EXPERIMENTAL)" : enable={@112 || (@101 && !@103 && !@104)};
+				checkbox 112, "Use Direct3D 11 (EXPERIMENTAL)" : enable={@112 || (@101 && !@103 && !@104)};
 				checkbox 106, "Avoid tearing (enable vsync)";
 				
 				set 0 : align=fill, spacing=3 {
@@ -390,6 +390,9 @@ dialog 1011, "" : fill, child {
 						listitem "Auto-switch to nearest monitor (recommended)";
 						listitem "Force primary display device";
 						listitem "Disable secondary display support";
+						listitem "t1";
+						listitem "t3";
+						listitem "t2";
 					}
 				}
 			}

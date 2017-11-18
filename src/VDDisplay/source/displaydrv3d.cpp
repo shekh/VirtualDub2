@@ -1,6 +1,7 @@
 #include <stdafx.h>
 #include <vd2/system/binary.h>
 #include <vd2/system/vdstl.h>
+#include <vd2/system/profile.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmapops.h>
 #include <vd2/Kasumi/pixmaputils.h>
@@ -675,6 +676,7 @@ void VDDisplayImageNode3D::Load(const VDPixmap& px) {
 	VDTLockData2D lockData;
 
 	if (mRenderMode == kRenderMode_BlitPal8) {
+		VDPROFILEBEGINEX3("V-BlitDisplay",px.info.frame_num==-1 ? 0:(uint32)px.info.frame_num,0,"Pal8 Blit");
 		if (mbRenderSwapRB) {
 			VDTLockData2D lockData;
 			if (mpPaletteTex->Lock(0, NULL, lockData)) {
@@ -691,6 +693,7 @@ void VDDisplayImageNode3D::Load(const VDPixmap& px) {
 
 			mpPaletteTex->Load(0, 0, 0, initData, 256, 1);
 		}
+		VDPROFILEEND();
 	} else if (mRenderMode == kRenderMode_BlitY
 		|| mRenderMode == kRenderMode_BlitUYVY
 		|| mRenderMode == kRenderMode_BlitRGB16
@@ -699,15 +702,19 @@ void VDDisplayImageNode3D::Load(const VDPixmap& px) {
 		) {
 		const VDTInitData2D plane0 = { px.data, px.pitch };
 
+		VDPROFILEBEGINEX3("V-BlitDisplay",px.info.frame_num==-1 ? 0:(uint32)px.info.frame_num,0,"1-plane Blit");
 		mpImageTex[0]->Load(0, 0, 0, plane0, mTexWidth, mTexHeight);
+		VDPROFILEEND();
 	} else if (mRenderMode == kRenderMode_BlitYCbCr) {
 		const VDTInitData2D plane0 = { px.data, px.pitch };
 		const VDTInitData2D plane1 = { px.data2, px.pitch2 };
 		const VDTInitData2D plane2 = { px.data3, px.pitch3 };
 
+		VDPROFILEBEGINEX3("V-BlitDisplay",px.info.frame_num==-1 ? 0:(uint32)px.info.frame_num,0,"3-plane Blit");
 		mpImageTex[0]->Load(0, 0, 0, plane0, mTexWidth, mTexHeight);
 		mpImageTex[1]->Load(0, 0, 0, plane1, mTex2Width, mTex2Height);
 		mpImageTex[2]->Load(0, 0, 0, plane2, mTex2Width, mTex2Height);
+		VDPROFILEEND();
 	} else {
 		if (!mpImageTex[0]->Lock(0, NULL, lockData))
 			return;
@@ -719,7 +726,9 @@ void VDDisplayImageNode3D::Load(const VDPixmap& px) {
 		dstpx.w = mTexWidth;
 		dstpx.h = mTexHeight;
 
+		VDPROFILEBEGINEX3("V-BlitDisplay",px.info.frame_num==-1 ? 0:(uint32)px.info.frame_num,0,"convert to XRGB");
 		VDPixmapBlt(dstpx, px);
+		VDPROFILEEND();
 
 		mpImageTex[0]->Unlock(0);
 	}

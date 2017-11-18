@@ -972,7 +972,7 @@ void LoadPreferences() {
 	g_prefs2.mbDisplayEnableBackgroundFallback = key.getBool("Display: Enable background fallback", true);
 	g_prefs2.mbDisplayEnable3D = key.getBool("Display: Enable unified 3D driver", false);
 
-	g_prefs2.mDisplaySecondaryMode = (VDPreferences2::DisplaySecondaryMode)key.getEnumInt("Display: Secondary monitor mode", VDPreferences2::kDisplaySecondaryMode_AutoSwitch);
+	g_prefs2.mDisplaySecondaryMode = (VDPreferences2::DisplaySecondaryMode)key.getEnumInt("Display: Secondary monitor mode", VDPreferences2::kDisplaySecondaryModeCount);
 
 	uint32 imageSeqHi = key.getInt("Images: Frame rate numerator", 10);
 	uint32 imageSeqLo = key.getInt("Images: Frame rate denominator", 1);
