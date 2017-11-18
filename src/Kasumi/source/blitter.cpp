@@ -7,9 +7,7 @@ void IVDPixmapBlitter::SetComment(const VDPixmap& dst, const VDPixmap& src) {
 }
 
 void IVDPixmapBlitter::SetComment(const VDPixmapLayout& dst, const VDPixmapLayout& src) {
-	VDPixmapFormatEx dst2 = VDPixmapFormatCombine(dst.format, dst.formatEx);
-	VDPixmapFormatEx src2 = VDPixmapFormatCombine(src.format, src.formatEx);
-	profiler_comment = VDPixmapFormatPrintSpec(src2) + " -> " + VDPixmapFormatPrintSpec(dst2);
+	profiler_comment = VDPixmapFormatPrintSpec(src.formatEx) + " -> " + VDPixmapFormatPrintSpec(dst.formatEx);
 }
 
 VDPixmapCachedBlitter::VDPixmapCachedBlitter()

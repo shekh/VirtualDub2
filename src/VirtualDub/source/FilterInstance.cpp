@@ -1128,7 +1128,7 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 			src = streamInfo.mExternalSrcPreAlign;
 
 			if (streamInfo.mAlignOnEntry) {
-				VDPixmapCreateLinearLayout(src.mPixmapLayout, src.mPixmapLayout.format, src.mPixmapLayout.w, src.mPixmapLayout.h, streamInfo.mAlignOnEntry);
+				VDPixmapCreateLinearLayout(src.mPixmapLayout, src.mPixmapLayout.formatEx, src.mPixmapLayout.w, src.mPixmapLayout.h, streamInfo.mAlignOnEntry);
 				src.ConvertPixmapLayoutToBitmapLayout();
 			}
 

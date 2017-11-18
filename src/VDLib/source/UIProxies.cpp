@@ -148,6 +148,8 @@ void VDUIProxyListView::Detach() {
 void VDUIProxyListView::AutoSizeColumns(bool expandlast) {
 	const int colCount = GetColumnCount();
 
+	SendMessage(mhwnd, WM_SETREDRAW, FALSE, 0);
+
 	int colCacheCount = mColumnWidthCache.size();
 	while(colCacheCount < colCount) {
 		SendMessage(mhwnd, LVM_SETCOLUMNWIDTH, colCacheCount, LVSCW_AUTOSIZE_USEHEADER);
@@ -179,6 +181,9 @@ void VDUIProxyListView::AutoSizeColumns(bool expandlast) {
 
 		totalWidth += dataWidth;
 	}
+
+	SendMessage(mhwnd, WM_SETREDRAW, TRUE, 0);
+	InvalidateRect(mhwnd,0,true);
 }
 
 void VDUIProxyListView::Clear() {

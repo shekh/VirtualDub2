@@ -440,8 +440,10 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 	VDFilterPrepareInfo2& prepareInfo2 = fa->mPrepareInfo2;
 
 	prepareInfo2.mStreams.resize(inputCount);
-	for(uint32 i=0; i<inputCount; ++i)
+	for(uint32 i=0; i<inputCount; ++i) {
 		prepareInfo2.mStreams[i].mbConvertOnEntry = false;
+		prepareInfo2.mStreams[i].srcFormat = 0;
+	}
 
 	vdvector<VFBitmapInternal> inputs;
 	inputs.clear();
@@ -462,6 +464,7 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 			bmTemp.ConvertPixmapLayoutToBitmapLayout();
 
 			prepareInfo2.mStreams[0].mbConvertOnEntry = true;
+			prepareInfo2.mStreams[0].srcFormat = bmTemp.mPixmapLayout.formatEx;
 		}
 	}
 
@@ -551,7 +554,7 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 
 		inputs[0] = *inputSrcs[0];
 
-		int originalFormat = inputs[0].mPixmapLayout.format;
+		VDPixmapFormatEx originalFormat = inputs[0].mPixmapLayout.formatEx;
 		int format = originalFormat;
 		if (flags != FILTERPARAM_NOT_SUPPORTED) {
 			formatMask.reset();
@@ -590,6 +593,7 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 
 						VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, nsVDPixmap::kPixFormat_XRGB8888, inputs[j].w, inputs[j].h, alignReq);
 						inputs[j].mPixmapLayout.format = format;
+						inputs[j].mPixmapLayout.formatEx = format;
 						inputs[j].ConvertPixmapLayoutToBitmapLayout();
 					}
 
@@ -640,7 +644,10 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 					for(uint32 j = 0; j < inputCount; ++j) {
 						inputs[j] = *inputSrcs[j];
 
-						VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, format, inputs[j].w, inputs[j].h, alignReq);
+						VDPixmapFormatEx formatEx = format;
+						if (VDPixmapFormatMatrixType(format)==1)
+							formatEx = VDPixmapFormatCombine(format,VDPixmapFormatNormalize(originalFormat));
+						VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, formatEx, inputs[j].w, inputs[j].h, alignReq);
 
 						if (altFormatCheckRequired && format == nsVDPixmap::kPixFormat_XRGB8888)
 							VDPixmapLayoutFlipV(inputs[j].mPixmapLayout);
@@ -799,8 +806,10 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 			}
 
 			if (conversionRequired) {
-				for(uint32 j = 0; j < inputCount; ++j)
+				for(uint32 j = 0; j < inputCount; ++j) {
 					prepareInfo2.mStreams[j].mbConvertOnEntry = true;
+					prepareInfo2.mStreams[j].srcFormat = originalFormat;
+				}
 			}
 		}
 	}
@@ -1524,12 +1533,15 @@ void FilterSystem::AppendAccelUploadFilter(StreamTail& tail, const vdrect32& src
 	VDPixmapLayout layout;
 	VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_XRGB8888, srcRect.width(), srcRect.height(), vdxa_align);
 
+	int format = nsVDXPixmap::kPixFormat_VDXA_YUV;
 	bool isRGB = false;
 	if (srcLayout.format == nsVDXPixmap::kPixFormat_XRGB8888) {
-		layout.format = nsVDXPixmap::kPixFormat_VDXA_RGB;
+		format = nsVDXPixmap::kPixFormat_VDXA_RGB;
 		isRGB = true;
-	} else
-		layout.format = nsVDXPixmap::kPixFormat_VDXA_YUV;
+	}
+
+	layout.format = format;
+	layout.formatEx = format;
 
 	srcLayout.data += srcRect.top * srcLayout.pitch + (isRGB ? srcRect.left << 2 : srcRect.left);
 	srcLayout.data2 += srcRect.top * srcLayout.pitch2 + srcRect.left;
@@ -1567,6 +1579,7 @@ void FilterSystem::AppendAccelConversionFilter(StreamTail& tail, int format) {
 	VDPixmapCreateLinearLayout(layout, nsVDPixmap::kPixFormat_XRGB8888, prevLayout.w, prevLayout.h, vdxa_align);
 
 	layout.format = format;
+	layout.formatEx = format;
 
 	conv->Init(mpBitmaps->mpAccelEngine, tail.mpSrc, layout, NULL);
 	conv->RegisterAllocatorProxies(&mpBitmaps->mAllocatorManager);

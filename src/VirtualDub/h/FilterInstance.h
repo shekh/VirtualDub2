@@ -324,6 +324,7 @@ struct VDFilterPrepareInfo {
 };
 
 struct VDFilterPrepareStreamInfo2 {
+	VDPixmapFormatEx	srcFormat; // before any auto-conversion
 	bool	mbConvertOnEntry;
 };
 

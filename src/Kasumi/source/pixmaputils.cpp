@@ -472,7 +472,7 @@ VDPixmapLayout VDPixmapLayoutOffset(const VDPixmapLayout& src, vdpixpos x, vdpix
 	return temp;
 }
 
-uint32 VDPixmapCreateLinearLayout(VDPixmapLayout& layout, int format, vdpixsize w, vdpixsize h, int alignment) {
+uint32 VDPixmapCreateLinearLayout(VDPixmapLayout& layout, VDPixmapFormatEx format, vdpixsize w, vdpixsize h, int alignment) {
 	const ptrdiff_t alignmask = alignment - 1;
 
 	const VDPixmapFormatInfo& srcinfo = VDPixmapGetInfo(format);
@@ -495,6 +495,7 @@ uint32 VDPixmapCreateLinearLayout(VDPixmapLayout& layout, int format, vdpixsize 
 	layout.w		= w;
 	layout.h		= h;
 	layout.format	= format;
+	layout.formatEx	= format;
 
 	if (srcinfo.auxbufs >= 1) {
 		ptrdiff_t	subpitch	= (subw * auxsize + alignmask) & ~alignmask;
@@ -738,6 +739,7 @@ void VDPixmapBuffer::init(sint32 width, sint32 height, int f) {
 	w		= width;
 	h		= height;
 	format	= f;
+	info.clear();
 
 	if (srcinfo.auxbufs >= 1) {
 		data2	= p;
@@ -835,6 +837,9 @@ void VDPixmapBuffer::init(const VDPixmapLayout& layout, uint32 additionalPadding
 	w		= layout.w;
 	h		= layout.h;
 	format	= layout.format;
+	info.clear();
+	info.colorSpaceMode = layout.formatEx.colorSpaceMode;
+	info.colorRangeMode = layout.formatEx.colorRangeMode;
 	data	= p + layout.data - mino;
 	data2	= p + layout.data2 - mino;
 	data3	= p + layout.data3 - mino;

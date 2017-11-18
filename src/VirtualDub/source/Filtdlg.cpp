@@ -1751,13 +1751,21 @@ void VDVideoFiltersDialog::FilterListItem::GetText(int subItem, VDStringW& s) co
 				s.sprintf(L"%ux%u", layout.w, layout.h);
 
 				if (mpParent->mbShowFormats) {
-					if (layout.format == nsVDXPixmap::kPixFormat_VDXA_RGB)
+					VDPixmapFormatEx format = layout.formatEx;
+					bool convertOnEntry = false;
+					if (subItem == 1 && streamInfo2 && streamInfo2->mbConvertOnEntry) {
+						convertOnEntry = true;
+						format = streamInfo2->srcFormat;
+					}
+
+					if (format == nsVDXPixmap::kPixFormat_VDXA_RGB)
 						s += L" (RGB)";
-					else if (layout.format == nsVDXPixmap::kPixFormat_VDXA_YUV)
+					else if (format == nsVDXPixmap::kPixFormat_VDXA_YUV)
 						s += L" (YUV)";
 					else {
-						const VDPixmapFormatInfo& info = VDPixmapGetInfo(layout.format);
-						s.append_sprintf(L" (%hs)", info.name);
+						//const VDPixmapFormatInfo& info = VDPixmapGetInfo(format);
+						VDString name = VDPixmapFormatPrintSpec(format);
+						s.append_sprintf(L" (%hs)", name.c_str());
 					}
 				}
 
