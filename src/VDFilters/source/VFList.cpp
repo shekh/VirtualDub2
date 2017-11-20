@@ -27,7 +27,7 @@ extern const VDXFilterDefinition g_VDVFBlurHi;
 extern const VDXFilterDefinition g_VDVFBoxBlur;
 extern const VDXFilterDefinition g_VDVFBrightCont;
 extern const VDXFilterDefinition g_VDVFChromaSmoother;
-extern const VDXFilterDefinition g_VDVFConvertFormat;
+extern const VDXFilterDefinition2 g_VDVFConvertFormat;
 extern const VDXFilterDefinition g_VDVFDeinterlace;
 extern const VDXFilterDefinition2 g_VDVFDrawText;
 extern const VDXFilterDefinition g_VDVFFieldBob;

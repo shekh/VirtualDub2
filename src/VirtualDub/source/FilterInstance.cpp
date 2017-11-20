@@ -1169,7 +1169,17 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 			vdprotected1("preparing filter \"%s\"", const char *, filter->name) {
 				VDFilterThreadContextSwapper autoSwap(&mThreadContext);
 
+				mRealSrc.mPixmap.info.colorSpaceMode = mRealSrc.mPixmapLayout.formatEx.colorSpaceMode;
+				mRealSrc.mPixmap.info.colorRangeMode = mRealSrc.mPixmapLayout.formatEx.colorRangeMode;
+
 				flags = filter->paramProc(AsVDXFilterActivation(), &g_VDFilterCallbacks);
+
+				if (flags != FILTERPARAM_NOT_SUPPORTED) {
+					VDFilterPrepareStreamInfo& streamInfo = prepareInfo.mStreams[0];
+					streamInfo.reqFormat.format = mRealSrc.mPixmapLayout.format;
+					streamInfo.reqFormat.colorSpaceMode = mRealSrc.mPixmap.info.colorSpaceMode;
+					streamInfo.reqFormat.colorRangeMode = mRealSrc.mPixmap.info.colorRangeMode;
+				}
 			}
 
 			if(mFilterName==L"Deshaker v3.0" || mFilterName==L"Deshaker v3.1") {

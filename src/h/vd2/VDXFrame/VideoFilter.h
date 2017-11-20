@@ -122,6 +122,9 @@ public:
 	// extract details from legacy pixmap or from extended pixmap, based on what is available
 	nsVDXPixmap::ColorSpaceMode ExtractColorSpace(const VDXPixmap* pixmap);
 	nsVDXPixmap::ColorRangeMode ExtractColorRange(const VDXPixmap* pixmap);
+
+	nsVDXPixmap::ColorSpaceMode ExtractColorSpace(sint32 format);
+	nsVDXPixmap::ColorRangeMode ExtractColorRange(sint32 format);
 };
 
 ///////////////////////////////////////////////////////////////////////////

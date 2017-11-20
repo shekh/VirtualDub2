@@ -16,131 +16,184 @@
 //	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #include "stdafx.h"
+#include <windows.h>
 #include "resource.h"
 #include <vd2/system/strutil.h>
 #include <vd2/VDLib/Dialog.h>
 #include <vd2/VDXFrame/VideoFilter.h>
 #include <vd2/Kasumi/pixmaputils.h>
 
-namespace {
-	const int kFormats[]={
-		nsVDXPixmap::kPixFormat_XRGB8888,
-		nsVDPixmap::kPixFormat_XRGB64,
-		nsVDXPixmap::kPixFormat_YUV444_Planar,
-		nsVDXPixmap::kPixFormat_YUV422_Planar,
-		nsVDXPixmap::kPixFormat_YUV420_Planar,
-		nsVDXPixmap::kPixFormat_YUV411_Planar,
-		nsVDXPixmap::kPixFormat_YUV410_Planar,
-		nsVDXPixmap::kPixFormat_YUV422_UYVY,
-		nsVDXPixmap::kPixFormat_YUV422_YUYV,
-
-		nsVDXPixmap::kPixFormat_YUV444_Planar_709,
-		nsVDXPixmap::kPixFormat_YUV422_Planar_709,
-		nsVDXPixmap::kPixFormat_YUV420_Planar_709,
-		nsVDXPixmap::kPixFormat_YUV411_Planar_709,
-		nsVDXPixmap::kPixFormat_YUV410_Planar_709,
-		nsVDXPixmap::kPixFormat_YUV422_UYVY_709,
-		nsVDXPixmap::kPixFormat_YUV422_YUYV_709,
-
-		nsVDXPixmap::kPixFormat_YUV444_Planar_FR,
-		nsVDXPixmap::kPixFormat_YUV422_Planar_FR,
-		nsVDXPixmap::kPixFormat_YUV420_Planar_FR,
-		nsVDXPixmap::kPixFormat_YUV411_Planar_FR,
-		nsVDXPixmap::kPixFormat_YUV410_Planar_FR,
-		nsVDXPixmap::kPixFormat_YUV422_UYVY_FR,
-		nsVDXPixmap::kPixFormat_YUV422_YUYV_FR,
-
-		nsVDXPixmap::kPixFormat_YUV444_Planar_709_FR,
-		nsVDXPixmap::kPixFormat_YUV422_Planar_709_FR,
-		nsVDXPixmap::kPixFormat_YUV420_Planar_709_FR,
-		nsVDXPixmap::kPixFormat_YUV411_Planar_709_FR,
-		nsVDXPixmap::kPixFormat_YUV410_Planar_709_FR,
-		nsVDXPixmap::kPixFormat_YUV422_UYVY_709_FR,
-		nsVDXPixmap::kPixFormat_YUV422_YUYV_709_FR,
-
-		nsVDXPixmap::kPixFormat_YUV444_Planar16,
-		nsVDXPixmap::kPixFormat_YUV422_Planar16,
-		nsVDXPixmap::kPixFormat_YUV420_Planar16,
-	};
-
-	const wchar_t *const kYUVFormats[]={
-		L"4:4:4 planar YCbCr (YV24)",
-		L"4:2:2 planar YCbCr (YV16)",
-		L"4:2:0 planar YCbCr (YV12)",
-		L"4:1:1 planar YCbCr",
-		L"4:1:0 planar YCbCr (YVU9)",
-		L"4:2:2 interleaved YCbCr (UYVY)",
-		L"4:2:2 interleaved YCbCr (YUY2)",
-	};
-
-	const wchar_t *const kYUVFormats16[]={
-		L"4:4:4 planar YCbCr 16 bit",
-		L"4:2:2 planar YCbCr 16 bit",
-		L"4:2:0 planar YCbCr 16 bit",
-  };
-}
+class VDVFilterConvertFormat;
 
 class VDVFilterConvertFormatConfigDialog : public VDDialogFrameW32 {
 public:
-	VDVFilterConvertFormatConfigDialog(int format);
-
-	int GetFormat() const { return mFormat; }
+	VDVFilterConvertFormatConfigDialog(VDPixmapFormatEx format);
 
 	bool OnLoaded();
+	bool OnCommand(uint32 id, uint32 extcode);
 	void OnDataExchange(bool write);
+	void InitFocus();
+	void SyncControls();
+	void SyncInputColor();
+	void redo();
 
-protected:
-	int mFormat;
+	VDPixmapFormatEx mFormat;
+	IVDXFilterPreview2 *fp;
+	VDVFilterConvertFormat* filter;
+
+	struct FormatButtonMapping {
+		int mFormat;
+		uint32 mInputButton;
+	};
+
+	static const FormatButtonMapping kFormatButtonMappings[];
 };
 
-VDVFilterConvertFormatConfigDialog::VDVFilterConvertFormatConfigDialog(int format)
+const VDVFilterConvertFormatConfigDialog::FormatButtonMapping VDVFilterConvertFormatConfigDialog::kFormatButtonMappings[] = {
+	{	nsVDPixmap::kPixFormat_Null,			IDC_INPUT_AUTOSELECT},
+	{	nsVDPixmap::kPixFormat_XRGB8888,		IDC_INPUT_XRGB8888},
+	{	nsVDPixmap::kPixFormat_XRGB64,			IDC_INPUT_XRGB64},
+	{	nsVDPixmap::kPixFormat_YUV422_UYVY,		IDC_INPUT_YUV422_UYVY},
+	{	nsVDPixmap::kPixFormat_YUV422_YUYV,		IDC_INPUT_YUV422_YUY2},
+	{	nsVDPixmap::kPixFormat_YUV420_Planar,	IDC_INPUT_YUV420_PLANAR},
+	{	nsVDPixmap::kPixFormat_YUV422_Planar,	IDC_INPUT_YUV422_PLANAR},
+	{	nsVDPixmap::kPixFormat_YUV411_Planar,	IDC_INPUT_YUV411_PLANAR},
+	{	nsVDPixmap::kPixFormat_YUV410_Planar,	IDC_INPUT_YUV410_PLANAR},
+	{	nsVDPixmap::kPixFormat_YUV444_Planar,	IDC_INPUT_YUV444_PLANAR},
+	{	nsVDPixmap::kPixFormat_YUV444_Planar16,	IDC_INPUT_YUV444_PLANAR16},
+	{	nsVDPixmap::kPixFormat_YUV422_Planar16,	IDC_INPUT_YUV422_PLANAR16},
+	{	nsVDPixmap::kPixFormat_YUV420_Planar16,	IDC_INPUT_YUV420_PLANAR16},
+};
+
+VDVFilterConvertFormatConfigDialog::VDVFilterConvertFormatConfigDialog(VDPixmapFormatEx format)
 	: VDDialogFrameW32(IDD_FILTER_CONVERTFORMAT)
 	, mFormat(format)
 {
+	fp = 0;
+	filter = 0;
 }
 
 bool VDVFilterConvertFormatConfigDialog::OnLoaded() {
-	LBAddString(IDC_FORMATS, L"RGBA32");
-	LBAddString(IDC_FORMATS, L"RGBA64");
-
-	VDStringW s;
-	for(int i=0; i<4; ++i) {
-		for(size_t j=0; j<sizeof(kYUVFormats)/sizeof(kYUVFormats[0]); ++j) {
-			s = kYUVFormats[j];
-
-			if (i & 1)
-				s += L" (Rec. 709)";
-
-			if (i & 2)
-				s += L" (full range)";
-
-			LBAddString(IDC_FORMATS, s.c_str());
-		}
-	}
-
-	for(size_t j=0; j<sizeof(kYUVFormats16)/sizeof(kYUVFormats16[0]); ++j) {
-		LBAddString(IDC_FORMATS, kYUVFormats16[j]);
-	}
-
-	SetFocusToControl(IDC_FORMATS);
-
+	OnDataExchange(false);
+	InitFocus();
 	VDDialogFrameW32::OnLoaded();
+	if (fp) {
+		EnableWindow(GetDlgItem(mhdlg, IDC_PREVIEW), TRUE);
+		fp->InitButton((VDXHWND)GetDlgItem(mhdlg, IDC_PREVIEW));
+	}
 	return true;
 }
 
 void VDVFilterConvertFormatConfigDialog::OnDataExchange(bool write) {
 	if (write) {
-		int idx = LBGetSelectedIndex(IDC_FORMATS);
-
-		if ((unsigned)idx < sizeof(kFormats) / sizeof(kFormats[0]))
-			mFormat = kFormats[idx];
 	} else {
-		const int *begin = kFormats;
-		const int *end = kFormats + sizeof(kFormats) / sizeof(kFormats[0]);
-		const int *p = std::find(begin, end, mFormat);
+		SyncControls();
+	}
+}
 
-		if (p != end)
-			LBSetSelectedIndex(IDC_FORMATS, p - begin);
+bool VDVFilterConvertFormatConfigDialog::OnCommand(uint32 id, uint32 extcode) {
+	if (extcode == BN_CLICKED) {
+		switch(id) {
+			case IDC_CS_NONE:
+				mFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
+				redo();
+				return TRUE;
+
+			case IDC_CS_601:
+				mFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+				redo();
+				return TRUE;
+
+			case IDC_CS_709:
+				mFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+				redo();
+				return TRUE;
+
+			case IDC_CR_NONE:
+				mFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+				redo();
+				return TRUE;
+
+			case IDC_CR_LIMITED:
+				mFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+				redo();
+				return TRUE;
+
+			case IDC_CR_FULL:
+				mFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+				redo();
+				return TRUE;
+
+			case IDC_PREVIEW:
+				if (fp) fp->Toggle((VDXHWND)mhdlg);
+				return TRUE;
+		}
+
+		for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
+			const FormatButtonMapping& fbm = kFormatButtonMappings[i];
+			if (fbm.mInputButton == id) {
+				mFormat.format = fbm.mFormat;
+				SyncInputColor();
+				redo();
+			}
+		}
+	}
+
+	return false;
+}
+
+void VDVFilterConvertFormatConfigDialog::InitFocus() {
+	for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
+		const FormatButtonMapping& fbm = kFormatButtonMappings[i];
+
+		if (fbm.mFormat == mFormat) {
+			SetFocusToControl(fbm.mInputButton);
+			return;
+		}
+	}
+
+	SetFocusToControl(IDC_INPUT_AUTOSELECT);
+}
+
+void VDVFilterConvertFormatConfigDialog::SyncControls() {
+	uint32 inputButton = IDC_INPUT_AUTOSELECT;
+	for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
+		const FormatButtonMapping& fbm = kFormatButtonMappings[i];
+
+		if (fbm.mFormat == mFormat)
+			inputButton = fbm.mInputButton;
+	}
+
+	CheckButton(inputButton, true);
+	SyncInputColor();
+}
+
+void VDVFilterConvertFormatConfigDialog::SyncInputColor() {
+	bool enable = VDPixmapFormatMatrixType(mFormat)!=0;
+	if (mFormat==0) enable = true;
+
+	EnableControl(IDC_STATIC_COLORSPACE, enable);
+	EnableControl(IDC_STATIC_COLORRANGE, enable);
+	EnableControl(IDC_CS_NONE,   enable);
+	EnableControl(IDC_CS_601,    enable);
+	EnableControl(IDC_CS_709,    enable);
+	EnableControl(IDC_CR_NONE,   enable);
+	EnableControl(IDC_CR_LIMITED,enable);
+	EnableControl(IDC_CR_FULL,   enable);
+	if (enable) {
+		CheckButton(IDC_CS_NONE, mFormat.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_None);
+		CheckButton(IDC_CS_601, mFormat.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_601);
+		CheckButton(IDC_CS_709, mFormat.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_709);
+		CheckButton(IDC_CR_NONE, mFormat.colorRangeMode == nsVDXPixmap::kColorRangeMode_None);
+		CheckButton(IDC_CR_LIMITED, mFormat.colorRangeMode == nsVDXPixmap::kColorRangeMode_Limited);
+		CheckButton(IDC_CR_FULL, mFormat.colorRangeMode == nsVDXPixmap::kColorRangeMode_Full);
+	} else {
+		CheckButton(IDC_CS_NONE,    true);
+		CheckButton(IDC_CS_601,     false);
+		CheckButton(IDC_CS_709,     false);
+		CheckButton(IDC_CR_NONE,    true);
+		CheckButton(IDC_CR_LIMITED, false);
+		CheckButton(IDC_CR_FULL,    false);
 	}
 }
 
@@ -159,11 +212,11 @@ public:
 	void GetScriptString(char *buf, int maxlen);
 
 	void ScriptConfig(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc);
+	void ScriptConfig3(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc);
 
 	VDXVF_DECLARE_SCRIPT_METHODS();
 
-protected:
-	int mFormat;
+	VDPixmapFormatEx mFormat;
 };
 
 VDVFilterConvertFormat::VDVFilterConvertFormat()
@@ -175,8 +228,29 @@ uint32 VDVFilterConvertFormat::GetParams() {
 	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
 	VDXPixmapLayout& pxldst = *fa->dst.mpPixmapLayout;
 
-	if (pxlsrc.format != mFormat)
+	VDPixmapFormatEx format0 = ExtractBaseFormat(pxlsrc.format);
+	format0.colorSpaceMode = ExtractColorSpace(fa->src.mpPixmap);
+	format0.colorRangeMode = ExtractColorRange(fa->src.mpPixmap);
+
+	VDPixmapFormatEx format = mFormat;
+	if (format.format==0) format.format = format0.format;
+	if (format.colorSpaceMode==0) format.colorSpaceMode = format0.colorSpaceMode;
+	if (format.colorRangeMode==0) format.colorRangeMode = format0.colorRangeMode;
+	format = VDPixmapFormatCombine(format, 0);
+
+	if (pxlsrc.format == 255)
 		return FILTERPARAM_NOT_SUPPORTED;
+
+	if (pxlsrc.format != format)
+		return FILTERPARAM_NOT_SUPPORTED;
+
+	if (VDPixmapFormatMatrixType(format)==1) {
+		if (fma && fma->fmpixmap) {
+			FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(fa->src.mpPixmap);
+			info->colorSpaceMode = format.colorSpaceMode;
+			info->colorRangeMode = format.colorRangeMode;
+		}
+	}
 
 	pxldst.pitch = pxlsrc.pitch;
 
@@ -186,151 +260,64 @@ uint32 VDVFilterConvertFormat::GetParams() {
 void VDVFilterConvertFormat::Run() {
 }
 
+void VDVFilterConvertFormatConfigDialog::redo() {
+	filter->mFormat = mFormat;
+	if (fp) fp->RedoSystem();
+}
+
 bool VDVFilterConvertFormat::Configure(VDXHWND hwnd) {
 	VDVFilterConvertFormatConfigDialog dlg(mFormat);
+	dlg.fp = fa->ifp2;
+	dlg.filter = this;
+	VDPixmapFormatEx oldFormat = mFormat;
 
-	if (!dlg.ShowDialog((VDGUIHandle)hwnd))
+	if (!dlg.ShowDialog((VDGUIHandle)hwnd)) {
+		mFormat = oldFormat;
 		return false;
+	}
 
-	mFormat = dlg.GetFormat();
+	mFormat = dlg.mFormat;
 	return true;
 }
 
 void VDVFilterConvertFormat::GetSettingString(char *buf, int maxlen) {
 	VDStringA s;
-
-	switch(mFormat) {
-		case nsVDXPixmap::kPixFormat_XRGB8888:
-		default:
-			s = "RGBA32";
-			break;
-
-		case nsVDPixmap::kPixFormat_XRGB64:
-			s = "RGBA64";
-			break;
-
-		case nsVDXPixmap::kPixFormat_YUV444_Planar:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar_709_FR:
-			s = "YV24";
-			break;
-
-		case nsVDXPixmap::kPixFormat_YUV422_Planar:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar_709_FR:
-			s = "YV16";
-			break;
-
-		case nsVDXPixmap::kPixFormat_YUV420_Planar:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar_709_FR:
-			s = "YV12";
-			break;
-
-		case nsVDXPixmap::kPixFormat_YUV411_Planar:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar_709_FR:
-			s = "YUV411";
-			break;
-
-		case nsVDXPixmap::kPixFormat_YUV410_Planar:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar_709_FR:
-			s = "YVU9";
-			break;
-
-		case nsVDXPixmap::kPixFormat_YUV422_UYVY:
-		case nsVDXPixmap::kPixFormat_YUV422_UYVY_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_UYVY_709:
-		case nsVDXPixmap::kPixFormat_YUV422_UYVY_709_FR:
-			s = "UYVY";
-			break;
-
-		case nsVDXPixmap::kPixFormat_YUV422_YUYV:
-		case nsVDXPixmap::kPixFormat_YUV422_YUYV_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_YUYV_709:
-		case nsVDXPixmap::kPixFormat_YUV422_YUYV_709_FR:
-			s = "YUY2";
-			break;
-
-		case nsVDXPixmap::kPixFormat_YUV444_Planar16:
-			s = "YUV444P16";
-			break;
-
-		case nsVDXPixmap::kPixFormat_YUV422_Planar16:
-			s = "YUV422P16";
-			break;
-
-		case nsVDXPixmap::kPixFormat_YUV420_Planar16:
-			s = "YUV420P16";
-			break;
+	if (mFormat.format==0) s += "*"; else s += VDPixmapGetInfo(mFormat).name;
+	if (mFormat.format==0 || VDPixmapFormatMatrixType(mFormat)) {
+		if (mFormat.colorSpaceMode==0) s += "-*";
+		if (mFormat.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) s += "-709";
+		if (mFormat.colorRangeMode==0) s += "-*";
+		if (mFormat.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) s += "-FR";
 	}
-
-	switch(mFormat) {
-		case nsVDXPixmap::kPixFormat_YUV444_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV422_UYVY_709:
-		case nsVDXPixmap::kPixFormat_YUV422_YUYV_709:
-
-		case nsVDXPixmap::kPixFormat_YUV444_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_UYVY_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_YUYV_709_FR:
-			s += "-709";
-			break;
-	}
-
-	switch(mFormat) {
-		case nsVDXPixmap::kPixFormat_YUV444_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_UYVY_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_YUYV_FR:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_UYVY_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_YUYV_709_FR:
-			s += "-FR";
-			break;
-	}
-
+	if (mFormat.fullEqual(0)) s = "No change";
 	SafePrintf(buf, maxlen, " (%s)", s.c_str());
 }
 
 void VDVFilterConvertFormat::GetScriptString(char *buf, int maxlen) {
-	_snprintf(buf, maxlen, "Config(%d)", mFormat);
+	int combo = VDPixmapFormatCombine(mFormat, 0);
+	if (mFormat.fullEqual(VDPixmapFormatNormalize(combo)) || VDPixmapFormatMatrixType(mFormat)==0) {
+		_snprintf(buf, maxlen, "Config(%d)", combo);
+	} else {
+		_snprintf(buf, maxlen, "Config(%d,%d,%d)", mFormat.format, mFormat.colorSpaceMode, mFormat.colorRangeMode);
+	}
 }
 
 void VDVFilterConvertFormat::ScriptConfig(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc) {
-	mFormat = argv[0].asInt();
+	mFormat = VDPixmapFormatNormalize(argv[0].asInt());
+}
 
-	const int *begin = kFormats;
-	const int *end = kFormats + sizeof(kFormats)/sizeof(kFormats[0]);
-	if (std::find(begin, end, mFormat) == end)
-		mFormat = nsVDXPixmap::kPixFormat_XRGB8888;
+void VDVFilterConvertFormat::ScriptConfig3(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc) {
+	mFormat.format = VDPixmapFormatNormalize(argv[0].asInt());
+	mFormat.colorSpaceMode = (nsVDXPixmap::ColorSpaceMode)argv[1].asInt();
+	mFormat.colorRangeMode = (nsVDXPixmap::ColorRangeMode)argv[2].asInt();
 }
 
 VDXVF_BEGIN_SCRIPT_METHODS(VDVFilterConvertFormat)
 VDXVF_DEFINE_SCRIPT_METHOD(VDVFilterConvertFormat, ScriptConfig, "i")
+VDXVF_DEFINE_SCRIPT_METHOD(VDVFilterConvertFormat, ScriptConfig3, "iii")
 VDXVF_END_SCRIPT_METHODS()
 
-extern const VDXFilterDefinition g_VDVFConvertFormat = VDXVideoFilterDefinition<VDVFilterConvertFormat>(NULL, "convert format", "Converts video to a different color space or color encoding.");
+extern const VDXFilterDefinition2 g_VDVFConvertFormat = VDXVideoFilterDefinition<VDVFilterConvertFormat>(NULL, "convert format", "Converts video to a different color space or color encoding.");
 
 // warning C4505: 'VDXVideoFilter::[thunk]: __thiscall VDXVideoFilter::`vcall'{24,{flat}}' }'' : unreferenced local function has been removed
 #pragma warning(disable: 4505)

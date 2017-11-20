@@ -114,15 +114,10 @@ nsVDXPixmap::VDXPixmapFormat VDXVideoFilter::ExtractBaseFormat(sint32 format) {
 	return (nsVDXPixmap::VDXPixmapFormat)format;
 }
 
-nsVDXPixmap::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(const VDXPixmap* pixmap) {
+nsVDXPixmap::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(sint32 format) {
 	using namespace nsVDXPixmap;
 
-	if (fma && fma->fmpixmap) {
-		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(pixmap);
-		if (info->colorSpaceMode!=kColorSpaceMode_None) return info->colorSpaceMode;
-	}
-
-	switch (pixmap->format) {
+	switch (format) {
 	case kPixFormat_XRGB1555:
 	case kPixFormat_RGB565:
 	case kPixFormat_RGB888:
@@ -161,15 +156,10 @@ nsVDXPixmap::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(const VDXPixmap* p
 	return kColorSpaceMode_601;
 }
 
-nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(const VDXPixmap* pixmap) {
+nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(sint32 format) {
 	using namespace nsVDXPixmap;
 
-	if (fma && fma->fmpixmap) {
-		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(pixmap);
-		if (info->colorRangeMode!=kColorRangeMode_None) return info->colorRangeMode;
-	}
-
-	switch (pixmap->format) {
+	switch (format) {
 	case kPixFormat_XRGB1555:
 	case kPixFormat_RGB565:
 	case kPixFormat_RGB888:
@@ -204,6 +194,28 @@ nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(const VDXPixmap* p
 	}
 
 	return kColorRangeMode_Limited;
+}
+
+nsVDXPixmap::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(const VDXPixmap* pixmap) {
+	using namespace nsVDXPixmap;
+
+	if (fma && fma->fmpixmap) {
+		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(pixmap);
+		if (info->colorSpaceMode!=kColorSpaceMode_None) return info->colorSpaceMode;
+	}
+
+	return ExtractColorSpace(pixmap->format);
+}
+
+nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(const VDXPixmap* pixmap) {
+	using namespace nsVDXPixmap;
+
+	if (fma && fma->fmpixmap) {
+		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(pixmap);
+		if (info->colorRangeMode!=kColorRangeMode_None) return info->colorRangeMode;
+	}
+
+	return ExtractColorRange(pixmap->format);
 }
 
 ///////////////////////////////////////////////////////////////////////////

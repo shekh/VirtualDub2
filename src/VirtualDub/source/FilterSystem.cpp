@@ -657,8 +657,19 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 
 					flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
 
-					if (flags != FILTERPARAM_NOT_SUPPORTED)
+					if (flags != FILTERPARAM_NOT_SUPPORTED) {
+						VDFilterPrepareStreamInfo& streamInfo = prepareInfo.mStreams[0];
+						if (!streamInfo.reqFormat.fullEqual(inputs[0].mPixmapLayout.formatEx)) {
+							for(uint32 j = 0; j < inputCount; ++j) {
+								inputs[j] = *inputSrcs[j];
+								VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, streamInfo.reqFormat, inputs[j].w, inputs[j].h, alignReq);
+								inputs[j].ConvertPixmapLayoutToBitmapLayout();
+							}
+
+							flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
+						}
 						break;
+					}
 
 					formatMask.reset(format);
 				}
