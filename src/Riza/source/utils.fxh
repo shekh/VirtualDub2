@@ -49,8 +49,6 @@ float4 ConvertYCbCrToRGB(float y, float cb, float cr, uniform int colorSpace) {
 		result.rgb += kCoeffCr * cr;
 		result.rgb += kCoeffCb * cb;
 		result.rgb += kCoeffY * kBiasY + (kCoeffCr + kCoeffCb) * kBiasC;	
-		
-		return result;
 	} else if (colorSpace == COLOR_SPACE_REC601_FR) {
 		const float3 kCoeffCr = { 1.402f, -0.7141363f, 0 };
 		const float3 kCoeffCb = { 0, -0.3441363f, 1.772f };

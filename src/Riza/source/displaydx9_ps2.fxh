@@ -454,7 +454,7 @@ technique ycbcr_601_to_rgb_2_0 {
 technique ycbcr_709_to_rgb_2_0 {
 	pass < string vd_viewport = "unclipped,unclipped"; > {
 		VertexShader = compile vs_2_0 VS_YCbCr_to_RGB_2_0();
-		PixelShader = compile ps_2_0 PS_YCbCr_to_RGB_2_0(COLOR_SPACE_REC601);
+		PixelShader = compile ps_2_0 PS_YCbCr_to_RGB_2_0(COLOR_SPACE_REC709);
 		
 		Sampler[0] = <vd_srcsampler_clamp_point>;
 		Sampler[1] = <vd_src2asampler_clamp_linear>;
@@ -537,7 +537,7 @@ technique ycbcr420i_601_to_rgb_2_0 {
 technique ycbcr420i_709_to_rgb_2_0 {
 	pass < string vd_viewport = "unclipped,unclipped"; > {
 		VertexShader = compile vs_2_0 VS_YCbCr420i_to_RGB_2_0();
-		PixelShader = compile ps_2_0 PS_YCbCr420i_to_RGB_2_0(COLOR_SPACE_REC601);
+		PixelShader = compile ps_2_0 PS_YCbCr420i_to_RGB_2_0(COLOR_SPACE_REC709);
 		
 		Sampler[0] = <vd_srcsampler_clamp_point>;
 		Sampler[1] = <vd_src2asampler_clamp_linear>;

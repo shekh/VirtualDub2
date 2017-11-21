@@ -2,6 +2,7 @@
 #define f_VD2_VDDISPLAY_DISPLAYDRV3D_H
 
 #include <vd2/VDDisplay/displaydrv.h>
+#include <vd2/Kasumi/blitter.h>
 
 struct VDPixmap;
 class IVDTContext;
@@ -116,6 +117,7 @@ private:
 	uint32	mTexHeight;
 	uint32	mTex2Width;
 	uint32	mTex2Height;
+	VDPixmapCachedBlitter mCachedBlitter;
 };
 
 ///////////////////////////////////////////////////////////////////////////

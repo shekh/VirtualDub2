@@ -136,6 +136,10 @@ void VDVideoFilterPreviewZoomPopup::UpdateText() {
 	uint32 rgb = mBitmap[3][3] & 0xffffff;
 	SetControlTextF(IDC_POSITION, L"%d,%d", x, y);
 	SetControlTextF(IDC_COLOR, L"#%06X", rgb);
+	if(ps.r<0.001) ps.r=0;
+	if(ps.g<0.001) ps.g=0;
+	if(ps.b<0.001) ps.b=0;
+	if(ps.a<0.001) ps.a=0;
 	SetControlTextF(IDC_RED,   L"R: %1.*g", flt255_digits(ps.r)+2, ps.r);
 	SetControlTextF(IDC_GREEN, L"G: %1.*g", flt255_digits(ps.g)+2, ps.g);
 	SetControlTextF(IDC_BLUE,  L"B: %1.*g", flt255_digits(ps.b)+2, ps.b);

@@ -167,6 +167,7 @@ bool VDDisplayImageNode3D::CanStretch() const {
 
 bool VDDisplayImageNode3D::Init(IVDTContext& ctx, VDDisplayNodeContext3D& dctx, uint32 w, uint32 h, uint32 format) {
 	const VDTDeviceCaps& caps = ctx.GetDeviceCaps();
+	mCachedBlitter.Invalidate();
 
 	if (w > caps.mMaxTextureWidth || h > caps.mMaxTextureHeight)
 		return false;
@@ -726,8 +727,9 @@ void VDDisplayImageNode3D::Load(const VDPixmap& px) {
 		dstpx.w = mTexWidth;
 		dstpx.h = mTexHeight;
 
+		mCachedBlitter.Update(dstpx, px);
 		VDPROFILEBEGINEX3("V-BlitDisplay",px.info.frame_num==-1 ? 0:(uint32)px.info.frame_num,0,"convert to XRGB");
-		VDPixmapBlt(dstpx, px);
+		mCachedBlitter.Blit(dstpx, px);
 		VDPROFILEEND();
 
 		mpImageTex[0]->Unlock(0);
