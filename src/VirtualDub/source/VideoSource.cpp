@@ -40,6 +40,7 @@
 #include <../Kasumi/h/uberblit_rgb64.h>
 #include <../Kasumi/h/uberblit_16f.h>
 #include <vd2/Riza/bitmap.h>
+#include <../dfsc/dfsc.h>
 #include "misc.h"
 #include "oshelper.h"
 #include "helpfile.h"
@@ -895,6 +896,17 @@ IVDVideoDecompressor *VDFindVideoDecompressorEx(uint32 fccHandler, const VDAVIBi
 		dec = VDCreateVideoDecompressorHuffyuv(w, h, hdr->biBitCount, (const uint8 *)(hdr + 1), hdrlen - sizeof(*hdr));
 		if (dec)
 			return dec;
+	}
+
+	// If it's Debugmode, use the internal decoder.
+	bool is_dfsc = isEqualFOURCC(hdr->biCompression, 'CSFD');
+	if (is_dfsc) {
+		vdautoptr<VDVideoDecompressorDFSC> pDecoder(new_nothrow VDVideoDecompressorDFSC);
+		if (pDecoder) {
+			pDecoder->Init(hdr, hdrlen);
+
+			return pDecoder.release();
+		}
 	}
 
 	// if we were asked to use an internal decoder and failed, try external decoders

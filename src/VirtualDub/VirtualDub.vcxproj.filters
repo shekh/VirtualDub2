@@ -662,6 +662,9 @@
     <ClCompile Include="source\if_list.cpp">
       <Filter>Filters\Source - Input Drivers</Filter>
     </ClCompile>
+    <ClCompile Include="..\dfsc\dfsc.cpp">
+      <Filter>Filters\Source - Input Drivers</Filter>
+    </ClCompile>
     <ClCompile Include="source\if_testid.cpp">
       <Filter>Filters\Source - Input Drivers</Filter>
     </ClCompile>

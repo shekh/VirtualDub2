@@ -6054,6 +6054,10 @@
           RelativePath=".\source\if_testid.cpp"
           >
         </File>
+        <File
+          RelativePath="..\dfsc\dfsc.cpp"
+          >
+        </File>
       </Filter>
       <Filter
         Name="Source - Audio Filters"

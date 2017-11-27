@@ -478,7 +478,7 @@ dialog 1014, "" : fill, child {
 				label 0, "Byte &threshold:";
 				textedit 200, "" : minw=60, sunken;
 			}
-			checkbox 104, "Prefer internal video decoders over installed third-party codecs (MJPEG and DV)";
+			checkbox 104, "Prefer internal video decoders over installed third-party codecs \n(MJPEG, DV, DebugMode FrameServer)";
 			checkbox 105, "Prefer internal audio decoders over installed third-party codecs" : marginb = 5;
 			
 			grid 0 : spacing=2, fill {

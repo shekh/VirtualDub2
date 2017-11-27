@@ -1508,14 +1508,14 @@ BEGIN
     EDITTEXT        IDC_AUDIORATE,119,83,45,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER | WS_DISABLED
     LTEXT           "Hz",IDC_STATIC,168,86,10,8
     GROUPBOX        "Decoder options",IDC_STATIC_MJPEGOPTS,7,109,266,101
-    CONTROL         "Use internal decoders for Motion JPEG and DV",IDC_AVI_INTERNALDECODER,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,120,164,10
-    LTEXT           "Interlaced frame mode (Motion JPEG only):",IDC_STATIC_IFMODE,13,135,135,8
+    CONTROL         "Use internal decoders (Motion JPEG, DV, DebugMode FrameServer)",IDC_AVI_INTERNALDECODER,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,120,250,10
+    LTEXT           "Interlaced frame mode (Motion JPEG only):",IDC_STATIC_IFMODE,13,135,253,8
     CONTROL         "Normal",IDC_IF_NORMAL,"Button",BS_AUTORADIOBUTTON,19,145,132,9
     CONTROL         "Split interlaced frames into two fields (unswapped) and double framerate",IDC_IF_SPLITNOSWAP,
-                    "Button",BS_AUTORADIOBUTTON,19,155,241,10
+                    "Button",BS_AUTORADIOBUTTON,19,155,247,10
     CONTROL         "Split interlaced frames into two fields (swapped) and double framerate",IDC_IF_SPLITSWAP,
-                    "Button",BS_AUTORADIOBUTTON,19,165,233,10
+                    "Button",BS_AUTORADIOBUTTON,19,165,247,10
     CONTROL         "Discard first field",IDC_IF_DISCARDFIRST,"Button",BS_AUTORADIOBUTTON,19,175,67,10
     CONTROL         "Discard second field",IDC_IF_DISCARDSECOND,"Button",BS_AUTORADIOBUTTON,19,185,80,10
     CONTROL         "Swap fields",IDC_IF_SWAP,"Button",BS_AUTORADIOBUTTON,19,195,52,10
