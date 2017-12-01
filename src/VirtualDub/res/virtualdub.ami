@@ -252,7 +252,6 @@ dialog 1000, "Preferences" : minw=350, maxw=350, aspect=140, valign=top+expand {
 				listitem "Images";
 				listitem "Threading";
 				listitem "Playback";
-				listitem "3D accel";
 				listitem "Batch";
 				listitem "Auto-recover";
 				listitem "Startup";
@@ -272,7 +271,6 @@ dialog 1000, "Preferences" : minw=350, maxw=350, aspect=140, valign=top+expand {
 				page 1018;
 				page 1019;
 				page 1020;
-				page 1021;
 				page 1022;
 				page 1023;
 				page 1024;

@@ -859,12 +859,12 @@ public:
 				case 8:	pSubDialog->SetCallback(new VDDialogPreferencesImages(mPrefs), true); break;
 				case 9:	pSubDialog->SetCallback(new VDDialogPreferencesThreading(mPrefs), true); break;
 				case 10:	pSubDialog->SetCallback(new VDDialogPreferencesPlayback(mPrefs), true); break;
-				case 11:	pSubDialog->SetCallback(new VDDialogPreferencesAccel(mPrefs), true); break;
-				case 12:	pSubDialog->SetCallback(new VDDialogPreferencesBatch(mPrefs), true); break;
-				case 13:	pSubDialog->SetCallback(new VDDialogPreferencesAutoRecover(mPrefs), true); break;
-				case 14:	pSubDialog->SetCallback(new VDDialogPreferencesStartup(mPrefs), true); break;
-				case 15:	pSubDialog->SetCallback(new VDDialogPreferencesHistory(mPrefs), true); break;
-				case 16:	pSubDialog->SetCallback(new VDDialogPreferencesExit(mPrefs), true); break;
+				//deprecated:	pSubDialog->SetCallback(new VDDialogPreferencesAccel(mPrefs), true); break;
+				case 11:	pSubDialog->SetCallback(new VDDialogPreferencesBatch(mPrefs), true); break;
+				case 12:	pSubDialog->SetCallback(new VDDialogPreferencesAutoRecover(mPrefs), true); break;
+				case 13:	pSubDialog->SetCallback(new VDDialogPreferencesStartup(mPrefs), true); break;
+				case 14:	pSubDialog->SetCallback(new VDDialogPreferencesHistory(mPrefs), true); break;
+				case 15:	pSubDialog->SetCallback(new VDDialogPreferencesExit(mPrefs), true); break;
 				}
 			}
 		} else if (type == kEventSelect) {
@@ -984,7 +984,8 @@ void LoadPreferences() {
 
 	key.getString("Playback: Default audio device", g_prefs2.mAudioPlaybackDeviceKey);
 
-	g_prefs2.mbFilterAccelEnabled = key.getBool("Filters: Enable 3D hardware acceleration", false);
+	//g_prefs2.mbFilterAccelEnabled = key.getBool("Filters: Enable 3D hardware acceleration", false);
+	g_prefs2.mbFilterAccelEnabled = false;
 	g_prefs2.mFilterProcessAhead = key.getInt("Filters: Process-ahead frame count", 0);
 
 	g_prefs2.mEnabledCPUFeatures = key.getInt("CPU: Enabled extensions", 0);
@@ -1054,7 +1055,7 @@ void VDSavePreferences(VDPreferences2& prefs) {
 
 	key.setString("Playback: Default audio device", prefs.mAudioPlaybackDeviceKey.c_str());
 
-	key.setBool("Filters: Enable 3D hardware acceleration", prefs.mbFilterAccelEnabled);
+	//key.setBool("Filters: Enable 3D hardware acceleration", prefs.mbFilterAccelEnabled);
 	key.setInt("Filters: Process-ahead frame count", prefs.mFilterProcessAhead);
 
 	key.setInt("CPU: Enabled extensions", prefs.mEnabledCPUFeatures);

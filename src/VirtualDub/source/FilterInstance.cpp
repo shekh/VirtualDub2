@@ -2335,6 +2335,8 @@ void FilterInstance::RunFilterInner() {
 				blendSrc = &mBlendTemp.mPixmap;
 			}
 		}
+	} else {
+		skipBlit = true;
 	}
 
 	if (!skipFilter) {
@@ -2373,7 +2375,7 @@ void FilterInstance::RunFilterInner() {
 		}
 	}
 
-	if ((!sampleCB && !sampleHandler) && !skipBlit && (alpha < 254.5f / 255.0f || IsOpacityCroppingEnabled())) {
+	if (!skipBlit) {
 		const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(blendSrc->format);
 		int xmask = ~((1 << (formatInfo.qwbits + formatInfo.auxwbits)) - 1);
 		int ymask = ~((1 << (formatInfo.qhbits + formatInfo.auxhbits)) - 1);
