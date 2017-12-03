@@ -308,7 +308,7 @@ void VDSubstituteStrings(VDStringW& s) {
 				break;
 
 			case L'm':
-				t.append(L"Includes modifications: see sourceforge.net/projects/vdfiltermod");
+				t.append(L"Description and updates: <a href=\"https://sourceforge.net/p/vdfiltermod/wiki/Home/\">sourceforge.net/projects/vdfiltermod</a>\nBug reports: <a href=\"https://sourceforge.net/p/vdfiltermod/tickets/\">sourceforge.net/p/vdfiltermod/tickets</a>");
 				break;
 		}
 

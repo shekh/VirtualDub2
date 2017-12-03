@@ -18,6 +18,8 @@
 #include "stdafx.h"
 
 #include <windows.h>
+#include <commctrl.h>
+#include <shellapi.h>
 #include <vfw.h>
 
 #include "resource.h"
@@ -309,6 +311,18 @@ INT_PTR APIENTRY AboutDlgProc( HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		{ 4, 5, 6, 7 },
 	};
 */
+
+  if(message==WM_NOTIFY){
+    switch (((LPNMHDR)lParam)->code){
+    case NM_CLICK:
+    case NM_RETURN:
+      {
+        PNMLINK pNMLink = (PNMLINK)lParam;
+        LITEM   item    = pNMLink->item;
+        ShellExecuteW(NULL, L"open", item.szUrl, NULL, NULL, SW_SHOW);
+      }
+    }
+  }
 
     switch (message)
     {

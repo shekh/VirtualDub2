@@ -254,16 +254,8 @@ BEGIN
         MENUITEM "Contents\tF1",                ID_HELP_CONTENTS
         MENUITEM SEPARATOR
         MENUITEM "&License...",                 ID_HELP_LICENSE
-        MENUITEM "Change log...",               ID_HELP_CHANGELOG
-        MENUITEM "Release notes...",            ID_HELP_RELEASENOTES
-        POPUP "VirtualDub online"
-        BEGIN
-            MENUITEM "VirtualDub home page",        ID_HELP_ONLINE_HOME
-            MENUITEM "Frequently Asked Questions",  ID_HELP_ONLINE_FAQ
-            MENUITEM "Knowledge base",              ID_HELP_ONLINE_KB
-        END
         MENUITEM SEPARATOR
-        MENUITEM "About VirtualDub...",         ID_HELP_ABOUT
+        MENUITEM "About...",                    ID_HELP_ABOUT
     END
 END
 
@@ -929,18 +921,19 @@ BEGIN
     LTEXT           "Filter information",IDC_FILTER_INFO,7,151,258,40,0,WS_EX_STATICEDGE
 END
 
-IDD_ABOUT DIALOGEX 0, 0, 340, 247
+IDD_ABOUT DIALOGEX 0, 0, 340, 162
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "About VirtualDub"
+CAPTION "About VirtualDub FilterMod"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,283,227,50,14
-    LTEXT           "VirtualDub FilterMod - based on VirtualDub 1.10.5 by Avery Lee.\n$m\nCompiled with $k\nThis program is free software and may be distributed according to the terms of the GNU General Public License.",IDC_STATIC_VERSION,7,7,326,45
-    LTEXT           "Build 0/release (baka baka baka)",IDC_FINALS_SUCK,7,54,238,8
-    GROUPBOX        "Original version special thanks",IDC_STATIC,7,80,326,142
-    LTEXT           "Please send all comments, criticism, etc. to <phaeron@virtualdub.org>.",IDC_STATIC,7,220,254,8,NOT WS_VISIBLE
-    LISTBOX         IDC_CREDITS,14,93,312,120,LBS_SORT | LBS_USETABSTOPS | LBS_NOINTEGRALHEIGHT | LBS_NOSEL | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Original version copyright (C) 1998-2012 by Avery Lee, All Rights Reserved.",IDC_STATIC,7,67,326,10
+    DEFPUSHBUTTON   "OK",IDOK,283,141,50,14
+    CONTROL         "$m\nCompiled with $k\nThis program is free software and may be distributed according to the terms of the GNU General Public License.",IDC_STATIC_VERSION,
+                    "SysLink",WS_TABSTOP,7,7,326,44
+    LTEXT           "Build 0/release (baka baka baka)",IDC_FINALS_SUCK,7,56,238,8
+    GROUPBOX        "About original version",IDC_STATIC,7,88,326,44
+    LTEXT           "Copyright (C) 1998-2012 by Avery Lee, All Rights Reserved.",IDC_STATIC,14,100,312,10
+    CONTROL         "Home page: <a HREF=""http:\\\\www.virtualdub.org"">virtualdub.org</a>",IDC_ORIGINAL,
+                    "SysLink",WS_TABSTOP,14,113,312,14
 END
 
 IDD_FILTER_CONVOLUTE DIALOGEX 0, 0, 231, 135
@@ -2825,7 +2818,7 @@ BEGIN
         VERTGUIDE, 14
         VERTGUIDE, 326
         TOPMARGIN, 7
-        BOTTOMMARGIN, 240
+        BOTTOMMARGIN, 155
     END
 
     IDD_FILTER_CONVOLUTE, DIALOG
@@ -3828,12 +3821,9 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "VirtualDub"
-            VALUE "FileVersion", "1.10.4"
             VALUE "InternalName", "VirtualDub"
-            VALUE "LegalCopyright", "Copyright © 1998-2013 by Avery Lee, All Rights Reserved."
             VALUE "OriginalFilename", "VirtualDub.exe"
             VALUE "ProductName", "VirtualDub"
-            VALUE "ProductVersion", "1.10.4"
         END
     END
     BLOCK "VarFileInfo"
@@ -3866,12 +3856,9 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "VirtualDub"
-            VALUE "FileVersion", "1.10.4"
             VALUE "InternalName", "VirtualDub"
-            VALUE "LegalCopyright", "Copyright © 1999-2013 by Avery Lee, All Rights Reserved."
             VALUE "OriginalFilename", "VirtualDub.exe"
             VALUE "ProductName", "VirtualDub"
-            VALUE "ProductVersion", "1.10.4"
             VALUE "SpecialBuild", "Debug build (i.e. big, fat, and slow)"
         END
     END

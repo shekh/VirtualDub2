@@ -1000,6 +1000,7 @@
 #define IDC_CH_SPIN0                    1560
 #define IDC_CH_0                        1561
 #define IDC_CH_1                        1562
+#define IDC_ORIGINAL                    1562
 #define IDC_CH_SPIN1                    1563
 #define IDC_CH_2                        1564
 #define IDC_CH_SPIN2                    1565
@@ -1580,7 +1581,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        312
 #define _APS_NEXT_COMMAND_VALUE         40595
-#define _APS_NEXT_CONTROL_VALUE         1562
+#define _APS_NEXT_CONTROL_VALUE         1564
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif
