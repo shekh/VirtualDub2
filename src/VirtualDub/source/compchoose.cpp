@@ -41,6 +41,7 @@
 #include "plugins.h"
 #include "dub.h"
 #include "videoSource.h"
+#include "filters.h"
 #include "optdlg.h"
 
 extern HINSTANCE g_hInst;
@@ -137,7 +138,9 @@ protected:
 
 	void OnCodecSelectionChanged(VDUIProxyListBoxControl *sender, int index);
 	void SetVideoDepthOptionsAsk();
-	int testFormat(EncoderHIC* plugin, const char* debug_id);
+	int testFilterFormat(EncoderHIC* plugin, const char* debug_id);
+	int testDIBFormat(EncoderHIC* plugin, BITMAPINFOHEADER* format, const char* debug_id);
+	int testVDFormat(EncoderHIC* plugin, int format, const char* debug_id);
 
 	COMPVARS2 *mpCompVars;
 	BITMAPINFOHEADER *mpSrcFormat;
@@ -390,7 +393,7 @@ enum {
 	format_compress_ready = 3,
 };
 
-int VDUIDialogChooseVideoCompressorW32::testFormat(EncoderHIC* plugin, const char* debug_id) {
+int VDUIDialogChooseVideoCompressorW32::testFilterFormat(EncoderHIC* plugin, const char* debug_id) {
 	int flags = 0;
 
 	vdprotected1("querying video codec \"%.64s\"", const char *, debug_id) {
@@ -446,6 +449,50 @@ int VDUIDialogChooseVideoCompressorW32::testFormat(EncoderHIC* plugin, const cha
 	return flags;
 }
 
+int VDUIDialogChooseVideoCompressorW32::testDIBFormat(EncoderHIC* plugin, BITMAPINFOHEADER* format, const char* debug_id) {
+	vdprotected1("querying video codec \"%.64s\"", const char *, debug_id) {
+		if (format) {
+			if (plugin->compressQuery(format, NULL)==ICERR_OK)
+				return format_compress_ready;
+		}
+	}
+
+	return 0;
+}
+
+int VDUIDialogChooseVideoCompressorW32::testVDFormat(EncoderHIC* plugin, int format, const char* debug_id) {
+	vdprotected1("querying video codec \"%.64s\"", const char *, debug_id) {
+		int w = 320;
+		int h = 240;
+
+		// try plugin mode
+		VDPixmapLayout layout;
+		VDPixmapCreateLinearLayout(layout,format,w,h,0);
+		if (plugin->compressQuery(NULL, NULL, &layout)==ICERR_OK)
+			return format_compress_ready;
+
+		int codec_format = plugin->queryInputFormat(0);
+		if (codec_format && VDPixmapFormatDifference(format,codec_format)==0) {
+			// it is already selected but test anyway
+			VDPixmapCreateLinearLayout(layout,codec_format,w,h,0);
+			if (plugin->compressQuery(NULL, NULL, &layout)==ICERR_OK)
+				return format_compress_ready;
+		}
+
+		// try known vfw
+		int n = VDGetPixmapToBitmapVariants(format);
+		for(int variant=0; variant<n; variant++){
+			vdstructex<VDAVIBitmapInfoHeader> bm;
+			if (VDMakeBitmapFormatFromPixmapFormat(bm,format,variant,w,h)) {
+				if (plugin->compressQuery(bm.data(), NULL)==ICERR_OK)
+					return format_compress_ready;
+			}
+		}
+	}
+
+	return 0;
+}
+
 void VDUIDialogChooseVideoCompressorW32::EnumerateCodecs() {
 	vdprotected("enumerating video codecs") {
 		ICINFO info = {sizeof(ICINFO)};
@@ -481,7 +528,7 @@ void VDUIDialogChooseVideoCompressorW32::EnumerateCodecs() {
 				  if (plugin.getInfo(ici))
 						VDTextWToA(namebuf, sizeof namebuf, ici.szDescription, -1);
 
-					bool formatSupported = testFormat(&plugin,namebuf)!=0;
+					bool formatSupported = testFilterFormat(&plugin,namebuf)!=0;
 
 					CodecInfo *pii = new CodecInfo;
 					static_cast<ICINFO&>(*pii) = ici;
@@ -523,7 +570,7 @@ void VDUIDialogChooseVideoCompressorW32::EnumeratePluginCodecs() {
 				if (plugin->getInfo(ici))
 					VDTextWToA(namebuf, sizeof namebuf, ici.szDescription, -1);
 
-				bool formatSupported = testFormat(plugin,namebuf)!=0;
+				bool formatSupported = testFilterFormat(plugin,namebuf)!=0;
 
 				CodecInfo *pii = new CodecInfo;
 				static_cast<ICINFO&>(*pii) = ici;
@@ -956,31 +1003,66 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 		int codec_format = mhCodec->queryInputFormat(0);
 		if (codec_format) format.format = codec_format;
 	}
+	if (mpSrcFormat && !VDBitmapFormatToPixmapFormat((VDAVIBitmapInfoHeader&)*mpSrcFormat)) {
+		// source format is unknown so conversion is not possible
+		format = 0;
+	}
 
 	VDString s;
 
 	if(format==0) {
 		if (mCapture) {
-			//s += "auto";
+			s += "as capture";
 		} else if (inputVideo) {
 			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
 			if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) inputFormat = inputVideo->getSourceFormat();
-			s += "(auto) ";
-			s += VDPixmapFormatPrintSpec(inputFormat);
+			format = inputFormat;
+			s += VDPixmapFormatPrintSpec(format);
 		} else {
-			s += "auto";
+			s += "as decoding";
 		}
 	} else {
 		s += VDPixmapFormatPrintSpec(format);
 	}
 
-	if (filter_mode==0 && mhCodec) {
-		int test = testFormat(mhCodec,"selected");
-			if((test & format_compress_ready)!=format_compress_ready)
-				s = VDString("(!) ") + s;
+	VDStringW msg;
+	format = VDPixmapFormatCombine(format,0);
+	if (mhCodec && format) {
+		int test = testVDFormat(mhCodec,format,"selected");
+		if((test & format_compress_ready)!=format_compress_ready) {
+			msg = VDStringW(L"(?) Format not accepted by codec, YMMV");
+			// codec is vfw and format decision is too convolved to show precise answer
+		} else {
+			VDPixmapFormatEx src;
+			if (mCapture) {
+				src = filter_format;
+			} else if (inputVideo) {
+				src = inputVideo->getTargetFormat().format;
+				if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) src = inputVideo->getSourceFormat();
+				if (g_dubOpts.video.mode == DubVideoOptions::M_FULL) src = filters.GetOutputLayout().formatEx;
+			}
+			src = VDPixmapFormatCombine(src,0);
+			if (src) {
+				if (src.fullEqual(format)){
+					msg = VDStringW(L"No conversion required on output");
+				} else {
+					VDString conv = VDPixmapFormatPrintSpec(src) + " -> " + VDPixmapFormatPrintSpec(format);
+					msg = VDStringW(L"Using conversion: ") + VDTextAToW(conv);
+				}
+			}
+		}
+	}
+	if (mhCodec && !format && mpSrcFormat) {
+		int test = testDIBFormat(mhCodec,mpSrcFormat,"selected");
+		if((test & format_compress_ready)!=format_compress_ready) {
+			msg = VDStringW(L"(!) Format not accepted by codec");
+		} else {
+			msg = VDStringW(L"Using DIB format");
+		}
 	}
 
 	SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
+	SetDlgItemTextW(mhdlg,IDC_FORMAT_INFO,msg.c_str());
 }
 
 void VDUIDialogChooseVideoCompressorW32::SetVideoDepthOptionsAsk() {

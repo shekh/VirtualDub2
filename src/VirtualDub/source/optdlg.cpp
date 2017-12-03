@@ -605,6 +605,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_RGB565:
 				case nsVDPixmap::kPixFormat_RGB888:
 				case nsVDPixmap::kPixFormat_XRGB8888:
+				case nsVDPixmap::kPixFormat_XRGB64:
 				case nsVDPixmap::kPixFormat_R210:
 				case nsVDPixmap::kPixFormat_R10K:
 				case nsVDPixmap::kPixFormat_Y8_FR:
@@ -629,9 +630,6 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
 				case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
 					s = L"Full";
-					break;
-				case nsVDPixmap::kPixFormat_XRGB64:
-					s = L"Auto";
 					break;
 				case nsVDPixmap::kPixFormat_Y8:
 				case nsVDPixmap::kPixFormat_YUV422_V210:
@@ -952,9 +950,16 @@ bool VDDialogVideoDepthW32::OnLoaded() {
 	if (mType==DepthDialog_input) {
 		SetWindowText(mhdlg,"Decompression format");
 		SetDlgItemText(mhdlg,IDC_MATRIX_TITLE, "Interpret as:");
+		SetDlgItemText(mhdlg,IDC_INPUT_AUTOSELECT, "Autoselect");
 	} else {
 		SetWindowText(mhdlg,"Output format to compressor");
-		SetDlgItemText(mhdlg,IDC_MATRIX_TITLE, "Encode as:");
+		SetDlgItemText(mhdlg,IDC_MATRIX_TITLE, "Convert to:");
+	}
+	if (mType==DepthDialog_output) {
+		SetDlgItemText(mhdlg,IDC_INPUT_AUTOSELECT, "Same as decoding");
+	}
+	if (mType==DepthDialog_cap_output) {
+		SetDlgItemText(mhdlg,IDC_INPUT_AUTOSELECT, "Same as capture");
 	}
 	if (mLockFormat!=-1) {
 		EnableControl(IDC_INPUT_OTHER,false);
@@ -1056,11 +1061,12 @@ void VDDialogVideoDepthW32::OnDataExchange(bool write) {
 }
 
 void VDDialogVideoDepthW32::InitFinalFormat() {
-	ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), mType==DepthDialog_input && inputVideo ? SW_SHOW:SW_HIDE);
-	if (mType==DepthDialog_input && inputVideo) {
+	ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), (mType==DepthDialog_input || mType==DepthDialog_output) && inputVideo ? SW_SHOW:SW_HIDE);
+	if ((mType==DepthDialog_input || mType==DepthDialog_output) && inputVideo) {
 		VDPixmapFormatEx inputFormat = inputVideo->getSourceFormat();
 		VDString s;
-		s += " Current format: ";
+		if (mType==DepthDialog_input) s += " Current format: ";
+		if (mType==DepthDialog_output) s += " Decoding format: ";
 		VDPixmapFormatEx opt = mInputFormat;
 		if (opt.format==0) opt.format = inputFormat;
 		s += VDPixmapFormatPrintSpec(VDPixmapFormatCombine(inputFormat,opt));

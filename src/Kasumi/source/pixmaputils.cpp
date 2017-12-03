@@ -340,6 +340,9 @@ VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format, VDPixmapFormatEx
 	if (VDPixmapFormatMatrixType(r)==0) {
 		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
 		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+	} else {
+		if (!r.colorSpaceMode) r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		if (!r.colorRangeMode) r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
 	}
 
 	switch (r.format) {
