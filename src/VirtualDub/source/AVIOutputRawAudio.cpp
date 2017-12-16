@@ -99,7 +99,7 @@ bool AVIOutputRawAudio::init(const wchar_t *pwszFile) {
 
 bool AVIOutputRawAudio::init(VDFileHandle h, bool pipeMode) {
 	mpFileAsync = VDCreateFileAsync((IVDFileAsync::Mode)VDPreferencesGetFileAsyncDefaultMode());
-	mpFileAsync->Open(h, 2, mBufferSize >> 1);
+	mpFileAsync->OpenPipe(h, 2, mBufferSize >> 1);
 	mbPipeMode = pipeMode;
 
 	mBytesWritten = 0;

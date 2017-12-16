@@ -52,7 +52,7 @@ public:
 	bool IsOpen() { return mhFileSlow != INVALID_HANDLE_VALUE; }
 
 	void Open(const wchar_t *pszFilename, uint32 count, uint32 bufferSize);
-	void Open(VDFileHandle h, uint32 count, uint32 bufferSize);
+	void OpenPipe(VDFileHandle h, uint32 count, uint32 bufferSize);
 	void Close();
 	void FastWrite(const void *pData, uint32 bytes);
 	void FastWriteEnd();
@@ -96,6 +96,7 @@ protected:
 	VDRingBuffer<char, VDFileUnbufferAllocator<char> >	mBuffer;
 
 	VDStringA	mFilename;
+	bool mPipeMode;
 	VDAtomicPtr<MyError>	mpError;
 };
 
@@ -110,6 +111,7 @@ VDFileAsync9x::VDFileAsync9x(bool useFastMode, bool writeThrough)
 	, mbWriteThrough(writeThrough)
 	, mbPreemptiveExtend(false)
 	, mpError(NULL)
+	, mPipeMode(false)
 {
 }
 
@@ -145,9 +147,10 @@ void VDFileAsync9x::Open(const wchar_t *pszFilename, uint32 count, uint32 buffer
 	ThreadStart();
 }
 
-void VDFileAsync9x::Open(VDFileHandle h, uint32 count, uint32 bufferSize) {
+void VDFileAsync9x::OpenPipe(VDFileHandle h, uint32 count, uint32 bufferSize) {
 	try {
 		mFilename = "<anonymous pipe>";
+		mPipeMode = true;
 
 		HANDLE hProcess = GetCurrentProcess();
 		if (!DuplicateHandle(hProcess, h, hProcess, &mhFileSlow, 0, FALSE, DUPLICATE_SAME_ACCESS))
@@ -221,7 +224,7 @@ void VDFileAsync9x::FastWrite(const void *pData, uint32 bytes) {
 }
 
 void VDFileAsync9x::FastWriteEnd() {
-	FastWrite(NULL, mSectorSize - 1);
+	if (!mPipeMode) FastWrite(NULL, mSectorSize - 1);
 
 	mState = kStateFlush;
 	mWriteOccurred.signal();
@@ -269,7 +272,7 @@ void VDFileAsync9x::Truncate(sint64 pos) {
 
 void VDFileAsync9x::SafeTruncateAndClose(sint64 pos) {
 	if (mhFileSlow != INVALID_HANDLE_VALUE) {
-		FastWrite(NULL, mSectorSize - 1);
+		if (!mPipeMode) FastWrite(NULL, mSectorSize - 1);
 
 		mState = kStateFlush;
 		mWriteOccurred.signal();
@@ -429,7 +432,7 @@ public:
 	bool IsOpen() { return mhFileSlow != INVALID_HANDLE_VALUE; }
 
 	void Open(const wchar_t *pszFilename, uint32 count, uint32 bufferSize);
-	void Open(VDFileHandle h, uint32 count, uint32 bufferSize);
+	void OpenPipe(VDFileHandle h, uint32 count, uint32 bufferSize);
 	void Close();
 	void FastWrite(const void *pData, uint32 bytes);
 	void FastWriteEnd();
@@ -478,6 +481,7 @@ protected:
 
 	VDAtomicPtr<MyError>	mpError;
 	VDStringA	mFilename;
+	bool mPipeMode;
 };
 
 VDFileAsyncNT::VDFileAsyncNT()
@@ -488,6 +492,7 @@ VDFileAsyncNT::VDFileAsyncNT()
 	, mClientFastPointer(0)
 	, mbPreemptiveExtend(false)
 	, mpError(NULL)
+	, mPipeMode(false)
 {
 }
 
@@ -529,9 +534,10 @@ void VDFileAsyncNT::Open(const wchar_t *pszFilename, uint32 count, uint32 buffer
 	}
 }
 
-void VDFileAsyncNT::Open(VDFileHandle h, uint32 count, uint32 bufferSize) {
+void VDFileAsyncNT::OpenPipe(VDFileHandle h, uint32 count, uint32 bufferSize) {
 	try {
 		mFilename = "<anonymous pipe>";
+		mPipeMode = true;
 
 		HANDLE hProcess = GetCurrentProcess();
 		if (!DuplicateHandle(hProcess, h, hProcess, &mhFileSlow, 0, FALSE, DUPLICATE_SAME_ACCESS))
@@ -637,7 +643,7 @@ void VDFileAsyncNT::FastWrite(const void *pData, uint32 bytes) {
 
 void VDFileAsyncNT::FastWriteEnd() {
 	if (mhFileFast != INVALID_HANDLE_VALUE) {
-		FastWrite(NULL, mSectorSize - 1);
+		if (!mPipeMode) FastWrite(NULL, mSectorSize - 1);
 		mState = kStateFlush;
 		mWriteOccurred.signal();
 		ThreadWait();

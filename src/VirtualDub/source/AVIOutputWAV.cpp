@@ -139,7 +139,7 @@ bool AVIOutputWAV::init(VDFileHandle h, bool pipeMode) {
 	if (!audioOut) return false;
 
 	mpFileAsync = VDCreateFileAsync((IVDFileAsync::Mode)VDPreferencesGetFileAsyncDefaultMode());
-	mpFileAsync->Open(h, 2, mBufferSize >> 1);
+	mpFileAsync->OpenPipe(h, 2, mBufferSize >> 1);
 
 	mbPipeMode = pipeMode;
 	mbAutoWriteWAVE64 = false;

@@ -182,7 +182,7 @@ bool AVIOutputRawVideo::init(const wchar_t *pwszFile) {
 
 bool AVIOutputRawVideo::init(VDFileHandle h) {
 	mpFileAsync = VDCreateFileAsync((IVDFileAsync::Mode)VDPreferencesGetFileAsyncDefaultMode());
-	mpFileAsync->Open(h, 2, mBufferSize >> 1);
+	mpFileAsync->OpenPipe(h, 2, mBufferSize >> 1);
 
 	mBytesWritten = 0;
 	mbDoTruncate = false;
