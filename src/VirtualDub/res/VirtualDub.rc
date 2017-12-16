@@ -406,6 +406,7 @@ BEGIN
         MENUITEM "Raw capture format...",       ID_AUDIO_RAWCAPTUREFORMAT
         MENUITEM "Channel mask...",             ID_AUDIO_CHANNELS
         MENUITEM "&Compression...\tA",          ID_AUDIO_COMPRESSION
+        MENUITEM "Capture pin...",              ID_AUDIO_CAPTUREPIN
         MENUITEM "Capture filter...",           ID_AUDIO_CAPTUREFILTER
         MENUITEM "Windows &mixer...",           ID_AUDIO_WINMIXER
         POPUP "Audio input"

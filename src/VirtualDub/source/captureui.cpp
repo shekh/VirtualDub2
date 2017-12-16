@@ -1777,6 +1777,19 @@ void VDCaptureProjectUI::UICaptureDriversUpdated() {
 }
 
 void VDCaptureProjectUI::UICaptureAudioDriverChanged(int idx) {
+	HMENU hMenu = GetMenu((HWND)mhwnd);
+
+	static const struct {
+		UINT id;
+		DriverDialog dlg;
+	} kIDToDialogMap[]={
+		{ ID_AUDIO_CAPTUREFILTER, kDialogAudioCaptureFilter },
+		{ ID_AUDIO_CAPTUREPIN, kDialogAudioCapturePin },
+	};
+
+	for(int i=0; i<sizeof kIDToDialogMap / sizeof kIDToDialogMap[0]; ++i)
+		VDEnableMenuItemByCommandW32(hMenu, kIDToDialogMap[i].id, mpProject->IsDriverDialogSupported(kIDToDialogMap[i].dlg));
+
 	HMENU hmenu = GetSubMenu(mhMenuCapture, kAudioDriverMenuPos);
 
 	CheckMenuRadioItem(hmenu, ID_AUDIO_CAPTURE_DRIVER, ID_AUDIO_CAPTURE_DRIVER+9, ID_AUDIO_CAPTURE_DRIVER+idx, MF_BYCOMMAND);
@@ -2030,6 +2043,7 @@ void VDCaptureProjectUI::UICaptureDriverChanged(int driver) {
 		{ ID_VIDEO_PREVIEWPIN, kDialogVideoPreviewPin },
 		{ ID_VIDEO_CAPTUREFILTER, kDialogVideoCaptureFilter },
 		{ ID_AUDIO_CAPTUREFILTER, kDialogAudioCaptureFilter },
+		{ ID_AUDIO_CAPTUREPIN, kDialogAudioCapturePin },
 		{ ID_VIDEO_CROSSBAR, kDialogVideoCrossbar },
 		{ ID_VIDEO_CROSSBAR2, kDialogVideoCrossbar2 },
 		{ ID_VIDEO_TUNER, kDialogTVTuner }
@@ -3442,6 +3456,12 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 		case ID_AUDIO_CAPTUREFILTER:
 			SuspendDisplay(true);
 			mpProject->DisplayDriverDialog(kDialogAudioCaptureFilter);
+			mpProject->ValidateAudioFormat();
+			ResumeDisplay();
+			break;
+		case ID_AUDIO_CAPTUREPIN:
+			SuspendDisplay(true);
+			mpProject->DisplayDriverDialog(kDialogAudioCapturePin);
 			mpProject->ValidateAudioFormat();
 			ResumeDisplay();
 			break;

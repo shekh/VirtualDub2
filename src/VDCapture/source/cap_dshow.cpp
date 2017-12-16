@@ -284,6 +284,12 @@ namespace {
 namespace cap_dshow {
 	#if 1//def _DEBUG
 		const char *GetDXErrorName(const HRESULT hr) {
+#define X(err) case __HRESULT_FROM_WIN32(err): return #err
+			switch(hr) {
+				X(ERROR_BAD_COMMAND);
+				X(ERROR_ALREADY_INITIALIZED);
+			}
+#undef X
 #define X(err) case err: return #err
 			switch(hr) {
 				X(VFW_E_INVALIDMEDIATYPE);
@@ -607,7 +613,53 @@ namespace cap_dshow {
 
 	typedef std::vector<std::pair<IMonikerPtr, VDStringW> > tDeviceVector;
 
-	void Enumerate(tDeviceVector& devlist, REFCLSID devclsid) {
+	HRESULT GetPinCategory(IPin *pPin, GUID *pPinCategory) {
+		IKsPropertySet *pKs = NULL;
+
+		HRESULT hr = pPin->QueryInterface(IID_PPV_ARGS(&pKs));
+		if (FAILED(hr)) return hr;
+
+		DWORD cbReturned = 0;
+		hr = pKs->Get(AMPROPSETID_Pin, AMPROPERTY_PIN_CATEGORY, NULL, 0, pPinCategory, sizeof(GUID), &cbReturned);
+		pKs->Release();
+		return hr;
+	}
+
+	bool test_audio_out(IMoniker *pM) {
+		IBaseFilterPtr obj;
+		HRESULT hr = pM->BindToObject(NULL, NULL, IID_IBaseFilter, (void **)~obj);
+		if (FAILED(hr)) return false;
+
+		bool result = false;
+		IEnumPinsPtr pEnumPins;
+		if (SUCCEEDED(obj->EnumPins(~pEnumPins))) {
+			IPinPtr pPin;
+			for(;;) {
+				ULONG actual;
+				HRESULT hr = pEnumPins->Next(1, ~pPin, &actual);
+				if (hr != S_OK) break;
+				GUID cat;
+				if (SUCCEEDED(GetPinCategory(pPin,&cat))) {
+					if (cat!=PIN_CATEGORY_CAPTURE) continue;
+				}
+				PIN_DIRECTION dir;
+				if (SUCCEEDED(pPin->QueryDirection(&dir)) && dir == PINDIR_OUTPUT) {
+					IEnumMediaTypesPtr pEnum;
+					if (SUCCEEDED(pPin->EnumMediaTypes(~pEnum))) {
+						AM_MEDIA_TYPE *pMediaType;
+						if (S_OK == pEnum->Next(1, &pMediaType, NULL)) {
+							if (pMediaType->majortype == MEDIATYPE_Audio) result = true;
+							RizaDeleteMediaType(pMediaType);
+						}
+					}
+				}
+			}
+		}
+
+		return result;
+	}
+
+	void Enumerate(tDeviceVector& devlist, REFCLSID devclsid, bool filter_audio=false) {
 		ICreateDevEnum *pCreateDevEnum;
 		IEnumMoniker *pEm = NULL;
 
@@ -673,7 +725,13 @@ namespace cap_dshow {
 							name += (isVFWDriver ? L" (VFW>DirectShow)" : L" (DirectShow)");
 						}
 
-						devlist.push_back(tDeviceVector::value_type(pM, name));
+						if (devclsid == AM_KSCATEGORY_CAPTURE) {
+							name += L" (WDM)";
+						}
+
+						bool skip = false;
+						if (filter_audio && !test_audio_out(pM)) skip = true;
+						if (!skip) devlist.push_back(tDeviceVector::value_type(pM, name));
 
 						SysFreeString(varName.bstrVal);
 					}
@@ -692,17 +750,21 @@ namespace cap_dshow {
 	public:
 		VDWaveFormatAsDShowMediaType(const WAVEFORMATEX *pwfex, UINT size) {
 			majortype		= MEDIATYPE_Audio;
-			subtype.Data1	= pwfex->wFormatTag;
-			subtype.Data2	= 0;
-			subtype.Data3	= 0x0010;
-			subtype.Data4[0] = 0x80;
-			subtype.Data4[1] = 0x00;
-			subtype.Data4[2] = 0x00;
-			subtype.Data4[3] = 0xAA;
-			subtype.Data4[4] = 0x00;
-			subtype.Data4[5] = 0x38;
-			subtype.Data4[6] = 0x9B;
-			subtype.Data4[7] = 0x71;
+			if (pwfex->wFormatTag==WAVE_FORMAT_PCM || pwfex->wFormatTag==WAVE_FORMAT_EXTENSIBLE) {
+				subtype = MEDIASUBTYPE_PCM;
+			} else {
+				subtype.Data1	= pwfex->wFormatTag;
+				subtype.Data2	= 0;
+				subtype.Data3	= 0x0010;
+				subtype.Data4[0] = 0x80;
+				subtype.Data4[1] = 0x00;
+				subtype.Data4[2] = 0x00;
+				subtype.Data4[3] = 0xAA;
+				subtype.Data4[4] = 0x00;
+				subtype.Data4[5] = 0x38;
+				subtype.Data4[6] = 0x9B;
+				subtype.Data4[7] = 0x71;
+			}
 			bFixedSizeSamples	= TRUE;
 			bTemporalCompression	= FALSE;
 			lSampleSize		= pwfex->nBlockAlign;
@@ -2037,6 +2099,8 @@ bool VDCaptureDriverDS::Init(VDGUIHandle hParent) {
 
 	Enumerate(mAudioDevices, CLSID_AudioInputDeviceCategory);
 
+	Enumerate(mAudioDevices, AM_KSCATEGORY_CAPTURE, true);
+
 #if 0	// Disabled Dazzle hack for now.
 	Enumerate(mAudioDevices, KSCATEGORY_CAPTURE);
 #endif
@@ -3112,9 +3176,10 @@ bool VDCaptureDriverDS::IsDriverDialogSupported(nsVDCapture::DriverDialog dlg) {
 		else
 			return mpVFWDialogs && SUCCEEDED(mpVFWDialogs->HasDialog(VfwCaptureDialog_Display));
 	case kDialogVideoCaptureFilter:	return DisplayPropertyPages(mpCapFilt, NULL, NULL, 0);
-	case kDialogAudioCaptureFilter:	return DisplayPropertyPages(mpAudioCapFilt, NULL, NULL, 0);
 	case kDialogVideoCapturePin:	return DisplayPropertyPages(mpRealCapturePin, NULL, NULL, 0);
 	case kDialogVideoPreviewPin:	return DisplayPropertyPages(mpRealPreviewPin, NULL, NULL, 0);
+	case kDialogAudioCaptureFilter:	return DisplayPropertyPages(mpAudioCapFilt, NULL, NULL, 0);
+	case kDialogAudioCapturePin:	return DisplayPropertyPages(mpAudioPin, NULL, NULL, 0);
 	case kDialogVideoCrossbar:		return DisplayPropertyPages(mpCrossbar, NULL, NULL, 0);
 	case kDialogVideoCrossbar2:		return DisplayPropertyPages(mpCrossbar2, NULL, NULL, 0);
 	case kDialogTVTuner:			return DisplayPropertyPages(mpTVTuner, NULL, NULL, 0);
@@ -3227,6 +3292,9 @@ void VDCaptureDriverDS::DisplayDriverDialog(nsVDCapture::DriverDialog dlg) {
 		break;
 	case kDialogAudioCaptureFilter:
 		DisplayPropertyPages(mpAudioCapFilt, mhwndParent, NULL, 0);
+		break;
+	case kDialogAudioCapturePin:
+		DisplayPropertyPages(mpAudioPin, mhwndParent, NULL, 0);
 		break;
 	case kDialogVideoCrossbar:
 		DisplayPropertyPages(mpCrossbar, mhwndParent, NULL, 0);
@@ -3696,6 +3764,57 @@ bool VDCaptureDriverDS::BuildCaptureGraph() {
 	return false;
 }
 
+void LogMediaType(const wchar_t* title, AM_MEDIA_TYPE* pMediaType) {
+	VDStringW s;
+	s.append_sprintf(L"%s: major {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} subtype {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} formattype {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}"
+		, title
+		, pMediaType->majortype.Data1
+		, pMediaType->majortype.Data2
+		, pMediaType->majortype.Data3
+		, pMediaType->majortype.Data4[0]
+		, pMediaType->majortype.Data4[1]
+		, pMediaType->majortype.Data4[2]
+		, pMediaType->majortype.Data4[3]
+		, pMediaType->majortype.Data4[4]
+		, pMediaType->majortype.Data4[5]
+		, pMediaType->majortype.Data4[6]
+		, pMediaType->majortype.Data4[7]
+		, pMediaType->subtype.Data1
+		, pMediaType->subtype.Data2
+		, pMediaType->subtype.Data3
+		, pMediaType->subtype.Data4[0]
+		, pMediaType->subtype.Data4[1]
+		, pMediaType->subtype.Data4[2]
+		, pMediaType->subtype.Data4[3]
+		, pMediaType->subtype.Data4[4]
+		, pMediaType->subtype.Data4[5]
+		, pMediaType->subtype.Data4[6]
+		, pMediaType->subtype.Data4[7]
+		, pMediaType->formattype.Data1
+		, pMediaType->formattype.Data2
+		, pMediaType->formattype.Data3
+		, pMediaType->formattype.Data4[0]
+		, pMediaType->formattype.Data4[1]
+		, pMediaType->formattype.Data4[2]
+		, pMediaType->formattype.Data4[3]
+		, pMediaType->formattype.Data4[4]
+		, pMediaType->formattype.Data4[5]
+		, pMediaType->formattype.Data4[6]
+		, pMediaType->formattype.Data4[7]
+	);
+
+	if (pMediaType->cbFormat) {
+		s.append_sprintf(L" format {", title);
+		char* b = (char*)pMediaType->pbFormat;
+		for(int i=0; i<(int)pMediaType->cbFormat; i++){
+			s.append_sprintf(L"%02x",int(b[i]));
+		}
+		s += L"}";
+	}
+	s+=L"\n";
+	VDLogF(kVDLogInfo, s.c_str());
+}
+
 bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 	IPinPtr pCapturePin = mpRealCapturePin;
 	IPinPtr pPreviewPin = mpRealPreviewPin;
@@ -3785,6 +3904,8 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 		if (FAILED(hr)) {
 			VDLogF(kVDLogWarning, L"CapDShow: Failed to build filter graph: cannot connect sample grabber filter to capture filter (error code: %08x)\n", hr);
 
+			LogMediaType(L"Expected media type", &vamtDummy);
+
 			// see if we can tell what formats are supported by the pin
 			vdrefptr<IEnumMediaTypes> pEnumMediaTypes;
 			if (SUCCEEDED(pCapturePin->EnumMediaTypes(~pEnumMediaTypes))) {
@@ -3793,42 +3914,7 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 					if (S_OK != pEnumMediaTypes->Next(1, &pMediaType, NULL))
 						break;
 
-					VDLogF(kVDLogInfo, L"Supported media type: major {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} subtype {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} formattype {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}\n"
-						, pMediaType->majortype.Data1
-						, pMediaType->majortype.Data2
-						, pMediaType->majortype.Data3
-						, pMediaType->majortype.Data4[0]
-						, pMediaType->majortype.Data4[1]
-						, pMediaType->majortype.Data4[2]
-						, pMediaType->majortype.Data4[3]
-						, pMediaType->majortype.Data4[4]
-						, pMediaType->majortype.Data4[5]
-						, pMediaType->majortype.Data4[6]
-						, pMediaType->majortype.Data4[7]
-						, pMediaType->subtype.Data1
-						, pMediaType->subtype.Data2
-						, pMediaType->subtype.Data3
-						, pMediaType->subtype.Data4[0]
-						, pMediaType->subtype.Data4[1]
-						, pMediaType->subtype.Data4[2]
-						, pMediaType->subtype.Data4[3]
-						, pMediaType->subtype.Data4[4]
-						, pMediaType->subtype.Data4[5]
-						, pMediaType->subtype.Data4[6]
-						, pMediaType->subtype.Data4[7]
-						, pMediaType->formattype.Data1
-						, pMediaType->formattype.Data2
-						, pMediaType->formattype.Data3
-						, pMediaType->formattype.Data4[0]
-						, pMediaType->formattype.Data4[1]
-						, pMediaType->formattype.Data4[2]
-						, pMediaType->formattype.Data4[3]
-						, pMediaType->formattype.Data4[4]
-						, pMediaType->formattype.Data4[5]
-						, pMediaType->formattype.Data4[6]
-						, pMediaType->formattype.Data4[7]
-						);
-
+					LogMediaType(L"Supported media type", pMediaType);
 					RizaDeleteMediaType(pMediaType);
 				}
 			}
@@ -3865,8 +3951,8 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 	// Note that we use the video port pin preferentially to the preview
 	// pin.
 
-	VDASSERT(pPreviewPin != mpAudioPin);
-	VDASSERT(pCapturePin != mpAudioPin);
+	VDASSERT(!pPreviewPin || (pPreviewPin != mpAudioPin));
+	VDASSERT(!pCapturePin || (pCapturePin != mpAudioPin));
 
 	switch(mDisplayMode) {
 	case kDisplayHardware:
@@ -4006,6 +4092,8 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 			if (FAILED(hr)) {
 				VDLogF(kVDLogWarning, L"CapDShow: Failed to build filter graph: cannot connect sample grabber filter to audio capture filter (error code: %08x)\n", hr);
 
+				LogMediaType(L"Expected media type", &amt);
+
 				// see if we can tell what formats are supported by the pin
 				vdrefptr<IEnumMediaTypes> pEnumMediaTypes;
 				if (SUCCEEDED(pAudioPin->EnumMediaTypes(~pEnumMediaTypes))) {
@@ -4014,42 +4102,7 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 						if (S_OK != pEnumMediaTypes->Next(1, &pMediaType, NULL))
 							break;
 
-						VDLogF(kVDLogInfo, L"Supported media type: major {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} subtype {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} formattype {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}\n"
-							, pMediaType->majortype.Data1
-							, pMediaType->majortype.Data2
-							, pMediaType->majortype.Data3
-							, pMediaType->majortype.Data4[0]
-							, pMediaType->majortype.Data4[1]
-							, pMediaType->majortype.Data4[2]
-							, pMediaType->majortype.Data4[3]
-							, pMediaType->majortype.Data4[4]
-							, pMediaType->majortype.Data4[5]
-							, pMediaType->majortype.Data4[6]
-							, pMediaType->majortype.Data4[7]
-							, pMediaType->subtype.Data1
-							, pMediaType->subtype.Data2
-							, pMediaType->subtype.Data3
-							, pMediaType->subtype.Data4[0]
-							, pMediaType->subtype.Data4[1]
-							, pMediaType->subtype.Data4[2]
-							, pMediaType->subtype.Data4[3]
-							, pMediaType->subtype.Data4[4]
-							, pMediaType->subtype.Data4[5]
-							, pMediaType->subtype.Data4[6]
-							, pMediaType->subtype.Data4[7]
-							, pMediaType->formattype.Data1
-							, pMediaType->formattype.Data2
-							, pMediaType->formattype.Data3
-							, pMediaType->formattype.Data4[0]
-							, pMediaType->formattype.Data4[1]
-							, pMediaType->formattype.Data4[2]
-							, pMediaType->formattype.Data4[3]
-							, pMediaType->formattype.Data4[4]
-							, pMediaType->formattype.Data4[5]
-							, pMediaType->formattype.Data4[6]
-							, pMediaType->formattype.Data4[7]
-							);
-
+						LogMediaType(L"Supported media type", pMediaType);
 						RizaDeleteMediaType(pMediaType);
 					}
 				}
@@ -4733,7 +4786,8 @@ void VDCaptureDriverDS::LoadVideoConfig(VDRegistryAppKey& key) {
 	if(n!=-1){
 		d.memory.resize(n);
 		key.getBinary("VideoCapConfig",d.memory.data(),d.memory.size());
-		str->Load(&d);
+		HRESULT hr = str->Load(&d);
+		if (FAILED(hr)) VDLogF(kVDLogInfo, L"CapDShow: loading video filter state: (error code: %08x, %hs)\n", hr, GetDXErrorName(hr));
 	}
 }
 
@@ -4759,6 +4813,7 @@ void VDCaptureDriverDS::LoadAudioConfig(VDRegistryAppKey& key) {
 	if(n!=-1){
 		d.memory.resize(n);
 		key.getBinary("AudioCapConfig",d.memory.data(),d.memory.size());
-		str->Load(&d);
+		HRESULT hr = str->Load(&d);
+		if (FAILED(hr)) VDLogF(kVDLogInfo, L"CapDShow: loading audio filter state: (error code: %08x, %hs)\n", hr, GetDXErrorName(hr));
 	}
 }
