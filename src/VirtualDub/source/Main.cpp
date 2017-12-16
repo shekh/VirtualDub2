@@ -1597,6 +1597,8 @@ void VDSaveImageDialogW32::InitFormat() {
 						: (mFormat == AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW || mFormat == AVIOutputImages::kFormatTIFF_ZIP) ? IDC_FORMAT_TIFF
 						: IDC_FORMAT_PNG
 						, BST_CHECKED);
+
+	UpdateEnables();
 }
 
 INT_PTR VDSaveImageDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
@@ -1606,7 +1608,6 @@ INT_PTR VDSaveImageDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 		SendDlgItemMessage(mhdlg, IDC_QUALITY, TBM_SETPOS, TRUE, mQuality);
 		CheckDlgButton(mhdlg, IDC_QUICK, mbQuickCompress ? BST_CHECKED : BST_UNCHECKED);
 		InitFormat();
-		UpdateEnables();
 		UpdateChecks();
 		UpdateSlider();
 

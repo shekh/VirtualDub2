@@ -94,6 +94,15 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
 	/* r10k */						{ "R10k",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
 };
 
+bool VDPixmapFormatHasAlpha(sint32 format) {
+	switch (format) {
+	case nsVDPixmap::kPixFormat_XRGB8888:
+	case nsVDPixmap::kPixFormat_XRGB64:
+		return true;
+	}
+	return false;
+}
+
 int VDPixmapFormatMatrixType(sint32 format) {
 	switch (VDPixmapFormatNormalize(format)) {
 	case nsVDPixmap::kPixFormat_YUV422_V210:

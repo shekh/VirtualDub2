@@ -1983,7 +1983,7 @@ static void func_VirtualDub_OpenOld(IVDScriptInterpreter *, VDScriptValue *argli
 		g_project->Open(filename.c_str(), pDriver, !!arglist[2].asInt(), true, 0);
 }
 
-static void func_VirtualDub_Open(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+static void VirtualDub_Open2(VDScriptValue *arglist, int arg_count, int fAutoScan) {
 	VDStringW filename(VDTextU8ToW(VDStringA(*arglist[0].asString())));
 	IVDInputDriver *pDriver = NULL;
 	bool extopen = false;
@@ -2010,9 +2010,17 @@ static void func_VirtualDub_Open(IVDScriptInterpreter *, VDScriptValue *arglist,
 			pDriver = pTest;
 		}
 
-		g_project->Open(filename.c_str(), pDriver, extopen, true, 0, buf.data(), l);
+		g_project->Open(filename.c_str(), pDriver, extopen, true, fAutoScan, buf.data(), l);
 	} else
-		g_project->Open(filename.c_str(), pDriver, extopen, true, 0);
+		g_project->Open(filename.c_str(), pDriver, extopen, true, fAutoScan);
+}
+
+static void func_VirtualDub_Open(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	VirtualDub_Open2(arglist, arg_count, 0);
+}
+
+static void func_VirtualDub_OpenSequence(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	VirtualDub_Open2(arglist, arg_count, 2);
 }
 
 static void func_VirtualDub_intOpenTest(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
@@ -2240,6 +2248,9 @@ static const VDScriptFunctionDef obj_VirtualDub_functbl[]={
 	{ func_VirtualDub_Open,				NULL,					"0s" },
 	{ func_VirtualDub_Open,				NULL,					"0ssi" },
 	{ func_VirtualDub_Open,				NULL,					"0ssis" },
+	{ func_VirtualDub_OpenSequence,		"OpenSequence",			"0s" },
+	{ func_VirtualDub_OpenSequence,		NULL,					"0ssi" },
+	{ func_VirtualDub_OpenSequence,		NULL,					"0ssis" },
 	{ func_VirtualDub_intOpenTest,		"__OpenTest",			"0i" },
 	{ func_VirtualDub_Append,			"Append",				"0s" },
 	{ func_VirtualDub_Close,				"Close",				"0" },

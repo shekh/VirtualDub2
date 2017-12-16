@@ -603,6 +603,9 @@ void JobAddConfigurationInputs(JobScriptOutput& output, const VDProject* project
 		VDStringW s(szFileInput);
 		if (project) s = project->BuildProjectPath(szFileInput);
 		const VDStringA filename(strCify(VDTextWToU8(s).c_str()));
+		const char* funcName = "VirtualDub.Open";
+		if (inputAVI->GetFileFlags() & IVDInputDriver::kFF_Sequence)
+		funcName = "VirtualDub.OpenSequence";
 
 		if (g_pInputOpts) {
 			int req = g_pInputOpts->write(NULL, 0);
@@ -615,12 +618,12 @@ void JobAddConfigurationInputs(JobScriptOutput& output, const VDProject* project
 				vdfastvector<char> encbuf((srcsize + 2) / 3 * 4 + 1);
 				membase64(encbuf.data(), srcbuf.data(), srcsize);
 
-				output.addf("VirtualDub.Open(\"%s\",\"%s\",0,\"%s\");", filename.c_str(), pszInputDriver?strCify(VDTextWToU8(VDStringW(pszInputDriver)).c_str()):"", encbuf.data());
+				output.addf("%s(\"%s\",\"%s\",0,\"%s\");", funcName, filename.c_str(), pszInputDriver?strCify(VDTextWToU8(VDStringW(pszInputDriver)).c_str()):"", encbuf.data());
 				break;
 			}
 		}
 
-		output.addf("VirtualDub.Open(\"%s\",\"%s\",0);", filename.c_str(), pszInputDriver?strCify(VDTextWToU8(VDStringW(pszInputDriver)).c_str()):"");
+		output.addf("%s(\"%s\",\"%s\",0);", funcName, filename.c_str(), pszInputDriver?strCify(VDTextWToU8(VDStringW(pszInputDriver)).c_str()):"");
 
 	} while(false);
 
