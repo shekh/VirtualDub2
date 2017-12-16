@@ -37,8 +37,6 @@
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmapops.h>
 #include <vd2/Kasumi/pixmaputils.h>
-#include <../Kasumi/h/uberblit_rgb64.h>
-#include <../Kasumi/h/uberblit_16f.h>
 #include <vd2/Riza/bitmap.h>
 #include <../dfsc/dfsc.h>
 #include "misc.h"
@@ -2231,14 +2229,7 @@ const void *VideoSourceAVI::streamGetFrame(const void *inputBuffer, uint32 data_
 	lLastFrame = frame_num;
 	mTargetFormat.info.frame_num = frame_num;
 	if(mpDecompressor->GetAlpha()) mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaMask;
-	if(mTargetFormat.format==nsVDPixmap::kPixFormat_XRGB64)
-		VDPixmap_bitmap_to_X16R16G16B16(mTargetFormat,mTargetFormat,mTargetFormatVariant);
-	if(mTargetFormat.format==nsVDPixmap::kPixFormat_YUV420_Planar16)
-		VDPixmap_bitmap_to_YUV420_Planar16(mTargetFormat,mTargetFormat,mTargetFormatVariant);
-	if(mTargetFormat.format==nsVDPixmap::kPixFormat_YUV422_Planar16)
-		VDPixmap_bitmap_to_YUV422_Planar16(mTargetFormat,mTargetFormat,mTargetFormatVariant);
-	if(mTargetFormat.format==nsVDPixmap::kPixFormat_XYUV64)
-		VDPixmap_bitmap_to_XYUV64(mTargetFormat,mTargetFormat,mTargetFormatVariant);
+	VDSetPixmapInfoFromBitmap(mTargetFormat,mTargetFormatVariant);
 
 	return getFrameBuffer();
 }

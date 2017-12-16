@@ -458,17 +458,6 @@ void VDPixmap_X16R16G16B16_to_b64a(VDPixmap& dst, const VDPixmap& src) {
 	}}
 }
 
-// variant 1 = BRA[64] = default
-// variant 2 = b64a
-void VDPixmap_bitmap_to_X16R16G16B16(VDPixmap& dst, const VDPixmap& src, int variant) {
-	dst.info.ref_r = 0xFFFF;
-	dst.info.ref_g = 0xFFFF;
-	dst.info.ref_b = 0xFFFF;
-	dst.info.ref_a = 0xFFFF;
-
-	if (variant==2) VDPixmap_b64a_to_X16R16G16B16(dst,src);
-}
-
 void VDPixmap_b64a_to_X16R16G16B16(VDPixmap& dst, const VDPixmap& src) {
 	int w = (src.w+1)/2;
 	{for(int y=0; y<src.h; y++){

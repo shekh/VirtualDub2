@@ -411,6 +411,7 @@ public:
 	bool			mbDoConversion;
 
 	IVDCaptureFilterSystem *mpFilterSys;
+	int mInputFormatVariant;
 	VDPixmapLayout			mInputLayout;
 	VDPixmapLayout			mOutputLayout;
 	vdautoptr<IVDPixmapBlitter>	mpOutputBlitter;
@@ -806,6 +807,7 @@ protected:
 
 	VDCriticalSection		mVideoFilterLock;
 	vdautoptr<IVDCaptureFilterSystem>	mpFilterSys;
+	int mInputFormatVariant;
 	VDPixmapLayout			mFilterInputLayout;
 	VDPixmapLayout			mFilterOutputLayout;
 
@@ -2113,6 +2115,7 @@ unknown_PCM_format:
 		}
 
 		icd.mInputLayout = mFilterInputLayout;
+		icd.mInputFormatVariant = mInputFormatVariant;
 		VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.mOutputLayout);
 		icd.vfwLayout.format = 0;
 
@@ -2851,6 +2854,7 @@ bool VDCaptureProject::InitFilter() {
 		return true;
 
 	mFilterInputLayout.format = 0;
+	mInputFormatVariant = 0;
 
 	vdstructex<VDAVIBitmapInfoHeader> vformat;
 	if (!GetVideoFormat(vformat))
@@ -2864,6 +2868,7 @@ bool VDCaptureProject::InitFilter() {
 
 	// some code needs this, so we need to do it anyway
 	VDMakeBitmapCompatiblePixmapLayout(mFilterInputLayout, vformat->biWidth, vformat->biHeight, format, variant);
+	mInputFormatVariant = variant;
 
 	if (!AreFiltersEnabled(mFilterSetup))
 		return false;
@@ -3388,6 +3393,7 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 	void *pFilteredData = (void *)data;
 
 	VDPixmap px(VDPixmapFromLayout(mInputLayout, pFilteredData));
+	VDSetPixmapInfoFromBitmap(px, mInputFormatVariant);
 
 	// We don't need to lock here as it is illegal to change the filter
 	// mode while capture is running.
@@ -3513,6 +3519,8 @@ void VDCaptureData::createOutputBlitter() {
 
 	if (driverLayout.format) {
 		VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
+		VDSetPixmapInfoFromBitmap(pxsrc, mInputFormatVariant);
+
 		FilterModPixmapInfo out_info;
 		out_info.ref_r = 0xFFFF;
 		out_info.ref_g = 0xFFFF;

@@ -19,6 +19,7 @@
 #include <vd2/Riza/bitmap.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmaputils.h>
+#include <../Kasumi/h/uberblit_rgb64.h>
 
 VDString print_fourcc(uint32 a) {
 	uint8 fcc[4];
@@ -632,4 +633,81 @@ VDPixmap VDGetPixmapForBitmap(const VDAVIBitmapInfoHeader& hdr, const void *data
 	VDMakeBitmapCompatiblePixmapLayout(layout, hdr.biWidth, hdr.biHeight, format, variant);
 
 	return VDPixmapFromLayout(layout, (void *)data);
+}
+
+void VDPixmap_bitmap_to_YUV420_Planar16(VDPixmap& dst, const VDPixmap& src, int variant) {
+	dst.info.ref_r = 0xFFFF;
+
+	if (variant==2) {
+		// ffmpeg, 10 bit
+		dst.info.ref_r = 0x3FF;
+	}
+
+	if (variant==3 || variant==4) {
+		// P016/P010, msb aligned
+		dst.info.ref_r = 0xFF00;
+		// next blitter should deinterleave it
+		dst.ext.format_swizzle = 3;
+		dst.pitch2 = src.pitch;
+		dst.pitch3 = 0;
+		dst.data3 = 0;
+	}
+}
+
+void VDPixmap_bitmap_to_YUV422_Planar16(VDPixmap& dst, const VDPixmap& src, int variant) {
+	dst.info.ref_r = 0xFFFF;
+
+	if (variant==2) {
+		// ffmpeg, 10 bit
+		dst.info.ref_r = 0x3FF;
+	}
+
+	if (variant==3 || variant==4) {
+		// P216/P210, msb aligned
+		dst.info.ref_r = 0xFF00;
+		// next blitter should deinterleave it
+		dst.ext.format_swizzle = 3;
+		dst.pitch2 = src.pitch;
+		dst.pitch3 = 0;
+		dst.data3 = 0;
+	}
+}
+
+void VDPixmap_bitmap_to_XYUV64(VDPixmap& dst, const VDPixmap& src, int variant) {
+	// Y416, msb aligned
+	dst.info.ref_r = 0xFF00;
+	dst.ext.format_swizzle = 1;
+}
+
+// variant 1 = BRA[64] = default
+// variant 2 = b64a
+void VDPixmap_bitmap_to_X16R16G16B16(VDPixmap& dst, const VDPixmap& src, int variant) {
+	dst.info.ref_r = 0xFFFF;
+	dst.info.ref_g = 0xFFFF;
+	dst.info.ref_b = 0xFFFF;
+	dst.info.ref_a = 0xFFFF;
+
+	if (variant==2) VDPixmap_b64a_to_X16R16G16B16(dst,src);
+}
+
+void VDSetPixmapInfoFromBitmap(VDPixmap& px, int variant) {
+	using namespace nsVDPixmap;
+
+	switch (px.format) {
+	case kPixFormat_XRGB64:
+		VDPixmap_bitmap_to_X16R16G16B16(px,px,variant);
+		break;
+
+	case kPixFormat_YUV420_Planar16:
+		VDPixmap_bitmap_to_YUV420_Planar16(px,px,variant);
+		break;
+
+	case kPixFormat_YUV422_Planar16:
+		VDPixmap_bitmap_to_YUV422_Planar16(px,px,variant);
+		break;
+
+	case kPixFormat_XYUV64:
+		VDPixmap_bitmap_to_XYUV64(px,px,variant);
+		break;
+	}
 }

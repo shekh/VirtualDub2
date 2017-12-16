@@ -138,8 +138,12 @@ int VDPixmapFormatNextSimilar(VDPixmapFormatEx src) {
 
 	if (src.format==kPixFormat_YUV422_V210) return kPixFormat_YUV422_Planar16;
 	if (src.format==kPixFormat_YUV422_Planar16) return kPixFormat_YUV422_V210;
+	if (src.format==kPixFormat_XYUV64) return kPixFormat_YUV444_Planar16;
+	if (src.format==kPixFormat_YUV444_V410) return kPixFormat_YUV444_Planar16;
+	if (src.format==kPixFormat_YUV444_Y410) return kPixFormat_YUV444_Planar16;
 
-	if (src.format==kPixFormat_XRGB1555) return kPixFormat_RGB888;
+	if (src.format==kPixFormat_R210) return kPixFormat_XRGB64;
+	if (src.format==kPixFormat_R10K) return kPixFormat_XRGB64;
 	if (src.format==kPixFormat_RGB565) return kPixFormat_RGB888;
 	if (src.format==kPixFormat_XRGB8888) return kPixFormat_RGB888;
 	if (src.format==kPixFormat_RGB888) return kPixFormat_XRGB8888;
