@@ -763,6 +763,7 @@ bool InitInstance( HANDLE hInstance, int nCmdShow, bool topmost) {
 
 struct ProcessCommandLine {
 	bool fExitOnDone;
+	bool fHelp;
 	bool forceAutoRecoverScan;
 	bool captureMode;
 	VDStringW captureFile;
@@ -770,10 +771,12 @@ struct ProcessCommandLine {
 
 	ProcessCommandLine() {
 		fExitOnDone = false;
+		fHelp = false;
 		forceAutoRecoverScan = false;
 		captureMode = false;
 	}
 	int scan(const VDCommandLine& cmdLine, bool execute);
+	int showHelp();
 };
 
 int VDProcessCommandLine(const VDCommandLine& cmdLine) {
@@ -782,11 +785,67 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 	ProcessCommandLine cmd;
 	int rc = cmd.scan(cmdLine, false);
 	if (rc>=0) return rc;
+	if (cmd.fHelp) return cmd.showHelp();
 
 	if (cmd.fExitOnDone)
 		g_exitOnDone = true;
 	rc = cmd.scan(cmdLine, true);
 	return rc;
+}
+
+int ProcessCommandLine::showHelp() {
+	MyError msg(
+	//   12345678901234567890123456789012345678901234567890123456789012345678901234567890
+	"  /autorecover              Scan for auto-recover files\n"
+	"  /b <src-dir> <dst-dir>    Add batch entries for a directory\n"
+	"  /blockDebugOutput         Block debug output from specific DLLs\n"
+	"         [+/-dllname,...]\n"
+	"  /c                        Clear job list\n"
+	"  /capture                  Switch to capture mode\n"
+	"  /capaudiorec [on|off]     Enable/disable capture audio recording\n"
+	"  /capaudioplay [on|off]    Enable/disable capture audio playback\n"
+	"  /capchannel <ch> [<freq>] Set capture channel (opt. frequency in MHz)\n"
+	"                            Use antenna:<n> or cable:<n> to force mode\n"
+	"  /capdevice <devname>      Set capture device\n"
+	"  /capfile <filename>       Set capture filename\n"
+	"  /capfileinc <filename>    Set capture filename and bump until clear\n"
+	"  /capfilealloc <size>      Preallocate capture file in megabytes\n"
+	"  /capstart [<time>[s]]     Capture with optional time limit\n"
+	"                            (default is minutes, use 's' for seconds)\n"
+	"  /cmd <command>            Run quick script command\n"
+	"  /F <filter>               Load filter\n"
+	"  /edit <instance>          Open video filter configure dialog\n"
+	"  /h                        Disable exception filter\n"
+	"  /hexedit [<filename>]     Open hex editor\n"
+	"  /hexview [<filename>]     Open hex editor (read-only mode)\n"
+	"  /i <script> [<args...>]   Invoke script with arguments\n"
+	"  /master <file>            Join shared job queue in non-autostart mode\n"
+	"  /min                      Start minimized\n"
+	"  /max                      Start maximized\n"
+	"  /noStupidAntiDebugChecks  Stop lame drivers from screwing up debugging\n"
+	"                            sessions\n"
+	"  /p <src> <dst>            Add a batch entry for a file\n"
+	"  /portable                 Switch to portable settings mode\n"
+	"  /priority <pri>           Start in low, belowNormal, normal, aboveNormal,\n"
+	"                            high, or realtime priority\n"
+	"  /queryVersion             Return build number\n"
+	"  /r                        Run job queue\n"
+	"  /resetall                 Reset all settings to defaults\n"
+	"  /s <script>               Run a script\n"
+	"  /safecpu                  Do not use CPU extensions on startup\n"
+	"  /slave <file>             Join shared job queue in autostart mode\n"
+	"  /topmost                  Create window as always-on-top\n"
+	"  /vdxadebug                Enable filter acceleration debug window\n"
+	"  /x                        Exit when complete\n"
+	);
+
+	if (g_consoleMode) {
+		VDLog(kVDLogError, VDTextAToW(msg.gets()));
+		return 5;
+	} else {
+		msg.post(g_hWnd, "Command-line flags:");
+		return -1;
+	}
 }
 
 int ProcessCommandLine::scan(const VDCommandLine& cmdLine, bool execute) {
@@ -835,52 +894,7 @@ int ProcessCommandLine::scan(const VDCommandLine& cmdLine, bool execute) {
 				// parse out the switch name
 				++token;
 				if (!wcscmp(token, L"?")) {
-					throw MyError(
-					//   12345678901234567890123456789012345678901234567890123456789012345678901234567890
-						"Command-line flags:\n"
-						"\n"
-						"  /autorecover              Scan for auto-recover files\n"
-						"  /b <src-dir> <dst-dir>    Add batch entries for a directory\n"
-						"  /blockDebugOutput         Block debug output from specific DLLs\n"
-						"         [+/-dllname,...]\n"
-						"  /c                        Clear job list\n"
-						"  /capture                  Switch to capture mode\n"
-						"  /capaudiorec [on|off]     Enable/disable capture audio recording\n"
-						"  /capaudioplay [on|off]    Enable/disable capture audio playback\n"
-						"  /capchannel <ch> [<freq>] Set capture channel (opt. frequency in MHz)\n"
-						"                            Use antenna:<n> or cable:<n> to force mode\n"
-						"  /capdevice <devname>      Set capture device\n"
-						"  /capfile <filename>       Set capture filename\n"
-						"  /capfileinc <filename>    Set capture filename and bump until clear\n"
-						"  /capfilealloc <size>      Preallocate capture file in megabytes\n"
-						"  /capstart [<time>[s]]     Capture with optional time limit\n"
-						"                            (default is minutes, use 's' for seconds)\n"
-						"  /cmd <command>            Run quick script command\n"
-						"  /F <filter>               Load filter\n"
-						"  /edit <instance>          Open video filter configure dialog\n"
-						"  /h                        Disable exception filter\n"
-						"  /hexedit [<filename>]     Open hex editor\n"
-						"  /hexview [<filename>]     Open hex editor (read-only mode)\n"
-						"  /i <script> [<args...>]   Invoke script with arguments\n"
-						"  /master <file>            Join shared job queue in non-autostart mode\n"
-						"  /min                      Start minimized\n"
-						"  /max                      Start maximized\n"
-						"  /noStupidAntiDebugChecks  Stop lame drivers from screwing up debugging\n"
-						"                            sessions\n"
-						"  /p <src> <dst>            Add a batch entry for a file\n"
-						"  /portable                 Switch to portable settings mode\n"
-						"  /priority <pri>           Start in low, belowNormal, normal, aboveNormal,\n"
-						"                            high, or realtime priority\n"
-						"  /queryVersion             Return build number\n"
-						"  /r                        Run job queue\n"
-						"  /resetall                 Reset all settings to defaults\n"
-						"  /s <script>               Run a script\n"
-						"  /safecpu                  Do not use CPU extensions on startup\n"
-						"  /slave <file>             Join shared job queue in autostart mode\n"
-						"  /topmost                  Create window as always-on-top\n"
-						"  /vdxadebug                Enable filter acceleration debug window\n"
-						"  /x                        Exit when complete\n"
-						);
+					fHelp = true;
 				}
 				else if (!wcscmp(token, L"autorecover")) {
 					forceAutoRecoverScan = true;
