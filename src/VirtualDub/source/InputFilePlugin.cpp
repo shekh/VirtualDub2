@@ -455,7 +455,7 @@ protected:
 	VDXStreamSourceInfoV3	mSSInfo;
 	VDXVideoSourceInfo	mVSInfo;
 	VDPixmap mTargetFormat;
-	VDPixmapFormatEx formatEx;
+	VDPixmapFormatEx formatOpt;
 };
 
 void VDVideoSourcePlugin::LoadFormat()
@@ -494,7 +494,7 @@ VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverCont
 {
 	memset(&mSSInfo, 0, sizeof mSSInfo);
 	memset(&mVSInfo, 0, sizeof mVSInfo);
-	formatEx = 0;
+	formatOpt = 0;
 	profile_comment = VDTextWToA(pContext->mName);
 
 	vdwithinputplugin(mpContext) {
@@ -652,7 +652,7 @@ const VDPixmap& VDVideoSourcePlugin::getTargetFormat() {
 			//! todo: return struct size to grab further fields
 		}
 		mSourceFormat = format;
-		format = VDPixmapFormatCombine(format,formatEx);
+		format = VDPixmapFormatCombineOpt(format,formatOpt);
 		mTargetFormat.format = format;
 		mTargetFormat.info.colorRangeMode = format.colorRangeMode;
 		mTargetFormat.info.colorSpaceMode = format.colorSpaceMode;
@@ -678,8 +678,7 @@ bool VDVideoSourcePlugin::setTargetFormat(VDPixmapFormatEx format) {
 	if (!VDMakeBitmapFormatFromPixmapFormat(mpTargetFormatHeader, px->format, 0, px->w, px->h))
 		mpTargetFormatHeader.clear();
 
-	if (format.format==0) format.format = px->format;
-	formatEx = VDPixmapFormatCombine(px->format,format);
+	formatOpt = format;
 
 	return true;
 }

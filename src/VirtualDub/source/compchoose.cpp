@@ -1014,7 +1014,7 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 		if (mCapture) {
 			s += "as capture";
 		} else if (inputVideo) {
-			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat().format;
+			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat();
 			if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) inputFormat = inputVideo->getSourceFormat();
 			format = inputFormat;
 			s += VDPixmapFormatPrintSpec(format);
@@ -1026,7 +1026,7 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	}
 
 	VDStringW msg;
-	format = VDPixmapFormatCombine(format,0);
+	format = VDPixmapFormatCombine(format);
 	if (mhCodec && format) {
 		int test = testVDFormat(mhCodec,format,"selected");
 		if((test & format_compress_ready)!=format_compress_ready) {
@@ -1041,7 +1041,7 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 				if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) src = inputVideo->getSourceFormat();
 				if (g_dubOpts.video.mode == DubVideoOptions::M_FULL) src = filters.GetOutputLayout().formatEx;
 			}
-			src = VDPixmapFormatCombine(src,0);
+			src = VDPixmapFormatCombine(src);
 			if (src) {
 				if (src.fullEqual(format)){
 					msg = VDStringW(L"No conversion required on output");

@@ -20,7 +20,7 @@
 #include <vd2/Plugin/vdvideofilt.h>
 #include <vd2/VDFilters/VFList.h>
 
-extern const VDXFilterDefinition g_VDVFAliasFormat;
+extern const VDXFilterDefinition2 g_VDVFAliasFormat;
 extern const VDXFilterDefinition g_VDVFBlendLayers;
 extern const VDXFilterDefinition g_VDVFBlur;
 extern const VDXFilterDefinition g_VDVFBlurHi;

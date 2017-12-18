@@ -471,6 +471,13 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 	fa->PrepareReset();
 
 	uint32 flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
+	VDPixmapFormatEx originalFormat = inputs[0].mPixmapLayout.formatEx;
+	VDPixmapFormatEx originalReq;
+	bool acceptOriginal = false;
+	if (flags != FILTERPARAM_NOT_SUPPORTED) {
+		originalReq = prepareInfo.mStreams[0].reqFormat;
+		acceptOriginal = originalReq.fullEqual(originalFormat);
+	}
 
 	if (flags == FILTERPARAM_NOT_SUPPORTED || (flags & FILTERPARAM_SUPPORTS_ALTFORMATS)) {
 		using namespace nsVDPixmap;
@@ -554,7 +561,6 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 
 		inputs[0] = *inputSrcs[0];
 
-		VDPixmapFormatEx originalFormat = inputs[0].mPixmapLayout.formatEx;
 		int format = originalFormat;
 		if (flags != FILTERPARAM_NOT_SUPPORTED) {
 			formatMask.reset();
@@ -629,7 +635,9 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 
 			while(format && formatMask.any()) {
 				if (formatMask.test(format)) {
-					if (format == originalFormat) {
+					if (format == originalFormat && acceptOriginal) {
+						// can work with incoming format
+						// just setup everything normally again
 						for(uint32 j = 0; j < inputCount; ++j)
 							inputs[j] = *inputSrcs[j];
 
@@ -641,12 +649,14 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 						}
 					}
 
+					// test conversion
+					// preserve colorspaces for advanced formats (we only test them once)
+					VDPixmapFormatEx formatEx = format;
+					if (VDPixmapFormatMatrixType(format)==1)
+						formatEx = VDPixmapFormatCombineOpt(format,originalFormat);
+
 					for(uint32 j = 0; j < inputCount; ++j) {
 						inputs[j] = *inputSrcs[j];
-
-						VDPixmapFormatEx formatEx = format;
-						if (VDPixmapFormatMatrixType(format)==1)
-							formatEx = VDPixmapFormatCombine(format,VDPixmapFormatNormalize(originalFormat));
 						VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, formatEx, inputs[j].w, inputs[j].h, alignReq);
 
 						if (altFormatCheckRequired && format == nsVDPixmap::kPixFormat_XRGB8888)
@@ -659,7 +669,8 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 
 					if (flags != FILTERPARAM_NOT_SUPPORTED) {
 						VDFilterPrepareStreamInfo& streamInfo = prepareInfo.mStreams[0];
-						if (!streamInfo.reqFormat.fullEqual(inputs[0].mPixmapLayout.formatEx)) {
+						if (!streamInfo.reqFormat.fullEqual(formatEx)) {
+							// previous test triggered another format selection (normally colorspace change), apply it
 							for(uint32 j = 0; j < inputCount; ++j) {
 								inputs[j] = *inputSrcs[j];
 								VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, streamInfo.reqFormat, inputs[j].w, inputs[j].h, alignReq);
@@ -667,6 +678,11 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 							}
 
 							flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
+
+							if (flags == FILTERPARAM_NOT_SUPPORTED) {
+								formatMask.reset();
+								VDASSERT(false);
+							}
 						}
 						break;
 					}

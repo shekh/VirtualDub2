@@ -229,6 +229,12 @@ struct FilterModPixmapInfo {
 	void copy_alpha(const FilterModPixmapInfo& a) {
 		alpha_type = a.alpha_type;
 	}
+	void copy_dynamic(const FilterModPixmapInfo& a) {
+		copy_ref(a);
+		copy_frame(a);
+		copy_alpha(a);
+		transfer_type = a.transfer_type;
+	}
 };
 
 struct VDXPixmap {

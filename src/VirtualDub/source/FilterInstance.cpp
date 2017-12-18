@@ -207,7 +207,7 @@ void VFBitmapInternal::Unbind() {
 
 void VFBitmapInternal::Fixup(void *base) {
 	VDPixmap px = VDPixmapFromLayout(mPixmapLayout, base);
-	px.info = mPixmap.info;
+	px.info.copy_dynamic(mPixmap.info);
 	mPixmap = px;
 	data = (uint32 *)((pitch < 0 ? (char *)base - pitch*(h-1) : (char *)base) + offset);
 
@@ -1169,16 +1169,32 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 			vdprotected1("preparing filter \"%s\"", const char *, filter->name) {
 				VDFilterThreadContextSwapper autoSwap(&mThreadContext);
 
+				// pixmap.format = 0 here to preserve old behavior
+				// therefore we have to expand format flags for things like ExtractColorSpace
+
 				mRealSrc.mPixmap.info.colorSpaceMode = mRealSrc.mPixmapLayout.formatEx.colorSpaceMode;
 				mRealSrc.mPixmap.info.colorRangeMode = mRealSrc.mPixmapLayout.formatEx.colorRangeMode;
+
+				mRealDst.mPixmap.info.colorSpaceMode = mRealDst.mPixmapLayout.formatEx.colorSpaceMode;
+				mRealDst.mPixmap.info.colorRangeMode = mRealDst.mPixmapLayout.formatEx.colorRangeMode;
 
 				flags = filter->paramProc(AsVDXFilterActivation(), &g_VDFilterCallbacks);
 
 				if (flags != FILTERPARAM_NOT_SUPPORTED) {
+					// for convertFormat
 					VDFilterPrepareStreamInfo& streamInfo = prepareInfo.mStreams[0];
-					streamInfo.reqFormat.format = mRealSrc.mPixmapLayout.format;
-					streamInfo.reqFormat.colorSpaceMode = mRealSrc.mPixmap.info.colorSpaceMode;
-					streamInfo.reqFormat.colorRangeMode = mRealSrc.mPixmap.info.colorRangeMode;
+					streamInfo.reqFormat = VDPixmapFormatCombine(mRealSrc.mPixmapLayout.format);
+					if (VDPixmapFormatMatrixType(streamInfo.reqFormat)==1) {
+						streamInfo.reqFormat.colorSpaceMode = mRealSrc.mPixmap.info.colorSpaceMode;
+						streamInfo.reqFormat.colorRangeMode = mRealSrc.mPixmap.info.colorRangeMode;
+					}
+
+					// for aliasFormat
+					mRealDst.mPixmapLayout.formatEx = VDPixmapFormatCombine(mRealDst.mPixmapLayout.format);
+					if (VDPixmapFormatMatrixType(mRealDst.mPixmapLayout.format)==1) {
+						mRealDst.mPixmapLayout.formatEx.colorSpaceMode = mRealDst.mPixmap.info.colorSpaceMode;
+						mRealDst.mPixmapLayout.formatEx.colorRangeMode = mRealDst.mPixmap.info.colorRangeMode;
+					}
 				}
 			}
 
@@ -2101,7 +2117,7 @@ bool FilterInstance::BeginFrame(VDFilterFrameRequest& request, uint32 sourceOffs
 	mRealDst.SetFrameNumber(timing.mOutputFrame);
 	mExternalDst.BindToFrameBuffer(resultBuffer, false);
 
-	mRealDst.mPixmap.info = mRealSrc.mPixmap.info;
+	mRealDst.mPixmap.info.copy_dynamic(mRealSrc.mPixmap.info);
 
 	mSourceFrameArray.resize(sourceCount);
 	mSourceFrames.resize(sourceCount);

@@ -93,7 +93,8 @@ int VDPixmapFormatMatrixType(sint32 format);
 int VDPixmapFormatDifference(VDPixmapFormatEx src, VDPixmapFormatEx dst);
 int VDPixmapFormatNextSimilar(VDPixmapFormatEx src);
 VDPixmapFormatEx VDPixmapFormatNormalize(VDPixmapFormatEx format);
-VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format, VDPixmapFormatEx opt);
+VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format);
+VDPixmapFormatEx VDPixmapFormatCombineOpt(VDPixmapFormatEx format, VDPixmapFormatEx opt);
 VDStringA VDPixmapFormatPrintSpec(VDPixmapFormatEx format);
 
 uint32 VDPixmapCreateLinearLayout(VDPixmapLayout& layout, VDPixmapFormatEx format, vdpixsize w, vdpixsize h, int alignment);

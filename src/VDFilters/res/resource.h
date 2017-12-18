@@ -159,6 +159,11 @@
 #define IDC_CR_LIMITED                  1496
 #define IDC_CR_FULL                     1497
 #define IDC_STATIC_COLORSPACE           1498
+#define IDC_ALPHA_NONE                  1499
+#define IDC_ALPHA_DISABLED              1500
+#define IDC_ALPHA_MASK                  1501
+#define IDC_ALPHA_OPACITY_PM            1502
+#define IDC_ALPHA_OPACITY               1503
 #define IDC_BLEND_WEIGHTING             1522
 #define IDC_STATIC_COLORRANGE           1531
 #define IDC_MATRIX_TITLE                1535

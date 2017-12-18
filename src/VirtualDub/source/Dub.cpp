@@ -1100,24 +1100,27 @@ void Dubber::InitOutputFile() {
 		FilterModPixmapInfo outputFormatInfo;
 		outputFormatInfo.clear();
 		VDPixmapLayout driverLayout = {0};
+		bool useOverride = false;
 
-		if (mpOutputSystem)
+		if (mpOutputSystem) {
 			outputFormatID = mpOutputSystem->GetVideoOutputFormatOverride(last_format);
-
-		if (!outputFormatID && mpVideoCompressor) {
-			outputFormatID = mpVideoCompressor->QueryInputFormat(&outputFormatInfo);
-			if (outputFormatID)
-				mOptions.video.mOutputFormat.format = outputFormatID;
+			if (outputFormatID) useOverride = true;
 		}
 
-		if (!outputFormatID) {
-			outputFormatID = mOptions.video.mOutputFormat.format;
+		if (!useOverride) {
+			outputFormatID = mOptions.video.mOutputFormat;
+			if (mOptions.video.mode <= DubVideoOptions::M_FASTREPACK) outputFormatID = 0;
 
-			if (!outputFormatID || mOptions.video.mode < DubVideoOptions::M_SLOWREPACK)
-				outputFormatID = vSrc->getTargetFormat().format;
+			if (mpVideoCompressor) {
+				int codec_format = mpVideoCompressor->QueryInputFormat(&outputFormatInfo);
+				if (codec_format) outputFormatID.format = codec_format;
+			}
+
+			if (!outputFormatID) outputFormatID = vSrc->getTargetFormat();
+
+			outputFormatID = VDPixmapFormatCombine(outputFormatID);
 		}
 
-		outputFormatID = VDPixmapFormatCombine(outputFormatID, mOptions.video.mOutputFormat);
 		VDPixmapFormatEx outputFormatID0 = outputFormatID;
 
 		VDPixmapCreateLinearLayout(driverLayout,VDPixmapFormatNormalize(outputFormatID),outputWidth,outputHeight,16);
@@ -1158,15 +1161,15 @@ void Dubber::InitOutputFile() {
 					proxy_index = 1;
 				}
 				if (outputFormatID==nsVDPixmap::kPixFormat_XRGB64) {
-					test_list.push_back(VDPixmapFormatCombine(nsVDPixmap::kPixFormat_R10K, outputFormatID));
-					test_list.push_back(VDPixmapFormatCombine(nsVDPixmap::kPixFormat_R210, outputFormatID));
+					test_list.push_back(nsVDPixmap::kPixFormat_R10K);
+					test_list.push_back(nsVDPixmap::kPixFormat_R210);
 				}
 				if (outputFormatID==nsVDPixmap::kPixFormat_YUV444_Planar16) {
-					test_list.push_back(VDPixmapFormatCombine(nsVDPixmap::kPixFormat_YUV444_V410, outputFormatID));
-					test_list.push_back(VDPixmapFormatCombine(nsVDPixmap::kPixFormat_YUV444_Y410, outputFormatID));
+					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV444_V410, outputFormatID));
+					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV444_Y410, outputFormatID));
 				}
 				if (outputFormatID==nsVDPixmap::kPixFormat_YUV422_Planar16) {
-					test_list.push_back(VDPixmapFormatCombine(nsVDPixmap::kPixFormat_YUV422_V210, outputFormatID));
+					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV422_V210, outputFormatID));
 				}
 
 				bool foundDibCompatibleFormat = false;

@@ -225,24 +225,23 @@ VDVFilterConvertFormat::VDVFilterConvertFormat()
 }
 
 uint32 VDVFilterConvertFormat::GetParams() {
-	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
+	VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
 	VDXPixmapLayout& pxldst = *fa->dst.mpPixmapLayout;
 
+	if (pxlsrc.format == 255)
+		return FILTERPARAM_NOT_SUPPORTED;
+
 	VDPixmapFormatEx format0 = ExtractBaseFormat(pxlsrc.format);
-	format0.colorSpaceMode = ExtractColorSpace(fa->src.mpPixmap);
-	format0.colorRangeMode = ExtractColorRange(fa->src.mpPixmap);
+	format0.colorSpaceMode = ExtractColorSpace(&fa->src);
+	format0.colorRangeMode = ExtractColorRange(&fa->src);
 
 	VDPixmapFormatEx format = mFormat;
 	if (format.format==0) format.format = format0.format;
 	if (format.colorSpaceMode==0) format.colorSpaceMode = format0.colorSpaceMode;
 	if (format.colorRangeMode==0) format.colorRangeMode = format0.colorRangeMode;
-	format = VDPixmapFormatCombine(format, 0);
+	format = VDPixmapFormatCombine(format);
 
-	if (pxlsrc.format == 255)
-		return FILTERPARAM_NOT_SUPPORTED;
-
-	if (pxlsrc.format != format)
-		return FILTERPARAM_NOT_SUPPORTED;
+	pxlsrc.format = format;
 
 	if (VDPixmapFormatMatrixType(format)==1) {
 		if (fma && fma->fmpixmap) {
@@ -294,7 +293,7 @@ void VDVFilterConvertFormat::GetSettingString(char *buf, int maxlen) {
 }
 
 void VDVFilterConvertFormat::GetScriptString(char *buf, int maxlen) {
-	int combo = VDPixmapFormatCombine(mFormat, 0);
+	int combo = VDPixmapFormatCombine(mFormat);
 	if (mFormat.fullEqual(VDPixmapFormatNormalize(combo)) || VDPixmapFormatMatrixType(mFormat)==0) {
 		_snprintf(buf, maxlen, "Config(%d)", combo);
 	} else {

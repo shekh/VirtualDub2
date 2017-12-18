@@ -1018,7 +1018,7 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src
 }
 
 IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapExtraGen* extraDst, int src_swizzle) {
-	if (src.format == dst.format && !extraDst && !src_swizzle) {
+	if (src.formatEx.fullEqual(dst.formatEx) && !extraDst && !src_swizzle) {
 		return VDCreatePixmapUberBlitterDirectCopy(dst, src);
 	}
 

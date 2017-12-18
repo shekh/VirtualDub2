@@ -1062,14 +1062,18 @@ void VDDialogVideoDepthW32::OnDataExchange(bool write) {
 
 void VDDialogVideoDepthW32::InitFinalFormat() {
 	ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), (mType==DepthDialog_input || mType==DepthDialog_output) && inputVideo ? SW_SHOW:SW_HIDE);
-	if ((mType==DepthDialog_input || mType==DepthDialog_output) && inputVideo) {
+	if (mType==DepthDialog_input && inputVideo) {
 		VDPixmapFormatEx inputFormat = inputVideo->getSourceFormat();
 		VDString s;
-		if (mType==DepthDialog_input) s += " Current format: ";
-		if (mType==DepthDialog_output) s += " Decoding format: ";
-		VDPixmapFormatEx opt = mInputFormat;
-		if (opt.format==0) opt.format = inputFormat;
-		s += VDPixmapFormatPrintSpec(VDPixmapFormatCombine(inputFormat,opt));
+		s += " Current format: ";
+		s += VDPixmapFormatPrintSpec(VDPixmapFormatCombineOpt(inputFormat,mInputFormat));
+		SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
+	}
+	if (mType==DepthDialog_output && inputVideo) {
+		VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat();
+		VDString s;
+		s += " Decoding format: ";
+		s += VDPixmapFormatPrintSpec(inputFormat);
 		SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
 	}
 }

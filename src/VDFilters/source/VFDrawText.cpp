@@ -532,8 +532,8 @@ void VDVFilterDrawText::Run() {
 	const VDXPixmap& pxdst = *fa->dst.mpPixmap;
 
 	int base_format = ExtractBaseFormat(pxdst.format);
-	int colorSpace = ExtractColorSpace(&pxdst);
-	int colorRange = ExtractColorRange(&pxdst);
+	int colorSpace = ExtractColorSpace(&fa->dst);
+	int colorRange = ExtractColorRange(&fa->dst);
 
 	uint32 color1 = param.color;
 	uint32 color0 = param.shadow_color;

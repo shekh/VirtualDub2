@@ -3559,7 +3559,7 @@ void VDCaptureData::createOutputBlitter() {
 			}
 			break;
 		}
-		VDPixmapFormatEx fmt = VDPixmapFormatCombine(driverLayout.format,VDPixmapFormatNormalize(pxsrc.format));
+		VDPixmapFormatEx fmt = VDPixmapFormatCombineOpt(driverLayout.format,VDPixmapFormatNormalize(pxsrc.format));
 		if (pxsrc.format!=fmt.format || extraDst) {
 			repack_buffer.init(driverLayout);
 			repack_buffer.format = fmt.format;
@@ -3572,7 +3572,7 @@ void VDCaptureData::createOutputBlitter() {
 
 	} else if (vfwLayout.format) {
 		VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
-		VDPixmapFormatEx fmt = VDPixmapFormatCombine(vfwLayout.format,VDPixmapFormatNormalize(pxsrc.format));
+		VDPixmapFormatEx fmt = VDPixmapFormatCombineOpt(vfwLayout.format,VDPixmapFormatNormalize(pxsrc.format));
 		if (pxsrc.format!=fmt.format) {
 			repack_buffer.init(vfwLayout);
 			repack_buffer.format = fmt.format;

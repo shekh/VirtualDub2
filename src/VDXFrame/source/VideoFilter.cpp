@@ -196,26 +196,26 @@ nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(sint32 format) {
 	return kColorRangeMode_Limited;
 }
 
-nsVDXPixmap::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(const VDXPixmap* pixmap) {
+nsVDXPixmap::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(const VDXFBitmap* bitmap) {
 	using namespace nsVDXPixmap;
 
 	if (fma && fma->fmpixmap) {
-		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(pixmap);
+		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(bitmap->mpPixmap);
 		if (info->colorSpaceMode!=kColorSpaceMode_None) return info->colorSpaceMode;
 	}
 
-	return ExtractColorSpace(pixmap->format);
+	return ExtractColorSpace(bitmap->mpPixmapLayout->format);
 }
 
-nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(const VDXPixmap* pixmap) {
+nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(const VDXFBitmap* bitmap) {
 	using namespace nsVDXPixmap;
 
 	if (fma && fma->fmpixmap) {
-		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(pixmap);
+		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(bitmap->mpPixmap);
 		if (info->colorRangeMode!=kColorRangeMode_None) return info->colorRangeMode;
 	}
 
-	return ExtractColorRange(pixmap->format);
+	return ExtractColorRange(bitmap->mpPixmapLayout->format);
 }
 
 ///////////////////////////////////////////////////////////////////////////
