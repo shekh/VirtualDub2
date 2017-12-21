@@ -1433,6 +1433,7 @@ void VDCaptureProjectUI::LoadDeviceSettings() {
 	}
 
 	// clean up
+	mpProject->ValidateAudioFormat();
 	UpdateDisplayMode();
 
 	VDDEBUG("CaptureUI: Device settings loaded.\n");
@@ -1792,7 +1793,8 @@ void VDCaptureProjectUI::UICaptureAudioDriverChanged(int idx) {
 
 	HMENU hmenu = GetSubMenu(mhMenuCapture, kAudioDriverMenuPos);
 
-	CheckMenuRadioItem(hmenu, ID_AUDIO_CAPTURE_DRIVER, ID_AUDIO_CAPTURE_DRIVER+9, ID_AUDIO_CAPTURE_DRIVER+idx, MF_BYCOMMAND);
+	const int n = mpProject->GetAudioDeviceCount();
+	CheckMenuRadioItem(hmenu, ID_AUDIO_CAPTURE_DRIVER, ID_AUDIO_CAPTURE_DRIVER+n-1, ID_AUDIO_CAPTURE_DRIVER+idx, MF_BYCOMMAND);
 
 	HMENU hmenuInputs = GetSubMenu(hmenu, kAudioInputMenuPos);
 	if (hmenuInputs) {
@@ -1855,8 +1857,11 @@ void VDCaptureProjectUI::UICaptureAudioDriversUpdated() {
 		const wchar_t *name = mpProject->GetAudioDeviceName(i);
 
 		wchar_t buf[1024];
+		int r;
+		if (i<10) r = _snwprintf(buf, sizeof buf / sizeof buf[0], L"&%d %ls", i, name);
+		else r = _snwprintf(buf, sizeof buf / sizeof buf[0], L"%d %ls", i, name);
 
-		if ((unsigned)_snwprintf(buf, sizeof buf / sizeof buf[0], L"&%c %ls", '0'+i, name) < sizeof buf / sizeof buf[0]) {
+		if (r < sizeof buf / sizeof buf[0]) {
 			VDAppendMenuW32(hmenu, MF_ENABLED, ID_AUDIO_CAPTURE_DRIVER+i, buf);
 			++driversFound;
 		}
@@ -2144,7 +2149,7 @@ void VDCaptureProjectUI::UICaptureAudioFormatUpdated() {
 				{for(int i=0; i<wf->mChannels; i++)
 					if ((1<<i) & mask) cn2++; }
 
-				sprintf(bufa, "%dK/%d/", (wf->mSamplingRate+500)/1000, wf->mSampleBits);
+				sprintf(bufa, "%dK/%d/", (wf->mSamplingRate+500)/1000, get_audio_sampleBits(wf.data()));
 
 				char buf2[64];
 				if(cn2<cn){
@@ -2540,12 +2545,21 @@ LRESULT VDCaptureProjectUI::StatusWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 						SendMessage(hwnd, SB_GETTEXT, i+1, (LPARAM)str.data());
 						SendMessage(hwnd, SB_SETTEXT, (i+1), (LPARAM)str.data());
 
-						SetForegroundWindow((HWND)mhwnd);
-						TrackPopupMenu(
-								GetSubMenu(mhMenuAuxCapture, i),
-								TPM_BOTTOMALIGN | TPM_RIGHTALIGN | TPM_LEFTBUTTON,
-								r2.right, r2.top,
-								0, (HWND)mhwnd, NULL);
+						bool enabled = true;
+						if (i==0) {
+							std::list<vdstructex<VDWaveFormat> > aformats;
+							mpProject->GetAvailableAudioFormats(aformats);
+							if (aformats.size()<=1) enabled = false;
+						}
+
+						if (enabled) {
+							SetForegroundWindow((HWND)mhwnd);
+							TrackPopupMenu(
+									GetSubMenu(mhMenuAuxCapture, i),
+									TPM_BOTTOMALIGN | TPM_RIGHTALIGN | TPM_LEFTBUTTON,
+									r2.right, r2.top,
+									0, (HWND)mhwnd, NULL);
+						}
 
 						SendMessage(hwnd, SB_SETTEXT, (i+1) | SBT_POPOUT, (LPARAM)str.data());
 						PostMessage((HWND)mhwnd, WM_NULL, 0, 0);
@@ -2984,12 +2998,17 @@ void VDCaptureProjectUI::OnSize() {
 
 	if ((nParts = SendMessage(mhwndStatus, SB_GETPARTS, 0, 0))>1) {
 		int i;
-		INT xCoord = (rClient.right-rClient.left) - (rStatus.bottom-rStatus.top);
+		INT xCoord = (rClient.right-rClient.left);
+
+		if (!mbMaximize) xCoord -= (rStatus.bottom-rStatus.top);
 
 		aWidth[nParts-2] = xCoord;
 
 		for(i=nParts-3; i>=0; i--) {
-			xCoord -= 100;
+			int pw = 100;
+			if (i==0) pw = 120; // audio format
+			if (i==3) pw = 140; // bitrate
+			xCoord -= pw;
 			aWidth[i] = xCoord;
 		}
 		aWidth[nParts-1] = -1;

@@ -2646,6 +2646,7 @@ void VDCaptureProject::CapProcessData2(int stream, const void *data, uint32 size
 			if (stream == -1) {
 				VDPROFILEBEGINEX2("V-In",0,vdprofiler_flag_event);
 				VDPixmap px(VDPixmapFromLayout(mFilterInputLayout, (void *)data));
+				VDSetPixmapInfoFromBitmap(px, mInputFormatVariant);
 				bool firstFrame = true;
 
 				vdsynchronized(mVideoFilterLock) {
@@ -3517,10 +3518,10 @@ void VDCaptureData::createOutputBlitter() {
 	mpOutputBlitter = 0;
 	mbDoConversion = false;
 
-	if (driverLayout.format) {
-		VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
-		VDSetPixmapInfoFromBitmap(pxsrc, mInputFormatVariant);
+	VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
+	VDSetPixmapInfoFromBitmap(pxsrc, mInputFormatVariant);
 
+	if (driverLayout.format) {
 		FilterModPixmapInfo out_info;
 		out_info.ref_r = 0xFFFF;
 		out_info.ref_g = 0xFFFF;
@@ -3571,7 +3572,6 @@ void VDCaptureData::createOutputBlitter() {
 		}
 
 	} else if (vfwLayout.format) {
-		VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
 		VDPixmapFormatEx fmt = VDPixmapFormatCombineOpt(vfwLayout.format,VDPixmapFormatNormalize(pxsrc.format));
 		if (pxsrc.format!=fmt.format) {
 			repack_buffer.init(vfwLayout);

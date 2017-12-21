@@ -800,7 +800,7 @@ public:
 
 				const unsigned samprate = wfex.mSamplingRate;
 				const unsigned channels = wfex.mChannels;
-				const unsigned depth	= wfex.mSampleBits;
+				const unsigned depth	= get_audio_sampleBits(&wfex);
 				const unsigned kbps		= wfex.mDataRate / 125;
 				const wchar_t *chstr	= wfex.mChannels == 2 ? L"stereo" : L"mono";
 				const wchar_t *lineformat;

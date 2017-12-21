@@ -63,6 +63,13 @@ bool is_audio_float(const VDWaveFormat *wfex) {
 	return false;
 }
 
+int get_audio_sampleBits(const VDWaveFormat *wfex) {
+	WAVEFORMATEXTENSIBLE *wfext = (WAVEFORMATEXTENSIBLE*)wfex;
+	if (wfex->mTag == WAVE_FORMAT_PCM) return wfex->mSampleBits;
+	if (wfex->mTag == WAVE_FORMAT_EXTENSIBLE) return wfext->Samples.wValidBitsPerSample;
+	return wfex->mSampleBits;
+}
+
 // copy-paste from FFMPEG, copyright FFMPEG developers
 
 #define AV_CH_FRONT_LEFT             0x00000001
