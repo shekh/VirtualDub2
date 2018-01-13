@@ -1451,6 +1451,7 @@ bool Dubber::NegotiateFastFormat(int format) {
 	}
 	
 	const BITMAPINFOHEADER *pbih = (const BITMAPINFOHEADER *)mVideoSources.front()->getDecompressedFormat();
+	if (!pbih) return false;
 
 	int s_variant;
 	int s_format = VDBitmapFormatToPixmapFormat((const VDAVIBitmapInfoHeader&)*pbih,s_variant);

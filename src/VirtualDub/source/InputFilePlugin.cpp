@@ -675,8 +675,10 @@ bool VDVideoSourcePlugin::setTargetFormat(VDPixmapFormatEx format) {
 		px = &mpXVDec->GetFrameBuffer();
 	}
 
-	if (!VDMakeBitmapFormatFromPixmapFormat(mpTargetFormatHeader, px->format, 0, px->w, px->h))
-		mpTargetFormatHeader.clear();
+	if (!VDMakeBitmapFormatFromPixmapFormat(mpTargetFormatHeader, px->format, 0, px->w, px->h)) {
+		if (!VDMakeBitmapFormatFromPixmapFormat(mpTargetFormatHeader, VDPixmapFormatNormalize(px->format), 0, px->w, px->h))
+			mpTargetFormatHeader.clear();
+	}
 
 	formatOpt = format;
 
