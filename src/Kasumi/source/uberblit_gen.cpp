@@ -1811,6 +1811,7 @@ void VDPixmapUberBlitterGenerator::rgb32_to_ycbcr709_32f() {
 	mStack.push_back(StackEntry(src, 2));
 }
 
+/*
 void VDPixmapUberBlitterGenerator::ycbcr601_to_ycbcr709() {
 	StackEntry *args = &mStack.back() - 2;
 
@@ -1860,6 +1861,7 @@ void VDPixmapUberBlitterGenerator::ycbcr709_to_ycbcr601() {
 	args[1] = StackEntry(src, 1);
 	args[2] = StackEntry(src, 2);
 }
+*/
 
 void VDPixmapUberBlitterGenerator::ycbcr_to_rgb32_generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB) {
 	StackEntry *args = &mStack.back() - 2;

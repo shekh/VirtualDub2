@@ -1343,23 +1343,29 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 #endif
 
 		// When target is high bit depth we need to upconvert as soon as possible
+		int target_quality = 0;
 		switch (dstToken & kVDPixType_Mask) {
 		case kVDPixType_V210:
 		case kVDPixType_V410:
 		case kVDPixType_Y410:
 		case kVDPixType_16_16_16_LE:
-			if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_BGR) {
-				srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32Fx4_LE, w, h);
-				uint32 dstSpace = dstToken & kVDPixSpace_Mask;
-				bool studioRGB = true;
-				const VDPixmapGenYCbCrBasis* basis = &g_VDPixmapGenYCbCrBasis_601;
-				if (dst.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-					basis = &g_VDPixmapGenYCbCrBasis_709;
-				if (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full)
-					studioRGB = false;
-				gen.rgb32f_to_ycbcr_generic(*basis, studioRGB, dstSpace);
-				srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | dstSpace | kVDPixType_32F_32F_32F_LE;
-			}
+		case kVDPixType_16_16x2_LE:
+		case kVDPixType_16x4_LE:
+			target_quality = 1;
+			break;
+		}
+
+		if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_BGR && target_quality) {
+			srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32Fx4_LE, w, h);
+			uint32 dstSpace = dstToken & kVDPixSpace_Mask;
+			bool studioRGB = true;
+			const VDPixmapGenYCbCrBasis* basis = &g_VDPixmapGenYCbCrBasis_601;
+			if (dst.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
+				basis = &g_VDPixmapGenYCbCrBasis_709;
+			if (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full)
+				studioRGB = false;
+			gen.rgb32f_to_ycbcr_generic(*basis, studioRGB, dstSpace);
+			srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | dstSpace | kVDPixType_32F_32F_32F_LE;
 		}
 
 		// Do this here before range/space mode is fully established
@@ -1707,11 +1713,8 @@ space_reconvert:
 					case kVDPixSpace_YCC_709:
 						switch(srcToken & kVDPixType_Mask) {
 							case kVDPixType_8_8_8:
-								gen.ycbcr709_to_ycbcr601();
-								srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_601;
-								break;
-
 							case kVDPixType_32F_32F_32F_LE:
+								if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 								gen.ycbcr_to_ycbcr_generic(g_VDPixmapGenYCbCrBasis_601, true, g_VDPixmapGenYCbCrBasis_709, true, kVDPixSpace_YCC_601);
 								srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_601;
 								break;
@@ -1726,6 +1729,7 @@ space_reconvert:
 						switch(srcToken & kVDPixType_Mask) {
 							case kVDPixType_8_8_8:
 							case kVDPixType_32F_32F_32F_LE:
+								if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 								gen.ycbcr_to_ycbcr_generic(g_VDPixmapGenYCbCrBasis_601, true, g_VDPixmapGenYCbCrBasis_601, false, kVDPixSpace_YCC_601);
 								srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_601;
 								break;
@@ -1740,6 +1744,7 @@ space_reconvert:
 						switch(srcToken & kVDPixType_Mask) {
 							case kVDPixType_8_8_8:
 							case kVDPixType_32F_32F_32F_LE:
+								if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 								gen.ycbcr_to_ycbcr_generic(g_VDPixmapGenYCbCrBasis_601, true, g_VDPixmapGenYCbCrBasis_709, false, kVDPixSpace_YCC_601);
 								srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_601;
 								break;
@@ -1785,18 +1790,24 @@ space_reconvert:
 						srcToken = kVDPixSpace_YCC_709 | kVDPixType_8_8_8 | (srcToken  & kVDPixSamp_Mask);
 						break;
 					case kVDPixSpace_YCC_601:
-						if ((srcToken & kVDPixType_Mask) == kVDPixType_8_8_8)
-							gen.ycbcr601_to_ycbcr709();
-						else
-							gen.ycbcr_to_ycbcr_generic(g_VDPixmapGenYCbCrBasis_709, true, g_VDPixmapGenYCbCrBasis_601, true, kVDPixSpace_YCC_709);
+						switch(srcToken & kVDPixType_Mask) {
+							case kVDPixType_8_8_8:
+							case kVDPixType_32F_32F_32F_LE:
+								if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
+								gen.ycbcr_to_ycbcr_generic(g_VDPixmapGenYCbCrBasis_709, true, g_VDPixmapGenYCbCrBasis_601, true, kVDPixSpace_YCC_709);
+								srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_709;
+								break;
 
-						srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_709;
-						break;
+							default:
+								VDASSERT(false);
+								break;
+						}
 
 					case kVDPixSpace_YCC_601_FR:
 						switch(srcToken & kVDPixType_Mask) {
 							case kVDPixType_8_8_8:
 							case kVDPixType_32F_32F_32F_LE:
+								if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 								gen.ycbcr_to_ycbcr_generic(g_VDPixmapGenYCbCrBasis_709, true, g_VDPixmapGenYCbCrBasis_601, false, kVDPixSpace_YCC_709);
 								srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_709;
 								break;
@@ -1811,6 +1822,7 @@ space_reconvert:
 						switch(srcToken & kVDPixType_Mask) {
 							case kVDPixType_8_8_8:
 							case kVDPixType_32F_32F_32F_LE:
+								if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 								gen.ycbcr_to_ycbcr_generic(g_VDPixmapGenYCbCrBasis_709, true, g_VDPixmapGenYCbCrBasis_709, false, kVDPixSpace_YCC_709);
 								srcToken = (srcToken & ~kVDPixSpace_Mask) | kVDPixSpace_YCC_709;
 								break;
@@ -1868,18 +1880,22 @@ space_reconvert:
 							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
 							break;
 						case kVDPixSpace_YCC_601:
+							if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 							gen.ycbcr_to_ycbcr_generic(dstBasis, false, g_VDPixmapGenYCbCrBasis_601, true, targetSpace);
 							srcToken = (srcToken & ~kVDPixSpace_Mask) | targetSpace;
 							break;
 						case kVDPixSpace_YCC_709:
+							if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 							gen.ycbcr_to_ycbcr_generic(dstBasis, false, g_VDPixmapGenYCbCrBasis_709, true, targetSpace);
 							srcToken = (srcToken & ~kVDPixSpace_Mask) | targetSpace;
 							break;
 						case kVDPixSpace_YCC_601_FR:
+							if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 							gen.ycbcr_to_ycbcr_generic(dstBasis, false, g_VDPixmapGenYCbCrBasis_601, false, targetSpace);
 							srcToken = (srcToken & ~kVDPixSpace_Mask) | targetSpace;
 							break;
 						case kVDPixSpace_YCC_709_FR:
+							if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 							gen.ycbcr_to_ycbcr_generic(dstBasis, false, g_VDPixmapGenYCbCrBasis_709, false, targetSpace);
 							srcToken = (srcToken & ~kVDPixSpace_Mask) | targetSpace;
 							break;

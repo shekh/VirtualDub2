@@ -145,8 +145,8 @@ public:
 	void rgb32_to_ycbcr601_32f();
 	void rgb32_to_ycbcr709_32f();
 
-	void ycbcr601_to_ycbcr709();
-	void ycbcr709_to_ycbcr601();
+	//void ycbcr601_to_ycbcr709();
+	//void ycbcr709_to_ycbcr601();
 
 	void ycbcr_to_rgb32_generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB);
 	void ycbcr_to_rgb64_generic(const VDPixmapGenYCbCrBasis& basis, bool studioRGB);
