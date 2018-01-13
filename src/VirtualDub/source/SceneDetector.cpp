@@ -609,10 +609,15 @@ void SceneDetector::BitmapToLummap(uint32 *lummap, const VDPixmap& pxsrc) {
 				case nsVDPixmap::kPixFormat_YUV444_Y410:
 				case nsVDPixmap::kPixFormat_R210:
 				case nsVDPixmap::kPixFormat_R10K:
+				case nsVDPixmap::kPixFormat_YUV444_V308:
+				case nsVDPixmap::kPixFormat_YUV422_P210:
+				case nsVDPixmap::kPixFormat_YUV420_P010:
+				case nsVDPixmap::kPixFormat_YUV422_P216:
+				case nsVDPixmap::kPixFormat_YUV420_P016:
 					break;
 
 				default:
-					VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == nsVDPixmap::kPixFormat_R10K + 1);
+					VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == nsVDPixmap::kPixFormat_YUV420_P016 + 1);
 					VDASSERT(false);
 			}
 		} while(--h);

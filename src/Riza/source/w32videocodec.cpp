@@ -173,9 +173,20 @@ bool VDVideoDecompressorVCM::SetTargetFormat(int format) {
 	if (!format) {
 		switch (mBestFormat) {
 		case kPixFormat_YUV422_V210:
+		case kPixFormat_YUV422_P210:
+		case kPixFormat_YUV422_P216:
 		case kPixFormat_YUV422_Planar16:
 			if (SetTargetFormat(kPixFormat_YUV422_Planar16)) return true;
+			if (SetTargetFormat(kPixFormat_YUV422_P216)) return true;
+			if (SetTargetFormat(kPixFormat_YUV422_P210)) return true;
 			if (SetTargetFormat(kPixFormat_YUV422_V210)) return true;
+			break;
+		case kPixFormat_YUV420_P010:
+		case kPixFormat_YUV420_P016:
+		case kPixFormat_YUV420_Planar16:
+			if (SetTargetFormat(kPixFormat_YUV420_Planar16)) return true;
+			if (SetTargetFormat(kPixFormat_YUV420_P016)) return true;
+			if (SetTargetFormat(kPixFormat_YUV420_P010)) return true;
 			break;
 		case kPixFormat_XRGB64:
 		case kPixFormat_R10K:
@@ -189,6 +200,10 @@ bool VDVideoDecompressorVCM::SetTargetFormat(int format) {
 		if (mBestFormat && SetTargetFormat(mBestFormat)) return true;
 
 		if (SetTargetFormat(kPixFormat_YUV422_Planar16)) return true;
+		if (SetTargetFormat(kPixFormat_YUV422_P216)) return true;
+		if (SetTargetFormat(kPixFormat_YUV422_P210)) return true;
+		if (SetTargetFormat(kPixFormat_YUV420_P016)) return true;
+		if (SetTargetFormat(kPixFormat_YUV420_P010)) return true;
 		if (SetTargetFormat(kPixFormat_YUV444_V410)) return true;
 		if (SetTargetFormat(kPixFormat_YUV444_Y410)) return true;
 		if (SetTargetFormat(kPixFormat_YUV422_V210)) return true;

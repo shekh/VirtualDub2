@@ -145,14 +145,16 @@ protected:
 class VDPixmapGen_Y16_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
 
-	VDPixmapGen_Y16_Normalize(){ max_value = 0xFFFF; }
+	VDPixmapGen_Y16_Normalize(){ max_value = 0xFFFF; mask = 0xFFFF; }
 
 	uint32 max_value;
+	uint16 mask;
 
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
 		mpSrc->TransformPixmapInfo(src,dst);
 		if (dst.ref_r==max_value) {
 			do_normalize = false;
+			ref = dst.ref_r;
 		} else {
 			do_normalize = true;
 			ref = dst.ref_r;
@@ -164,10 +166,15 @@ public:
 	}
 
 	void Start() {
-		StartWindow(mWidth * 2);
+		int type = mpSrc->GetType(0);
+		bpp = 2;
+		if ((type & kVDPixType_Mask)==kVDPixType_16x2_LE) bpp = 4;
+		if ((type & kVDPixType_Mask)==kVDPixType_16x4_LE) bpp = 8;
+		StartWindow(mWidth * bpp);
 	}
 
 protected:
+	int bpp;
 	int ref;
 	uint32 m;
 	bool do_normalize;
@@ -175,13 +182,15 @@ protected:
 
 	void Compute(void *dst0, sint32 y);
 	void ComputeNormalize(void *dst0, sint32 y);
+	void ComputeMask(void *dst0, sint32 y);
 };
 
 class ExtraGen_YUV_Normalize : public IVDPixmapExtraGen {
 public:
 	uint32 max_value;
+  uint16 mask;
 
-	ExtraGen_YUV_Normalize(){ max_value=0xFFFF; }
+	ExtraGen_YUV_Normalize(){ max_value=0xFFFF; mask=0xFFFF; }
 	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst);
 };
 

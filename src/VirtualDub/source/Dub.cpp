@@ -1169,7 +1169,13 @@ void Dubber::InitOutputFile() {
 					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV444_Y410, outputFormatID));
 				}
 				if (outputFormatID==nsVDPixmap::kPixFormat_YUV422_Planar16) {
+					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV422_P216, outputFormatID));
+					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV422_P210, outputFormatID));
 					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV422_V210, outputFormatID));
+				}
+				if (outputFormatID==nsVDPixmap::kPixFormat_YUV420_Planar16) {
+					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV420_P016, outputFormatID));
+					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV420_P010, outputFormatID));
 				}
 
 				bool foundDibCompatibleFormat = false;

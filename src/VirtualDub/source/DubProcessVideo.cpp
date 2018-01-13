@@ -1215,6 +1215,16 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 		out_info.ref_g = 0xFFFF;
 		out_info.ref_b = 0xFFFF;
 		out_info.ref_a = 0xFFFF;
+
+		switch (pBuffer->mPixmap.format) {
+		case nsVDPixmap::kPixFormat_YUV422_P210:
+		case nsVDPixmap::kPixFormat_YUV420_P010:
+		case nsVDPixmap::kPixFormat_YUV422_P216:
+		case nsVDPixmap::kPixFormat_YUV420_P016:
+			out_info.ref_r = 0xFF00;
+			break;
+		}
+
 		if (mpVideoCompressor) {
 			if (!mpVideoCompressor->GetInputFormat(&out_info)) {
 				out_info.ref_r = 0xFFFF;
@@ -1225,15 +1235,21 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 				mpVideoCompressor->GetInputBitmapFormat(bm);
 				int variant;
 				VDBitmapFormatToPixmapFormat((VDAVIBitmapInfoHeader&)*bm.data(),variant);
-				if(pBuffer->mPixmap.format==nsVDPixmap::kPixFormat_YUV420_Planar16) {
+				switch (pBuffer->mPixmap.format) {
+				case nsVDPixmap::kPixFormat_YUV420_Planar16:
 					// ffmpeg, 10 bit
 					if (variant==2) out_info.ref_r = 0x3FF;
-					if (variant>2) throw MyError("Output format is not implemented");
-				}
-				if(pBuffer->mPixmap.format==nsVDPixmap::kPixFormat_YUV422_Planar16) {
+					break;
+				case nsVDPixmap::kPixFormat_YUV422_Planar16:
 					// ffmpeg, 10 bit
 					if (variant==2) out_info.ref_r = 0x3FF;
-					if (variant>2) throw MyError("Output format is not implemented");
+					break;
+				case nsVDPixmap::kPixFormat_YUV422_P210:
+				case nsVDPixmap::kPixFormat_YUV420_P010:
+				case nsVDPixmap::kPixFormat_YUV422_P216:
+				case nsVDPixmap::kPixFormat_YUV420_P016:
+					out_info.ref_r = 0xFF00;
+					break;
 				}
 			}
 		}
@@ -1256,9 +1272,20 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 		case nsVDPixmap::kPixFormat_YUV420_Planar16:
 		case nsVDPixmap::kPixFormat_YUV422_Planar16:
 		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_P216:
+		case nsVDPixmap::kPixFormat_YUV420_P016:
 			{
 				ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
 				normalize->max_value = out_info.ref_r;
+				extraDst = normalize;
+			}
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_P210:
+		case nsVDPixmap::kPixFormat_YUV420_P010:
+			{
+				ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
+				normalize->max_value = out_info.ref_r;
+				normalize->mask = 0xFFC0;
 				extraDst = normalize;
 			}
 			break;

@@ -151,13 +151,13 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 		variant = 2;
 		return kPixFormat_YUV420_Planar16;
 
+	// P016,P010
+
 	case VDMAKEFOURCC('P', '0', '1', '6'):
-		variant = 3;
-		return kPixFormat_YUV420_Planar16;
+		return kPixFormat_YUV420_P016;
 
 	case VDMAKEFOURCC('P', '0', '1', '0'):
-		variant = 4;
-		return kPixFormat_YUV420_Planar16;
+		return kPixFormat_YUV420_P010;
 
 	// v210
 
@@ -173,13 +173,13 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 		variant = 2;
 		return kPixFormat_YUV422_Planar16;
 
+	// P216,P210
+
 	case VDMAKEFOURCC('P', '2', '1', '6'):
-		variant = 3;
-		return kPixFormat_YUV422_Planar16;
+		return kPixFormat_YUV422_P216;
 
 	case VDMAKEFOURCC('P', '2', '1', '0'):
-		variant = 4;
-		return kPixFormat_YUV422_Planar16;
+		return kPixFormat_YUV422_P210;
 
 	// v410
 
@@ -233,10 +233,10 @@ int VDGetPixmapToBitmapVariants(int format) {
 		return 2;
 
 	if (format == nsVDPixmap::kPixFormat_YUV420_Planar16)
-		return 4;
+		return 2;
 
 	if (format == nsVDPixmap::kPixFormat_YUV422_Planar16)
-		return 4;
+		return 2;
 
 	return 1;
 }
@@ -414,12 +414,6 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		case 2:
 			dst->biCompression	= VDMAKEFOURCC('Y', '3', 11, 10);
 			break;
-		case 3:
-			dst->biCompression	= VDMAKEFOURCC('P', '0', '1', '6');
-			break;
-		case 4:
-			dst->biCompression	= VDMAKEFOURCC('P', '0', '1', '0');
-			break;
 		case 1:
 		default:
 			dst->biCompression	= VDMAKEFOURCC('Y', '3', 11, 16);
@@ -428,22 +422,36 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biBitCount		= 24;
 		dst->biSizeImage	= w*h*2 + ((w+1)>>1)*((h+1)>>1)*4;
 		break;
+	case kPixFormat_YUV420_P010:
+		dst->biCompression	= VDMAKEFOURCC('P', '0', '1', '0');
+		dst->biBitCount		= 24;
+		dst->biSizeImage	= w*h*2 + ((w+1)>>1)*((h+1)>>1)*4;
+		break;
+	case kPixFormat_YUV420_P016:
+		dst->biCompression	= VDMAKEFOURCC('P', '0', '1', '6');
+		dst->biBitCount		= 24;
+		dst->biSizeImage	= w*h*2 + ((w+1)>>1)*((h+1)>>1)*4;
+		break;
 	case kPixFormat_YUV422_Planar16:
 		switch(variant) {
 		case 2:
 			dst->biCompression	= VDMAKEFOURCC('Y', '3', 10, 10);
-			break;
-		case 3:
-			dst->biCompression	= VDMAKEFOURCC('P', '2', '1', '6');
-			break;
-		case 4:
-			dst->biCompression	= VDMAKEFOURCC('P', '2', '1', '0');
 			break;
 		case 1:
 		default:
 			dst->biCompression	= VDMAKEFOURCC('Y', '3', 10, 16);
 			break;
 		}
+		dst->biBitCount		= 32;
+		dst->biSizeImage	= ((w+1)>>1) * h * 8;
+		break;
+	case kPixFormat_YUV422_P210:
+		dst->biCompression	= VDMAKEFOURCC('P', '2', '1', '0');
+		dst->biBitCount		= 32;
+		dst->biSizeImage	= ((w+1)>>1) * h * 8;
+		break;
+	case kPixFormat_YUV422_P216:
+		dst->biCompression	= VDMAKEFOURCC('P', '2', '1', '6');
 		dst->biBitCount		= 32;
 		dst->biSizeImage	= ((w+1)>>1) * h * 8;
 		break;
@@ -642,16 +650,6 @@ void VDPixmap_bitmap_to_YUV420_Planar16(VDPixmap& dst, const VDPixmap& src, int 
 		// ffmpeg, 10 bit
 		dst.info.ref_r = 0x3FF;
 	}
-
-	if (variant==3 || variant==4) {
-		// P016/P010, msb aligned
-		dst.info.ref_r = 0xFF00;
-		// next blitter should deinterleave it
-		dst.ext.format_swizzle = 3;
-		dst.pitch2 = src.pitch;
-		dst.pitch3 = 0;
-		dst.data3 = 0;
-	}
 }
 
 void VDPixmap_bitmap_to_YUV422_Planar16(VDPixmap& dst, const VDPixmap& src, int variant) {
@@ -660,16 +658,6 @@ void VDPixmap_bitmap_to_YUV422_Planar16(VDPixmap& dst, const VDPixmap& src, int 
 	if (variant==2) {
 		// ffmpeg, 10 bit
 		dst.info.ref_r = 0x3FF;
-	}
-
-	if (variant==3 || variant==4) {
-		// P216/P210, msb aligned
-		dst.info.ref_r = 0xFF00;
-		// next blitter should deinterleave it
-		dst.ext.format_swizzle = 3;
-		dst.pitch2 = src.pitch;
-		dst.pitch3 = 0;
-		dst.data3 = 0;
 	}
 }
 
@@ -704,6 +692,13 @@ void VDSetPixmapInfoFromBitmap(VDPixmap& px, int variant) {
 
 	case kPixFormat_YUV422_Planar16:
 		VDPixmap_bitmap_to_YUV422_Planar16(px,px,variant);
+		break;
+
+	case kPixFormat_YUV422_P210:
+	case kPixFormat_YUV420_P010:
+	case kPixFormat_YUV422_P216:
+	case kPixFormat_YUV420_P016:
+		px.info.ref_r = 0xFF00;
 		break;
 
 	case kPixFormat_XYUV64:

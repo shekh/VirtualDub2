@@ -449,6 +449,22 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV444_V308:
+		{
+			int ref = 255;
+			VDPixmapFormatEx f = px.format;
+			f.colorRangeMode = px.info.colorRangeMode;
+			f.colorSpaceMode = px.info.colorSpaceMode;
+			const uint8* s = (const uint8*)(size_t(px.data) + px.pitch*y + x*3);
+			uint8 py = s[1];
+			uint8 pcb = s[2];
+			uint8 pcr = s[0];
+			float r,g,b;
+			VDConvertYCbCrToRGB(py,pcb,pcr,ref,f,r,g,b);
+			return VDPackRGB(r,g,b);
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 		{
 			int ref = px.info.ref_r;
@@ -484,6 +500,27 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV422_P216:
+	case nsVDPixmap::kPixFormat_YUV422_P210:
+		{
+			sint32 u = (x << 7) + 128;
+			sint32 v = (y << 8);
+			uint32 w2 = px.w >> 1;
+			uint32 h2 = px.h;
+
+			int ref = px.info.ref_r;
+			VDPixmapFormatEx f = px.format;
+			f.colorRangeMode = px.info.colorRangeMode;
+			f.colorSpaceMode = px.info.colorSpaceMode;
+			uint16 py = VDPixmapSample16U(px.data, px.pitch, x, y);
+			uint16 pcb = VDPixmapInterpolateSample2x16U(px.data2, px.pitch2, w2, h2, u, v, ref);
+			uint16 pcr = VDPixmapInterpolateSample2x16U(((char*)px.data2)+2, px.pitch2, w2, h2, u, v, ref);
+			float r,g,b;
+			VDConvertYCbCrToRGB(py,pcb,pcr,ref,f,r,g,b);
+			return VDPackRGB(r,g,b);
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
 		{
 			sint32 u = (x << 7) + 128;
@@ -498,6 +535,27 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 			uint16 py = VDPixmapSample16U(px.data, px.pitch, x, y);
 			uint16 pcb = VDPixmapInterpolateSample16U(px.data2, px.pitch2, w2, h2, u, v, ref);
 			uint16 pcr = VDPixmapInterpolateSample16U(px.data3, px.pitch3, w2, h2, u, v, ref);
+			float r,g,b;
+			VDConvertYCbCrToRGB(py,pcb,pcr,ref,f,r,g,b);
+			return VDPackRGB(r,g,b);
+		}
+		break;
+
+	case nsVDPixmap::kPixFormat_YUV420_P016:
+	case nsVDPixmap::kPixFormat_YUV420_P010:
+		{
+			sint32 u = (x << 7) + 128;
+			sint32 v = (y << 7);
+			uint32 w2 = px.w >> 1;
+			uint32 h2 = px.h >> 1;
+
+			int ref = px.info.ref_r;
+			VDPixmapFormatEx f = px.format;
+			f.colorRangeMode = px.info.colorRangeMode;
+			f.colorSpaceMode = px.info.colorSpaceMode;
+			uint16 py = VDPixmapSample16U(px.data, px.pitch, x, y);
+			uint16 pcb = VDPixmapInterpolateSample2x16U(px.data2, px.pitch2, w2, h2, u, v, ref);
+			uint16 pcr = VDPixmapInterpolateSample2x16U(((char*)px.data2)+2, px.pitch2, w2, h2, u, v, ref);
 			float r,g,b;
 			VDConvertYCbCrToRGB(py,pcb,pcr,ref,f,r,g,b);
 			return VDPackRGB(r,g,b);
@@ -630,7 +688,7 @@ uint8 VDPixmapInterpolateSample8(const void *data, ptrdiff_t pitch, uint32 w, ui
 	return (uint8)p;
 }
 
-uint16 VDPixmapInterpolateSample16U(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256, uint32 ref) {
+uint16 VDPixmapInterpolateSample16U(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256, uint32 ref, int xx) {
 	// bias coordinates to integer
 	x_256 -= 128;
 	y_256 -= 128;
@@ -644,13 +702,13 @@ uint16 VDPixmapInterpolateSample16U(const void *data, ptrdiff_t pitch, uint32 w,
 	x_256 ^= (x_256 ^ w_256) & ((x_256 - w_256) >> 31);
 	y_256 ^= (y_256 ^ h_256) & ((y_256 - h_256) >> 31);
 
-	const uint16 *row0 = (const uint16 *)data + pitch/2 * (y_256 >> 8) + (x_256 >> 8);
+	const uint16 *row0 = (const uint16 *)data + pitch/2 * (y_256 >> 8) + (x_256 >> 8) * xx;
 	const uint16 *row1 = row0;
 
 	if ((uint32)y_256 < h_256)
 		row1 += pitch/2;
 
-	ptrdiff_t xstep = (uint32)x_256 < w_256 ? 1 : 0;
+	ptrdiff_t xstep = (uint32)x_256 < w_256 ? xx : 0;
 	sint32 xoffset = x_256 & 255;
 	sint32 yoffset = y_256 & 255;
 	sint32 p00 = row0[0];
@@ -664,8 +722,18 @@ uint16 VDPixmapInterpolateSample16U(const void *data, ptrdiff_t pitch, uint32 w,
 	return p;
 }
 
+uint16 VDPixmapInterpolateSample2x16U(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256, uint32 ref) {
+  return VDPixmapInterpolateSample16U(data,pitch,w,h,x_256,y_256,ref,2);
+}
+
 uint8 VDPixmapInterpolateSample16(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256, uint32 ref) {
 	uint16 v = VDPixmapInterpolateSample16U(data,pitch,w,h,x_256,y_256,ref);
+	if (v>ref) return 255;
+	return (uint8)((v*0xFF0/ref+8)>>4);
+}
+
+uint8 VDPixmapInterpolateSample2x16(const void *data, ptrdiff_t pitch, uint32 w, uint32 h, sint32 x_256, sint32 y_256, uint32 ref) {
+	uint16 v = VDPixmapInterpolateSample16U(data,pitch,w,h,x_256,y_256,ref,2);
 	if (v>ref) return 255;
 	return (uint8)((v*0xFF0/ref+8)>>4);
 }

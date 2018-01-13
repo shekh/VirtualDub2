@@ -111,14 +111,14 @@ void VDPixmapGen_B8x2_To_B8R8::Compute(void *dst0, sint32 y) {
 /////////////////////////////////////////////////////////////////////////////
 
 void VDPixmapGen_16In32::Compute(void *dst0, sint32 y) {
-	const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex) + mOffset;
+	const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex);
 	uint16 *dst = (uint16 *)dst0;
 
 	sint32 w = mWidth;
 	int w0 = w & ~7;
 	w -= w0;
 
-	{for(int i=0; i<w0/8; i++){
+	if(mOffset==0){for(int i=0; i<w0/8; i++){
 		__m128i a0 = _mm_loadu_si128((__m128i*)src);
 		__m128i a1 = _mm_loadu_si128((__m128i*)(src+8));
 		a0 = _mm_slli_epi32(a0,16);
@@ -130,6 +130,18 @@ void VDPixmapGen_16In32::Compute(void *dst0, sint32 y) {
 		dst += 8;
 		src += 16;
 	}}
+	if(mOffset==1){for(int i=0; i<w0/8; i++){
+		__m128i a0 = _mm_loadu_si128((__m128i*)src);
+		__m128i a1 = _mm_loadu_si128((__m128i*)(src+8));
+		a0 = _mm_srai_epi32(a0,16);
+		a1 = _mm_srai_epi32(a1,16);
+		__m128i b = _mm_packs_epi32(a0,a1);
+		_mm_storeu_si128((__m128i*)dst,b);
+		dst += 8;
+		src += 16;
+	}}
+
+	src += mOffset;
 
 	for(sint32 x=0; x<w; ++x) {
 		*dst++ = *src;

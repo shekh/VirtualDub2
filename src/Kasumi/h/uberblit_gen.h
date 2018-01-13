@@ -122,6 +122,7 @@ public:
 	void interleave_X8R8G8B8();
 	void interleave_X16R16G16B16();
 	void interleave_B8R8();
+	void interleave_B16R16();
 
 	void conv_X16_to_8888();
 	void conv_8888_to_X16();

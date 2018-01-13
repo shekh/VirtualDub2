@@ -92,6 +92,11 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
 	/* YUV444_Y410 */				{ "Y410",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
 	/* r210 */						{ "r210",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
 	/* r10k */						{ "R10k",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
+	/* YUV444_V308 */				{ "v308",			false, 1, 1,  0,  0,  3, 0, 0, 0, 0,   0 },
+	/* YUV422_P210 */				{ "P210",			false, 1, 1,  0,  0,  2, 1, 1, 0, 4,   0 },
+	/* YUV420_P010 */				{ "P010",			false, 1, 1,  0,  0,  2, 1, 1, 1, 4,   0 },
+	/* YUV422_P216 */				{ "P216",			false, 1, 1,  0,  0,  2, 1, 1, 0, 4,   0 },
+	/* YUV420_P016 */				{ "P016",			false, 1, 1,  0,  0,  2, 1, 1, 1, 4,   0 },
 };
 
 bool VDPixmapFormatHasAlpha(sint32 format) {
@@ -112,6 +117,11 @@ int VDPixmapFormatMatrixType(sint32 format) {
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
 	case nsVDPixmap::kPixFormat_XYUV64:
+	case nsVDPixmap::kPixFormat_YUV444_V308:
+	case nsVDPixmap::kPixFormat_YUV422_P216:
+	case nsVDPixmap::kPixFormat_YUV420_P016:
+	case nsVDPixmap::kPixFormat_YUV422_P210:
+	case nsVDPixmap::kPixFormat_YUV420_P010:
 		return 1; // flexible
 
 	case nsVDPixmap::kPixFormat_YUV444_Planar:
@@ -127,40 +137,58 @@ int VDPixmapFormatMatrixType(sint32 format) {
 	return 0;
 }
 
-int VDPixmapFormatNextSimilar(VDPixmapFormatEx src) {
+int VDPixmapFormatGroup(int src) {
 	using namespace nsVDPixmap;
-	int f1 = VDPixmapFormatNormalize(src);
-	if (f1!=src) return f1;
+	src = VDPixmapFormatNormalize(src);
 
-	if (src.format==kPixFormat_YUV422_YUYV) return kPixFormat_YUV422_Planar;
-	if (src.format==kPixFormat_YUV422_UYVY) return kPixFormat_YUV422_Planar;
-	if (src.format==kPixFormat_YUV422_Planar) return kPixFormat_YUV422_YUYV;
+	switch (src) {
+	case kPixFormat_RGB565:
+	case kPixFormat_XRGB1555:
+	case kPixFormat_RGB888:
+		return kPixFormat_XRGB8888;
 
-	if (src.format==kPixFormat_YUV422_V210) return kPixFormat_YUV422_Planar16;
-	if (src.format==kPixFormat_YUV422_Planar16) return kPixFormat_YUV422_V210;
-	if (src.format==kPixFormat_XYUV64) return kPixFormat_YUV444_Planar16;
-	if (src.format==kPixFormat_YUV444_V410) return kPixFormat_YUV444_Planar16;
-	if (src.format==kPixFormat_YUV444_Y410) return kPixFormat_YUV444_Planar16;
+	case kPixFormat_R210:
+	case kPixFormat_R10K:
+		return kPixFormat_XRGB64;
 
-	if (src.format==kPixFormat_R210) return kPixFormat_XRGB64;
-	if (src.format==kPixFormat_R10K) return kPixFormat_XRGB64;
-	if (src.format==kPixFormat_RGB565) return kPixFormat_RGB888;
-	if (src.format==kPixFormat_XRGB8888) return kPixFormat_RGB888;
-	if (src.format==kPixFormat_RGB888) return kPixFormat_XRGB8888;
+	case kPixFormat_YUV420_NV12:
+		return kPixFormat_YUV420_Planar;
 
-	return src.format;
+	case kPixFormat_YUV422_YUYV:
+	case kPixFormat_YUV422_UYVY:
+		return kPixFormat_YUV422_Planar;
+
+	case kPixFormat_YUV444_V308:
+		return kPixFormat_YUV444_Planar;
+
+	case kPixFormat_YUV420_P016:
+	case kPixFormat_YUV420_P010:
+		return kPixFormat_YUV420_Planar16;
+
+	case kPixFormat_YUV422_P216:
+	case kPixFormat_YUV422_P210:
+	case kPixFormat_YUV422_V210:
+		return kPixFormat_YUV422_Planar16;
+
+	case kPixFormat_XYUV64:
+	case kPixFormat_YUV444_V410:
+	case kPixFormat_YUV444_Y410:
+		return kPixFormat_YUV444_Planar16;
+	}
+
+	return src;
 }
 
-// for now only resolve some obvious equal formats
 int VDPixmapFormatDifference(VDPixmapFormatEx src, VDPixmapFormatEx dst) {
 	src = VDPixmapFormatNormalize(src);
 	dst = VDPixmapFormatNormalize(dst);
 	if (src.format==dst.format) return 0;
 
-	src = VDPixmapFormatNextSimilar(src);
+	src = VDPixmapFormatGroup(src);
+	dst = VDPixmapFormatGroup(dst);
 
-	if (src.format==dst.format) return 0;
-	return 1;
+	if (src.format==dst.format) return 1;
+	return 2;
 }
 
 // derive base format if possible,

@@ -1641,6 +1641,19 @@ void VDPixmapUberBlitterGenerator::interleave_X16R16G16B16() {
 	mStack.pop_back();
 }
 
+void VDPixmapUberBlitterGenerator::interleave_B16R16() {
+	StackEntry *args = &mStack.back() - 1;
+	VDPixmapGen_B16x2_To_B16R16 *src = new VDPixmapGen_B16x2_To_B16R16;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex, args[1].mpSrc, args[1].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	MarkDependency(src, args[1].mpSrc);
+	args[0] = StackEntry(src, 0);
+	mStack.pop_back();
+}
+
 void VDPixmapUberBlitterGenerator::interleave_B8R8() {
 	StackEntry *args = &mStack.back() - 1;
 

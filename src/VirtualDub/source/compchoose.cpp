@@ -413,36 +413,33 @@ int VDUIDialogChooseVideoCompressorW32::testFilterFormat(EncoderHIC* plugin, con
 				return format_compress_ready;
 
 			int codec_format = plugin->queryInputFormat(0);
-			if (codec_format && VDPixmapFormatDifference(filter_format,codec_format)==0) {
+			if (codec_format && VDPixmapFormatDifference(filter_format,codec_format)<=1) {
 				// it is already selected but test anyway
 				VDPixmapCreateLinearLayout(layout,codec_format,w,h,0);
 				if (plugin->compressQuery(NULL, NULL, &layout)==ICERR_OK)
 					return format_compress_ready;
 			}
 
-			int test = filter_format;
-			vdfastvector<int> track;
-			while (1) {
-				track.push_back(test);
+			int filter_group = VDPixmapFormatGroup(filter_format);
+
+			{for(int format=1; format<nsVDPixmap::kPixFormat_Max_Standard; format++){
+				if (VDPixmapFormatGroup(format)!=filter_group) continue;
 
 				// try known plugin
-				VDPixmapCreateLinearLayout(layout,test,0,0,0);
+				VDPixmapCreateLinearLayout(layout,format,0,0,0);
 				int r = plugin->inputFormatInfo(&layout);
 				if (r!=-1 && r!=0) flags |= format_supported;
 
 				// try known vfw
-				int n = VDGetPixmapToBitmapVariants(test);
+				int n = VDGetPixmapToBitmapVariants(format);
 				for(int variant=0; variant<n; variant++){
 					vdstructex<VDAVIBitmapInfoHeader> bm;
-					if (VDMakeBitmapFormatFromPixmapFormat(bm,test,variant,w,h)) {
+					if (VDMakeBitmapFormatFromPixmapFormat(bm,format,variant,w,h)) {
 						if (plugin->compressQuery(bm.data(), NULL)==ICERR_OK)
 							return format_compress_ready;
 					}
 				}
-
-				test = VDPixmapFormatNextSimilar(test);
-				if (vector_find(track,test)!=-1) break;
-			}
+			}}
 		}
 	}
 
@@ -472,7 +469,7 @@ int VDUIDialogChooseVideoCompressorW32::testVDFormat(EncoderHIC* plugin, int for
 			return format_compress_ready;
 
 		int codec_format = plugin->queryInputFormat(0);
-		if (codec_format && VDPixmapFormatDifference(format,codec_format)==0) {
+		if (codec_format && VDPixmapFormatDifference(format,codec_format)<=1) {
 			// it is already selected but test anyway
 			VDPixmapCreateLinearLayout(layout,codec_format,w,h,0);
 			if (plugin->compressQuery(NULL, NULL, &layout)==ICERR_OK)
