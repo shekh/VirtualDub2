@@ -8,6 +8,7 @@
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmapops.h>
 #include <vd2/Kasumi/pixmaputils.h>
+#include <vd2/Kasumi/blitter.h>
 #include <vd2/Riza/opengl.h>
 #include <vd2/VDDisplay/compositor.h>
 #include <vd2/VDDisplay/displaydrv.h>
@@ -545,6 +546,7 @@ protected:
 	VDOpenGLBinding	mGL;
 
 	VDPixmapBuffer	mConversionBuffer;
+	VDPixmapCachedBlitter mCachedBlitter;
 };
 
 #define MYWM_OGLINIT		(WM_USER + 0x180)
@@ -584,6 +586,7 @@ VDVideoDisplayMinidriverOpenGL::~VDVideoDisplayMinidriverOpenGL() {
 }
 
 bool VDVideoDisplayMinidriverOpenGL::Init(HWND hwnd, HMONITOR hmonitor, const VDVideoDisplaySourceInfo& info) {
+	mCachedBlitter.Invalidate();
 	mSource = info;
 	mhwnd = hwnd;
 
@@ -600,6 +603,7 @@ bool VDVideoDisplayMinidriverOpenGL::Init(HWND hwnd, HMONITOR hmonitor, const VD
 				return false;
 
 			mConversionBuffer.init(info.pixmap.w, info.pixmap.h, nsVDPixmap::kPixFormat_XRGB8888);
+			mCachedBlitter.Update(mConversionBuffer, info.pixmap);
 			break;
 	}
 
@@ -806,7 +810,10 @@ void VDVideoDisplayMinidriverOpenGL::Upload(const VDPixmap& source, VDVideoTextu
 		mGL.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tile.mSrcW, tile.mSrcH, GL_BGRA_EXT, GL_UNSIGNED_BYTE, (const char *)source.data);
 		break;
 	default:
-		VDPixmapBlt(mConversionBuffer, source);
+		mCachedBlitter.Update(mConversionBuffer, source);
+		VDPROFILEBEGINEX3("V-BlitDisplay",source.info.frame_num==-1 ? 0:(uint32)source.info.frame_num,0,mCachedBlitter.profiler_comment.c_str());
+		mCachedBlitter.Blit(mConversionBuffer, source);
+		VDPROFILEEND();
 		mGL.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tile.mSrcW, tile.mSrcH, GL_BGRA_EXT, GL_UNSIGNED_BYTE, (const char *)mConversionBuffer.data);
 		break;
 	}
