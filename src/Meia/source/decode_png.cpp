@@ -197,6 +197,8 @@ PNGDecodeError VDImageDecoderPNG::Decode(const void *src0, uint32 size) {
 
 	vdfastvector<uint8> packeddata;
 	unsigned char pal[768];
+	unsigned char index_alpha[256];
+	bool index_alpha_found = false;
 
 	// decode chunks
 	VDCRCChecker checker;
@@ -240,6 +242,13 @@ PNGDecodeError VDImageDecoderPNG::Decode(const void *src0, uint32 size) {
 				return kPNGDecodeUnsupportedInterlacingAlgorithm;
 
 			header_found = true;
+		} else if (type == 'tRNS') {
+			if (hdr.colortype==3) {
+				index_alpha_found = true;
+				memset(index_alpha,255,256);
+				for(int i=0; i<(int)length && i<256; i++)
+					index_alpha[i] = src[i+8];
+			}
 		} else if (type == 'IDAT') {
 			packeddata.resize(packeddata.size()+length);
 			memcpy(&packeddata[packeddata.size()-length], src+8, length);
@@ -280,6 +289,7 @@ PNGDecodeError VDImageDecoderPNG::Decode(const void *src0, uint32 size) {
 		bitsperpixel *= 3;
 		break;
 	case 3:		// Paletted
+		hasAlpha = index_alpha_found;
 		break;
 	case 4:		// IA
 		bitsperpixel *= 2;
@@ -400,11 +410,21 @@ PNGDecodeError VDImageDecoderPNG::Decode(const void *src0, uint32 size) {
 				rowsrc = tempindices.data();
 			}
 
-			for(x=0; (uint32)x<hdr.width; ++x) {
-				unsigned idx = rowsrc[x];
-				rowdst[x*3+0] = pal[idx*3+2];
-				rowdst[x*3+1] = pal[idx*3+1];
-				rowdst[x*3+2] = pal[idx*3+0];
+			if (hasAlpha) {
+				for(x=0; (uint32)x<hdr.width; ++x) {
+					unsigned idx = rowsrc[x];
+					rowdst[x*4+0] = pal[idx*3+2];
+					rowdst[x*4+1] = pal[idx*3+1];
+					rowdst[x*4+2] = pal[idx*3+0];
+					rowdst[x*4+3] = index_alpha[idx];
+				}
+			} else {
+				for(x=0; (uint32)x<hdr.width; ++x) {
+					unsigned idx = rowsrc[x];
+					rowdst[x*3+0] = pal[idx*3+2];
+					rowdst[x*3+1] = pal[idx*3+1];
+					rowdst[x*3+2] = pal[idx*3+0];
+				}
 			}
 		}
 
@@ -436,6 +456,7 @@ const char *PNGGetErrorString(PNGDecodeError err) {
 
 bool VDDecodePNGHeader(const void *src0, uint32 len, int& w, int& h, bool& hasalpha) {
 	const uint8 *src = (const uint8 *)src0;
+	const uint8 *src_end = src+len;
 
 	if (len < 29)
 		return false;
@@ -463,11 +484,40 @@ bool VDDecodePNGHeader(const void *src0, uint32 len, int& w, int& h, bool& hasal
 	hdr.filter		= src[27];
 	hdr.interlacing	= src[28];
 
+  src += hlen+12+8;
+
+	bool index_alpha = false;
+
+	while(src < src_end) {
+		if (src_end-src < 12)
+			break;
+
+		uint32 length = PNGDecodeNetwork32(src);
+
+		if ((uint32)(src_end-src) < length+12)
+			break;
+
+		uint32 crc = PNGDecodeNetwork32(src + length + 8);
+
+		uint32 type = PNGDecodeNetwork32(src + 4);
+
+		if (type == 'tRNS') {
+			if (hdr.colortype==3) {
+				index_alpha = true;
+			}
+		}
+
+		src += length+12;
+	}
+
 	switch(hdr.colortype) {
 		case 2:		// RGB
-		case 3:		// Paletted
 		default:
 			hasalpha = false;
+			break;
+
+		case 3:		// Paletted
+			hasalpha = index_alpha;
 			break;
 
 		case 4:		// IA
