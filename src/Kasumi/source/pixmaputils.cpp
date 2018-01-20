@@ -97,15 +97,63 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
 	/* YUV420_P010 */				{ "P010",			false, 1, 1,  0,  0,  2, 1, 1, 1, 4,   0 },
 	/* YUV422_P216 */				{ "P216",			false, 1, 1,  0,  0,  2, 1, 1, 0, 4,   0 },
 	/* YUV420_P016 */				{ "P016",			false, 1, 1,  0,  0,  2, 1, 1, 1, 4,   0 },
+	/* YUV444_Alpha_Planar */			{ "YUVA444",		false, 1, 1,  0,  0,  1, 3, 0, 0, 1,   0, 1 },
+	/* YUV422_Alpha_Planar */			{ "YUVA422",		false, 1, 1,  0,  0,  1, 3, 1, 0, 1,   0, 1 },
+	/* YUV420_Alpha_Planar */			{ "YUVA420",		false, 1, 1,  0,  0,  1, 3, 1, 1, 1,   0, 1 },
+	/* YUV444_Alpha_Planar16 */			{ "YUVA444P16",		false, 1, 1,  0,  0,  2, 3, 0, 0, 2,   0, 2 },
+	/* YUV422_Alpha_Planar16 */			{ "YUVA422P16",		false, 1, 1,  0,  0,  2, 3, 1, 0, 2,   0, 2 },
+	/* YUV420_Alpha_Planar16 */			{ "YUVA420P16",		false, 1, 1,  0,  0,  2, 3, 1, 1, 2,   0, 2 },
 };
 
 bool VDPixmapFormatHasAlpha(sint32 format) {
 	switch (format) {
 	case nsVDPixmap::kPixFormat_XRGB8888:
 	case nsVDPixmap::kPixFormat_XRGB64:
+	case nsVDPixmap::kPixFormat_XYUV64:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
 		return true;
 	}
 	return false;
+}
+
+bool VDPixmapFormatHasAlphaPlane(sint32 format) {
+	switch (format) {
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+		return true;
+	}
+	return false;
+}
+
+VDPixmap VDPixmap::copy(const VDXPixmap& a) {
+	VDPixmap b;
+	b.data = a.data;
+	b.palette = a.palette;
+	b.w = a.w;
+	b.h = a.h;
+	b.pitch = a.pitch;
+	b.format = a.format;
+	b.data2 = a.data2;
+	b.pitch2 = a.pitch2;
+	b.data3 = a.data3;
+	b.pitch3 = a.pitch3;
+
+	if (VDPixmapFormatHasAlphaPlane(a.format)) {
+		const VDXPixmapAlpha& aa = (const VDXPixmapAlpha&)a;
+		b.data4 = aa.data4;
+		b.pitch4 = aa.pitch4;
+	}
+
+	return b;
 }
 
 int VDPixmapFormatMatrixType(sint32 format) {
@@ -122,6 +170,12 @@ int VDPixmapFormatMatrixType(sint32 format) {
 	case nsVDPixmap::kPixFormat_YUV420_P016:
 	case nsVDPixmap::kPixFormat_YUV422_P210:
 	case nsVDPixmap::kPixFormat_YUV420_P010:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
 		return 1; // flexible
 
 	case nsVDPixmap::kPixFormat_YUV444_Planar:
@@ -589,11 +643,20 @@ namespace {
 					return false;
 				}
 
-				if (info.auxbufs > 2) {
+				if (info.auxbufs >= 2) {
 					if (!VDIsValidPixmapPlane(px.data3, px.pitch3, auxw * info.auxsize, auxh)) {
 						VDDEBUG("Kasumi: Invalid Cr plane detected in pixmap.\n"
 								"        Pixmap info: format=%d, dimensions=%dx%d\n", px.format, px.w, px.h);
 						VDASSERT(!"Kasumi: Invalid Cr plane detected in pixmap.\n");
+						return false;
+					}
+				}
+
+				if (info.auxbufs >= 3) {
+					if (!VDIsValidPixmapPlane(px.data4, px.pitch4, px.w * info.aux4size, px.h)) {
+						VDDEBUG("Kasumi: Invalid Alpha plane detected in pixmap.\n"
+								"        Pixmap info: format=%d, dimensions=%dx%d\n", px.format, px.w, px.h);
+						VDASSERT(!"Kasumi: Invalid Alpha plane detected in pixmap.\n");
 						return false;
 					}
 				}
@@ -632,6 +695,8 @@ VDPixmap VDPixmapOffset(const VDPixmap& src, vdpixpos x, vdpixpos y) {
 	}
 
 	switch(info.auxbufs) {
+	case 3:
+		temp.data4 = (char *)temp.data4 + x*info.aux4size + y*temp.pitch4;
 	case 2:
 		temp.data3 = (char *)temp.data3 + (x >> info.auxwbits)*info.auxsize + (y >> info.auxhbits)*temp.pitch3;
 	case 1:
@@ -653,6 +718,8 @@ VDPixmapLayout VDPixmapLayoutOffset(const VDPixmapLayout& src, vdpixpos x, vdpix
 	}
 
 	switch(info.auxbufs) {
+	case 3:
+		temp.data4 += x*info.aux4size + y*temp.pitch4;
 	case 2:
 		temp.data3 += -(-x >> info.auxwbits)*info.auxsize + -(-y >> info.auxhbits)*temp.pitch3;
 	case 1:
@@ -684,6 +751,8 @@ uint32 VDPixmapCreateLinearLayout(VDPixmapLayout& layout, VDPixmapFormatEx forma
 	layout.pitch2	= 0;
 	layout.data3	= 0;
 	layout.pitch3	= 0;
+	layout.data4	= 0;
+	layout.pitch4	= 0;
 	layout.w		= w;
 	layout.h		= h;
 	layout.format	= format;
@@ -702,6 +771,15 @@ uint32 VDPixmapCreateLinearLayout(VDPixmapLayout& layout, VDPixmapFormatEx forma
 			layout.pitch3	= subpitch;
 			mainsize += subsize;
 		}
+	}
+
+	if (srcinfo.auxbufs >= 3) {
+		ptrdiff_t	apitch	= (srcinfo.aux4size * w + alignmask) & ~alignmask;
+		size_t		asize	= apitch * h;
+
+		layout.data4	= mainsize;
+		layout.pitch4	= apitch;
+		mainsize += asize;
 	}
 
 	return mainsize;
@@ -727,6 +805,11 @@ void VDPixmapFlipV(VDPixmap& px) {
 			px.pitch3 = -px.pitch3;
 		}
 	}
+
+	if (srcinfo.auxbufs >= 3) {
+		vdptrstep(px.data4, px.pitch4 * (h - 1));
+		px.pitch4 = -px.pitch4;
+	}
 }
 
 void VDPixmapLayoutFlipV(VDPixmapLayout& layout) {
@@ -748,6 +831,11 @@ void VDPixmapLayoutFlipV(VDPixmapLayout& layout) {
 			layout.data3 += layout.pitch3 * (subh - 1);
 			layout.pitch3 = -layout.pitch3;
 		}
+	}
+
+	if (srcinfo.auxbufs >= 3) {
+		layout.data4 += layout.pitch4 * (h - 1);
+		layout.pitch4 = -layout.pitch4;
 	}
 }
 
@@ -787,6 +875,18 @@ uint32 VDPixmapLayoutGetMinSize(const VDPixmapLayout& layout) {
 			if (limit < limit3)
 				limit = limit3;
 		}
+	}
+
+	if (srcinfo.auxbufs >= 3) {
+		uint32 limit4 = layout.data4;
+
+		if (layout.pitch4 >= 0)
+			limit4 += layout.pitch4 * h;
+		else
+			limit4 -= layout.pitch4;
+
+		if (limit < limit4)
+			limit = limit4;
 	}
 
 	return limit;
@@ -848,6 +948,7 @@ VDPixmap VDPixmapExtractField(const VDPixmap& src, bool field2) {
 	px.pitch += px.pitch;
 	px.pitch2 += px.pitch2;
 	px.pitch3 += px.pitch3;
+	px.pitch4 += px.pitch4;
 	return px;
 }
 
@@ -887,9 +988,20 @@ void VDPixmapBuffer::init(sint32 width, sint32 height, int f) {
 	sint32		subh		= -(-height >> srcinfo.auxhbits);
 	ptrdiff_t	mainpitch	= (srcinfo.qsize * qw + 15) & ~15;
 	ptrdiff_t	subpitch	= (srcinfo.auxsize * subw + 15) & ~15;
+	ptrdiff_t	apitch		= (srcinfo.aux4size * width + 15) & ~15;
 	uint64		mainsize	= (uint64)mainpitch * qh;
 	uint64		subsize		= (uint64)subpitch * subh;
-	uint64		totalsize64	= mainsize + subsize*srcinfo.auxbufs + 4 * srcinfo.palsize;
+	uint64		asize		= (uint64)apitch * height;
+	uint64		totalsize64	= mainsize + 4 * srcinfo.palsize;
+
+	switch (srcinfo.auxbufs) {
+	case 3:
+		totalsize64 += asize;
+	case 2:
+		totalsize64 += subsize;
+	case 1:
+		totalsize64 += subsize;
+	}
 
 #ifdef _DEBUG
 	totalsize64 += 28;
@@ -928,6 +1040,8 @@ void VDPixmapBuffer::init(sint32 width, sint32 height, int f) {
 	pitch2	= NULL;
 	data3	= NULL;
 	pitch3	= NULL;
+	data4	= NULL;
+	pitch4	= NULL;
 	w		= width;
 	h		= height;
 	format	= f;
@@ -943,6 +1057,12 @@ void VDPixmapBuffer::init(sint32 width, sint32 height, int f) {
 		data3	= p;
 		pitch3	= subpitch;
 		p += subsize;
+	}
+
+	if (srcinfo.auxbufs >= 3) {
+		data4	= p;
+		pitch4	= apitch;
+		p += asize;
 	}
 
 	if (srcinfo.palsize) {
@@ -993,6 +1113,16 @@ void VDPixmapBuffer::init(const VDPixmapLayout& layout, uint32 additionalPadding
 		}
 	}
 
+	if (srcinfo.auxbufs >= 3) {
+		if (layout.pitch4 < 0) {
+			mino = std::min<sint64>(mino, layout.data4 + (sint64)layout.pitch4 * (layout.h-1));
+			maxo = std::max<sint64>(maxo, layout.data4 - (sint64)layout.pitch4);
+		} else {
+			mino = std::min<sint64>(mino, layout.data4);
+			maxo = std::max<sint64>(maxo, layout.data4 + (sint64)layout.pitch4*layout.h);
+		}
+	}
+
 	sint64 linsize64 = ((maxo - mino + 3) & ~(uint64)3);
 
 	sint64 totalsize64 = linsize64 + 4*srcinfo.palsize + additionalPadding;
@@ -1035,9 +1165,11 @@ void VDPixmapBuffer::init(const VDPixmapLayout& layout, uint32 additionalPadding
 	data	= p + layout.data - mino;
 	data2	= p + layout.data2 - mino;
 	data3	= p + layout.data3 - mino;
+	data4	= p + layout.data4 - mino;
 	pitch	= layout.pitch;
 	pitch2	= layout.pitch2;
 	pitch3	= layout.pitch3;
+	pitch4	= layout.pitch4;
 	palette	= NULL;
 
 	if (srcinfo.palsize) {
@@ -1075,6 +1207,8 @@ void VDPixmapBuffer::assign(const VDPixmap& src) {
 			memcpy((void *)palette, src.palette, 4 * srcinfo.palsize);
 
 		switch(srcinfo.auxbufs) {
+		case 3:
+			VDMemcpyRect(data4, pitch4, src.data4, src.pitch4, src.w * srcinfo.aux4size, src.h);
 		case 2:
 			VDMemcpyRect(data3, pitch3, src.data3, src.pitch3, subw, subh);
 		case 1:

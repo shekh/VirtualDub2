@@ -267,6 +267,18 @@ struct VDXPixmapLayout {
 	ptrdiff_t		pitch3;
 };
 
+// Alpha extensions: safe to upcast only when format defines alpha plane
+
+struct VDXPixmapAlpha: public VDXPixmap {
+	void			*data4;
+	ptrdiff_t		pitch4;
+};
+
+struct VDXPixmapLayoutAlpha: public VDXPixmapLayout {
+	ptrdiff_t		data4;
+	ptrdiff_t		pitch4;
+};
+
 class IFilterModPixmap {
 public:
 	virtual FilterModPixmapInfo* GetPixmapInfo(const VDXPixmap* pixmap)=0;
@@ -330,6 +342,22 @@ namespace nsVDXPixmap {
 		kPixFormat_YUV420_Planar16	= 60,
 		kPixFormat_Y16				= 61,
 		kPixFormat_XYUV64			= 62,
+		kPixFormat_YUV444_V410	= 63,
+		kPixFormat_YUV444_Y410	= 64,
+		kPixFormat_R210			= 65,
+		kPixFormat_R10K			= 66,
+		kPixFormat_YUV444_V308	= 67,
+		kPixFormat_YUV422_P210	= 68,
+		kPixFormat_YUV420_P010	= 69,
+		kPixFormat_YUV422_P216	= 70,
+		kPixFormat_YUV420_P016	= 71,
+
+		kPixFormat_YUV444_Alpha_Planar = 72,
+		kPixFormat_YUV422_Alpha_Planar = 73,
+		kPixFormat_YUV420_Alpha_Planar = 74,
+		kPixFormat_YUV444_Alpha_Planar16 = 75,
+		kPixFormat_YUV422_Alpha_Planar16 = 76,
+		kPixFormat_YUV420_Alpha_Planar16 = 77,
 
 		kPixFormat_VDXA_RGB			= 0x10001,
 		kPixFormat_VDXA_YUV			= 0x10002

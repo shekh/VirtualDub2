@@ -82,6 +82,13 @@ namespace nsVDPixmap {
 		kPixFormat_YUV420_P010,
 		kPixFormat_YUV422_P216,
 		kPixFormat_YUV420_P016,
+
+		kPixFormat_YUV444_Alpha_Planar,
+		kPixFormat_YUV422_Alpha_Planar,
+		kPixFormat_YUV420_Alpha_Planar,
+		kPixFormat_YUV444_Alpha_Planar16,
+		kPixFormat_YUV422_Alpha_Planar16,
+		kPixFormat_YUV420_Alpha_Planar16,
 		kPixFormat_Max_Standard
 	};
 }
@@ -104,6 +111,8 @@ struct VDPixmap {
 	vdpixoffset		pitch2;
 	void			*data3;		// Cr (V) for YCbCr
 	vdpixoffset		pitch3;
+	void			*data4;		// Alpha
+	vdpixoffset		pitch4;
 
 	FilterModPixmapInfo info;
 	struct Ext{
@@ -127,24 +136,13 @@ struct VDPixmap {
 		pitch2 = 0;
 		data3 = 0;
 		pitch3 = 0;
+		data4 = 0;
+		pitch4 = 0;
 		info.clear();
 		ext.clear();
 	}
 
-	static VDPixmap copy(const VDXPixmap& a) {
-		VDPixmap b;
-		b.data = a.data;
-		b.palette = a.palette;
-		b.w = a.w;
-		b.h = a.h;
-		b.pitch = a.pitch;
-		b.format = a.format;
-		b.data2 = a.data2;
-		b.pitch2 = a.pitch2;
-		b.data3 = a.data3;
-		b.pitch3 = a.pitch3;
-		return b;
-	}
+	static VDPixmap copy(const VDXPixmap& a);
 };
 
 struct VDPixmapFormatEx {
@@ -198,6 +196,8 @@ struct VDPixmapLayout {
 	vdpixoffset		pitch2;
 	ptrdiff_t		data3;		// Cr (V) for YCbCr
 	vdpixoffset		pitch3;
+	ptrdiff_t		data4;		// Alpha
+	vdpixoffset		pitch4;
 
 	VDPixmapFormatEx formatEx;
 };

@@ -109,6 +109,8 @@ bool VDPixmapBltDirect(const VDPixmap& dst, const VDPixmap& src, vdpixsize w, vd
 		const int auxh = -(-h >> srcinfo.auxhbits);
 
 		switch(srcinfo.auxbufs) {
+		case 3:
+			VDMemcpyRect(dst.data4, dst.pitch4, src.data4, src.pitch4, srcinfo.aux4size * w, h);
 		case 2:
 			VDMemcpyRect(dst.data3, dst.pitch3, src.data3, src.pitch3, srcinfo.auxsize * auxw, auxh);
 		case 1:

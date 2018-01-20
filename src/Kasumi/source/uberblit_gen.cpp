@@ -92,6 +92,7 @@ void VDPixmapUberBlitterDirectCopy::Blit(const VDPixmap& dst, const vdrect32 *rD
 	void *p = dst.data;
 	void *p2 = dst.data2;
 	void *p3 = dst.data3;
+	void *p4 = dst.data4;
 	int w = std::min<int>(dst.w, src.w);
 	int h = std::min<int>(dst.h, src.h);
 
@@ -134,6 +135,10 @@ void VDPixmapUberBlitterDirectCopy::Blit(const VDPixmap& dst, const vdrect32 *rD
 			if (formatInfo.auxbufs >= 2)
 				p3 = vdptroffset(dst.data3, dst.pitch3 * ay1 + ax1);
 		}
+
+		if (formatInfo.auxbufs >= 3) {
+			p4 = vdptroffset(dst.data4, dst.pitch4 * y1 + x1*formatInfo.aux4size);
+		}
 	}
 
 	uint32 bpr = formatInfo.qsize * w;
@@ -146,6 +151,9 @@ void VDPixmapUberBlitterDirectCopy::Blit(const VDPixmap& dst, const vdrect32 *rD
 		if (formatInfo.auxbufs >= 2)
 			VDMemcpyRect(p3, dst.pitch3, src.data3, src.pitch3, w2 * formatInfo.auxsize, h2);
 	}
+
+	if (formatInfo.auxbufs >= 3)
+		VDMemcpyRect(p4, dst.pitch4, src.data4, src.pitch4, w * formatInfo.aux4size, h);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

@@ -60,6 +60,8 @@ uint8 VDPixmapInterpolateSample2x16(const void *data, ptrdiff_t pitch, uint32 w,
 uint32 VDConvertYCbCrToRGB(uint8 y, uint8 cb, uint8 cr, bool use709, bool useFullRange);
 void VDConvertYCbCrToRGB(int y, int cb, int cr, int ref, VDPixmapFormatEx& format, float& r, float& g, float& b);
 uint32 VDPackRGB(float r, float g, float b);
+uint32 VDPackRGBA(float r, float g, float b, float a);
+uint32 VDPackRGBA8(float r, float g, float b, uint8 a);
 uint32 VDConvertRGBToYCbCr(uint32 c, bool use709=false, bool useFullRange=false);
 uint32 VDConvertRGBToYCbCr(uint8 r, uint8 g, uint8 b, bool use709, bool useFullRange);
 

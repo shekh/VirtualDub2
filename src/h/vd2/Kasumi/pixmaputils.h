@@ -18,7 +18,7 @@ struct VDPixmapFormatInfo {
 	int	auxwbits, auxhbits;	// subsampling factors for auxiliary buffers in shifts
 	int auxsize;			// size of an aux sample in bytes
 	int palsize;			// entries in palette
-	int subformats;			// number of subformats for this format
+	int aux4size;			// size of an aux4 sample in bytes (Alpha plane of YUVA)
 };
 
 extern VDPixmapFormatInfo g_vdPixmapFormats[];
@@ -89,6 +89,7 @@ inline VDPixmapLayout VDPixmapToLayout(const VDPixmap& px, void *&p) {
 }
 
 bool VDPixmapFormatHasAlpha(sint32 format);
+bool VDPixmapFormatHasAlphaPlane(sint32 format);
 int VDPixmapFormatMatrixType(sint32 format);
 int VDPixmapFormatDifference(VDPixmapFormatEx src, VDPixmapFormatEx dst);
 int VDPixmapFormatGroup(int src);

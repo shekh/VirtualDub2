@@ -72,6 +72,10 @@ namespace {
 		int mask = align-1;
 
 		switch(bufcnt) {
+		case 3:
+			if ((layout.data4 | layout.pitch4) & mask)
+				return false;
+			break;
 		case 2:
 			if ((layout.data3 | layout.pitch3) & mask)
 				return false;
