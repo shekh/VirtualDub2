@@ -1991,6 +1991,8 @@ space_reconvert:
 
 	if (extraDst) extraDst->Create(gen,dst);
 
+	//gen.debug_dump();
+
 	IVDPixmapBlitter* r = gen.create();
 	r->SetComment(dst,src);
 	return r;

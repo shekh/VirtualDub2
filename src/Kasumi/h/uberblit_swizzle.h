@@ -35,6 +35,8 @@ public:
 
 	uint32 GetType(uint32 index) const;
 
+	virtual const char* dump_name(){ return "Swap8In16"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 
@@ -63,6 +65,8 @@ public:
 	uint32 GetType(uint32 index) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8;
 	}
+
+	virtual const char* dump_name(){ return "8In16"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -95,6 +99,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8;
 	}
 
+	virtual const char* dump_name(){ return "8In32"; }
+
 protected:
 	void Compute(void *dst0, sint32 y) {
 		const uint8 *srcp = (const uint8 *)mpSrc->GetRow(y, mSrcIndex) + mOffset;
@@ -126,6 +132,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16_LE;
 	}
 
+	virtual const char* dump_name(){ return "16In32"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 
@@ -148,6 +156,8 @@ public:
 	uint32 GetType(uint32 index) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16_LE;
 	}
+
+	virtual const char* dump_name(){ return "16In64"; }
 
 protected:
 	void Compute(void *dst0, sint32 y);
@@ -172,6 +182,14 @@ public:
 		mpSrcCb->TransformPixmapInfo(src,unused);
 		mpSrcCr->TransformPixmapInfo(src,unused);
 	}
+
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcCb;
+		if(index==1) return mpSrcCr;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "B8x2_To_B8R8"; }
 
 protected:
 	void Compute(void *dst0, sint32 y);
@@ -223,6 +241,15 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrcY->GetType(mSrcIndexY) & ~kVDPixType_Mask) | kVDPixType_B8G8_R8G8;
 	}
+
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcY;
+		if(index==1) return mpSrcCb;
+		if(index==2) return mpSrcCr;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "B8x3_To_G8B8_G8R8"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -305,6 +332,15 @@ public:
 		return (mpSrcY->GetType(mSrcIndexY) & ~kVDPixType_Mask) | kVDPixType_G8B8_G8R8;
 	}
 
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcY;
+		if(index==1) return mpSrcCb;
+		if(index==2) return mpSrcCr;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "B8x3_To_B8G8_R8G8"; }
+
 protected:
 	void Compute(void *dst0, sint32 y) {
 		uint8 * VDRESTRICT dst = (uint8 *)dst0;
@@ -385,6 +421,15 @@ public:
 		return (mpSrcY->GetType(mSrcIndexY) & ~kVDPixType_Mask) | kVDPixType_8888;
 	}
 
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcY;
+		if(index==1) return mpSrcCb;
+		if(index==2) return mpSrcCr;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "B8x3_To_X8R8G8B8"; }
+
 protected:
 	void Compute(void *dst0, sint32 y) {
 		uint8 *dst = (uint8 *)dst0;
@@ -449,6 +494,15 @@ public:
 		return (mpSrcY->GetType(mSrcIndexY) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
 	}
 
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcY;
+		if(index==1) return mpSrcCb;
+		if(index==2) return mpSrcCr;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "B16x3_To_X16R16G16B16"; }
+
 protected:
 	void Compute(void *dst0, sint32 y) {
 		uint16 *dst = (uint16 *)dst0;
@@ -507,6 +561,14 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrcCb->GetType(mSrcIndexCb) & ~kVDPixType_Mask) | kVDPixType_16x2_LE;
 	}
+
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcCb;
+		if(index==1) return mpSrcCr;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "B16x2_To_B16R16"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {

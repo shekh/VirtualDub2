@@ -22,6 +22,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8888;
 	}
 
+	virtual const char* dump_name(){ return "Pal_To_X8R8G8B8"; }
+
 protected:
 	const uint32 *mpPal;
 };

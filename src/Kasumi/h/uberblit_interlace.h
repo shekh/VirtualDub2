@@ -65,6 +65,13 @@ public:
 		mHeight[1] = h >> 1;
 	}
 
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrc;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "SplitFields"; }
+
 protected:
 	IVDPixmapGen *mpSrc;
 	uint32 mSrcIndex;
@@ -120,6 +127,14 @@ public:
 		mHeight = h;
 		mBpr = bpr;
 	}
+
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrc[0];
+		if(index==1) return mpSrc[1];
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "MergeFields"; }
 
 protected:
 	IVDPixmapGen *mpSrc[2];

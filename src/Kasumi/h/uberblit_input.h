@@ -61,6 +61,9 @@ public:
 		return mType;
 	}
 
+	virtual const char* dump_name(){ return "src"; }
+	virtual IVDPixmapGen* dump_src(int index){ return 0; }
+
 protected:
 	const void *mpSrc;
 	ptrdiff_t	mPitch;

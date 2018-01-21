@@ -101,6 +101,8 @@ public:
 	virtual const void *GetRow(sint32 y, uint32 output) = 0;
 	virtual void ProcessRow(void *dst, sint32 y) = 0;
 	virtual void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) = 0;
+	virtual const char* dump_name() = 0;
+	virtual IVDPixmapGen* dump_src(int index) = 0;
 };
 
 #endif

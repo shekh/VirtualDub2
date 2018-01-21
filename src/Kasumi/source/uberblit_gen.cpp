@@ -17,6 +17,7 @@
 //	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #include <stdafx.h>
+#include <windows.h>
 #include <vd2/system/vdalloc.h>
 #include <vd2/Kasumi/pixmaputils.h>
 #include "uberblit.h"
@@ -609,6 +610,47 @@ VDPixmapUberBlitterGenerator::~VDPixmapUberBlitterGenerator() {
 		delete mGenerators.back();
 		mGenerators.pop_back();
 	}
+}
+
+void VDPixmapUberBlitterGenerator::debug_dump() {
+	VDString r = dump();
+	OutputDebugString(r.c_str());
+}
+
+VDString VDPixmapUberBlitterGenerator::dump() {
+	VDString r;
+	{for(int i=0; i<(int)mStack.size(); i++){
+		StackEntry& s = mStack[i];
+		r.append_sprintf("[entry %d]:%d<-",i,s.mSrcIndex);
+		r += dump_gen(s.mpSrc);
+		r += "\n";
+	}}
+	return r;
+}
+
+VDString VDPixmapUberBlitterGenerator::dump_gen(IVDPixmapGen* src) {
+	VDString r;
+	while (src) {
+		IVDPixmapGen** px = std::find(mGenerators.begin(),mGenerators.end(),src);
+		int x = px-mGenerators.begin();
+		r.append_sprintf("[%s #%d]",src->dump_name(),x);
+
+		if (!src->dump_src(1)) {
+			src = src->dump_src(0);
+			if (src) r += "<-";
+		} else {
+			r += "(";
+			{for(int i=0; ;i++){
+				IVDPixmapGen* src1 = src->dump_src(i);
+				if(!src1) break;
+				if(i>0) r += ", ";
+				r += dump_gen(src1);
+			}}
+			r += ")";
+			break;
+		}
+	}
+	return r;
 }
 
 void VDPixmapUberBlitterGenerator::swap(int index) {

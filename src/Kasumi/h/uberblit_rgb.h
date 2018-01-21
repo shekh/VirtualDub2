@@ -20,6 +20,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_565_LE;
 	}
 
+	virtual const char* dump_name(){ return "X1R5G5B5_To_R5G6B5"; }
+
 protected:
 	virtual void Compute(void *dst0, sint32 y) {
 		uint16 *dst = (uint16 *)dst0;
@@ -46,6 +48,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8888;
 	}
+
+	virtual const char* dump_name(){ return "R5G6B5_To_X1R5G5B5"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -80,6 +84,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8888;
 	}
 
+	virtual const char* dump_name(){ return "X1R5G5B5_To_X8R8G8B8"; }
+
 protected:
 	virtual void Compute(void *dst0, sint32 y) {
 		uint32 *dst = (uint32 *)dst0;
@@ -104,6 +110,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8888;
 	}
+
+	virtual const char* dump_name(){ return "R5G6B5_To_X8R8G8B8"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -130,6 +138,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8888;
 	}
+
+	virtual const char* dump_name(){ return "R8G8B8_To_A8R8G8B8"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -164,6 +174,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_1555_LE;
 	}
 
+	virtual const char* dump_name(){ return "X8R8G8B8_To_X1R5G5B5"; }
+
 protected:
 	void Compute(void *dst0, sint32 y) {
 		uint16 *dst = (uint16 *)dst0;
@@ -188,6 +200,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_565_LE;
 	}
 
+	virtual const char* dump_name(){ return "X8R8G8B8_To_R5G6B5"; }
+
 protected:
 	void Compute(void *dst0, sint32 y) {
 		uint16 *dst = (uint16 *)dst0;
@@ -211,6 +225,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_888;
 	}
+
+	virtual const char* dump_name(){ return "X8R8G8B8_To_R8G8B8"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -244,6 +260,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_1555_LE;
 	}
+
+	virtual const char* dump_name(){ return "X8R8G8B8_To_X1R5G5B5_Dithered"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -281,6 +299,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_565_LE;
 	}
+
+	virtual const char* dump_name(){ return "X8R8G8B8_To_R5G6B5_Dithered"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -325,6 +345,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_32F_LE;
 	}
 
+	virtual const char* dump_name(){ return "8_To_32F"; }
+
 protected:
 	void Compute(void *dst0, sint32 y) {
 		float *dst = (float *)dst0;
@@ -347,6 +369,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_32Fx4_LE;
 	}
+
+	virtual const char* dump_name(){ return "X8R8G8B8_To_X32B32G32R32F"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -383,6 +407,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8;
 	}
 
+	virtual const char* dump_name(){ return "32F_To_8"; }
+
 protected:
 	void Compute(void *dst0, sint32 y) {
 		uint8 *dst = (uint8 *)dst0;
@@ -410,6 +436,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8;
 	}
+
+	virtual const char* dump_name(){ return "32F_To_8_Dithered"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -461,6 +489,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8888;
 	}
 
+	virtual const char* dump_name(){ return "X32B32G32R32F_To_X8R8G8B8"; }
+
 protected:
 	void Compute(void *dst0, sint32 y) {
 		uint32 *dst = (uint32 *)dst0;
@@ -494,6 +524,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8888;
 	}
+
+	virtual const char* dump_name(){ return "X32B32G32R32F_To_X8R8G8B8_Dithered"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {

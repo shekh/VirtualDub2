@@ -45,6 +45,15 @@ public:
 
 	uint32 GetType(uint32 output) const;
 
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcR;
+		if(index==1) return mpSrcG;
+		if(index==2) return mpSrcB;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "32F_To_V210"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 
@@ -70,6 +79,8 @@ public:
 	sint32 GetWidth(int index) const;
 	uint32 GetType(uint32 output) const;
 
+	virtual const char* dump_name(){ return "V210_To_32F"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 };
@@ -89,16 +100,18 @@ public:
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
 		FilterModPixmapInfo unused;
 		mpSrc->TransformPixmapInfo(src,unused);
-    dst.colorSpaceMode = src.colorSpaceMode;
-    dst.colorRangeMode = src.colorRangeMode;
-    dst.ref_r = 0x3FF;
-    dst.ref_g = 0;
-    dst.ref_b = 0;
-    dst.ref_a = 0;
+		dst.colorSpaceMode = src.colorSpaceMode;
+		dst.colorRangeMode = src.colorRangeMode;
+		dst.ref_r = 0x3FF;
+		dst.ref_g = 0;
+		dst.ref_b = 0;
+		dst.ref_a = 0;
 	}
 
 	sint32 GetWidth(int index) const;
 	uint32 GetType(uint32 output) const;
+
+	virtual const char* dump_name(){ return "V210_To_P16"; }
 
 protected:
 	void Compute(void *dst0, sint32 y);
@@ -145,6 +158,15 @@ public:
 
 	uint32 GetType(uint32 output) const;
 
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcR;
+		if(index==1) return mpSrcG;
+		if(index==2) return mpSrcB;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "32F_To_V410"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 
@@ -169,6 +191,8 @@ public:
 
 	uint32 GetType(uint32 output) const;
 
+	virtual const char* dump_name(){ return "V410_To_32F"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 };
@@ -188,15 +212,17 @@ public:
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
 		FilterModPixmapInfo unused;
 		mpSrc->TransformPixmapInfo(src,unused);
-    dst.colorSpaceMode = src.colorSpaceMode;
-    dst.colorRangeMode = src.colorRangeMode;
-    dst.ref_r = 0x3FF;
-    dst.ref_g = 0;
-    dst.ref_b = 0;
-    dst.ref_a = 0;
+		dst.colorSpaceMode = src.colorSpaceMode;
+		dst.colorRangeMode = src.colorRangeMode;
+		dst.ref_r = 0x3FF;
+		dst.ref_g = 0;
+		dst.ref_b = 0;
+		dst.ref_a = 0;
 	}
 
 	uint32 GetType(uint32 output) const;
+
+	virtual const char* dump_name(){ return "V410_To_P16"; }
 
 protected:
 	void Compute(void *dst0, sint32 y);
@@ -212,6 +238,7 @@ protected:
 class VDPixmapGen_32F_To_Y410 : public VDPixmapGen_32F_To_V410 {
 public:
 	uint32 GetType(uint32 output) const;
+	virtual const char* dump_name(){ return "32F_To_Y410"; }
 
 protected:
 	void Compute(void *dst0, sint32 y);
@@ -224,6 +251,8 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 class VDPixmapGen_Y410_To_32F : public VDPixmapGen_V410_To_32F {
+public:
+	virtual const char* dump_name(){ return "Y410_To_32F"; }
 protected:
 	void Compute(void *dst0, sint32 y);
 };
@@ -236,6 +265,8 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 class VDPixmapGen_Y410_To_P16 : public VDPixmapGen_V410_To_P16 {
+public:
+	virtual const char* dump_name(){ return "Y410_To_P16"; }
 protected:
 	void Compute(void *dst0, sint32 y);
 };

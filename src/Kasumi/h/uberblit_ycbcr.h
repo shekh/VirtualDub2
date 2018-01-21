@@ -31,6 +31,15 @@ public:
 		mpSrcCr->TransformPixmapInfo(src,unused);
 	}
 
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcY;
+		if(index==1) return mpSrcCb;
+		if(index==2) return mpSrcCr;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "YCbCrToRGB"; }
+
 protected:
 	IVDPixmapGen *mpSrcY;
 	uint32 mSrcIndexY;
@@ -49,6 +58,8 @@ public:
 
 		StartWindow(mWidth * 4);
 	}
+
+	virtual const char* dump_name(){ return "YCbCrToRGB32"; }
 };
 
 
@@ -61,6 +72,8 @@ public:
 
 		StartWindow(mWidth * 8);
 	}
+
+	virtual const char* dump_name(){ return "YCbCrToRGB64"; }
 };
 
 
@@ -73,6 +86,8 @@ public:
 
 		StartWindow(mWidth * 16);
 	}
+
+	virtual const char* dump_name(){ return "YCbCrToRGB32F"; }
 };
 
 
@@ -89,6 +104,8 @@ public:
 	const void *GetRow(sint32 y, uint32 index) {
 		return (const uint8 *)VDPixmapGenWindowBasedOneSource::GetRow(y, index) + mWindowPitch * index;
 	}
+
+	virtual const char* dump_name(){ return "RGB32ToYCbCr"; }
 };
 
 class VDPixmapGenRGB32FToYCbCrBase : public VDPixmapGenWindowBasedOneSource {
@@ -104,6 +121,8 @@ public:
 	const void *GetRow(sint32 y, uint32 index) {
 		return (const uint8 *)VDPixmapGenWindowBasedOneSource::GetRow(y, index) + mWindowPitch * index;
 	}
+
+	virtual const char* dump_name(){ return "RGB32FToYCbCr"; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -371,6 +390,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixType_8 | kVDPixSpace_YCC_709;
 	}
 
+	virtual const char* dump_name(){ return "RGB32ToYCbCr709"; }
+
 protected:
 	void Compute(void *dst0, sint32 y) {
 		uint8 *dstCr = (uint8 *)dst0;
@@ -409,6 +430,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixType_32F_LE | kVDPixSpace_YCC_709;
 	}
+
+	virtual const char* dump_name(){ return "RGB32FToYCbCr709"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {

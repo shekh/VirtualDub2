@@ -16,6 +16,8 @@ public:
 
 	uint32 GetType(uint32 output) const;
 
+	virtual const char* dump_name(){ return "32F_To_16F"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 };
@@ -31,6 +33,8 @@ public:
 	void Start();
 
 	uint32 GetType(uint32 output) const;
+
+	virtual const char* dump_name(){ return "16F_To_32F"; }
 
 protected:
 	void Compute(void *dst0, sint32 y);
@@ -55,6 +59,8 @@ public:
 	void Start();
 
 	uint32 GetType(uint32 output) const;
+
+	virtual const char* dump_name(){ return "32F_To_16"; }
 
 protected:
 	float m;
@@ -81,6 +87,8 @@ public:
 	void Start();
 
 	uint32 GetType(uint32 output) const;
+
+	virtual const char* dump_name(){ return "16_To_32F"; }
 
 protected:
 	int ref;
@@ -113,6 +121,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16_LE;
 	}
 
+	virtual const char* dump_name(){ return "8_To_16"; }
+
 protected:
 
 	void Compute(void *dst0, sint32 y);
@@ -132,6 +142,8 @@ public:
 	void Start();
 
 	uint32 GetType(uint32 output) const;
+
+	virtual const char* dump_name(){ return "16_To_8"; }
 
 protected:
 	int ref;
@@ -172,6 +184,8 @@ public:
 		if ((type & kVDPixType_Mask)==kVDPixType_16x4_LE) bpp = 8;
 		StartWindow(mWidth * bpp);
 	}
+
+	virtual const char* dump_name(){ return "Y16_Normalize"; }
 
 protected:
 	int bpp;

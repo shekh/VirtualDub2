@@ -171,6 +171,9 @@ public:
 	void addToEnd(VDPixmapGenWindowBasedOneSourceSimple* extra, int srcIndex=0);
 
 	IVDPixmapBlitter *create();
+	VDString dump();
+	VDString dump_gen(IVDPixmapGen* src);
+	void debug_dump();
 
 protected:
 	void MarkDependency(IVDPixmapGen *dst, IVDPixmapGen *src);

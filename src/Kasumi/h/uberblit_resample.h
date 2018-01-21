@@ -38,6 +38,8 @@ public:
 		return mpSrc->GetType(mSrcIndex);
 	}
 
+	virtual const char* dump_name(){ return "ResampleRow"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 	void Compute8(void *dst0, sint32 y);
@@ -75,6 +77,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return mpSrc->GetType(mSrcIndex);
 	}
+
+	virtual const char* dump_name(){ return "ResampleCol"; }
 
 protected:
 	void Compute(void *dst0, sint32 y);

@@ -116,6 +116,8 @@ public:
 		return mpSrc->GetType(mSrcIndex);
 	}
 
+	virtual IVDPixmapGen* dump_src(int index){ if(index==0) return mpSrc; return 0; }
+
 protected:
 	virtual void Compute(void *dst0, sint32 y) = 0;
 

@@ -47,6 +47,9 @@ public:
 		return mType;
 	}
 
+	virtual IVDPixmapGen* dump_src(int index){ return 0; }
+	virtual const char* dump_name(){ return "Fill8"; }
+
 protected:
 	sint32		mWidth;
 	sint32		mHeight;
@@ -98,6 +101,9 @@ public:
 	uint32 GetType(uint32 index) const {
 		return mType;
 	}
+
+	virtual IVDPixmapGen* dump_src(int index){ return 0; }
+	virtual const char* dump_name(){ return "FillF"; }
 
 protected:
 	sint32		mWidth;

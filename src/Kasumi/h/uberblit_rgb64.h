@@ -39,6 +39,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
 	}
 
+	virtual const char* dump_name(){ return "X8R8G8B8_To_X16R16G16B16"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 };
@@ -66,6 +68,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_32Fx4_LE;
 	}
+
+	virtual const char* dump_name(){ return "X16R16G16B16_To_X32B32G32R32F"; }
 
 protected:
 	int ref_r;
@@ -104,6 +108,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
 	}
 
+	virtual const char* dump_name(){ return "X32B32G32R32F_To_X16R16G16B16"; }
+
 protected:
 	float mr;
 	float mg;
@@ -140,6 +146,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8888;
 	}
 
+	virtual const char* dump_name(){ return "X16R16G16B16_To_X8R8G8B8"; }
+
 protected:
 	int ref_r;
 	int ref_g;
@@ -164,6 +172,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_R210;
 	}
 
+	virtual const char* dump_name(){ return "X16R16G16B16_To_R210"; }
+
 protected:
 	
 	void Compute(void *dst0, sint32 y);
@@ -179,6 +189,8 @@ public:
 	uint32 GetType(uint32 output) const {
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_R10K;
 	}
+
+	virtual const char* dump_name(){ return "X16R16G16B16_To_R10K"; }
 
 protected:
 	
@@ -206,6 +218,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
 	}
 
+	virtual const char* dump_name(){ return "R210_To_X16R16G16B16"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 };
@@ -231,6 +245,8 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
 	}
 
+	virtual const char* dump_name(){ return "R10K_To_X16R16G16B16"; }
+
 protected:
 	void Compute(void *dst0, sint32 y);
 };
@@ -238,6 +254,8 @@ protected:
 class VDPixmapGen_X16R16G16B16_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
 	VDPixmapGen_X16R16G16B16_Normalize(){ max_value=0xFFFF; }
+
+	virtual const char* dump_name(){ return "X16R16G16B16_Normalize"; }
 
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
 		mpSrc->TransformPixmapInfo(src,dst);
@@ -306,6 +324,8 @@ public:
 	void Start() {
 		StartWindow(mWidth * 4);
 	}
+
+	virtual const char* dump_name(){ return "X8R8G8B8_Normalize"; }
 
 protected:
 	uint32 a_mask;
