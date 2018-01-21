@@ -42,6 +42,27 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 	bool valid_yuv = false;
 
 	switch(px.format) {
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+		{
+			uint8 a = VDPixmapSample8(px.data4, px.pitch4, x, y);
+			ps.sa = a;
+			ps.a = float(a);
+		}
+		break;
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+		{
+			uint16 a = VDPixmapSample16U(px.data4, px.pitch4, x, y);
+			ps.sa = a;
+			if(a>=px.info.ref_a) ps.a=255; else ps.a=float(a*255.0/px.info.ref_a);
+		}
+		break;
+	}
+
+	switch(px.format) {
 	case nsVDPixmap::kPixFormat_Pal1:
 	case nsVDPixmap::kPixFormat_Pal2:
 	case nsVDPixmap::kPixFormat_Pal4:
@@ -70,6 +91,7 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 		{
 			int ref = px.info.ref_r;
@@ -85,6 +107,7 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
 		{
 			sint32 u = (x << 7) + 128;
@@ -105,6 +128,7 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
 		{
 			sint32 u = (x << 7) + 128;
@@ -125,6 +149,7 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
 	case nsVDPixmap::kPixFormat_YUV444_Planar:
 	case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
 	case nsVDPixmap::kPixFormat_YUV444_Planar_709:
@@ -137,6 +162,7 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
 	case nsVDPixmap::kPixFormat_YUV422_Planar:
 	case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
 	case nsVDPixmap::kPixFormat_YUV422_Planar_709:
@@ -154,6 +180,7 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
 	case nsVDPixmap::kPixFormat_YUV420_Planar:
 	case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
 	case nsVDPixmap::kPixFormat_YUV420_Planar_709:

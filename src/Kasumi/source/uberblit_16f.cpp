@@ -196,6 +196,58 @@ void VDPixmapGen_Y16_Normalize::Compute(void *dst0, sint32 y) {
 		memcpy(dst0,mpSrc->GetRow(y, mSrcIndex),mWidth*bpp);
 }
 
+void VDPixmapGen_A16_Normalize::Compute(void *dst0, sint32 y) {
+	if (a_mask)
+		ComputeWipeAlpha(dst0,y);
+	else
+		VDPixmapGen_Y16_Normalize::Compute(dst0,y);
+}
+
+void VDPixmapGen_A8_Normalize::Compute(void *dst0, sint32 y) {
+	if (a_mask)
+		ComputeWipeAlpha(dst0,y);
+	else
+		memcpy(dst0,mpSrc->GetRow(y, mSrcIndex),mWidth);
+}
+
+void VDPixmapGen_A16_Normalize::ComputeWipeAlpha(void *dst0, sint32 y) {
+	uint16 *dst = (uint16 *)dst0;
+
+	int w = mWidth*bpp/2;
+	int w0 = w & ~7;
+	w -= w0;
+
+	__m128i cmask = _mm_set1_epi16(a_mask);
+	{for(int x=0; x<w0/8; x++) {
+		_mm_storeu_si128((__m128i*)dst,cmask);
+		dst+=8;
+	}}
+
+	{for(int x=0; x<w; x++) {
+		*dst = a_mask;
+		dst++;
+	}}
+}
+
+void VDPixmapGen_A8_Normalize::ComputeWipeAlpha(void *dst0, sint32 y) {
+	uint8 *dst = (uint8 *)dst0;
+
+	int w = mWidth;
+	int w0 = w & ~15;
+	w -= w0;
+
+	__m128i cmask = _mm_set1_epi8(a_mask);
+	{for(int x=0; x<w0/16; x++) {
+		_mm_storeu_si128((__m128i*)dst,cmask);
+		dst+=16;
+	}}
+
+	{for(int x=0; x<w; x++) {
+		*dst = a_mask;
+		dst++;
+	}}
+}
+
 void VDPixmapGen_Y16_Normalize::ComputeMask(void *dst0, sint32 y) {
 	uint16 *dst = (uint16 *)dst0;
 	const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex);
@@ -267,19 +319,31 @@ void VDPixmapGen_Y16_Normalize::ComputeNormalize(void *dst0, sint32 y) {
 }
 
 void ExtraGen_YUV_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst) {
+	if (dst.pitch4) {
+		VDPixmapGen_A16_Normalize* normalize3 = new VDPixmapGen_A16_Normalize;
+		normalize3->max_value = max_value; normalize3->mask = mask;
+		gen.swap(normalize3,3);
+	}
 	if (dst.pitch3) {
 		VDPixmapGen_Y16_Normalize* normalize2 = new VDPixmapGen_Y16_Normalize;
 		normalize2->max_value = max_value; normalize2->mask = mask;
-		gen.addToEnd(normalize2,2);
+		gen.swap(normalize2,2);
 	}
 	if (dst.pitch2) {
 		VDPixmapGen_Y16_Normalize* normalize1 = new VDPixmapGen_Y16_Normalize;
 		normalize1->max_value = max_value; normalize1->mask = mask;
-		gen.addToEnd(normalize1,1);
+		gen.swap(normalize1,1);
 	}
 	VDPixmapGen_Y16_Normalize* normalize0 = new VDPixmapGen_Y16_Normalize;
 	normalize0->max_value = max_value; normalize0->mask = mask;
-	gen.addToEnd(normalize0,0);
+	gen.swap(normalize0,0);
+}
+
+void ExtraGen_A8_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst) {
+	if (dst.pitch4) {
+		VDPixmapGen_A8_Normalize* normalize = new VDPixmapGen_A8_Normalize;
+		gen.swap(normalize,3);
+	}
 }
 
 void VDPixmap_YUV_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc, uint32 max_value) {

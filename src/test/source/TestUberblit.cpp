@@ -5,9 +5,10 @@
 #include <vd2/Kasumi/pixmapops.h>
 #include <vd2/Kasumi/pixmaputils.h>
 #include "../../Kasumi/h/uberblit.h"
+#include "../../Kasumi/h/uberblit_16f.h"
 
 namespace {
-	bool CheckBlit(const VDPixmap& dst, const VDPixmap& src) {
+	bool CheckBlit(const VDPixmap& dst, const VDPixmap& src, uint32 color) {
 		uint32 w = std::min<uint32>(src.w, dst.w);
 		uint32 h = std::min<uint32>(src.h, dst.h);
 
@@ -65,6 +66,7 @@ DEFINE_TEST(Uberblit) {
 	VDPixmapBuffer src[kColorCount];
 	for(int i=0; i<kColorCount; ++i) {
 		src[i].init(size, size, kPixFormat_XRGB8888);
+		src[i].info.alpha_type = FilterModPixmapInfo::kAlphaMask;
 		VDMemset32Rect(src[i].data, src[i].pitch, kColors[i], size, size);
 	}
 
@@ -77,6 +79,11 @@ DEFINE_TEST(Uberblit) {
 	int src_end = nsVDPixmap::kPixFormat_Max_Standard-1;
 	int dst_start = nsVDPixmap::kPixFormat_XRGB1555;
 	int dst_end = nsVDPixmap::kPixFormat_Max_Standard-1;
+	IVDPixmapExtraGen* extraDst = 0;
+	#if 0
+	ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
+	extraDst = normalize;
+	#endif
 
 	#if 0
 	src_start = src_end = nsVDPixmap::kPixFormat_YUV444_Planar16;
@@ -102,7 +109,7 @@ DEFINE_TEST(Uberblit) {
 				blit1 = VDPixmapCreateBlitter(in[0], src[0]);
 
 			blit1->Blit(in[v], src[v]);
-			if (!CheckBlit(in[v], src[v])) goto failed2;
+			if (!CheckBlit(in[v], src[v], kColors[v])) goto failed2;
 			in[v].validate();
 		}
 
@@ -124,7 +131,7 @@ DEFINE_TEST(Uberblit) {
 				) ? 2 : 8;
 
 			// convert src to dst
-			vdautoptr<IVDPixmapBlitter> blit2(VDPixmapCreateBlitter(out, in[0]));
+			vdautoptr<IVDPixmapBlitter> blit2(VDPixmapCreateBlitter(out, in[0], extraDst));
 
 			// convert dst to rgb32
 			vdautoptr<IVDPixmapBlitter> blit3(VDPixmapCreateBlitter(output, out));
@@ -133,10 +140,10 @@ DEFINE_TEST(Uberblit) {
 
 			for(int v=0; v<maxtest; ++v) {
 				blit2->Blit(out, in[v]);
-				if (!CheckBlit(out, in[v])) goto failed;
+				if (!CheckBlit(out, in[v], kColors[v])) goto failed;
 				out.validate();
 				blit3->Blit(output, out);
-				if (!CheckBlit(output, out)) goto failed;
+				if (!CheckBlit(output, out, kColors[v])) goto failed;
 				output.validate();
 
 				// white and black must be exact
@@ -184,5 +191,7 @@ failed:;
 		}
 failed2:;
 	}
+
+	delete extraDst;
 	return 0;
 }

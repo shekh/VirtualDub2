@@ -99,6 +99,12 @@ uint32 VDPixmapGetFormatTokenFromFormat(int format) {
 	case kPixFormat_YUV420_P010:
 	case kPixFormat_YUV420_P016:
 		return kVDPixType_16_16x2_LE | kVDPixSamp_420_MPEG2 | kVDPixSpace_YCC_601;
+	case kPixFormat_YUV444_Alpha_Planar:	return kVDPixType_8_8_8_8 | kVDPixSamp_444 | kVDPixSpace_YCC_601;
+	case kPixFormat_YUV422_Alpha_Planar:	return kVDPixType_8_8_8_8 | kVDPixSamp_422 | kVDPixSpace_YCC_601;
+	case kPixFormat_YUV420_Alpha_Planar:	return kVDPixType_8_8_8_8 | kVDPixSamp_420_MPEG2 | kVDPixSpace_YCC_601;
+	case kPixFormat_YUV444_Alpha_Planar16:	return kVDPixType_16_16_16_16_LE | kVDPixSamp_444 | kVDPixSpace_YCC_601;
+	case kPixFormat_YUV422_Alpha_Planar16:	return kVDPixType_16_16_16_16_LE | kVDPixSamp_422 | kVDPixSpace_YCC_601;
+	case kPixFormat_YUV420_Alpha_Planar16:	return kVDPixType_16_16_16_16_LE | kVDPixSamp_420_MPEG2 | kVDPixSpace_YCC_601;
 	default:
 		VDASSERT(false);
 		return 0;
@@ -157,10 +163,12 @@ namespace {
 				return 0;
 
 			case kVDPixType_8_8_8:
+			case kVDPixType_8_8_8_8:
 				return w;
 
 			case kVDPixType_16F_16F_16F_LE:
 			case kVDPixType_16_16_16_LE:
+			case kVDPixType_16_16_16_16_LE:
 				return w*2;
 
 			case kVDPixType_32F_32F_32F_LE:
@@ -1032,6 +1040,43 @@ namespace {
 	}
 }
 
+int BlitterSplitAlpha(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& src, uint32& srcToken, int alpha_type) {
+	int w = src.w;
+	int h = src.h;
+
+	switch(srcToken & kVDPixType_Mask) {
+	case kVDPixType_8888:
+		gen.dup();
+		gen.extract_8in32(3, w, h, true);
+		if (alpha_type==kVDPixType_16_LE) gen.conv_a8_to_a16();
+		gen.swap(1);
+		return 0;
+
+	case kVDPixType_16x4_LE:
+		gen.dup();
+		gen.extract_16in64(3, w, h, true);
+		if (alpha_type==kVDPixType_8) gen.conv_a16_to_a8();
+		gen.swap(1);
+		return 0;
+
+	case kVDPixType_8_8_8_8:
+		gen.move_to_end(0);
+		if (alpha_type==kVDPixType_16_LE) gen.conv_a8_to_a16();
+		gen.move_to(0);
+		srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
+		return 0;
+
+	case kVDPixType_16_16_16_16_LE:
+		gen.move_to_end(0);
+		if (alpha_type==kVDPixType_8) gen.conv_a16_to_a8();
+		gen.move_to(0);
+		srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
+		return 0;
+	}
+
+	return -1;
+}
+
 IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src, IVDPixmapExtraGen* extraDst) {
 	const VDPixmapLayout& dstlayout = VDPixmapToLayoutFromBase(dst, dst.data);
 	const VDPixmapLayout& srclayout = VDPixmapToLayoutFromBase(src, src.data);
@@ -1112,6 +1157,8 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, ((w + 1) & ~1)*2);
 		break;
 
+	case kVDPixType_8_8_8_8:
+			gen.ldsrc(0, 3, 0, 0, w, h, kVDPixType_8, w);
 	case kVDPixType_8_8_8:
 		{
 			uint32 ytoken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8;
@@ -1148,6 +1195,8 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 		}
 		break;
 
+	case kVDPixType_16_16_16_16_LE:
+			gen.ldsrc(0, 3, 0, 0, w, h, kVDPixType_16_LE, w*2);
 	case kVDPixType_16_16_16_LE:
 		{
 			uint32 ytoken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_LE;
@@ -1251,12 +1300,7 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 	}
 
 	if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_YCC_601) {
-		switch (srcToken & kVDPixType_Mask) {
-		case kVDPixType_V210:
-		case kVDPixType_V410:
-		case kVDPixType_Y410:
-		case kVDPixType_16_16_16_LE:
-		case kVDPixType_16x4_LE:
+		if (VDPixmapFormatMatrixType(src.format)==1) {
 			uint32 srcSpace = (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
 			if (src.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
 				srcSpace = (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
@@ -1265,16 +1309,66 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 	}
 
 	if ((dstToken & kVDPixSpace_Mask)==kVDPixSpace_YCC_601) {
-		switch (dstToken & kVDPixType_Mask) {
-		case kVDPixType_V210:
-		case kVDPixType_V410:
-		case kVDPixType_Y410:
-		case kVDPixType_16_16_16_LE:
-		case kVDPixType_16x4_LE:
+		if (VDPixmapFormatMatrixType(dst.format)==1) {
 			uint32 dstSpace = (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
 			if (dst.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
 				dstSpace = (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
 			dstToken = (dstToken & ~kVDPixSpace_Mask) | dstSpace;
+		}
+	}
+
+	int alpha_src = -1;
+	int alpha_type = 0;
+	// check if we need alpha bypass
+	if (VDPixmapFormatHasAlphaPlane(dst.format)) {
+		int proxy_dst = 0;
+		switch (dstToken & kVDPixType_Mask) {
+		case kVDPixType_8_8_8_8:
+			proxy_dst = (dstToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
+			alpha_type = kVDPixType_8;
+			break;
+		case kVDPixType_16_16_16_16_LE:
+			proxy_dst = (dstToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
+			alpha_type = kVDPixType_16_LE;
+			break;
+		}
+
+		if (VDPixmapFormatHasAlpha(src.format))
+			alpha_src = BlitterSplitAlpha(gen, src, srcToken, alpha_type);
+
+		dstToken = proxy_dst;
+
+	} else if (VDPixmapFormatHasAlpha(dst.format)) {
+		switch (dstToken & kVDPixType_Mask) {
+		case kVDPixType_8888:
+			alpha_type = kVDPixType_8;
+			break;
+		case kVDPixType_16x4_LE:
+			alpha_type = kVDPixType_16_LE;
+			break;
+		}
+
+		bool direct = false;
+		if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_BGR && (dstToken & kVDPixSpace_Mask)==kVDPixSpace_BGR) direct = true;
+
+		if (VDPixmapFormatHasAlpha(src.format) && !direct)
+			alpha_src = BlitterSplitAlpha(gen, src, srcToken, alpha_type);
+		
+	} else {
+		if (VDPixmapFormatHasAlpha(src.format)) {
+			switch(srcToken & kVDPixType_Mask) {
+			case kVDPixType_8_8_8_8:
+				gen.move_to_end(0);
+				gen.pop();
+				srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
+				break;
+
+			case kVDPixType_16_16_16_16_LE:
+				gen.move_to_end(0);
+				gen.pop();
+				srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
+				break;
+			}
 		}
 	}
 
@@ -1375,6 +1469,7 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 		case kVDPixType_16_16_16_LE:
 		case kVDPixType_16_16x2_LE:
 		case kVDPixType_16x4_LE:
+		case kVDPixType_16_16_16_16_LE:
 			target_quality = 1;
 			break;
 		}
@@ -1988,6 +2083,26 @@ space_reconvert:
 
 	// check if we need a type change (possible with 16F)
 	srcToken = BlitterConvertType(gen, srcToken, dstToken, w, h);
+
+	// attach alpha
+	if (alpha_src!=-1) {
+		switch(dstToken & kVDPixType_Mask) {
+		case kVDPixType_8_8_8:
+		case kVDPixType_16_16_16_LE:
+			gen.move_to_end(alpha_src);
+			break;
+
+		case kVDPixType_8888:
+			gen.move_to_end(alpha_src);
+			gen.X8R8G8B8_to_A8R8G8B8();
+			break;
+
+		case kVDPixType_16x4_LE:
+			gen.move_to_end(alpha_src);
+			gen.X16R16G16B16_to_A16R16G16B16();
+			break;
+		}
+	}
 
 	if (extraDst) extraDst->Create(gen,dst);
 

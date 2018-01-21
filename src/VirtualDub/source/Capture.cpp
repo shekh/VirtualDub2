@@ -3553,9 +3553,20 @@ void VDCaptureData::createOutputBlitter() {
 		case nsVDPixmap::kPixFormat_YUV420_Planar16:
 		case nsVDPixmap::kPixFormat_YUV422_Planar16:
 		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
 			{
 				ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
 				normalize->max_value = out_info.ref_r;
+				extraDst = normalize;
+			}
+			break;
+		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+			{
+				ExtraGen_A8_Normalize* normalize = new ExtraGen_A8_Normalize;
 				extraDst = normalize;
 			}
 			break;

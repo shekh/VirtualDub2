@@ -537,6 +537,12 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 		formatMask.set(kPixFormat_YUV422_Planar16);
 		formatMask.set(kPixFormat_YUV420_Planar16);
 		formatMask.set(kPixFormat_Y16);
+		formatMask.set(kPixFormat_YUV444_Alpha_Planar);
+		formatMask.set(kPixFormat_YUV422_Alpha_Planar);
+		formatMask.set(kPixFormat_YUV420_Alpha_Planar);
+		formatMask.set(kPixFormat_YUV444_Alpha_Planar16);
+		formatMask.set(kPixFormat_YUV422_Alpha_Planar16);
+		formatMask.set(kPixFormat_YUV420_Alpha_Planar16);
 
 		static const int kStaticOrder[]={
 			kPixFormat_YUV444_Planar,

@@ -76,6 +76,9 @@ int VDFilterFrameConverter::AllocateNodes(int threads) {
 		case nsVDPixmap::kPixFormat_YUV420_Planar16:
 		case nsVDPixmap::kPixFormat_YUV422_Planar16:
 		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
 			extraDst = new ExtraGen_YUV_Normalize;
 			break;
 		}

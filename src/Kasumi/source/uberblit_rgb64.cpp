@@ -348,7 +348,7 @@ void VDPixmapGen_X16R16G16B16_Normalize::ComputeWipeAlpha(void *dst0, sint32 y) 
 void ExtraGen_X16R16G16B16_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst) {
 	VDPixmapGen_X16R16G16B16_Normalize* normalize = new VDPixmapGen_X16R16G16B16_Normalize;
 	normalize->max_value = max_value;
-	gen.addToEnd(normalize);
+	gen.swap(normalize);
 }
 
 void VDPixmapGen_X8R8G8B8_Normalize::Compute(void *dst0, sint32 y) {
@@ -392,7 +392,7 @@ void VDPixmapGen_X8R8G8B8_Normalize::ComputeWipeAlpha(void *dst0, sint32 y) {
 
 void ExtraGen_X8R8G8B8_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst) {
 	VDPixmapGen_X8R8G8B8_Normalize* normalize = new VDPixmapGen_X8R8G8B8_Normalize;
-	gen.addToEnd(normalize);
+	gen.swap(normalize);
 }
 
 void VDPixmap_X16R16G16B16_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc, uint32 max_value) {

@@ -174,15 +174,8 @@ void VDPixmapUberBlitter::Blit(const VDPixmap& dst, const VDPixmap& src) {
 	Blit(dst, NULL, src);
 	FilterModPixmapInfo& info = (const_cast<VDPixmap&>(dst)).info;
 	info.copy_frame(src.info);
-	switch (dst.format) {
-	case kPixFormat_XRGB1555:
-	case kPixFormat_XRGB8888:
-	case kPixFormat_XRGB64:
-	case kPixFormat_XYUV64:
-		break;
-	default:
+	if (!VDPixmapFormatHasAlpha(dst.format))
 		info.alpha_type = FilterModPixmapInfo::kAlphaInvalid;
-	}
 }
 
 void VDPixmapUberBlitter::Blit(const VDPixmap& dst, const vdrect32 *rDst, const VDPixmap& src) {
@@ -204,6 +197,10 @@ void VDPixmapUberBlitter::Blit(const VDPixmap& dst, const vdrect32 *rDst, const 
 				p = src.data3;
 				pitch = src.pitch3;
 				break;
+			case 3:
+				p = src.data4;
+				pitch = src.pitch4;
+				break;
 			default:
 				VDASSERT(false);
 				break;
@@ -219,6 +216,10 @@ void VDPixmapUberBlitter::Blit(const VDPixmap& dst, const vdrect32 *rDst, const 
 			Blit3Split(dst, rDst, src.info);
 		else
 			Blit3(dst, rDst, src.info);
+
+		if (mOutputs[3].mpSrc)
+			BlitAlpha(dst, rDst, src.info);
+
 	} else if (mOutputs[1].mpSrc) {
 		if (mbIndependentPlanes)
 			Blit2Separated(dst, rDst, src.info);
@@ -226,6 +227,28 @@ void VDPixmapUberBlitter::Blit(const VDPixmap& dst, const vdrect32 *rDst, const 
 			Blit2(dst, rDst, src.info);
 	} else
 		Blit(dst, rDst, src.info);
+}
+
+void VDPixmapUberBlitter::BlitAlpha(const VDPixmap& px, const vdrect32 *rDst, const FilterModPixmapInfo& src) {
+	const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(px.format);
+	IVDPixmapGen *gen = mOutputs[3].mpSrc;
+	int idx = mOutputs[3].mSrcIndex;
+
+	gen->AddWindowRequest(0, 0);
+	gen->TransformPixmapInfo(src,(const_cast<VDPixmap&>(px)).info);
+	gen->Start();
+
+	uint32 height = px.h;
+	uint32 bpr = formatInfo.aux4size * px.w;
+	uint8 *dst = (uint8 *)px.data4;
+	ptrdiff_t pitch = px.pitch4;
+	uint32 y2 = 0;
+	for(uint32 y=0; y<height; ++y) {
+		memcpy(dst, gen->GetRow(y, idx), bpr);
+		vdptrstep(dst, pitch);
+	}
+
+	VDCPUCleanupExtensions();
 }
 
 void VDPixmapUberBlitter::Blit(const VDPixmap& dst, const vdrect32 *rDst, const FilterModPixmapInfo& src) {
@@ -657,6 +680,27 @@ void VDPixmapUberBlitterGenerator::swap(int index) {
 	std::swap(mStack.back(), (&mStack.back())[-index]);
 }
 
+void VDPixmapUberBlitterGenerator::swap(VDPixmapGenWindowBasedOneSourceSimple* extra, int srcIndex) {
+	StackEntry& e = mStack[srcIndex];
+	extra->Init(e.mpSrc, e.mSrcIndex);
+
+	mGenerators.push_back(extra);
+	MarkDependency(extra, e.mpSrc);
+	e = StackEntry(extra, 0);
+}
+
+void VDPixmapUberBlitterGenerator::move_to_end(int index) {
+	StackEntry e = mStack[index];
+	mStack.erase(mStack.begin()+index);
+	mStack.push_back(e);
+}
+
+void VDPixmapUberBlitterGenerator::move_to(int index) {
+	StackEntry e = mStack.back();
+	mStack.pop_back();
+	mStack.insert(mStack.begin()+index,e);
+}
+
 void VDPixmapUberBlitterGenerator::dup() {
 	mStack.push_back(mStack.back());
 }
@@ -666,7 +710,7 @@ void VDPixmapUberBlitterGenerator::pop() {
 }
 
 void VDPixmapUberBlitterGenerator::ldsrc(int srcIndex, int srcPlane, int x, int y, uint32 w, uint32 h, uint32 type, uint32 bpr) {
-	VDPixmapGenSrc *src = new VDPixmapGenSrc;
+	VDPixmapGenSrc *src = srcPlane==3 ? new VDPixmapGenSrcAlpha : new VDPixmapGenSrc;
 
 	src->Init(w, h, type, bpr);
 
@@ -722,7 +766,7 @@ void VDPixmapUberBlitterGenerator::extract_8in16(int offset, uint32 w, uint32 h)
 	args[0] = StackEntry(src, 0);
 }
 
-void VDPixmapUberBlitterGenerator::extract_8in32(int offset, uint32 w, uint32 h) {
+void VDPixmapUberBlitterGenerator::extract_8in32(int offset, uint32 w, uint32 h, bool alpha) {
 	StackEntry *args = &mStack.back();
 	VDPixmapGen_8In32 *src = NULL;
 
@@ -737,6 +781,7 @@ void VDPixmapUberBlitterGenerator::extract_8in32(int offset, uint32 w, uint32 h)
 		src = new VDPixmapGen_8In32;
 
 	src->Init(args[0].mpSrc, args[0].mSrcIndex, offset, w, h);
+	src->alpha = alpha;
 
 	mGenerators.push_back(src);
 	MarkDependency(src, args[0].mpSrc);
@@ -753,10 +798,11 @@ void VDPixmapUberBlitterGenerator::extract_16in32(int offset, uint32 w, uint32 h
 	args[0] = StackEntry(src, 0);
 }
 
-void VDPixmapUberBlitterGenerator::extract_16in64(int offset, uint32 w, uint32 h) {
+void VDPixmapUberBlitterGenerator::extract_16in64(int offset, uint32 w, uint32 h, bool alpha) {
 	StackEntry *args = &mStack.back();
 	VDPixmapGen_16In64 *src = new VDPixmapGen_16In64;
 	src->Init(args[0].mpSrc, args[0].mSrcIndex, offset, w, h);
+	src->alpha = alpha;
 
 	mGenerators.push_back(src);
 	MarkDependency(src, args[0].mpSrc);
@@ -1181,6 +1227,17 @@ void VDPixmapUberBlitterGenerator::conv_8_to_16() {
 	args[0] = StackEntry(src, 0);
 }
 
+void VDPixmapUberBlitterGenerator::conv_a8_to_a16() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_A8_To_A16 *src = new VDPixmapGen_A8_To_A16;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
 void VDPixmapUberBlitterGenerator::conv_16F_to_32F() {
 	StackEntry *args = &mStack.back();
 	VDPixmapGen_16F_To_32F *src = new VDPixmapGen_16F_To_32F;
@@ -1206,6 +1263,17 @@ void VDPixmapUberBlitterGenerator::conv_16_to_32F() {
 void VDPixmapUberBlitterGenerator::conv_16_to_8() {
 	StackEntry *args = &mStack.back();
 	VDPixmapGen_16_To_8 *src = new VDPixmapGen_16_To_8;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
+void VDPixmapUberBlitterGenerator::conv_a16_to_a8() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_A16_To_A8 *src = new VDPixmapGen_A16_To_A8;
 
 	src->Init(args[0].mpSrc, args[0].mSrcIndex);
 
@@ -1676,6 +1744,19 @@ void VDPixmapUberBlitterGenerator::interleave_X8R8G8B8() {
 	mStack.pop_back();
 }
 
+void VDPixmapUberBlitterGenerator::X8R8G8B8_to_A8R8G8B8() {
+	StackEntry *args = &mStack.back() - 1;
+	VDPixmapGen_X8R8G8B8_To_A8R8G8B8 *src = new VDPixmapGen_X8R8G8B8_To_A8R8G8B8;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex, args[1].mpSrc, args[1].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	MarkDependency(src, args[1].mpSrc);
+	args[0] = StackEntry(src, 0);
+	mStack.pop_back();
+}
+
 void VDPixmapUberBlitterGenerator::interleave_X16R16G16B16() {
 	StackEntry *args = &mStack.back() - 2;
 	VDPixmapGen_B16x3_To_X16R16G16B16 *src = new VDPixmapGen_B16x3_To_X16R16G16B16;
@@ -1688,6 +1769,19 @@ void VDPixmapUberBlitterGenerator::interleave_X16R16G16B16() {
 	MarkDependency(src, args[2].mpSrc);
 	args[0] = StackEntry(src, 0);
 	mStack.pop_back();
+	mStack.pop_back();
+}
+
+void VDPixmapUberBlitterGenerator::X16R16G16B16_to_A16R16G16B16() {
+	StackEntry *args = &mStack.back() - 1;
+	VDPixmapGen_X16R16G16B16_To_A16R16G16B16 *src = new VDPixmapGen_X16R16G16B16_To_A16R16G16B16;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex, args[1].mpSrc, args[1].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	MarkDependency(src, args[1].mpSrc);
+	args[0] = StackEntry(src, 0);
 	mStack.pop_back();
 }
 
@@ -2025,21 +2119,12 @@ void VDPixmapUberBlitterGenerator::ycbcr_to_ycbcr_generic(const VDPixmapGenYCbCr
 	args[2] = StackEntry(src, 2);
 }
 
-void VDPixmapUberBlitterGenerator::addToEnd(VDPixmapGenWindowBasedOneSourceSimple* extra, int srcIndex) {
-	StackEntry *args = &mStack.back() - srcIndex;
-	extra->Init(args[0].mpSrc, args[0].mSrcIndex);
-
-	mGenerators.push_back(extra);
-	MarkDependency(extra, args[0].mpSrc);
-	args[0] = StackEntry(extra, 0);
-}
-
 IVDPixmapBlitter *VDPixmapUberBlitterGenerator::create() {
 	vdautoptr<VDPixmapUberBlitter> blitter(new VDPixmapUberBlitter);
 
 	int numStackEntries = (int)mStack.size();
 
-	for(int i=0; i<3; ++i) {
+	for(int i=0; i<4; ++i) {
 		if (i < numStackEntries) {
 			blitter->mOutputs[i].mpSrc = mStack[i].mpSrc;
 			blitter->mOutputs[i].mSrcIndex = mStack[i].mSrcIndex;
@@ -2050,6 +2135,11 @@ IVDPixmapBlitter *VDPixmapUberBlitterGenerator::create() {
 	}
 
 	mStack.clear();
+
+	blitter->mbIndependentAlpha = false;
+	if (numStackEntries >= 4) {
+		blitter->mbIndependentAlpha = true;
+	}
 
 	// If this blitter has three outputs, determine if outputs 1 and 2 are independent
 	// from output 0.

@@ -1451,6 +1451,10 @@ void VDVideoDisplayDX9Manager::DetermineBestTextureFormat(int srcFormat, int& ds
 				break;
 
 			default:
+				if (VDPixmapFormatHasAlpha(dstFormat)) {
+					dstFormat = kPixFormat_XRGB8888;
+					break;
+				}
 				goto fail;
 		}
 	}

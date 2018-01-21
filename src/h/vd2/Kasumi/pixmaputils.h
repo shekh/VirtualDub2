@@ -42,6 +42,7 @@ inline VDPixmap VDPixmapFromLayout(const VDPixmapLayout& layout, void *p) {
 	px.data		= (char *)p + layout.data;
 	px.data2	= (char *)p + layout.data2;
 	px.data3	= (char *)p + layout.data3;
+	px.data4	= (char *)p + layout.data4;
 	px.format	= layout.format;
 	px.info.colorRangeMode = layout.formatEx.colorRangeMode;
 	px.info.colorSpaceMode = layout.formatEx.colorSpaceMode;
@@ -51,6 +52,7 @@ inline VDPixmap VDPixmapFromLayout(const VDPixmapLayout& layout, void *p) {
 	px.pitch	= layout.pitch;
 	px.pitch2	= layout.pitch2;
 	px.pitch3	= layout.pitch3;
+	px.pitch4	= layout.pitch4;
 
 	return px;
 }
@@ -60,6 +62,7 @@ inline VDPixmapLayout VDPixmapToLayoutFromBase(const VDPixmap& px, void *p) {
 	layout.data		= (char *)px.data - (char *)p;
 	layout.data2	= (char *)px.data2 - (char *)p;
 	layout.data3	= (char *)px.data3 - (char *)p;
+	layout.data4	= (char *)px.data4 - (char *)p;
 	layout.format	= px.format;
 	layout.formatEx = px;
 	layout.w		= px.w;
@@ -68,6 +71,7 @@ inline VDPixmapLayout VDPixmapToLayoutFromBase(const VDPixmap& px, void *p) {
 	layout.pitch	= px.pitch;
 	layout.pitch2	= px.pitch2;
 	layout.pitch3	= px.pitch3;
+	layout.pitch4	= px.pitch4;
 	return layout;
 }
 
@@ -77,6 +81,7 @@ inline VDPixmapLayout VDPixmapToLayout(const VDPixmap& px, void *&p) {
 	layout.data		= 0;
 	layout.data2	= (char *)px.data2 - (char *)px.data;
 	layout.data3	= (char *)px.data3 - (char *)px.data;
+	layout.data4	= (char *)px.data4 - (char *)px.data;
 	layout.format	= px.format;
 	layout.formatEx = px;
 	layout.w		= px.w;
@@ -85,6 +90,7 @@ inline VDPixmapLayout VDPixmapToLayout(const VDPixmap& px, void *&p) {
 	layout.pitch	= px.pitch;
 	layout.pitch2	= px.pitch2;
 	layout.pitch3	= px.pitch3;
+	layout.pitch4	= px.pitch4;
 	return layout;
 }
 

@@ -88,6 +88,9 @@ protected:
 
 class VDPixmapGenWindowBasedOneSource : public VDPixmapGenWindowBased {
 public:
+	bool alpha;
+	VDPixmapGenWindowBasedOneSource(){ alpha = false; }
+
 	void InitSource(IVDPixmapGen *src, uint32 srcindex) {
 		mpSrc = src;
 		mSrcIndex = srcindex;
@@ -98,7 +101,14 @@ public:
 	}
 
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
-		mpSrc->TransformPixmapInfo(src,dst);
+		if (alpha) {
+			FilterModPixmapInfo buf;
+			mpSrc->TransformPixmapInfo(src,buf);
+			dst.copy_alpha(buf);
+			dst.ref_a = buf.ref_a;
+		} else {
+			mpSrc->TransformPixmapInfo(src,dst);
+		}
 	}
 
 	void AddWindowRequest(int minDY, int maxDY) {

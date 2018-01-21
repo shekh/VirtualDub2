@@ -637,9 +637,9 @@ const VDFraction VDVideoSourcePlugin::getPixelAspectRatio() const {
 
 const VDPixmap& VDVideoSourcePlugin::getTargetFormat() {
 	vdwithinputplugin(mpContext) {
-		const VDXPixmap *px = &mpXVDec->GetFrameBuffer();
-		memcpy(&mTargetFormat,px,sizeof(VDXPixmap));
-		VDPixmapFormatEx format = px->format;
+		const VDXPixmap &px = mpXVDec->GetFrameBuffer();
+		mTargetFormat = VDPixmap::copy(px);
+		VDPixmapFormatEx format = px.format;
 
 		mTargetFormat.info.clear();
 		if (mpFMVDec) {

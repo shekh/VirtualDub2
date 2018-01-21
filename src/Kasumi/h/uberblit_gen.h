@@ -32,13 +32,14 @@ protected:
 	void Blit3Separated(const VDPixmap& px, const vdrect32 *rDst, const FilterModPixmapInfo& src);
 	void Blit2(const VDPixmap& dst, const vdrect32 *rDst, const FilterModPixmapInfo& src);
 	void Blit2Separated(const VDPixmap& px, const vdrect32 *rDst, const FilterModPixmapInfo& src);
+	void BlitAlpha(const VDPixmap& dst, const vdrect32 *rDst, const FilterModPixmapInfo& src);
 
 	friend class VDPixmapUberBlitterGenerator;
 
 	struct OutputEntry {
 		IVDPixmapGen *mpSrc;
 		int mSrcIndex;
-	} mOutputs[3];
+	} mOutputs[4];
 
 	struct SourceEntry {
 		IVDPixmapGenSrc *mpSrc;
@@ -56,6 +57,7 @@ protected:
 
 	bool mbIndependentChromaPlanes;
 	bool mbIndependentPlanes;
+	bool mbIndependentAlpha;
 };
 
 class VDPixmapUberBlitterGenerator {
@@ -64,8 +66,11 @@ public:
 	~VDPixmapUberBlitterGenerator();
 
 	void swap(int index);
+	void move_to_end(int index);
+	void move_to(int index);
 	void dup();
 	void pop();
+	void swap(VDPixmapGenWindowBasedOneSourceSimple* extra, int srcIndex=0);
 
 	void ldsrc(int srcIndex, int srcPlane, int x, int y, uint32 w, uint32 h, uint32 type, uint32 bpr);
 
@@ -73,9 +78,9 @@ public:
 	void ldconstF(float fill, uint32 bpr, uint32 w, uint32 h, uint32 type);
 
 	void extract_8in16(int offset, uint32 w, uint32 h);
-	void extract_8in32(int offset, uint32 w, uint32 h);
+	void extract_8in32(int offset, uint32 w, uint32 h, bool alpha=false);
 	void extract_16in32(int offset, uint32 w, uint32 h);
-	void extract_16in64(int offset, uint32 w, uint32 h);
+	void extract_16in64(int offset, uint32 w, uint32 h, bool alpha=false);
 	void swap_8in16(uint32 w, uint32 h, uint32 bpr);
 
 	void conv_Pal1_to_8888(int srcIndex);
@@ -91,9 +96,11 @@ public:
 	void conv_8888_to_X32F();
 	void conv_8_to_32F();
 	void conv_8_to_16();
+	void conv_a8_to_a16();
 	void conv_16F_to_32F();
 	void conv_16_to_32F();
 	void conv_16_to_8();
+	void conv_a16_to_a8();
 	void conv_V210_to_32F();
 	void conv_V210_to_P16();
 	void conv_V410_to_32F();
@@ -123,6 +130,8 @@ public:
 	void interleave_X16R16G16B16();
 	void interleave_B8R8();
 	void interleave_B16R16();
+	void X8R8G8B8_to_A8R8G8B8();
+	void X16R16G16B16_to_A16R16G16B16();
 
 	void conv_X16_to_8888();
 	void conv_8888_to_X16();
@@ -167,8 +176,6 @@ public:
 	void lanczos3h(float xoffset, float xfactor, uint32 w);
 	void lanczos3v(float yoffset, float yfactor, uint32 h);
 	void lanczos3(float xoffset, float xfactor, uint32 w, float yoffset, float yfactor, uint32 h);
-
-	void addToEnd(VDPixmapGenWindowBasedOneSourceSimple* extra, int srcIndex=0);
 
 	IVDPixmapBlitter *create();
 	VDString dump();

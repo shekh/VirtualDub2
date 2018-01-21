@@ -73,4 +73,12 @@ protected:
 	uint32		mType;
 };
 
+class VDPixmapGenSrcAlpha: public VDPixmapGenSrc {
+public:
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		dst.copy_alpha(src);
+		dst.ref_a = src.ref_a;
+	}
+};
+
 #endif
