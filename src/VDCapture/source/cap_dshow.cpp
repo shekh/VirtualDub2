@@ -2523,6 +2523,7 @@ bool VDCaptureDriverDS::SetVideoFormat(const BITMAPINFOHEADER *pbih, uint32 size
 	case MAKEFOURCC('Y', 'V', '1', '6'):
 	case MAKEFOURCC('Y', 'V', '1', '2'):
 	case MAKEFOURCC('Y', 'V', 'U', '9'):
+	case MAKEFOURCC('v', '3', '0', '8'):
 	case MAKEFOURCC('v', '2', '1', '0'):
 	case MAKEFOURCC('P', '2', '1', '0'):
 	case MAKEFOURCC('P', '2', '1', '6'):

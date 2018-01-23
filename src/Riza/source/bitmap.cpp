@@ -203,6 +203,9 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 
 	// ----
 
+	case VDMAKEFOURCC('v', '3', '0', '8'):
+		return kPixFormat_YUV444_V308;
+
 	case VDMAKEFOURCC('Y', '4', '1', '6'):
 		return kPixFormat_YUVA444_Y416;
 
@@ -404,6 +407,11 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biBitCount		= 64;
 		dst->biSizeImage	= w*8 * h;
 		break;
+	case kPixFormat_YUV444_V308:
+		dst->biCompression	= VDMAKEFOURCC('v', '3', '0', '8');
+		dst->biBitCount		= 24;
+		dst->biSizeImage	= w*3 * h;
+		break;
 	case kPixFormat_YUVA444_Y416:
 		dst->biCompression	= VDMAKEFOURCC('Y', '4', '1', '6');
 		dst->biBitCount		= 64;
@@ -561,7 +569,7 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 	return true;
 }
 
-uint32 VDMakeBitmapCompatiblePixmapLayout(VDPixmapLayout& layout, sint32 w, sint32 h, int format, int variant, const uint32 *palette) {
+uint32 VDMakeBitmapCompatiblePixmapLayout(VDPixmapLayout& layout, sint32 w, sint32 h, int format, int variant, const uint32 *palette, int imageSize) {
 	using namespace nsVDPixmap;
 	int alignment = 4;
 
@@ -570,6 +578,12 @@ uint32 VDMakeBitmapCompatiblePixmapLayout(VDPixmapLayout& layout, sint32 w, sint
 		alignment = 128;
 	} else if (format == kPixFormat_R210) {
 		alignment = 256;
+		if (imageSize && imageSize==w*h*4) alignment = 1;
+	} else if (format == kPixFormat_YUV444_V308) {
+		alignment = 1;
+		if (imageSize && ((w*3+3) & ~3)*h==imageSize) alignment = 4;
+	} else if (format == kPixFormat_Y8) {
+		if (imageSize && w*h==imageSize) alignment = 1;
 	} else if (VDPixmapGetInfo(format).auxbufs > 1)
 		alignment = 1;
 
@@ -629,7 +643,7 @@ bool VDGetPixmapLayoutForBitmapFormat(const VDAVIBitmapInfoHeader& hdr, uint32 h
 	if (!format)
 		return false;
 
-	VDMakeBitmapCompatiblePixmapLayout(layout, hdr.biWidth, hdr.biHeight, format, variant);
+	VDMakeBitmapCompatiblePixmapLayout(layout, hdr.biWidth, hdr.biHeight, format, variant, 0, hdr.biSizeImage);
 	return true;
 }
 
@@ -638,7 +652,7 @@ VDPixmap VDGetPixmapForBitmap(const VDAVIBitmapInfoHeader& hdr, const void *data
 
 	int format = VDBitmapFormatToPixmapFormat(hdr, variant);
 	VDPixmapLayout layout;
-	VDMakeBitmapCompatiblePixmapLayout(layout, hdr.biWidth, hdr.biHeight, format, variant);
+	VDMakeBitmapCompatiblePixmapLayout(layout, hdr.biWidth, hdr.biHeight, format, variant, 0, hdr.biSizeImage);
 
 	return VDPixmapFromLayout(layout, (void *)data);
 }

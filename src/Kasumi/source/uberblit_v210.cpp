@@ -476,3 +476,64 @@ void VDPixmapGen_Y410_To_P16::Compute(void *dst0, sint32 y) {
 		dstB++;
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VDPixmapGen_V308_To_P8::Start() {
+	StartWindow(mWidth, 3);
+}
+
+const void *VDPixmapGen_V308_To_P8::GetRow(sint32 y, uint32 index) {
+	return (const uint8 *)VDPixmapGenWindowBasedOneSource::GetRow(y, index) + mWindowPitch * index;
+}
+
+uint32 VDPixmapGen_V308_To_P8::GetType(uint32 output) const {
+	return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8;
+}
+
+void VDPixmapGen_V308_To_P8::Compute(void *dst0, sint32 y) {
+	uint8 *dstR = (uint8 *)dst0;
+	uint8 *dstG = (uint8 *)((char *)dstR + mWindowPitch);
+	uint8 *dstB = (uint8 *)((char *)dstG + mWindowPitch);
+	const uint8 *src = (const uint8 *)mpSrc->GetRow(y, mSrcIndex);
+
+	// Cr Y Cb
+
+	for(int i=0; i<mWidth; ++i) {
+		dstR[0] = src[0];
+		dstG[0] = src[1];
+		dstB[0] = src[2];
+		src+=3;
+		dstR++;
+		dstG++;
+		dstB++;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+uint32 VDPixmapGen_P8_To_V308::GetType(uint32 output) const {
+	return (mpSrcG->GetType(mSrcIndexG) & ~kVDPixType_Mask) | kVDPixType_V308;
+}
+
+void VDPixmapGen_P8_To_V308::Compute(void *dst0, sint32 y) {
+	uint8 *dst = (uint8 *)dst0;
+	const uint8 *srcR = (const uint8 *)mpSrcR->GetRow(y, mSrcIndexR);
+	const uint8 *srcG = (const uint8 *)mpSrcG->GetRow(y, mSrcIndexG);
+	const uint8 *srcB = (const uint8 *)mpSrcB->GetRow(y, mSrcIndexB);
+
+	VDCPUCleanupExtensions();
+
+	// Cr Y Cb
+
+	for(sint32 i=0; i<mWidth; ++i) {
+		dst[0] = srcR[0];
+		dst[1] = srcG[0];
+		dst[2] = srcB[0];
+		srcR++;
+		srcB++;
+		srcG++;
+		dst+=3;
+	}
+}
+

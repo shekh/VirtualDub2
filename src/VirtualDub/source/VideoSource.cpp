@@ -731,14 +731,13 @@ bool VDVideoDecompressorDIB::QueryTargetFormat(const void *format) {
 }
 
 bool VDVideoDecompressorDIB::SetTargetFormat(int format) {
-	if (mSrcFormatVariant!=1) {
-		VDMakeBitmapCompatiblePixmapLayout(mDstLayout, mWidth, mHeight, mSrcLayout.format, 0);
-		mDstFormat = mSrcLayout.format;
-		mDstFormatVariant = mSrcFormatVariant;
-		return true;
-	}
+	bool enable_convert = true;
+
+	if (mSrcFormatVariant!=1)
+		enable_convert = false;
 
 	switch(mSrcLayout.format) {
+	case nsVDPixmap::kPixFormat_Y8:
 	case nsVDPixmap::kPixFormat_XRGB64:
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
@@ -753,16 +752,20 @@ bool VDVideoDecompressorDIB::SetTargetFormat(int format) {
 	case nsVDPixmap::kPixFormat_YUV420_P010:
 	case nsVDPixmap::kPixFormat_YUV422_P216:
 	case nsVDPixmap::kPixFormat_YUV420_P016:
-		format = mSrcLayout.format;
+		enable_convert = false;
 		break;
 	}
 
-	if (!format)
-		format = mSrcLayout.format;
+	if (enable_convert && format) {
+		VDMakeBitmapCompatiblePixmapLayout(mDstLayout, mWidth, mHeight, format, 0);
+		mDstFormat = format;
+		mDstFormatVariant = 1;
+	} else {
+		mDstLayout = mSrcLayout;
+		mDstFormat = mSrcLayout.format;
+		mDstFormatVariant = mSrcFormatVariant;
+	}
 
-	VDMakeBitmapCompatiblePixmapLayout(mDstLayout, mWidth, mHeight, format, 0);
-	mDstFormat = format;
-	mDstFormatVariant = 1;
 	return true;
 }
 
@@ -850,7 +853,7 @@ IVDVideoDecompressor *VDFindVideoDecompressorEx(uint32 fccHandler, const VDAVIBi
 		dec = new VDVideoDecompressorDIB;
 		if (dec) {
 			VDPixmapLayout layout;
-			VDMakeBitmapCompatiblePixmapLayout(layout, hdr->biWidth, hdr->biHeight, format, variant);
+			VDMakeBitmapCompatiblePixmapLayout(layout, hdr->biWidth, hdr->biHeight, format, variant, 0, hdr->biSizeImage);
 
 			const uint32 *palette = (const uint32 *)(hdr + 1);
 			static_cast<VDVideoDecompressorDIB *>(dec)->Init(layout, variant, palette, hdrlen >= sizeof(VDAVIBitmapInfoHeader) ? (hdrlen - sizeof(VDAVIBitmapInfoHeader)) >> 2 : 0);
@@ -977,10 +980,11 @@ bool VideoSource::setTargetFormatVariant(VDPixmapFormatEx format, int variant) {
 	const VDAVIBitmapInfoHeader *bih = getImageFormat();
 	const sint32 w = bih->biWidth;
 	const sint32 h = abs(bih->biHeight);			// we don't want inverted output....
+	int bih_format = VDBitmapFormatToPixmapFormat(*bih);
 	VDPixmapLayout layout;
 
 	format = VDPixmapFormatCombine(format);
-	VDMakeBitmapCompatiblePixmapLayout(layout, w, h, format, variant);
+	VDMakeBitmapCompatiblePixmapLayout(layout, w, h, format, variant, 0, bih_format ? bih->biSizeImage:0);
 
 	mTargetFormat = VDPixmapFromLayout(layout, mpFrameBuffer);
 	mTargetFormatVariant = variant;
@@ -1387,7 +1391,7 @@ bool VideoSourceAVI::_construct(int streamIndex) {
 	}
 
 	if (mSourceLayout.format) {
-		mSourceFrameSize = VDMakeBitmapCompatiblePixmapLayout(mSourceLayout, mSourceLayout.w, mSourceLayout.h, mSourceLayout.format, mSourceVariant);
+		mSourceFrameSize = VDMakeBitmapCompatiblePixmapLayout(mSourceLayout, mSourceLayout.w, mSourceLayout.h, mSourceLayout.format, mSourceVariant, 0, bmih->biSizeImage);
 
 		vdstructex<VDAVIBitmapInfoHeader> format;
 		VDMakeBitmapFormatFromPixmapFormat(format, vdstructex<VDAVIBitmapInfoHeader>(getImageFormat(), getFormatLen()), mSourceLayout.format, mSourceVariant);

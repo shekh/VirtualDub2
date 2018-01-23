@@ -438,6 +438,7 @@ bool VDDialogSelectVideoFormatW32::OnLoaded() {
 		nsVDPixmap::kPixFormat_YUV410_Planar,
 		nsVDPixmap::kPixFormat_YUV422_Planar_Centered,
 		nsVDPixmap::kPixFormat_YUV420_Planar_Centered,
+		nsVDPixmap::kPixFormat_YUV444_V308,
 		nsVDPixmap::kPixFormat_YUV422_V210,
 		nsVDPixmap::kPixFormat_YUV444_V410,
 		nsVDPixmap::kPixFormat_YUV444_Y410,

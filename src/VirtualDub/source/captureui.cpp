@@ -4477,11 +4477,13 @@ static INT_PTR CALLBACK CaptureCustomVidSizeDlgProc(HWND hdlg, UINT msg, WPARAM 
 		{ RV('MJPG'),	16, "MJPG\tMotion JPEG" },
 		{ RV('dmb1'),	16, "dmb1\tMatrox MJPEG" },
 		{ RV('HDYC'),	16, "HDYC\tYUV 4:2:2 interleaved (Rec. 709)" },
+		{ RV('v308'),	24, "v308\tYUV 4:4:4 interleaved" },
 		{ RV('v210'),	20, "v210\tYUV 4:2:2 interleaved (10-bit)" },
 		{ RV('P210'),	20, "P210\tYUV 4:2:2 interleaved (10-bit)" },
 		{ RV('P010'),	15, "P010\tYUV 4:2:0 interleaved (10-bit)" },
 		{ RV('v410'),	30, "v410\tYUV 4:4:4 interleaved (10-bit)" },
 		{ RV('Y410'),	30, "Y410\tYUV 4:4:4 interleaved (10-bit)" },
+		{ RV('Y416'),	64, "Y416\tYUV 4:4:4 interleaved (16-bit)" },
 	};
 #undef RV
 

@@ -255,7 +255,7 @@ void VDDubVideoProcessorDisplay::CheckForDecompressorSwitch() {
 					int variant = mpVideoDecompressor->GetTargetFormatVariant();
 
 					VDPixmapLayout layout;
-					VDMakeBitmapCompatiblePixmapLayout(layout, abs(pbih->biWidth), abs(pbih->biHeight), format, variant, mpVideoDecompressor->GetTargetFormatPalette());
+					VDMakeBitmapCompatiblePixmapLayout(layout, abs(pbih->biWidth), abs(pbih->biHeight), format, variant, mpVideoDecompressor->GetTargetFormatPalette(), pbih->biSizeImage);
 
 					mVideoDecompBuffer.init(layout);
 				} catch(const MyError&) {

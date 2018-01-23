@@ -271,4 +271,83 @@ protected:
 	void Compute(void *dst0, sint32 y);
 };
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//	V308 -> P8
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+class VDPixmapGen_V308_To_P8 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+	void Start();
+	const void *GetRow(sint32 y, uint32 index);
+
+	uint32 GetType(uint32 output) const;
+
+	virtual const char* dump_name(){ return "V308_To_P8"; }
+
+protected:
+	void Compute(void *dst0, sint32 y);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//	P8 -> V308
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+class VDPixmapGen_P8_To_V308 : public VDPixmapGenWindowBased {
+public:
+	void Init(IVDPixmapGen *srcR, uint32 srcindexR, IVDPixmapGen *srcG, uint32 srcindexG, IVDPixmapGen *srcB, uint32 srcindexB) {
+		mpSrcR = srcR;
+		mSrcIndexR = srcindexR;
+		mpSrcG = srcG;
+		mSrcIndexG = srcindexG;
+		mpSrcB = srcB;
+		mSrcIndexB = srcindexB;
+		mWidth = srcG->GetWidth(srcindexG);
+		mHeight = srcG->GetHeight(srcindexG);
+
+		srcR->AddWindowRequest(0, 0);
+		srcG->AddWindowRequest(0, 0);
+		srcB->AddWindowRequest(0, 0);
+	}
+
+	void Start() {
+		mpSrcR->Start();
+		mpSrcG->Start();
+		mpSrcB->Start();
+
+		StartWindow(mWidth * 3);
+	}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo unused;
+		mpSrcR->TransformPixmapInfo(src,unused);
+		mpSrcG->TransformPixmapInfo(src,unused);
+		mpSrcB->TransformPixmapInfo(src,unused);
+	}
+
+	uint32 GetType(uint32 output) const;
+
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcR;
+		if(index==1) return mpSrcG;
+		if(index==2) return mpSrcB;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "P8_To_V308"; }
+
+protected:
+	void Compute(void *dst0, sint32 y);
+
+	IVDPixmapGen *mpSrcR;
+	uint32 mSrcIndexR;
+	IVDPixmapGen *mpSrcG;
+	uint32 mSrcIndexG;
+	IVDPixmapGen *mpSrcB;
+	uint32 mSrcIndexB;
+};
+
 #endif	// f_VD2_KASUMI_UBERBLIT_V210_H
