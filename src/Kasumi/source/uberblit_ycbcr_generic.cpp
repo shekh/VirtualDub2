@@ -289,7 +289,7 @@ void VDPixmapGenYCbCrToRGB64Generic::Compute(void *dst0, sint32 y) {
 	const __m128i zero = _mm_setzero_si128();
 	const __m128i bias = _mm_set1_epi16((uint16)0x8000);
 
-	sint32 w0 = (mWidth-4) & ~3;
+	sint32 w0 = (mWidth<4) ? 0 : (mWidth-4) & ~3;
 	sint32 w1 = mWidth-w0;
 
 	for(sint32 i=0; i<w0/4; ++i) {

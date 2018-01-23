@@ -445,6 +445,7 @@ bool VDDialogSelectVideoFormatW32::OnLoaded() {
 		nsVDPixmap::kPixFormat_YUV420_P010,
 		nsVDPixmap::kPixFormat_YUV422_P216,
 		nsVDPixmap::kPixFormat_YUV420_P016,
+		nsVDPixmap::kPixFormat_YUVA444_Y416,
 		nsVDPixmap::kPixFormat_YUV422_UYVY_709,
 		nsVDPixmap::kPixFormat_YUV420_NV12,
 		nsVDPixmap::kPixFormat_YUV422_YUYV_709,
@@ -567,6 +568,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_YUV420_P010:
 				case nsVDPixmap::kPixFormat_YUV422_P216:
 				case nsVDPixmap::kPixFormat_YUV420_P016:
+				case nsVDPixmap::kPixFormat_YUVA444_Y416:
 				case nsVDPixmap::kPixFormat_YUV422_UYVY_FR:
 				case nsVDPixmap::kPixFormat_YUV422_YUYV_FR:
 				case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
@@ -649,6 +651,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_YUV420_P010:
 				case nsVDPixmap::kPixFormat_YUV422_P216:
 				case nsVDPixmap::kPixFormat_YUV420_P016:
+				case nsVDPixmap::kPixFormat_YUVA444_Y416:
 				case nsVDPixmap::kPixFormat_YUV444_Planar:
 				case nsVDPixmap::kPixFormat_YUV444_Planar_709:
 				case nsVDPixmap::kPixFormat_YUV422_UYVY:
@@ -787,6 +790,9 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_YUV420_P016:
 					s = L"4:2:0 16-bit (P016)";
 					break;
+				case nsVDPixmap::kPixFormat_YUVA444_Y416:
+					s = L"4:4:4 16-bit (Y416)";
+					break;
 			}
 			break;
 
@@ -838,6 +844,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_YUV420_P010:
 				case nsVDPixmap::kPixFormat_YUV422_P216:
 				case nsVDPixmap::kPixFormat_YUV420_P016:
+				case nsVDPixmap::kPixFormat_YUVA444_Y416:
 					s = L"-";
 					break;
 				case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:

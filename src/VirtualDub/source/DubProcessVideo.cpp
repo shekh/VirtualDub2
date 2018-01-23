@@ -1300,6 +1300,13 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 				extraDst = normalize;
 			}
 			break;
+		case nsVDPixmap::kPixFormat_YUVA444_Y416:
+			{
+				ExtraGen_X16R16G16B16_Normalize* normalize = new ExtraGen_X16R16G16B16_Normalize;
+				normalize->max_value = out_info.ref_r;
+				extraDst = normalize;
+			}
+			break;
 		}
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc, extraDst);
 		delete extraDst;

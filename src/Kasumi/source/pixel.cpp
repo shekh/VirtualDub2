@@ -91,6 +91,25 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUVA444_Y416:
+		{
+			int ref = px.info.ref_r;
+			VDPixmapFormatEx f = px.format;
+			f.colorRangeMode = px.info.colorRangeMode;
+			f.colorSpaceMode = px.info.colorSpaceMode;
+			const uint16* s = (const uint16*)(size_t(px.data) + px.pitch*y + x*8);
+			uint16 a = s[3];
+			ps.sy = s[1];
+			ps.scb = s[0];
+			ps.scr = s[2];
+			valid_yuv = true;
+			VDConvertYCbCrToRGB(ps.sy,ps.scb,ps.scr,ref,f,ps.r,ps.g,ps.b);
+			ps.r*=255; ps.g*=255; ps.b*=255;
+			ps.sa = a;
+			if(a>=px.info.ref_a) ps.a=255; else ps.a=float(a*255.0/px.info.ref_a);
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 		{
@@ -427,20 +446,21 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 		}
 		break;
 
-	case nsVDPixmap::kPixFormat_XYUV64:
+	case nsVDPixmap::kPixFormat_YUVA444_Y416:
 		{
 			int ref = px.info.ref_r;
 			VDPixmapFormatEx f = px.format;
 			f.colorRangeMode = px.info.colorRangeMode;
 			f.colorSpaceMode = px.info.colorSpaceMode;
 			const uint16* s = (const uint16*)(size_t(px.data) + px.pitch*y + x*8);
-			uint32 pa = s[0];
+			uint32 pa = s[3];
 			uint32 py = s[1];
-			uint32 pcb = s[2];
-			uint32 pcr = s[3];
+			uint32 pcb = s[0];
+			uint32 pcr = s[2];
 			float r,g,b;
 			VDConvertYCbCrToRGB(py,pcb,pcr,ref,f,r,g,b);
-			return VDPackRGB(r,g,b);
+			float a = float(pa)/px.info.ref_a;
+			return VDPackRGBA(r,g,b,a);
 		}
 		break;
 

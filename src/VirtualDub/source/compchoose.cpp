@@ -712,11 +712,12 @@ static int g_depths[]={
 	64,	64,
 	12,
 	16,	16,	16,
-	24,
+	24, 24,
 	24, 24,
 	30,
 	32,	32,
-	32,	32
+	32,	32,
+	64
 };
 
 static int g_depths_fcc[]={
@@ -726,11 +727,12 @@ static int g_depths_fcc[]={
 	VDMAKEFOURCC('b', '6', '4', 'a'),	VDMAKEFOURCC('B', 'R', 'A', 64),
 	VDMAKEFOURCC('Y', 'V', '1', '2'),
 	VDMAKEFOURCC('Y', 'V', '1', '6'),	VDMAKEFOURCC('Y', 'U', 'Y', '2'),	VDMAKEFOURCC('H', 'D', 'Y', 'C'),
-	VDMAKEFOURCC('Y', 'V', '2', '4'),
+	VDMAKEFOURCC('Y', 'V', '2', '4'),	VDMAKEFOURCC('v', '3', '0', '8'),
 	VDMAKEFOURCC('P', '0', '1', '0'),	VDMAKEFOURCC('P', '0', '1', '6'),
 	VDMAKEFOURCC('v', '2', '1', '0'),
 	VDMAKEFOURCC('P', '2', '1', '0'),	VDMAKEFOURCC('P', '2', '1', '6'),
-	VDMAKEFOURCC('v', '4', '1', '0'),	VDMAKEFOURCC('Y', '4', '1', '0')
+	VDMAKEFOURCC('v', '4', '1', '0'),	VDMAKEFOURCC('Y', '4', '1', '0'),
+	VDMAKEFOURCC('Y', '4', '1', '6')
 };
 
 static const wchar_t* g_depths_id[]={
@@ -740,11 +742,12 @@ static const wchar_t* g_depths_id[]={
 	L"b64a",  L"BRA[64]",
 	L"YV12",
 	L"YV16",  L"YUY2",  L"HDYC",
-	L"YV24",
+	L"YV24",  L"v308",
 	L"P010",  L"P016",
 	L"v210",
 	L"P210",  L"P216",
-	L"v410",  L"Y410"
+	L"v410",  L"Y410",
+	L"Y416"
 };
 
 

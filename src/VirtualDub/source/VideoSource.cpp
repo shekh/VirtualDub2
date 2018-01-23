@@ -661,6 +661,7 @@ public:
 		switch (mSrcLayout.format) {
 		case nsVDPixmap::kPixFormat_XRGB8888:
 		case nsVDPixmap::kPixFormat_XRGB64:
+		case nsVDPixmap::kPixFormat_YUVA444_Y416:
 			return true;
 		}
 		return false;
@@ -742,7 +743,7 @@ bool VDVideoDecompressorDIB::SetTargetFormat(int format) {
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
-	case nsVDPixmap::kPixFormat_XYUV64:
+	case nsVDPixmap::kPixFormat_YUVA444_Y416:
 	case nsVDPixmap::kPixFormat_YUV444_V410:
 	case nsVDPixmap::kPixFormat_YUV444_Y410:
 	case nsVDPixmap::kPixFormat_R210:

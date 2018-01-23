@@ -766,7 +766,34 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 					format = kPixFormat_YUV422_Planar16;
 					break;
 
-				case kPixFormat_XYUV64:
+				case kPixFormat_YUVA444_Y416:
+					format = kPixFormat_YUV444_Alpha_Planar16;
+					break;
+
+				case kPixFormat_YUV444_Alpha_Planar16:
+					format = kPixFormat_YUV444_Planar16;
+					break;
+
+				case kPixFormat_YUV422_Alpha_Planar16:
+					format = kPixFormat_YUV422_Planar16;
+					break;
+
+				case kPixFormat_YUV420_Alpha_Planar16:
+					format = kPixFormat_YUV420_Planar16;
+					break;
+
+				case kPixFormat_YUV444_Alpha_Planar:
+					format = kPixFormat_YUV444_Planar;
+					break;
+
+				case kPixFormat_YUV422_Alpha_Planar:
+					format = kPixFormat_YUV422_Planar;
+					break;
+
+				case kPixFormat_YUV420_Alpha_Planar:
+					format = kPixFormat_YUV420_Planar;
+					break;
+
 				case kPixFormat_YUV444_V410:
 				case kPixFormat_YUV444_Y410:
 					format = kPixFormat_YUV444_Planar16;

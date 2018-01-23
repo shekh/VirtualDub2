@@ -87,7 +87,7 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
 	/* YUV422_Planar16 */			{ "YUV422P16",		false, 1, 1,  0,  0,  2, 2, 1, 0, 2,   0 },
 	/* YUV420_Planar16 */			{ "YUV420P16",		false, 1, 1,  0,  0,  2, 2, 1, 1, 2,   0 },
 	/* Y16 */						{ "I16",			false, 1, 1,  1,  0,  2, 0, 0, 0, 0,   0 },
-	/* YUV64 */						{ "XYUV64",			false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
+	/* YUVA444_Y416 */				{ "Y416",			false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
 	/* YUV444_V410 */				{ "v410",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
 	/* YUV444_Y410 */				{ "Y410",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
 	/* r210 */						{ "r210",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
@@ -109,7 +109,7 @@ bool VDPixmapFormatHasAlpha(sint32 format) {
 	switch (format) {
 	case nsVDPixmap::kPixFormat_XRGB8888:
 	case nsVDPixmap::kPixFormat_XRGB64:
-	case nsVDPixmap::kPixFormat_XYUV64:
+	case nsVDPixmap::kPixFormat_YUVA444_Y416:
 	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
 	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
 	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
@@ -164,7 +164,7 @@ int VDPixmapFormatMatrixType(sint32 format) {
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
-	case nsVDPixmap::kPixFormat_XYUV64:
+	case nsVDPixmap::kPixFormat_YUVA444_Y416:
 	case nsVDPixmap::kPixFormat_YUV444_V308:
 	case nsVDPixmap::kPixFormat_YUV422_P216:
 	case nsVDPixmap::kPixFormat_YUV420_P016:
@@ -224,7 +224,7 @@ int VDPixmapFormatGroup(int src) {
 	case kPixFormat_YUV422_V210:
 		return kPixFormat_YUV422_Planar16;
 
-	case kPixFormat_XYUV64:
+	case kPixFormat_YUVA444_Y416:
 	case kPixFormat_YUV444_V410:
 	case kPixFormat_YUV444_Y410:
 		return kPixFormat_YUV444_Planar16;
@@ -672,7 +672,7 @@ namespace {
 		case nsVDPixmap::kPixFormat_YUV444_Planar16:
 		case nsVDPixmap::kPixFormat_YUV422_Planar16:
 		case nsVDPixmap::kPixFormat_YUV420_Planar16:
-		case nsVDPixmap::kPixFormat_XYUV64:
+		case nsVDPixmap::kPixFormat_YUVA444_Y416:
 			if (px.info.ref_r<=0) {
 				VDDEBUG("Kasumi: Invalid PixmapInfo detected in pixmap.\n"
 						"        Pixmap info: format=%d, ref_r=%d\n", px.format, px.info.ref_r);

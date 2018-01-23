@@ -604,7 +604,7 @@ void SceneDetector::BitmapToLummap(uint32 *lummap, const VDPixmap& pxsrc) {
 				case nsVDPixmap::kPixFormat_YUV422_Planar16:
 				case nsVDPixmap::kPixFormat_YUV420_Planar16:
 				case nsVDPixmap::kPixFormat_Y16:
-				case nsVDPixmap::kPixFormat_XYUV64:
+				case nsVDPixmap::kPixFormat_YUVA444_Y416:
 				case nsVDPixmap::kPixFormat_YUV444_V410:
 				case nsVDPixmap::kPixFormat_YUV444_Y410:
 				case nsVDPixmap::kPixFormat_R210:

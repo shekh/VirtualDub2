@@ -13,6 +13,14 @@ bool inline VDPixmap_X16R16G16B16_IsNormalized(const FilterModPixmapInfo& info, 
 	return true;
 }
 
+bool inline VDPixmap_Y416_IsNormalized(const FilterModPixmapInfo& info) {
+	if (info.ref_r!=0xFF00)
+		return false;
+	if (info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid && info.ref_a!=0xFFFF)
+		return false;
+	return true;
+}
+
 void VDPixmap_X16R16G16B16_Normalize(VDPixmap& dst, const VDPixmap& src, uint32 max_value=0xFFFF);
 void VDPixmap_X16R16G16B16_to_b64a(VDPixmap& dst, const VDPixmap& src);
 void VDPixmap_b64a_to_X16R16G16B16(VDPixmap& dst, const VDPixmap& src);
@@ -253,42 +261,51 @@ protected:
 
 class VDPixmapGen_X16R16G16B16_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
-	VDPixmapGen_X16R16G16B16_Normalize(){ max_value=0xFFFF; }
+	VDPixmapGen_X16R16G16B16_Normalize(){ max_r=0xFFFF; max_a=0xFFFF; }
 
 	virtual const char* dump_name(){ return "X16R16G16B16_Normalize"; }
 
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
 		mpSrc->TransformPixmapInfo(src,dst);
-		if (VDPixmap_X16R16G16B16_IsNormalized(dst,max_value)) {
-			do_normalize = false;
+		if (VDPixmap_X16R16G16B16_IsNormalized(dst,max_r)) {
+			set_normalize(dst, false);
 		} else {
-			do_normalize = true;
 			ref_r = dst.ref_r;
 			ref_g = dst.ref_g;
 			ref_b = dst.ref_b;
 			ref_a = dst.ref_a;
-			mr = max_value*0x10000/ref_r;
-			mg = max_value*0x10000/ref_g;
-			mb = max_value*0x10000/ref_b;
-			ma = max_value*0x10000/ref_a;
-			dst.ref_r = max_value;
-			dst.ref_g = max_value;
-			dst.ref_b = max_value;
-			dst.ref_a = max_value;
+			set_normalize(dst, true);
+		}
+	}
+
+	void set_normalize(FilterModPixmapInfo& dst, bool v) {
+		if (!v) {
+			do_normalize = false;
+		} else {
+			do_normalize = true;
+			mr = max_r*0x10000/ref_r;
+			mg = max_r*0x10000/ref_g;
+			mb = max_r*0x10000/ref_b;
+			ma = max_a*0x10000/ref_a;
+			dst.ref_r = max_r;
+			dst.ref_g = max_r;
+			dst.ref_b = max_r;
+			dst.ref_a = max_a;
 			scale_down = true;
 			if (mr>=0x10000 || mg>=0x10000 || mb>=0x10000 || ma>=0x10000) scale_down = false;
 		}
 
 		a_mask = 0;
 		if(dst.alpha_type==FilterModPixmapInfo::kAlphaInvalid)
-			a_mask = max_value;
+			a_mask = max_a;
 	}
 
 	void Start() {
 		StartWindow(mWidth * 8);
 	}
 
-	uint32 max_value;
+	uint32 max_r;
+	uint32 max_a;
 
 protected:
 	int ref_r,ref_g,ref_b,ref_a;
@@ -300,6 +317,30 @@ protected:
 	void Compute(void *dst0, sint32 y);
 	void ComputeAll(void *dst0, sint32 y);
 	void ComputeWipeAlpha(void *dst0, sint32 y);
+};
+
+class VDPixmapGen_Y416_Normalize : public VDPixmapGen_X16R16G16B16_Normalize {
+public:
+	VDPixmapGen_Y416_Normalize(){ max_r=0xFF00; max_a=0xFFFF; }
+
+	virtual const char* dump_name(){ return "Y416_Normalize"; }
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		mpSrc->TransformPixmapInfo(src,dst);
+		if (VDPixmap_Y416_IsNormalized(dst)) {
+			set_normalize(dst, false);
+		} else {
+			ref_r = dst.ref_r;
+			ref_g = dst.ref_r;
+			ref_b = dst.ref_r;
+			ref_a = dst.ref_a;
+			set_normalize(dst, true);
+		}
+	}
+
+	void Start() {
+		StartWindow(mWidth * 8);
+	}
 };
 
 class ExtraGen_X16R16G16B16_Normalize : public IVDPixmapExtraGen {

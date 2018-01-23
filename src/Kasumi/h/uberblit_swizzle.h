@@ -458,7 +458,7 @@ protected:
 	uint32 mSrcIndexCr;
 };
 
-class VDPixmapGen_B16x3_To_X16R16G16B16 : public VDPixmapGenWindowBased {
+class VDPixmapGen_B16x3_To_Y416 : public VDPixmapGenWindowBased {
 public:
 	void Init(IVDPixmapGen *srcCr, uint32 srcindexCr, IVDPixmapGen *srcY, uint32 srcindexY, IVDPixmapGen *srcCb, uint32 srcindexCb) {
 		mpSrcY = srcY;
@@ -501,7 +501,7 @@ public:
 		return 0; 
 	}
 
-	virtual const char* dump_name(){ return "B16x3_To_X16R16G16B16"; }
+	virtual const char* dump_name(){ return "B16x3_To_Y416"; }
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -515,10 +515,10 @@ protected:
 			uint16 cb = *srcCb++;
 			uint16 cr = *srcCr++;
 
-			dst[0] = 0;
+			dst[0] = cb;
 			dst[1] = y;
-			dst[2] = cb;
-			dst[3] = cr;
+			dst[2] = cr;
+			dst[3] = 0;
 			dst += 4;
 		}
 	}

@@ -72,7 +72,7 @@ namespace nsVDPixmap {
 		kPixFormat_YUV422_Planar16,
 		kPixFormat_YUV420_Planar16,
 		kPixFormat_Y16,
-		kPixFormat_XYUV64,
+		kPixFormat_YUVA444_Y416,
 		kPixFormat_YUV444_V410,
 		kPixFormat_YUV444_Y410,
 		kPixFormat_R210,
@@ -115,15 +115,6 @@ struct VDPixmap {
 	vdpixoffset		pitch4;
 
 	FilterModPixmapInfo info;
-	struct Ext{
-		int format_swizzle;
-
-		Ext() { clear(); }
-		bool operator!=(const Ext& a) const { return format_swizzle!=a.format_swizzle; }
-		void clear() {
-			format_swizzle = 0;
-		}
-	} ext;
 
 	void clear() {
 		data = 0;
@@ -139,7 +130,6 @@ struct VDPixmap {
 		data4 = 0;
 		pitch4 = 0;
 		info.clear();
-		ext.clear();
 	}
 
 	static VDPixmap copy(const VDXPixmap& a);

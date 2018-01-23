@@ -87,7 +87,7 @@ uint32 VDPixmapGetFormatTokenFromFormat(int format) {
 	case kPixFormat_YUV422_Planar16:	return kVDPixType_16_16_16_LE | kVDPixSamp_422 | kVDPixSpace_YCC_601;
 	case kPixFormat_YUV420_Planar16:	return kVDPixType_16_16_16_LE | kVDPixSamp_420_MPEG2 | kVDPixSpace_YCC_601;
 	case kPixFormat_Y16:				return kVDPixType_16_LE | kVDPixSamp_444 | kVDPixSpace_Y_601;
-	case kPixFormat_XYUV64:				return kVDPixType_16x4_LE | kVDPixSamp_444 | kVDPixSpace_YCC_601;
+	case kPixFormat_YUVA444_Y416:		return kVDPixType_16x4_LE | kVDPixSamp_444 | kVDPixSpace_YCC_601;
 	case kPixFormat_YUV444_V410:		return kVDPixType_V410 | kVDPixSamp_444 | kVDPixSpace_YCC_601;
 	case kPixFormat_YUV444_Y410:		return kVDPixType_Y410 | kVDPixSamp_444 | kVDPixSpace_YCC_601;
 	case kPixFormat_R210:				return kVDPixType_R210 | kVDPixSamp_444 | kVDPixSpace_BGR;
@@ -985,7 +985,7 @@ namespace {
 						case kVDPixType_16_16_16_LE:
 							if ((srcToken & kVDPixSamp_Mask) != kVDPixSamp_444)
 								srcToken = BlitterConvertSampling(gen, srcToken, kVDPixSamp_444, w, h);
-							gen.interleave_X16R16G16B16();
+							gen.interleave_Y416();
 							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
 							break;
 						case kVDPixType_1:
@@ -1081,11 +1081,11 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src
 	const VDPixmapLayout& dstlayout = VDPixmapToLayoutFromBase(dst, dst.data);
 	const VDPixmapLayout& srclayout = VDPixmapToLayoutFromBase(src, src.data);
 
-	return VDPixmapCreateBlitter(dstlayout, srclayout, extraDst, src.ext.format_swizzle);
+	return VDPixmapCreateBlitter(dstlayout, srclayout, extraDst);
 }
 
-IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapExtraGen* extraDst, int src_swizzle) {
-	if (src.formatEx.fullEqual(dst.formatEx) && !extraDst && !src_swizzle) {
+IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapExtraGen* extraDst) {
+	if (src.formatEx.fullEqual(dst.formatEx) && !extraDst) {
 		return VDCreatePixmapUberBlitterDirectCopy(dst, src);
 	}
 
@@ -1132,16 +1132,19 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 		break;
 
 	case kVDPixType_16x4_LE:
-		if (src.format==nsVDPixmap::kPixFormat_XYUV64 && src_swizzle==1) {
-  		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w*8);
+		if (src.format==nsVDPixmap::kPixFormat_YUVA444_Y416) {
+			gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w*8);
 			gen.dup();
 			gen.dup();
+			gen.dup();
+			gen.extract_16in64(3, w, h);
+			gen.swap(3);
 			gen.extract_16in64(2, w, h);
 			gen.swap(2);
 			gen.extract_16in64(1, w, h);
 			gen.swap(1);
 			gen.extract_16in64(0, w, h);
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
+			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_16_LE;
 			break;
 		}
 

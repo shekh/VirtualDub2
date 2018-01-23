@@ -22,7 +22,7 @@ public:
 };
 
 IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src, IVDPixmapExtraGen* extraDst=0);
-IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapExtraGen* extraDst=0, int src_swizzle=0);
+IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapExtraGen* extraDst=0);
 
 class VDPixmapCachedBlitter {
 	VDPixmapCachedBlitter(const VDPixmapCachedBlitter&);
@@ -44,8 +44,6 @@ protected:
 	sint32 mDstWidth;
 	sint32 mDstHeight;
 	VDPixmapFormatEx mDstFormat;
-	VDPixmap::Ext mSrcExt;
-	VDPixmap::Ext mDstExt;
 	IVDPixmapBlitter *mpCachedBlitter;
 };
 

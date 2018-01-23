@@ -204,7 +204,7 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 	// ----
 
 	case VDMAKEFOURCC('Y', '4', '1', '6'):
-		return kPixFormat_XYUV64;
+		return kPixFormat_YUVA444_Y416;
 
 	case VDMAKEFOURCC('H', 'D', 'Y', 'C'):
 		return kPixFormat_YUV422_UYVY_709;
@@ -404,7 +404,7 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biBitCount		= 64;
 		dst->biSizeImage	= w*8 * h;
 		break;
-	case kPixFormat_XYUV64:
+	case kPixFormat_YUVA444_Y416:
 		dst->biCompression	= VDMAKEFOURCC('Y', '4', '1', '6');
 		dst->biBitCount		= 64;
 		dst->biSizeImage	= w*8 * h;
@@ -661,12 +661,6 @@ void VDPixmap_bitmap_to_YUV422_Planar16(VDPixmap& dst, const VDPixmap& src, int 
 	}
 }
 
-void VDPixmap_bitmap_to_XYUV64(VDPixmap& dst, const VDPixmap& src, int variant) {
-	// Y416, msb aligned
-	dst.info.ref_r = 0xFF00;
-	dst.ext.format_swizzle = 1;
-}
-
 // variant 1 = BRA[64] = default
 // variant 2 = b64a
 void VDPixmap_bitmap_to_X16R16G16B16(VDPixmap& dst, const VDPixmap& src, int variant) {
@@ -701,8 +695,9 @@ void VDSetPixmapInfoFromBitmap(VDPixmap& px, int variant) {
 		px.info.ref_r = 0xFF00;
 		break;
 
-	case kPixFormat_XYUV64:
-		VDPixmap_bitmap_to_XYUV64(px,px,variant);
+	case kPixFormat_YUVA444_Y416:
+		px.info.ref_r = 0xFF00;
+		px.info.ref_a = 0xFFFF;
 		break;
 	}
 }

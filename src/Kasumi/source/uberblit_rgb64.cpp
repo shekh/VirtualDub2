@@ -254,10 +254,10 @@ void VDPixmapGen_X16R16G16B16_Normalize::ComputeAll(void *dst0, sint32 y) {
 		uint16 a = src[3];
 		src += 4;
 
-		if(r>ref_r) r=max_value; else r=(r*mr+0x8000)>>16;
-		if(g>ref_g) g=max_value; else g=(g*mg+0x8000)>>16;
-		if(b>ref_b) b=max_value; else b=(b*mb+0x8000)>>16;
-		if(a>ref_a) a=max_value; else a=(a*ma+0x8000)>>16;
+		if(r>ref_r) r=max_r; else r=(r*mr+0x8000)>>16;
+		if(g>ref_g) g=max_r; else g=(g*mg+0x8000)>>16;
+		if(b>ref_b) b=max_r; else b=(b*mb+0x8000)>>16;
+		if(a>ref_a) a=max_a; else a=(a*ma+0x8000)>>16;
 
 		dst[2] = r;
 		dst[1] = g;
@@ -294,10 +294,10 @@ void VDPixmapGen_X16R16G16B16_Normalize::ComputeAll(void *dst0, sint32 y) {
 		uint16 a = src[3];
 		src += 4;
 
-		if(r>ref_r) r=max_value; else r=(r*mr+0x8000)>>16;
-		if(g>ref_g) g=max_value; else g=(g*mg+0x8000)>>16;
-		if(b>ref_b) b=max_value; else b=(b*mb+0x8000)>>16;
-		if(a>ref_a) a=max_value; else a=(a*ma+0x8000)>>16;
+		if(r>ref_r) r=max_r; else r=(r*mr+0x8000)>>16;
+		if(g>ref_g) g=max_r; else g=(g*mg+0x8000)>>16;
+		if(b>ref_b) b=max_r; else b=(b*mb+0x8000)>>16;
+		if(a>ref_a) a=max_a; else a=(a*ma+0x8000)>>16;
 
 		dst[2] = r;
 		dst[1] = g;
@@ -346,9 +346,16 @@ void VDPixmapGen_X16R16G16B16_Normalize::ComputeWipeAlpha(void *dst0, sint32 y) 
 }
 
 void ExtraGen_X16R16G16B16_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst) {
-	VDPixmapGen_X16R16G16B16_Normalize* normalize = new VDPixmapGen_X16R16G16B16_Normalize;
-	normalize->max_value = max_value;
-	gen.swap(normalize);
+	if (dst.format==nsVDPixmap::kPixFormat_XRGB64) {
+		VDPixmapGen_X16R16G16B16_Normalize* normalize = new VDPixmapGen_X16R16G16B16_Normalize;
+		normalize->max_r = max_value;
+		normalize->max_a = max_value;
+		gen.swap(normalize);
+	}
+	if (dst.format==nsVDPixmap::kPixFormat_YUVA444_Y416) {
+		VDPixmapGen_Y416_Normalize* normalize = new VDPixmapGen_Y416_Normalize;
+		gen.swap(normalize);
+	}
 }
 
 void VDPixmapGen_X8R8G8B8_Normalize::Compute(void *dst0, sint32 y) {
