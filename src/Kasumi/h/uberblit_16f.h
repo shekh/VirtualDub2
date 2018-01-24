@@ -203,6 +203,7 @@ public:
 		bpp = 2;
 		if ((type & kVDPixType_Mask)==kVDPixType_16x2_LE) bpp = 4;
 		if ((type & kVDPixType_Mask)==kVDPixType_16x4_LE) bpp = 8;
+		if ((type & kVDPixType_Mask)==kVDPixType_YU64) bpp = 4;
 		StartWindow(mWidth * bpp);
 	}
 

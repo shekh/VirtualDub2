@@ -8,6 +8,14 @@
 #include "../../Kasumi/h/uberblit_16f.h"
 
 namespace {
+	bool can_sample(const VDPixmap& px) {
+		switch (px.format) {
+		case nsVDPixmap::kPixFormat_YUV422_YU64:
+			return false;
+		}
+		return true;
+	}
+
 	bool CheckBlit(const VDPixmap& dst, const VDPixmap& src, uint32 color) {
 		uint32 w = std::min<uint32>(src.w, dst.w);
 		uint32 h = std::min<uint32>(src.h, dst.h);
@@ -16,6 +24,9 @@ namespace {
 			for(uint32 x=0; x<w; ++x) {
 				uint32 p1 = VDPixmapSample(src, x, y);
 				uint32 p2 = VDPixmapSample(dst, x, y);
+
+				if (!can_sample(src)) p1 = color;
+				if (!can_sample(dst)) p2 = color;
 
 				int y1 = ((p1 & 0xff00ff)*0x130036 + (p1 & 0xff00)*0xb700) >> 16;
 				int y2 = ((p2 & 0xff00ff)*0x130036 + (p2 & 0xff00)*0xb700) >> 16;

@@ -482,7 +482,7 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 	if (flags == FILTERPARAM_NOT_SUPPORTED || (flags & FILTERPARAM_SUPPORTS_ALTFORMATS)) {
 		using namespace nsVDPixmap;
 
-		VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_YUV420_Alpha_Planar16 + 1);
+		VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_YUV422_YU64 + 1);
 
 		std::bitset<nsVDPixmap::kPixFormat_Max_Standard> formatMask;
 
@@ -763,6 +763,7 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 				case kPixFormat_YUV422_V210:
 				case kPixFormat_YUV422_P210:
 				case kPixFormat_YUV422_P216:
+				case kPixFormat_YUV422_YU64:
 					format = kPixFormat_YUV422_Planar16;
 					break;
 

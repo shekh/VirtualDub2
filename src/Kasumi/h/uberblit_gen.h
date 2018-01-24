@@ -103,6 +103,8 @@ public:
 	void conv_a16_to_a8();
 	void conv_V210_to_32F();
 	void conv_V210_to_P16();
+	void conv_YU64_to_P16();
+	void conv_P16_to_YU64();
 	void conv_V410_to_32F();
 	void conv_V410_to_P16();
 	void conv_Y410_to_32F();
