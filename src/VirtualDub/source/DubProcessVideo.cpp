@@ -21,8 +21,7 @@
 #include <vd2/system/time.h>
 #include <vd2/Dita/resources.h>
 #include <vd2/Riza/bitmap.h>
-#include <../Kasumi/h/uberblit_rgb64.h>
-#include <../Kasumi/h/uberblit_16f.h>
+#include <../Kasumi/h/uberblit_base.h>
 #include "AVIPipe.h"
 #include "AVIOutput.h"
 #include "Dub.h"
@@ -1211,104 +1210,19 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 	}
 	if (!mpOutputBlitter && !mbPreview) {
 		FilterModPixmapInfo out_info;
-		out_info.ref_r = 0xFFFF;
-		out_info.ref_g = 0xFFFF;
-		out_info.ref_b = 0xFFFF;
-		out_info.ref_a = 0xFFFF;
-
-		switch (pBuffer->mPixmap.format) {
-		case nsVDPixmap::kPixFormat_YUV422_P210:
-		case nsVDPixmap::kPixFormat_YUV420_P010:
-		case nsVDPixmap::kPixFormat_YUV422_P216:
-		case nsVDPixmap::kPixFormat_YUV420_P016:
-			out_info.ref_r = 0xFF00;
-			break;
-		}
+		VDSetPixmapInfoForBitmap(out_info, pBuffer->mPixmap.format);
 
 		if (mpVideoCompressor) {
 			if (!mpVideoCompressor->GetInputFormat(&out_info)) {
-				out_info.ref_r = 0xFFFF;
-				out_info.ref_g = 0xFFFF;
-				out_info.ref_b = 0xFFFF;
-				out_info.ref_a = 0xFFFF;
 				vdstructex<tagBITMAPINFOHEADER> bm;
 				mpVideoCompressor->GetInputBitmapFormat(bm);
 				int variant;
 				VDBitmapFormatToPixmapFormat((VDAVIBitmapInfoHeader&)*bm.data(),variant);
-				switch (pBuffer->mPixmap.format) {
-				case nsVDPixmap::kPixFormat_YUV420_Planar16:
-					// ffmpeg, 10 bit
-					if (variant==2) out_info.ref_r = 0x3FF;
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_Planar16:
-					// ffmpeg, 10 bit
-					if (variant==2) out_info.ref_r = 0x3FF;
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_P210:
-				case nsVDPixmap::kPixFormat_YUV420_P010:
-				case nsVDPixmap::kPixFormat_YUV422_P216:
-				case nsVDPixmap::kPixFormat_YUV420_P016:
-					out_info.ref_r = 0xFF00;
-					break;
-				}
+				VDSetPixmapInfoForBitmap(out_info, pBuffer->mPixmap.format, variant);
 			}
 		}
 
-		IVDPixmapExtraGen* extraDst = 0;
-		switch (pBuffer->mPixmap.format) {
-		case nsVDPixmap::kPixFormat_XRGB8888:
-			{
-				ExtraGen_X8R8G8B8_Normalize* normalize = new ExtraGen_X8R8G8B8_Normalize;
-				extraDst = normalize;
-			}
-			break;
-		case nsVDPixmap::kPixFormat_XRGB64:
-			{
-				ExtraGen_X16R16G16B16_Normalize* normalize = new ExtraGen_X16R16G16B16_Normalize;
-				normalize->max_value = out_info.ref_r;
-				extraDst = normalize;
-			}
-			break;
-		case nsVDPixmap::kPixFormat_YUV420_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Planar16:
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
-		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_P216:
-		case nsVDPixmap::kPixFormat_YUV420_P016:
-		case nsVDPixmap::kPixFormat_YUV422_YU64:
-			{
-				ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
-				normalize->max_value = out_info.ref_r;
-				extraDst = normalize;
-			}
-			break;
-		case nsVDPixmap::kPixFormat_YUV422_P210:
-		case nsVDPixmap::kPixFormat_YUV420_P010:
-			{
-				ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
-				normalize->max_value = out_info.ref_r;
-				normalize->mask = 0xFFC0;
-				extraDst = normalize;
-			}
-			break;
-		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
-		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
-			{
-				ExtraGen_A8_Normalize* normalize = new ExtraGen_A8_Normalize;
-				extraDst = normalize;
-			}
-			break;
-		case nsVDPixmap::kPixFormat_YUVA444_Y416:
-			{
-				ExtraGen_X16R16G16B16_Normalize* normalize = new ExtraGen_X16R16G16B16_Normalize;
-				normalize->max_value = out_info.ref_r;
-				extraDst = normalize;
-			}
-			break;
-		}
+		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(pBuffer->mPixmap.format, out_info);
 		mpOutputBlitter = VDPixmapCreateBlitter(pBuffer->mPixmap, pxsrc, extraDst);
 		delete extraDst;
 	} else if(!mpOutputBlitter) {
@@ -1374,23 +1288,6 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::WriteFinishedVideoFra
 
 		dwBytes = pBuffer->mBuffer.size();
 		packetInfo.keyframe = true;
-
-		if (mpVideoOut->isAVIFile()) {
-			VDPROFILEBEGIN("V-Format");
-			VDPixmap& src = pBuffer->mPixmap;
-			if (src.format==nsVDPixmap::kPixFormat_XRGB64) {
-				// need another buffer for this
-				if (!repack_buffer.data) repack_buffer.init(src.w,src.h,src.format);
-				frameBuffer = repack_buffer.data;
-				if (VDPixmap_X16R16G16B16_IsNormalized(src.info)) {
-					VDPixmap_X16R16G16B16_to_b64a(repack_buffer,src);
-				} else {
-					VDPixmap_X16R16G16B16_Normalize(repack_buffer,src);
-					VDPixmap_X16R16G16B16_to_b64a(repack_buffer,repack_buffer);
-				}
-			}
-			VDPROFILEEND();
-		}
 	}
 
 	WriteFinishedVideoFrame(frameBuffer, dwBytes, packetInfo, true, pBuffer);

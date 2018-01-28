@@ -118,6 +118,8 @@ void VDPixmapGen_16_To_32F::Compute(void *dst0, sint32 y) {
 }
 
 void VDPixmapGen_8_To_16::Compute(void *dst0, sint32 y) {
+	if (invalid) return;
+
 	uint16 *dst = (uint16 *)dst0;
 	const uint8 *src = (const uint8 *)mpSrc->GetRow(y, mSrcIndex);
 	int w = mWidth;
@@ -153,6 +155,8 @@ uint32 VDPixmapGen_16_To_8::GetType(uint32 output) const {
 }
 
 void VDPixmapGen_16_To_8::Compute(void *dst0, sint32 y) {
+	if (invalid) return;
+
 	const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex);
 	uint8 *dst = (uint8 *)dst0;
 

@@ -22,8 +22,6 @@ bool inline VDPixmap_Y416_IsNormalized(const FilterModPixmapInfo& info) {
 }
 
 void VDPixmap_X16R16G16B16_Normalize(VDPixmap& dst, const VDPixmap& src, uint32 max_value=0xFFFF);
-void VDPixmap_X16R16G16B16_to_b64a(VDPixmap& dst, const VDPixmap& src);
-void VDPixmap_b64a_to_X16R16G16B16(VDPixmap& dst, const VDPixmap& src);
 
 class VDPixmapGen_X8R8G8B8_To_X16R16G16B16 : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
@@ -202,6 +200,23 @@ public:
 
 protected:
 	
+	void Compute(void *dst0, sint32 y);
+};
+
+class VDPixmapGen_B64A_To_X16R16G16B16 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	void Start() {
+		StartWindow(mWidth * 8);
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
+	}
+
+	virtual const char* dump_name(){ return "B64A_To_X16R16G16B16"; }
+
+protected:
 	void Compute(void *dst0, sint32 y);
 };
 

@@ -1119,6 +1119,12 @@ void Dubber::InitOutputFile() {
 			if (!outputFormatID) outputFormatID = vSrc->getTargetFormat();
 
 			outputFormatID = VDPixmapFormatCombine(outputFormatID);
+
+			if (!mpVideoCompressor) {
+				// select reasonable uncompressed format
+				if (outputFormatID==nsVDPixmap::kPixFormat_XRGB64)
+					outputFormatID = nsVDPixmap::kPixFormat_B64A;
+			}
 		}
 
 		VDPixmapFormatEx outputFormatID0 = outputFormatID;
@@ -1158,6 +1164,7 @@ void Dubber::InitOutputFile() {
 					proxy_index = 1;
 				}
 				if (outputFormatID==nsVDPixmap::kPixFormat_XRGB64) {
+					test_list.push_back(nsVDPixmap::kPixFormat_B64A);
 					test_list.push_back(nsVDPixmap::kPixFormat_R10K);
 					test_list.push_back(nsVDPixmap::kPixFormat_R210);
 				}
@@ -1188,10 +1195,6 @@ void Dubber::InitOutputFile() {
 					srcFormat.assign(pSrcFormat, srcFormatLen);
 
 					for(int variant=1; variant <= variants; ++variant) {
-						// BRA[64] is more simple but is not supported as output yet
-						if (format==nsVDPixmap::kPixFormat_XRGB64 && variant==1)
-							continue;
-
 						bool dibCompatible;
 						if (srcFormat.empty()) {
 							dibCompatible = VDMakeBitmapFormatFromPixmapFormat(mpCompressorVideoFormat, format, variant, outputWidth, outputHeight);
@@ -1455,10 +1458,8 @@ bool Dubber::NegotiateFastFormat(int format) {
 	const BITMAPINFOHEADER *pbih = (const BITMAPINFOHEADER *)mVideoSources.front()->getDecompressedFormat();
 	if (!pbih) return false;
 
-	int s_variant;
-	int s_format = VDBitmapFormatToPixmapFormat((const VDAVIBitmapInfoHeader&)*pbih,s_variant);
-	// BRA[64] is not supported as output yet
-	if (s_format==nsVDPixmap::kPixFormat_XRGB64 && s_variant==1) return false;
+	//int s_variant;
+	//int s_format = VDBitmapFormatToPixmapFormat((const VDAVIBitmapInfoHeader&)*pbih,s_variant);
 
 	if (mpVideoCompressor->Query(pbih)) {
 		VDString buf;

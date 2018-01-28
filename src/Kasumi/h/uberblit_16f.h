@@ -111,6 +111,7 @@ public:
 		mpSrc->TransformPixmapInfo(src,buf);
 		dst.copy_frame(buf);
 		dst.ref_r = 0xFFFF;
+		invalid = false;
 	}
 
 	void Start() {
@@ -124,6 +125,7 @@ public:
 	virtual const char* dump_name(){ return "8_To_16"; }
 
 protected:
+	bool invalid;
 
 	void Compute(void *dst0, sint32 y);
 };
@@ -137,6 +139,7 @@ public:
 		dst.copy_frame(buf);
 		ref = buf.ref_r;
 		m = 0xFF0000/buf.ref_r;
+		invalid = false;
 	}
 
 	void Start();
@@ -148,6 +151,7 @@ public:
 protected:
 	int ref;
 	uint32 m;
+	bool invalid;
 
 	void Compute(void *dst0, sint32 y);
 };
@@ -159,6 +163,7 @@ public:
 		mpSrc->TransformPixmapInfo(src,buf);
 		dst.copy_alpha(buf);
 		dst.ref_a = 0xFFFF;
+		invalid = !dst.alpha_type;
 	}
 };
 
@@ -169,7 +174,8 @@ public:
 		mpSrc->TransformPixmapInfo(src,buf);
 		dst.copy_alpha(buf);
 		ref = buf.ref_a;
-		m = 0xFF0000/buf.ref_a;
+		invalid = !dst.alpha_type;
+		if (!invalid) m = 0xFF0000/buf.ref_a;
 	}
 };
 

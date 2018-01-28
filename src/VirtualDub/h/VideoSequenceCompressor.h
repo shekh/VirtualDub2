@@ -43,6 +43,9 @@ public:
 		}
 		return mInputLayout.format; 
 	}
+	virtual void GetInputBitmapFormat(vdstructex<tagBITMAPINFOHEADER>& bm) {
+		bm = mInputFormat;
+	}
 
 	void init(EncoderHIC* driver, long lQ, long lKeyRate);
 	void Start(const void *inputFormat, uint32 inputFormatSize, const void *outputFormat, uint32 outputFormatSize, const VDFraction& frameRate, VDPosition frameCount);

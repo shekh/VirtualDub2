@@ -11,6 +11,7 @@ namespace {
 	bool can_sample(const VDPixmap& px) {
 		switch (px.format) {
 		case nsVDPixmap::kPixFormat_YUV422_YU64:
+		case nsVDPixmap::kPixFormat_B64A:
 			return false;
 		}
 		return true;

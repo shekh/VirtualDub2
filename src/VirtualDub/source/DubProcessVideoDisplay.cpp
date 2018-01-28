@@ -299,7 +299,7 @@ void VDDubVideoProcessorDisplay::UpdateDecompressedVideo(const void *data, uint3
 			mpVideoDecompressor->DecompressFrame(mVideoDecompBuffer.base(), (char *)data, size, isKey, false);
 			if(mpVideoDecompressor->GetAlpha()) mVideoDecompBuffer.info.alpha_type = FilterModPixmapInfo::kAlphaMask;
 			int variant = mpVideoDecompressor->GetTargetFormatVariant();
-			VDSetPixmapInfoFromBitmap(mVideoDecompBuffer, variant);
+			VDSetPixmapInfoForBitmap(mVideoDecompBuffer.info, mVideoDecompBuffer.format, variant);
 		} catch(const MyError&) {
 			mpBlitter->postAPC(0, -1, AsyncDecompressorErrorCallback, mpOutputDisplay, NULL);
 			mbVideoDecompressorErrored = true;

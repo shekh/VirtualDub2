@@ -103,7 +103,7 @@ public:
 	VDThreadedVideoCompressorSlave();
 	~VDThreadedVideoCompressorSlave();
 
-	void Init(VDThreadedVideoCompressor *parent, IVDVideoCompressor *compressor, VDPixmapBuffer* repack_buffer);
+	void Init(VDThreadedVideoCompressor *parent, IVDVideoCompressor *compressor);
 	void Shutdown();
 
 protected:
@@ -111,7 +111,6 @@ protected:
 
 	VDThreadedVideoCompressor *mpParent;
 	IVDVideoCompressor *mpCompressor;
-	VDPixmapBuffer* repack_buffer;
 };
 
 /////////
@@ -130,12 +129,10 @@ VDThreadedVideoCompressor::VDThreadedVideoCompressor()
 	, mbLoopDetectedDuringFlush(false)
 	, mInputBufferCount(0)
 	, mPriority(VDThread::kPriorityDefault)
-	, cloned_repack_buffer(0)
 {
 }
 
 VDThreadedVideoCompressor::~VDThreadedVideoCompressor() {
-	delete[] cloned_repack_buffer;
 }
 
 VDThreadedVideoCompressor::FlushStatus VDThreadedVideoCompressor::GetFlushStatus() {
@@ -180,10 +177,7 @@ void VDThreadedVideoCompressor::Init(int threads, IVDVideoCompressor *pBaseCompr
 		for(int i=0; i<threads; ++i)
 			mpThreads[i].ThreadSetPriority(mPriority);
 
-		mpThreads[0].Init(this, pBaseCompressor, &base_repack_buffer);
-
-		if (threads>1)
-			cloned_repack_buffer = new VDPixmapBuffer[threads-1];
+		mpThreads[0].Init(this, pBaseCompressor);
 
 		for(int i=1; i<threads; ++i) {
 			IVDVideoCompressor *vc;
@@ -192,7 +186,7 @@ void VDThreadedVideoCompressor::Init(int threads, IVDVideoCompressor *pBaseCompr
 
 			mClonedCodecs.push_back(vc);
 
-			mpThreads[i].Init(this, vc, &cloned_repack_buffer[i-1]);
+			mpThreads[i].Init(this, vc);
 		}
 	}
 }
@@ -325,7 +319,7 @@ bool VDThreadedVideoCompressor::ExchangeBuffer(VDRenderOutputBuffer *buffer, VDR
 			if (!mbFlushInProgress)
 				++mFramesSubmitted;
 
-			if (!ProcessFrame(buffer, mpBaseCompressor, NULL, 0, NULL, &base_repack_buffer)) {
+			if (!ProcessFrame(buffer, mpBaseCompressor, NULL, 0, NULL)) {
 				if (mbInErrorState)
 					throw mError;
 
@@ -345,7 +339,7 @@ bool VDThreadedVideoCompressor::ExchangeBuffer(VDRenderOutputBuffer *buffer, VDR
 	return success;
 }
 
-void VDThreadedVideoCompressor::RunSlave(IVDVideoCompressor *compressor, VDPixmapBuffer& repack_buffer) {
+void VDThreadedVideoCompressor::RunSlave(IVDVideoCompressor *compressor) {
 	VDRTProfileChannel	profchan("VideoCompressor");
 
 	FrameTrackingQueue frameTrackingQueue;
@@ -439,12 +433,12 @@ void VDThreadedVideoCompressor::RunSlave(IVDVideoCompressor *compressor, VDPixma
 		while(framesToSkip--)
 			compressor->SkipFrame();
 
-		if (!ProcessFrame(buffer, compressor, &profchan, frameNumber, &frameTrackingQueue, &repack_buffer))
+		if (!ProcessFrame(buffer, compressor, &profchan, frameNumber, &frameTrackingQueue))
 			break;
 	}
 }
 
-bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDVideoCompressor *pCompressor, VDRTProfileChannel *pProfileChannel, sint32 frameNumber, FrameTrackingQueue *frameTrackingQueue, VDPixmapBuffer* repack_buffer) {
+bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDVideoCompressor *pCompressor, VDRTProfileChannel *pProfileChannel, sint32 frameNumber, FrameTrackingQueue *frameTrackingQueue) {
 	vdrefptr<VDRenderPostCompressionBuffer> pOutputBuffer;
 
 	if (frameTrackingQueue) {
@@ -471,27 +465,13 @@ bool VDThreadedVideoCompressor::ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDV
 	uint32 packedSize;
 	bool valid;
 
-	VDPROFILEBEGIN("V-Format");
-	VDPixmap& src = pBuffer->mPixmap;
-	void* dst = pBuffer->mpBase;
-	if (src.format==nsVDPixmap::kPixFormat_XRGB64) {
-		int out_format = pCompressor->GetInputFormat(0);
-		if (!out_format) {
-			// need another buffer for this
-			if (!repack_buffer->data) repack_buffer->init(src.w,src.h,src.format);
-			dst = repack_buffer->data;
-			VDPixmap_X16R16G16B16_to_b64a(*repack_buffer,src);
-		}
-	}
-	VDPROFILEEND();
-
 	VDPROFILEBEGIN("V-Compress");
 
 	try {
 		if (frameTrackingQueue && frameNumber >= 0)
 			frameTrackingQueue->push_back(frameNumber);
 
-		valid = pCompressor->CompressFrame(pOutputBuffer->mOutputBuffer.data(), dst, packedSize, pOutputBuffer->packetInfo);
+		valid = pCompressor->CompressFrame(pOutputBuffer->mOutputBuffer.data(), pBuffer->mpBase, packedSize, pOutputBuffer->packetInfo);
 
 		if (!valid) {
 			vdsynchronized(mMutex) {
@@ -587,14 +567,13 @@ VDThreadedVideoCompressorSlave::VDThreadedVideoCompressorSlave()
 VDThreadedVideoCompressorSlave::~VDThreadedVideoCompressorSlave() {
 }
 
-void VDThreadedVideoCompressorSlave::Init(VDThreadedVideoCompressor *parent, IVDVideoCompressor *compressor, VDPixmapBuffer* buffer) {
+void VDThreadedVideoCompressorSlave::Init(VDThreadedVideoCompressor *parent, IVDVideoCompressor *compressor/*, VDPixmapBuffer* buffer*/) {
 	mpParent = parent;
 	mpCompressor = compressor;
-	repack_buffer = buffer;
 
 	ThreadStart();
 }
 
 void VDThreadedVideoCompressorSlave::ThreadRun() {
-	mpParent->RunSlave(mpCompressor,*repack_buffer);
+	mpParent->RunSlave(mpCompressor);
 }

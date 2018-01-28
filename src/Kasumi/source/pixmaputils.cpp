@@ -104,12 +104,14 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
 	/* YUV422_Alpha_Planar16 */			{ "YUVA422P16",		false, 1, 1,  0,  0,  2, 3, 1, 0, 2,   0, 2 },
 	/* YUV420_Alpha_Planar16 */			{ "YUVA420P16",		false, 1, 1,  0,  0,  2, 3, 1, 1, 2,   0, 2 },
 	/* YUV422_YU64 */				{ "YU64",			true, 2, 1,  1,  0,  8, 0, 0, 0, 0,   0 },
+	/* B64A */						{ "b64a",			false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
 };
 
 bool VDPixmapFormatHasAlpha(sint32 format) {
 	switch (format) {
 	case nsVDPixmap::kPixFormat_XRGB8888:
 	case nsVDPixmap::kPixFormat_XRGB64:
+	case nsVDPixmap::kPixFormat_B64A:
 	case nsVDPixmap::kPixFormat_YUVA444_Y416:
 	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
 	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
@@ -205,6 +207,7 @@ int VDPixmapFormatGroup(int src) {
 
 	case kPixFormat_R210:
 	case kPixFormat_R10K:
+	case kPixFormat_B64A:
 		return kPixFormat_XRGB64;
 
 	case kPixFormat_YUV420_NV12:

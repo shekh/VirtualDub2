@@ -22,6 +22,7 @@
 #include "uberblit.h"
 #include "uberblit_gen.h"
 #include "uberblit_ycbcr_generic.h"
+#include "uberblit_rgb64.h"
 
 uint32 VDPixmapGetFormatTokenFromFormat(int format) {
 	using namespace nsVDPixmap;
@@ -83,6 +84,7 @@ uint32 VDPixmapGetFormatTokenFromFormat(int format) {
 	case kPixFormat_YUV420ib_Planar_709:	return kVDPixType_8_8_8 | kVDPixSamp_420_MPEG2INT2 | kVDPixSpace_YCC_709;
 	case kPixFormat_YUV420ib_Planar_709_FR:	return kVDPixType_8_8_8 | kVDPixSamp_420_MPEG2INT2 | kVDPixSpace_YCC_709_FR;
 	case kPixFormat_XRGB64:		return kVDPixType_16x4_LE | kVDPixSamp_444 | kVDPixSpace_BGR;
+	case kPixFormat_B64A:		return kVDPixType_16x4_LE | kVDPixSamp_444 | kVDPixSpace_BGR;
 	case kPixFormat_YUV444_Planar16:	return kVDPixType_16_16_16_LE | kVDPixSamp_444 | kVDPixSpace_YCC_601;
 	case kPixFormat_YUV422_Planar16:	return kVDPixType_16_16_16_LE | kVDPixSamp_422 | kVDPixSpace_YCC_601;
 	case kPixFormat_YUV420_Planar16:	return kVDPixType_16_16_16_LE | kVDPixSamp_420_MPEG2 | kVDPixSpace_YCC_601;
@@ -1205,6 +1207,12 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 			break;
 		}
 
+		if (src.format==nsVDPixmap::kPixFormat_B64A) {
+			gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w*8);
+			gen.swap(new VDPixmapGen_B64A_To_X16R16G16B16);
+			break;
+		}
+
 		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w*8);
 		break;
 
@@ -2180,6 +2188,10 @@ space_reconvert:
 	}
 
 	if (extraDst) extraDst->Create(gen,dst);
+
+	if (dst.format==nsVDPixmap::kPixFormat_B64A) {
+		gen.swap(new VDPixmapGen_B64A_To_X16R16G16B16);
+	}
 
 	//gen.debug_dump();
 

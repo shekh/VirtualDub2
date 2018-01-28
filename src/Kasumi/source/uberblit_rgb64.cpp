@@ -191,6 +191,29 @@ void VDPixmapGen_X16R16G16B16_To_R10K::Compute(void *dst0, sint32 y) {
 	}
 }
 
+void VDPixmapGen_B64A_To_X16R16G16B16::Compute(void *dst0, sint32 y) {
+	uint16 *dst = (uint16 *)dst0;
+	const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex);
+
+	{for(int i=0; i<mWidth/2; i++){
+		__m128i c = _mm_loadu_si128((__m128i*)src);
+		__m128i c0 = _mm_srli_epi16(c,8);
+		__m128i c1 = _mm_slli_epi16(c,8);
+		c = _mm_or_si128(c0,c1);
+		c = _mm_shufflehi_epi16(_mm_shufflelo_epi16(c,0x1B),0x1B); // 0 1 2 3
+		_mm_storeu_si128((__m128i*)dst,c);
+		src += 8;
+		dst += 8;
+	}}
+
+	if (mWidth & 1) {
+		dst[0] = _byteswap_ushort(src[3]);
+		dst[1] = _byteswap_ushort(src[2]);
+		dst[2] = _byteswap_ushort(src[1]);
+		dst[3] = _byteswap_ushort(src[0]);
+	}
+}
+
 void VDPixmapGen_R210_To_X16R16G16B16::Compute(void *dst0, sint32 y) {
 	uint16 *dst = (uint16 *)dst0;
 	const uint32 *src = (const uint32 *)mpSrc->GetRow(y, mSrcIndex);
@@ -442,43 +465,3 @@ void VDPixmap_X16R16G16B16_Normalize(VDPixmap& pxdst, const VDPixmap& pxsrc, uin
 	}}
 }
 
-void VDPixmap_X16R16G16B16_to_b64a(VDPixmap& dst, const VDPixmap& src) {
-	int w = (src.w+1)/2;
-	int m = 0;
-	if(src.info.alpha_type==FilterModPixmapInfo::kAlphaInvalid)
-		m = -1;
-	__m128i a_mask = _mm_set_epi16(m,0,0,0,m,0,0,0);
-	{for(int y=0; y<src.h; y++){
-		uint8* s = (uint8*)src.data + y*src.pitch;
-		uint8* d = (uint8*)dst.data + y*dst.pitch;
-		{for(int x=0; x<w; x++){
-			__m128i c = _mm_load_si128((__m128i*)s);
-			c = _mm_or_si128(c,a_mask);
-			__m128i c0 = _mm_srli_epi16(c,8);
-			__m128i c1 = _mm_slli_epi16(c,8);
-			c = _mm_or_si128(c0,c1);
-			c = _mm_shufflehi_epi16(_mm_shufflelo_epi16(c,0x1B),0x1B); // 0 1 2 3
-			_mm_store_si128((__m128i*)d,c);
-			s += 16;
-			d += 16;
-		}}
-	}}
-}
-
-void VDPixmap_b64a_to_X16R16G16B16(VDPixmap& dst, const VDPixmap& src) {
-	int w = (src.w+1)/2;
-	{for(int y=0; y<src.h; y++){
-		uint8* s = (uint8*)src.data + y*src.pitch;
-		uint8* d = (uint8*)dst.data + y*dst.pitch;
-		{for(int x=0; x<w; x++){
-			__m128i c = _mm_load_si128((__m128i*)s);
-			__m128i c0 = _mm_srli_epi16(c,8);
-			__m128i c1 = _mm_slli_epi16(c,8);
-			c = _mm_or_si128(c0,c1);
-			c = _mm_shufflehi_epi16(_mm_shufflelo_epi16(c,0x1B),0x1B); // 0 1 2 3
-			_mm_store_si128((__m128i*)d,c);
-			s += 16;
-			d += 16;
-		}}
-	}}
-}

@@ -19,7 +19,8 @@
 
 #include <vd2/system/error.h>
 #include <vd2/Kasumi/blitter.h>
-#include <../Kasumi/h/uberblit_rgb64.h>
+#include <vd2/Riza/bitmap.h>
+#include <../Kasumi/h/uberblit_base.h>
 
 #include "AVIOutputRawVideo.h"
 
@@ -97,46 +98,16 @@ void AVIVideoOutputStreamRaw::partialWriteEnd() {
 
 void AVIVideoOutputStreamRaw::WriteVideoImage(const VDPixmap *px) {
 	if (!mpBlitter) {
-		mpBlitter = VDPixmapCreateBlitter(mOutputPixmap, *px);
+		FilterModPixmapInfo out_info;
+		VDSetPixmapInfoForBitmap(out_info, px->format);
+		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(px->format, out_info);
+		mpBlitter = VDPixmapCreateBlitter(mOutputPixmap, *px, extraDst);
+		delete extraDst;
 		if (!mpBlitter)
 			throw MyMemoryError();
 	}
 
 	mpBlitter->Blit(mOutputPixmap, *px);
-
-	bool wipe_alpha = true;
-	if (px->info.alpha_type!=FilterModPixmapInfo::kAlphaInvalid)
-		wipe_alpha = false;
-
-	if (wipe_alpha && mOutputPixmap.format==nsVDPixmap::kPixFormat_XRGB8888) {
-		char *row = (char*)mOutputPixmap.data;
-		for(int y=0; y<mOutputPixmap.h; ++y) {
-			uint8 *p = (uint8*)row;
-			for(int x=0; x<mOutputPixmap.w; ++x) {
-				p[3] = 0xFF;
-				p += 4;
-			}
-			row += mOutputPixmap.pitch;
-		}
-	}
-
-	if (mOutputPixmap.format==nsVDPixmap::kPixFormat_XRGB64) {
-		if (!VDPixmap_X16R16G16B16_IsNormalized(mOutputPixmap.info)) 
-			VDPixmap_X16R16G16B16_Normalize(mOutputPixmap,mOutputPixmap);
-
-		if (wipe_alpha) {
-			char *row = (char*)mOutputPixmap.data;
-			for(int y=0; y<mOutputPixmap.h; ++y) {
-				uint16 *p = (uint16*)row;
-				for(int x=0; x<mOutputPixmap.w; ++x) {
-					p[3] = 0xFFFF;
-					p += 4;
-				}
-				row += mOutputPixmap.pitch;
-			}
-		}
-	}
-
 	mpParent->write(mOutputBuffer.data(), mOutputBuffer.size());
 }
 

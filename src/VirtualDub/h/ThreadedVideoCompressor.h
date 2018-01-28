@@ -226,12 +226,12 @@ public:
 	}
 
 public:
-	void RunSlave(IVDVideoCompressor *compressor, VDPixmapBuffer& repack_buffer);
+	void RunSlave(IVDVideoCompressor *compressor);
 
 protected:
 	typedef vdfastdeque<uint32> FrameTrackingQueue;
 
-	bool ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDVideoCompressor *pCompressor, VDRTProfileChannel *pProfileChannel, sint32 frameNumber, FrameTrackingQueue *frameTrackingQueue, VDPixmapBuffer* repack_buffer);
+	bool ProcessFrame(VDRenderOutputBuffer *pBuffer, IVDVideoCompressor *pCompressor, VDRTProfileChannel *pProfileChannel, sint32 frameNumber, FrameTrackingQueue *frameTrackingQueue);
 	void FlushInputQueue();
 	void FlushOutputQueue();
 
@@ -275,8 +275,6 @@ protected:
 	VDEvent<VDThreadedVideoCompressor, bool> mEventFrameComplete;
 
 	vdfastvector<IVDVideoCompressor *> mClonedCodecs;
-	VDPixmapBuffer base_repack_buffer;
-	VDPixmapBuffer* cloned_repack_buffer;
 };
 
 #endif

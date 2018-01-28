@@ -424,7 +424,7 @@ bool VDDialogSelectVideoFormatW32::OnLoaded() {
 		nsVDPixmap::kPixFormat_RGB565,
 		nsVDPixmap::kPixFormat_RGB888,
 		nsVDPixmap::kPixFormat_XRGB8888,
-		nsVDPixmap::kPixFormat_XRGB64,
+		nsVDPixmap::kPixFormat_B64A,
 		nsVDPixmap::kPixFormat_R210,
 		nsVDPixmap::kPixFormat_R10K,
 		nsVDPixmap::kPixFormat_Y8,
@@ -528,7 +528,7 @@ bool VDDialogSelectVideoFormatW32::OnErase(VDZHDC hdc) {
 
 void VDDialogSelectVideoFormatW32::FormatItem::Init(int format) {
 	mFormat = format;
-	VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == nsVDPixmap::kPixFormat_YUV422_YU64 + 1);
+	VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == nsVDPixmap::kPixFormat_B64A + 1);
 }
 
 void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s) const {
@@ -543,6 +543,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 					s = L"RGB";
 					break;
 				case nsVDPixmap::kPixFormat_XRGB8888:
+				case nsVDPixmap::kPixFormat_B64A:
 				case nsVDPixmap::kPixFormat_XRGB64:
 					s = L"RGBA";
 					break;
@@ -618,6 +619,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_RGB888:
 				case nsVDPixmap::kPixFormat_XRGB8888:
 				case nsVDPixmap::kPixFormat_XRGB64:
+				case nsVDPixmap::kPixFormat_B64A:
 				case nsVDPixmap::kPixFormat_R210:
 				case nsVDPixmap::kPixFormat_R10K:
 				case nsVDPixmap::kPixFormat_Y8_FR:
@@ -697,6 +699,9 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 					break;
 				case nsVDPixmap::kPixFormat_XRGB64:
 					s = L"16-bit (RGBA64)";
+					break;
+				case nsVDPixmap::kPixFormat_B64A:
+					s = L"16-bit (b64a)";
 					break;
 				case nsVDPixmap::kPixFormat_R210:
 					s = L"10-bit (r210)";
@@ -804,6 +809,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 				case nsVDPixmap::kPixFormat_RGB888:
 				case nsVDPixmap::kPixFormat_XRGB8888:
 				case nsVDPixmap::kPixFormat_XRGB64:
+				case nsVDPixmap::kPixFormat_B64A:
 				case nsVDPixmap::kPixFormat_R210:
 				case nsVDPixmap::kPixFormat_R10K:
 				case nsVDPixmap::kPixFormat_Y8:

@@ -216,8 +216,7 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 		return kPixFormat_YUV420_NV12;
 
 	case VDMAKEFOURCC('b', '6', '4', 'a'):
-		variant = 2;
-		return kPixFormat_XRGB64;
+		return kPixFormat_B64A;
 
 	case VDMAKEFOURCC('B', 'R', 'A', 64):
 		return kPixFormat_XRGB64;
@@ -230,9 +229,6 @@ int VDGetPixmapToBitmapVariants(int format) {
 		return 3;
 
 	if (format == nsVDPixmap::kPixFormat_Y8)
-		return 2;
-
-	if (format == nsVDPixmap::kPixFormat_XRGB64)
 		return 2;
 
 	if (format == nsVDPixmap::kPixFormat_YUV420_Planar16)
@@ -395,15 +391,12 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biSizeImage	= w * 4 * h;
 		break;
 	case kPixFormat_XRGB64:
-		switch(variant) {
-		case 2:
-			dst->biCompression	= VDMAKEFOURCC('b', '6', '4', 'a');
-			break;
-		case 1:
-		default:
-			dst->biCompression	= VDMAKEFOURCC('B', 'R', 'A', 64);
-			break;
-		}
+		dst->biCompression	= VDMAKEFOURCC('B', 'R', 'A', 64);
+		dst->biBitCount		= 64;
+		dst->biSizeImage	= w*8 * h;
+		break;
+	case kPixFormat_B64A:
+		dst->biCompression	= VDMAKEFOURCC('b', '6', '4', 'a');
 		dst->biBitCount		= 64;
 		dst->biSizeImage	= w*8 * h;
 		break;
@@ -657,61 +650,46 @@ VDPixmap VDGetPixmapForBitmap(const VDAVIBitmapInfoHeader& hdr, const void *data
 	return VDPixmapFromLayout(layout, (void *)data);
 }
 
-void VDPixmap_bitmap_to_YUV420_Planar16(VDPixmap& dst, const VDPixmap& src, int variant) {
-	dst.info.ref_r = 0xFFFF;
-
-	if (variant==2) {
-		// ffmpeg, 10 bit
-		dst.info.ref_r = 0x3FF;
-	}
-}
-
-void VDPixmap_bitmap_to_YUV422_Planar16(VDPixmap& dst, const VDPixmap& src, int variant) {
-	dst.info.ref_r = 0xFFFF;
-
-	if (variant==2) {
-		// ffmpeg, 10 bit
-		dst.info.ref_r = 0x3FF;
-	}
-}
-
-// variant 1 = BRA[64] = default
-// variant 2 = b64a
-void VDPixmap_bitmap_to_X16R16G16B16(VDPixmap& dst, const VDPixmap& src, int variant) {
-	dst.info.ref_r = 0xFFFF;
-	dst.info.ref_g = 0xFFFF;
-	dst.info.ref_b = 0xFFFF;
-	dst.info.ref_a = 0xFFFF;
-
-	if (variant==2) VDPixmap_b64a_to_X16R16G16B16(dst,src);
-}
-
-void VDSetPixmapInfoFromBitmap(VDPixmap& px, int variant) {
+void VDSetPixmapInfoForBitmap(FilterModPixmapInfo& info, int format, int variant) {
 	using namespace nsVDPixmap;
 
-	switch (px.format) {
+	switch (format) {
 	case kPixFormat_XRGB64:
-		VDPixmap_bitmap_to_X16R16G16B16(px,px,variant);
+	case kPixFormat_B64A:
+		info.ref_r = 0xFFFF;
+		info.ref_g = 0xFFFF;
+		info.ref_b = 0xFFFF;
+		info.ref_a = 0xFFFF;
 		break;
 
 	case kPixFormat_YUV420_Planar16:
-		VDPixmap_bitmap_to_YUV420_Planar16(px,px,variant);
+	case kPixFormat_YUV422_Planar16:
+		info.ref_r = 0xFFFF;
+
+		if (variant==2) {
+			// ffmpeg, 10 bit
+			info.ref_r = 0x3FF;
+		}
 		break;
 
-	case kPixFormat_YUV422_Planar16:
-		VDPixmap_bitmap_to_YUV422_Planar16(px,px,variant);
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar16:
+		info.ref_r = 0xFFFF;
+		info.ref_a = 0xFFFF;
 		break;
 
 	case kPixFormat_YUV422_P210:
 	case kPixFormat_YUV420_P010:
 	case kPixFormat_YUV422_P216:
 	case kPixFormat_YUV420_P016:
-		px.info.ref_r = 0xFF00;
+		info.ref_r = 0xFF00;
 		break;
 
 	case kPixFormat_YUVA444_Y416:
-		px.info.ref_r = 0xFF00;
-		px.info.ref_a = 0xFFFF;
+		info.ref_r = 0xFF00;
+		info.ref_a = 0xFFFF;
 		break;
 	}
 }

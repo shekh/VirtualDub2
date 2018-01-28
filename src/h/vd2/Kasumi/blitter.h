@@ -23,6 +23,7 @@ public:
 
 IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src, IVDPixmapExtraGen* extraDst=0);
 IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixmapLayout& src, IVDPixmapExtraGen* extraDst=0);
+IVDPixmapExtraGen* VDPixmapCreateNormalizer(int format, FilterModPixmapInfo& out_info);
 
 class VDPixmapCachedBlitter {
 	VDPixmapCachedBlitter(const VDPixmapCachedBlitter&);

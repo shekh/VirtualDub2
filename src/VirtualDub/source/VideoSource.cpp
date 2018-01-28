@@ -661,6 +661,7 @@ public:
 		switch (mSrcLayout.format) {
 		case nsVDPixmap::kPixFormat_XRGB8888:
 		case nsVDPixmap::kPixFormat_XRGB64:
+		case nsVDPixmap::kPixFormat_B64A:
 		case nsVDPixmap::kPixFormat_YUVA444_Y416:
 			return true;
 		}
@@ -739,6 +740,7 @@ bool VDVideoDecompressorDIB::SetTargetFormat(int format) {
 	switch(mSrcLayout.format) {
 	case nsVDPixmap::kPixFormat_Y8:
 	case nsVDPixmap::kPixFormat_XRGB64:
+	case nsVDPixmap::kPixFormat_B64A:
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
@@ -2243,7 +2245,7 @@ const void *VideoSourceAVI::streamGetFrame(const void *inputBuffer, uint32 data_
 	lLastFrame = frame_num;
 	mTargetFormat.info.frame_num = frame_num;
 	if(mpDecompressor->GetAlpha()) mTargetFormat.info.alpha_type = FilterModPixmapInfo::kAlphaMask;
-	VDSetPixmapInfoFromBitmap(mTargetFormat,mTargetFormatVariant);
+	VDSetPixmapInfoForBitmap(mTargetFormat.info, mTargetFormat.format, mTargetFormatVariant);
 
 	return getFrameBuffer();
 }

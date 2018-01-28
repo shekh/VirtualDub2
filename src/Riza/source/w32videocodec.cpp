@@ -189,9 +189,8 @@ bool VDVideoDecompressorVCM::SetTargetFormat(int format) {
 			if (SetTargetFormat(kPixFormat_YUV420_P010)) return true;
 			break;
 		case kPixFormat_XRGB64:
-		case kPixFormat_R10K:
-		case kPixFormat_R210:
 			if (SetTargetFormat(kPixFormat_XRGB64)) return true;
+			if (SetTargetFormat(kPixFormat_B64A)) return true;
 			if (SetTargetFormat(kPixFormat_R10K)) return true;
 			if (SetTargetFormat(kPixFormat_R210)) return true;
 			break;
@@ -209,6 +208,7 @@ bool VDVideoDecompressorVCM::SetTargetFormat(int format) {
 		if (SetTargetFormat(kPixFormat_YUV422_V210)) return true;
 		if (SetTargetFormat(kPixFormat_YUVA444_Y416)) return true;
 		if (SetTargetFormat(kPixFormat_XRGB64)) return true;
+		if (SetTargetFormat(kPixFormat_B64A)) return true;
 		if (SetTargetFormat(kPixFormat_R10K)) return true;
 		if (SetTargetFormat(kPixFormat_R210)) return true;
 

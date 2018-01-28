@@ -2646,7 +2646,7 @@ void VDCaptureProject::CapProcessData2(int stream, const void *data, uint32 size
 			if (stream == -1) {
 				VDPROFILEBEGINEX2("V-In",0,vdprofiler_flag_event);
 				VDPixmap px(VDPixmapFromLayout(mFilterInputLayout, (void *)data));
-				VDSetPixmapInfoFromBitmap(px, mInputFormatVariant);
+				VDSetPixmapInfoForBitmap(px.info, px.format, mInputFormatVariant);
 				bool firstFrame = true;
 
 				vdsynchronized(mVideoFilterLock) {
@@ -3394,7 +3394,7 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 	void *pFilteredData = (void *)data;
 
 	VDPixmap px(VDPixmapFromLayout(mInputLayout, pFilteredData));
-	VDSetPixmapInfoFromBitmap(px, mInputFormatVariant);
+	VDSetPixmapInfoForBitmap(px.info, px.format, mInputFormatVariant);
 
 	// We don't need to lock here as it is illegal to change the filter
 	// mode while capture is running.
@@ -3519,58 +3519,16 @@ void VDCaptureData::createOutputBlitter() {
 	mbDoConversion = false;
 
 	VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
-	VDSetPixmapInfoFromBitmap(pxsrc, mInputFormatVariant);
+	VDSetPixmapInfoForBitmap(pxsrc.info, pxsrc.format, mInputFormatVariant);
+	FilterModPixmapInfo out_info;
+	VDSetPixmapInfoForBitmap(out_info, driverLayout.format);
 
 	if (driverLayout.format) {
-		FilterModPixmapInfo out_info;
-		out_info.ref_r = 0xFFFF;
-		out_info.ref_g = 0xFFFF;
-		out_info.ref_b = 0xFFFF;
-		out_info.ref_a = 0xFFFF;
-		int format = 0;
 		if (mpVideoCompressor) {
-			format = mpVideoCompressor->GetInputFormat(&out_info);
-		}
-		if (!format) {
-			throw MyError("bad path");
+			mpVideoCompressor->GetInputFormat(&out_info);
 		}
 
-		IVDPixmapExtraGen* extraDst = 0;
-		switch (format) {
-		case nsVDPixmap::kPixFormat_XRGB8888:
-			{
-				ExtraGen_X8R8G8B8_Normalize* normalize = new ExtraGen_X8R8G8B8_Normalize;
-				extraDst = normalize;
-			}
-			break;
-		case nsVDPixmap::kPixFormat_XRGB64:
-			{
-				ExtraGen_X16R16G16B16_Normalize* normalize = new ExtraGen_X16R16G16B16_Normalize;
-				normalize->max_value = out_info.ref_r;
-				extraDst = normalize;
-			}
-			break;
-		case nsVDPixmap::kPixFormat_YUV420_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Planar16:
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
-		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-			{
-				ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
-				normalize->max_value = out_info.ref_r;
-				extraDst = normalize;
-			}
-			break;
-		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
-		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
-			{
-				ExtraGen_A8_Normalize* normalize = new ExtraGen_A8_Normalize;
-				extraDst = normalize;
-			}
-			break;
-		}
+		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(driverLayout.format, out_info);
 		VDPixmapFormatEx fmt = VDPixmapFormatCombineOpt(driverLayout.format,VDPixmapFormatNormalize(pxsrc.format));
 		if (pxsrc.format!=fmt.format || extraDst) {
 			repack_buffer.init(driverLayout);
@@ -3583,13 +3541,23 @@ void VDCaptureData::createOutputBlitter() {
 		}
 
 	} else if (vfwLayout.format) {
+		if (mpVideoCompressor) {
+			vdstructex<tagBITMAPINFOHEADER> bm;
+			mpVideoCompressor->GetInputBitmapFormat(bm);
+			int variant;
+			VDBitmapFormatToPixmapFormat((VDAVIBitmapInfoHeader&)*bm.data(),variant);
+			VDSetPixmapInfoForBitmap(out_info, vfwLayout.format, variant);
+		}
+
+		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(driverLayout.format, out_info);
 		VDPixmapFormatEx fmt = VDPixmapFormatCombineOpt(vfwLayout.format,VDPixmapFormatNormalize(pxsrc.format));
-		if (pxsrc.format!=fmt.format) {
+		if (pxsrc.format!=fmt.format || extraDst) {
 			repack_buffer.init(vfwLayout);
 			repack_buffer.format = fmt.format;
 			repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
 			repack_buffer.info.colorRangeMode = fmt.colorRangeMode;
-			mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc);
+			mpOutputBlitter = VDPixmapCreateBlitter(repack_buffer, pxsrc, extraDst);
+			delete extraDst;
 			mbDoConversion = true;
 		}
 	}

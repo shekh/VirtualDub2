@@ -17,8 +17,8 @@
 
 #include "stdafx.h"
 #include <vd2/Kasumi/pixmaputils.h>
-#include <../Kasumi/h/uberblit_rgb64.h>
-#include <../Kasumi/h/uberblit_16f.h>
+#include <vd2/Riza/bitmap.h>
+#include <../Kasumi/h/uberblit_base.h>
 #include "FilterFrameConverter.h"
 
 class VDFilterFrameConverterNode {
@@ -69,19 +69,9 @@ int VDFilterFrameConverter::AllocateNodes(int threads) {
 
 	IVDPixmapExtraGen* extraDst = 0;
 	if (mNormalize16) {
-		switch (mLayout.format) {
-		case nsVDPixmap::kPixFormat_XRGB64:
-			extraDst = new ExtraGen_X16R16G16B16_Normalize;
-			break;
-		case nsVDPixmap::kPixFormat_YUV420_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Planar16:
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
-		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-			extraDst = new ExtraGen_YUV_Normalize;
-			break;
-		}
+		FilterModPixmapInfo out_info;
+		VDSetPixmapInfoForBitmap(out_info, mLayout.format);
+		extraDst = VDPixmapCreateNormalizer(mLayout.format, out_info);
 	}
 
 	{for(int i=0; i<threads; i++){

@@ -488,6 +488,7 @@ public:
 		mpSrcY->TransformPixmapInfo(src,dst);
 		mpSrcCb->TransformPixmapInfo(src,unused);
 		mpSrcCr->TransformPixmapInfo(src,unused);
+		dst.alpha_type = 0;
 	}
 
 	uint32 GetType(uint32 output) const {
