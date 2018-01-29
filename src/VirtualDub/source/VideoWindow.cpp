@@ -234,6 +234,15 @@ void VDVideoWindow::SetAspectRatio(double ar, bool bFrame) {
 			mFreeAspectRatio = ar / mSourceAspectRatio;
 		else
 			mFreeAspectRatio = ar;
+	} else {
+		RECT r;
+		GetClientRect(mhwnd, &r);
+		if (r.right && r.bottom) {
+			mFreeAspectRatio = r.right / (r.bottom * mSourceAspectRatio);
+			mZoom = (double)r.bottom / mSourceHeight;
+			mPanWidth = r.right;
+			mPanHeight = r.bottom;
+		}
 	}
 
 	Resize();
@@ -543,8 +552,12 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 					mPanHeight = r.bottom;
 				}
 
-				if (mAspectRatio < 0 && !mbUseSourcePAR && r.right && r.bottom)
+				if (mAspectRatio < 0 && !mbUseSourcePAR && r.right && r.bottom) {
 					mFreeAspectRatio = r.right / (r.bottom * mSourceAspectRatio);
+					mZoom = (double)r.bottom / mSourceHeight;
+					mPanWidth = r.right;
+					mPanHeight = r.bottom;
+				}
 			}
 
 			ClipPan(mPanX,mPanY);
