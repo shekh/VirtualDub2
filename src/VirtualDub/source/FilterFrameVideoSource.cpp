@@ -24,6 +24,7 @@ VDFilterFrameVideoSource::VDFilterFrameVideoSource()
 	: mpVS(NULL)
 	, mpRequest(NULL)
 {
+	mbPreroll = false;
 }
 
 VDFilterFrameVideoSource::~VDFilterFrameVideoSource() {
@@ -45,7 +46,14 @@ void VDFilterFrameVideoSource::Init(IVDVideoSource *vs, const VDPixmapLayout& la
 	SetOutputLayout(layout);
 }
 
+// used to decide if it is going to complete already
+bool VDFilterFrameVideoSource::IsPreroll() {
+	return mbPreroll;
+}
+
 VDFilterFrameVideoSource::RunResult VDFilterFrameVideoSource::RunRequests(const uint32 *batchNumberLimit, int index) {
+	mbPreroll = false;
+
 	if (index>0)
 		return kRunResult_Idle;
 
@@ -153,6 +161,7 @@ VDFilterFrameVideoSource::RunResult VDFilterFrameVideoSource::RunRequests(const 
 		mpVS->streamGetFrame(mBuffer.data(), bytes, preroll, pos, mTargetSample);
 		VDPROFILEEND();
 		mbFirstSample = false;
+		mbPreroll = preroll;
 	} catch(const MyError& e) {
 		if (mpRequest) {
 			vdrefptr<VDFilterFrameRequestError> err(new_nothrow VDFilterFrameRequestError);

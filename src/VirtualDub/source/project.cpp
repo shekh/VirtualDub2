@@ -892,6 +892,7 @@ bool VDProject::UpdateFrame(bool updateInputFrame) {
 	uint32 startTime = VDGetCurrentTick();
 
 	bool workCompleted;
+	bool runToEnd = false;
 
 	try {
 		for(;;) {
@@ -954,20 +955,33 @@ bool VDProject::UpdateFrame(bool updateInputFrame) {
 				}
 			}
 
+			bool gotSource = false;
+
 			if (mpVideoFrameSource) {
-				switch(mpVideoFrameSource->RunRequests(NULL,0)) {
+				loop:
+				IVDFilterFrameSource::RunResult rr = mpVideoFrameSource->RunRequests(NULL,0);
+				switch(rr) {
 					case IVDFilterFrameSource::kRunResult_Running:
 					case IVDFilterFrameSource::kRunResult_IdleWasActive:
 					case IVDFilterFrameSource::kRunResult_BlockedWasActive:
 						workCompleted = true;
+						if (!mpVideoFrameSource->IsPreroll())
+							gotSource = true;
 						break;
 				}
+				if (rr!=IVDFilterFrameSource::kRunResult_Idle && gotSource)
+					goto loop;
 			}
 
 			if (!workCompleted)
 				return false;
 
 			uint32 nCurrentTime = VDGetCurrentTick();
+
+			if (gotSource) {
+				startTime = nCurrentTime;
+				if (!g_fDropSeeking) runToEnd = true;
+			}
 
 			if (nCurrentTime - mLastDecodeUpdate > 500) {
 				mLastDecodeUpdate = nCurrentTime;
@@ -977,8 +991,9 @@ bool VDProject::UpdateFrame(bool updateInputFrame) {
 					guiSetStatus("Decoding frame %lu...", 255, (unsigned long)mpPendingOutputFrame->GetFrameNumber());
 			}
 
-			if (nCurrentTime - startTime > 100)
-				break;
+			if (nCurrentTime - startTime > 100) {
+				if (!gotSource && !runToEnd) break;
+			}
 		}
 	} catch(const MyError& e) {
 		guiSetStatus("%s", 255, e.gets());

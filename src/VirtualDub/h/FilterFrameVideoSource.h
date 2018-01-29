@@ -40,6 +40,7 @@ public:
 	void Init(IVDVideoSource *vs, const VDPixmapLayout& layout);
 
 	RunResult RunRequests(const uint32 *batchNumberLimit, int index);
+	bool IsPreroll();
 
 public:	// IVDFilterFrameSource
 	virtual sint64 GetNearestUniqueFrame(sint64 outputFrame);
@@ -52,6 +53,7 @@ protected:
 	uint32		mDecodePadding;
 	VDPosition	mTargetSample;
 	bool		mbFirstSample;
+	bool		mbPreroll;
 
 	vdfastvector<uint8> mBuffer;
 	vdautoptr<IVDPixmapBlitter>	mpBlitter;
