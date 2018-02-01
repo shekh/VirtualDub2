@@ -567,6 +567,11 @@ void JobCreateScript(JobScriptOutput& output, bool project_relative, const DubOp
 					output.addf("VirtualDub.video.SetRange();");
 				}
 
+				VDPosition z0,z1;
+				if (g_project->GetZoomRange(z0,z1)) {
+					output.addf("VirtualDub.video.SetZoomFrames(%I64d,%I64d);", z0, z1);
+				}
+
 				const vdfastvector<sint64>& marker = g_project->GetTimeline().GetMarker();
 				{for(int i=0; i<marker.size(); i++){
 					output.addf("VirtualDub.video.AddMarker(%I64d);", marker[i]);

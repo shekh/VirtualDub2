@@ -181,6 +181,7 @@ BEGIN
         MENUITEM "Stop",                        ID_VIDEO_SEEK_STOP
         MENUITEM SEPARATOR
         MENUITEM "Go To Frame...\tCtrl+G",      ID_EDIT_JUMPTO
+        MENUITEM "&Zoom selection",             ID_EDIT_ZOOMRANGE
     END
     POPUP "&Video"
     BEGIN

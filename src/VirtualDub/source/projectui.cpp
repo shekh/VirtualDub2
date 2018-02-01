@@ -305,6 +305,7 @@ namespace {
 		{ ID_EDIT_CROPTOSELECTION,		"Edit.CropToSelection" },
 		{ ID_EDIT_RESET,				"Edit.Reset" },
 		{ ID_EDIT_JUMPTO,				"Edit.ShowJumpToLocationDialog" },
+		{ ID_EDIT_ZOOMRANGE,			"Edit.ToggleZoom" },
 		{ ID_VIDEO_SEEK_START,			"Edit.GoToStart" },
 		{ ID_VIDEO_SEEK_END,			"Edit.GoToEnd" },
 		{ ID_VIDEO_SEEK_PREV,			"Edit.GoToPrevFrame" },
@@ -738,6 +739,7 @@ void VDProjectUI::UpdateAccelPreview() {
 		ID_VIDEO_SEEK_NEXTDROP,
 
 		ID_EDIT_JUMPTO,
+		ID_EDIT_ZOOMRANGE,
 		ID_EDIT_PREVRANGE,
 		ID_EDIT_NEXTRANGE,
 		ID_EDIT_SETMARKER,
@@ -1759,8 +1761,10 @@ void VDProjectUI::JumpToFrameAsk() {
 
 		VDPosition pos = VDDisplayJumpToPositionDialog(mhwnd, GetCurrentFrame(), inputVideo, mVideoInputFrameRate);
 
-		if (pos >= 0)
+		if (pos >= 0) {
+			if (mbZoomEnabled && ((pos<mposZoomStart) || (pos>mposZoomEnd))) ToggleZoomRange();
 			MoveToFrame(pos);
+		}
 	}
 }
 
@@ -1856,6 +1860,7 @@ bool VDProjectUI::QueueCommand(int cmd) {
 		case kVDProjectCmd_GoToNextUnit:
 		case kVDProjectCmd_GoToNextKey:
 		case kVDProjectCmd_GoToNextRange:
+		case kVDProjectCmd_ZoomRange:
 			// allow restart
 			g_dubber->Abort(false);
 			SetPositionCallbackEnabled(false);
@@ -1945,6 +1950,9 @@ void VDProjectUI::ExecuteCommand(int cmd) {
 		case kVDProjectCmd_SetSelectionEnd:
 			SetSelectionEnd();
 			break;
+		case kVDProjectCmd_ZoomRange:
+			ToggleZoomRange();
+			break;
 	}
 	mPreviewRestartPosition = mpPosition->GetPosition();
 }
@@ -1968,6 +1976,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_VIDEO_SEEK_PREVDROP:
 		case ID_VIDEO_SEEK_NEXTDROP:
 		case ID_EDIT_JUMPTO:
+		case ID_EDIT_ZOOMRANGE:
 		case ID_VIDEO_COPYSOURCEFRAME:
 		case ID_VIDEO_COPYOUTPUTFRAME:
 		case ID_FILE_SAVEIMAGE:
@@ -2216,6 +2225,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_EDIT_PREVRANGE:					QueueCommand(kVDProjectCmd_GoToPrevRange);		break;
 		case ID_EDIT_NEXTRANGE:					QueueCommand(kVDProjectCmd_GoToNextRange);		break;
 		case ID_EDIT_JUMPTO:					QueueCommand(kVDProjectCmd_GoToAsk);			break;
+		case ID_EDIT_ZOOMRANGE:					QueueCommand(kVDProjectCmd_ZoomRange);			break;
 		case ID_VIDEO_SEEK_STOP:
 			SceneShuttleStop();
 			AbortPreviewing();
@@ -2790,6 +2800,12 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_NEXTSCENE		, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_STOP			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_JUMPTO				, bSourceFileExists);
+
+	bool zoom = mbZoomEnabled;
+	if (mposZoomEnd>mposZoomStart) zoom = true;
+	if (mposSelectionEnd>mposSelectionStart) zoom = true;
+	VDEnableMenuItemW32(hMenu, ID_EDIT_ZOOMRANGE, zoom);
+	VDCheckMenuItemW32(hMenu, ID_EDIT_ZOOMRANGE, mbZoomEnabled);
 
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_CLIPPING			, inputVideo != 0);
 
@@ -4211,7 +4227,13 @@ void VDProjectUI::UICurrentPositionUpdated(bool fast_update) {
 void VDProjectUI::UITimelineUpdated() {
 	if (!inputAVI) return;
 
-	mpPosition->SetRange(0, g_project->GetFrameCount());
+	if (mbZoomEnabled) {
+		mpPosition->SetRangeZoom(true);
+		mpPosition->SetRange(mposZoomStart, mposZoomEnd);
+	} else {
+		mpPosition->SetRangeZoom(false);
+		mpPosition->SetRange(0, g_project->GetFrameCount());
+	}
 
 	VDPosition start(GetSelectionStartFrame());
 	VDPosition end(GetSelectionEndFrame());

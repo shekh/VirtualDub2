@@ -116,6 +116,7 @@ protected:
 	void		SetFrameTypeCallback(IVDPositionControlCallback *pCB);
 
 	void		SetRange(VDPosition lo, VDPosition hi, bool updateNow);
+	void		SetRangeZoom(bool v, bool updateNow);
 	VDPosition	GetRangeBegin();
 	VDPosition	GetRangeEnd();
 
@@ -127,6 +128,8 @@ protected:
 
 	bool		GetSelection(VDPosition& start, VDPosition& end);
 	void		SetSelection(VDPosition start, VDPosition end, bool updateNow);
+	bool		GetSelection2(VDPosition& start, VDPosition& end);
+	void		SetSelection2(VDPosition start, VDPosition end, bool updateNow);
 	void		SetTimeline(VDTimeline& t);
 
 	void		SetFrameRate(const VDFraction& frameRate);
@@ -138,6 +141,7 @@ protected:
 
 protected:
 	void InternalSetPosition(VDPosition pos, VDPositionControlEventData::EventType eventType);
+	VDPosition PositionInRange(VDPosition pos);
 
 	static LRESULT APIENTRY StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	LRESULT CALLBACK WndProc(UINT msg, WPARAM wParam, LPARAM lParam);
@@ -171,6 +175,7 @@ protected:
 		kBrushTick,
 		kBrushTrack,
 		kBrushSelection,
+		kBrushSelection2,
 		kBrushes
 	};
 
@@ -181,12 +186,15 @@ protected:
 	VDPosition			mRangeEnd;
 	VDPosition			mSelectionStart;
 	VDPosition			mSelectionEnd;
+	VDPosition			mSelection2Start;
+	VDPosition			mSelection2End;
 	vdfastvector<sint64> marker;
 	vdfastvector<sint64> edit;
 
 	RECT				mPositionArea;			// track, ticks, bar, and numbers
 	RECT				mTrackArea;				// track, ticks, and bar
 	RECT				mTickArea;				// just ticks
+	RECT				mTickArea2;				// just ticks
 	RECT				mTrack;					// just the track
 	RECT				mThumbRect;
 	int					mThumbWidth;
@@ -211,6 +219,7 @@ protected:
 	bool mbHasSceneControls;
 	bool mbAutoFrame;
 	bool mbAutoStep;
+	bool mbZoom;
 
 	VDEvent<IVDPositionControl, VDPositionControlEventData>	mPositionUpdatedEvent;
 
@@ -267,6 +276,8 @@ VDPositionControlW32::VDPositionControlW32(HWND hwnd)
 	, mRangeEnd(0)
 	, mSelectionStart(0)
 	, mSelectionEnd(-1)
+	, mSelection2Start(0)
+	, mSelection2End(-1)
 	, mButtonSize(0)
 	, mGapSize(0)
 	, mPixelsPerFrame(0)
@@ -279,11 +290,13 @@ VDPositionControlW32::VDPositionControlW32(HWND hwnd)
 	, mbHasSceneControls(false)
 	, mbAutoFrame(true)
 	, mbAutoStep(false)
+	, mbZoom(false)
 {
 	mBrushes[kBrushCurrentFrame] = CreateSolidBrush(RGB(255,0,0));
 	mBrushes[kBrushTick] = CreateSolidBrush(RGB(0,0,0));
 	mBrushes[kBrushTrack] = CreateSolidBrush(RGB(128,128,128));
 	mBrushes[kBrushSelection] = CreateSolidBrush(RGB(192,224,255));
+	mBrushes[kBrushSelection2] = CreateSolidBrush(RGB(247,148,29));
 
 	SetRect(&mThumbRect, 0, 0, 0, 0);
 	SetRect(&mTrack, 0, 0, 0, 0);
@@ -325,10 +338,19 @@ void VDPositionControlW32::SetRange(VDPosition lo, VDPosition hi, bool updateNow
 			mSelectionStart = mRangeStart;
 		if (mSelectionEnd > mRangeEnd)
 			mSelectionEnd = mRangeEnd;
+		if (mSelection2Start < mRangeStart)
+			mSelection2Start = mRangeStart;
+		if (mSelection2End > mRangeEnd)
+			mSelection2End = mRangeEnd;
 
 		RecomputeMetrics();
 		UpdateString();
 	}
+}
+
+void VDPositionControlW32::SetRangeZoom(bool v, bool updateNow) {
+	mbZoom = v;
+	RecomputeMetrics();
 }
 
 VDPosition VDPositionControlW32::GetRangeBegin() {
@@ -349,11 +371,17 @@ void VDPositionControlW32::SetPosition(VDPosition pos) {
 		UpdateWindow(mhwnd);
 }
 
-void VDPositionControlW32::InternalSetPosition(VDPosition pos, VDPositionControlEventData::EventType eventType) {
+VDPosition VDPositionControlW32::PositionInRange(VDPosition pos) {
 	if (pos < mRangeStart)
 		pos = mRangeStart;
 	if (pos > mRangeEnd)
 		pos = mRangeEnd;
+	return pos;
+}
+
+void VDPositionControlW32::InternalSetPosition(VDPosition pos, VDPositionControlEventData::EventType eventType) {
+	if (!mbZoom)
+		pos = PositionInRange(pos);
 
 	if (pos != mPosition) {
 		mPosition = pos;
@@ -398,6 +426,16 @@ bool VDPositionControlW32::GetSelection(VDPosition& start, VDPosition& end) {
 	return false;
 }
 
+bool VDPositionControlW32::GetSelection2(VDPosition& start, VDPosition& end) {
+	if (mSelection2Start < mSelection2End) {
+		start	= mSelection2Start;
+		end		= mSelection2End;
+		return true;
+	}
+
+	return false;
+}
+
 void VDPositionControlW32::SetSelection(VDPosition start, VDPosition end, bool updateNow) {
 	const int tickHeight = mTickArea.bottom - mTickArea.top;
 
@@ -420,6 +458,33 @@ void VDPositionControlW32::SetSelection(VDPosition start, VDPosition end, bool u
 		int selx2 = FrameToPixel(mSelectionEnd);
 
 		RECT rNew = { selx1 - tickHeight, mTrack.top, selx2 + tickHeight, mTickArea.bottom };
+
+		InvalidateRect(mhwnd, &rNew, TRUE);
+	}
+}
+
+void VDPositionControlW32::SetSelection2(VDPosition start, VDPosition end, bool updateNow) {
+	const int tickHeight = mTickArea2.bottom - mTickArea2.top;
+
+	// wipe old selection
+	if (mhwnd && mSelection2Start <= mSelection2End) {
+		int selx1 = FrameToPixel(mSelection2Start);
+		int selx2 = FrameToPixel(mSelection2End);
+
+		RECT rOld = { selx1 - tickHeight, mTickArea2.top, selx2 + tickHeight, mTickArea2.bottom };
+
+		InvalidateRect(mhwnd, &rOld, TRUE);
+	}
+
+	// render new selection
+	mSelection2Start	= start;
+	mSelection2End	= end;
+
+	if (mhwnd && mSelection2Start <= mSelection2End) {
+		int selx1 = FrameToPixel(mSelection2Start);
+		int selx2 = FrameToPixel(mSelection2End);
+
+		RECT rNew = { selx1 - tickHeight, mTickArea2.top, selx2 + tickHeight, mTickArea2.bottom };
 
 		InvalidateRect(mhwnd, &rNew, TRUE);
 	}
@@ -647,7 +712,7 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 				}
 			} else if (PtInRect(&mPositionArea, pt)) {
 				VDPosition prev = mPosition;
-				mPosition = (sint64)floor((pt.x - mTrack.left) * mFramesPerPixel + 0.5);
+				mPosition = mRangeStart + (sint64)floor((pt.x - mTrack.left) * mFramesPerPixel + 0.5);
 				if (mPosition < mRangeStart)
 					mPosition = mRangeStart;
 				if (mPosition > mRangeEnd)
@@ -714,7 +779,7 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 					UpdateWindow(mhwnd);
 				}
 
-				sint64 pos = VDRoundToInt64((x - mTrack.left + mThumbWidth) * mFramesPerPixel);
+				sint64 pos = mRangeStart + VDRoundToInt64((x - mTrack.left + mThumbWidth) * mFramesPerPixel);
 				if (pos > mRangeEnd)
 					pos = mRangeEnd;
 				if (pos < mRangeStart)
@@ -736,7 +801,8 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 			mDragAccum -= delta * 8;
 
 			if (delta) {
-				SetPosition(mDragAnchorPos += delta);
+				mDragAnchorPos = PositionInRange(mDragAnchorPos + delta);
+				SetPosition(mDragAnchorPos);
 				Notify(PCN_THUMBTRACK, VDPositionControlEventData::kEventTracking);
 			}
 			
@@ -773,7 +839,7 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 			if (increments) {
 				mWheelAccum -= WHEEL_DELTA * increments;
 
-				SetPosition(mPosition + increments);
+				SetPosition(PositionInRange(mPosition + increments));
 
 				if (increments < 0)
 					Notify(PCN_THUMBPOSITIONPREV, VDPositionControlEventData::kEventJump);
@@ -1112,6 +1178,47 @@ void VDPositionControlW32::OnPaint() {
 		}
 	}
 
+	// Draw selection2 and ticks.
+	if (mSelection2End >= mSelection2Start) {
+		int selx1 = FrameToPixel(mSelection2Start);
+		int selx2 = FrameToPixel(mSelection2End);
+
+		RECT rSel={selx1, (mTickArea2.top+mTickArea2.bottom)/2, selx2, mTickArea2.bottom};
+
+		if (rSel.right == rSel.left)
+			++rSel.right;
+
+		FillRect(hdc, &rSel, mBrushes[kBrushSelection2]);
+
+		if (HPEN hNullPen = CreatePen(PS_NULL, 0, 0)) {
+			if (HGDIOBJ hLastPen = SelectObject(hdc, hNullPen)) {
+				if (HGDIOBJ hOldBrush = SelectObject(hdc, GetStockObject(BLACK_BRUSH))) {
+					const int tickHeight = mTickArea2.bottom - mTickArea2.top;
+
+					const POINT pts1[3]={
+						{ selx1+1, mTickArea2.top },
+						{ selx1+1, mTickArea2.bottom },
+						{ selx1+1-tickHeight, mTickArea2.bottom },
+					};
+
+					const POINT pts2[3]={
+						{ selx2, mTickArea2.top },
+						{ selx2, mTickArea2.bottom },
+						{ selx2+tickHeight, mTickArea2.bottom },
+					};
+
+					Polygon(hdc, pts1, 3);
+					Polygon(hdc, pts2, 3);
+
+					SelectObject(hdc, hOldBrush);
+				}
+
+				SelectObject(hdc, hLastPen);
+			}
+			DeleteObject(hNullPen);
+		}
+	}
+
 	if(!edit.empty()){
 		HPEN hNullPen = CreatePen(PS_NULL, 0, 0);
 		HBRUSH br = CreateSolidBrush(RGB(255,255,255));
@@ -1177,6 +1284,17 @@ void VDPositionControlW32::OnPaint() {
 
 	DrawEdge(hdc, &rEdge, EDGE_SUNKEN, BF_RECT);
 
+	if (mbZoom) {
+		RECT r1 = {0, mTrack.top, mTrack.left-10, mTrack.bottom};
+		RECT r2 = {mTrack.right+10, mTrack.top, mPositionArea.right, mTrack.bottom};
+		FillRect(hdc, &r1, mBrushes[kBrushTrack]);
+		FillRect(hdc, &r2, mBrushes[kBrushTrack]);
+		InflateRect(&r1, xedge, yedge);
+		InflateRect(&r2, xedge, yedge);
+		DrawEdge(hdc, &r1, EDGE_SUNKEN, BF_RECT);
+		DrawEdge(hdc, &r2, EDGE_SUNKEN, BF_RECT);
+	}
+
 	// Draw cursor.
 	RECT rThumb = mThumbRect;
 
@@ -1207,6 +1325,9 @@ void VDPositionControlW32::RecomputeMetrics() {
 	if (labelSpace < 16)
 		labelSpace = 16;
 
+	if (mbZoom)
+		labelSpace += 16;
+
 	mTrackArea.left		= mPositionArea.left;
 	mTrackArea.top		= mPositionArea.top;
 	mTrackArea.right	= mPositionArea.right;
@@ -1226,6 +1347,11 @@ void VDPositionControlW32::RecomputeMetrics() {
 
 	mTickArea.left		= mTrack.left - tickHeight;
 	mTickArea.right		= mTrack.right + tickHeight;
+
+	mTickArea2.top		= mPositionArea.top;
+	mTickArea2.bottom	= mTrack.top - 1*GetSystemMetrics(SM_CYEDGE);
+	mTickArea2.left		= mTickArea.left;
+	mTickArea2.right		= mTickArea.right;
 
 	// (left+0.5) -> mRangeStart
 	// (right-0.5) -> mRangeEnd

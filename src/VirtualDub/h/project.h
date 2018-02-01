@@ -76,7 +76,8 @@ enum {
 	kVDProjectCmd_ScrubUpdatePrev,
 	kVDProjectCmd_ScrubUpdateNext,
 	kVDProjectCmd_SetSelectionStart,
-	kVDProjectCmd_SetSelectionEnd
+	kVDProjectCmd_SetSelectionEnd,
+	kVDProjectCmd_ZoomRange
 };
 
 class FilterModTimeline: public IFilterModTimeline {
@@ -144,6 +145,10 @@ public:
 	VDPosition GetSelectionEndFrame();
 	void SetMarker();
 	void SetMarker(VDPosition pos);
+	void ToggleZoomRange();
+	void SetZoomRange(VDPosition start, VDPosition end);
+	bool GetZoomRange(VDPosition& start, VDPosition& end);
+	void ClearZoomRange();
 
 	bool IsClipboardEmpty();
 	bool IsSceneShuttleRunning();
@@ -306,9 +311,17 @@ protected:
 		VDPosition	mFrame;
 		VDPosition	mSelStart;
 		VDPosition	mSelEnd;
+		VDPosition	mZoomStart;
+		VDPosition	mZoomEnd;
 
-		UndoEntry(const FrameSubset& s, const wchar_t *desc, VDPosition pos, VDPosition selStart, VDPosition selEnd) : mSubset(s), mDescription(desc), mFrame(pos), mSelStart(selStart), mSelEnd(selEnd) {}
+		UndoEntry(const wchar_t *desc){ mDescription = desc; }
+		void SetSelection(VDPosition pos, VDPosition selStart, VDPosition selEnd){ mFrame = pos; mSelStart = selStart; mSelEnd = selEnd; }
+		void SetZoom(VDPosition Start, VDPosition End){ mZoomStart = Start; mZoomEnd = End; }
 	};
+
+	void SaveUndo(UndoEntry& ue);
+	void LoadUndo(UndoEntry& ue);
+
 	std::list<UndoEntry>	mUndoStack;
 	std::list<UndoEntry>	mRedoStack;
 
@@ -318,6 +331,9 @@ protected:
 	VDPosition	mposCurrentFrame;
 	VDPosition	mposSelectionStart;
 	VDPosition	mposSelectionEnd;
+	VDPosition	mposZoomStart;
+	VDPosition	mposZoomEnd;
+	bool		mbZoomEnabled;
 	bool		mbPositionCallbackEnabled;
 
 	bool		mbFilterChainLocked;

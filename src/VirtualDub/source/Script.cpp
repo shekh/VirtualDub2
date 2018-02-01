@@ -860,6 +860,16 @@ static void func_VDVideo_SetRangeFrames(IVDScriptInterpreter *, VDScriptValue *a
 	g_project->SetSelectionEnd(endOffset);
 }
 
+static void func_VDVideo_SetZoomFrames(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	if (!inputVideo)
+		return;
+
+	VDPosition startOffset = arglist[0].asLong();
+	VDPosition endOffset = arglist[1].asLong();
+
+	g_project->SetZoomRange(startOffset, endOffset);
+}
+
 static void func_VDVideo_AddMarker(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 	if (!inputVideo)
 		return;
@@ -1163,6 +1173,7 @@ static const VDScriptFunctionDef obj_VDVideo_functbl[]={
 	{ func_VDVideo_SetRange			, NULL,				"0ii" },
 	{ func_VDVideo_AddMarker		, "AddMarker",		"0l" },
 	{ func_VDVideo_SetRangeFrames	, "SetRangeFrames",	"0ll" },
+	{ func_VDVideo_SetZoomFrames	, "SetZoomFrames",	"0ll" },
 	{ func_VDVideo_GetCompression	, "GetCompression",	"ii" },
 	{ func_VDVideo_SetCompression	, "SetCompression",	"0siii" },
 	{ func_VDVideo_SetCompression	, NULL,				"0iiii" },

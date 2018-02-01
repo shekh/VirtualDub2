@@ -65,6 +65,7 @@ public:
 
 	virtual void		SetFrameTypeCallback(IVDPositionControlCallback *pCB) = 0;
 	virtual void		SetRange(VDPosition lo, VDPosition hi, bool updateNow = true) = 0;
+	virtual void		SetRangeZoom(bool v, bool updateNow = true) = 0;
 	virtual VDPosition	GetRangeBegin() = 0;
 	virtual VDPosition	GetRangeEnd() = 0;
 	virtual VDPosition	GetPosition() = 0;
@@ -72,6 +73,8 @@ public:
 	virtual void		SetDisplayedPosition(VDPosition pos) = 0;
 	virtual bool		GetSelection(VDPosition& start, VDPosition& end) = 0;
 	virtual void		SetSelection(VDPosition start, VDPosition end, bool updateNow = true) = 0;
+	virtual bool		GetSelection2(VDPosition& start, VDPosition& end) = 0;
+	virtual void		SetSelection2(VDPosition start, VDPosition end, bool updateNow = true) = 0;
 	virtual void		SetTimeline(VDTimeline& t) = 0;
 	virtual void		SetFrameRate(const VDFraction& frameRate) = 0;
 	virtual void		SetAutoPositionUpdate(bool autoUpdate) = 0;

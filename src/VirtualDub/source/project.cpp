@@ -392,6 +392,9 @@ VDProject::VDProject()
 	, mposCurrentFrame(0)
 	, mposSelectionStart(0)
 	, mposSelectionEnd(0)
+	, mposZoomStart(0)
+	, mposZoomEnd(0)
+	, mbZoomEnabled(false)
 	, mbPositionCallbackEnabled(false)
 	, mbFilterChainLocked(false)
 	, mbTimelineRateDirty(true)
@@ -463,7 +466,9 @@ void VDProject::BeginTimelineUpdate(const wchar_t *undostr) {
 		if (mUndoStack.size()+1 > kUndoLimit)
 			mUndoStack.pop_back();
 
-		mUndoStack.push_front(UndoEntry(mTimeline.GetSubset(), undostr, mposCurrentFrame, mposSelectionStart, mposSelectionEnd));
+		UndoEntry ue(undostr);
+		SaveUndo(ue);
+		mUndoStack.push_front(ue);
 	}
 
 	mRedoStack.clear();
@@ -487,22 +492,36 @@ void VDProject::EndLoading() {
 	UpdateFilterList();
 }
 
+void VDProject::SaveUndo(UndoEntry& ue) {
+	ue.mSubset = mTimeline.GetSubset();
+	ue.SetSelection(mposCurrentFrame, mposSelectionStart, mposSelectionEnd);
+	ue.SetZoom(mposZoomStart, mposZoomEnd);
+}
+
+void VDProject::LoadUndo(UndoEntry& ue) {
+	mTimeline.GetSubset() = ue.mSubset;
+	SetSelection(ue.mSelStart, ue.mSelEnd, false);
+	mposZoomStart = ue.mZoomStart;
+	mposZoomEnd = ue.mZoomEnd;
+}
+
 bool VDProject::Undo() {
 	if (mUndoStack.empty())
 		return false;
 
 	UndoEntry& ue = mUndoStack.front();
-
-	mTimeline.GetSubset().swap(ue.mSubset);
+	UndoEntry re(ue.mDescription.c_str());
+	SaveUndo(re);
+	LoadUndo(ue);
+	EndTimelineUpdate();
+	MoveToFrame(ue.mFrame);
 
 	if (mRedoStack.size()+1 > kRedoLimit)
 		mRedoStack.pop_back();
 
-	mRedoStack.splice(mRedoStack.begin(), mUndoStack, mUndoStack.begin());
+	mRedoStack.insert(mRedoStack.begin(), re);
+	mUndoStack.pop_front();
 
-	EndTimelineUpdate();
-	MoveToFrame(ue.mFrame);
-	SetSelection(mposSelectionStart, mposSelectionEnd, false);
 	return true;
 }
 
@@ -510,18 +529,19 @@ bool VDProject::Redo() {
 	if (mRedoStack.empty())
 		return false;
 
-	UndoEntry& ue = mRedoStack.front();
-
-	mTimeline.GetSubset().swap(ue.mSubset);
+	UndoEntry& re = mRedoStack.front();
+	UndoEntry ue(re.mDescription.c_str());
+	SaveUndo(ue);
+	LoadUndo(re);
+	EndTimelineUpdate();
+	MoveToFrame(re.mFrame);
 
 	if (mUndoStack.size()+1 > kUndoLimit)
 		mUndoStack.pop_back();
 
-	mUndoStack.splice(mUndoStack.begin(), mRedoStack, mRedoStack.begin());
+	mUndoStack.insert(mUndoStack.begin(), ue);
+	mRedoStack.pop_front();
 
-	EndTimelineUpdate();
-	MoveToFrame(ue.mFrame);
-	SetSelection(mposSelectionStart, mposSelectionEnd, false);
 	return true;
 }
 
@@ -645,7 +665,18 @@ void VDProject::Paste() {
 	BeginTimelineUpdate(VDLoadString(0, kVDST_Project, kVDM_Paste));
 	if (!IsSelectionEmpty())
 		DeleteInternal(false, true);
-	s.insert(mposCurrentFrame, mClipboard);
+	VDPosition start = mposCurrentFrame;
+	VDPosition len = mClipboard.getTotalFrames();
+	s.insert(start, mClipboard);
+
+	if (mbZoomEnabled) {
+		if (start<mposZoomStart || start>mposZoomEnd) {
+			ClearZoomRange();
+		} else {
+			mposZoomEnd += len;
+		}
+	}
+	
 	EndTimelineUpdate();
 }
 
@@ -682,6 +713,16 @@ void VDProject::DeleteInternal(bool tagAsCut, bool noTag) {
 
 	s.deleteRange(start, len);
 
+	if (mbZoomEnabled) {
+		if (start<mposZoomStart || start+len>mposZoomEnd) {
+			ClearZoomRange();
+		} else if (start==mposZoomStart && start+len==mposZoomEnd) {
+			ClearZoomRange();
+		} else {
+			mposZoomEnd -= len;
+		}
+	}
+
 	if (!noTag)
 		EndTimelineUpdate();
 
@@ -701,6 +742,7 @@ void VDProject::CropToSelection() {
 		EndTimelineUpdate();
 
 		ClearSelection(false);
+		ClearZoomRange();
 		MoveToFrame(0);
 	}
 }
@@ -1482,6 +1524,7 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 		mLastDisplayedTimelineFrame = -1;
 
 		ClearSelection(false);
+		ClearZoomRange();
 		mpCB->UITimelineUpdated();
 
 		if (mAudioSourceMode >= kVDAudioSourceMode_Source)
@@ -1634,6 +1677,9 @@ void VDProject::Reopen() {
 		if (!IsSelectionEmpty() && mposSelectionEnd > newFrameCount)
 			SetSelectionEnd(newFrameCount, false);
 
+		if (mbZoomEnabled && mposZoomEnd > newFrameCount)
+			ClearZoomRange();
+
 		if (mposCurrentFrame > newFrameCount)
 			MoveToFrame(newFrameCount);
 	}
@@ -1762,6 +1808,8 @@ void VDProject::PreviewOutput(VDPosition* restart) {
 
 	VDPosition start = restart ? *restart : GetCurrentFrame();
 	DubOptions dubOpt(g_dubOpts);
+	if (dubOpt.video.mSelectionEnd.mOffset==-1 && mbZoomEnabled)
+		dubOpt.video.mSelectionEnd.mOffset = mposZoomEnd;
 
 	const VDPixmapLayout& layout = (dubOpt.video.mode == DubVideoOptions::M_FULL) ? filters.GetOutputLayout() : filters.GetInputLayout();
 	dubOpt.video.mOutputFormat = layout.format;
@@ -1842,6 +1890,10 @@ void VDProject::RunNullVideoPass(bool benchmark) {
 		throw MyError("No input file to process.");
 
 	DubOptions dubOpt(g_dubOpts);
+	if (dubOpt.video.mSelectionStart.mOffset==0 && mbZoomEnabled)
+		dubOpt.video.mSelectionStart.mOffset = mposZoomStart;
+	if (dubOpt.video.mSelectionEnd.mOffset==-1 && mbZoomEnabled)
+		dubOpt.video.mSelectionEnd.mOffset = mposZoomEnd;
 	dubOpt.perf.fBenchmark = benchmark;
 	VDAVIOutputNullVideoSystem nullout;
 	RunOperation(&nullout, FALSE, &dubOpt, g_prefs.main.iDubPriority, true, 0, 0, VDPreferencesGetRenderBackgroundPriority());
@@ -2210,13 +2262,56 @@ void VDProject::SetMarker(VDPosition pos) {
 	}
 }
 
+void VDProject::SetZoomRange(VDPosition start, VDPosition end) {
+	mbZoomEnabled = true;
+	mposZoomStart = start;
+	mposZoomEnd = end;
+}
+
+bool VDProject::GetZoomRange(VDPosition& start, VDPosition& end) {
+	start = mposZoomStart;
+	end = mposZoomEnd;
+	return mbZoomEnabled;
+}
+
+void VDProject::ClearZoomRange() {
+	mbZoomEnabled = false;
+	mposZoomStart = 0;
+	mposZoomEnd = 0;
+}
+
+void VDProject::ToggleZoomRange() {
+	if (mbZoomEnabled) {
+		mbZoomEnabled = false;
+		if (mpCB)
+			mpCB->UITimelineUpdated();
+		return;
+	}
+	if (mposSelectionEnd>mposSelectionStart) {
+		mposZoomStart = mposSelectionStart;
+		mposZoomEnd = mposSelectionEnd;
+	}
+	if (mposZoomEnd>mposZoomStart) {
+		mbZoomEnabled = true;
+		if (mpCB)
+			mpCB->UITimelineUpdated();
+
+		if (mposCurrentFrame<mposZoomStart)
+			MoveToFrame(mposZoomStart);
+		else if (mposCurrentFrame>mposZoomEnd)
+			MoveToFrame(mposZoomEnd);
+	}
+}
+
 void VDProject::MoveToFrame(VDPosition frame, int sync_mode) {
 	if (inputVideo) {
 		if (sync_mode==1 && mposSyncMode==1 && !g_fDropSeeking) {
 			if (UpdateFrame()) return;
 		}
 
-		frame = std::max<VDPosition>(0, std::min<VDPosition>(frame, mTimeline.GetLength()));
+		VDPosition min = mbZoomEnabled ? mposZoomStart : 0;
+		VDPosition max = mbZoomEnabled ? mposZoomEnd : mTimeline.GetLength();
+		frame = std::max<VDPosition>(min, std::min<VDPosition>(frame, max));
 
 		mposSyncMode = sync_mode;
 		mposCurrentFrame = frame;
@@ -2272,16 +2367,37 @@ void VDProject::MoveToNearestKey(VDPosition pos) {
 	if (!inputVideo)
 		return;
 
+	pos = mTimeline.GetNearestKey(pos);
+	if (pos < 0)
+		return;
 
-	MoveToFrame(mTimeline.GetNearestKey(pos), 1);
+	if (mbZoomEnabled) {
+		if (pos>mposZoomEnd) {
+			pos = mTimeline.GetPrevKey(pos);
+		} else if (pos<mposZoomStart) {
+			pos = mTimeline.GetNextKey(pos);
+		}
+		if (pos<mposZoomStart || pos>mposZoomEnd)
+			return;
+	}
+
+	MoveToFrame(pos, 1);
 }
 
 void VDProject::MoveToNearestKeyNext(VDPosition pos) {
 	if (!inputVideo)
 		return;
 
+	pos = mTimeline.GetNearestKeyNext(pos);
+	if (pos < 0)
+		return;
 
-	MoveToFrame(mTimeline.GetNearestKeyNext(pos), 1);
+	if (mbZoomEnabled) {
+		if (pos>mposZoomEnd)
+			return;
+	}
+
+	MoveToFrame(pos, 1);
 }
 
 void VDProject::MoveToPreviousKey() {
@@ -2289,9 +2405,13 @@ void VDProject::MoveToPreviousKey() {
 		return;
 
 	VDPosition pos = mTimeline.GetPrevKey(GetCurrentFrame());
-
 	if (pos < 0)
-		pos = 0;
+		return;
+
+	if (mbZoomEnabled) {
+		if (pos<mposZoomStart)
+			return;
+	}
 
 	MoveToFrame(pos, 1);
 }
@@ -2303,7 +2423,12 @@ void VDProject::MoveToNextKey() {
 	VDPosition pos = mTimeline.GetNextKey(GetCurrentFrame());
 
 	if (pos < 0)
-		pos = mTimeline.GetEnd();
+		return;
+
+	if (mbZoomEnabled) {
+		if (pos>mposZoomEnd)
+			return;
+	}
 
 	MoveToFrame(pos, 1);
 }
@@ -2335,17 +2460,19 @@ void VDProject::StartSceneShuttleForward() {
 }
 
 void VDProject::MoveToPreviousRange() {
+	VDPosition min = mbZoomEnabled ? mposZoomStart : 0;
+
 	if (inputAVI) {
 		VDPosition pos = mTimeline.GetPrevEdit(GetCurrentFrame());
 		VDPosition mpos = mTimeline.GetPrevMarker(GetCurrentFrame());
 
-		if (mpos >=0 && (mpos>pos || pos==-1)) {
+		if (mpos>=min && (mpos>pos || pos==-1)) {
 			MoveToFrame(mpos);
 			guiSetStatus("Marker", 255);
 			return;
 		}
 
-		if (pos >= 0) {
+		if (pos>=min) {
 			MoveToFrame(pos);
 
 			sint64 len;
@@ -2356,22 +2483,24 @@ void VDProject::MoveToPreviousRange() {
 			return;
 		}
 	}
-	MoveToFrame(0);
+	MoveToFrame(min);
 	guiSetStatus("No previous edit.", 255);
 }
 
 void VDProject::MoveToNextRange() {
+	VDPosition max = mbZoomEnabled ? mposZoomEnd : GetFrameCount();
+
 	if (inputAVI) {
 		VDPosition pos = mTimeline.GetNextEdit(GetCurrentFrame());
 		VDPosition mpos = mTimeline.GetNextMarker(GetCurrentFrame());
 
-		if (mpos >=0 && (mpos<pos || pos==-1)) {
+		if (mpos>=0 && mpos<=max && (mpos<pos || pos==-1)) {
 			MoveToFrame(mpos);
 			guiSetStatus("Marker", 255);
 			return;
 		}
 
-		if (pos >= 0) {
+		if (pos>=0 && pos<=max) {
 			MoveToFrame(pos);
 
 			sint64 len;
@@ -2382,15 +2511,16 @@ void VDProject::MoveToNextRange() {
 			return;
 		}
 	}
-	MoveToFrame(GetFrameCount());
+	MoveToFrame(max);
 	guiSetStatus("No next edit.", 255);
 }
 
 void VDProject::MoveToPreviousDrop() {
 	if (inputAVI) {
 		VDPosition pos = mTimeline.GetPrevDrop(GetCurrentFrame());
+		VDPosition min = mbZoomEnabled ? mposZoomStart : 0;
 
-		if (pos >= 0)
+		if (pos >= min)
 			MoveToFrame(pos);
 		else
 			guiSetStatus("No previous dropped frame found.", 255);
@@ -2400,8 +2530,9 @@ void VDProject::MoveToPreviousDrop() {
 void VDProject::MoveToNextDrop() {
 	if (inputAVI) {
 		VDPosition pos = mTimeline.GetNextDrop(GetCurrentFrame());
+		VDPosition max = mbZoomEnabled ? mposZoomEnd : GetFrameCount();
 
-		if (pos >= 0)
+		if (pos >= 0 && pos <= max)
 			MoveToFrame(pos);
 		else
 			guiSetStatus("No next dropped frame found.", 255);
@@ -2413,7 +2544,7 @@ void VDProject::ResetTimeline() {
 		BeginTimelineUpdate(VDLoadString(0, kVDST_Project, kVDM_ResetTimeline));
 
 		mTimeline.SetFromSource();
-
+		ClearZoomRange();
 		EndTimelineUpdate();
 	}
 }
@@ -2801,7 +2932,9 @@ void VDProject::SceneShuttleStep() {
 			return;
 		}
 	} else {
-		if (sample<0 || sample>=mTimeline.GetLength()) {
+		VDPosition min = mbZoomEnabled ? mposZoomStart : 0;
+		VDPosition max = mbZoomEnabled ? mposZoomEnd : mTimeline.GetLength()-1;
+		if (sample<min || sample>max) {
 			SceneShuttleStop();
 			return;
 		}
