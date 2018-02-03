@@ -1286,8 +1286,7 @@ void Dubber::InitOutputFile() {
 				pVideoStream->applyStreamMode(stream_mode);
 
 				if (vSrc->getImageFormat()->biCompression == 0xFFFFFFFF)
-					throw MyError("The source video stream uses a compression algorithm which is not compatible with AVI files. "
-								"Direct stream copy cannot be used with this video stream.");
+					throw MyError("Direct stream copy cannot be used with this video stream.\nYou may want to select different Input Driver.");
 
 				outputFormat.assign(vSrc->getImageFormat(), pVideoStream->getFormatLen());
 
