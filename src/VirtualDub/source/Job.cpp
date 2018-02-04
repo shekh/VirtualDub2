@@ -604,7 +604,8 @@ void JobAddConfigurationInputs(JobScriptOutput& output, const VDProject* project
 		if (project) s = project->BuildProjectPath(szFileInput);
 		const VDStringA filename(strCify(VDTextWToU8(s).c_str()));
 		const char* funcName = "VirtualDub.Open";
-		if (inputAVI->GetFileFlags() & IVDInputDriver::kFF_Sequence)
+		int flags = inputAVI->GetFileFlags();
+		if (flags!=-1 && (flags & IVDInputDriver::kFF_Sequence))
 		funcName = "VirtualDub.OpenSequence";
 
 		if (g_pInputOpts) {
