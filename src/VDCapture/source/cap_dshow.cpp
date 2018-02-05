@@ -1272,6 +1272,7 @@ public:
 private:
 	CMediaType m_mt;
 
+	void TransformFormat(const CMediaType *mtIn, CMediaType *pMediaType);
 	BOOL CanPerformTransform(const CMediaType *pMediaType) const;
 	HRESULT Copy(IMediaSample *pSource, IMediaSample *pDest) const;
 };
@@ -1341,10 +1342,57 @@ HRESULT VDAudioMaskFilter::CheckInputType(const CMediaType *mtIn)
 
 HRESULT VDAudioMaskFilter::CheckTransform(const CMediaType *mtIn, const CMediaType *mtOut)
 {
-	if (CanPerformTransform(mtIn)) {
-		return S_OK;
+	if (!CanPerformTransform(mtIn))
+		return VFW_E_TYPE_NOT_ACCEPTED;
+
+	CMediaType result;
+	TransformFormat(mtIn, &result);
+
+	if (*mtOut != result)
+		return E_FAIL;
+
+	return S_OK;
+}
+
+void VDAudioMaskFilter::TransformFormat(const CMediaType *mtIn, CMediaType *pMediaType)
+{
+	WAVEFORMATEX *pwfxin = (WAVEFORMATEX *)m_mt.pbFormat;
+
+	if (0) {
+		WAVEFORMATEXTENSIBLE *pwfx = (WAVEFORMATEXTENSIBLE *)pMediaType->AllocFormatBuffer(sizeof(WAVEFORMATEXTENSIBLE));
+		pwfx->Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+		pwfx->Format.cbSize = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
+		//pwfx->Format.nChannels = pwfxin->nChannels;
+		pwfx->Format.nChannels = 2;
+		pwfx->Format.nSamplesPerSec = pwfxin->nSamplesPerSec;
+		pwfx->Format.wBitsPerSample = pwfxin->wBitsPerSample;
+		pwfx->Format.nAvgBytesPerSec = pwfx->Format.nSamplesPerSec * pwfx->Format.wBitsPerSample * pwfx->Format.nChannels / 8;
+		pwfx->Format.nBlockAlign = pwfx->Format.wBitsPerSample * pwfx->Format.nChannels / 8;
+		pwfx->dwChannelMask = (1 << pwfx->Format.nChannels) - 1;
+		pwfx->Samples.wValidBitsPerSample = pwfx->Format.wBitsPerSample;
+		pwfx->SubFormat = MEDIASUBTYPE_PCM;
+		pMediaType->SetFormat((BYTE*)pwfx, sizeof(WAVEFORMATEXTENSIBLE));
+		pMediaType->SetSampleSize(pwfx->Format.nBlockAlign);
+	} else {
+		WAVEFORMATEX *pwfx = (WAVEFORMATEX *)pMediaType->AllocFormatBuffer(sizeof(WAVEFORMATEX));
+		pwfx->wFormatTag = WAVE_FORMAT_PCM;
+		pwfx->cbSize = 0;
+		pwfx->nChannels = 2;
+		pwfx->nSamplesPerSec = pwfxin->nSamplesPerSec;
+		pwfx->wBitsPerSample = pwfxin->wBitsPerSample;
+		pwfx->nAvgBytesPerSec = pwfx->nSamplesPerSec * pwfx->wBitsPerSample * pwfx->nChannels / 8;
+		pwfx->nBlockAlign = pwfx->wBitsPerSample * pwfx->nChannels / 8;
+		pMediaType->SetFormat((BYTE*)pwfx, sizeof(WAVEFORMATEX));
+		pMediaType->SetSampleSize(pwfx->nBlockAlign);
 	}
-	return VFW_E_TYPE_NOT_ACCEPTED;
+
+	pMediaType->SetType(&MEDIATYPE_Audio);
+	pMediaType->SetFormatType(&FORMAT_WaveFormatEx);
+	pMediaType->SetTemporalCompression(FALSE);
+
+	// Work out the GUID for the subtype from the header info.
+	GUID SubTypeGUID = MEDIASUBTYPE_PCM;
+	pMediaType->SetSubtype(&SubTypeGUID);
 }
 
 HRESULT VDAudioMaskFilter::DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pProperties)
@@ -1397,43 +1445,7 @@ HRESULT VDAudioMaskFilter::GetMediaType(int iPosition, CMediaType *pMediaType)
 	if (iPosition > 0)
 		return VFW_S_NO_MORE_ITEMS;
 
-	WAVEFORMATEX *pwfxin = (WAVEFORMATEX *)m_mt.pbFormat;
-
-	if (0) {
-		WAVEFORMATEXTENSIBLE *pwfx = (WAVEFORMATEXTENSIBLE *)pMediaType->AllocFormatBuffer(sizeof(WAVEFORMATEXTENSIBLE));
-		pwfx->Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
-		pwfx->Format.cbSize = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
-		//pwfx->Format.nChannels = pwfxin->nChannels;
-		pwfx->Format.nChannels = 2;
-		pwfx->Format.nSamplesPerSec = pwfxin->nSamplesPerSec;
-		pwfx->Format.wBitsPerSample = pwfxin->wBitsPerSample;
-		pwfx->Format.nAvgBytesPerSec = pwfx->Format.nSamplesPerSec * pwfx->Format.wBitsPerSample * pwfx->Format.nChannels / 8;
-		pwfx->Format.nBlockAlign = pwfx->Format.wBitsPerSample * pwfx->Format.nChannels / 8;
-		pwfx->dwChannelMask = (1 << pwfx->Format.nChannels) - 1;
-		pwfx->Samples.wValidBitsPerSample = pwfx->Format.wBitsPerSample;
-		pwfx->SubFormat = MEDIASUBTYPE_PCM;
-		pMediaType->SetFormat((BYTE*)pwfx, sizeof(WAVEFORMATEXTENSIBLE));
-		pMediaType->SetSampleSize(pwfx->Format.nBlockAlign);
-	} else {
-		WAVEFORMATEX *pwfx = (WAVEFORMATEX *)pMediaType->AllocFormatBuffer(sizeof(WAVEFORMATEX));
-		pwfx->wFormatTag = WAVE_FORMAT_PCM;
-		pwfx->cbSize = 0;
-		pwfx->nChannels = 2;
-		pwfx->nSamplesPerSec = pwfxin->nSamplesPerSec;
-		pwfx->wBitsPerSample = pwfxin->wBitsPerSample;
-		pwfx->nAvgBytesPerSec = pwfx->nSamplesPerSec * pwfx->wBitsPerSample * pwfx->nChannels / 8;
-		pwfx->nBlockAlign = pwfx->wBitsPerSample * pwfx->nChannels / 8;
-		pMediaType->SetFormat((BYTE*)pwfx, sizeof(WAVEFORMATEX));
-		pMediaType->SetSampleSize(pwfx->nBlockAlign);
-	}
-
-	pMediaType->SetType(&MEDIATYPE_Audio);
-	pMediaType->SetFormatType(&FORMAT_WaveFormatEx);
-	pMediaType->SetTemporalCompression(FALSE);
-
-	// Work out the GUID for the subtype from the header info.
-	GUID SubTypeGUID = MEDIASUBTYPE_PCM;
-	pMediaType->SetSubtype(&SubTypeGUID);
+	TransformFormat(&m_mt, pMediaType);
 
 	return NOERROR;
 }
