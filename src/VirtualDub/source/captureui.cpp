@@ -464,7 +464,7 @@ protected:
 	bool	OnChar(int ch);
 	bool	OnKeyDown(int key);
 	void	OnSize();
-	void	UpdateMaximize(bool window_max);
+	void	UpdateMaximize();
 	bool	OnParentNotify(WPARAM wParam, LPARAM lParam);
 	bool	OnCommand(UINT id);
 	bool	OnCaptureSafeCommand(UINT id);
@@ -522,6 +522,7 @@ protected:
 	bool	mbDisplayPrerollDialog;
 	bool	mbFullScreen;
 	bool	mbMaximize;
+	bool	mbMaximizeChanging;
 
 	bool	mbMaxPower;
 	bool	enable_power_scheme;
@@ -606,6 +607,7 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 	, mbMaxPower(false)
 	, mbFullScreen(false)
 	, mbMaximize(false)
+	, mbMaximizeChanging(false)
 	, mLastMouseMoveTime(0)
 	, mCurrentHotKeyStart(0)
 	, mCurrentHotKeyStop(0)
@@ -998,7 +1000,7 @@ void VDCaptureProjectUI::SetFullScreen(bool fs) {
 		if (mhwndStatus && mbStatusBar)
 			ShowWindow(mhwndStatus, SW_SHOWNORMAL);
 
-		UpdateMaximize(true);
+		UpdateMaximize();
 	}
 }
 
@@ -2582,19 +2584,14 @@ LRESULT VDCaptureProjectUI::CommonWndProc(UINT msg, WPARAM wParam, LPARAM lParam
 	switch(msg) {
 		case WM_WINDOWPOSCHANGING:
 			// seems to fix borderless sizing issues
-			if(!(((WINDOWPOS*)lParam)->flags & SWP_NOSIZE)){
+			if(!(((WINDOWPOS*)lParam)->flags & SWP_NOMOVE) && !mbMaximizeChanging && !mbFullScreen){
 				int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
-				SetWindowLong((HWND)mhwnd,GWL_STYLE,style | (WS_CAPTION|WS_SYSMENU));
+				SetWindowLong((HWND)mhwnd,GWL_STYLE,style | WS_CAPTION);
 			}
 			break;
 
 		case WM_SIZE:
-			if(wParam==SIZE_MAXIMIZED && mbMaximize){
-				UpdateMaximize(true);
-			}
-			if(wParam==SIZE_RESTORED){
-				UpdateMaximize(false);
-			}
+			if (!mbFullScreen) UpdateMaximize();
 			OnSize();
 			break;
 
@@ -2892,16 +2889,30 @@ bool VDCaptureProjectUI::OnKeyDown(int key) {
 	return false;
 }
 
-void VDCaptureProjectUI::UpdateMaximize(bool window_max) {
-	if(mbMaximize && window_max){
-		int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
-		SetWindowLong((HWND)mhwnd,GWL_STYLE,style & ~(WS_CAPTION|WS_SYSMENU));
+void VDCaptureProjectUI::UpdateMaximize() {
+	int style0 = GetWindowLong((HWND)mhwnd,GWL_STYLE);
+	int style1 = style0;
+
+	if(mbMaximize && IsZoomed((HWND)mhwnd)){
+		style1 &= ~(WS_CAPTION|WS_SYSMENU|WS_THICKFRAME);
 	} else {
-		int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
-		SetWindowLong((HWND)mhwnd,GWL_STYLE,style | (WS_CAPTION|WS_SYSMENU));
+		style1 |= (WS_CAPTION|WS_SYSMENU|WS_THICKFRAME);
 	}
-	SetWindowPos((HWND)mhwnd,0,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOACTIVATE|SWP_NOZORDER|SWP_FRAMECHANGED);
-	OnSize();
+
+	if(style1!=style0){
+		HMONITOR mon = MonitorFromWindow((HWND)mhwnd,MONITOR_DEFAULTTONEAREST);
+		MONITORINFO info = {sizeof(MONITORINFO)};
+		GetMonitorInfo(mon,&info);
+		RECT rr = info.rcWork;
+		int x = rr.left;
+		int y = rr.top;
+		int w = rr.right-rr.left;
+		int h = rr.bottom-rr.top;
+		mbMaximizeChanging = true;
+		SetWindowLong((HWND)mhwnd,GWL_STYLE,style1);
+		SetWindowPos((HWND)mhwnd,0,x,y,w,h,SWP_NOACTIVATE|SWP_NOZORDER|SWP_FRAMECHANGED);
+		mbMaximizeChanging = false;
+	}
 }
 
 void VDCaptureProjectUI::OnSize() {

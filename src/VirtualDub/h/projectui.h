@@ -142,7 +142,7 @@ protected:
 	void CloseCurveEditor();
 	void UpdateCurveList();
 	void UpdateCurveEditorPosition();
-	void UpdateMaximize(bool window_max);
+	void UpdateMaximize();
 
 	void UIRefreshInputFrame(const VDPixmap *px);
 	void UIRefreshOutputFrame(const VDPixmap *px);
@@ -225,6 +225,7 @@ protected:
 	bool		mbStatusBarVisible;
 	bool		mbFiltersPreview;
 	bool		mbMaximize;
+	bool		mbMaximizeChanging;
 
 	bool		mbLockPreviewRestart;
 

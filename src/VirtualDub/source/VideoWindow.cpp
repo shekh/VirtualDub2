@@ -64,7 +64,7 @@ public:
 	void SetSourcePAR(const VDFraction& fr);
 	void SetResizeParentEnabled(bool enabled);
 	double GetMaxZoomForArea(int w, int h);
-	void SetBorder(int v){ mbBorderless=v==0; mBorder = v; }
+	void SetBorder(int v, int ht=-1){ mbBorderless=v==0; mBorder = v; mHTBorder = ht; }
 	bool GetAutoSize(){ return mbAutoSize; }
 	void SetAutoSize(bool v){ mbAutoSize = v; }
 	void InitSourcePAR();
@@ -85,6 +85,7 @@ private:
 	POINT mPanStart;
 	bool mPanMode;
 	int mBorder;
+	int mHTBorder;
 	RECT mWorkArea;
 	VDFraction mSourcePARFrac;
 	double mSourcePAR;
@@ -97,6 +98,7 @@ private:
 	bool mbResizing;
 	bool mbMouseTransparent;
 	bool mbBorderless;
+	bool mbAutoBorder;
 	bool mbAutoSize;
 
 	IVDVideoDisplay *mpDisplay;
@@ -119,7 +121,7 @@ private:
 	void SetAspectRatioSourcePAR();
 	void SetZoom(double zoom, bool useWorkArea=true);
 	double EvalWidth();
-	void SetWorkArea(RECT& r){ mWorkArea = r; }
+	void SetWorkArea(RECT& r, bool auto_border){ mWorkArea = r; mbAutoBorder = auto_border; }
 
 	void UpdateSourcePARMenuItem();
 };
@@ -158,6 +160,7 @@ VDVideoWindow::VDVideoWindow(HWND hwnd)
 	, mbMouseTransparent(false)
 	, mbBorderless(false)
 	, mBorder(4)
+	, mHTBorder(-1)
 	, mbAutoSize(false)
 	, mpDisplay(NULL)
 {
@@ -531,6 +534,23 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 				pwp->cy = maxh;
 				pwp->flags &= ~SWP_NOSIZE;
 			}
+
+			if (mbAutoBorder) {
+				if ((pwp->cx>=mWorkArea.right-mWorkArea.left-4) && (pwp->cy>=mWorkArea.bottom-mWorkArea.top-4)) {
+					if(mBorder==4){
+						SetBorder(0,8);
+						pwp->flags |= SWP_FRAMECHANGED;
+					}
+					pwp->cx = mWorkArea.right;
+					pwp->cy = mWorkArea.bottom;
+					pwp->flags &= ~SWP_NOSIZE;
+				} else {
+					if(mBorder==0){
+						SetBorder(4);
+						pwp->flags |= SWP_FRAMECHANGED;
+					}
+				}
+			}
 		}
 		break;
 	case WM_WINDOWPOSCHANGED:
@@ -730,7 +750,10 @@ LRESULT VDVideoWindow::HitTest(int x, int y) {
 	GetClientRect(mhwnd, &rc);
 	ScreenToClient(mhwnd, &pt);
 
-	if (mbBorderless || mBorder>4 || (pt.x >= mBorder && pt.y >= mBorder && pt.x < rc.right-mBorder && pt.y < rc.bottom-mBorder))
+	int border = mHTBorder;
+	if (border==-1) border = mBorder;
+
+	if (border==0 || mBorder>4 || (pt.x >= border && pt.y >= border && pt.x < rc.right-border && pt.y < rc.bottom-border))
 		return mbMouseTransparent ? HTTRANSPARENT : HTCLIENT; //HTCAPTION;
 	else {
 		int xseg = std::min<int>(16, rc.right/3);

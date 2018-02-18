@@ -487,6 +487,7 @@ VDProjectUI::VDProjectUI()
 	mMRUList.load();
 	mbFiltersPreview = false;
 	mbMaximize = false;
+	mbMaximizeChanging = false;
 }
 
 VDProjectUI::~VDProjectUI() {
@@ -2164,7 +2165,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_VIEW_MAXIMIZE:
 			mbMaximize = !mbMaximize;
 			if(mbMaximize) ShowWindow((HWND)mhwnd,SW_SHOWMAXIMIZED);
-			UpdateMaximize((GetWindowLong((HWND)mhwnd,GWL_STYLE) & WS_MAXIMIZE)!=0);
+			UpdateMaximize();
 			break;
 
 		case ID_VIEW_CURVEEDITOR:
@@ -2963,19 +2964,14 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	case WM_WINDOWPOSCHANGING:
 		// seems to fix borderless sizing issues
-		if(!(((WINDOWPOS*)lParam)->flags & SWP_NOSIZE)){
+		if(!(((WINDOWPOS*)lParam)->flags & SWP_NOMOVE) && !mbMaximizeChanging){
 			int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
-			SetWindowLong((HWND)mhwnd,GWL_STYLE,style | (WS_CAPTION|WS_SYSMENU));
+			SetWindowLong((HWND)mhwnd,GWL_STYLE,style | WS_CAPTION);
 		}
 		break;
 
 	case WM_SIZE:
-		if(wParam==SIZE_MAXIMIZED && mbMaximize){
-			UpdateMaximize(true);
-		}
-		if(wParam==SIZE_RESTORED){
-			UpdateMaximize(false);
-		}
+		UpdateMaximize();
 		OnSize();
 		return 0;
 
@@ -3314,16 +3310,30 @@ void VDProjectUI::OnGetMinMaxInfo(MINMAXINFO& mmi) {
 		mmi.ptMinTrackSize.y = minHeight;
 }
 
-void VDProjectUI::UpdateMaximize(bool window_max) {
-	if(mbMaximize && window_max){
-		int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
-		SetWindowLong((HWND)mhwnd,GWL_STYLE,style & ~(WS_CAPTION|WS_SYSMENU));
+void VDProjectUI::UpdateMaximize() {
+	int style0 = GetWindowLong((HWND)mhwnd,GWL_STYLE);
+	int style1 = style0;
+
+	if(mbMaximize && IsZoomed((HWND)mhwnd)){
+		style1 &= ~(WS_CAPTION|WS_SYSMENU|WS_THICKFRAME);
 	} else {
-		int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
-		SetWindowLong((HWND)mhwnd,GWL_STYLE,style | (WS_CAPTION|WS_SYSMENU));
+		style1 |= (WS_CAPTION|WS_SYSMENU|WS_THICKFRAME);
 	}
-	SetWindowPos((HWND)mhwnd,0,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE|SWP_NOACTIVATE|SWP_NOZORDER|SWP_FRAMECHANGED);
-	OnSize();
+
+	if(style1!=style0){
+		HMONITOR mon = MonitorFromWindow((HWND)mhwnd,MONITOR_DEFAULTTONEAREST);
+		MONITORINFO info = {sizeof(MONITORINFO)};
+		GetMonitorInfo(mon,&info);
+		RECT rr = info.rcWork;
+		int x = rr.left;
+		int y = rr.top;
+		int w = rr.right-rr.left;
+		int h = rr.bottom-rr.top;
+		mbMaximizeChanging = true;
+		SetWindowLong((HWND)mhwnd,GWL_STYLE,style1);
+		SetWindowPos((HWND)mhwnd,0,x,y,w,h,SWP_NOACTIVATE|SWP_NOZORDER|SWP_FRAMECHANGED);
+		mbMaximizeChanging = false;
+	}
 }
 
 void VDProjectUI::OnSize() {
@@ -3481,7 +3491,7 @@ void VDProjectUI::RepositionPanes(bool reset) {
 		if (h) {
 			panes[n++] = h;
 			IVDVideoWindow *w = VDGetIVideoWindow(h);
-			w->SetWorkArea(rWork);
+			w->SetWorkArea(rWork, true);
 			if (reset) {
 				w->SetAutoSize(mbAutoSizePanes);
 			} else {
