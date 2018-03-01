@@ -398,9 +398,6 @@ dialog 1011, "" : fill, child {
 						listitem "Auto-switch to nearest monitor (recommended)";
 						listitem "Force primary display device";
 						listitem "Disable secondary display support";
-						listitem "t1";
-						listitem "t3";
-						listitem "t2";
 					}
 				}
 			}
