@@ -33,9 +33,10 @@ class ModelessDlgNode : public ListNode2<ModelessDlgNode> {
 public:
 	HWND hdlg;
 	HACCEL	mhAccel;
+	bool hook;
 
-	ModelessDlgNode() {}
-	ModelessDlgNode(HWND _hdlg, HACCEL hAccel = NULL) : hdlg(_hdlg), mhAccel(hAccel) {}
+	ModelessDlgNode() { hook=false; }
+	ModelessDlgNode(HWND _hdlg, HACCEL hAccel = NULL) : hdlg(_hdlg), mhAccel(hAccel) { hook=false; }
 };
 
 void guiOpenDebug();

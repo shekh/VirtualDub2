@@ -59,6 +59,7 @@ public:
 	void SetChildPos(float dx=0, float dy=0);
 	void ClipPan(float& x, float& y);
 	void SetChild(HWND hwnd);
+	void SetMaxDisplayHost(HWND hwnd);
 	void SetDisplay(IVDVideoDisplay *pDisplay);
 	const VDFraction GetSourcePAR();
 	void SetSourcePAR(const VDFraction& fr);
@@ -69,10 +70,13 @@ public:
 	void SetAutoSize(bool v){ mbAutoSize = v; }
 	void InitSourcePAR();
 	void SetDrawMode(IVDVideoDisplayDrawMode *p){ mDrawMode=p; }
+	void ToggleFullscreen();
 
 private:
 	HWND mhwnd;
 	HWND mhwndChild;
+	HWND mhwndMax;
+	HWND mhwndParent;
 	HMENU mhmenu;
 	int	mInhibitParamUpdateLocks;
 	int	mInhibitWorkArea;
@@ -87,6 +91,7 @@ private:
 	int mBorder;
 	int mHTBorder;
 	RECT mWorkArea;
+	RECT parentRect;
 	VDFraction mSourcePARFrac;
 	double mSourcePAR;
 	double mSourceAspectRatio;
@@ -100,6 +105,7 @@ private:
 	bool mbBorderless;
 	bool mbAutoBorder;
 	bool mbAutoSize;
+	bool mbFullscreen;
 
 	IVDVideoDisplay *mpDisplay;
 	IVDVideoDisplayDrawMode *mDrawMode;
@@ -120,6 +126,7 @@ private:
 	void SetAspectRatio(double ar, bool bFrame);
 	void SetAspectRatioSourcePAR();
 	void SetZoom(double zoom, bool useWorkArea=true);
+	void EvalZoom();
 	double EvalWidth();
 	void SetWorkArea(RECT& r, bool auto_border){ mWorkArea = r; mbAutoBorder = auto_border; }
 
@@ -139,6 +146,8 @@ IVDVideoWindow *VDGetIVideoWindow(HWND hwnd) {
 VDVideoWindow::VDVideoWindow(HWND hwnd)
 	: mhwnd(hwnd)
 	, mhwndChild(NULL)
+	, mhwndMax(NULL)
+	, mhwndParent(NULL)
 	, mhmenu(LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_DISPLAY_MENU)))
 	, mInhibitParamUpdateLocks(0)
 	, mInhibitWorkArea(0)
@@ -162,6 +171,7 @@ VDVideoWindow::VDVideoWindow(HWND hwnd)
 	, mBorder(4)
 	, mHTBorder(-1)
 	, mbAutoSize(false)
+	, mbFullscreen(false)
 	, mpDisplay(NULL)
 {
 	SetWindowLongPtr(mhwnd, 0, (LONG_PTR)this);
@@ -184,7 +194,7 @@ VDVideoWindow::~VDVideoWindow() {
 ATOM VDVideoWindow::RegisterControl() {
 	WNDCLASS wc;
 
-	wc.style			= CS_HREDRAW | CS_VREDRAW;
+	wc.style			= CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 	wc.lpfnWndProc		= VDVideoWindow::WndProcStatic;
 	wc.cbClsExtra		= 0;
 	wc.cbWndExtra		= sizeof(VDVideoWindow *);
@@ -225,6 +235,45 @@ void VDVideoWindow::GetDisplayRect(int& x0, int& y0, int& w, int& h) {
 	y0 = p.y;
 	w = mPanWidth;
 	h = mPanHeight;
+}
+
+void VDVideoWindow::ToggleFullscreen() {
+	mbFullscreen = !mbFullscreen;
+	if (mbFullscreen) {
+		GetWindowRect(mhwnd,&parentRect);
+		mhwndParent = GetParent(mhwnd);
+
+		HWND prev = GetWindow(mhwndMax,GW_CHILD);
+
+		SetParent(mhwnd,mhwndMax);
+		SetBorder(0,0);
+		EnableWindow(mhwndMax,true);
+		ShowWindow(mhwndMax,SW_SHOW);
+		SendMessage(mhwndMax,WM_SIZE,0,0);
+
+		NMHDR hdr;
+		hdr.hwndFrom = mhwnd;
+		hdr.idFrom = GetWindowLong(mhwnd, GWL_ID);
+		hdr.code = VWN_RESIZED;
+		SendMessage(mhwndParent, WM_NOTIFY, (WPARAM)hdr.idFrom, (LPARAM)&hdr);
+
+		if (prev) {
+			IVDVideoWindow* window = VDGetIVideoWindow(prev);
+			window->ToggleFullscreen();
+		}
+
+	} else {
+		SetParent(mhwnd,mhwndParent);
+		SetWindowPos(mhwnd,0,parentRect.left,parentRect.top,parentRect.right-parentRect.left,parentRect.bottom-parentRect.top,0);
+		if (!GetWindow(mhwndMax,GW_CHILD)) {
+			EnableWindow(mhwndMax,false);
+			HWND top = GetWindow(mhwndMax,GW_OWNER);
+			HWND top2 = GetWindow(top,GW_ENABLEDPOPUP);
+			if(top2) top = top2;
+			SetActiveWindow(top);
+			ShowWindow(mhwndMax,SW_HIDE);
+		}
+	}
 }
 
 void VDVideoWindow::SetAspectRatio(double ar, bool bFrame) {
@@ -344,19 +393,48 @@ void VDVideoWindow::Resize(bool useWorkArea) {
 		mPanWidth = w;
 		mPanHeight = h;
 
-		w += mBorder*2;
-		h += mBorder*2;
+		if (mbFullscreen) {
+			RECT r;
+			GetClientRect(mhwnd,&r);
+			if (w<r.right || h<r.bottom) EvalZoom();
+		} else {
+			w += mBorder*2;
+			h += mBorder*2;
 
-		++mInhibitParamUpdateLocks;
-		if (!useWorkArea)
-			++mInhibitWorkArea;
-		SetWindowPos(mhwnd, NULL, 0, 0, w, h, SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
-		--mInhibitParamUpdateLocks;
-		if (!useWorkArea)
-			--mInhibitWorkArea;
+			++mInhibitParamUpdateLocks;
+			if (!useWorkArea)
+				++mInhibitWorkArea;
+			SetWindowPos(mhwnd, NULL, 0, 0, w, h, SWP_NOZORDER|SWP_NOMOVE|SWP_NOACTIVATE);
+			--mInhibitParamUpdateLocks;
+			if (!useWorkArea)
+				--mInhibitWorkArea;
+		}
 
 		ClipPan(mPanX,mPanY);
 		SetChildPos();
+	}
+}
+
+void VDVideoWindow::EvalZoom() {
+	RECT r;
+	GetClientRect(mhwnd,&r);
+	mZoom = (double)r.bottom / mSourceHeight;
+
+	int w = VDRoundToInt(EvalWidth());
+	if (w<r.right) {
+		mZoom *= double(r.right) / w;
+		mPanWidth = r.right;
+		mPanHeight = VDRoundToInt(mSourceHeight * mZoom);
+	} else {
+		mPanWidth = w;
+		mPanHeight = r.bottom;
+	}
+
+	if (mAspectRatio < 0 && !mbUseSourcePAR && r.right && r.bottom) {
+		mFreeAspectRatio = r.right / (r.bottom * mSourceAspectRatio);
+		mZoom = (double)r.bottom / mSourceHeight;
+		mPanWidth = r.right;
+		mPanHeight = r.bottom;
 	}
 }
 
@@ -395,6 +473,10 @@ void VDVideoWindow::SetChildPos(float dx, float dy) {
 
 void VDVideoWindow::SetChild(HWND hwnd) {
 	mhwndChild = hwnd;
+}
+
+void VDVideoWindow::SetMaxDisplayHost(HWND hwnd) {
+	mhwndMax = hwnd;
 }
 
 void VDVideoWindow::SetDisplay(IVDVideoDisplay *pDisplay) {
@@ -507,7 +589,12 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 		}
 
-		if (!mInhibitWorkArea && mWorkArea.right) {
+		if (mbFullscreen) {
+			WINDOWPOS *pwp = ((WINDOWPOS *)lParam);
+			pwp->flags |= SWP_FRAMECHANGED;
+		}
+
+		if (!mInhibitWorkArea && !mbFullscreen && mWorkArea.right) {
 			WINDOWPOS *pwp = ((WINDOWPOS *)lParam);
 			POINT p0 = {0, 0};
 			if (pwp->flags & SWP_NOMOVE) {
@@ -555,39 +642,21 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 		break;
 	case WM_WINDOWPOSCHANGED:
 		{
-			RECT r;
-			GetClientRect(mhwnd, &r);
-
 			const WINDOWPOS& wp = *(const WINDOWPOS *)lParam;
 			if (mSourceHeight > 0 && !mInhibitParamUpdateLocks && !(wp.flags & SWP_NOSIZE)) {
-				mZoom = (double)r.bottom / mSourceHeight;
-
-				int w = VDRoundToInt(EvalWidth());
-				if (w<r.right) {
-					mZoom *= double(r.right) / w;
-					mPanWidth = r.right;
-					mPanHeight = VDRoundToInt(mSourceHeight * mZoom);
-				} else {
-					mPanWidth = w;
-					mPanHeight = r.bottom;
-				}
-
-				if (mAspectRatio < 0 && !mbUseSourcePAR && r.right && r.bottom) {
-					mFreeAspectRatio = r.right / (r.bottom * mSourceAspectRatio);
-					mZoom = (double)r.bottom / mSourceHeight;
-					mPanWidth = r.right;
-					mPanHeight = r.bottom;
-				}
+				EvalZoom();
 			}
 
 			ClipPan(mPanX,mPanY);
 			SetChildPos();
 
-			NMHDR hdr;
-			hdr.hwndFrom = mhwnd;
-			hdr.idFrom = GetWindowLong(mhwnd, GWL_ID);
-			hdr.code = VWN_RESIZED;
-			SendMessage(GetParent(mhwnd), WM_NOTIFY, (WPARAM)hdr.idFrom, (LPARAM)&hdr);
+			if (!mbFullscreen) {
+				NMHDR hdr;
+				hdr.hwndFrom = mhwnd;
+				hdr.idFrom = GetWindowLong(mhwnd, GWL_ID);
+				hdr.code = VWN_RESIZED;
+				SendMessage(GetParent(mhwnd), WM_NOTIFY, (WPARAM)hdr.idFrom, (LPARAM)&hdr);
+			}
 		}
 		break;		// explicitly pass this through to DefWindowProc for WM_SIZE and WM_MOVE
 
@@ -610,7 +679,7 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			if (mmi.ptMinTrackSize.y < 9)
 				mmi.ptMinTrackSize.y = 9;
 
-			if (mWorkArea.right) {
+			if (!mbFullscreen && mWorkArea.right) {
 				POINT p0 = {0, 0};
 				MapWindowPoints(mhwnd,GetParent(mhwnd),&p0,1);
 				p0.x -= mBorder;
@@ -622,6 +691,14 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 		}
 		return 0;
+
+	case WM_LBUTTONDBLCLK:
+		if (mhwndMax) {
+			mPanMode = false;
+			ReleaseCapture();
+			ToggleFullscreen();
+		}
+		return TRUE;
 
 	case WM_LBUTTONDOWN:
 		{

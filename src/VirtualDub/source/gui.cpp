@@ -177,6 +177,13 @@ bool guiCheckDialogs(LPMSG pMsg) {
 			if (TranslateAccelerator(pmdn->hdlg, pmdn->mhAccel, pMsg))
 				return true;
 
+		if (pmdn->hook && hwndAncestor == pmdn->hdlg) {
+			if(pMsg->message>=WM_KEYFIRST && pMsg->message<=WM_KEYLAST) {
+				if (SendMessage(pmdn->hdlg, pMsg->message, pMsg->wParam, pMsg->lParam))
+					return true;
+			}
+		}
+
 		if (IsDialogMessage(pmdn->hdlg, pMsg))
 			return true;
 

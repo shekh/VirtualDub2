@@ -190,6 +190,8 @@ protected:
 	HWND		mhwndOutputFrame;
 	HWND		mhwndInputDisplay;
 	HWND		mhwndOutputDisplay;
+	HWND		mhwndMaxDisplay;
+	ModelessDlgNode	max_dlg_node;
 	IVDVideoDisplay	*mpInputDisplay;
 	IVDVideoDisplay	*mpOutputDisplay;
 

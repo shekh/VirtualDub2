@@ -2020,6 +2020,7 @@ void PixmapView::Display(VDXHWND hwndParent, const wchar_t* title) {
 	mhwndParent = (HWND)hwndParent;
 	mhdlg = CreateDialogParam(g_hInst, MAKEINTRESOURCE(IDD_FILTER_PREVIEW), (HWND)hwndParent, StaticDlgProc, (LPARAM)this);
 	SetWindowTextW(mhdlg,title);
+	ShowWindow(mhdlg,SW_SHOW);
 }
 
 void PixmapView::Destroy() {

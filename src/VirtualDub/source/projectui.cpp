@@ -111,6 +111,7 @@ extern bool g_bAutoTest;
 extern HINSTANCE g_hInst;
 extern VDProject *g_project;
 extern vdrefptr<VDProjectUI> g_projectui;
+extern HWND g_hWnd;
 
 extern vdrefptr<AudioSource>	inputAudio;
 extern COMPVARS2 g_Vcompression;
@@ -447,6 +448,109 @@ LRESULT WINAPI status_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	return CallWindowProc(owner->prevStatusProc,wnd,msg,wparam,lparam);
 }
 
+struct max_enum_data{
+	HWND max;
+	vdfastvector<HWND> list;
+};
+
+BOOL CALLBACK max_enum_proc(HWND hwnd, LPARAM lParam)
+{
+	max_enum_data* data = (max_enum_data*)lParam;
+
+	HWND w1 = GetWindow(hwnd,GW_OWNER);
+	if(w1==g_hWnd && hwnd!=data->max){
+		char buf[1024];
+		GetWindowText(hwnd,buf,1024);
+		data->list.insert(data->list.begin(),hwnd);
+	}
+	return TRUE;
+}
+
+INT_PTR CALLBACK max_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	if(msg==WM_KEYDOWN && wparam==VK_ESCAPE){
+		HWND prev = GetWindow(wnd,GW_CHILD);
+		if (prev) {
+			IVDVideoWindow* window = VDGetIVideoWindow(prev);
+			window->ToggleFullscreen();
+		}
+		return 0;
+	}
+
+	if(msg>=WM_KEYFIRST && msg<=WM_KEYLAST){
+		MSG m = {0};
+		m.hwnd = g_hWnd;
+		m.message = msg;
+		m.wParam = wparam;
+		m.lParam = lparam;
+		m.time = GetMessageTime();
+		VDUIFrame::TranslateAcceleratorMessage(m);
+		SetWindowLongPtr(wnd,DWLP_MSGRESULT,true);
+		return true;
+	}
+
+	switch(msg){
+	case WM_DESTROY:
+		{
+			VDUISaveWindowPlacementW32(wnd, "FullscreenPane");
+			HWND prev = GetWindow(wnd,GW_CHILD);
+			if (prev) SetParent(prev,0);
+		}
+		break;
+
+	case WM_WINDOWPOSCHANGING:
+		{
+			WINDOWPOS *pwp = ((WINDOWPOS *)lparam);
+			POINT xy = {pwp->x,pwp->y};
+			HMONITOR mon;
+			if(pwp->flags & SWP_NOMOVE)
+				mon = MonitorFromWindow((HWND)wnd,MONITOR_DEFAULTTONEAREST);
+			else
+				mon = MonitorFromPoint(xy,MONITOR_DEFAULTTONEAREST);
+			MONITORINFO info = {sizeof(MONITORINFO)};
+			GetMonitorInfo(mon,&info);
+			RECT r = info.rcMonitor;
+			pwp->x = r.left;
+			pwp->y = r.top;
+			pwp->cx = r.right-r.left;
+			pwp->cy = r.bottom-r.top;
+			pwp->flags &= ~(SWP_NOSIZE|SWP_NOMOVE);
+			pwp->flags |= SWP_FRAMECHANGED|SWP_NOOWNERZORDER;
+		}
+		break;
+
+	case WM_ACTIVATE:
+		if(LOWORD(wparam)==WA_ACTIVE || LOWORD(wparam)==WA_CLICKACTIVE){
+			max_enum_data data;
+			data.max = wnd;
+			EnumWindows(max_enum_proc, (LPARAM)&data);
+			if(data.list.size() && data.list[0]!=wnd){
+				for(int i=0; i<data.list.size(); i++){
+					HWND w1 = data.list[i];
+					if(w1!=wnd) SetWindowPos(w1,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE);
+				}
+			}
+		}
+		break;
+
+	case DM_GETDEFID:
+		return 0;
+		
+	case WM_SIZE:
+		{
+			HWND child = GetWindow(wnd,GW_CHILD);
+			if (child) {
+				RECT r;
+				GetClientRect(wnd, &r);
+				SetWindowPos(child, NULL, 0, 0, r.right, r.bottom, SWP_NOZORDER|SWP_NOACTIVATE);
+			}
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 
 VDProjectUI::VDProjectUI()
@@ -456,6 +560,7 @@ VDProjectUI::VDProjectUI()
 	, mhwndOutputFrame(NULL)
 	, mhwndInputDisplay(NULL)
 	, mhwndOutputDisplay(NULL)
+	, mhwndMaxDisplay(NULL)
 	, mhwndFilters(NULL)
 	, mpInputDisplay(NULL)
 	, mpOutputDisplay(NULL)
@@ -608,6 +713,18 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 		return false;
 	}
 
+	mhwndMaxDisplay = CreateDialogParam(g_hInst, MAKEINTRESOURCE(IDD_FILTER_PREVIEW), (HWND)mhwnd, max_host_proc, (LPARAM)this);
+	if (!mhwndMaxDisplay) {
+		Detach();
+		return false;
+	}
+	SetWindowLong(mhwndMaxDisplay,GWL_STYLE,WS_CLIPCHILDREN);
+	max_dlg_node.hdlg = mhwndMaxDisplay;
+	max_dlg_node.mhAccel = 0;
+	max_dlg_node.hook = true;
+	guiAddModelessDialog(&max_dlg_node);
+	VDUIRestoreWindowPlacementW32(mhwndMaxDisplay, "FullscreenPane", SW_HIDE);
+
 	mpInputDisplay = VDGetIVideoDisplay((VDGUIHandle)mhwndInputDisplay);
 	mpOutputDisplay = VDGetIVideoDisplay((VDGUIHandle)mhwndOutputDisplay);
 
@@ -618,8 +735,10 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	IVDVideoWindow *pOutputWindow = VDGetIVideoWindow(mhwndOutputFrame);
 	pInputWindow->SetChild(mhwndInputDisplay);
 	pInputWindow->SetDisplay(mpInputDisplay);
+	pInputWindow->SetMaxDisplayHost(mhwndMaxDisplay);
 	pOutputWindow->SetChild(mhwndOutputDisplay);
 	pOutputWindow->SetDisplay(mpOutputDisplay);
+	pOutputWindow->SetMaxDisplayHost(mhwndMaxDisplay);
 	pInputWindow->SetAutoSize(mbAutoSizePanes);
 	pOutputWindow->SetAutoSize(mbAutoSizePanes);
 	pInputWindow->InitSourcePAR();
@@ -849,6 +968,12 @@ void VDProjectUI::Detach() {
 	if (mhwndOutputFrame) {
 		DestroyWindow(mhwndOutputFrame);
 		mhwndOutputFrame = NULL;
+	}
+
+	if (mhwndMaxDisplay) {
+		max_dlg_node.Remove();
+		DestroyWindow(mhwndMaxDisplay);
+		mhwndMaxDisplay = NULL;
 	}
 
 	if (mhwndPosition) {
@@ -2879,6 +3004,19 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 		UpdateMainMenu((HMENU)wParam);
 		break;
 
+	case WM_ACTIVATE:
+		if (LOWORD(wParam)==WA_ACTIVE || LOWORD(wParam)==WA_CLICKACTIVE) {
+			if (IsWindowVisible(mhwndMaxDisplay)) {
+				HMONITOR mon1 = MonitorFromWindow((HWND)mhwnd, MONITOR_DEFAULTTONEAREST);
+				HMONITOR mon2 = MonitorFromWindow(mhwndMaxDisplay, MONITOR_DEFAULTTONEAREST);
+				if (mon1==mon2) {
+					SetActiveWindow(mhwndMaxDisplay);
+					return 0;
+				}
+			}
+		}
+		break;
+
 	case WM_GETMINMAXINFO:
 		if (lParam) {
 			OnGetMinMaxInfo(*(MINMAXINFO *)lParam);
@@ -3488,7 +3626,7 @@ void VDProjectUI::RepositionPanes(bool reset) {
 
 	for(int i=0; i<n2; ++i) {
 		HWND h = panes[i];
-		if (h) {
+		if (h && GetParent(h)==(HWND)mhwnd) {
 			panes[n++] = h;
 			IVDVideoWindow *w = VDGetIVideoWindow(h);
 			w->SetWorkArea(rWork, true);
@@ -4863,8 +5001,8 @@ void VDProjectUI::DisplayPreview(bool v)
 	mpUIBase->SetVisible(!v);
 	
 	if (v) {
-		::ShowWindow(mhwndInputFrame, SW_HIDE);
-		::ShowWindow(mhwndOutputFrame, SW_HIDE);
+		if (GetParent(mhwndInputFrame)==(HWND)mhwnd) ::ShowWindow(mhwndInputFrame, SW_HIDE);
+		if (GetParent(mhwndOutputFrame)==(HWND)mhwnd) ::ShowWindow(mhwndOutputFrame, SW_HIDE);
 	} else {
 		bool videoPresent = inputVideo != NULL;
 		::ShowWindow(mhwndInputFrame, mPaneLayoutMode != kPaneLayoutOutput && videoPresent);

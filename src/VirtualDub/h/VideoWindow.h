@@ -21,6 +21,7 @@ public:
 	virtual void Move(int x, int y) = 0;
 	virtual void Resize(bool useWorkArea=true) = 0;
 	virtual void SetChild(HWND hwnd) = 0;
+	virtual void SetMaxDisplayHost(HWND hwnd) = 0;
 	virtual void SetDisplay(IVDVideoDisplay *) = 0;
 	virtual const VDFraction GetSourcePAR() = 0;
 	virtual void SetSourcePAR(const VDFraction& fr) = 0;
@@ -32,6 +33,7 @@ public:
 	virtual void InitSourcePAR() = 0;
 	virtual void SetWorkArea(RECT& r, bool auto_border=false) = 0;
 	virtual void SetDrawMode(IVDVideoDisplayDrawMode *p) = 0;
+	virtual void ToggleFullscreen() = 0;
 };
 
 IVDVideoWindow *VDGetIVideoWindow(HWND hwnd);
