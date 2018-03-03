@@ -336,6 +336,7 @@ namespace {
 		{ ID_VIEW_STATUSBAR,			"View.ToggleStatusBar" },
 		{ ID_VIEW_CURVEEDITOR,			"View.ToggleCurveEditor" },
 		{ ID_VIEW_AUDIODISPLAY,			"View.ToggleAudioDisplay" },
+		{ ID_VIEW_FULLSCREEN,			"View.ToggleFullScreen" },
 		{ ID_OPTIONS_SHOWLOG,			"View.ShowLogWindow" },
 		{ ID_OPTIONS_SHOWPROFILER,		"View.ShowProfilerWindow" },
 		{ ID_PANELAYOUT_INPUTPANEONLY,	"View.PaneLayout.ShowInputOnly" },
@@ -905,6 +906,8 @@ void VDProjectUI::UpdateAccelDub() {
 		ID_EDIT_PREVRANGE,
 		ID_EDIT_NEXTRANGE,
 		ID_EDIT_SETMARKER,
+
+		ID_VIEW_FULLSCREEN,
 	};
 
 	HACCEL haccel = LoadAccelerators(g_hInst, MAKEINTRESOURCE(IDR_DUB_KEYS));
@@ -1087,8 +1090,16 @@ void VDProjectUI::SetPaneLayout(PaneLayoutMode layout) {
 	mPaneLayoutMode = layout;
 
 	bool videoPresent = inputVideo != NULL;
-	::ShowWindow(mhwndInputFrame, mPaneLayoutMode != kPaneLayoutOutput && videoPresent);
-	::ShowWindow(mhwndOutputFrame, mPaneLayoutMode != kPaneLayoutInput && videoPresent);
+	bool showInput = mPaneLayoutMode != kPaneLayoutOutput && videoPresent;
+	bool showOutput = mPaneLayoutMode != kPaneLayoutInput && videoPresent;
+
+	IVDVideoWindow *w1 = VDGetIVideoWindow(mhwndInputFrame);
+	IVDVideoWindow *w2 = VDGetIVideoWindow(mhwndOutputFrame);
+	if (!showInput && w1->IsFullscreen()) w1->ToggleFullscreen();
+	if (!showOutput && w2->IsFullscreen()) w2->ToggleFullscreen();
+
+	::ShowWindow(mhwndInputFrame, showInput);
+	::ShowWindow(mhwndOutputFrame, showOutput);
 
 	RepositionPanes(true);
 
@@ -2307,6 +2318,10 @@ bool VDProjectUI::MenuHit(UINT id) {
 				OpenAudioDisplay();
 			break;
 
+		case ID_VIEW_FULLSCREEN:
+			ToggleFullscreen();
+			break;
+
 		case ID_PANELAYOUT_INPUTPANEONLY:
 			SetPaneLayout(kPaneLayoutInput);
 			break;
@@ -2558,6 +2573,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 		case ID_OPTIONS_SWAPPANES:
 			g_fSwapPanes = !g_fSwapPanes;
+			SwapFullscreen();
 			RepositionPanes(true);
 			break;
 
@@ -2709,6 +2725,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDCheckMenuItemW32(hMenu, ID_VIEW_CURVEEDITOR, mpCurveEditor != NULL);
 	VDCheckMenuItemW32(hMenu, ID_VIEW_AUDIODISPLAY, mpAudioDisplay != NULL);
 	VDCheckMenuItemW32(hMenu, ID_VIEW_MAXIMIZE, mbMaximize);
+	VDCheckMenuItemW32(hMenu, ID_VIEW_FULLSCREEN, IsWindowVisible(mhwndMaxDisplay)==TRUE);
 
 	VDCheckRadioMenuItemByCommandW32(hMenu, ID_PANELAYOUT_INPUTPANEONLY, mPaneLayoutMode == kPaneLayoutInput);
 	VDCheckRadioMenuItemByCommandW32(hMenu, ID_PANELAYOUT_OUTPUTPANEONLY, mPaneLayoutMode == kPaneLayoutOutput);
@@ -3587,6 +3604,50 @@ void VDProjectUI::OnPositionNotify(int code) {
 	}
 }
 
+void VDProjectUI::ToggleFullscreen() {
+	IVDVideoWindow *w1 = VDGetIVideoWindow(mhwndInputFrame);
+	IVDVideoWindow *w2 = VDGetIVideoWindow(mhwndOutputFrame);
+
+	if (w1->IsFullscreen()) {
+		w1->ToggleFullscreen();
+		return;
+	}
+
+	if (w2->IsFullscreen()) {
+		w2->ToggleFullscreen();
+		return;
+	}
+
+	switch(mPaneLayoutMode) {
+	case kPaneLayoutInput:
+		w1->ToggleFullscreen();
+		break;
+
+	case kPaneLayoutOutput:
+	case kPaneLayoutDual:
+		w2->ToggleFullscreen();
+		break;
+	}
+}
+
+void VDProjectUI::SwapFullscreen() {
+	IVDVideoWindow *w1 = VDGetIVideoWindow(mhwndInputFrame);
+	IVDVideoWindow *w2 = VDGetIVideoWindow(mhwndOutputFrame);
+
+	switch(mPaneLayoutMode) {
+	case kPaneLayoutDual:
+		if (w1->IsFullscreen()) {
+			w2->ToggleFullscreen();
+			return;
+		}
+		if (w2->IsFullscreen()) {
+			w1->ToggleFullscreen();
+			return;
+		}
+		break;
+	}
+}
+
 void VDProjectUI::RepositionPanes(bool reset) {
 	VDASSERT(!mbPaneLayoutBusy);
 	mbPaneLayoutBusy = true;
@@ -3756,13 +3817,19 @@ void VDProjectUI::UpdateVideoFrameLayout() {
 
 	if (inputVisible && !mbFiltersPreview)
 		ShowWindow(mhwndInputFrame, SW_SHOWNOACTIVATE);
-	else
+	else {
+		IVDVideoWindow *w = VDGetIVideoWindow(mhwndInputFrame);
+		if (w->IsFullscreen()) w->ToggleFullscreen();
 		ShowWindow(mhwndInputFrame, SW_HIDE);
+	}
 
 	if (outputVisible && !mbFiltersPreview)
 		ShowWindow(mhwndOutputFrame, SW_SHOWNOACTIVATE);
-	else
+	else {
+		IVDVideoWindow *w = VDGetIVideoWindow(mhwndOutputFrame);
+		if (w->IsFullscreen()) w->ToggleFullscreen();
 		ShowWindow(mhwndOutputFrame, SW_HIDE);
+	}
 }
 
 void VDProjectUI::OpenAudioDisplay() {

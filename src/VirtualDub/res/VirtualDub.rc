@@ -153,6 +153,7 @@ BEGIN
         MENUITEM "&Output video pane\tF10",     ID_OPTIONS_DISPLAYOUTPUTVIDEO, CHECKED
         MENUITEM "Arrange video panes vertically", ID_OPTIONS_VERTICALDISPLAY
         MENUITEM "Swap input/output panes",     ID_OPTIONS_SWAPPANES
+        MENUITEM "Full screen",                 ID_VIEW_FULLSCREEN
         MENUITEM SEPARATOR
         MENUITEM "Display &decompressed output\tShift+F10", ID_OPTIONS_DISPLAYDECOMPRESSEDOUTPUT
         MENUITEM "Show &status window",         ID_OPTIONS_SHOWSTATUSWINDOW, CHECKED
@@ -274,6 +275,7 @@ BEGIN
         MENUITEM "&Output video pane\tF10",     ID_OPTIONS_DISPLAYOUTPUTVIDEO, CHECKED
         MENUITEM "Arrange video panes vertically", ID_OPTIONS_VERTICALDISPLAY
         MENUITEM "Swap input/output panes",     ID_OPTIONS_SWAPPANES
+        MENUITEM "Full screen",                 ID_VIEW_FULLSCREEN
         MENUITEM SEPARATOR
         MENUITEM "Show &status window",         ID_OPTIONS_SHOWSTATUSWINDOW, CHECKED
         MENUITEM SEPARATOR

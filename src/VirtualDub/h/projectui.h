@@ -101,6 +101,8 @@ public:
 	HWND GetHwnd(){ return (HWND)mhwnd; }
 	HACCEL GetAccelPreview(){ return mhAccelPreview; }
 	void RepositionPanes(bool reset=false);
+	void ToggleFullscreen();
+	void SwapFullscreen();
 
 public:
 	const wchar_t *edit_token;

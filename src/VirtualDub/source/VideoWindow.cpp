@@ -71,6 +71,7 @@ public:
 	void InitSourcePAR();
 	void SetDrawMode(IVDVideoDisplayDrawMode *p){ mDrawMode=p; }
 	void ToggleFullscreen();
+	bool IsFullscreen(){ return mbFullscreen; }
 
 private:
 	HWND mhwnd;

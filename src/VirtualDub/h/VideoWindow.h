@@ -34,6 +34,7 @@ public:
 	virtual void SetWorkArea(RECT& r, bool auto_border=false) = 0;
 	virtual void SetDrawMode(IVDVideoDisplayDrawMode *p) = 0;
 	virtual void ToggleFullscreen() = 0;
+	virtual bool IsFullscreen() = 0;
 };
 
 IVDVideoWindow *VDGetIVideoWindow(HWND hwnd);
