@@ -5001,6 +5001,12 @@ void VDProjectUI::LoadSettings() {
 	format = keyPrefs.getInt("Output format", g_dubOpts.video.mOutputFormat);
 	if ((unsigned)format < nsVDPixmap::kPixFormat_Max_Standard)
 		g_dubOpts.video.mOutputFormat = format;
+
+	g_dubOpts.video.mInputFormat.colorSpaceMode = (nsVDXPixmap::ColorSpaceMode)keyPrefs.getInt("Input space", g_dubOpts.video.mInputFormat.colorSpaceMode);
+	g_dubOpts.video.mInputFormat.colorRangeMode = (nsVDXPixmap::ColorRangeMode)keyPrefs.getInt("Input range", g_dubOpts.video.mInputFormat.colorRangeMode);
+
+	g_dubOpts.video.mOutputFormat.colorSpaceMode = (nsVDXPixmap::ColorSpaceMode)keyPrefs.getInt("Output space", g_dubOpts.video.mOutputFormat.colorSpaceMode);
+	g_dubOpts.video.mOutputFormat.colorRangeMode = (nsVDXPixmap::ColorRangeMode)keyPrefs.getInt("Output range", g_dubOpts.video.mOutputFormat.colorRangeMode);
 }
 
 void VDProjectUI::SaveSettings() {
