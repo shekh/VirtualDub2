@@ -167,6 +167,8 @@ BEGIN
         MENUITEM "End\tCtrl+Right",             ID_VIDEO_SEEK_END
         MENUITEM "Prev frame\tLeft",            ID_VIDEO_SEEK_PREV
         MENUITEM "Next frame\tRight",           ID_VIDEO_SEEK_NEXT
+        MENUITEM "Fast backward",               ID_VIDEO_SEEK_FPREV
+        MENUITEM "Fast forward",                ID_VIDEO_SEEK_FNEXT
         MENUITEM "Prev keyframe\tShift+Left",   ID_VIDEO_SEEK_KEYPREV
         MENUITEM "Next keyframe\tShift+Right",  ID_VIDEO_SEEK_KEYNEXT
         MENUITEM "Back 50 frames\tAlt+Left",    ID_VIDEO_SEEK_PREVONESEC

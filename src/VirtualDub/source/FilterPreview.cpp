@@ -16,6 +16,7 @@
 //	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #include "stdafx.h"
+#include <windowsx.h>
 #include <vd2/system/w32assist.h>
 #include <vd2/VDDisplay/display.h>
 #include <vd2/Kasumi/pixmapops.h>
@@ -332,8 +333,8 @@ public:
 	int FMTranslateAccelerator(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
 	HWND GetHwnd(){ return mhdlg; }
 	int TranslateAcceleratorMessage(MSG* msg){ return TranslateAccelerator(mhdlg, mDlgNode.mhAccel, msg); }
-	void StartSceneShuttleReverse();
-	void StartSceneShuttleForward();
+	void StartShuttleReverse(bool sticky);
+	void StartShuttleForward(bool sticky);
 	void SceneShuttleStop();
 	void SceneShuttleStep();
 	void MoveToPreviousRange();
@@ -355,6 +356,7 @@ private:
 
 	void UpdateButton();
 	void RedrawFrame();
+	void ShowZoomMode(int px, int py);
 	void ExitZoomMode();
 
 	HWND		mhdlg;
@@ -385,7 +387,8 @@ private:
 	sint64		mLastOutputFrame;
 	sint64		mLastTimelineFrame;
 	sint64		mLastTimelineTimeMS;
-	int		mSceneShuttleMode;
+	int		mShuttleMode;
+	bool	mStickyShuttle;
 
 	IVDPositionControl	*mpPosition;
 	IVDVideoDisplay *mpDisplay;
@@ -451,7 +454,8 @@ FilterPreview::FilterPreview(FilterSystem *pFiltSys, VDFilterChainDesc *pFilterC
 	, mLastOutputFrame(0)
 	, mLastTimelineFrame(0)
 	, mLastTimelineTimeMS(0)
-	, mSceneShuttleMode(0)
+	, mShuttleMode(0)
+	, mStickyShuttle(false)
 	, mpPosition(NULL)
 	, mpDisplay(NULL)
 	, mpVideoWindow(NULL)
@@ -497,6 +501,91 @@ void FilterPreview::ExitZoomMode() {
 			zoom_info.flags = zoom_info.popup_cancel;
 			mpZoomCallback(zoom_info,mpvZoomCBData);
 		}
+	}
+}
+
+void FilterPreview::ShowZoomMode(int px, int py) {
+	int xoffset = px - mDisplayX - mBorder;
+	int yoffset = py - mDisplayY - mBorder;
+
+	int DisplayX,DisplayY;
+	int DisplayW,DisplayH;
+	mpVideoWindow->GetDisplayRect(DisplayX,DisplayY,DisplayW,DisplayH);
+	xoffset -= DisplayX;
+	yoffset -= DisplayY;
+
+	if (mpFiltSys->isRunning() && mpVideoFrameBuffer && xoffset>=-10 && yoffset>=-10 && xoffset < DisplayW+10 && yoffset < DisplayH+10) {
+		VDPixmap output = VDPixmapFromLayout(GetFrameBufferLayout(), (void *)mpVideoFrameBuffer->LockRead());
+		output.info = mpVideoFrameBuffer->info;
+		int x = VDFloorToInt((xoffset + 0.5) * (double)output.w / (double)DisplayW);
+		int y = VDFloorToInt((yoffset + 0.5) * (double)output.h / (double)DisplayH);
+		if (x<0) x = 0;
+		if (y<0) y = 0;
+		if (x>=output.w) x = output.w-1;
+		if (y>=output.h) y = output.h-1;
+
+		int bg = VDSwizzleU32(GetSysColor(COLOR_BTNFACE)) >> 8;
+
+		uint32 pixels[7][7];
+		for(int i=0; i<7; ++i) {
+			for(int j=0; j<7; ++j) {
+				int x1 = x+j-3;
+				int y1 = y+3-i;
+				if (x1<0 || y1<0 || x1>=output.w || y1>=output.h)
+					pixels[i][j] = bg;
+				else
+					pixels[i][j] = 0xFFFFFF & VDPixmapSample(output, x1, y1);
+			}
+		}
+
+		VDSample ps;
+		VDPixmapSample(output,x,y,ps);
+
+		mpVideoFrameBuffer->Unlock();
+
+		zoom_info.x = x;
+		zoom_info.y = y;
+		zoom_info.r = ps.r/255;
+		zoom_info.g = ps.g/255;
+		zoom_info.b = ps.b/255;
+		zoom_info.a = ps.a/255;
+
+		POINT pts = {px, py};
+		ClientToScreen(mhdlg, &pts);
+		mZoomPopup.Create((VDGUIHandle)mhdlg);
+		HMONITOR monitor = MonitorFromPoint(pts,MONITOR_DEFAULTTONEAREST);
+		MONITORINFO minfo = {sizeof(MONITORINFO)};
+		GetMonitorInfo(monitor,&minfo);
+		RECT r0;
+		GetWindowRect(mZoomPopup.GetWindowHandle(),&r0);
+		int zw = r0.right-r0.left;
+		int zh = r0.bottom-r0.top;
+		if(pts.x+32+zw>minfo.rcWork.right)
+			pts.x -= 32+zw;
+		else
+			pts.x += 32;
+		if(pts.y+32+zh>minfo.rcWork.bottom)
+			pts.y -= 32+zh;
+		else
+			pts.y += 32;
+
+		if (pOverlay) ShowWindow(pOverlay->GetHwnd(),false);
+		mZoomPopup.drawMode = mbShowOverlay ? pOverlay:0;
+		SetWindowPos(mZoomPopup.GetWindowHandle(), NULL, pts.x, pts.y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
+		mZoomPopup.Update(x, y, pixels, ps);
+		ShowWindow(mZoomPopup.GetWindowHandle(), SW_SHOWNOACTIVATE);
+
+		TRACKMOUSEEVENT tme={sizeof(TRACKMOUSEEVENT), TME_LEAVE, mhdlg, 0};
+		TrackMouseEvent(&tme);
+		mode_cursor = cross_cursor;
+
+		if(mpZoomCallback) {
+			zoom_info.flags = zoom_info.popup_update;
+			mpZoomCallback(zoom_info,mpvZoomCBData);
+		}
+
+	} else {
+		ExitZoomMode();
 	}
 }
 
@@ -620,90 +709,12 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 
 	case WM_MOUSEMOVE:
 		{
-			POINT pt = {(SHORT)LOWORD(lParam), (SHORT)HIWORD(lParam)};
-
-			int xoffset = pt.x - mDisplayX - mBorder;
-			int yoffset = pt.y - mDisplayY - mBorder;
-
-			int DisplayX,DisplayY;
-			int DisplayW,DisplayH;
-			mpVideoWindow->GetDisplayRect(DisplayX,DisplayY,DisplayW,DisplayH);
-			xoffset -= DisplayX;
-			yoffset -= DisplayY;
-
-			if ((wParam & MK_SHIFT) && mpFiltSys->isRunning() && mpVideoFrameBuffer && xoffset>=-10 && yoffset>=-10 && xoffset < DisplayW+10 && yoffset < DisplayH+10) {
-				VDPixmap output = VDPixmapFromLayout(GetFrameBufferLayout(), (void *)mpVideoFrameBuffer->LockRead());
-				output.info = mpVideoFrameBuffer->info;
-				int x = VDFloorToInt((xoffset + 0.5) * (double)output.w / (double)DisplayW);
-				int y = VDFloorToInt((yoffset + 0.5) * (double)output.h / (double)DisplayH);
-				if (x<0) x = 0;
-				if (y<0) y = 0;
-				if (x>=output.w) x = output.w-1;
-				if (y>=output.h) y = output.h-1;
-
-				int bg = VDSwizzleU32(GetSysColor(COLOR_BTNFACE)) >> 8;
-
-				uint32 pixels[7][7];
-				for(int i=0; i<7; ++i) {
-					for(int j=0; j<7; ++j) {
-						int x1 = x+j-3;
-						int y1 = y+3-i;
-						if (x1<0 || y1<0 || x1>=output.w || y1>=output.h)
-							pixels[i][j] = bg;
-						else
-							pixels[i][j] = 0xFFFFFF & VDPixmapSample(output, x1, y1);
-					}
-				}
-
-				VDSample ps;
-				VDPixmapSample(output,x,y,ps);
-
-				mpVideoFrameBuffer->Unlock();
-
-				zoom_info.x = x;
-				zoom_info.y = y;
-				zoom_info.r = ps.r/255;
-				zoom_info.g = ps.g/255;
-				zoom_info.b = ps.b/255;
-				zoom_info.a = ps.a/255;
-
-				POINT pts = pt;
-				ClientToScreen(mhdlg, &pts);
-				mZoomPopup.Create((VDGUIHandle)mhdlg);
-				HMONITOR monitor = MonitorFromPoint(pts,MONITOR_DEFAULTTONEAREST);
-				MONITORINFO minfo = {sizeof(MONITORINFO)};
-				GetMonitorInfo(monitor,&minfo);
-				RECT r0;
-				GetWindowRect(mZoomPopup.GetWindowHandle(),&r0);
-				int zw = r0.right-r0.left;
-				int zh = r0.bottom-r0.top;
-				if(pts.x+32+zw>minfo.rcWork.right)
-					pts.x -= 32+zw;
-				else
-					pts.x += 32;
-				if(pts.y+32+zh>minfo.rcWork.bottom)
-					pts.y -= 32+zh;
-				else
-					pts.y += 32;
-
-				if (pOverlay) ShowWindow(pOverlay->GetHwnd(),false);
-				mZoomPopup.drawMode = mbShowOverlay ? pOverlay:0;
-				SetWindowPos(mZoomPopup.GetWindowHandle(), NULL, pts.x, pts.y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
-				mZoomPopup.Update(x, y, pixels, ps);
-				ShowWindow(mZoomPopup.GetWindowHandle(), SW_SHOWNOACTIVATE);
-
-				TRACKMOUSEEVENT tme={sizeof(TRACKMOUSEEVENT), TME_LEAVE, mhdlg, 0};
-				TrackMouseEvent(&tme);
-				mode_cursor = cross_cursor;
-
-				if(mpZoomCallback) {
-					zoom_info.flags = zoom_info.popup_update;
-					mpZoomCallback(zoom_info,mpvZoomCBData);
-				}
-
-			} else {
+			int px = GET_X_LPARAM(lParam);
+			int py = GET_Y_LPARAM(lParam);
+			if (wParam & MK_SHIFT)
+				ShowZoomMode(px,py);
+			else
 				ExitZoomMode();
-			}
 		}
 		return 0;
 
@@ -716,9 +727,20 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		ExitZoomMode();
 		break;
 
+	case WM_KEYDOWN:
+		if (wParam == VK_SHIFT) {
+			POINT pt;
+			GetCursorPos(&pt);
+			MapWindowPoints(0,mhdlg,&pt,1);
+			ShowZoomMode(pt.x,pt.y);
+		}
+		break;
+
 	case WM_KEYUP:
 		if (wParam == VK_SHIFT)
 			ExitZoomMode();
+		if (mShuttleMode && !mStickyShuttle)
+			SceneShuttleStop();
 		break;
 
 	case WM_SETCURSOR:
@@ -796,7 +818,7 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		return TRUE;
 
 	case WM_TIMER:
-		if (wParam==TIMER_SHUTTLE && mSceneShuttleMode)
+		if (wParam==TIMER_SHUTTLE && mShuttleMode)
 			SceneShuttleStep();
 		return TRUE;
 	}
@@ -905,6 +927,7 @@ void FilterPreview::OnInit() {
 
 	mDlgNode.hdlg = mhdlg;
 	mDlgNode.mhAccel = g_projectui->GetAccelPreview();
+	mDlgNode.hook = true;
 	guiAddModelessDialog(&mDlgNode);
 }
 
@@ -1307,12 +1330,20 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		}
 		return true;
 
-	case ID_VIDEO_SEEK_NEXTSCENE:
-		StartSceneShuttleForward();
+	case ID_VIDEO_SEEK_FNEXT:
+		StartShuttleForward(false);
 		return true;
 
-	case ID_VIDEO_SEEK_PREVSCENE:
-		StartSceneShuttleReverse();
+	case ID_VIDEO_SEEK_FPREV:
+		StartShuttleReverse(false);
+		return true;
+
+	case ID_VIDEO_SEEK_FSNEXT:
+		StartShuttleForward(true);
+		return true;
+
+	case ID_VIDEO_SEEK_FSPREV:
+		StartShuttleReverse(true);
 		return true;
 
 	case ID_VIDEO_SEEK_STOP:
@@ -1432,23 +1463,25 @@ void FilterPreview::MoveToNextRange() {
 	mpPosition->SetPosition(mpTimeline->GetLength());
 }
 
-void FilterPreview::StartSceneShuttleForward() {
-	mSceneShuttleMode = 1;
+void FilterPreview::StartShuttleForward(bool sticky) {
+	mShuttleMode = 1;
+	mStickyShuttle = sticky;
 	SetTimer(mhdlg,TIMER_SHUTTLE,0,0);
 }
 
-void FilterPreview::StartSceneShuttleReverse() {
-	mSceneShuttleMode = -1;
+void FilterPreview::StartShuttleReverse(bool sticky) {
+	mShuttleMode = -1;
+	mStickyShuttle = sticky;
 	SetTimer(mhdlg,TIMER_SHUTTLE,0,0);
 }
 
 void FilterPreview::SceneShuttleStop() {
-	mSceneShuttleMode = 0;
+	mShuttleMode = 0;
 	KillTimer(mhdlg,TIMER_SHUTTLE);
 }
 
 void FilterPreview::SceneShuttleStep() {
-	VDPosition pos = mpPosition->GetPosition() + mSceneShuttleMode;
+	VDPosition pos = mpPosition->GetPosition() + mShuttleMode;
 	if (pos<0 || pos>=mpTimeline->GetLength()) {
 		SceneShuttleStop();
 		return;

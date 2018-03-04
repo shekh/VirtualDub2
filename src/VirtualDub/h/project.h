@@ -236,6 +236,8 @@ public:
 	void MoveToNextKey();
 	void MoveBackSome();
 	void MoveForwardSome();
+	void StartShuttleReverse(bool sticky);
+	void StartShuttleForward(bool sticky);
 	void StartSceneShuttleReverse();
 	void StartSceneShuttleForward();
 	void MoveToPreviousRange();
@@ -298,9 +300,11 @@ protected:
 	IVDProjectUICallback *mpCB;
 
 	SceneDetector	*mpSceneDetector;
+	int		mShuttleMode;
 	int		mSceneShuttleMode;
 	int		mSceneShuttleAdvance;
 	int		mSceneShuttleCounter;
+	bool	mStickyShuttle;
 
 	FrameSubset		mClipboard;
 	VDTimeline		mTimeline;

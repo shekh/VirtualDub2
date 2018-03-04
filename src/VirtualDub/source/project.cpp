@@ -385,7 +385,9 @@ VDProject::VDProject()
 	: mhwnd(NULL)
 	, mpCB(NULL)
 	, mpSceneDetector(0)
+	, mShuttleMode(0)
 	, mSceneShuttleMode(0)
+	, mStickyShuttle(false)
 	, mSceneShuttleAdvance(0)
 	, mSceneShuttleCounter(0)
 	, mpDubStatus(0)
@@ -587,7 +589,12 @@ bool VDProject::Tick() {
 			delete mpSceneDetector;
 			mpSceneDetector = NULL;
 		}
-	}
+
+	  if (inputVideo && mShuttleMode) {
+		  SceneShuttleStep();
+		  active = true;
+	  }
+  }
 
 	if (UpdateFrame())
 		active = true;
@@ -642,7 +649,7 @@ bool VDProject::IsClipboardEmpty() {
 }
 
 bool VDProject::IsSceneShuttleRunning() {
-	return mSceneShuttleMode != 0;
+	return (mSceneShuttleMode != 0) || (mShuttleMode != 0);
 }
 
 void VDProject::SetPositionCallbackEnabled(bool enable) {
@@ -2443,6 +2450,24 @@ void VDProject::MoveForwardSome() {
 		MoveToFrame(GetCurrentFrame() + 50, 1);
 }
 
+void VDProject::StartShuttleReverse(bool sticky) {
+	if (!inputVideo)
+		return;
+	mShuttleMode = -1;
+	mStickyShuttle = sticky;
+	if (mpCB)
+		mpCB->UIShuttleModeUpdated();
+}
+
+void VDProject::StartShuttleForward(bool sticky) {
+	if (!inputVideo)
+		return;
+	mShuttleMode = +1;
+	mStickyShuttle = sticky;
+	if (mpCB)
+		mpCB->UIShuttleModeUpdated();
+}
+
 void VDProject::StartSceneShuttleReverse() {
 	if (!inputVideo)
 		return;
@@ -2869,7 +2894,8 @@ void VDProject::EndFilterUpdates() {
 }
 
 void VDProject::SceneShuttleStop() {
-	if (mSceneShuttleMode) {
+	if (mSceneShuttleMode || mShuttleMode) {
+		mShuttleMode = 0;
 		mSceneShuttleMode = 0;
 		mSceneShuttleAdvance = 0;
 		mSceneShuttleCounter = 0;
@@ -2922,7 +2948,7 @@ void VDProject::AdjustTimelineForFilterChanges(const VDFraction& oldRate, sint64
 void VDProject::SceneShuttleStep() {
 	bool input_mode = IsInputPaneUsed();
 
-	VDPosition sample = GetCurrentFrame() + mSceneShuttleMode;
+	VDPosition sample = GetCurrentFrame() + mSceneShuttleMode + mShuttleMode;
 
 	if (input_mode) {
 		VDPosition ls2 = mTimeline.TimelineToSourceFrame(sample);
@@ -2963,6 +2989,8 @@ void VDProject::SceneShuttleStep() {
 	if (mpCB)
 		mpCB->UICurrentPositionUpdated();
 
+	if (!mpSceneDetector)
+		return;
 	if (!mpSceneDetector->Enabled())
 		return;
 

@@ -311,6 +311,10 @@ namespace {
 		{ ID_VIDEO_SEEK_END,			"Edit.GoToEnd" },
 		{ ID_VIDEO_SEEK_PREV,			"Edit.GoToPrevFrame" },
 		{ ID_VIDEO_SEEK_NEXT,			"Edit.GoToNextFrame" },
+		{ ID_VIDEO_SEEK_FPREV,			"Edit.GoToPrevFast" },
+		{ ID_VIDEO_SEEK_FNEXT,			"Edit.GoToNextFast" },
+		{ ID_VIDEO_SEEK_FSPREV,			"Edit.GoToPrevFastSticky" },
+		{ ID_VIDEO_SEEK_FSNEXT,			"Edit.GoToNextFastSticky" },
 		{ ID_VIDEO_SEEK_PREVONESEC,		"Edit.GoToPrevUnit" },
 		{ ID_VIDEO_SEEK_NEXTONESEC,		"Edit.GoToNextUnit" },
 		{ ID_EDIT_PREVRANGE,			"Edit.GoToPrevRange" },
@@ -487,6 +491,7 @@ INT_PTR CALLBACK max_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		m.time = GetMessageTime();
 		VDUIFrame::TranslateAcceleratorMessage(m);
 		SetWindowLongPtr(wnd,DWLP_MSGRESULT,true);
+		SendMessage(g_hWnd,msg,wparam,lparam);
 		return true;
 	}
 
@@ -852,6 +857,10 @@ void VDProjectUI::UpdateAccelPreview() {
 		ID_VIDEO_SEEK_KEYPREV,
 		ID_VIDEO_SEEK_NEXT,
 		ID_VIDEO_SEEK_PREV,
+		ID_VIDEO_SEEK_FNEXT,
+		ID_VIDEO_SEEK_FPREV,
+		ID_VIDEO_SEEK_FSNEXT,
+		ID_VIDEO_SEEK_FSPREV,
 		ID_VIDEO_SEEK_NEXTONESEC,
 		ID_VIDEO_SEEK_PREVONESEC,
 		ID_VIDEO_SEEK_SELSTART,
@@ -893,6 +902,10 @@ void VDProjectUI::UpdateAccelDub() {
 		ID_VIDEO_SEEK_KEYPREV,
 		ID_VIDEO_SEEK_NEXT,
 		ID_VIDEO_SEEK_PREV,
+		ID_VIDEO_SEEK_FNEXT,
+		ID_VIDEO_SEEK_FPREV,
+		ID_VIDEO_SEEK_FSNEXT,
+		ID_VIDEO_SEEK_FSPREV,
 		ID_VIDEO_SEEK_NEXTONESEC,
 		ID_VIDEO_SEEK_PREVONESEC,
 		ID_VIDEO_SEEK_SELSTART,
@@ -2104,6 +2117,10 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_VIDEO_SEEK_END:
 		case ID_VIDEO_SEEK_PREV:
 		case ID_VIDEO_SEEK_NEXT:
+		case ID_VIDEO_SEEK_FPREV:
+		case ID_VIDEO_SEEK_FNEXT:
+		case ID_VIDEO_SEEK_FSPREV:
+		case ID_VIDEO_SEEK_FSNEXT:
 		case ID_VIDEO_SEEK_PREVONESEC:
 		case ID_VIDEO_SEEK_NEXTONESEC:
 		case ID_VIDEO_SEEK_KEYPREV:
@@ -2383,6 +2400,34 @@ bool VDProjectUI::MenuHit(UINT id) {
 				SceneShuttleStop();
 			else {
 				if (AbortPreviewing()) StartSceneShuttleForward();
+			}
+			break;
+		case ID_VIDEO_SEEK_FPREV:
+			if (IsSceneShuttleRunning())
+				SceneShuttleStop();
+			else {
+				if (AbortPreviewing()) StartShuttleReverse(false);
+			}
+			break;
+		case ID_VIDEO_SEEK_FNEXT:
+			if (IsSceneShuttleRunning())
+				SceneShuttleStop();
+			else {
+				if (AbortPreviewing()) StartShuttleForward(false);
+			}
+			break;
+		case ID_VIDEO_SEEK_FSPREV:
+			if (IsSceneShuttleRunning())
+				SceneShuttleStop();
+			else {
+				if (AbortPreviewing()) StartShuttleReverse(true);
+			}
+			break;
+		case ID_VIDEO_SEEK_FSNEXT:
+			if (IsSceneShuttleRunning())
+				SceneShuttleStop();
+			else {
+				if (AbortPreviewing()) StartShuttleForward(true);
 			}
 			break;
 		case ID_VIDEO_SCANFORERRORS:			ScanForErrors();			break;
@@ -2929,6 +2974,10 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_END			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_PREV			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_NEXT			, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_FPREV			, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_FNEXT			, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_FSPREV			, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_FSNEXT			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_KEYPREV		, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_KEYNEXT		, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_PREVONESEC		, bSourceFileExists);
@@ -3184,6 +3233,12 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 		}
 		return 0;
+
+  case WM_KEYUP:
+    if (mShuttleMode && !mStickyShuttle) {
+      SceneShuttleStop();
+    }
+    return 0;
 
 	case WM_DROPFILES:
 		HandleDragDrop((HDROP)wParam);
@@ -4487,7 +4542,7 @@ void VDProjectUI::UINotifySelection() {
 }
 
 void VDProjectUI::UIShuttleModeUpdated() {
-	if (!mSceneShuttleMode)
+	if (!mSceneShuttleMode && !mShuttleMode)
 		mpPosition->ResetShuttle();
 }
 
