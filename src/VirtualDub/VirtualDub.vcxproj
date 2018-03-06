@@ -84,8 +84,8 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(VDOutputPath)\</OutDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
     <EmbedManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</EmbedManifest>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Veedub64</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Veedub64</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VirtualDub64</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VirtualDub64</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PixelShaderAssembler>
@@ -176,7 +176,7 @@ yasm -g cv8 -f win32 -o "$(IntDir)verstub.obj" verstub.asm
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <PreLinkEvent>
@@ -202,7 +202,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
     </Bscmake>
     <PostBuildEvent>
       <Message>Compiling function location database...</Message>
-      <Command>$(VDBaseDir)\out\$(VDConfigDirTag)\Asuka mapconv $(VDOutputPath)\Veedub64.map $(VDOutputPath)\Veedub64.vdi res\amd64.vdi</Command>
+      <Command>$(VDBaseDir)\out\$(VDConfigDirTag)\Asuka mapconv $(VDOutputPath)\VirtualDub64.map $(VDOutputPath)\VirtualDub64.vdi res\amd64.vdi</Command>
     </PostBuildEvent>
     <Manifest>
       <InputResourceManifests>
@@ -297,7 +297,7 @@ yasm -g cv8 -f win32 -o "$(IntDir)verstub.obj" verstub.asm
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>NDEBUG;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;WIN32_LEAN_AND_MEAN;_WIN64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <PreLinkEvent>
@@ -326,7 +326,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
     </Bscmake>
     <PostBuildEvent>
       <Message>Compiling function location database...</Message>
-      <Command>$(VDBaseDir)\out\$(VDConfigDirTag)\Asuka mapconv $(VDOutputPath)\Veedub64.map $(VDOutputPath)\Veedub64.vdi res\amd64.vdi</Command>
+      <Command>$(VDBaseDir)\out\$(VDConfigDirTag)\Asuka mapconv $(VDOutputPath)\VirtualDub64.map $(VDOutputPath)\VirtualDub64.vdi res\amd64.vdi</Command>
     </PostBuildEvent>
     <Manifest>
       <InputResourceManifests>
@@ -1478,6 +1478,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
     <ClCompile Include="source\f_test.cpp" />
     <ClCompile Include="source\if_list.cpp" />
     <ClCompile Include="source\if_testid.cpp" />
+    <ClCompile Include="..\dfsc\dfsc.cpp" />
     <ClCompile Include="source\af_base.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1871,13 +1872,9 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="res\VirtualDub.rc">
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">res;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">res;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">res;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">res;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <ResourceCompile Include="..\VDCapture\res\VDCapture.rc" />

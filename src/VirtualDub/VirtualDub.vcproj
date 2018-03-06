@@ -260,7 +260,7 @@
       />
       <Tool
         Name="VCResourceCompilerTool"
-        PreprocessorDefinitions="_DEBUG"
+        PreprocessorDefinitions="_DEBUG,_WIN64"
         Culture="1033"
       />
       <Tool
@@ -271,7 +271,7 @@
       <Tool
         Name="VCLinkerTool"
         AdditionalDependencies="winmm.lib vfw32.lib dxguid.lib msacm32.lib comctl32.lib powrprof.lib dwmapi.lib $(IntDir)\verstub.obj priss.lib sylia.lib system.lib dita.lib meia.lib kasumi.lib"
-        OutputFile="$(OutDir)\Veedub64.exe"
+        OutputFile="$(OutDir)\VirtualDub64.exe"
         LinkIncremental="2"
         SuppressStartupBanner="true"
         AdditionalLibraryDirectories="$(VDLibPath)"
@@ -305,7 +305,7 @@
       <Tool
         Name="VCPostBuildEventTool"
         Description="Compiling function location database..."
-        CommandLine="$(VDBaseDir)\out\$(VDConfigDirTag)\Asuka mapconv $(VDOutputPath)\Veedub64.map $(VDOutputPath)\Veedub64.vdi res\amd64.vdi"
+        CommandLine="$(VDBaseDir)\out\$(VDConfigDirTag)\Asuka mapconv $(VDOutputPath)\VirtualDub64.map $(VDOutputPath)\VirtualDub64.vdi res\amd64.vdi"
       />
     </Configuration>
     <Configuration
@@ -352,7 +352,7 @@
       />
       <Tool
         Name="VCResourceCompilerTool"
-        PreprocessorDefinitions="NDEBUG,WIN32_LEAN_AND_MEAN"
+        PreprocessorDefinitions="NDEBUG,WIN32_LEAN_AND_MEAN,_WIN64"
         Culture="1033"
       />
       <Tool
@@ -363,7 +363,7 @@
       <Tool
         Name="VCLinkerTool"
         AdditionalDependencies="winmm.lib vfw32.lib dxguid.lib msacm32.lib comctl32.lib powrprof.lib dwmapi.lib $(IntDir)\verstub.obj priss.lib sylia.lib system.lib dita.lib meia.lib kasumi.lib"
-        OutputFile="$(OutDir)\Veedub64.exe"
+        OutputFile="$(OutDir)\VirtualDub64.exe"
         LinkIncremental="1"
         SuppressStartupBanner="true"
         AdditionalLibraryDirectories="$(VDLibPath)"
@@ -400,7 +400,7 @@
       <Tool
         Name="VCPostBuildEventTool"
         Description="Compiling function location database..."
-        CommandLine="$(VDBaseDir)\out\$(VDConfigDirTag)\Asuka mapconv $(VDOutputPath)\Veedub64.map $(VDOutputPath)\Veedub64.vdi res\amd64.vdi"
+        CommandLine="$(VDBaseDir)\out\$(VDConfigDirTag)\Asuka mapconv $(VDOutputPath)\VirtualDub64.map $(VDOutputPath)\VirtualDub64.vdi res\amd64.vdi"
       />
     </Configuration>
   </Configurations>

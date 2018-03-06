@@ -754,10 +754,10 @@ CodeDisassemblyWindow::CodeDisassemblyWindow(void *_code, long _length, void *_r
 	SpliceProgramPath(buf, sizeof buf, "ia32.vdi");
 	if (!VDDisasmInit(&vdc, buf)) {
 #ifdef __INTEL_COMPILER
-		SpliceProgramPath(buf, sizeof buf, "VeedubP4.vdi");
+		SpliceProgramPath(buf, sizeof buf, "VirtualDubP4.vdi");
 		VDDisasmInit(&vdc, buf);
 #elif defined(_M_AMD64)
-		SpliceProgramPath(buf, sizeof buf, "Veedub64.vdi");
+		SpliceProgramPath(buf, sizeof buf, "VirtualDub64.vdi");
 		VDDisasmInit(&vdc, buf);
 #else
 		SpliceProgramPath(buf, sizeof buf, "VirtualDub.vdi");

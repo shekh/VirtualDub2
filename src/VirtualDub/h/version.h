@@ -33,7 +33,7 @@ uint32 VDGetBuildNumber();
 #define VD_WIDE_STRING_CONST2(name) L ## name
 #define VD_WIDE_STRING_CONST(name) VD_WIDE_STRING_CONST2(name)
 
-#define VD_PROGRAM_NAMEA		"VirtualDub FilterMod"
+#define VD_PROGRAM_NAMEA		"VirtualDub2"
 #define VD_PROGRAM_NAMEW		VD_WIDE_STRING_CONST(VD_PROGRAM_NAMEA)
 
 #define VD_PROGRAM_VERSIONA		""
@@ -65,7 +65,7 @@ uint32 VDGetBuildNumber();
 
 #if defined(_M_AMD64)
 	#define VD_PROGRAM_PLATFORM_NAMEW		L"AMD64"
-	#define VD_PROGRAM_EXEFILE_NAMEA		"Veedub64.exe"
+	#define VD_PROGRAM_EXEFILE_NAMEA		"VirtualDub64.exe"
 	#define VD_PROGRAM_CLIEXE_NAMEA			"vdub64.exe"
 #else
 	#define VD_PROGRAM_PLATFORM_NAMEW		L"80x86"

@@ -198,7 +198,7 @@
 		</p>
 		<blockquote><pre>start /low virtualdub.exe</pre></blockquote>
 		<p>
-			Because <tt>virtualdub.exe</tt> and <tt>veedub64.exe</tt> are GUI programs, the command interpreter in Windows
+			Because <tt>virtualdub.exe</tt> and <tt>VirtualDub64.exe</tt> are GUI programs, the command interpreter in Windows
 			will not wait for them to exit before returning. In addition, its main window will appear as usual. This can
 			be changed by using the <tt>vdub.exe</tt> or <tt>vdub64.exe</tt> front ends, which launch the main application
 			in a special command-line mode.
@@ -214,7 +214,7 @@
 		<p>
 			If you integrate VirtualDub as part of an unattended process and need to track processes, you should remember
 			that <tt>vdub.exe</tt> and <tt>vdub64.exe</tt> are just front ends for <tt>VirtualDub.exe</tt> and
-			<tt>Veedub64.exe</tt>. This has implications for monitoring the VirtualDub process or forcibly killing it.
+			<tt>VirtualDub64.exe</tt>. This has implications for monitoring the VirtualDub process or forcibly killing it.
 			If you send a Ctrl+C event to the command-line driver, it will attempt to soft-stop the main process
 			via a WM_QUIT event. However, if you kill the command-line driver process outright, the main process will
 			continue to run. If you need to forcibly kill the VirtualDub process, you must kill the main GUI process;

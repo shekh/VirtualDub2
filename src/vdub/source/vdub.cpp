@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #ifdef _M_AMD64
-	#define APPNAME "Veedub64.exe"
+	#define APPNAME "VirtualDub64.exe"
 #else
 	#define APPNAME "VirtualDub.exe"
 #endif

@@ -36,10 +36,10 @@
 
 #ifdef _M_AMD64
 	#define VD_LAUNCH_HELPER_NAMEA	"vdlaunch64.exe"
-	#define VD_LAUNCH_HELPER_NAMEW	L"vdlaunch64.exe"
+	#define VD_LAUNCH_HELPER_NAMEW	L"extra\\vdlaunch64.exe"
 #else
 	#define VD_LAUNCH_HELPER_NAMEA	"vdlaunch.exe"
-	#define VD_LAUNCH_HELPER_NAMEW	L"vdlaunch.exe"
+	#define VD_LAUNCH_HELPER_NAMEW	L"extra\\vdlaunch.exe"
 #endif
 
 namespace {

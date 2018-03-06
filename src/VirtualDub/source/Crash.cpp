@@ -1128,10 +1128,10 @@ LONG __stdcall CrashHandler(EXCEPTION_POINTERS *pExc, bool allowForcedExit) {
 		bSuccess = VDDebugInfoInitFromMemory(&g_debugInfo, cdw.vdc.pExtraData);
 	} else {
 #ifdef __INTEL_COMPILER		// P4 build
-		SpliceProgramPath(buf, sizeof buf, "VeedubP4.vdi");
+		SpliceProgramPath(buf, sizeof buf, "VirtualDubP4.vdi");
 		bSuccess = VDDebugInfoInitFromFile(&g_debugInfo, buf);
 #elif defined(_M_AMD64)
-		SpliceProgramPath(buf, sizeof buf, "Veedub64.vdi");
+		SpliceProgramPath(buf, sizeof buf, "VirtualDub64.vdi");
 		bSuccess = VDDebugInfoInitFromFile(&g_debugInfo, buf);
 #else						// General build
 		SpliceProgramPath(buf, sizeof buf, "VirtualDub.vdi");
@@ -1732,9 +1732,9 @@ static void VDDebugCrashDumpCallStack(VDDebugCrashTextOutput& out, HANDLE hThrea
 
 	if (!g_debugInfo.pRVAHeap) {
 #ifdef __INTEL_COMPILER
-		out.Write("Could not open debug resource file (VeedubP4.vdi).\n");
+		out.Write("Could not open debug resource file (VirtualDubP4.vdi).\n");
 #elif defined(_M_AMD64)
-		out.Write("Could not open debug resource file (Veedub64.vdi).\n");
+		out.Write("Could not open debug resource file (VirtualDub64.vdi).\n");
 #else
 		out.Write("Could not open debug resource file (VirtualDub.vdi).\n");
 #endif
@@ -1840,7 +1840,7 @@ static bool DoSave(const char *pszFilename, const wchar_t *pwszFilename, HANDLE 
 	VDDebugCrashTextOutputFile out(pszFilename, pwszFilename);
 
 	out.WriteF(
-			"VirtualDub FilterMod crash report -- build %d ("
+			"VirtualDub2 crash report -- build %d ("
 #ifdef DEBUG
 			"debug"
 #elif defined(_M_AMD64)
