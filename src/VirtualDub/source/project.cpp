@@ -2450,20 +2450,18 @@ void VDProject::MoveForwardSome() {
 		MoveToFrame(GetCurrentFrame() + 50, 1);
 }
 
-void VDProject::StartShuttleReverse(bool sticky) {
+void VDProject::StartShuttle(int d, bool sticky) {
 	if (!inputVideo)
 		return;
-	mShuttleMode = -1;
+	mSceneShuttleMode = 0;
+	mSceneShuttleAdvance = 0;
+	mSceneShuttleCounter = 0;
+	mShuttleMode = d;
 	mStickyShuttle = sticky;
-	if (mpCB)
-		mpCB->UIShuttleModeUpdated();
-}
-
-void VDProject::StartShuttleForward(bool sticky) {
-	if (!inputVideo)
-		return;
-	mShuttleMode = +1;
-	mStickyShuttle = sticky;
+	if (mpSceneDetector) {
+		delete mpSceneDetector;
+		mpSceneDetector = NULL;
+	}
 	if (mpCB)
 		mpCB->UIShuttleModeUpdated();
 }

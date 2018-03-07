@@ -504,6 +504,10 @@ INT_PTR CALLBACK max_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		}
 		break;
 
+	case WM_CLOSE:
+		SendMessage(g_hWnd,WM_CLOSE,0,0);
+		break;
+
 	case WM_WINDOWPOSCHANGING:
 		{
 			WINDOWPOS *pwp = ((WINDOWPOS *)lparam);
@@ -2403,31 +2407,23 @@ bool VDProjectUI::MenuHit(UINT id) {
 			}
 			break;
 		case ID_VIDEO_SEEK_FPREV:
-			if (IsSceneShuttleRunning())
-				SceneShuttleStop();
-			else {
-				if (AbortPreviewing()) StartShuttleReverse(false);
-			}
+			if (AbortPreviewing()) StartShuttle(-1,false);
 			break;
 		case ID_VIDEO_SEEK_FNEXT:
-			if (IsSceneShuttleRunning())
-				SceneShuttleStop();
-			else {
-				if (AbortPreviewing()) StartShuttleForward(false);
-			}
+			if (AbortPreviewing()) StartShuttle(+1,false);
 			break;
 		case ID_VIDEO_SEEK_FSPREV:
 			if (IsSceneShuttleRunning())
 				SceneShuttleStop();
 			else {
-				if (AbortPreviewing()) StartShuttleReverse(true);
+				if (AbortPreviewing()) StartShuttle(-1,true);
 			}
 			break;
 		case ID_VIDEO_SEEK_FSNEXT:
 			if (IsSceneShuttleRunning())
 				SceneShuttleStop();
 			else {
-				if (AbortPreviewing()) StartShuttleForward(true);
+				if (AbortPreviewing()) StartShuttle(+1,true);
 			}
 			break;
 		case ID_VIDEO_SCANFORERRORS:			ScanForErrors();			break;
@@ -3235,6 +3231,7 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 		return 0;
 
   case WM_KEYUP:
+  case WM_SYSKEYUP:
     if (mShuttleMode && !mStickyShuttle) {
       SceneShuttleStop();
     }

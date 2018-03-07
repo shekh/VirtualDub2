@@ -236,8 +236,7 @@ public:
 	void MoveToNextKey();
 	void MoveBackSome();
 	void MoveForwardSome();
-	void StartShuttleReverse(bool sticky);
-	void StartShuttleForward(bool sticky);
+	void StartShuttle(int d, bool sticky);
 	void StartSceneShuttleReverse();
 	void StartSceneShuttleForward();
 	void MoveToPreviousRange();
