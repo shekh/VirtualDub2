@@ -1811,6 +1811,7 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
     <None Include="res\scenefwd.ico" />
     <None Include="res\scenerev.ico" />
     <None Include="res\virtuald.ico" />
+    <None Include="res\mod2.ico" />
     <CustomBuild Include="res\virtualdub.ami">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling program resources....</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"$(TargetDir)ami" "%(FullPath)" "$(IntDir)virtualdub.vdres"

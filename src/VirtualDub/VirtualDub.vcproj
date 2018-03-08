@@ -3354,6 +3354,10 @@
         >
       </File>
       <File
+        RelativePath="res\mod2.ico"
+        >
+      </File>
+      <File
         RelativePath="res\virtualdub.ami"
         >
         <FileConfiguration
