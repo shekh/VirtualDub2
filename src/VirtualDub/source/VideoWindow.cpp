@@ -72,6 +72,7 @@ public:
 	void SetDrawMode(IVDVideoDisplayDrawMode *p){ mDrawMode=p; }
 	void ToggleFullscreen();
 	bool IsFullscreen(){ return mbFullscreen; }
+	void SetPanCentering(PanCenteringMode mode);
 
 private:
 	HWND mhwnd;
@@ -85,6 +86,7 @@ private:
 	int mSourceHeight;
 	int mPanWidth;
 	int mPanHeight;
+	PanCenteringMode mPanCentering;
 	float mPanX;
 	float mPanY;
 	POINT mPanStart;
@@ -185,6 +187,7 @@ VDVideoWindow::VDVideoWindow(HWND hwnd)
 	mWorkArea.right = 0;
 	mWorkArea.bottom = 0;
 	mDrawMode = 0;
+	mPanCentering = kPanCenter;
 }
 
 VDVideoWindow::~VDVideoWindow() {
@@ -446,14 +449,32 @@ void VDVideoWindow::ClipPan(float& px, float& py) {
 	int y1 = r.bottom-r.top-mPanHeight;
 	if (x1>0) x1 = 0;
 	if (y1>0) y1 = 0;
-	int w2 = (r.right-r.left)/2;
-	int h2 = (r.bottom-r.top)/2;
-	int x = w2 - VDRoundToInt(mPanWidth*px);
-	int y = h2 - VDRoundToInt(mPanHeight*py);
-	if (x>0) px = float(w2)/mPanWidth;
-	if (y>0) py = float(h2)/mPanHeight;
-	if (x<x1) px = float(w2-x1)/mPanWidth;
-	if (y<y1) py = float(h2-y1)/mPanHeight;
+	if (mPanCentering==kPanCenter) {
+		int w2 = (r.right-r.left)/2;
+		int h2 = (r.bottom-r.top)/2;
+		int x = w2 - VDRoundToInt(mPanWidth*px);
+		int y = h2 - VDRoundToInt(mPanHeight*py);
+		if (mPanWidth>0) {
+			if (x>0) px = float(w2)/mPanWidth;
+			if (x<x1) px = float(w2-x1)/mPanWidth;
+		} else px = 0.5;
+			if (mPanHeight>0) {
+			if (y>0) py = float(h2)/mPanHeight;
+			if (y<y1) py = float(h2-y1)/mPanHeight;
+		} else py = 0.5;
+	}
+	if (mPanCentering==kPanTopLeft) {
+		int x = -VDRoundToInt(mPanWidth*px);
+		int y = -VDRoundToInt(mPanHeight*py);
+		if (mPanWidth>0) {
+			if (x>0) px = 0;
+			if (x<x1) px = float(-x1)/mPanWidth;
+		} else px = 0;
+		if (mPanHeight>0) {
+			if (y>0) py = 0;
+			if (y<y1) py = float(-y1)/mPanHeight;
+		} else py = 0;
+	}
 }
 
 void VDVideoWindow::SetChildPos(float dx, float dy) {
@@ -463,13 +484,36 @@ void VDVideoWindow::SetChildPos(float dx, float dy) {
 		ClipPan(px,py);
 		RECT r;
 		GetClientRect(mhwnd,&r);
-		int x = (r.right-r.left)/2 - VDRoundToInt(mPanWidth*px);
-		int y = (r.bottom-r.top)/2 - VDRoundToInt(mPanHeight*py);
+		int x,y;
+		if (mPanCentering==kPanCenter) {
+			x = (r.right-r.left)/2 - VDRoundToInt(mPanWidth*px);
+			y = (r.bottom-r.top)/2 - VDRoundToInt(mPanHeight*py);
+		}
+		if (mPanCentering==kPanTopLeft) {
+			x = -VDRoundToInt(mPanWidth*px);
+			y = -VDRoundToInt(mPanHeight*py);
+		}
 		SetWindowPos(mhwndChild, NULL, x, y, mPanWidth, mPanHeight, SWP_NOZORDER|SWP_NOCOPYBITS);
 
 		if (mDrawMode)
 			mDrawMode->SetDisplayPos(x,y,mPanWidth,mPanHeight);
 	}
+}
+
+void VDVideoWindow::SetPanCentering(PanCenteringMode mode) {
+	switch (mode) {
+	case kPanCenter:
+		mPanCentering = mode;
+		mPanX = 0.5;
+		mPanY = 0.5;
+		break;
+	case kPanTopLeft:
+		mPanCentering = mode;
+		mPanX = 0;
+		mPanY = 0;
+		break;
+	}
+	SetChildPos();
 }
 
 void VDVideoWindow::SetChild(HWND hwnd) {

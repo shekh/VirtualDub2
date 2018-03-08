@@ -117,6 +117,7 @@ extern vdrefptr<AudioSource>	inputAudio;
 extern COMPVARS2 g_Vcompression;
 
 static bool				g_vertical				= FALSE;
+PanCenteringMode g_panCentering = kPanCenter;
 
 extern DubSource::ErrorMode	g_videoErrorMode;
 extern DubSource::ErrorMode	g_audioErrorMode;
@@ -385,6 +386,8 @@ namespace {
 		{ ID_OPTIONS_DISPLAYDECOMPRESSEDOUTPUT,	"View.ToggleDecompressedOutput" },
 		{ ID_OPTIONS_SHOWSTATUSWINDOW,	"View.ToggleStatusWindow" },
 		{ ID_OPTIONS_VERTICALDISPLAY,	"View.ToggleVerticalDisplay" },
+		{ ID_PAN_CENTER,				"View.PanCentering.Center" },
+		{ ID_PAN_TOPLEFT,				"View.PanCentering.TopLeft" },
 		{ ID_OPTIONS_SYNCTOAUDIO,		"Options.ToggleSyncToAudio" },
 		{ ID_OPTIONS_ENABLEDIRECTDRAW,	"Options.ToggleVideoOverlay" },
 		{ ID_OPTIONS_DROPFRAMES,		"Options.ToggleFrameDropping" },
@@ -741,6 +744,7 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	mpInputDisplay->SetCallback(this);
 	mpOutputDisplay->SetCallback(this);
 
+	ResetCentering();
 	IVDVideoWindow *pInputWindow = VDGetIVideoWindow(mhwndInputFrame);
 	IVDVideoWindow *pOutputWindow = VDGetIVideoWindow(mhwndOutputFrame);
 	pInputWindow->SetChild(mhwndInputDisplay);
@@ -2600,6 +2604,14 @@ bool VDProjectUI::MenuHit(UINT id) {
 			g_vertical = !g_vertical;
 			RepositionPanes(true);
 			break;
+		case ID_PAN_CENTER:
+			g_panCentering = kPanCenter;
+			ResetCentering();
+			break;
+		case ID_PAN_TOPLEFT:
+			g_panCentering = kPanTopLeft;
+			ResetCentering();
+			break;
 		case ID_OPTIONS_SYNCTOAUDIO:
 			g_dubOpts.video.fSyncToAudio = !g_dubOpts.video.fSyncToAudio;
 			break;
@@ -2803,6 +2815,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDCheckMenuItemW32(hMenu, ID_OPTIONS_DROPFRAMES,				g_fDropFrames);
 	VDCheckMenuItemW32(hMenu, ID_OPTIONS_DROPSEEKING,				g_fDropSeeking);
 	VDCheckMenuItemW32(hMenu, ID_OPTIONS_SWAPPANES,					g_fSwapPanes);
+	CheckMenuRadioItem(hMenu, ID_PAN_CENTER, ID_PAN_TOPLEFT, ID_PAN_CENTER+g_panCentering, MF_BYCOMMAND);
 
 	const bool bAVISourceExists = (inputAVI && inputAVI->Append(NULL));
 	VDEnableMenuItemW32(hMenu,ID_FILE_APPENDSEGMENT			, bAVISourceExists);
@@ -3698,6 +3711,13 @@ void VDProjectUI::SwapFullscreen() {
 		}
 		break;
 	}
+}
+
+void VDProjectUI::ResetCentering() {
+	IVDVideoWindow *w1 = VDGetIVideoWindow(mhwndInputFrame);
+	IVDVideoWindow *w2 = VDGetIVideoWindow(mhwndOutputFrame);
+	w1->SetPanCentering(g_panCentering);
+	w2->SetPanCentering(g_panCentering);
 }
 
 void VDProjectUI::RepositionPanes(bool reset) {
@@ -4979,6 +4999,7 @@ void VDProjectUI::LoadSettings() {
 	g_fDropFrames						= key.getBool("Preview frame skipping", g_fDropFrames);
 	g_fDropSeeking						= key.getBool("Seek frame skipping", g_fDropSeeking);
 	g_showStatusWindow					= key.getBool("Show status window", g_showStatusWindow);
+	g_panCentering						= (PanCenteringMode)key.getInt("Pan centering", g_panCentering);
 	g_dubOpts.video.fShowInputFrame		= key.getBool("Update input pane", g_dubOpts.video.fShowInputFrame);
 	g_dubOpts.video.fShowOutputFrame	= key.getBool("Update output pane", g_dubOpts.video.fShowOutputFrame);
 	g_dubOpts.video.fSyncToAudio		= key.getBool("Preview audio sync", g_dubOpts.video.fSyncToAudio);
@@ -5015,6 +5036,7 @@ void VDProjectUI::SaveSettings() {
 	key.setBool("Preview frame skipping", g_fDropFrames);
 	key.setBool("Seek frame skipping", g_fDropSeeking);
 	key.setBool("Show status window", g_showStatusWindow);
+	key.setInt("Pan centering", g_panCentering);
 	key.setBool("Update input pane", g_dubOpts.video.fShowInputFrame);
 	key.setBool("Update output pane", g_dubOpts.video.fShowOutputFrame);
 	key.setBool("Preview audio sync", g_dubOpts.video.fSyncToAudio);

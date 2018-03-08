@@ -147,6 +147,8 @@ BEGIN
             MENUITEM "Both panes",                  ID_PANELAYOUT_BOTHPANES
             MENUITEM SEPARATOR
             MENUITEM "Auto-size panes",             ID_PANELAYOUT_AUTOSIZE
+            MENUITEM "Pan && zoom: &Center",        ID_PAN_CENTER
+            MENUITEM "Pan && zoom: &Top-Left",      ID_PAN_TOPLEFT
         END
         MENUITEM "&Input video pane\tF9",       ID_OPTIONS_DISPLAYINPUTVIDEO, CHECKED
         MENUITEM "&Output video pane\tF10",     ID_OPTIONS_DISPLAYOUTPUTVIDEO, CHECKED
@@ -4021,8 +4023,7 @@ END
 //
 #include "version.rc"
 IDR_RESOURCES      STUFF   DISCARDABLE     "virtualdub.vdres"
-
-
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

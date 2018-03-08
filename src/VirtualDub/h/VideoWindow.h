@@ -12,6 +12,11 @@ ATOM RegisterVideoWindow();
 class VDFraction;
 class IVDVideoDisplay;
 
+enum PanCenteringMode {
+	kPanCenter,
+	kPanTopLeft,
+};
+
 class VDINTERFACE IVDVideoWindow {
 public:
 	virtual void SetMouseTransparent(bool) = 0;
@@ -35,6 +40,7 @@ public:
 	virtual void SetDrawMode(IVDVideoDisplayDrawMode *p) = 0;
 	virtual void ToggleFullscreen() = 0;
 	virtual bool IsFullscreen() = 0;
+	virtual void SetPanCentering(PanCenteringMode mode) = 0;
 };
 
 IVDVideoWindow *VDGetIVideoWindow(HWND hwnd);

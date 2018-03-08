@@ -44,6 +44,7 @@
 extern HINSTANCE	g_hInst;
 extern VDProject *g_project;
 extern vdrefptr<VDProjectUI> g_projectui;
+extern PanCenteringMode g_panCentering;
 extern IVDPositionControlCallback *VDGetPositionControlCallbackTEMP();
 extern void SaveImage(HWND, VDPosition frame, VDPixmap* px);
 
@@ -908,6 +909,7 @@ void FilterPreview::OnInit() {
 	EnableWindow(mhwndDisplay, FALSE);
 
 	mpVideoWindow = VDGetIVideoWindow(mhwndVideoWindow);
+	mpVideoWindow->SetPanCentering(g_panCentering);
 	mpVideoWindow->SetChild(mhwndDisplay);
 	mpVideoWindow->SetDisplay(mpDisplay);
 	mpVideoWindow->SetMouseTransparent(true);
@@ -2156,6 +2158,7 @@ void PixmapView::OnInit() {
 	EnableWindow(mhwndDisplay, FALSE);
 
 	mpVideoWindow = VDGetIVideoWindow(mhwndVideoWindow);
+	mpVideoWindow->SetPanCentering(g_panCentering);
 	mpVideoWindow->SetChild(mhwndDisplay);
 	mpVideoWindow->SetDisplay(mpDisplay);
 	mpVideoWindow->SetMouseTransparent(true);
