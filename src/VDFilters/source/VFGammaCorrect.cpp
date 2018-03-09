@@ -59,8 +59,12 @@ void VDVideoFilterGammaCorrectDialog::OnDataExchange(bool write) {
 
 class VDVideoFilterGammaCorrect : public VDXVideoFilter {
 public:
+	VDVideoFilterGammaCorrect() { mLookup16=0; }
+	VDVideoFilterGammaCorrect(const VDVideoFilterGammaCorrect& a) { mLookup16=0; mConfig = a.mConfig; }
+	~VDVideoFilterGammaCorrect() { free(mLookup16); }
 	uint32 GetParams();
 	void Start();
+	void End();
 	void Run();
 	bool Configure(VDXHWND hwnd);
 	void GetSettingString(char *buf, int maxlen);
@@ -73,6 +77,7 @@ protected:
 	VDVideoFilterGammaCorrectConfig mConfig;
 
 	uint8 mLookup[256];
+	uint16* mLookup16;
 };
 
 VDXVF_BEGIN_SCRIPT_METHODS(VDVideoFilterGammaCorrect)
@@ -83,41 +88,85 @@ uint32 VDVideoFilterGammaCorrect::GetParams() {
 	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
 	VDXPixmapLayout& pxldst = *fa->dst.mpPixmapLayout;
 
-	if (pxlsrc.format != nsVDXPixmap::kPixFormat_XRGB8888)
+	switch (pxlsrc.format) {
+	case nsVDXPixmap::kPixFormat_XRGB8888:
+	case nsVDXPixmap::kPixFormat_XRGB64:
+		break;
+	default:
 		return FILTERPARAM_NOT_SUPPORTED;
+	}
 
 	pxldst.pitch = pxlsrc.pitch;
 
-	return FILTERPARAM_ALIGN_SCANLINES | FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
+	return FILTERPARAM_ALIGN_SCANLINES | FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_NORMALIZE16;
 }
 
 void VDVideoFilterGammaCorrect::Start() {
 	const float a = 0.055f;
+	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
 
-	if (mConfig.mbConvertToLinear) {
-		for(int i=0; i<256; ++i) {
-			float x = i / 255.0f;
-			float y;
+	if (pxlsrc.format==nsVDXPixmap::kPixFormat_XRGB8888) {
+		if (mConfig.mbConvertToLinear) {
+			for(int i=0; i<256; ++i) {
+				float x = i / 255.0f;
+				float y;
 
-			if (x <= 0.04045f)
-				y = x / 12.92f;
-			else
-				y = powf((x + a)/(1.0f + a), 2.4f);
+				if (x <= 0.04045f)
+					y = x / 12.92f;
+				else
+					y = powf((x + a)/(1.0f + a), 2.4f);
 
-			mLookup[i] = (uint8)VDRoundToIntFast(y * 255.0f);
+				mLookup[i] = (uint8)VDRoundToIntFast(y * 255.0f);
+			}
+		} else {
+			for(int i=0; i<256; ++i) {
+				float x = i / 255.0f;
+				float y;
+
+				if (x <= 0.0031808f)
+					y = x * 12.92f;
+				else
+					y = (1.0f + a) * powf(x, 1.0f / 2.4f) - a;
+
+				mLookup[i] = (uint8)VDRoundToIntFast(y * 255.0f);
+			}
 		}
-	} else {
-		for(int i=0; i<256; ++i) {
-			float x = i / 255.0f;
-			float y;
+	}
 
-			if (x <= 0.0031808f)
-				y = x * 12.92f;
-			else
-				y = (1.0f + a) * powf(x, 1.0f / 2.4f) - a;
+	if (pxlsrc.format==nsVDXPixmap::kPixFormat_XRGB64) {
+		if (!mLookup16) mLookup16 = (uint16*)malloc(65536*2);
+		if (mConfig.mbConvertToLinear) {
+			for(int i=0; i<65536; ++i) {
+				float x = i / 65535.0f;
+				float y;
 
-			mLookup[i] = (uint8)VDRoundToIntFast(y * 255.0f);
+				if (x <= 0.04045f)
+					y = x / 12.92f;
+				else
+					y = powf((x + a)/(1.0f + a), 2.4f);
+
+				mLookup16[i] = (uint16)VDRoundToIntFast(y * 65535.0f);
+			}
+		} else {
+			for(int i=0; i<65536; ++i) {
+				float x = i / 65535.0f;
+				float y;
+
+				if (x <= 0.0031808f)
+					y = x * 12.92f;
+				else
+					y = (1.0f + a) * powf(x, 1.0f / 2.4f) - a;
+
+				mLookup16[i] = (uint16)VDRoundToIntFast(y * 65535.0f);
+			}
 		}
+	}
+}
+
+void VDVideoFilterGammaCorrect::End() {
+	if (mLookup16) {
+		free (mLookup16);
+		mLookup16 = 0;
 	}
 }
 
@@ -125,21 +174,43 @@ void VDVideoFilterGammaCorrect::Run() {
 	const VDXPixmap& pxdst = *fa->dst.mpPixmap;
 	const uint32 w = pxdst.w;
 	const uint32 h = pxdst.h;
-	const uint8 *VDRESTRICT tab = mLookup;
 
-	uint8 *dst = (uint8 *)pxdst.data;
-	for(uint32 y=0; y<h; ++y) {
-		uint8 *p = dst;
+	if (pxdst.format==nsVDXPixmap::kPixFormat_XRGB8888) {
+		const uint8 *VDRESTRICT tab = mLookup;
 
-		for(uint32 x=0; x<w; ++x) {
-			p[0] = tab[p[0]];
-			p[1] = tab[p[1]];
-			p[2] = tab[p[2]];
+		uint8 *dst = (uint8 *)pxdst.data;
+		for(uint32 y=0; y<h; ++y) {
+			uint8 *p = dst;
 
-			p += 4;
+			for(uint32 x=0; x<w; ++x) {
+				p[0] = tab[p[0]];
+				p[1] = tab[p[1]];
+				p[2] = tab[p[2]];
+
+				p += 4;
+			}
+
+			dst += pxdst.pitch;
 		}
+	}
 
-		dst += pxdst.pitch;
+	if (pxdst.format==nsVDXPixmap::kPixFormat_XRGB64) {
+		const uint16 *VDRESTRICT tab = mLookup16;
+
+		uint8 *dst = (uint8 *)pxdst.data;
+		for(uint32 y=0; y<h; ++y) {
+			uint16 *p = (uint16*)dst;
+
+			for(uint32 x=0; x<w; ++x) {
+				p[0] = tab[p[0]];
+				p[1] = tab[p[1]];
+				p[2] = tab[p[2]];
+
+				p += 4;
+			}
+
+			dst += pxdst.pitch;
+		}
 	}
 }
 

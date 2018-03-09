@@ -25,71 +25,34 @@
 ///////////////////////////////////
 
 namespace {
-#ifdef _M_IX86
-	void __declspec(naked) VDInvertRect32(uint32 *data, long w, long h, ptrdiff_t pitch) {
-		__asm {
-			push	ebp
-			push	edi
-			push	esi
-			push	ebx
-
-			mov		edi,[esp+4+16]
-			mov		edx,[esp+8+16]
-			mov		ecx,[esp+12+16]
-			mov		esi,[esp+16+16]
-			mov		eax,edx
-			xor		edx,-1
-			shl		eax,2
-			inc		edx
-			add		edi,eax
-			test	edx,1
-			jz		yloop
-			sub		edi,4
-	yloop:
-			mov		ebp,edx
-			inc		ebp
-			sar		ebp,1
-			jz		zero
-	xloop:
-			mov		eax,[edi+ebp*8  ]
-			mov		ebx,[edi+ebp*8+4]
-			xor		eax,-1
-			xor		ebx,-1
-			mov		[edi+ebp*8  ],eax
-			mov		[edi+ebp*8+4],ebx
-			inc		ebp
-			jne		xloop
-	zero:
-			test	edx,1
-			jz		notodd
-			not		dword ptr [edi]
-	notodd:
-			add		edi,esi
-			dec		ecx
-			jne		yloop
-
-			pop		ebx
-			pop		esi
-			pop		edi
-			pop		ebp
-			ret
-		};
-	}
-#else
 	void VDInvertRect32(uint32 *data, long w, long h, ptrdiff_t pitch) {
 		pitch -= 4*w;
 
 		do {
 			long wt = w;
 			do {
-				*data = ~*data;
+				*data = *data ^ 0x00FFFFFF;
 				++data;
 			} while(--wt);
 
 			data = (uint32 *)((char *)data + pitch);
 		} while(--h);
 	}
-#endif
+
+	void VDInvertRect64(uint32 *data, long w, long h, ptrdiff_t pitch) {
+		pitch -= 8*w;
+
+		do {
+			long wt = w;
+			do {
+				data[0] = data[0] ^ 0xFFFFFFFF;
+				data[1] = data[1] ^ 0x0000FFFF;
+				data+=2;
+			} while(--wt);
+
+			data = (uint32 *)((char *)data + pitch);
+		} while(--h);
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -123,6 +86,10 @@ uint32 VDVideoFilterInvert::GetParams() {
 			pxldst.pitch = pxlsrc.pitch;
 			return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
 
+		case nsVDXPixmap::kPixFormat_XRGB64:
+			pxldst.pitch = pxlsrc.pitch;
+			return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_NORMALIZE16;
+
 		case nsVDXPixmap::kPixFormat_VDXA_RGB:
 		case nsVDXPixmap::kPixFormat_VDXA_YUV:
 			return FILTERPARAM_SWAP_BUFFERS | FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
@@ -133,12 +100,11 @@ uint32 VDVideoFilterInvert::GetParams() {
 }
 
 void VDVideoFilterInvert::Run() {
-	VDInvertRect32(
-			fa->src.data,
-			fa->src.w,
-			fa->src.h,
-			fa->src.pitch
-			);
+	const VDXPixmap& src = *fa->src.mpPixmap;
+	if (src.format==nsVDXPixmap::kPixFormat_XRGB8888)
+		VDInvertRect32((uint32*)src.data, src.w, src.h, src.pitch);
+	if (src.format==nsVDXPixmap::kPixFormat_XRGB64)
+		VDInvertRect64((uint32*)src.data, src.w, src.h, src.pitch);
 }
 
 void VDVideoFilterInvert::StartAccel(IVDXAContext *vdxa) {
@@ -163,7 +129,7 @@ void VDVideoFilterInvert::StopAccel(IVDXAContext *vdxa) {
 extern const VDXFilterDefinition g_VDVFInvert = VDXVideoFilterDefinition<VDVideoFilterInvert>(
 		NULL,
 		"invert",
-		"Inverts the colors in the image.\n\n[Assembly optimized]");
+		"Inverts the colors in the image.");
 
 #ifdef _MSC_VER
 	#pragma warning(disable: 4505)	// warning C4505: 'VDXVideoFilter::[thunk]: __thiscall VDXVideoFilter::`vcall'{48,{flat}}' }'' : unreferenced local function has been removed
