@@ -679,6 +679,8 @@ VDFilterConfiguration::VDFilterConfiguration()
 	, mBlendY1(0)
 	, mBlendX2(0)
 	, mBlendY2(0)
+	, mRangeStart(0)
+	, mRangeEnd(-1)
 	, mbEnabled(true)
 	, mbForceSingleFB(false)
 {
@@ -707,6 +709,7 @@ void VDFilterConfiguration::SetCrop(int x1, int y1, int x2, int y2, bool precise
 bool VDFilterConfiguration::IsOpacityEnabled() const {
 	if (IsOpacityCroppingEnabled()) return true;
 	if (mpAlphaCurve) return true;
+	// ignore start/end frame here - it is checkid silently
 	return false;
 }
 
@@ -723,6 +726,11 @@ void VDFilterConfiguration::SetOpacityCrop(int x1, int y1, int x2, int y2) {
 	mBlendY1 = y1;
 	mBlendX2 = x2;
 	mBlendY2 = y2;
+}
+
+void VDFilterConfiguration::SetRangeFrames(VDPosition start, VDPosition end) {
+	mRangeStart = start;
+	mRangeEnd = end;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -2330,6 +2338,13 @@ void FilterInstance::RunFilterInner() {
 	if (pAlphaCurve)
 		alpha = (float)(*pAlphaCurve)((double)outputFrame).mY;
 
+	if (mRangeEnd!=-1) {
+		if (mRealSrc.w == mRealDst.w && mRealSrc.h == mRealDst.h && mRealSrc.mPixmapLayout.format == mRealDst.mPixmapLayout.format) {
+			if (outputFrame<mRangeStart) alpha = 0;
+			if (outputFrame>=mRangeEnd) alpha = 0;
+		}
+	}
+
 	// If this is an in-place filter with an alpha curve, save off the old image.
 	bool skipFilter = false;
 	bool skipBlit = false;
@@ -2896,7 +2911,7 @@ void FilterInstance::CheckValidConfiguration() {
 	if (IsOpacityEnabled()) {
 		// size check
 		if (mRealSrc.w != mRealDst.w || mRealSrc.h != mRealDst.h) {
-			throw MyError("Cannot start filter chain: Filter \"%s\" has a blend curve attached and has differing input and output sizes (%dx%d -> %dx%d). Input and output sizes must match."
+			throw MyError("Cannot start filter chain: Filter \"%s\" is using blending and has differing input and output sizes (%dx%d -> %dx%d). Input and output sizes must match."
 				, GetName()
 				, mRealSrc.w
 				, mRealSrc.h
@@ -2907,7 +2922,7 @@ void FilterInstance::CheckValidConfiguration() {
 
 		// format check
 		if (mRealSrc.mPixmapLayout.format != mRealDst.mPixmapLayout.format) {
-			throw MyError("Cannot start filter chain: Filter \"%s\" has a blend curve attached and has differing input and output formats. Input and output formats must match."
+			throw MyError("Cannot start filter chain: Filter \"%s\" is using blending and has differing input and output formats. Input and output formats must match."
 				, GetName());
 		}
 	}

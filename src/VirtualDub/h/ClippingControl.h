@@ -130,6 +130,7 @@ public:
 	void init_crop();
 	void init_size();
 	virtual void apply_crop(){}
+	virtual void apply_time_range(){}
 	static void ClipEditCallback(ClipEditInfo& info, void *pData);
 };
 

@@ -595,6 +595,7 @@
 #define IDC_MUXPARTIAL2                 1185
 #define IDC_USEOUTPUTASTEMP             1185
 #define IDC_TARGA_RLE                   1185
+#define IDC_BLEND_TIMELINE              1185
 #define IDC_CHROMAAGCENEVEN             1186
 #define IDC_SHOWFRAMERATES              1186
 #define IDC_TIFF_LZW                    1186

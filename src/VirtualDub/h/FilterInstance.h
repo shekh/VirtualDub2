@@ -288,6 +288,8 @@ public:
 	bool	IsOpacityCroppingEnabled() const;
 	vdrect32 GetOpacityCropInsets() const;
 	void	SetOpacityCrop(int x1, int y1, int x2, int y2);
+	void	SetRangeFrames(VDPosition start, VDPosition end);
+	void	GetRangeFrames(VDPosition& start, VDPosition& end) const { start = mRangeStart; end = mRangeEnd; }
 
 	VDParameterCurve *GetAlphaParameterCurve() const { return mpAlphaCurve; }
 	void SetAlphaParameterCurve(VDParameterCurve *p) { mpAlphaCurve = p; }
@@ -304,6 +306,8 @@ protected:
 	int		mBlendY1;
 	int		mBlendX2;
 	int		mBlendY2;
+	VDPosition mRangeStart;
+	VDPosition mRangeEnd;
 
 	vdrefptr<VDParameterCurve> mpAlphaCurve;
 };

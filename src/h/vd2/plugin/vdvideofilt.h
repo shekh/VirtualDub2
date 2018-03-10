@@ -211,6 +211,7 @@ struct ClipEditInfo {
 		edit_finish = 2,
 		fill_border = 4,
 		init_size = 8,
+		edit_time_range = 16,
 	};
 	int flags;
 	int x1,y1,x2,y2;

@@ -1113,6 +1113,7 @@ void VDClippingDialog2::ClipEditCallback(ClipEditInfo& info, void *pData) {
 	dlg->init_crop();
 	dlg->init_size();
 	if (info.flags & info.edit_finish) dlg->apply_crop();
+	if (info.flags & info.edit_time_range) dlg->apply_time_range();
 }
 
 void VDClippingDialog2::SetClipEdit() {

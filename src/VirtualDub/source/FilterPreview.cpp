@@ -340,6 +340,8 @@ public:
 	void SceneShuttleStep();
 	void MoveToPreviousRange();
 	void MoveToNextRange();
+	void SetRangeFrames();
+	void SetRangeFrames(VDPosition p0, VDPosition p1, bool set_p0, bool set_p1);
 
 private:
 	static INT_PTR CALLBACK StaticDlgProc(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam);
@@ -1025,6 +1027,38 @@ void FilterPreview::OnPaint() {
 	EndPaint(mhdlg, &ps);
 }
 
+void FilterPreview::SetRangeFrames() {
+	VDPosition r0,r1;
+	mpThisFilter->GetRangeFrames(r0, r1);
+	if (mpPosition) mpPosition->SetSelection2(r0, r1);
+}
+
+void FilterPreview::SetRangeFrames(VDPosition p0, VDPosition p1, bool set_p0, bool set_p1) {
+	VDPosition r0,r1;
+	mpThisFilter->GetRangeFrames(r0, r1);
+	if ((r1==-1) || (!set_p0 && !set_p1)) {
+		r0 = 0;
+		r1 = g_project->GetTimeline().GetLength();
+		VDPosition sel_start = g_project->GetSelectionStartFrame();
+		VDPosition sel_end = g_project->GetSelectionEndFrame();
+		if (sel_end>sel_start) {
+			r0 = sel_start;
+			r1 = sel_end;
+		}
+	}
+	if (set_p0){ r0 = p0; if (r0>r1) r1 = r0; }
+	if (set_p1){ r1 = p1; if( r1<r0) r0 = r1; }
+	mpThisFilter->SetRangeFrames(r0, r1);
+	mpPosition->SetSelection2(r0, r1);
+	if (mpClipEditCallback) {
+		ClipEditInfo info;
+		info.flags = info.edit_time_range;
+		mpClipEditCallback(info,mpClipEditCBData);
+	}
+
+	RedoFrame();
+}
+
 void FilterPreview::OnVideoResize(bool bInitial) {
 	if (bInitial) {
 		RECT rParent;
@@ -1138,15 +1172,20 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 			const VDFilterStreamDesc srcDesc(mpThisFilter->GetSourceDesc());
 			mpPosition->SetRange(0, srcDesc.mFrameCount < 0 ? 1000 : srcDesc.mFrameCount);
 		} else {
-			if (mpFiltSys->GetOutputFrameRate() == srcRate)
-				mpPosition->SetRange(0, mpTimeline->GetLength());
-			else
+			if (mpFiltSys->GetOutputFrameRate() == srcRate) {
+				VDPosition start,end;
+				if (g_project->GetZoomRange(start,end))
+					mpPosition->SetRange(start, end);
+				else
+					mpPosition->SetRange(0, mpTimeline->GetLength());
+			} else
 				mpPosition->SetRange(0, mpFiltSys->GetOutputFrameCount());
 
 			VDPosition sel_start = g_project->GetSelectionStartFrame();
 			VDPosition sel_end = g_project->GetSelectionEndFrame();
 			mpPosition->SetSelection(sel_start, sel_end);
 			mpPosition->SetTimeline(*mpTimeline);
+			SetRangeFrames();
 		}
 
 		if (mInitialTimeUS >= 0) {
@@ -1381,6 +1420,28 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		}
 		return true;
 
+	case ID_EDIT_SETSELSTART:
+		{
+			VDPosition p = mpPosition->GetPosition();
+			SetRangeFrames(p,p,true,false);
+		}
+		return true;
+
+	case ID_EDIT_SETSELEND:
+		{
+			VDPosition p = mpPosition->GetPosition();
+			SetRangeFrames(p,p,false,true);
+		}
+		return true;
+
+	case ID_EDIT_CLEAR:
+		SetRangeFrames(0,-1,true,true);
+		return true;
+
+	case ID_EDIT_SELECTALL:
+		SetRangeFrames(0,0,false,false);
+		return true;
+
 	case ID_EDIT_PREVRANGE:
 		SceneShuttleStop();
 		MoveToPreviousRange();
@@ -1433,11 +1494,12 @@ void FilterPreview::MoveToPreviousRange() {
 	VDPosition p0 = mpPosition->GetPosition();
 	VDPosition pos = mpTimeline->GetPrevEdit(p0);
 	VDPosition mpos = mpTimeline->GetPrevMarker(p0);
+	VDPosition r0,r1;
+	mpThisFilter->GetRangeFrames(r0,r1);
 
-	if (mpos >=0 && (mpos>pos || pos==-1)) {
-		mpPosition->SetPosition(mpos);
-		return;
-	}
+	if (mpos>=0 && (mpos>pos || pos==-1)) pos = mpos;
+	if (r1<p0 && (r1>pos || pos==-1)) pos = r1;
+	if (r0<p0 && (r0>pos || pos==-1)) pos = r0;
 
 	if (pos >= 0) {
 		mpPosition->SetPosition(pos);
@@ -1451,11 +1513,12 @@ void FilterPreview::MoveToNextRange() {
 	VDPosition p0 = mpPosition->GetPosition();
 	VDPosition pos = mpTimeline->GetNextEdit(p0);
 	VDPosition mpos = mpTimeline->GetNextMarker(p0);
+	VDPosition r0,r1;
+	mpThisFilter->GetRangeFrames(r0,r1);
 
-	if (mpos >=0 && (mpos<pos || pos==-1)) {
-		mpPosition->SetPosition(mpos);
-		return;
-	}
+	if (mpos>=0 && (mpos<pos || pos==-1)) pos = mpos;
+	if (r1>p0 && (r1<pos || pos==-1)) pos = r1;
+	if (r0>p0 && (r0<pos || pos==-1)) pos = r0;
 
 	if (pos >= 0) {
 		mpPosition->SetPosition(pos);
@@ -1626,11 +1689,13 @@ void FilterPreview::Display(VDXHWND hwndParent, bool fDisplay) {
 void FilterPreview::RedoFrame() {
 	if (mhdlg)
 		SendMessage(mhdlg, MYWM_INVALIDATE, 0, 0);
+	SetRangeFrames();
 }
 
 void FilterPreview::RedoSystem() {
 	if (mhdlg)
 		SendMessage(mhdlg, MYWM_RESTART, 0, 0);
+	SetRangeFrames();
 }
 
 void FilterPreview::UndoSystem() {

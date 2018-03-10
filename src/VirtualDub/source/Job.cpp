@@ -472,6 +472,17 @@ void JobCreateScript(JobScriptOutput& output, bool project_relative, const DubOp
 						, cropInsets.bottom
 						);
 		}
+
+		VDPosition rangeStart;
+		VDPosition rangeEnd;
+		fa->GetRangeFrames(rangeStart, rangeEnd);
+		if (rangeEnd!=-1) {
+			output.addf("VirtualDub.video.filters.instance[%d].SetRangeFrames(%I64d,%I64d);"
+						, iFilter
+						, rangeStart
+						, rangeEnd
+						);
+		}
 		
 		VDParameterCurve *pc = fa->GetAlphaParameterCurve();
 		if (pc) {

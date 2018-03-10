@@ -490,6 +490,7 @@ void VDProject::EndLoading() {
 	if (mProjectLoading)
 		ClearUndoStack();
 	mProjectLoading = false;
+	MoveToFrame(mposZoomStart);
 	EndTimelineUpdate();
 	UpdateFilterList();
 }

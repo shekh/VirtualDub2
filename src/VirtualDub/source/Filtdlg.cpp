@@ -42,6 +42,7 @@
 
 extern const char g_szError[];
 extern vdrefptr<VDProjectUI> g_projectui;
+extern VDProject *g_project;
 extern DubOptions	g_dubOpts;
 
 //////////////////////////////
@@ -552,6 +553,8 @@ public:
 	FilterInstance *fa;
 	vdrect32 r0;
 	vdrefptr<VDParameterCurve> curve;
+	VDPosition r0Start;
+	VDPosition r0End;
 
 	VDFilterBlendingDialog();
 	bool OnLoaded();
@@ -559,6 +562,38 @@ public:
 	INT_PTR DlgProc(UINT msg, WPARAM wParam, LPARAM lParam);
 	void apply_crop();
 	void apply_curve(bool v);
+	void init_range();
+	void apply_range_enabled(bool v);
+	void apply_time_range();
+
+	static const UINT WM_EDIT_CHANGED = WM_USER+666;
+	static void edit_changed(HWND wnd)
+	{
+		WPARAM id = GetWindowLong(wnd,GWL_ID);
+		SendMessage(GetParent(wnd),WM_EDIT_CHANGED,id,(LPARAM)wnd);
+	}
+
+	static LRESULT CALLBACK EditWndProc(HWND wnd,UINT msg,WPARAM wparam,LPARAM lparam)
+	{
+		if(msg==WM_KEYDOWN){
+			if(wparam==VK_RETURN){
+				edit_changed(wnd);
+				return 1;
+			}
+		}
+		if(msg==WM_KILLFOCUS) edit_changed(wnd);
+
+		WNDPROC p = (WNDPROC)GetWindowLongPtr(wnd,GWLP_USERDATA);
+		return CallWindowProc(p,wnd,msg,wparam,lparam);
+	}
+
+	void init_edit(int id)
+	{
+		HWND hWnd = GetDlgItem(mhdlg,id);
+		LPARAM p = GetWindowLongPtr(hWnd,GWLP_WNDPROC);
+		SetWindowLongPtr(hWnd,GWLP_USERDATA,p);
+		SetWindowLongPtr(hWnd,GWLP_WNDPROC,(LPARAM)EditWndProc);
+	}
 };
 
 VDFilterBlendingDialog::VDFilterBlendingDialog()
@@ -601,7 +636,37 @@ void VDFilterBlendingDialog::apply_curve(bool v) {
 	}
 }
 
+void VDFilterBlendingDialog::apply_range_enabled(bool v) {
+	if (!v) {
+		fa->SetRangeFrames(0,-1);
+	} else {
+		VDPosition p0 = 0;
+		VDPosition p1 = g_project->GetTimeline().GetLength();
+		VDPosition z0,z1;
+		if (g_project->GetZoomRange(z0,z1)) {
+			p0 = z0;
+			p1 = z1;
+		}
+		VDPosition sel_start = g_project->GetSelectionStartFrame();
+		VDPosition sel_end = g_project->GetSelectionEndFrame();
+		if (sel_end>sel_start) {
+			p0 = sel_start;
+			p1 = sel_end;
+		}
+		fa->SetRangeFrames(p0,p1);
+	}
+	init_range();
+	if (fp2) fp2->RedoFrame();
+}
+
+void VDFilterBlendingDialog::apply_time_range() {
+	init_range();
+}
+
 bool VDFilterBlendingDialog::OnLoaded() {
+	init_edit(IDC_START_FRAMES);
+	init_edit(IDC_END_FRAMES);
+
 	const vdrect32& r = fa->GetOpacityCropInsets();
 	r0 = r;
 	x1 = r.left;
@@ -612,7 +677,25 @@ bool VDFilterBlendingDialog::OnLoaded() {
 	curve = fa->GetAlphaParameterCurve();
 	CheckButton(IDC_BLEND_CURVE,curve!=0);
 
-  return VDClippingDialog2::OnLoaded();
+	fa->GetRangeFrames(r0Start,r0End);
+	init_range();
+
+	return VDClippingDialog2::OnLoaded();
+}
+
+void VDFilterBlendingDialog::init_range() {
+	VDPosition p0,p1;
+	fa->GetRangeFrames(p0,p1);
+	CheckButton(IDC_BLEND_TIMELINE,p1!=-1);
+	EnableWindow(GetDlgItem(mhdlg,IDC_START_FRAMES),p1!=-1);
+	EnableWindow(GetDlgItem(mhdlg,IDC_END_FRAMES),p1!=-1);
+	if (p1==-1) {
+		SetDlgItemText(mhdlg, IDC_START_FRAMES, 0);
+		SetDlgItemText(mhdlg, IDC_END_FRAMES, 0);
+	} else {
+		if (GetFocus()!=GetDlgItem(mhdlg,IDC_START_FRAMES)) SetDlgItemInt(mhdlg, IDC_START_FRAMES, (UINT)p0, FALSE);
+		if (GetFocus()!=GetDlgItem(mhdlg,IDC_END_FRAMES)) SetDlgItemInt(mhdlg, IDC_END_FRAMES, (UINT)p1, FALSE);
+	}
 }
 
 INT_PTR VDFilterBlendingDialog::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
@@ -626,13 +709,41 @@ INT_PTR VDFilterBlendingDialog::DlgProc(UINT message, WPARAM wParam, LPARAM lPar
 		case IDCANCEL:
 			fa->SetOpacityCrop(r0.left, r0.top, r0.right, r0.bottom);
 			fa->SetAlphaParameterCurve(curve);
+			fa->SetRangeFrames(r0Start,r0End);
 			break;
 
 		case IDC_BLEND_CURVE:
 			apply_curve(IsButtonChecked(IDC_BLEND_CURVE));
 			return TRUE;
+
+		case IDC_BLEND_TIMELINE:
+			apply_range_enabled(IsButtonChecked(IDC_BLEND_TIMELINE));
+			return TRUE;
 		}
 		break;
+
+	case WM_EDIT_CHANGED:
+		if (wParam==IDC_START_FRAMES) {
+			VDPosition p0,p1;
+			fa->GetRangeFrames(p0,p1);
+			p0 = GetDlgItemInt(mhdlg,IDC_START_FRAMES,0,false);
+			if (p0<0) p0 = 0;
+			if (p0>p1) p1 = p0;
+			fa->SetRangeFrames(p0,p1);
+			init_range();
+			if (fp2) fp2->RedoFrame();
+		}
+		if (wParam==IDC_END_FRAMES) {
+			VDPosition p0,p1;
+			fa->GetRangeFrames(p0,p1);
+			p1 = GetDlgItemInt(mhdlg,IDC_END_FRAMES,0,false);
+			if (p1<0) p1 = 0;
+			if (p1<p0) p0 = p1;
+			fa->SetRangeFrames(p0,p1);
+			init_range();
+			if (fp2) fp2->RedoFrame();
+		}
+		return TRUE;
 	}
 
 	return VDClippingDialog2::DlgProc(message, wParam, lParam);
