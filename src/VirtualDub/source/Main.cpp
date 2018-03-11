@@ -1176,7 +1176,7 @@ void SaveSegmentedAVI(HWND hWnd, bool queueAsJob) {
 		}
 
 		if (queueAsJob) {
-			JobAddConfiguration(0, &g_dubOpts, g_szInputAVIFile, NULL, fname.c_str(), true, &inputAVI->listFiles, optVals[3], optVals[1] ? optVals[2] : 0, true, digits);
+			JobAddConfiguration(0, &g_dubOpts, g_szInputAVIFile, g_project->mInputDriverName.c_str(), inputAVI->GetFileFlags(), fname.c_str(), true, &inputAVI->listFiles, optVals[3], optVals[1] ? optVals[2] : 0, true, digits);
 		} else {
 			SaveSegmentedAVI(fname.c_str(), false, NULL, optVals[3], optVals[1] ? optVals[2] : 0, digits);
 		}
@@ -1487,7 +1487,7 @@ void SaveImageSeq(HWND hwnd, bool queueAsJob) {
 			q = dlg.mbQuickCompress ? 0 : 100;
 
 		if (queueAsJob)
-			JobAddConfigurationImages(0, &g_dubOpts, g_szInputAVIFile, NULL, dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, dlg.mFormat, q, &inputAVI->listFiles);
+			JobAddConfigurationImages(0, &g_dubOpts, g_szInputAVIFile, g_project->mInputDriverName.c_str(), inputAVI->GetFileFlags(), dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, dlg.mFormat, q, &inputAVI->listFiles);
 		else
 			SaveImageSequence(dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, false, NULL, dlg.mFormat, q);
 	}

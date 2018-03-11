@@ -431,7 +431,7 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 						if (id == ID_ADDTOQUEUE_EXTRACTAUDIOASWAV)
 							outputFileName = VDFileSplitExtLeft(outputFileName) + L".wav";
 
-						JobAddConfigurationSaveAudio(0, &g_dubOpts, item->GetFileName(), NULL, NULL, outputFileName.c_str(), raw, false);
+						JobAddConfigurationSaveAudio(0, &g_dubOpts, item->GetFileName(), NULL, 0, NULL, outputFileName.c_str(), raw, false);
 					}
 				}
 
@@ -449,7 +449,7 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 				for(int i=0; i<n; ++i) {
 					VDUIBatchWizardItem *item = static_cast<VDUIBatchWizardItem *>(mList.GetVirtualItem(i));
 					if (item) {
-						JobAddConfigurationRunVideoAnalysisPass(0, &g_dubOpts, item->GetFileName(), NULL, NULL, false);
+						JobAddConfigurationRunVideoAnalysisPass(0, &g_dubOpts, item->GetFileName(), NULL, 0, NULL, false);
 					}
 				}
 

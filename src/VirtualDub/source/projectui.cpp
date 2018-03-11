@@ -1212,7 +1212,7 @@ void VDProjectUI::SaveWAVAsk(bool batchMode) {
 
 	if (!filename.empty()) {
 		if (batchMode)
-			JobAddConfigurationSaveAudio(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), false, true);
+			JobAddConfigurationSaveAudio(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), false, true);
 		else
 			SaveWAV(filename.c_str());
 	}
@@ -1458,7 +1458,7 @@ void VDProjectUI::SaveRawAudioAsk(bool batchMode) {
 	const VDStringW filename(VDGetSaveFileName(kFileDialog_RawAudioOut, mhwnd, L"Save raw audio", L"All types\0*.bin;*.mp3\0Raw audio (*.bin)\0*.bin\0MPEG layer III audio (*.mp3)\0*.mp3\0", NULL));
 	if (!filename.empty()) {
 		if (batchMode)
-			JobAddConfigurationSaveAudio(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), true, true);
+			JobAddConfigurationSaveAudio(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), true, true);
 		else
 			SaveRawAudio(filename.c_str(), false);
 	}
@@ -1586,7 +1586,7 @@ void VDProjectUI::SaveRawVideoAsk(bool batchMode) {
 	const VDStringW filename(VDGetSaveFileName(kFileDialog_RawVideoOut, mhwnd, L"Save raw video", L"All types\0*.bin\0Raw YUV (*.yuv)\0*.yuv\0", NULL));
 	if (!filename.empty()) {
 		if (batchMode)
-			JobAddConfigurationSaveVideo(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), true, format);
+			JobAddConfigurationSaveVideo(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), true, format);
 		else
 			SaveRawVideo(filename.c_str(), format, false);
 	}
@@ -1718,7 +1718,7 @@ void VDProjectUI::ExportViaEncoderAsk(bool batch) {
 		const VDStringW filename(VDGetSaveFileName(kFileDialog_ExtOut, mhwnd, L"Export via external encoder", filterSpec.c_str(), ext));
 		if (!filename.empty()) {
 			if (batch)
-				JobAddConfigurationExportViaEncoder(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), &inputAVI->listFiles, filename.c_str(), true, eset->mName.c_str());
+				JobAddConfigurationExportViaEncoder(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), true, eset->mName.c_str());
 			else
 				ExportViaEncoder(filename.c_str(), eset->mName.c_str(), false);
 		}
