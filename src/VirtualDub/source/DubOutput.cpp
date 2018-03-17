@@ -170,7 +170,7 @@ IVDMediaOutput *VDAVIOutputFileSystem::CreateSegment() {
 
 	char buf[80];
 
-	sprintf(buf, "VirtualDub build %d/%s", version_num,
+	sprintf(buf, "VirtualDub2 build %d/%s", version_num,
 #ifdef _DEBUG
 		"debug"
 #else

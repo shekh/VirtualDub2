@@ -65,7 +65,7 @@ VDUIJobErrorDialog::VDUIJobErrorDialog(const VDJob& job)
 }
 
 bool VDUIJobErrorDialog::OnLoaded() {
-	VDSetWindowTextFW32(mhdlg, L"VirtualDub - Job \"%hs\"", mJob.GetName());
+	VDSetWindowTextFW32(mhdlg, L"VirtualDub2 - Job \"%hs\"", mJob.GetName());
 
 	const char *text = mJob.GetError();
 	size_t len = strlen(text);

@@ -1230,7 +1230,7 @@ void HexEditor::Open(const wchar_t *pszFile, bool bRW) {
 
 	char buf[512];
 
-	_snprintf(buf, 512, "VirtualDub Hex Editor - [%ls]%s", pszFile, bRW ? "" : " (read only)");
+	_snprintf(buf, 512, "VirtualDub2 Hex Editor - [%ls]%s", pszFile, bRW ? "" : " (read only)");
 	buf[511] = 0;
 	SetWindowText(hwnd, buf);
 
@@ -1270,7 +1270,7 @@ void HexEditor::Close() {
 	if (hwndTree)
 		DestroyWindow(hwndTree);
 
-	SetWindowText(hwnd, "VirtualDub Hex Editor");
+	SetWindowText(hwnd, "VirtualDub2 Hex Editor");
 	SetStatus("");
 }
 
@@ -2681,7 +2681,7 @@ ATOM RegisterHexEditor() {
 void HexEdit(HWND hwndParent, const wchar_t *filename, bool readonly) {
 	HWND hwndEdit = CreateWindow(
 		HEXEDITORCLASS,
-		"VirtualDub Hex Editor",
+		"VirtualDub2 Hex Editor",
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,

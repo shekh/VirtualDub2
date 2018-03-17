@@ -2430,7 +2430,7 @@ void VDCaptureProjectUI::UICaptureStart(bool test) {
 			if (min<max) {
 				GUID* pNewScheme = 0;
 				if (PowerDuplicateScheme(NULL, pActiveScheme, &pNewScheme)==0) {
-					VDStringW name(L"VirtualDub Capture");
+					VDStringW name(L"VirtualDub2 Capture");
 					PowerWriteFriendlyName(NULL, pNewScheme, NULL, NULL, (UCHAR*)name.c_str(), (name.length()+1)*2);
 					PowerWriteACValueIndex(NULL, pNewScheme, &GUID_PROCESSOR_SETTINGS_SUBGROUP, &GUID_PROCESSOR_THROTTLE_MINIMUM, max);
 					PowerSetActiveScheme(NULL, pNewScheme);

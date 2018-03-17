@@ -825,7 +825,6 @@
 #define IDC_AUDIO_LENGTH                1404
 #define IDC_FILTER                      1407
 #define IDS_OPTIONS_PERFORMANCE         1408
-#define IDS_OPTIONS_DYNAMICCOMPILATION  1409
 #define IDC_QUALITY                     1409
 #define IDS_OPTIONS_DISPLAYINPUTVIDEO   1410
 #define IDC_TEXT                        1410
@@ -962,7 +961,6 @@
 #define IDC_FORMAT_INFO                 1535
 #define IDS_HELP_CONTENTS               1536
 #define IDC_CROP_SIZE                   1536
-#define IDS_HELP_CHANGELOG              1537
 #define IDC_SAVE_AUDIO                  1537
 #define IDS_HELP_RELEASENOTES           1538
 #define IDC_AUDIO_INFO                  1538
@@ -1078,7 +1076,6 @@
 #define ID_FILE_PREVIEWAVI              40025
 #define ID_HELP_CONTENTS                40026
 #define ID_VIDEO_CLIPPING               40027
-#define ID_HELP_CHANGELOG               40028
 #define ID_OPTIONS_SHOWSTATUSWINDOW     40034
 #define ID_DUBINPROGRESS_ABORT          40035
 #define ID_VIDEO_FORMAT                 40036
@@ -1101,8 +1098,6 @@
 #define ID_VIDEO_MODE_NORMALRECOMPRESS  40089
 #define ID_VIDEO_MODE_FULL              40090
 #define ID_CAPTURE_HIDEONCAPTURE        40091
-#define ID_HELP_RELEASENOTES            40092
-#define ID_OPTIONS_DYNAMICCOMPILATION   40093
 #define ID_OPTIONS_VERTICALDISPLAY      40094
 #define ID_AUDIO_MODE_DIRECT            40095
 #define ID_AUDIO_MODE_FULL              40096
@@ -1173,10 +1168,6 @@
 #define ID_VIDEO_CUSTOMFORMAT           40174
 #define ID_FILE_APPENDSEGMENT           40176
 #define ID_FILE_SAVESEGMENTEDAVI        40177
-#define ID_HELP_ONLINE_HOME             40178
-#define ID_HELP_ONLINE_FAQ              40179
-#define ID_HELP_ONLINE_NEWS             40180
-#define ID_HELP_ONLINE_KB               40181
 #define ID_CAPTURE_TIMING               40182
 #define ID_VIDEO_SWAPFIELDS             40184
 #define ID_VIDEO_VRNONE                 40186

@@ -65,7 +65,7 @@ void CreateSparseAVI(const char *pszIn, const char *pszOut) {
 		int ckidcount = 0;
 		sint64 ckidpos = 0;
 
-		int l = sprintf(buf, "VirtualDub build %d/%s", version_num,
+		int l = sprintf(buf, "VirtualDub2 build %d/%s", version_num,
 #ifdef _DEBUG
 		"debug"
 #else

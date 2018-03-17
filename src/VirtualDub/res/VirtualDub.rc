@@ -232,7 +232,6 @@ BEGIN
     POPUP "&Options"
     BEGIN
         MENUITEM "&Performance...",             ID_OPTIONS_PERFORMANCE
-        MENUITEM "Dynamic compilation...",      ID_OPTIONS_DYNAMICCOMPILATION
         MENUITEM "Preferences...",              ID_OPTIONS_PREFERENCES
         MENUITEM "Keyboard shortcuts...",       ID_OPTIONS_KEYBOARDSHORTCUTS
         MENUITEM "External encoders...",        ID_OPTIONS_EXTERNALENCODERS
@@ -293,18 +292,9 @@ BEGIN
     BEGIN
         MENUITEM "Contents\tF1",                ID_HELP_CONTENTS
         MENUITEM SEPARATOR
-        MENUITEM "GPL &License...",             ID_HELP_LICENSE
-        MENUITEM "Change log...",               ID_HELP_CHANGELOG
-        MENUITEM "Release notes...",            ID_HELP_RELEASENOTES
-        POPUP "VirtualDub online"
-        BEGIN
-            MENUITEM "VirtualDub home page",        ID_HELP_ONLINE_HOME
-            MENUITEM "Frequently Asked Questions",  ID_HELP_ONLINE_FAQ
-            MENUITEM "News",                        ID_HELP_ONLINE_NEWS
-            MENUITEM "Knowledge base",              ID_HELP_ONLINE_KB
-        END
+        MENUITEM "&License...",                 ID_HELP_LICENSE
         MENUITEM SEPARATOR
-        MENUITEM "About VirtualDub...",         ID_HELP_ABOUT
+        MENUITEM "About...",                    ID_HELP_ABOUT
     END
 END
 
@@ -633,7 +623,6 @@ BEGIN
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "Why is this here?",           ID_HELP_WHY
         MENUITEM "Keyboard commands",           ID_HELP_KEYS
     END
 END
@@ -747,7 +736,7 @@ END
 IDD_DUBBING DIALOGEX 0, 0, 186, 170
 STYLE DS_SETFONT | DS_MODALFRAME | DS_NOIDLEMSG | DS_FIXEDSYS | DS_CENTER | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_NOPARENTNOTIFY
-CAPTION "VirtualDub Status"
+CAPTION "VirtualDub2 Status"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     CONTROL         "Tab1",IDC_TABS,"SysTabControl32",WS_TABSTOP,7,7,172,85
@@ -1530,7 +1519,7 @@ END
 IDD_JOBCONTROL DIALOGEX 0, 0, 351, 199
 STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 EXSTYLE WS_EX_CLIENTEDGE
-CAPTION "VirtualDub Job Control"
+CAPTION "VirtualDub2 Job Control"
 MENU IDR_JOBS_MENU
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
@@ -1551,7 +1540,7 @@ END
 
 IDD_JOBERROR DIALOGEX 0, 0, 240, 117
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
-CAPTION "VirtualDub - Job ""butz"""
+CAPTION "VirtualDub2 - Job ""butz"""
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     DEFPUSHBUTTON   "Close",IDCANCEL,183,96,50,14
@@ -1778,7 +1767,7 @@ END
 
 IDD_DISASM_CRASH DIALOG  0, 0, 399, 234
 STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "VirtualDub Program Failure - Detail"
+CAPTION "VirtualDub2 Program Failure - Detail"
 FONT 8, "MS Shell Dlg"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,342,213,50,14
@@ -1984,7 +1973,7 @@ END
 
 IDD_DIVX_WARNING DIALOG  0, 0, 303, 183
 STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "VirtualDub warning: DivX codec detected"
+CAPTION "VirtualDub2 warning: DivX codec detected"
 FONT 8, "MS Shell Dlg"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,127,162,50,14
@@ -2127,7 +2116,7 @@ END
 
 IDD_JOBFINISH DIALOG  0, 0, 186, 71
 STYLE DS_SETFONT | DS_MODALFRAME | DS_NOIDLEMSG | DS_SETFOREGROUND | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
-CAPTION "VirtualDub Warning"
+CAPTION "VirtualDub2 Warning"
 FONT 8, "MS Shell Dlg"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,41,50,50,14
@@ -2139,7 +2128,7 @@ END
 IDD_CRASH DIALOGEX 0, 0, 371, 159
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOPMOST
-CAPTION "VirtualDub Program Failure"
+CAPTION "VirtualDub2 Program Failure"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     PUSHBUTTON      "Exit program",IDOK,314,7,50,14
@@ -2243,7 +2232,7 @@ END
 
 IDD_LOG DIALOG  0, 0, 270, 158
 STYLE DS_SETFONT | DS_3DLOOK | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
-CAPTION "VirtualDub Log"
+CAPTION "VirtualDub2 Log"
 FONT 8, "MS Shell Dlg"
 BEGIN
     CONTROL         "",IDC_LOG,"phaeronLogWindowControl",WS_VSCROLL | WS_TABSTOP,7,7,256,144
@@ -2268,7 +2257,7 @@ END
 
 IDD_WITHERRORS DIALOGEX 0, 0, 309, 183
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "VirtualDub Warning"
+CAPTION "VirtualDub2 Warning"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,129,162,50,14
@@ -2278,7 +2267,7 @@ END
 
 IDD_JOBLOG DIALOGEX 0, 0, 309, 183
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "VirtualDub Job Log"
+CAPTION "VirtualDub2 Job Log"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     LTEXT           "Some warnings were issued during the batch operation:",IDC_STATIC,7,7,295,8
@@ -2296,7 +2285,7 @@ END
 
 IDD_PROFILER DIALOGEX 0, 0, 602, 198
 STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
-CAPTION "VirtualDub Real-Time Profiler"
+CAPTION "VirtualDub2 Real-Time Profiler"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     CONTROL         "",IDC_PROFILE,"VDRTProfileDisplay2",WS_TABSTOP,267,7,328,146
@@ -2317,7 +2306,7 @@ END
 
 IDD_EXPERIMENTAL DIALOG  0, 0, 311, 105
 STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "VirtualDub warning"
+CAPTION "VirtualDub2 warning"
 FONT 8, "MS Shell Dlg"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,254,84,50,14,WS_DISABLED
@@ -3907,8 +3896,6 @@ END
 STRINGTABLE 
 BEGIN
     IDS_OPTIONS_PERFORMANCE "Alter VirtualDub's buffering parameters for best memory/speed tradeoff."
-    IDS_OPTIONS_DYNAMICCOMPILATION 
-                            "Alter Dynamic Compilation options for video filters that support it."
     IDS_OPTIONS_DISPLAYINPUTVIDEO "Toggle display of input video (left pane)."
     IDS_OPTIONS_DISPLAYOUTPUTVIDEO 
                             "Toggle display of output video (right pane)."
@@ -3931,8 +3918,6 @@ END
 STRINGTABLE 
 BEGIN
     IDS_HELP_CONTENTS       "Display help file."
-    IDS_HELP_CHANGELOG      "Show change history for this and past versions of VirtualDub."
-    IDS_HELP_RELEASENOTES   "Display last-minute release notes for this version."
     IDS_HELP_ABOUT          "Displays credits, copyright notice, and thanks."
 END
 

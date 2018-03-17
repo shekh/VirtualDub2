@@ -227,7 +227,6 @@ UINT iMainMenuHelpTranslator[]={
 	MENU_TO_HELP(AUDIO_MODE_FULL),
 	MENU_TO_HELP(OPTIONS_PREFERENCES),
 	MENU_TO_HELP(OPTIONS_PERFORMANCE),
-	MENU_TO_HELP(OPTIONS_DYNAMICCOMPILATION),
 	MENU_TO_HELP(OPTIONS_DISPLAYINPUTVIDEO),
 	MENU_TO_HELP(OPTIONS_DISPLAYOUTPUTVIDEO),
 	MENU_TO_HELP(OPTIONS_DISPLAYDECOMPRESSEDOUTPUT),
@@ -242,8 +241,6 @@ UINT iMainMenuHelpTranslator[]={
 	MENU_TO_HELP(TOOLS_EXPANDSPARSEAVI),
 
 	MENU_TO_HELP(HELP_CONTENTS),
-	MENU_TO_HELP(HELP_CHANGELOG),
-	MENU_TO_HELP(HELP_RELEASENOTES),
 	MENU_TO_HELP(HELP_ABOUT),
 	NULL,NULL,
 };
@@ -377,7 +374,6 @@ namespace {
 		{ ID_AUDIO_MODE_FULL,			"Audio.SetModeFull" },
 		{ ID_AUDIO_ERRORMODE,			"Audio.ShowErrorModeDialog" },
 		{ ID_OPTIONS_PERFORMANCE,		"Options.ShowPerformanceDialog" },
-		{ ID_OPTIONS_DYNAMICCOMPILATION,	"Options.ShowJITDialog" },
 		{ ID_OPTIONS_PREFERENCES,		"Options.ShowPreferencesDialog" },
 		{ ID_OPTIONS_KEYBOARDSHORTCUTS,	"Options.ShowShortcutsDialog" },
 		{ ID_OPTIONS_PLUGINS,			"Options.ShowPluginsDialog" },
@@ -409,12 +405,7 @@ namespace {
 		{ ID_TOOLS_CREATETESTVIDEO,		"Tools.CreateTestVideo" },
 		{ ID_HELP_LICENSE,				"Help.ShowLicense" },
 		{ ID_HELP_CONTENTS,				"Help.ShowContents" },
-		{ ID_HELP_CHANGELOG,			"Help.ShowChangeLog" },
-		{ ID_HELP_RELEASENOTES,			"Help.ShowReleaseNotes" },
 		{ ID_HELP_ABOUT,				"Help.ShowAbout" },
-		{ ID_HELP_ONLINE_HOME,			"Help.ShowOnlineHome" },
-		{ ID_HELP_ONLINE_FAQ,			"Help.ShowOnlineFAQ" },
-		{ ID_HELP_ONLINE_KB,			"Help.ShowOnlineKB" },
 		//{ ID_DUBINPROGRESS_ABORTFAST,	"Render.AbortWithoutDialog" },
 		{ ID_DUBINPROGRESS_ABORT,		"Render.Abort" },
 		{ ID_EXPORT_STREAM_COPY,		"Export.StreamCopy" },
@@ -2525,10 +2516,6 @@ bool VDProjectUI::MenuHit(UINT id) {
 			VDShowPerformanceDialog((VDGUIHandle)mhwnd);
 			break;
 
-		case ID_OPTIONS_DYNAMICCOMPILATION:
-			ActivateDubDialog(g_hInst, MAKEINTRESOURCE(IDD_PERF_DYNAMIC), (HWND)mhwnd, DynamicCompileOptionsDlgProc);
-			break;
-
 		case ID_OPTIONS_EXTERNALENCODERS:
 			VDUIDisplayDialogConfigureExternalEncoders((VDGUIHandle)mhwnd);
 			break;
@@ -2687,21 +2674,9 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_HELP_CONTENTS:
 			VDShowHelp((HWND)mhwnd);
 			break;
-		case ID_HELP_CHANGELOG:
-			extern void VDShowChangeLog(VDGUIHandle);
-			VDShowChangeLog(mhwnd);
-			break;
-		case ID_HELP_RELEASENOTES:
-			extern void VDShowReleaseNotes(VDGUIHandle);
-			VDShowReleaseNotes(mhwnd);
-			break;
 		case ID_HELP_ABOUT:
 			DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ABOUT), (HWND)mhwnd, AboutDlgProc);
 			break;
-
-		case ID_HELP_ONLINE_HOME:	LaunchURL("http://www.virtualdub.org/index"); break;
-		case ID_HELP_ONLINE_FAQ:	LaunchURL("http://www.virtualdub.org/virtualdub_faq"); break;
-		case ID_HELP_ONLINE_KB:		LaunchURL("http://www.virtualdub.org/virtualdub_kb"); break;
 
 		case ID_DUBINPROGRESS_ABORT:			AbortOperation();			break;
 
