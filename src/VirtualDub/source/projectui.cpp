@@ -2662,8 +2662,17 @@ bool VDProjectUI::MenuHit(UINT id) {
 				extern IVDInputDriver *VDCreateInputDriverTest();
 
 				vdrefptr<IVDInputDriver> pDriver(VDCreateInputDriverTest());
-
-				Open(L"", pDriver, true);
+				vdrefptr<InputFile> inputAVI;
+				inputAVI = pDriver->CreateInputFile(0);
+				InputFileOptions* opt = inputAVI->promptForOptions(mhwnd);
+				if (opt) {
+					VDString data;
+					int len = opt->write(0,0);
+					data.resize(len);
+					opt->write(&data[0],len);
+					delete opt;
+					Open(L"", pDriver, false, false, false, &data[0], len);
+				}
 			}
 			break;
 
