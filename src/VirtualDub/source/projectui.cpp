@@ -490,9 +490,20 @@ INT_PTR CALLBACK max_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	}
 
 	switch(msg){
+	case WM_SHOWWINDOW:
+		if (wparam==FALSE) {
+			HMONITOR mon = MonitorFromWindow(wnd,MONITOR_DEFAULTTONEAREST);
+			HMONITOR mon1 = MonitorFromWindow(g_hWnd,MONITOR_DEFAULTTONEAREST);
+			if (mon==mon1) {
+				VDUIDeleteWindowPlacementW32("FullscreenPane");
+			} else {
+				VDUISaveWindowPlacementW32(wnd, "FullscreenPane");
+			}
+		}
+		break;
+
 	case WM_DESTROY:
 		{
-			VDUISaveWindowPlacementW32(wnd, "FullscreenPane");
 			HWND prev = GetWindow(wnd,GW_CHILD);
 			if (prev) SetParent(prev,0);
 		}
@@ -511,6 +522,12 @@ INT_PTR CALLBACK max_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
 				mon = MonitorFromWindow((HWND)wnd,MONITOR_DEFAULTTONEAREST);
 			else
 				mon = MonitorFromPoint(xy,MONITOR_DEFAULTTONEAREST);
+			if(pwp->flags & SWP_SHOWWINDOW){
+				VDUISavedWindowPlacement sp;
+				if (!VDUIGetWindowPlacementW32(sp, "FullscreenPane")) {
+					mon = MonitorFromWindow(g_hWnd,MONITOR_DEFAULTTONEAREST);
+				}
+			}
 			MONITORINFO info = {sizeof(MONITORINFO)};
 			GetMonitorInfo(mon,&info);
 			RECT r = info.rcMonitor;
@@ -3751,6 +3768,7 @@ void VDProjectUI::RepositionPanes(bool reset) {
 			panes[n++] = h;
 			IVDVideoWindow *w = VDGetIVideoWindow(h);
 			w->SetWorkArea(rWork, true);
+			w->SyncMonitorChange();
 			if (reset) {
 				w->SetAutoSize(mbAutoSizePanes);
 			} else {
@@ -3798,7 +3816,7 @@ void VDProjectUI::RepositionPanes(bool reset) {
 					else
 						s1.w = VDFloorToInt((double)size.w * weights[i] / weightTotal);
 
-					w->SetZoom(w->GetMaxZoomForArea(s1.w, s1.h), false);
+					w->SetZoom(w->GetMaxZoomForArea(s1.w, s1.h), n==1);
 				}
 			}
 		}

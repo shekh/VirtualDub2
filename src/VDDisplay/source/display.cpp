@@ -151,6 +151,7 @@ protected:
 	void OnPaint();
 	void SyncSetSourceMessage(const wchar_t *);
 	bool SyncSetSource(bool bAutoUpdate, const VDVideoDisplaySourceInfo& params);
+	void SyncMonitorChange();
 	void SyncReset();
 	bool SyncInit(bool bAutoRefresh, bool bAllowNonpersistentSource);
 	void SyncUpdate(int);
@@ -1048,6 +1049,27 @@ void VDVideoDisplayWindow::OnPaint() {
 	}
 
 	--mInhibitRefresh;
+}
+
+void VDVideoDisplayWindow::SyncMonitorChange() {
+	if (mpMiniDriver) {
+		// Check if a monitor change has occurred (and we care).
+		if ((sbEnableSecondaryMonitorDX && !sbEnableMonitorSwitchingDX) || !CheckForMonitorChange()) {
+			// Check if the driver sensitive to secondary monitors and if we're now on the secondary
+			// monitor.
+			if (!mbMiniDriverSecondarySensitive || (!sbEnableMonitorSwitchingDX && !IsOnSecondaryMonitor())) {
+				return;
+			}
+		}
+
+		VDDEBUG_DISP("VideoDisplay: Monitor switch detected -- reinitializing display.\n");
+
+		if (!mReinitDisplayTimer) {
+			SyncReset();
+			if (!SyncInit(true, false))
+				mReinitDisplayTimer = SetTimer(mhwnd, kReinitDisplayTimerId, 500, NULL);
+		}
+	}
 }
 
 bool VDVideoDisplayWindow::SyncSetSource(bool bAutoUpdate, const VDVideoDisplaySourceInfo& params) {

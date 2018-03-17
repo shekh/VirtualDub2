@@ -112,6 +112,7 @@ public:
 	virtual void SetCallback(IVDVideoDisplayCallback *p) = 0;
 	virtual void SetDrawMode(IVDVideoDisplayDrawMode *p) = 0;
 	virtual void DrawInvalidate(RECT* r) = 0;
+	virtual void SyncMonitorChange() = 0;
 
 	enum AccelerationMode {
 		kAccelOnlyInForeground,

@@ -28,6 +28,7 @@ public:
 	virtual void SetChild(HWND hwnd) = 0;
 	virtual void SetMaxDisplayHost(HWND hwnd) = 0;
 	virtual void SetDisplay(IVDVideoDisplay *) = 0;
+	virtual void SyncMonitorChange() = 0;
 	virtual const VDFraction GetSourcePAR() = 0;
 	virtual void SetSourcePAR(const VDFraction& fr) = 0;
 	virtual void SetZoom(double zoom, bool useWorkArea=true) = 0;

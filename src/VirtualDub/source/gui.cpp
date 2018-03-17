@@ -227,15 +227,9 @@ void VDInstallModelessDialogHookW32() {
 		g_vdModelessDialogHook = SetWindowsHookEx(WH_MSGFILTER, VDModelessDialogHookW32, NULL, GetCurrentThreadId());
 }
 
-namespace {
-	struct VDUISavedWindowPlacement {
-		sint32 mLeft;
-		sint32 mTop;
-		sint32 mRight;
-		sint32 mBottom;
-		uint8 mbMaximized;
-		uint8 mPad[3];
-	};
+void VDUIDeleteWindowPlacementW32(const char *name) {
+	VDRegistryAppKey key("Window Placement");
+	key.setBinary(name, 0, 0);
 }
 
 void VDUISaveWindowPlacementW32(HWND hwnd, const char *name) {
@@ -257,18 +251,27 @@ void VDUISaveWindowPlacementW32(HWND hwnd, const char *name) {
 	}
 }
 
+bool VDUIGetWindowPlacementW32(VDUISavedWindowPlacement& sp, const char *name) {
+	VDRegistryAppKey key("Window Placement");
+
+	// Earlier versions only saved a RECT.
+	int len = key.getBinaryLength(name);
+
+	if (len > (int)sizeof(VDUISavedWindowPlacement))
+		len = sizeof(VDUISavedWindowPlacement);
+
+	memset(&sp,0,sizeof sp);
+	if (len >= offsetof(VDUISavedWindowPlacement, mbMaximized) && key.getBinary(name, (char *)&sp, len)) {
+		return true;
+	}
+
+	return false;
+}
+
 void VDUIRestoreWindowPlacementW32(HWND hwnd, const char *name, int nCmdShow) {
 	if (!IsZoomed(hwnd) && !IsIconic(hwnd)) {
-		VDRegistryAppKey key("Window Placement");
-		VDUISavedWindowPlacement sp = {0};
-
-		// Earlier versions only saved a RECT.
-		int len = key.getBinaryLength(name);
-
-		if (len > (int)sizeof(VDUISavedWindowPlacement))
-			len = sizeof(VDUISavedWindowPlacement);
-
-		if (len >= offsetof(VDUISavedWindowPlacement, mbMaximized) && key.getBinary(name, (char *)&sp, len)) {
+		VDUISavedWindowPlacement sp;
+		if (VDUIGetWindowPlacementW32(sp, name)) {
 			WINDOWPLACEMENT wp = {sizeof(WINDOWPLACEMENT)};
 
 			if (GetWindowPlacement(hwnd, &wp)) {

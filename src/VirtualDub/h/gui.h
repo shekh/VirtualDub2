@@ -47,8 +47,19 @@ void guiAddModelessDialog(ModelessDlgNode *pmdn);
 void VDInstallModelessDialogHookW32();
 void VDDeinstallModelessDialogHookW32();
 
+struct VDUISavedWindowPlacement {
+	sint32 mLeft;
+	sint32 mTop;
+	sint32 mRight;
+	sint32 mBottom;
+	uint8 mbMaximized;
+	uint8 mPad[3];
+};
+
 void VDUISaveWindowPlacementW32(HWND hwnd, const char *name);
 void VDUIRestoreWindowPlacementW32(HWND hwnd, const char *name, int nCmdShow);
+bool VDUIGetWindowPlacementW32(VDUISavedWindowPlacement& sp, const char *name);
+void VDUIDeleteWindowPlacementW32(const char *name);
 void VDUISaveListViewColumnsW32(HWND hwnd, const char *name);
 void VDUIRestoreListViewColumnsW32(HWND hwnd, const char *name);
 

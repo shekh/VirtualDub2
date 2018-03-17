@@ -64,6 +64,7 @@ public:
 	const VDFraction GetSourcePAR();
 	void SetSourcePAR(const VDFraction& fr);
 	void SetResizeParentEnabled(bool enabled);
+	double GetMaxZoomForArea(int w, int h, int border);
 	double GetMaxZoomForArea(int w, int h);
 	void SetBorder(int v, int ht=-1){ mbBorderless=v==0; mBorder = v; mHTBorder = ht; }
 	bool GetAutoSize(){ return mbAutoSize; }
@@ -130,8 +131,10 @@ private:
 	void SetAspectRatioSourcePAR();
 	void SetZoom(double zoom, bool useWorkArea=true);
 	void EvalZoom();
+	double EvalWidth(double zoom);
 	double EvalWidth();
 	void SetWorkArea(RECT& r, bool auto_border){ mWorkArea = r; mbAutoBorder = auto_border; }
+	void SyncMonitorChange(){ mpDisplay->SyncMonitorChange(); }
 
 	void UpdateSourcePARMenuItem();
 };
@@ -246,6 +249,7 @@ void VDVideoWindow::ToggleFullscreen() {
 	if (mbFullscreen) {
 		GetWindowRect(mhwnd,&parentRect);
 		mhwndParent = GetParent(mhwnd);
+		MapWindowPoints(0,mhwndParent,(POINT*)&parentRect,2);
 
 		HWND prev = GetWindow(mhwndMax,GW_CHILD);
 
@@ -328,14 +332,14 @@ void VDVideoWindow::SetZoom(double zoom, bool useWorkArea) {
 	Resize(useWorkArea);
 }
 
-double VDVideoWindow::GetMaxZoomForArea(int w, int h) {
+double VDVideoWindow::GetMaxZoomForArea(int w, int h, int border) {
 	double frameAspect;
 
-	w -= mBorder*2;
+	w -= border*2;
 	if (w <= 0)
 		return 0;
 
-	h -= mBorder*2;
+	h -= border*2;
 	if (h <= 0)
 		return 0;
 
@@ -360,27 +364,45 @@ double VDVideoWindow::GetMaxZoomForArea(int w, int h) {
 	return std::min<double>((double)w / ((double)mSourceHeight * frameAspect), (double)h / (double)mSourceHeight);
 }
 
+double VDVideoWindow::GetMaxZoomForArea(int w, int h) {
+	if (mbAutoBorder && !mbFullscreen && mWorkArea.right && mSourceWidth > 0 && mSourceHeight > 0) {
+		double z0 = GetMaxZoomForArea(w,h,0);
+		int w0 = VDRoundToInt(EvalWidth(z0));
+		int h0 = VDRoundToInt(mSourceHeight * z0);
+		if ((w0>=mWorkArea.right-mWorkArea.left-4) && (h0>=mWorkArea.bottom-mWorkArea.top-4)) return z0;
+
+		return GetMaxZoomForArea(w,h,4);
+
+	} else {
+		return GetMaxZoomForArea(w,h,mBorder);
+	}
+}
+
 void VDVideoWindow::Move(int x, int y) {
 	++mInhibitParamUpdateLocks;
 	SetWindowPos(mhwnd, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 	--mInhibitParamUpdateLocks;
 }
 
-double VDVideoWindow::EvalWidth() {
+double VDVideoWindow::EvalWidth(double zoom) {
 	if (mbUseSourcePAR) {
 		double ratio = 1.0;
 		if (mSourcePAR > 0)
 			ratio = mSourcePAR;
 
-		return mSourceHeight * mSourceAspectRatio * ratio * mZoom;
+		return mSourceHeight * mSourceAspectRatio * ratio * zoom;
 	} else if (mAspectRatio < 0) {
-		return mSourceHeight * mSourceAspectRatio * mFreeAspectRatio * mZoom;
+		return mSourceHeight * mSourceAspectRatio * mFreeAspectRatio * zoom;
 	} else {
 		if (mbAspectIsFrameBased)
-			return mSourceHeight * mAspectRatio * mZoom;
+			return mSourceHeight * mAspectRatio * zoom;
 		else
-			return mSourceWidth * mAspectRatio * mZoom;
+			return mSourceWidth * mAspectRatio * zoom;
 	}
+}
+
+double VDVideoWindow::EvalWidth() {
+	return EvalWidth(mZoom);
 }
 
 void VDVideoWindow::Resize(bool useWorkArea) {
@@ -402,8 +424,19 @@ void VDVideoWindow::Resize(bool useWorkArea) {
 			GetClientRect(mhwnd,&r);
 			if (w<r.right || h<r.bottom) EvalZoom();
 		} else {
-			w += mBorder*2;
-			h += mBorder*2;
+
+			int border = mBorder;
+
+			if (mbAutoBorder && !mbFullscreen && mWorkArea.right && useWorkArea) {
+				if ((w>=mWorkArea.right-mWorkArea.left-4) && (h>=mWorkArea.bottom-mWorkArea.top-4)) {
+					border = 0;
+				} else {
+					border = 4;
+				}
+			}
+
+			w += border*2;
+			h += border*2;
 
 			++mInhibitParamUpdateLocks;
 			if (!useWorkArea)
@@ -669,7 +702,7 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 
 			if (mbAutoBorder) {
 				if ((pwp->cx>=mWorkArea.right-mWorkArea.left-4) && (pwp->cy>=mWorkArea.bottom-mWorkArea.top-4)) {
-					if(mBorder==4){
+					if(mBorder==4 || mHTBorder!=8){
 						SetBorder(0,8);
 						pwp->flags |= SWP_FRAMECHANGED;
 					}
@@ -694,6 +727,7 @@ LRESULT VDVideoWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 
 			ClipPan(mPanX,mPanY);
 			SetChildPos();
+			SyncMonitorChange();
 
 			if (!mbFullscreen) {
 				NMHDR hdr;
