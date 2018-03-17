@@ -81,7 +81,7 @@ protected:
 };
 
 VDXVF_BEGIN_SCRIPT_METHODS(VDVideoFilterGammaCorrect)
-	VDXVF_DEFINE_SCRIPT_METHOD(VDVideoFilterGammaCorrect, ScriptConfig, "0")
+	VDXVF_DEFINE_SCRIPT_METHOD(VDVideoFilterGammaCorrect, ScriptConfig, "i")
 VDXVF_END_SCRIPT_METHODS()
 
 uint32 VDVideoFilterGammaCorrect::GetParams() {
