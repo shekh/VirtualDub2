@@ -134,7 +134,7 @@ private:
 	double EvalWidth(double zoom);
 	double EvalWidth();
 	void SetWorkArea(RECT& r, bool auto_border){ mWorkArea = r; mbAutoBorder = auto_border; }
-	void SyncMonitorChange(){ mpDisplay->SyncMonitorChange(); }
+	void SyncMonitorChange(){ if(mpDisplay) mpDisplay->SyncMonitorChange(); }
 
 	void UpdateSourcePARMenuItem();
 };

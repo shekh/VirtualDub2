@@ -465,6 +465,17 @@ BOOL CALLBACK max_enum_proc(HWND hwnd, LPARAM lParam)
 	return TRUE;
 }
 
+void max_save_on_close(HWND wnd)
+{
+	HMONITOR mon = MonitorFromWindow(wnd,MONITOR_DEFAULTTONEAREST);
+	HMONITOR mon1 = MonitorFromWindow(g_hWnd,MONITOR_DEFAULTTONEAREST);
+	if (mon==mon1) {
+		VDUIDeleteWindowPlacementW32("FullscreenPane");
+	} else {
+		VDUISaveWindowPlacementW32(wnd, "FullscreenPane");
+	}
+}
+
 INT_PTR CALLBACK max_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	if(msg==WM_KEYDOWN && wparam==VK_ESCAPE){
@@ -491,15 +502,8 @@ INT_PTR CALLBACK max_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 	switch(msg){
 	case WM_SHOWWINDOW:
-		if (wparam==FALSE) {
-			HMONITOR mon = MonitorFromWindow(wnd,MONITOR_DEFAULTTONEAREST);
-			HMONITOR mon1 = MonitorFromWindow(g_hWnd,MONITOR_DEFAULTTONEAREST);
-			if (mon==mon1) {
-				VDUIDeleteWindowPlacementW32("FullscreenPane");
-			} else {
-				VDUISaveWindowPlacementW32(wnd, "FullscreenPane");
-			}
-		}
+		if (wparam==FALSE)
+			max_save_on_close(wnd);
 		break;
 
 	case WM_DESTROY:
@@ -510,6 +514,7 @@ INT_PTR CALLBACK max_host_proc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		break;
 
 	case WM_CLOSE:
+		max_save_on_close(wnd);
 		SendMessage(g_hWnd,WM_CLOSE,0,0);
 		break;
 
