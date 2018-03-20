@@ -1111,7 +1111,8 @@ public:
 
 void VDShowCaptureChannelsDialog(VDGUIHandle h, const vdstructex<VDWaveFormat>& format, VDAudioMaskParam& param, IVDUICaptureVumeter** thunk) {
 	VDDialogAudioMask dlg(IDD_CAPTURE_AUDIO_MASK);
-	dlg.channels = format->mChannels;
+	dlg.channels = 0;
+	if (!format.empty()) dlg.channels = format->mChannels;
 	dlg.mask = param.mask;
 	memcpy(dlg.mix,param.mix,sizeof(param.mix));
 	*thunk = &dlg;
