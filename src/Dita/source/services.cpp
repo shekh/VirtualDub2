@@ -24,6 +24,7 @@
 #include <commdlg.h>
 #include <objbase.h>
 #include <shlobj.h>
+#include <shobjidl.h>
 
 #include <vd2/system/filesys.h>
 #include <vd2/system/strutil.h>
@@ -246,9 +247,7 @@ struct tester {
 
 void VDInitFilespecSystem() {
 	if (!g_pFilespecMap) {
-		// This ensures the filespec map will be destroyed before any global destructors.
-		static vdautoptr<tFilespecMap> spFilespecMap(new tFilespecMap);
-		g_pFilespecMap = spFilespecMap;
+		g_pFilespecMap = new tFilespecMap;
 	}
 }
 
@@ -715,7 +714,157 @@ struct DirspecEntry {
 typedef std::map<long, DirspecEntry> tDirspecMap;
 tDirspecMap *g_pDirspecMap;
 
+void VDShutdownFilespecSystem() {
+	delete g_pFilespecMap;
+	g_pFilespecMap = 0;
+	delete g_pDirspecMap;
+	g_pDirspecMap = 0;
+}
+
 ///////////////////////////////////////////////////////////////////////////
+
+#ifndef __IFileOpenDialog_INTERFACE_DEFINED__
+#define __IFileOpenDialog_INTERFACE_DEFINED__
+
+    MIDL_INTERFACE("b4db1657-70d7-485e-8e3e-6fcb5a5c1802")
+    IModalWindow : public IUnknown
+    {
+    public:
+        virtual /* [local] */ HRESULT STDMETHODCALLTYPE Show( 
+            /* [in] */ 
+            __in  HWND hwndParent) = 0;
+        
+    };
+
+typedef struct _COMDLG_FILTERSPEC
+    {
+    LPCWSTR pszName;
+    LPCWSTR pszSpec;
+    } 	COMDLG_FILTERSPEC;
+
+typedef /* [v1_enum] */ 
+enum tagFDAP
+    {	FDAP_BOTTOM	= 0,
+    	FDAP_TOP	= 0x1
+    } 	FDAP;
+
+typedef enum _FILEOPENDIALOGOPTIONS { 
+  FOS_OVERWRITEPROMPT         = 0x00000002,
+  FOS_STRICTFILETYPES         = 0x00000004,
+  FOS_NOCHANGEDIR             = 0x00000008,
+  FOS_PICKFOLDERS             = 0x00000020,
+  FOS_FORCEFILESYSTEM         = 0x00000040,
+  FOS_ALLNONSTORAGEITEMS      = 0x00000080,
+  FOS_NOVALIDATE              = 0x00000100,
+  FOS_ALLOWMULTISELECT        = 0x00000200,
+  FOS_PATHMUSTEXIST           = 0x00000800,
+  FOS_FILEMUSTEXIST           = 0x00001000,
+  FOS_CREATEPROMPT            = 0x00002000,
+  FOS_SHAREAWARE              = 0x00004000,
+  FOS_NOREADONLYRETURN        = 0x00008000,
+  FOS_NOTESTFILECREATE        = 0x00010000,
+  FOS_HIDEMRUPLACES           = 0x00020000,
+  FOS_HIDEPINNEDPLACES        = 0x00040000,
+  FOS_NODEREFERENCELINKS      = 0x00100000,
+  FOS_DONTADDTORECENT         = 0x02000000,
+  FOS_FORCESHOWHIDDEN         = 0x10000000,
+  FOS_DEFAULTNOMINIMODE       = 0x20000000,
+  FOS_FORCEPREVIEWPANEON      = 0x40000000,
+  FOS_SUPPORTSTREAMABLEITEMS  = 0x80000000
+} ; typedef DWORD FILEOPENDIALOGOPTIONS;
+
+    MIDL_INTERFACE("42f85136-db7e-439c-85f1-e4075d135fc8")
+    IFileDialog : public IModalWindow
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE SetFileTypes( 
+            /* [in] */ UINT cFileTypes,
+            /* [size_is][in] */ const COMDLG_FILTERSPEC *rgFilterSpec) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetFileTypeIndex( 
+            /* [in] */ UINT iFileType) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetFileTypeIndex( 
+            /* [out] */ __RPC__out UINT *piFileType) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE Advise( 
+            /* [in] */ __RPC__in_opt IFileDialogEvents *pfde,
+            /* [out] */ __RPC__out DWORD *pdwCookie) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE Unadvise( 
+            /* [in] */ DWORD dwCookie) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetOptions( 
+            /* [in] */ DWORD fos) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetOptions( 
+            /* [out] */ __RPC__out DWORD *pfos) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetDefaultFolder( 
+            /* [in] */ __RPC__in_opt IShellItem *psi) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetFolder( 
+            /* [in] */ __RPC__in_opt IShellItem *psi) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetFolder( 
+            /* [out] */ __RPC__deref_out_opt IShellItem **ppsi) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetCurrentSelection( 
+            /* [out] */ __RPC__deref_out_opt IShellItem **ppsi) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetFileName( 
+            /* [string][in] */ __RPC__in LPCWSTR pszName) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetFileName( 
+            /* [string][out] */ __RPC__deref_out_opt_string LPWSTR *pszName) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetTitle( 
+            /* [string][in] */ __RPC__in LPCWSTR pszTitle) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetOkButtonLabel( 
+            /* [string][in] */ __RPC__in LPCWSTR pszText) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetFileNameLabel( 
+            /* [string][in] */ __RPC__in LPCWSTR pszLabel) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetResult( 
+            /* [out] */ __RPC__deref_out_opt IShellItem **ppsi) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE AddPlace( 
+            /* [in] */ __RPC__in_opt IShellItem *psi,
+            /* [in] */ FDAP fdap) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetDefaultExtension( 
+            /* [string][in] */ __RPC__in LPCWSTR pszDefaultExtension) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE Close( 
+            /* [in] */ HRESULT hr) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetClientGuid( 
+            /* [in] */ __RPC__in REFGUID guid) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE ClearClientData( void) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE SetFilter( 
+            /* [in] */ __RPC__in_opt IShellItemFilter *pFilter) = 0;
+        
+    };
+
+    MIDL_INTERFACE("d57c7288-d4ad-4768-be02-9d969532d960")
+    IFileOpenDialog : public IFileDialog
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetResults( 
+            /* [out] */ __RPC__deref_out_opt IShellItemArray **ppenum) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetSelectedItems( 
+            /* [out] */ __RPC__deref_out_opt IShellItemArray **ppsai) = 0;
+        
+    };
+
+    IID IID_IFileOpenDialog = {0xD57C7288, 0xD4AD, 0x4768, 0xBE, 0x02, 0x9D, 0x96, 0x95, 0x32, 0xD9, 0x60};
+
+#endif
 
 const VDStringW VDGetDirectory(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle) {
 	if (!g_pDirspecMap)
@@ -744,61 +893,65 @@ const VDStringW VDGetDirectory(long nKey, VDGUIHandle ctxParent, const wchar_t *
 
 		if (SUCCEEDED(SHGetMalloc(&pMalloc))) {
 
-			if ((LONG)GetVersion() < 0) {		// Windows 9x
-				char *pszBuffer;
+			if (VDIsAtLeastVistaW32()) {
+				IFileOpenDialog *pFileOpen;
+				HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL, IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
 
-				if (pszBuffer = (char *)pMalloc->Alloc(MAX_PATH)) {
-					BROWSEINFOA bi;
+				if (SUCCEEDED(hr)) {
+					pFileOpen->SetOptions(FOS_PICKFOLDERS|FOS_FORCEFILESYSTEM);
+					pFileOpen->SetTitle(pszTitle);
+
+					if (fsent.szFile[0]) {
+						HMODULE hmod = GetModuleHandle("shell32.dll");
+						typedef HRESULT (APIENTRY *tpSHCreateItemFromParsingName)(PCWSTR pszPath, IBindCtx *pbc, REFIID riid, void **ppv);
+						tpSHCreateItemFromParsingName pSHCreateItemFromParsingName = (tpSHCreateItemFromParsingName)GetProcAddress(hmod, "SHCreateItemFromParsingName");
+
+						IShellItem *dir = 0;
+						pSHCreateItemFromParsingName(fsent.szFile,0,IID_IShellItem,(void**)&dir);
+						pFileOpen->SetFolder(dir);
+						dir->Release();
+					}
+
+					hr = pFileOpen->Show(NULL);
+
+					if (SUCCEEDED(hr)) {
+						IShellItem *pItem;
+						hr = pFileOpen->GetResult(&pItem);
+						if (SUCCEEDED(hr)) {
+							PWSTR pszFilePath;
+							hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+							if (SUCCEEDED(hr)) {
+								wcscpy(fsent.szFile, pszFilePath);
+								bSuccess = true;
+								CoTaskMemFree(pszFilePath);
+							}
+							pItem->Release();
+						}
+					}
+					pFileOpen->Release();
+				}
+
+			} else {
+				if (wchar_t *pszBuffer = (wchar_t *)pMalloc->Alloc(MAX_PATH * sizeof(wchar_t))) {
+					BROWSEINFOW bi;
 					ITEMIDLIST *pidlBrowse;
-
-					VDStringA tempA(VDTextWToA(pszTitle));
 
 					bi.hwndOwner		= (HWND)ctxParent;
 					bi.pidlRoot			= NULL;
 					bi.pszDisplayName	= pszBuffer;
-					bi.lpszTitle		= tempA.c_str();
+					bi.lpszTitle		= pszTitle;
 					bi.ulFlags			= BIF_EDITBOX | /*BIF_NEWDIALOGSTYLE |*/ BIF_RETURNONLYFSDIRS | BIF_VALIDATE;
 					bi.lpfn				= NULL;
 
-					if (pidlBrowse = SHBrowseForFolderA(&bi)) {
-						if (SHGetPathFromIDListA(pidlBrowse, pszBuffer)) {
-							VDTextAToW(fsent.szFile, MAX_PATH, pszBuffer);
+					if (pidlBrowse = SHBrowseForFolderW(&bi)) {
+						if (SHGetPathFromIDListW(pidlBrowse, pszBuffer)) {
+							wcscpy(fsent.szFile, pszBuffer);
 							bSuccess = true;
 						}
 
 						pMalloc->Free(pidlBrowse);
 					}
 					pMalloc->Free(pszBuffer);
-				}
-			} else {
-				HMODULE hmod = GetModuleHandle("shell32.dll");		// We know shell32 is loaded because we hard link to SHBrowseForFolderA.
-				typedef LPITEMIDLIST (APIENTRY *tpSHBrowseForFolderW)(LPBROWSEINFOW);
-				typedef BOOL (APIENTRY *tpSHGetPathFromIDListW)(LPCITEMIDLIST pidl, LPWSTR pszPath);
-				tpSHBrowseForFolderW pSHBrowseForFolderW = (tpSHBrowseForFolderW)GetProcAddress(hmod, "SHBrowseForFolderW");
-				tpSHGetPathFromIDListW pSHGetPathFromIDListW = (tpSHGetPathFromIDListW)GetProcAddress(hmod, "SHGetPathFromIDListW");
-
-				if (pSHBrowseForFolderW && pSHGetPathFromIDListW) {
-					if (wchar_t *pszBuffer = (wchar_t *)pMalloc->Alloc(MAX_PATH * sizeof(wchar_t))) {
-						BROWSEINFOW bi;
-						ITEMIDLIST *pidlBrowse;
-
-						bi.hwndOwner		= (HWND)ctxParent;
-						bi.pidlRoot			= NULL;
-						bi.pszDisplayName	= pszBuffer;
-						bi.lpszTitle		= pszTitle;
-						bi.ulFlags			= BIF_EDITBOX | /*BIF_NEWDIALOGSTYLE |*/ BIF_RETURNONLYFSDIRS | BIF_VALIDATE;
-						bi.lpfn				= NULL;
-
-						if (pidlBrowse = pSHBrowseForFolderW(&bi)) {
-							if (pSHGetPathFromIDListW(pidlBrowse, pszBuffer)) {
-								wcscpy(fsent.szFile, pszBuffer);
-								bSuccess = true;
-							}
-
-							pMalloc->Free(pidlBrowse);
-						}
-						pMalloc->Free(pszBuffer);
-					}
 				}
 			}
 		}

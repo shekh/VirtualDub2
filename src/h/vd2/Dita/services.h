@@ -66,5 +66,6 @@ void VDSaveFilespecSystemData();
 void VDClearFilespecSystemData();
 
 void VDInitFilespecSystem();
+void VDShutdownFilespecSystem();
 
 #endif

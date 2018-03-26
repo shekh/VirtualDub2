@@ -641,6 +641,7 @@ void Deinit() {
 
 	VDShutdownExternalEncoderProfiles();
 	VDSaveFilespecSystemData();
+	VDShutdownFilespecSystem();
 
 	if (g_pPortableRegistry) {
 		try {
