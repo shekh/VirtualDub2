@@ -470,7 +470,7 @@ public:
 	HANDLE GetProcessHandle() const { return mProcessHandle.GetHandle(); }
 
 	void Attach(HANDLE h, uint32 processId);
-	void Run(const char *name, const wchar_t *cmdLine, HANDLE hStdInput, HANDLE hStdOutput, HANDLE hStdError);
+	void Run(const char *name, const wchar_t *cmdLine, const wchar_t *outputDir, HANDLE hStdInput, HANDLE hStdOutput, HANDLE hStdError);
 	void Wait();
 	void Close();
 
@@ -516,11 +516,12 @@ void VDCLIProcessW32::Attach(HANDLE h, uint32 processId) {
 	mProcessId = processId;
 }
 
-void VDCLIProcessW32::Run(const char *name, const wchar_t *cmdLine, HANDLE hStdInput, HANDLE hStdOutput, HANDLE hStdError) {
+void VDCLIProcessW32::Run(const char *name, const wchar_t *cmdLine, const wchar_t *outputDir, HANDLE hStdInput, HANDLE hStdOutput, HANDLE hStdError) {
 
 	PROCESS_INFORMATION pi;
 	BOOL success;
 
+/*
 #if 0	// This requires at least WinSDK 6.0, which we can't switch to yet.
 	OSVERSIONINFO osvi = { sizeof(OSVERSIONINFO) };
 	if (GetVersionEx(&osvi) && osvi.dwMajorVersion >= 6) {
@@ -559,6 +560,7 @@ void VDCLIProcessW32::Run(const char *name, const wchar_t *cmdLine, HANDLE hStdI
 		return;
 	}
 #endif
+*/
 
 	const VDStringW programPath(VDGetProgramPath());
 
@@ -571,19 +573,11 @@ void VDCLIProcessW32::Run(const char *name, const wchar_t *cmdLine, HANDLE hStdI
 
 	const DWORD flags = (VDIsWindowsNT() ? CREATE_NO_WINDOW : 0) | CREATE_NEW_PROCESS_GROUP | CREATE_SUSPENDED;
 
-	if (VDIsWindowsNT()) {
-		STARTUPINFOW siw = { sizeof(STARTUPINFOW) };
-		siw.dwFlags = STARTF_USESHOWWINDOW;
-		siw.wShowWindow = SW_SHOWMINNOACTIVE;
+	STARTUPINFOW siw = { sizeof(STARTUPINFOW) };
+	siw.dwFlags = STARTF_USESHOWWINDOW;
+	siw.wShowWindow = SW_SHOWMINNOACTIVE;
 
-		success = CreateProcessW(launchCmdLine.c_str(), (LPWSTR)launchCmdLine.c_str(), NULL, NULL, FALSE, flags, NULL, NULL, &siw, &pi);
-	} else {
-		STARTUPINFOA sia = { sizeof(STARTUPINFOA) };
-		sia.dwFlags = STARTF_USESHOWWINDOW;
-		sia.wShowWindow = SW_SHOWMINNOACTIVE;
-
-		success = CreateProcess(VDTextWToA(launchCmdLine).c_str(), NULL, NULL, NULL, FALSE, flags, NULL, NULL, &sia, &pi);
-	}
+	success = CreateProcessW(launchCmdLine.c_str(), (LPWSTR)launchCmdLine.c_str(), NULL, NULL, FALSE, flags, NULL, outputDir, &siw, &pi);
 
 	if (!success)
 		throw MyWin32Error("CLI: Unable to launch %s: %%s.", GetLastError(), name);
@@ -610,6 +604,10 @@ void VDCLIProcessW32::Run(const char *name, const wchar_t *cmdLine, HANDLE hStdI
 
 		throw MyWin32Error("CLI: Unable to launch %s: %%s", err, name);
 	}
+
+	VDStringW cmd_info;
+	cmd_info.sprintf(L"%hs: %s",name,cmdLine);
+	VDLog(kVDLogInfo, cmd_info);
 
 	mLaunchData.Init(pi.dwProcessId, NULL, cmdLine, hStdInputClone, hStdOutputClone, hStdErrorClone, hCurrentProcessClone, hLaunchEventClone);
 
@@ -997,6 +995,7 @@ IVDMediaOutputStream *AVIOutputCLI::createAudioStream() {
 
 bool AVIOutputCLI::init(const wchar_t *pwszFile) {
 	mOutputFile = pwszFile;
+	VDStringW outputDir = VDFileSplitPathLeft(mOutputFile);
 
 	mTempOutputLock.open(pwszFile, nsVDFile::kWrite | nsVDFile::kDenyAll | nsVDFile::kCreateAlways);
 
@@ -1051,6 +1050,7 @@ bool AVIOutputCLI::init(const wchar_t *pwszFile) {
 
 		mVideoEncoderProcess.Run("video encoder",
 			cmdLine.c_str(),
+			outputDir.c_str(),
 			mVideoPipe.GetOutput(), 
 			mTemplate.mpVideoEncoderProfile->mbLogStdout ? videoOutputPipe.GetInput() : videoErrorSink.GetHandle(),
 			mTemplate.mpVideoEncoderProfile->mbLogStderr ? videoOutputPipe.GetInput() : videoErrorSink.GetHandle());
@@ -1103,6 +1103,7 @@ bool AVIOutputCLI::init(const wchar_t *pwszFile) {
 
 		mAudioEncoderProcess.Run("audio encoder",
 			cmdLine.c_str(),
+			outputDir.c_str(),
 			mAudioPipe.GetOutput(), 
 			mTemplate.mpAudioEncoderProfile->mbLogStdout ? audioOutputPipe.GetInput() : audioErrorSink.GetHandle(),
 			mTemplate.mpAudioEncoderProfile->mbLogStderr ? audioOutputPipe.GetInput() : audioErrorSink.GetHandle());
@@ -1170,10 +1171,12 @@ void AVIOutputCLI::Close(bool finalize) {
 
 			VDCLIOutputSinkW32 muxOutputSink;
 			muxOutputSink.SetLogPrefix(L"Mux: ");
+			VDStringW outputDir = VDFileSplitPathLeft(mOutputFile);
 
 			VDCLIProcessW32 muxProcess;
 			muxProcess.Run("multiplexer",
 				cmdLine.c_str(),
+				outputDir.c_str(),
 				muxErrorSink.GetHandle(), 
 				mTemplate.mpMultiplexerProfile->mbLogStdout ? muxOutputPipe.GetInput() : muxErrorSink.GetHandle(),
 				mTemplate.mpMultiplexerProfile->mbLogStderr ? muxOutputPipe.GetInput() : muxErrorSink.GetHandle());
