@@ -64,10 +64,10 @@ using namespace nsVDCapture;
 namespace {
 	enum {
 		kAudioDriverMenuPos = 3,
-		kAudioInputMenuPos = 7,
-		kAudioSourceMenuPos = 8,
+		kAudioInputMenuPos = 10,
+		kAudioSourceMenuPos = 11,
 		kVideoDriverMenuPos = 2,
-		kVideoSourceMenuPos = 8,
+		kVideoSourceMenuPos = 9,
 		kDeviceMenuPos = 1,
 		kDeviceTunerMenuPos = 1,
 		kDeviceTunerInputMenuPos = 2
