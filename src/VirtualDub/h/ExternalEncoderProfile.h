@@ -79,6 +79,7 @@ bool VDGetExternalEncoderSetByIndex(uint32 idx, VDExtEncSet **pp);
 bool VDGetExternalEncoderSetByName(const wchar_t *name, VDExtEncSet **pp);
 void VDAddExternalEncoderSet(VDExtEncSet *eset);
 void VDRemoveExternalEncoderSet(VDExtEncSet *eset);
+bool VDGetExternalEncoderSetAsk(HWND parent, VDExtEncSet **pp);
 
 void VDLoadExternalEncoderProfiles();
 void VDSaveExternalEncoderProfiles();

@@ -707,10 +707,6 @@ void VDSetLastLoadSaveFileName(long nKey, const wchar_t *fileName) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-struct DirspecEntry {
-	wchar_t szFile[MAX_PATH];
-};
-
 typedef std::map<long, DirspecEntry> tDirspecMap;
 tDirspecMap *g_pDirspecMap;
 
@@ -866,7 +862,7 @@ typedef enum _FILEOPENDIALOGOPTIONS {
 
 #endif
 
-const VDStringW VDGetDirectory(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle) {
+DirspecEntry* VDGetDirSpec(long nKey) {
 	if (!g_pDirspecMap)
 		g_pDirspecMap = new tDirspecMap;
 
@@ -876,8 +872,7 @@ const VDStringW VDGetDirectory(long nKey, VDGUIHandle ctxParent, const wchar_t *
 		std::pair<tDirspecMap::iterator, bool> r = g_pDirspecMap->insert(tDirspecMap::value_type(nKey, DirspecEntry()));
 
 		if (!r.second) {
-			VDStringW empty;
-			return empty;
+			return 0;
 		}
 
 		it = r.first;
@@ -886,6 +881,12 @@ const VDStringW VDGetDirectory(long nKey, VDGUIHandle ctxParent, const wchar_t *
 	}
 
 	DirspecEntry& fsent = (*it).second;
+	return &fsent;
+}
+
+const VDStringW VDGetDirectory(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle) {
+	DirspecEntry& fsent = *VDGetDirSpec(nKey);
+	if (!&fsent) return VDStringW();
 	bool bSuccess = false;
 
 	if (SUCCEEDED(CoInitialize(NULL))) {

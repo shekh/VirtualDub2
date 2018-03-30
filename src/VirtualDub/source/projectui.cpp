@@ -1680,10 +1680,7 @@ void VDUIDialogExportViaEncoder::OnDataExchange(bool write) {
 	}
 }
 
-void VDProjectUI::ExportViaEncoderAsk(bool batch) {
-	if (!inputVideo)
-		throw MyError("No input video stream to process.");
-
+bool VDGetExternalEncoderSetAsk(HWND parent, VDExtEncSet **pp) {
 	VDRegistryAppKey key(g_szRegKeyPersistence);
 	
 	VDUIDialogExportViaEncoder dlg;
@@ -1696,45 +1693,58 @@ void VDProjectUI::ExportViaEncoderAsk(bool batch) {
 			dlg.SetSelectedSet(eset);
 	}
 
-	if (!dlg.ShowDialog(mhwnd))
-		return;
+	if (!dlg.ShowDialog((VDGUIHandle)parent))
+		return false;
 
-	vdrefptr<VDExtEncSet> eset(dlg.GetSelectedSet());
-
+	VDExtEncSet *eset = dlg.GetSelectedSet();
 	if (eset) {
 		key.setString("CLI Export: Encoder set", eset->mName.c_str());
-		VDStringW filterSpec;
-		const wchar_t *ext = NULL;
+		*pp = eset;
+		eset->AddRef();
+		return true;
+	}
 
-		if (!eset->mFileDesc.empty())
-			filterSpec += eset->mFileDesc;
-		else {
-			filterSpec += L"Output file (*.";
-			if (!eset->mFileExt.empty())
-				filterSpec += eset->mFileExt;
-			else
-				filterSpec += L"*";
-			filterSpec += L")";
-		}
+	return false;
+}
 
-		filterSpec += (wchar_t)0;
+void VDProjectUI::ExportViaEncoderAsk(bool batch) {
+	if (!inputVideo)
+		throw MyError("No input video stream to process.");
 
-		filterSpec += L"*.";
-		if (!eset->mFileExt.empty()) {
+	vdrefptr<VDExtEncSet> eset;
+	if (!VDGetExternalEncoderSetAsk((HWND)mhwnd, ~eset)) return;
+
+	VDStringW filterSpec;
+	const wchar_t *ext = NULL;
+
+	if (!eset->mFileDesc.empty())
+		filterSpec += eset->mFileDesc;
+	else {
+		filterSpec += L"Output file (*.";
+		if (!eset->mFileExt.empty())
 			filterSpec += eset->mFileExt;
-			ext = eset->mFileExt.c_str();
-		} else
+		else
 			filterSpec += L"*";
+		filterSpec += L")";
+	}
 
-		filterSpec += (wchar_t)0;
-		
-		const VDStringW filename(VDGetSaveFileName(kFileDialog_ExtOut, mhwnd, L"Export via external encoder", filterSpec.c_str(), ext));
-		if (!filename.empty()) {
-			if (batch)
-				JobAddConfigurationExportViaEncoder(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), true, eset->mName.c_str());
-			else
-				ExportViaEncoder(filename.c_str(), eset->mName.c_str(), false);
-		}
+	filterSpec += (wchar_t)0;
+
+	filterSpec += L"*.";
+	if (!eset->mFileExt.empty()) {
+		filterSpec += eset->mFileExt;
+		ext = eset->mFileExt.c_str();
+	} else
+		filterSpec += L"*";
+
+	filterSpec += (wchar_t)0;
+	
+	const VDStringW filename(VDGetSaveFileName(kFileDialog_ExtOut, mhwnd, L"Export via external encoder", filterSpec.c_str(), ext));
+	if (!filename.empty()) {
+		if (batch)
+			JobAddConfigurationExportViaEncoder(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), true, eset->mName.c_str());
+		else
+			ExportViaEncoder(filename.c_str(), eset->mName.c_str(), false);
 	}
 }
 

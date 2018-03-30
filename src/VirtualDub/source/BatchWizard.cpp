@@ -10,12 +10,14 @@
 #include <vd2/Dita/services.h>
 #include <vd2/VDLib/Dialog.h>
 #include <vd2/VDLib/UIProxies.h>
+#include "ExternalEncoderProfile.h"
 #include "resource.h"
 #include "gui.h"
 #include "job.h"
 
 namespace {
 	enum {
+		kFileDialog_ProcessDirIn	= 'jpdi',
 		kFileDialog_BatchOutputDir	= 'bout'
 	};
 }
@@ -50,7 +52,7 @@ VDUIBatchWizardNameFilter::VDUIBatchWizardNameFilter()
 	: VDDialogFrameW32(IDD_BATCH_WIZARD_NAMEFILTER)
 	, mbCaseSensitive(false)
 {
-	VDRegistryAppKey key("Persistance");
+	VDRegistryAppKey key("Persistence");
 
 	mbCaseSensitive = key.getBool("Batch Wizard: Match case", false);
 }
@@ -69,7 +71,7 @@ void VDUIBatchWizardNameFilter::OnDataExchange(bool write) {
 	ExchangeControlValueBoolCheckbox(write, IDC_MATCHCASE, mbCaseSensitive);
 
 	if (write) {
-		VDRegistryAppKey key("Persistance");
+		VDRegistryAppKey key("Persistence");
 
 		key.setBool("Batch Wizard: Match case", mbCaseSensitive);
 	}
@@ -84,17 +86,21 @@ public:
 
 protected:
 	VDZINT_PTR DlgProc(VDZUINT msg, VDZWPARAM wParam, VDZLPARAM lParam);
+	static LRESULT CALLBACK ListProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	bool OnLoaded();
+	void SetOutputAbsolute();
 	void OnDestroy();
 	void OnSize();
 	bool OnCommand(uint32 id, uint32 extcode);
 	void OnDropFiles(IVDUIDropFileList *dropFileList);
 	bool CheckAndConfirmConflicts();
+	void DeleteSelected();
 
 	bool mbOutputRelative;
 
 	VDDialogResizerW32	mResizer;
 	VDUIProxyListView	mList;
+	WNDPROC list_proc;
 
 	HMENU	mhmenuPopups;
 };
@@ -113,12 +119,35 @@ VDUIBatchWizard::~VDUIBatchWizard() {
 
 VDZINT_PTR VDUIBatchWizard::DlgProc(VDZUINT msg, VDZWPARAM wParam, VDZLPARAM lParam) {
 	switch(msg) {
-		case WM_NOTIFY:
-			SetWindowLongPtr(mhdlg, DWLP_MSGRESULT, mMsgDispatcher.Dispatch_WM_NOTIFY(wParam, lParam));
-			return TRUE;
+	case WM_NOTIFY:
+		SetWindowLongPtr(mhdlg, DWLP_MSGRESULT, mMsgDispatcher.Dispatch_WM_NOTIFY(wParam, lParam));
+		return TRUE;
 	}
 
 	return VDDialogFrameW32::DlgProc(msg, wParam, lParam);
+}
+
+LRESULT VDUIBatchWizard::ListProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	VDUIBatchWizard* p = (VDUIBatchWizard*)GetWindowLongPtr(hwnd,GWLP_USERDATA);
+	switch(msg) {
+	case WM_GETDLGCODE:
+		{
+			MSG* msg = (MSG*)lParam;
+			if (!msg) return 0;
+			if (msg->message==WM_KEYDOWN && (wParam==VK_DELETE || wParam==VK_UP || wParam==VK_DOWN))
+				return DLGC_WANTMESSAGE;
+		}
+		return 0;
+
+	case WM_KEYDOWN:
+		if (wParam==VK_DELETE) {
+			p->DeleteSelected();
+			return true;
+		}
+		break;
+	}
+
+	return CallWindowProc(p->list_proc, hwnd, msg, wParam, lParam);
 }
 
 bool VDUIBatchWizard::OnLoaded() {
@@ -133,20 +162,48 @@ bool VDUIBatchWizard::OnLoaded() {
 	mResizer.Add(IDOK, VDDialogResizerW32::kBR);
 	DragAcceptFiles(mhdlg, TRUE);
 
+	VDUIRestoreWindowPlacementW32(mhdlg, "Batch wizard", SW_SHOWNORMAL);
+
 	AddProxy(&mList, IDC_LIST);
+	mList.SetFullRowSelectEnabled(true);
+	list_proc = (WNDPROC)GetWindowLongPtr(GetDlgItem(mhdlg,IDC_LIST), GWLP_WNDPROC);
+	SetWindowLongPtr(GetDlgItem(mhdlg,IDC_LIST), GWLP_USERDATA, (LPARAM)this);
+	SetWindowLongPtr(GetDlgItem(mhdlg,IDC_LIST), GWLP_WNDPROC, (LPARAM)ListProc);
 
 	mList.InsertColumn(0, L"Source file", 100);
 	mList.InsertColumn(1, L"Output name", 100);
+
+	VDRegistryAppKey key("Persistence");
+	mbOutputRelative = key.getBool("Batch Wizard: Output relative", true);
+
+	DirspecEntry* fsent = VDGetDirSpec(kFileDialog_BatchOutputDir);
+	if (!fsent || !fsent->szFile[0]) mbOutputRelative = true;
 
 	if (mbOutputRelative)
 		CheckButton(IDC_OUTPUT_RELATIVE, true);
 	else
 		CheckButton(IDC_OUTPUT_ABSOLUTE, true);
+	if (!mbOutputRelative) SetOutputAbsolute();
 
 	return false;
 }
 
+void VDUIBatchWizard::SetOutputAbsolute() {
+	VDStringW s;
+	GetControlText(IDC_OUTPUTFOLDER, s);
+
+	if (s.empty()) {
+		DirspecEntry* fsent = VDGetDirSpec(kFileDialog_BatchOutputDir);
+		if (fsent)
+			SetControlText(IDC_OUTPUTFOLDER, fsent->szFile);
+	}
+}
+
 void VDUIBatchWizard::OnDestroy() {
+	VDUISaveWindowPlacementW32(mhdlg, "Batch wizard");
+	VDRegistryAppKey key("Persistence");
+	key.setBool("Batch Wizard: Output relative", mbOutputRelative);
+
 	mList.Clear();
 
 	VDDialogFrameW32::OnDestroy();
@@ -185,9 +242,20 @@ void VDUIBatchWizardItem::GetText(int subItem, VDStringW& s) const {
 			break;
 
 		case 1:
-			s = mOutputName;
+			s = VDFileSplitExtLeft(mOutputName) + L".***";
 			break;
 	}
+}
+
+void VDUIBatchWizard::DeleteSelected() {
+	int x = mList.GetSelectedIndex();
+	if (x!=-1)
+		mList.DeleteItem(x);
+	int n = mList.GetItemCount();
+	if (n>x)
+		mList.SetSelectedIndex(x);
+	else if (n>0)
+		mList.SetSelectedIndex(n-1);
 }
 
 bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
@@ -198,16 +266,85 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 			break;
 
 		case IDC_OUTPUT_ABSOLUTE:
-			if (extcode == BN_CLICKED)
+			if (extcode == BN_CLICKED) {
 				mbOutputRelative = false;
+				SetOutputAbsolute();
+			}
+			break;
+
+		case IDC_OUTPUTFOLDER:
+			if (extcode = EN_CHANGE) {
+				VDStringW s;
+				GetControlText(IDC_OUTPUTFOLDER, s);
+
+				if (!s.empty()) {
+					DirspecEntry* fsent = VDGetDirSpec(kFileDialog_BatchOutputDir);
+					if (fsent)
+						wcscpy(fsent->szFile, s.c_str());
+					CheckButton(IDC_OUTPUT_RELATIVE, false);
+					CheckButton(IDC_OUTPUT_ABSOLUTE, true);
+					mbOutputRelative = false;
+				}
+			}
 			break;
 
 		case IDC_BROWSEOUTPUTFOLDER:
 			{
 				const VDStringW s(VDGetDirectory(kFileDialog_BatchOutputDir, (VDGUIHandle)mhdlg, L"Select output directory"));
 
-				if (!s.empty())
+				if (!s.empty()) {
 					SetControlText(IDC_OUTPUTFOLDER, s.c_str());
+					CheckButton(IDC_OUTPUT_RELATIVE, false);
+					CheckButton(IDC_OUTPUT_ABSOLUTE, true);
+					mbOutputRelative = false;
+				}
+			}
+			return true;
+
+		case IDC_ADDFILES:
+			{
+				DirspecEntry& fsent = *VDGetDirSpec(kFileDialog_ProcessDirIn);
+				if (!&fsent) return true;
+
+				OPENFILENAMEW ofn = {0};
+				int buf_size = 1024*1024;
+				wchar_t* szFile = (wchar_t*)malloc(buf_size*2);
+				if (!szFile) return true;
+				szFile[0]=0;
+
+				ofn.lStructSize = sizeof(OPENFILENAMEW);
+				ofn.hwndOwner = mhdlg;
+				ofn.lpstrFilter = L"All files (*.*)\0*.*\0";
+				ofn.nFilterIndex = 1;
+				ofn.lpstrFile = szFile;
+				ofn.nMaxFile = buf_size;
+				ofn.lpstrInitialDir = fsent.szFile;
+				ofn.lpstrTitle = L"Select files";
+				ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_ENABLESIZING | OFN_ALLOWMULTISELECT;
+
+				if (GetOpenFileNameW(&ofn)) {
+					wchar_t* p = szFile;
+					VDStringW dir(p);
+					p += dir.length()+1;
+					if (!*p) {
+						vdrefptr<VDUIBatchWizardItem> item(new VDUIBatchWizardItem(dir.c_str()));
+						mList.InsertVirtualItem(-1, item);
+						wcscpy(fsent.szFile, VDFileSplitPathLeft(dir).c_str());
+					} else {
+						while(1) {
+							if (!*p) break;
+							VDStringW name(p);
+							VDStringW path = VDMakePath(dir.c_str(), name.c_str());
+							vdrefptr<VDUIBatchWizardItem> item(new VDUIBatchWizardItem(path.c_str()));
+							mList.InsertVirtualItem(-1, item);
+							p += name.length()+1;
+						}
+						wcscpy(fsent.szFile, dir.c_str());
+					}
+					mList.AutoSizeColumns();
+				}
+
+				free(szFile);
 			}
 			return true;
 
@@ -455,6 +592,39 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 
 				mList.Clear();
 			}
+			return true;
+
+		case ID_ADDTOQUEUE_CLI:
+			if (!CheckAndConfirmConflicts())
+				return true;
+
+			{
+				const int n = mList.GetItemCount();
+				const VDStringW outputPath(GetControlValueString(IDC_OUTPUTFOLDER));
+				VDStringW outputFileName;
+
+				vdrefptr<VDExtEncSet> eset;
+				if (!VDGetExternalEncoderSetAsk(mhdlg, ~eset)) return true;
+
+				for(int i=0; i<n; ++i) {
+					VDUIBatchWizardItem *item = static_cast<VDUIBatchWizardItem *>(mList.GetVirtualItem(i));
+					if (item) {
+						const wchar_t *outputName = item->GetOutputName();
+
+						if (mbOutputRelative)
+							outputFileName = VDMakePath(VDFileSplitPathLeft(VDStringW(item->GetFileName())).c_str(), outputName);
+						else
+							outputFileName = VDMakePath(outputPath.c_str(), outputName);
+
+						if (!eset->mFileExt.empty())
+							outputFileName = VDFileSplitExtLeft(outputFileName) + eset->mFileExt;
+
+						JobAddConfigurationExportViaEncoder(0, &g_dubOpts, item->GetFileName(), NULL, 0, NULL, outputFileName.c_str(), false, eset->mName.c_str());
+					}
+				}
+			}
+
+			mList.Clear();
 			return true;
 	}
 

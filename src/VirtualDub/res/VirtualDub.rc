@@ -515,6 +515,9 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Use local job list",          ID_FILE_USELOCALJOBQUEUE
         MENUITEM "Use shared job list...",      ID_FILE_USEREMOTEJOBQUEUE
+        MENUITEM SEPARATOR
+        MENUITEM "Process directory...",        ID_EDIT_PROCESSDIRECTORY
+        MENUITEM "Batch wizard...",             ID_FILE_BATCHWIZARD
     END
     POPUP "&Edit"
     BEGIN
@@ -525,8 +528,6 @@ BEGIN
         MENUITEM "All Postponed => Waiting",    ID_EDIT_POSTPONEDTOWAITING
         MENUITEM "All Done => Waiting",         ID_EDIT_DONETOWAITING
         MENUITEM "All Failed => Waiting",       ID_EDIT_FAILEDTOWAITING
-        MENUITEM SEPARATOR
-        MENUITEM "Process directory...",        ID_EDIT_PROCESSDIRECTORY
     END
     POPUP "&Options"
     BEGIN
@@ -664,6 +665,7 @@ BEGIN
         MENUITEM "Extract audio to &WAV",       ID_ADDTOQUEUE_EXTRACTAUDIOTOWAV
         MENUITEM "Extract &raw audio",          ID_ADDTOQUEUE_EXTRACTRAWAUDIO
         MENUITEM "Run video &analysis pass",    ID_ADDTOQUEUE_RUNVIDEOANALYSISPASS
+        MENUITEM "Export using external encoder...", ID_ADDTOQUEUE_CLI
     END
 END
 
@@ -2402,10 +2404,11 @@ BEGIN
                     "Button",BS_AUTORADIOBUTTON,67,7,145,10
     CONTROL         "Route outputs to a different folder:",IDC_OUTPUT_ABSOLUTE,
                     "Button",BS_AUTORADIOBUTTON,67,17,130,10
-    EDITTEXT        IDC_OUTPUTFOLDER,67,29,288,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_OUTPUTFOLDER,67,29,288,14,ES_MULTILINE | ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSEOUTPUTFOLDER,357,29,20,14
-    LTEXT           "List of files to batch process (drag and drop to add more):",IDC_STATIC,7,49,370,11
-    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_TABSTOP,7,62,370,134,WS_EX_CLIENTEDGE
+    LTEXT           "List of files to batch process (drag and drop or select to add more):",IDC_STATIC,7,49,224,11
+    PUSHBUTTON      "Select Files...",IDC_ADDFILES,234,47,85,14
+    CONTROL         "",IDC_LIST,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_ALIGNLEFT | WS_TABSTOP,7,62,370,134,WS_EX_CLIENTEDGE
     PUSHBUTTON      "Filter Output Names...",IDC_FILTEROUTPUTNAMES,7,199,85,14
     PUSHBUTTON      "Rename Files",IDC_RENAMEFILES,181,199,69,14
     PUSHBUTTON      "Add To Queue",IDC_ADDTOQUEUE,253,199,69,14

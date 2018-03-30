@@ -44,6 +44,7 @@
 #define IDC_CONFIGURE                   7
 #define IDS_TITLE_SERVING               7
 #define IDC_POSTPONE2                   7
+#define IDC_ADDFILES                    7
 #define IDC_CLIPPING                    8
 #define IDS_TITLE_CAPTURE               8
 #define IDC_ABOUT                       8
@@ -1525,6 +1526,7 @@
 #define ID_VIDEO_SEEK_FSPREV            40601
 #define ID_PAN_CENTER                   40602
 #define ID_PAN_TOPLEFT                  40603
+#define ID_ADDTOQUEUE_CLI               40604
 #define ID_AUDIOMODE_11KHZ_8MONO        41000
 #define ID_AUDIOMODE_11KHZ_8STEREO      41001
 #define ID_AUDIOMODE_11KHZ_16MONO       41002
@@ -1581,7 +1583,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        312
-#define _APS_NEXT_COMMAND_VALUE         40604
+#define _APS_NEXT_COMMAND_VALUE         40605
 #define _APS_NEXT_CONTROL_VALUE         1564
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

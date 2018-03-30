@@ -59,6 +59,10 @@ void VDSetLastLoadSavePath(long nKey, const wchar_t *path);
 const VDStringW VDGetLastLoadSavePath(long nKey);
 void VDSetLastLoadSaveFileName(long nKey, const wchar_t *fileName);
 
+struct DirspecEntry {
+	wchar_t szFile[MAX_PATH];
+};
+DirspecEntry* VDGetDirSpec(long nKey);
 const VDStringW VDGetDirectory(long nKey, VDGUIHandle ctxParent, const wchar_t *pszTitle);
 
 void VDLoadFilespecSystemData();

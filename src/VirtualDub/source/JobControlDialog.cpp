@@ -482,6 +482,11 @@ bool VDUIJobControlDialog::OnMenuHit(uint32 id) {
 				JobProcessDirectory(mhdlg);
 				break;
 
+			case ID_FILE_BATCHWIZARD:
+				extern void VDUIDisplayBatchWizard(VDGUIHandle hParent);
+				VDUIDisplayBatchWizard((VDGUIHandle)mhdlg);
+				break;
+
 			case ID_WHENFINISHED_DONOTHING:
 				{
 					VDRegistryAppKey appKey("");

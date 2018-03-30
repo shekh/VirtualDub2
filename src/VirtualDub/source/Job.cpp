@@ -623,7 +623,7 @@ void JobAddConfigurationInputs(JobScriptOutput& output, const VDProject* project
 		if (inputFlags!=-1 && (inputFlags & IVDInputDriver::kFF_Sequence))
 		funcName = "VirtualDub.OpenSequence";
 
-		if (g_pInputOpts) {
+		if (pszInputDriver && g_pInputOpts) {
 			int req = g_pInputOpts->write(NULL, 0);
 
 			vdfastvector<char> srcbuf(req);
