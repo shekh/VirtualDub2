@@ -617,7 +617,7 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 							outputFileName = VDMakePath(outputPath.c_str(), outputName);
 
 						if (!eset->mFileExt.empty())
-							outputFileName = VDFileSplitExtLeft(outputFileName) + eset->mFileExt;
+							outputFileName = VDFileSplitExtLeft(outputFileName) +L"."+ eset->mFileExt;
 
 						JobAddConfigurationExportViaEncoder(0, &g_dubOpts, item->GetFileName(), NULL, 0, NULL, outputFileName.c_str(), false, eset->mName.c_str());
 					}
