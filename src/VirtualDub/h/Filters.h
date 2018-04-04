@@ -95,6 +95,7 @@ struct FilterBlurb {
 	VDStringA					name;
 	VDStringA					author;
 	VDStringA					description;
+	VDStringW					module;
 	bool						hide;
 };
 

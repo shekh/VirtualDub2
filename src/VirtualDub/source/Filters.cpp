@@ -213,6 +213,10 @@ void FilterEnumerateFilters(std::list<FilterBlurb>& blurbs) {
 		fb.name			= fd.GetName();
 		fb.author		= fd.GetAuthor();
 		fb.description	= fd.GetDescription();
+
+		VDExternalModule	*module = fd.GetModule();
+		if (module)
+			fb.module = module->GetFilename();
 	}
 }
 

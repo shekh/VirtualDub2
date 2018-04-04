@@ -525,6 +525,63 @@ int VDZCALLBACK VDUIProxyListView::SortAdapter(LPARAM x, LPARAM y, LPARAM cookie
 	return ((IVDUIListViewVirtualComparer *)cookie)->Compare((IVDUIListViewVirtualItem *)x, (IVDUIListViewVirtualItem *)y);
 }
 
+// sortOrder - 0 neither, 1 ascending, 2 descending
+int VDUIProxyListView::GetSortIcon(int col) {
+	HWND headerWnd = ListView_GetHeader(mhwnd);
+	int numColumns = Header_GetItemCount(headerWnd);
+
+	if (col<numColumns) {
+		HD_ITEMW item;
+		const int bufLen = 256;
+		wchar_t headerText[bufLen];
+		item.mask = HDI_FORMAT | HDI_TEXT;
+		item.pszText = headerText;
+		item.cchTextMax = bufLen - 1;
+		SendMessage(headerWnd, HDM_GETITEMW, col, (LPARAM)&item);
+
+		switch (item.fmt & (HDF_SORTUP | HDF_SORTDOWN)) {
+		case HDF_SORTDOWN:
+			return 1;
+		case HDF_SORTUP:
+			return 2;
+		}
+	}
+
+	return 0;
+}
+
+void VDUIProxyListView::SetSortIcon(int col, int sortOrder) {
+	HWND headerWnd = ListView_GetHeader(mhwnd);
+	int numColumns = Header_GetItemCount(headerWnd);
+
+	for (int curCol=0; curCol<numColumns; curCol++) {
+		HD_ITEMW item;
+		const int bufLen = 256;
+		wchar_t headerText[bufLen];
+		item.mask = HDI_FORMAT | HDI_TEXT;
+		item.pszText = headerText;
+		item.cchTextMax = bufLen - 1;
+		SendMessage(headerWnd, HDM_GETITEMW, curCol, (LPARAM)&item);
+
+		if ((sortOrder != 0) && (curCol==col))
+		switch (sortOrder) {
+		case 1:
+			item.fmt &= !HDF_SORTUP;
+			item.fmt |= HDF_SORTDOWN;
+			break;
+		case 2:
+			item.fmt &= !HDF_SORTDOWN;
+			item.fmt |= HDF_SORTUP;
+			break;
+		} else {
+			item.fmt &= !HDF_SORTUP & !HDF_SORTDOWN;
+		}
+		item.fmt |= HDF_STRING;
+		item.mask = HDI_FORMAT | HDI_TEXT;
+		SendMessage(headerWnd, HDM_SETITEMW, curCol, (LPARAM)&item);
+	}
+}
+
 VDZLRESULT VDUIProxyListView::On_WM_NOTIFY(VDZWPARAM wParam, VDZLPARAM lParam) {
 	const NMHDR *hdr = (const NMHDR *)lParam;
 

@@ -7,6 +7,7 @@
 #include <vd2/VDLib/Dialog.h>
 #include <vd2/VDLib/UIProxies.h>
 #include <vd2/system/registry.h>
+#include <vd2/system/filesys.h>
 #include <commctrl.h>
 
 extern const char g_szError[];
@@ -30,10 +31,17 @@ public:
 		int filter;
 		VDStringW name;
 		VDStringW author;
+		VDStringW module;
 
 		void GetText(int subItem, VDStringW& s) const {
 			if (subItem==0) s = name;
 			if (subItem==1) s = author;
+			if (subItem==2) {
+				if(module.empty())
+					s = L"(internal)";
+				else
+					s = module;
+			}
 		}
 	};
 
@@ -50,6 +58,7 @@ protected:
 	void OnItemCheckedChanged(VDUIProxyListView *sender, int item);
 	void OnSelectionChanged(VDUIProxyListView *sender, int selIdx);
 	void OnDoubleClick(VDUIProxyListView *sender, int selIdx);
+	void OnColumnClicked(VDUIProxyListView *source, int column);
 	void OnDestroy();
 	void OnSize();
 	bool OnErase(VDZHDC hdc);
@@ -62,15 +71,45 @@ protected:
 	bool mbShowLoaded;
 	bool mbShowCheck;
 
-	VDDelegate          mDelegateCheckedChanged;
+	VDDelegate					mDelegateCheckedChanged;
 	VDDelegate					mDelegateSelChanged;
 	VDDelegate					mDelegateDblClk;
+	VDDelegate					mDelegateColumnClicked;
 
 	VDDialogResizerW32 mResizer;
 
 	struct FilterBlurbSort {
+		int sort_name;
+		int sort_author;
+		int sort_module;
+
 		bool operator()(const FilterBlurb *x, const FilterBlurb *y) {
-			return x->name.comparei(y->name) < 0;
+			if (sort_author) {
+				if (x->author==y->author)
+					return x->name.comparei(y->name) < 0;
+				else {
+					if (sort_author==1)
+						return x->author.comparei(y->author) < 0;
+					if (sort_author==2)
+						return x->author.comparei(y->author) > 0;
+				}
+			}
+
+			if (sort_module) {
+				if (x->module==y->module)
+					return x->name.comparei(y->name) < 0;
+				else {
+					if (sort_module==1)
+						return x->module.comparei(y->module) < 0;
+					if (sort_module==2)
+						return x->module.comparei(y->module) > 0;
+				}
+			}
+
+			if (sort_name==2)
+				return x->name.comparei(y->name) > 0;
+			else
+				return x->name.comparei(y->name) < 0;
 		}
 	};
 };
@@ -81,6 +120,7 @@ VDDialogFilterListW32::VDDialogFilterListW32()
 	mListView.OnItemCheckedChanged() += mDelegateCheckedChanged.Bind(this, &VDDialogFilterListW32::OnItemCheckedChanged);
 	mListView.OnItemSelectionChanged() += mDelegateSelChanged.Bind(this, &VDDialogFilterListW32::OnSelectionChanged);
 	mListView.OnItemDoubleClicked() += mDelegateDblClk.Bind(this, &VDDialogFilterListW32::OnDoubleClick);
+	mListView.OnColumnClicked() += mDelegateColumnClicked.Bind(this, &VDDialogFilterListW32::OnColumnClicked);
 }
 
 FilterDefinitionInstance *VDDialogFilterListW32::Activate(VDGUIHandle hParent) {
@@ -102,6 +142,8 @@ bool VDDialogFilterListW32::OnLoaded() {
 	mListView.SetItemCheckboxesEnabled(false);
 	mListView.InsertColumn(0, L"Name", 230);
 	mListView.InsertColumn(1, L"Author", 150);
+	mListView.InsertColumn(2, L"Module", 150);
+	mListView.SetSortIcon(0, 1);
 
 	mbShowAll = false;
 	mbShowLoaded = false;
@@ -120,6 +162,7 @@ void VDDialogFilterListW32::OnDestroy() {
 
 void VDDialogFilterListW32::OnSize() {
 	mResizer.Relayout();
+	SendMessage(mListView.GetHandle(), LVM_SETCOLUMNWIDTH, 2, LVSCW_AUTOSIZE_USEHEADER);
 }
 
 bool VDDialogFilterListW32::OnErase(VDZHDC hdc) {
@@ -215,6 +258,7 @@ void VDDialogFilterListW32::RebuildList(bool reset_tag) {
 		FilterBlurb& item = *it;
 		VDString s = format_hide_key(item);
 		item.hide = key.getBool(s.c_str());
+		item.module = VDFileSplitPathRight(item.module);
 
 		if (mbShowLoaded) {
 			if (item.key) {
@@ -233,7 +277,12 @@ void VDDialogFilterListW32::RebuildList(bool reset_tag) {
 		mSortedFilters.push_back(&item);
 	}
 
-	std::sort(mSortedFilters.begin(), mSortedFilters.end(), FilterBlurbSort());
+	FilterBlurbSort sort;
+	sort.sort_name = mListView.GetSortIcon(0);
+	sort.sort_author = mListView.GetSortIcon(1);
+	sort.sort_module = mListView.GetSortIcon(2);
+
+	std::sort(mSortedFilters.begin(), mSortedFilters.end(), sort);
 
 	uintptr idx = 0;
 	uintptr sel_idx = 0;
@@ -244,6 +293,7 @@ void VDDialogFilterListW32::RebuildList(bool reset_tag) {
 		item->filter = idx;
 		item->name = VDTextAToW(fb.name);
 		item->author = VDTextAToW(fb.author);
+		item->module = fb.module;
 		int index = mListView.InsertVirtualItem(-1,item);
 		mListView.SetItemChecked(index, !fb.hide);
 		if (fb.key==sel)
@@ -254,6 +304,7 @@ void VDDialogFilterListW32::RebuildList(bool reset_tag) {
 		mListView.SetSelectedIndex(sel_idx);
 
 	EnableWindow(GetDlgItem(mhdlg,IDC_SHOWALL),hide_count>0 || mbShowLoaded);
+	SendMessage(mListView.GetHandle(), LVM_SETCOLUMNWIDTH, 2, LVSCW_AUTOSIZE_USEHEADER);
 }
 
 void VDDialogFilterListW32::ReloadCheck() {
@@ -296,6 +347,12 @@ void VDDialogFilterListW32::OnSelectionChanged(VDUIProxyListView *sender, int se
 void VDDialogFilterListW32::OnDoubleClick(VDUIProxyListView *sender, int selIdx) {
 	if (!OnOK())
 		End(true);
+}
+
+void VDDialogFilterListW32::OnColumnClicked(VDUIProxyListView *source, int column) {
+	int x = mListView.GetSortIcon(column);
+	mListView.SetSortIcon(column, x==1 ? 2:1);
+	RebuildList();
 }
 
 FilterDefinitionInstance *VDUIShowDialogAddFilter(VDGUIHandle hParent) {

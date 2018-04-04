@@ -97,6 +97,8 @@ public:
 	bool IsItemChecked(int item);
 	void SetItemChecked(int item, bool checked);
 	void SetItemCheckedVisible(int item, bool visible);
+	void SetSortIcon(int col, int sortOrder);
+	int GetSortIcon(int col);
 
 	void SetItemImage(int item, uint32 imageIndex);
 
