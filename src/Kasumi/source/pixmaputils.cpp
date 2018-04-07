@@ -161,6 +161,7 @@ VDPixmap VDPixmap::copy(const VDXPixmap& a) {
 
 int VDPixmapFormatMatrixType(sint32 format) {
 	switch (VDPixmapFormatNormalize(format)) {
+	case nsVDPixmap::kPixFormat_YUV420_NV12:
 	case nsVDPixmap::kPixFormat_YUV422_V210:
 	case nsVDPixmap::kPixFormat_YUV444_V410:
 	case nsVDPixmap::kPixFormat_YUV444_Y410:
@@ -591,6 +592,20 @@ VDStringA VDPixmapFormatPrintSpec(VDPixmapFormatEx format) {
 	if (type==1 || type==2) {
 		if (format.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) s += "-709";
 		if (format.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) s += "-FR";
+	}
+
+	return s;
+}
+
+VDStringA VDPixmapFormatPrintColor(VDPixmapFormatEx format) {
+	int type = VDPixmapFormatMatrixType(format);
+
+	format = VDPixmapFormatNormalize(format);
+	VDStringA s;
+
+	if (type==1 || type==2) {
+		if (format.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) s += "Rec. 709";
+		if (format.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) { if(!s.empty()) s += ", "; s += "Full range"; }
 	}
 
 	return s;

@@ -103,6 +103,7 @@ VDPixmapFormatEx VDPixmapFormatNormalize(VDPixmapFormatEx format);
 VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format);
 VDPixmapFormatEx VDPixmapFormatCombineOpt(VDPixmapFormatEx format, VDPixmapFormatEx opt);
 VDStringA VDPixmapFormatPrintSpec(VDPixmapFormatEx format);
+VDStringA VDPixmapFormatPrintColor(VDPixmapFormatEx format);
 
 uint32 VDPixmapCreateLinearLayout(VDPixmapLayout& layout, VDPixmapFormatEx format, vdpixsize w, vdpixsize h, int alignment);
 

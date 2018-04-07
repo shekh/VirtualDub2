@@ -108,8 +108,10 @@ VDFilterFrameVideoSource::RunResult VDFilterFrameVideoSource::RunRequests(const 
 			if (!mpBlitter)
 				mpBlitter = VDPixmapCreateBlitter(pxdst, pxsrc);
 
+			VDPROFILEBEGINEX3("V-BlitReq",(int)mTargetSample,0,mpBlitter->profiler_comment.c_str());
 			mpBlitter->Blit(pxdst, pxsrc);
 			buf->info = pxdst.info;
+			VDPROFILEEND();
 
 			buf->Unlock();
 

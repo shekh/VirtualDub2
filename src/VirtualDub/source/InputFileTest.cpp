@@ -81,62 +81,60 @@ private:
 	struct FormatInfo {
 		int mFormat;
 		bool mbIsYUV;
-		bool mbIs709;
-		bool mbIsFullRange;
 		const char *mpName;
 	};
 
 	const FormatInfo *mpFormatInfo;
+	VDPixmapCachedBlitter mCachedBlitter;
 
 	static const struct FormatInfo kFormatInfo[];
 };
 
 const struct VDVideoSourceTest::FormatInfo VDVideoSourceTest::kFormatInfo[]={
-	{	nsVDPixmap::kPixFormat_XRGB1555,				false, false, true , "XRGB1555"	},
-	{	nsVDPixmap::kPixFormat_RGB565,					false, false, true , "RGB565"	},
-	{	nsVDPixmap::kPixFormat_RGB888,					false, false, true , "RGB24"	},
-	{	nsVDPixmap::kPixFormat_XRGB8888,				false, false, true , "RGBA32"	},
-	{	nsVDPixmap::kPixFormat_Y8,						false, false, false, "8-bit Y (16-235)"	},
-	{	nsVDPixmap::kPixFormat_Y8_FR,					false, false, true , "8-bit Y (0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_UYVY,				true , false, false, "4:2:2 YCbCr (UYVY)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_YUYV,				true , false, false, "4:2:2 YCbCr (YUYV)"	},
-	{	nsVDPixmap::kPixFormat_YUV444_Planar,			true , false, false, "4:4:4 YCbCr"	},
-	{	nsVDPixmap::kPixFormat_YUV422_Planar,			true , false, false, "4:2:2 YCbCr"	},
-	{	nsVDPixmap::kPixFormat_YUV420_Planar,			true , false, false, "4:2:0 YCbCr"	},
-	{	nsVDPixmap::kPixFormat_YUV411_Planar,			true , false, false, "4:1:1 YCbCr"	},
-	{	nsVDPixmap::kPixFormat_YUV410_Planar,			true , false, false, "4:1:0 YCbCr"	},
-	{	nsVDPixmap::kPixFormat_YUV422_Planar_Centered,	true , false, false, "4:2:2 YCbCr (centered chroma)"	},
-	{	nsVDPixmap::kPixFormat_YUV420_Planar_Centered,	true , false, false, "4:2:0 YCbCr (centered chroma)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_UYVY_709,			true , true , false, "4:2:2 YCbCr (UYVY, Rec. 709)"	},
-	{	nsVDPixmap::kPixFormat_YUV420_NV12,				true , true , false, "4:2:0 YCbCr (NV12)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_YUYV_709,			true , true , false, "4:2:2 YCbCr (YUYV, Rec. 709)"	},
-	{	nsVDPixmap::kPixFormat_YUV444_Planar_709,		true , true , false, "4:4:4 YCbCr (Rec. 709)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_Planar_709,		true , true , false, "4:2:2 YCbCr (Rec. 709)"	},
-	{	nsVDPixmap::kPixFormat_YUV420_Planar_709,		true , true , false, "4:2:0 YCbCr (Rec. 709)"	},
-	{	nsVDPixmap::kPixFormat_YUV411_Planar_709,		true , true , false, "4:1:1 YCbCr (Rec. 709)"	},
-	{	nsVDPixmap::kPixFormat_YUV410_Planar_709,		true , true , false, "4:1:0 YCbCr (Rec. 709)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_UYVY_FR,			true , false, true , "4:2:2 YCbCr (UYVY, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_YUYV_FR,			true , false, true , "4:2:2 YCbCr (YUYV, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV444_Planar_FR,		true , false, true , "4:4:4 YCbCr (0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_Planar_FR,		true , false, true , "4:2:2 YCbCr (0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV420_Planar_FR,		true , false, true , "4:2:0 YCbCr (0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV411_Planar_FR,		true , false, true , "4:1:1 YCbCr (0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV410_Planar_FR,		true , false, true , "4:1:0 YCbCr (0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_UYVY_709_FR,		true , true , true , "4:2:2 YCbCr (UYVY, Rec. 709, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_YUYV_709_FR,		true , true , true , "4:2:2 YCbCr (YUYV, Rec. 709, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV444_Planar_709_FR,	true , true , true , "4:4:4 YCbCr (Rec. 709, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV422_Planar_709_FR,	true , true , true , "4:2:2 YCbCr (Rec. 709, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV420_Planar_709_FR,	true , true , true , "4:2:0 YCbCr (Rec. 709, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV411_Planar_709_FR,	true , true , true , "4:1:1 YCbCr (Rec. 709, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV410_Planar_709_FR,	true , true , true , "4:1:0 YCbCr (Rec. 709, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV420i_Planar,			true , false, false, "4:2:0 YCbCr (interlaced)"	},
-	{	nsVDPixmap::kPixFormat_YUV420i_Planar_FR,		true , false, true , "4:2:0 YCbCr (interlaced, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_YUV420i_Planar_709,		true , true , false, "4:2:0 YCbCr (interlaced, Rec. 709)"	},
-	{	nsVDPixmap::kPixFormat_YUV420i_Planar_709_FR,	true , true , true , "4:2:0 YCbCr (interlaced, Rec. 709, 0-255)"	},
-	{	nsVDPixmap::kPixFormat_XRGB64,					false, false, true , "RGBA64"	},
-	{	nsVDPixmap::kPixFormat_YUV444_Planar16,			true , false, false, "16-bit 4:4:4 YCbCr"	},
-	//{	nsVDPixmap::kPixFormat_YUV422_Planar16,			true , false, false, "16-bit 4:2:2 YCbCr"	},
-	//{	nsVDPixmap::kPixFormat_YUV420_Planar16,			true , false, false, "16-bit 4:2:0 YCbCr"	},
+	{	nsVDPixmap::kPixFormat_XRGB1555,				false, "XRGB1555"	},
+	{	nsVDPixmap::kPixFormat_RGB565,					false, "RGB565"	},
+	{	nsVDPixmap::kPixFormat_RGB888,					false, "RGB24"	},
+	{	nsVDPixmap::kPixFormat_XRGB8888,				false, "RGBA32"	},
+	{	nsVDPixmap::kPixFormat_Y8,						false, "8-bit Y (16-235)"	},
+	{	nsVDPixmap::kPixFormat_Y8_FR,					false, "8-bit Y (0-255)"	},
+	{	nsVDPixmap::kPixFormat_XRGB64,					false, "RGBA64"	},
+	{	nsVDPixmap::kPixFormat_YUV422_UYVY,				true, "4:2:2 YCbCr (UYVY)"	},
+	{	nsVDPixmap::kPixFormat_YUV422_YUYV,				true, "4:2:2 YCbCr (YUYV)"	},
+	{	nsVDPixmap::kPixFormat_YUV444_Planar,			true, "4:4:4 YCbCr"	},
+	{	nsVDPixmap::kPixFormat_YUV422_Planar,			true, "4:2:2 YCbCr"	},
+	{	nsVDPixmap::kPixFormat_YUV420_Planar,			true, "4:2:0 YCbCr"	},
+	{	nsVDPixmap::kPixFormat_YUV411_Planar,			true, "4:1:1 YCbCr"	},
+	{	nsVDPixmap::kPixFormat_YUV410_Planar,			true, "4:1:0 YCbCr"	},
+	{	nsVDPixmap::kPixFormat_YUV422_Planar_Centered,	true, "4:2:2 YCbCr (centered chroma)"	},
+	{	nsVDPixmap::kPixFormat_YUV420_Planar_Centered,	true, "4:2:0 YCbCr (centered chroma)"	},
+	{	nsVDPixmap::kPixFormat_YUV422_UYVY_709,			true, "4:2:2 YCbCr (UYVY, Rec. 709)"	},
+	{	nsVDPixmap::kPixFormat_YUV420_NV12,				true, "4:2:0 YCbCr (NV12)"	},
+	{	nsVDPixmap::kPixFormat_YUV444_V308,				true, "4:4:4 YCbCr (V308)"	},
+	{	nsVDPixmap::kPixFormat_YUV422_YUYV_709,			true, "4:2:2 YCbCr (YUYV, Rec. 709)"	},
+	{	nsVDPixmap::kPixFormat_YUV444_Planar_709,		true, "4:4:4 YCbCr (Rec. 709)"	},
+	{	nsVDPixmap::kPixFormat_YUV422_Planar_709,		true, "4:2:2 YCbCr (Rec. 709)"	},
+	{	nsVDPixmap::kPixFormat_YUV420_Planar_709,		true, "4:2:0 YCbCr (Rec. 709)"	},
+	{	nsVDPixmap::kPixFormat_YUV411_Planar_709,		true, "4:1:1 YCbCr (Rec. 709)"	},
+	{	nsVDPixmap::kPixFormat_YUV410_Planar_709,		true, "4:1:0 YCbCr (Rec. 709)"	},
+	{	nsVDPixmap::kPixFormat_YUV422_UYVY_FR,			true, "4:2:2 YCbCr (UYVY, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV422_YUYV_FR,			true, "4:2:2 YCbCr (YUYV, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV444_Planar_FR,		true, "4:4:4 YCbCr (0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV422_Planar_FR,		true, "4:2:2 YCbCr (0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV420_Planar_FR,		true, "4:2:0 YCbCr (0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV411_Planar_FR,		true, "4:1:1 YCbCr (0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV410_Planar_FR,		true, "4:1:0 YCbCr (0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV422_UYVY_709_FR,		true, "4:2:2 YCbCr (UYVY, Rec. 709, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV422_YUYV_709_FR,		true, "4:2:2 YCbCr (YUYV, Rec. 709, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV444_Planar_709_FR,	true, "4:4:4 YCbCr (Rec. 709, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV422_Planar_709_FR,	true, "4:2:2 YCbCr (Rec. 709, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV420_Planar_709_FR,	true, "4:2:0 YCbCr (Rec. 709, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV411_Planar_709_FR,	true, "4:1:1 YCbCr (Rec. 709, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV410_Planar_709_FR,	true, "4:1:0 YCbCr (Rec. 709, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV420i_Planar,			true, "4:2:0 YCbCr (interlaced)"	},
+	{	nsVDPixmap::kPixFormat_YUV420i_Planar_FR,		true, "4:2:0 YCbCr (interlaced, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV420i_Planar_709,		true, "4:2:0 YCbCr (interlaced, Rec. 709)"	},
+	{	nsVDPixmap::kPixFormat_YUV420i_Planar_709_FR,	true, "4:2:0 YCbCr (interlaced, Rec. 709, 0-255)"	},
+	{	nsVDPixmap::kPixFormat_YUV444_Planar16,			true, "16-bit 4:4:4 YCbCr"	},
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -268,6 +266,10 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 		return false;
 	}
 
+	VDPixmapFormatEx f1 = VDPixmapFormatNormalize(format);
+	bool Is709 = f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709;
+	bool IsFullRange = f1.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full;
+
 	if (format==nsVDPixmap::kPixFormat_XRGB64) {
 		switch (mMode) {
 		case 5:
@@ -302,14 +304,14 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 
 		mbUseTempBuffer = true;
 	} else if (mMode == 9) {
-		if (finfo->mbIsYUV && finfo->mbIs709)
+		if (finfo->mbIsYUV && Is709)
 			mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar_709);
 		else
 			mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar);
 
 		mbUseTempBuffer = true;
 	} else if (mMode == 10) {
-		if (finfo->mbIsYUV && finfo->mbIs709)
+		if (finfo->mbIsYUV && Is709)
 			mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar_709_FR);
 		else
 			mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar_FR);
@@ -329,13 +331,13 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 		default:
 			if (!finfo->mbIsYUV)
 				mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_XRGB8888);
-			else if (finfo->mbIs709) {
-				if (finfo->mbIsFullRange)
+			else if (Is709) {
+				if (IsFullRange)
 					mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar_709_FR);
 				else
 					mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar_709);
 			} else {
-				if (finfo->mbIsFullRange)
+				if (IsFullRange)
 					mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar_FR);
 				else
 					mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar);
@@ -369,6 +371,7 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 
 	invalidateFrameBuffer();
 	mpFormatInfo = finfo;
+	mCachedBlitter.Invalidate();
 	return true;
 }
 
@@ -461,60 +464,61 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 	if (mbUseTempBuffer)
 		dst = &mTempBuffer;
 
+	VDPixmapFormatEx f1 = VDPixmapFormatNormalize(*dst);
+
 	switch(dst->format) {
-		case nsVDPixmap::kPixFormat_XRGB8888:
-			dst->info.alpha_type = FilterModPixmapInfo::kAlphaMask;
-			VDMemset32Rect(dst->data, dst->pitch, 0x00404040, dstw, dsth);
-			break;
-		case nsVDPixmap::kPixFormat_XRGB64:
-			dst->info.ref_r = 0xFFFF;
-			dst->info.ref_g = 0xFFFF;
-			dst->info.ref_b = 0xFFFF;
-			dst->info.ref_a = 0xFFFF;
-			dst->info.alpha_type = FilterModPixmapInfo::kAlphaMask;
-			VDMemset64Rect(dst->data, dst->pitch, 0x0000404040404040, dstw, dsth);
-			break;
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
-			dst->info.ref_r = 0xFFFF;
-			textcolor = VDConvertRGBToYCbCr(textcolor, false, false);
-			black = 0xFF801080;
+	case nsVDPixmap::kPixFormat_XRGB8888:
+		dst->info.alpha_type = FilterModPixmapInfo::kAlphaMask;
+		VDMemset32Rect(dst->data, dst->pitch, 0x00404040, dstw, dsth);
+		break;
+	case nsVDPixmap::kPixFormat_XRGB64:
+		dst->info.ref_r = 0xFFFF;
+		dst->info.ref_g = 0xFFFF;
+		dst->info.ref_b = 0xFFFF;
+		dst->info.ref_a = 0xFFFF;
+		dst->info.alpha_type = FilterModPixmapInfo::kAlphaMask;
+		VDMemset64Rect(dst->data, dst->pitch, 0x0000404040404040, dstw, dsth);
+		break;
+	case nsVDPixmap::kPixFormat_YUV444_Planar16:
+	case nsVDPixmap::kPixFormat_YUV444_Planar:
+	case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
+	case nsVDPixmap::kPixFormat_YUV444_Planar_709:
+	case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
+		{
 			isyuv = true;
-			VDMemset16Rect(dst->data, dst->pitch, 0x4747, dstw, dsth);
-			VDMemset16Rect(dst->data2, dst->pitch2, 0x8080, dstw, dsth);
-			VDMemset16Rect(dst->data3, dst->pitch3, 0x8080, dstw, dsth);
-			break;
-		case nsVDPixmap::kPixFormat_YUV444_Planar:
-			textcolor = VDConvertRGBToYCbCr(textcolor, false, false);
-			black = 0xFF801080;
-			isyuv = true;
-			VDMemset8Rect(dst->data, dst->pitch, 0x47, dstw, dsth);
-			VDMemset8Rect(dst->data2, dst->pitch2, 0x80, dstw, dsth);
-			VDMemset8Rect(dst->data3, dst->pitch3, 0x80, dstw, dsth);
-			break;
-		case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-			textcolor = VDConvertRGBToYCbCr(textcolor, false, true);
-			black = 0xFF800080;
-			isyuv = true;
-			VDMemset8Rect(dst->data, dst->pitch, 0x40, dstw, dsth);
-			VDMemset8Rect(dst->data2, dst->pitch2, 0x80, dstw, dsth);
-			VDMemset8Rect(dst->data3, dst->pitch3, 0x80, dstw, dsth);
-			break;
-		case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-			textcolor = VDConvertRGBToYCbCr(textcolor, true, false);
-			black = 0xFF801080;
-			isyuv = true;
-			VDMemset8Rect(dst->data, dst->pitch, 0x47, dstw, dsth);
-			VDMemset8Rect(dst->data2, dst->pitch2, 0x80, dstw, dsth);
-			VDMemset8Rect(dst->data3, dst->pitch3, 0x80, dstw, dsth);
-			break;
-		case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-			textcolor = VDConvertRGBToYCbCr(textcolor, true, true);
-			black = 0xFF800080;
-			isyuv = true;
-			VDMemset8Rect(dst->data, dst->pitch, 0x40, dstw, dsth);
-			VDMemset8Rect(dst->data2, dst->pitch2, 0x80, dstw, dsth);
-			VDMemset8Rect(dst->data3, dst->pitch3, 0x80, dstw, dsth);
-			break;
+			int gray;
+			if (f1.colorRangeMode==nsVDXPixmap::kColorRangeMode_Limited) {
+				gray = 0x47;
+				if (f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) {
+					textcolor = VDConvertRGBToYCbCr(textcolor, true, false);
+					black = 0xFF801080;
+				} else {
+					textcolor = VDConvertRGBToYCbCr(textcolor, false, false);
+					black = 0xFF801080;
+				}
+			} else {
+				gray = 0x40;
+				if (f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) {
+					textcolor = VDConvertRGBToYCbCr(textcolor, true, true);
+					black = 0xFF800080;
+				} else {
+					textcolor = VDConvertRGBToYCbCr(textcolor, false, true);
+					black = 0xFF800080;
+				}
+			}
+
+			if (dst->format==nsVDPixmap::kPixFormat_YUV444_Planar16) {
+				dst->info.ref_r = 0xFFFF;
+				gray = (gray<<8) | gray;
+				VDMemset16Rect(dst->data, dst->pitch, uint16(gray), dstw, dsth);
+				VDMemset16Rect(dst->data2, dst->pitch2, 0x8080, dstw, dsth);
+				VDMemset16Rect(dst->data3, dst->pitch3, 0x8080, dstw, dsth);
+			} else {
+				VDMemset8Rect(dst->data, dst->pitch, uint8(gray), dstw, dsth);
+				VDMemset8Rect(dst->data2, dst->pitch2, 0x80, dstw, dsth);
+				VDMemset8Rect(dst->data3, dst->pitch3, 0x80, dstw, dsth);
+			}
+		}
 	}
 
 	vdfloat4x4 ortho;
@@ -875,6 +879,11 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 	VDStringA buf;
 	buf.sprintf("%s - frame %d (%s)", mode_name, (int)frame_num, mpFormatInfo->mpName);
 
+	if (VDPixmapFormatMatrixType(mTargetFormat.format)==1) {
+		buf += " ";
+		buf += VDPixmapFormatPrintColor(f1);
+	}
+
 	mTextRasterizer.Clear();
 	VDPixmapConvertTextToPath(mTextRasterizer, NULL, 24.0f * 64.0f * mScale, 20.0f * 64.0f * mScale, 460.0f * 64.0f * mScale, buf.c_str());
 
@@ -885,8 +894,12 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 	VDPixmapFillRegionAntialiased8x(*dst, mTextBorderRegion, 0, 0, black);
 	VDPixmapFillRegionAntialiased8x(*dst, mTextRegion, 0, 0, textcolor);
 
-	if (&mTargetFormat != dst)
-		VDPixmapBlt(mTargetFormat, *dst);
+	if (&mTargetFormat != dst) {
+		mCachedBlitter.Update(mTargetFormat, *dst);
+		VDPROFILEBEGINEX3("V-BlitSource",(int)frame_num,0,mCachedBlitter.profiler_comment.c_str());
+		mCachedBlitter.Blit(mTargetFormat, *dst);
+		VDPROFILEEND();
+	}
 
 	mCachedFrame = frame_num;
 	return mpFrameBuffer;
@@ -900,6 +913,8 @@ const void *VDVideoSourceTest::getFrame(VDPosition frameNum) {
 }
 
 void VDVideoSourceTest::DrawRotatingCubeFrame(VDPixmap& dst, bool interlaced, bool oddField, int frame_num, bool isyuv, int variant) {
+	VDPixmapFormatEx f1 = VDPixmapFormatNormalize(dst);
+	
 	// draw cube
 	static const int kIndices[] = {
 		0, 1, 4, 4, 1, 5,
@@ -927,12 +942,11 @@ void VDVideoSourceTest::DrawRotatingCubeFrame(VDPixmap& dst, bool interlaced, bo
 		}
 
 		if (isyuv) {
-			float y = 0.299f*r + 0.587f*g + 0.114f*b;
-			float cr = 0.713f*(r-y);
-			float cb = 0.564f*(b-y);
-			vertices[i].r = cr*224.0f/255.0f + 128.0f/255.0f;
-			vertices[i].g = y*219.0f/255.0f + 16.0f/255.0f;
-			vertices[i].b = cb*224.0f/255.0f + 128.0f/255.0f;
+			float y,cb,cr;
+			VDConvertRGBToYCbCr(r,g,b,y,cb,cr,f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709, f1.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full);
+			vertices[i].r = cr;
+			vertices[i].g = y;
+			vertices[i].b = cb;
 		} else {
 			vertices[i].r = r;
 			vertices[i].g = g;

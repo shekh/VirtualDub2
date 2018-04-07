@@ -2576,6 +2576,7 @@ bool VDVideoUploadContextD3D9::Init(void *hmonitor, bool use9ex, const VDPixmap&
 			}
 			break;
 
+		/*
 		case nsVDPixmap::kPixFormat_YUV420_NV12:
 			if (mpManager->IsTextureFormatAvailable(D3DFMT_L8) &&
 				mpManager->IsTextureFormatAvailable(D3DFMT_A8L8) &&
@@ -2608,7 +2609,6 @@ bool VDVideoUploadContextD3D9::Init(void *hmonitor, bool use9ex, const VDPixmap&
 			}
 			break;
 
-		/*
 		case nsVDPixmap::kPixFormat_YUV422_V210:
 			if (mpManager->IsTextureFormatAvailable(D3DFMT_A2B10G10R10) && caps.PixelShaderVersion >= D3DPS_VERSION(2, 0)) {
 				mUploadMode = kUploadModeDirectV210;

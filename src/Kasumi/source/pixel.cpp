@@ -512,6 +512,23 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 		}
 		break;
 
+	case nsVDPixmap::kPixFormat_YUV420_NV12:
+		{
+			int ref = 255;
+			VDPixmapFormatEx f = px.format;
+			f.colorRangeMode = px.info.colorRangeMode;
+			f.colorSpaceMode = px.info.colorSpaceMode;
+			sint32 x_256 = (x << 8) + 128;
+			sint32 y_256 = (y << 8) + 128;
+			uint8 py = VDPixmapInterpolateSample8To24(px.data, px.pitch, px.w, px.h, x_256, y_256) >> 16;
+			uint8 pcb = VDPixmapInterpolateSample8x2To24((const char *)px.data2 + 0, px.pitch2, (px.w + 1) >> 1, (px.h + 1) >> 1, (x_256 >> 1) + 128, y_256 >> 1) >> 16;
+			uint8 pcr = VDPixmapInterpolateSample8x2To24((const char *)px.data2 + 1, px.pitch2, (px.w + 1) >> 1, (px.h + 1) >> 1, (x_256 >> 1) + 128, y_256 >> 1) >> 16;
+			float r,g,b;
+			VDConvertYCbCrToRGB(py,pcb,pcr,ref,f,r,g,b);
+			return VDPackRGB(r,g,b);
+		}
+		break;
+
 	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
 		{
 			int ref = 255;
@@ -1325,13 +1342,6 @@ uint32 VDPixmapInterpolateSampleRGB24(const VDPixmap& px, sint32 x_256, sint32 y
 					VDPixmapInterpolateSample8x4To24((const char *)px.data + 3, px.pitch, (px.w + 1) >> 1, px.h, (x_256 >> 1) + 128, y_256)
 				);
 
-		case nsVDPixmap::kPixFormat_YUV420_NV12:
-			return ConvertYCC72ToRGB24(
-					VDPixmapInterpolateSample8To24(px.data, px.pitch, px.w, px.h, x_256, y_256),
-					VDPixmapInterpolateSample8x2To24((const char *)px.data2 + 0, px.pitch2, (px.w + 1) >> 1, (px.h + 1) >> 1, (x_256 >> 1) + 128, y_256 >> 1),
-					VDPixmapInterpolateSample8x2To24((const char *)px.data2 + 1, px.pitch2, (px.w + 1) >> 1, (px.h + 1) >> 1, (x_256 >> 1) + 128, y_256 >> 1)
-				);
-
 		case nsVDPixmap::kPixFormat_YUV444_Planar:
 			return InterpPlanarYCC888(px, x_256, y_256, x_256, y_256, px.w, px.h);
 
@@ -1663,4 +1673,29 @@ uint32 VDConvertRGBToYCbCr(uint8 r8, uint8 g8, uint8 b8, bool use709, bool useFu
 	}
 
 	return (uint8)cb + (y & 0xff00) + (cr&0xff0000);
+}
+
+void VDConvertRGBToYCbCr(float r, float g, float b, float& y, float& cb, float& cr, bool use709, bool useFullRange) {
+  float scale = 0xFF00;
+	if (use709) {
+		if (useFullRange) {
+			y  = ( 13933*r + 46871*g +  4732*b +   0x80) / scale;
+			cb = ( -7509*r - 25259*g + 32768*b + 0x8080) / scale;
+			cr = ( 32768*r - 29763*g -  3005*b + 0x8080) / scale;
+		} else {
+			y =  ( 11966*r + 40254*g +  4064*b + 0x1080) / scale;
+			cb = ( -6596*r - 22189*g + 28784*b + 0x8080) / scale;
+			cr = ( 28784*r - 26145*g -  2639*b + 0x8080) / scale;
+		}
+	} else {
+		if (useFullRange) {
+			y =  ( 19595*r + 38470*g +  7471*b +   0x80) / scale;
+			cb = (-11058*r - 21710*g + 32768*b + 0x8080) / scale;
+			cr = ( 32768*r - 27439*g -  5329*b + 0x8080) / scale;
+		} else {
+			y  = ( 16829*r + 33039*g +  6416*b + 0x1080) / scale;
+			cb = ( -9714*r - 19071*g + 28784*b + 0x8080) / scale;
+			cr = ( 28784*r - 24103*g -  4681*b + 0x8080) / scale;
+		}
+	}
 }

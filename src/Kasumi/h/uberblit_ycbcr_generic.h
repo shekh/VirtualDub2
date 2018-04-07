@@ -162,6 +162,8 @@ public:
 	const void *GetRow(sint32 y, uint32 index);
 	uint32 GetType(uint32 output) const;
 
+	virtual const char* dump_name(){ return "YCbCrToYCbCr"; }
+
 protected:
 	void Compute(void *dst0, sint32 ypos);
 
@@ -188,6 +190,8 @@ public:
 	void Start();
 	const void *GetRow(sint32 y, uint32 index);
 	uint32 GetType(uint32 output) const;
+
+	virtual const char* dump_name(){ return "YCbCrToYCbCr_32F"; }
 
 protected:
 	void Compute(void *dst0, sint32 ypos);

@@ -24,7 +24,7 @@ public:
 	}
 
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
-		dst = src;
+		dst.copy_dynamic(src);
 	}
 
 	void AddWindowRequest(int minY, int maxY) {

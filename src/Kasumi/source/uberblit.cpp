@@ -2004,6 +2004,7 @@ space_reconvert:
 								VDASSERT(false);
 								break;
 						}
+						break;
 
 					case kVDPixSpace_YCC_601_FR:
 						switch(srcToken & kVDPixType_Mask) {

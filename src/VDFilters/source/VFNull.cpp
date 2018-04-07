@@ -42,6 +42,7 @@ uint32 VDVFNull::GetParams() {
 	case nsVDXPixmap::kPixFormat_YUV411_Planar:
 	case nsVDXPixmap::kPixFormat_YUV410_Planar:
 	case nsVDXPixmap::kPixFormat_YUV422_UYVY_709:
+	case nsVDXPixmap::kPixFormat_YUV420_NV12:
 	case nsVDXPixmap::kPixFormat_Y8_FR:
 	case nsVDXPixmap::kPixFormat_YUV422_YUYV_709:
 	case nsVDXPixmap::kPixFormat_YUV444_Planar_709:

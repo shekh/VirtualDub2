@@ -302,6 +302,7 @@ namespace nsVDXPixmap {
 		kPixFormat_YUV410_Planar			= 17,
 		kPixFormat_YUV422_V210				= 21,
 		kPixFormat_YUV422_UYVY_709			= 22,
+		kPixFormat_YUV420_NV12				= 23,
 		kPixFormat_Y8_FR					= 24,
 		kPixFormat_YUV422_YUYV_709			= 25,
 		kPixFormat_YUV444_Planar_709		= 26,
