@@ -342,7 +342,7 @@ void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width,
 			++it)
 		{
 			VDFilterChainEntry *ent = *it;
-    	FilterInstance *fa = ent->mpInstance;
+			FilterInstance *fa = ent->mpInstance;
 			if (!fa->IsEnabled())
 				continue;
 
@@ -354,14 +354,14 @@ void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width,
 				break;
 			}
 
-	    lRequiredSize += fa->mPrepareInfo.mLastFrameSizeRequired;
+			lRequiredSize += fa->mPrepareInfo.mLastFrameSizeRequired;
 
-	    state.prevInput = &fa->GetOutputStream();
-	    if (!ent->mOutputName.empty())
-		    state.namedInputs[ent->mOutputName] = state.prevInput;
+			state.prevInput = &fa->GetOutputStream();
+			if (!ent->mOutputName.empty())
+				state.namedInputs[ent->mOutputName] = state.prevInput;
 
-	    if (IsVDXAFormat(state.prevInput->mPixmapLayout.format))
-		    mbFiltersUseAcceleration = true;
+			if (IsVDXAFormat(state.prevInput->mPixmapLayout.format))
+				mbFiltersUseAcceleration = true;
 
 			if (fa->IsTerminal())
 				break;
@@ -393,7 +393,7 @@ void FilterSystem::prepareLinearChain(VDFilterChainDesc *desc, uint32 src_width,
 }
 
 void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *ent, bool accelEnabled, uint32 alignReq) {
-  typedef PrepareState::NamedInputs NamedInputs;
+	typedef PrepareState::NamedInputs NamedInputs;
 	FilterInstance *fa = ent->mpInstance;
 
 	const VDXFilterDefinition *fdef = fa->GetDefinition();
@@ -480,83 +480,6 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 	}
 
 	if (flags == FILTERPARAM_NOT_SUPPORTED || (flags & FILTERPARAM_SUPPORTS_ALTFORMATS)) {
-		using namespace nsVDPixmap;
-
-		VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_B64A + 1);
-
-		std::bitset<nsVDPixmap::kPixFormat_Max_Standard> formatMask;
-
-		formatMask.set(kPixFormat_XRGB1555);
-		formatMask.set(kPixFormat_RGB565);
-		formatMask.set(kPixFormat_RGB888);
-		formatMask.set(kPixFormat_XRGB8888);
-		formatMask.set(kPixFormat_Y8);
-		formatMask.set(kPixFormat_Y8_FR);
-		formatMask.set(kPixFormat_YUV422_UYVY);
-		formatMask.set(kPixFormat_YUV422_YUYV);
-		formatMask.set(kPixFormat_YUV444_Planar);
-		formatMask.set(kPixFormat_YUV422_Planar);
-		formatMask.set(kPixFormat_YUV420_Planar);
-		formatMask.set(kPixFormat_YUV420i_Planar);
-		formatMask.set(kPixFormat_YUV420it_Planar);
-		formatMask.set(kPixFormat_YUV420ib_Planar);
-		formatMask.set(kPixFormat_YUV411_Planar);
-		formatMask.set(kPixFormat_YUV410_Planar);
-		formatMask.set(kPixFormat_YUV422_UYVY_709);
-		formatMask.set(kPixFormat_YUV422_YUYV_709);
-		formatMask.set(kPixFormat_YUV444_Planar_709);
-		formatMask.set(kPixFormat_YUV422_Planar_709);
-		formatMask.set(kPixFormat_YUV420_Planar_709);
-		formatMask.set(kPixFormat_YUV420i_Planar_709);
-		formatMask.set(kPixFormat_YUV420it_Planar_709);
-		formatMask.set(kPixFormat_YUV420ib_Planar_709);
-		formatMask.set(kPixFormat_YUV411_Planar_709);
-		formatMask.set(kPixFormat_YUV410_Planar_709);
-		formatMask.set(kPixFormat_YUV422_UYVY_FR);
-		formatMask.set(kPixFormat_YUV422_YUYV_FR);
-		formatMask.set(kPixFormat_YUV444_Planar_FR);
-		formatMask.set(kPixFormat_YUV422_Planar_FR);
-		formatMask.set(kPixFormat_YUV420_Planar_FR);
-		formatMask.set(kPixFormat_YUV420i_Planar_FR);
-		formatMask.set(kPixFormat_YUV420it_Planar_FR);
-		formatMask.set(kPixFormat_YUV420ib_Planar_FR);
-		formatMask.set(kPixFormat_YUV411_Planar_FR);
-		formatMask.set(kPixFormat_YUV410_Planar_FR);
-		formatMask.set(kPixFormat_YUV422_UYVY_709_FR);
-		formatMask.set(kPixFormat_YUV422_YUYV_709_FR);
-		formatMask.set(kPixFormat_YUV444_Planar_709_FR);
-		formatMask.set(kPixFormat_YUV422_Planar_709_FR);
-		formatMask.set(kPixFormat_YUV420_Planar_709_FR);
-		formatMask.set(kPixFormat_YUV420i_Planar_709_FR);
-		formatMask.set(kPixFormat_YUV420it_Planar_709_FR);
-		formatMask.set(kPixFormat_YUV420ib_Planar_709_FR);
-		formatMask.set(kPixFormat_YUV411_Planar_709_FR);
-		formatMask.set(kPixFormat_YUV410_Planar_709_FR);
-		formatMask.set(kPixFormat_XRGB64);
-		formatMask.set(kPixFormat_YUV444_Planar16);
-		formatMask.set(kPixFormat_YUV422_Planar16);
-		formatMask.set(kPixFormat_YUV420_Planar16);
-		formatMask.set(kPixFormat_Y16);
-		formatMask.set(kPixFormat_YUV444_Alpha_Planar);
-		formatMask.set(kPixFormat_YUV422_Alpha_Planar);
-		formatMask.set(kPixFormat_YUV420_Alpha_Planar);
-		formatMask.set(kPixFormat_YUV444_Alpha_Planar16);
-		formatMask.set(kPixFormat_YUV422_Alpha_Planar16);
-		formatMask.set(kPixFormat_YUV420_Alpha_Planar16);
-
-		static const int kStaticOrder[]={
-			kPixFormat_YUV444_Planar,
-			kPixFormat_YUV422_Planar,
-			kPixFormat_YUV422_UYVY,
-			kPixFormat_YUV422_YUYV,
-			kPixFormat_YUV420_Planar,
-			kPixFormat_YUV411_Planar,
-			kPixFormat_YUV410_Planar,
-			kPixFormat_XRGB8888
-		};
-
-		int staticOrderIndex = 0;
-
 		// test an invalid format and make sure the filter DOESN'T accept it
 		for(uint32 i = 0; i < inputCount; ++i)
 			inputs[i] = *inputSrcs[i];
@@ -567,311 +490,62 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 
 		inputs[0] = *inputSrcs[0];
 
-		int format = originalFormat;
 		if (flags != FILTERPARAM_NOT_SUPPORTED) {
-			formatMask.reset();
 			VDASSERT(fa->GetInvalidFormatHandlingState());
 		} else {
 			bool conversionRequired = true;
+			MatchFilterFormat match(originalFormat);
 
-			if (accelEnabled && fa->IsAcceleratable()) {
-				static const int kFormats[]={
-					nsVDXPixmap::kPixFormat_VDXA_RGB,
-					nsVDXPixmap::kPixFormat_VDXA_YUV,
-					nsVDXPixmap::kPixFormat_VDXA_RGB
-				};
-
-				const int *formats = kFormats + 1;
-
-				switch(originalFormat) {
-					case nsVDXPixmap::kPixFormat_RGB565:
-					case nsVDXPixmap::kPixFormat_XRGB1555:
-					case nsVDXPixmap::kPixFormat_RGB888:
-					case nsVDXPixmap::kPixFormat_XRGB8888:
-					case nsVDXPixmap::kPixFormat_VDXA_RGB:
-						formats = kFormats;
-						break;
-				}
-
-				for(int i=0; i<2; ++i) {
-					format = formats[i];
-
-					bool conversionFound = false;
-					for(uint32 j = 0; j < inputCount; ++j) {
+			while(!match.empty()) {
+				if (match.format.fullEqual(originalFormat) && acceptOriginal) {
+					// can work with incoming format
+					// just setup everything normally again
+					for(uint32 j = 0; j < inputCount; ++j)
 						inputs[j] = *inputSrcs[j];
 
-						if (inputs[j].mPixmapLayout.format != format)
-							conversionFound = true;
+					flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
 
-						VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, nsVDPixmap::kPixFormat_XRGB8888, inputs[j].w, inputs[j].h, alignReq);
-						inputs[j].mPixmapLayout.format = format;
-						inputs[j].mPixmapLayout.formatEx = format;
+					if (flags != FILTERPARAM_NOT_SUPPORTED) {
+						conversionRequired = false;
+						break;
+					}
+				}
+
+				// test conversion
+				for(uint32 j = 0; j < inputCount; ++j) {
+					inputs[j] = *inputSrcs[j];
+					VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, match.format, inputs[j].w, inputs[j].h, alignReq);
+
+					if (altFormatCheckRequired && match.format == nsVDPixmap::kPixFormat_XRGB8888)
+						VDPixmapLayoutFlipV(inputs[j].mPixmapLayout);
+
+					inputs[j].ConvertPixmapLayoutToBitmapLayout();
+				}
+
+				flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
+
+				if (flags != FILTERPARAM_NOT_SUPPORTED) {
+					VDFilterPrepareStreamInfo& streamInfo = prepareInfo.mStreams[0];
+					if (match.format.fullEqual(streamInfo.reqFormat)) {
+						break;
+					}
+
+					// previous test triggered another format selection (normally colorspace change), apply it
+					for(uint32 j = 0; j < inputCount; ++j) {
+						inputs[j] = *inputSrcs[j];
+						VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, streamInfo.reqFormat, inputs[j].w, inputs[j].h, alignReq);
 						inputs[j].ConvertPixmapLayoutToBitmapLayout();
 					}
 
 					flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
 
-					if (flags != FILTERPARAM_NOT_SUPPORTED) {
-						// clear the format mask so we don't try any more formats
-						formatMask.reset();
-
-						conversionRequired = conversionFound;
-						break;
-					}
-				}
-
-				if (formatMask.any()) {
-					// failed - restore original first format to try
-					format = originalFormat;
-				}
-			}
-
-			// check if the incoming format is VDXA and we haven't already handled the situation --
-			// if so we must convert it to the equivalent.
-			if (formatMask.any()) {
-				switch(originalFormat) {
-					case nsVDXPixmap::kPixFormat_VDXA_RGB:
-						format = nsVDXPixmap::kPixFormat_XRGB8888;
-						break;
-					case nsVDXPixmap::kPixFormat_VDXA_YUV:
-						format = nsVDXPixmap::kPixFormat_YUV444_Planar;
-						break;
-				}
-			}
-
-			while(format && formatMask.any()) {
-				if (formatMask.test(format)) {
-					if (format == originalFormat && acceptOriginal) {
-						// can work with incoming format
-						// just setup everything normally again
-						for(uint32 j = 0; j < inputCount; ++j)
-							inputs[j] = *inputSrcs[j];
-
-						flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
-
-						if (flags != FILTERPARAM_NOT_SUPPORTED) {
-							conversionRequired = false;
-							break;
-						}
-					}
-
-					// test conversion
-					// preserve colorspaces for advanced formats (we only test them once)
-					VDPixmapFormatEx formatEx = format;
-					if (VDPixmapFormatMatrixType(format)==1)
-						formatEx = VDPixmapFormatCombineOpt(format,originalFormat);
-
-					for(uint32 j = 0; j < inputCount; ++j) {
-						inputs[j] = *inputSrcs[j];
-						VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, formatEx, inputs[j].w, inputs[j].h, alignReq);
-
-						if (altFormatCheckRequired && format == nsVDPixmap::kPixFormat_XRGB8888)
-							VDPixmapLayoutFlipV(inputs[j].mPixmapLayout);
-
-						inputs[j].ConvertPixmapLayoutToBitmapLayout();
-					}
-
-					flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
-
-					if (flags != FILTERPARAM_NOT_SUPPORTED) {
-						VDFilterPrepareStreamInfo& streamInfo = prepareInfo.mStreams[0];
-						if (!streamInfo.reqFormat.fullEqual(formatEx)) {
-							// previous test triggered another format selection (normally colorspace change), apply it
-							for(uint32 j = 0; j < inputCount; ++j) {
-								inputs[j] = *inputSrcs[j];
-								VDPixmapCreateLinearLayout(inputs[j].mPixmapLayout, streamInfo.reqFormat, inputs[j].w, inputs[j].h, alignReq);
-								inputs[j].ConvertPixmapLayoutToBitmapLayout();
-							}
-
-							flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
-
-							if (flags == FILTERPARAM_NOT_SUPPORTED) {
-								formatMask.reset();
-								VDASSERT(false);
-							}
-						}
-						break;
-					}
-
-					formatMask.reset(format);
-				}
-
-				switch(format) {
-				case kPixFormat_YUV422_UYVY:
-					if (formatMask.test(kPixFormat_YUV422_YUYV))
-						format = kPixFormat_YUV422_YUYV;
-					else
-						format = kPixFormat_YUV422_Planar;
-					break;
-
-				case kPixFormat_YUV422_YUYV:
-					if (formatMask.test(kPixFormat_YUV422_UYVY))
-						format = kPixFormat_YUV422_UYVY;
-					else
-						format = kPixFormat_YUV422_Planar;
-					break;
-
-				case kPixFormat_YUV422_UYVY_709:
-					if (formatMask.test(kPixFormat_YUV422_YUYV_709))
-						format = kPixFormat_YUV422_YUYV_709;
-					else
-						format = kPixFormat_YUV422_Planar_709;
-					break;
-
-				case kPixFormat_YUV422_YUYV_709:
-					if (formatMask.test(kPixFormat_YUV422_UYVY_709))
-						format = kPixFormat_YUV422_UYVY_709;
-					else
-						format = kPixFormat_YUV422_Planar_709;
-					break;
-
-				case kPixFormat_YUV422_UYVY_FR:
-					if (formatMask.test(kPixFormat_YUV422_YUYV_FR))
-						format = kPixFormat_YUV422_YUYV_FR;
-					else
-						format = kPixFormat_YUV422_Planar_FR;
-					break;
-
-				case kPixFormat_YUV422_YUYV_709_FR:
-					if (formatMask.test(kPixFormat_YUV422_UYVY_709_FR))
-						format = kPixFormat_YUV422_UYVY_709_FR;
-					else
-						format = kPixFormat_YUV422_Planar_709_FR;
-					break;
-
-				case kPixFormat_Y8:
-				case kPixFormat_YUV422_Planar:
-				case kPixFormat_YUV444_V308:
-					format = kPixFormat_YUV444_Planar;
-					break;
-
-				case kPixFormat_YUV420_Planar:
-				case kPixFormat_YUV411_Planar:
-					format = kPixFormat_YUV422_Planar;
-					break;
-
-				case kPixFormat_YUV410_Planar:
-				case kPixFormat_YUV420_NV12:
-					format = kPixFormat_YUV420_Planar;
-					break;
-
-				case kPixFormat_YUV420_P010:
-				case kPixFormat_YUV420_P016:
-					format = kPixFormat_YUV420_Planar16;
-					break;
-
-				case kPixFormat_YUV422_V210:
-				case kPixFormat_YUV422_P210:
-				case kPixFormat_YUV422_P216:
-				case kPixFormat_YUV422_YU64:
-					format = kPixFormat_YUV422_Planar16;
-					break;
-
-				case kPixFormat_YUVA444_Y416:
-					format = kPixFormat_YUV444_Alpha_Planar16;
-					break;
-
-				case kPixFormat_YUV444_Alpha_Planar16:
-					format = kPixFormat_YUV444_Planar16;
-					break;
-
-				case kPixFormat_YUV422_Alpha_Planar16:
-					format = kPixFormat_YUV422_Planar16;
-					break;
-
-				case kPixFormat_YUV420_Alpha_Planar16:
-					format = kPixFormat_YUV420_Planar16;
-					break;
-
-				case kPixFormat_YUV444_Alpha_Planar:
-					format = kPixFormat_YUV444_Planar;
-					break;
-
-				case kPixFormat_YUV422_Alpha_Planar:
-					format = kPixFormat_YUV422_Planar;
-					break;
-
-				case kPixFormat_YUV420_Alpha_Planar:
-					format = kPixFormat_YUV420_Planar;
-					break;
-
-				case kPixFormat_YUV444_V410:
-				case kPixFormat_YUV444_Y410:
-					format = kPixFormat_YUV444_Planar16;
-					break;
-
-				case kPixFormat_Y8_FR:
-				case kPixFormat_YUV422_Planar_FR:
-					format = kPixFormat_YUV444_Planar_FR;
-					break;
-
-				case kPixFormat_YUV420_Planar_FR:
-				case kPixFormat_YUV411_Planar_FR:
-					format = kPixFormat_YUV422_Planar_FR;
-					break;
-
-				case kPixFormat_YUV410_Planar_FR:
-					format = kPixFormat_YUV420_Planar_FR;
-					break;
-
-				case kPixFormat_YUV422_Planar_709:
-					format = kPixFormat_YUV444_Planar_709;
-					break;
-
-				case kPixFormat_YUV420_Planar_709:
-				case kPixFormat_YUV411_Planar_709:
-					format = kPixFormat_YUV422_Planar_709;
-					break;
-
-				case kPixFormat_YUV410_Planar_709:
-					format = kPixFormat_YUV420_Planar_709;
-					break;
-
-				case kPixFormat_YUV422_Planar_709_FR:
-					format = kPixFormat_YUV444_Planar_709_FR;
-					break;
-
-				case kPixFormat_YUV420_Planar_709_FR:
-				case kPixFormat_YUV411_Planar_709_FR:
-					format = kPixFormat_YUV422_Planar_709_FR;
-					break;
-
-				case kPixFormat_YUV410_Planar_709_FR:
-					format = kPixFormat_YUV420_Planar_709_FR;
-					break;
-
-				case kPixFormat_R210:
-				case kPixFormat_R10K:
-				case kPixFormat_B64A:
-					format = kPixFormat_XRGB64;
-					break;
-
-				case kPixFormat_XRGB1555:
-				case kPixFormat_RGB565:
-				case kPixFormat_RGB888:
-				case kPixFormat_XRGB64:
-					if (formatMask.test(kPixFormat_XRGB8888)) {
-						format = kPixFormat_XRGB8888;
-						break;
-					}
-
-					// fall through
-
-				default:
-					if (staticOrderIndex < sizeof(kStaticOrder)/sizeof(kStaticOrder[0]))
-						format = kStaticOrder[staticOrderIndex++];
-					else if (formatMask.test(kPixFormat_XRGB8888))
-						format = kPixFormat_XRGB8888;
-					else {
-						for(size_t i=1; i<nsVDPixmap::kPixFormat_Max_Standard; ++i) {
-							if (formatMask.test(i)) {
-								format = i;
-								break;
-							}
-						}
+					if (flags == FILTERPARAM_NOT_SUPPORTED) {
+						VDASSERT(false);
 					}
 					break;
 				}
+
+				match.next();
 			}
 
 			if (conversionRequired) {

@@ -7,6 +7,7 @@
 
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/system/vdstring.h>
+#include <bitset>
 
 struct VDPixmapFormatInfo {
 	const char *name;		// debugging name
@@ -104,6 +105,44 @@ VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format);
 VDPixmapFormatEx VDPixmapFormatCombineOpt(VDPixmapFormatEx format, VDPixmapFormatEx opt);
 VDStringA VDPixmapFormatPrintSpec(VDPixmapFormatEx format);
 VDStringA VDPixmapFormatPrintColor(VDPixmapFormatEx format);
+
+struct MatchFilterFormat {
+	std::bitset<nsVDPixmap::kPixFormat_Max_Standard> formatMask;
+	VDPixmapFormatEx original;
+	VDPixmapFormatEx format;
+	int base;
+	int base2;
+	bool follow_base;
+	int backup;
+	int legacy;
+
+	MatchFilterFormat(VDPixmapFormatEx originalFormat) {
+		original = VDPixmapFormatNormalize(originalFormat);
+		format = originalFormat;
+		initMask();
+		initBase();
+		backup = 0;
+		legacy = 1;
+		while(!empty()) {
+			if (formatMask.test(format)) break;
+			next1();
+		}
+	}
+	void initMask();
+	void initBase();
+	int next_base();
+	void next1();
+	void next() {
+		while(!empty()) {
+			next1();
+			if (formatMask.test(format)) break;
+		}
+	}
+	bool empty() {
+		if (format && formatMask.any()) return false;
+		return true;
+	}
+};
 
 uint32 VDPixmapCreateLinearLayout(VDPixmapLayout& layout, VDPixmapFormatEx format, vdpixsize w, vdpixsize h, int alignment);
 

@@ -611,6 +611,314 @@ VDStringA VDPixmapFormatPrintColor(VDPixmapFormatEx format) {
 	return s;
 }
 
+// search logic (rules):
+// 1. search through same precision group (from specific to more generic),
+// 2. switch precision and search again
+// 3. try some backup formats (drop colorspaces now)
+// 4. try all legacy formats
+
+void MatchFilterFormat::next1() {
+	using namespace nsVDPixmap;
+
+	formatMask.reset(format);
+
+	if (base) {
+		base = next_base();
+		if (base) {
+			format = VDPixmapFormatCombineOpt(base, original);
+			return;
+		}
+	}
+
+	static const int kBackup[]={
+		kPixFormat_YUV444_Planar,
+		kPixFormat_YUV422_Planar,
+		kPixFormat_YUV422_UYVY,
+		kPixFormat_YUV422_YUYV,
+		kPixFormat_YUV420_Planar,
+		kPixFormat_YUV411_Planar,
+		kPixFormat_YUV410_Planar,
+		kPixFormat_XRGB8888,
+		kPixFormat_XRGB64
+	};
+
+	while(backup<sizeof(kBackup)/sizeof(kBackup[0])) {
+		int i = kBackup[backup];
+		backup++;
+		if (formatMask.test(i)) {
+			format = i;
+			return;
+		}
+	}
+
+	while(legacy<kPixFormat_XRGB64) {
+		int i = legacy;
+		legacy++;
+		if (formatMask.test(i)) {
+			format = i;
+			return;
+		}
+	}
+
+	format = 0;
+}
+
+void MatchFilterFormat::initBase() {
+	using namespace nsVDPixmap;
+
+	base = original;
+	base2 = 0;
+	follow_base = true;
+
+	switch(original) {
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV410_Planar:
+	case kPixFormat_YUV420_NV12:
+		base2 = kPixFormat_YUV420_Planar16;
+		break;
+
+	case kPixFormat_YUV422_UYVY:
+	case kPixFormat_YUV422_YUYV:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV411_Planar:
+		base2 = kPixFormat_YUV422_Planar16;
+		break;
+
+	case kPixFormat_Y8:
+	case kPixFormat_Y8_FR:
+		base2 = kPixFormat_Y16;
+		break;
+
+	case kPixFormat_Y16:
+		base2 = kPixFormat_Y8;
+		break;
+
+	case kPixFormat_YUV444_V308:
+	case kPixFormat_YUV444_Planar:
+		base2 = kPixFormat_YUV444_Planar16;
+		break;
+
+	case kPixFormat_YUV420_P010:
+	case kPixFormat_YUV420_P016:
+	case kPixFormat_YUV420_Planar16:
+		base2 = kPixFormat_YUV420_Planar;
+		break;
+
+	case kPixFormat_YUV422_V210:
+	case kPixFormat_YUV422_P210:
+	case kPixFormat_YUV422_P216:
+	case kPixFormat_YUV422_YU64:
+	case kPixFormat_YUV422_Planar16:
+		base2 = kPixFormat_YUV422_Planar;
+		break;
+
+	case kPixFormat_YUV444_V410:
+	case kPixFormat_YUV444_Y410:
+	case kPixFormat_YUV444_Planar16:
+		base2 = kPixFormat_YUV444_Planar;
+		break;
+
+	case kPixFormat_YUVA444_Y416:
+	case kPixFormat_YUV444_Alpha_Planar16:
+		base2 = kPixFormat_YUV444_Alpha_Planar;
+		break;
+
+	case kPixFormat_YUV422_Alpha_Planar16:
+		base2 = kPixFormat_YUV422_Alpha_Planar;
+		break;
+
+	case kPixFormat_YUV420_Alpha_Planar16:
+		base2 = kPixFormat_YUV420_Alpha_Planar;
+		break;
+
+	case kPixFormat_YUV444_Alpha_Planar:
+		base2 = kPixFormat_YUV444_Alpha_Planar16;
+		break;
+
+	case kPixFormat_YUV422_Alpha_Planar:
+		base2 = kPixFormat_YUV422_Alpha_Planar16;
+		break;
+
+	case kPixFormat_YUV420_Alpha_Planar:
+		base2 = kPixFormat_YUV420_Alpha_Planar16;
+		break;
+
+	case kPixFormat_R210:
+	case kPixFormat_R10K:
+	case kPixFormat_B64A:
+	case kPixFormat_XRGB64:
+		base2 = kPixFormat_XRGB8888;
+		break;
+
+	case kPixFormat_XRGB1555:
+	case kPixFormat_RGB565:
+	case kPixFormat_RGB888:
+	case kPixFormat_XRGB8888:
+		base2 = kPixFormat_XRGB64;
+		break;
+	}
+}
+
+int MatchFilterFormat::next_base() {
+	using namespace nsVDPixmap;
+
+	if (follow_base) switch(base) {
+	case kPixFormat_YUV422_UYVY:
+		if (formatMask.test(kPixFormat_YUV422_YUYV))
+			return kPixFormat_YUV422_YUYV;
+		else
+			return kPixFormat_YUV422_Planar;
+
+	case kPixFormat_YUV422_YUYV:
+		if (formatMask.test(kPixFormat_YUV422_UYVY))
+			return kPixFormat_YUV422_UYVY;
+		else
+			return kPixFormat_YUV422_Planar;
+
+	case kPixFormat_Y8:
+	case kPixFormat_Y8_FR:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV444_V308:
+		return kPixFormat_YUV444_Planar;
+
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV411_Planar:
+		return kPixFormat_YUV422_Planar;
+
+	case kPixFormat_YUV410_Planar:
+	case kPixFormat_YUV420_NV12:
+		return kPixFormat_YUV420_Planar;
+
+	case kPixFormat_YUV420_P010:
+	case kPixFormat_YUV420_P016:
+		return kPixFormat_YUV420_Planar16;
+
+	case kPixFormat_YUV422_V210:
+	case kPixFormat_YUV422_P210:
+	case kPixFormat_YUV422_P216:
+	case kPixFormat_YUV422_YU64:
+		return kPixFormat_YUV422_Planar16;
+
+	case kPixFormat_YUVA444_Y416:
+		return kPixFormat_YUV444_Alpha_Planar16;
+
+	case kPixFormat_YUV444_Alpha_Planar16:
+		return kPixFormat_YUV444_Planar16;
+
+	case kPixFormat_YUV422_Alpha_Planar16:
+		return kPixFormat_YUV422_Planar16;
+
+	case kPixFormat_YUV420_Alpha_Planar16:
+		return kPixFormat_YUV420_Planar16;
+
+	case kPixFormat_YUV444_Alpha_Planar:
+		return kPixFormat_YUV444_Planar;
+
+	case kPixFormat_YUV422_Alpha_Planar:
+		return kPixFormat_YUV422_Planar;
+
+	case kPixFormat_YUV420_Alpha_Planar:
+		return kPixFormat_YUV420_Planar;
+
+	case kPixFormat_YUV444_V410:
+	case kPixFormat_YUV444_Y410:
+		return kPixFormat_YUV444_Planar16;
+
+	case kPixFormat_R210:
+	case kPixFormat_R10K:
+	case kPixFormat_B64A:
+		return kPixFormat_XRGB64;
+
+	case kPixFormat_XRGB1555:
+	case kPixFormat_RGB565:
+	case kPixFormat_RGB888:
+		return kPixFormat_XRGB8888;
+
+	case kPixFormat_YUV444_Planar16:
+		follow_base = false;
+		return kPixFormat_XRGB64;
+
+	case kPixFormat_XRGB64:
+		follow_base = false;
+		return kPixFormat_YUV444_Planar16;
+
+	case kPixFormat_YUV444_Planar:
+		follow_base = false;
+		return kPixFormat_XRGB8888;
+
+	case kPixFormat_XRGB8888:
+		follow_base = false;
+		return kPixFormat_YUV444_Planar;
+	}
+
+	int r = base2;
+	base2 = 0;
+	follow_base = true;
+	return r;
+}
+
+void MatchFilterFormat::initMask() {
+	using namespace nsVDPixmap;
+	formatMask.set(kPixFormat_XRGB1555);
+	formatMask.set(kPixFormat_RGB565);
+	formatMask.set(kPixFormat_RGB888);
+	formatMask.set(kPixFormat_XRGB8888);
+	formatMask.set(kPixFormat_Y8);
+	formatMask.set(kPixFormat_Y8_FR);
+	formatMask.set(kPixFormat_YUV422_UYVY);
+	formatMask.set(kPixFormat_YUV422_YUYV);
+	formatMask.set(kPixFormat_YUV444_Planar);
+	formatMask.set(kPixFormat_YUV422_Planar);
+	formatMask.set(kPixFormat_YUV420_Planar);
+	formatMask.set(kPixFormat_YUV420i_Planar);
+	formatMask.set(kPixFormat_YUV420it_Planar);
+	formatMask.set(kPixFormat_YUV420ib_Planar);
+	formatMask.set(kPixFormat_YUV411_Planar);
+	formatMask.set(kPixFormat_YUV410_Planar);
+	formatMask.set(kPixFormat_YUV422_UYVY_709);
+	formatMask.set(kPixFormat_YUV420_NV12);
+	formatMask.set(kPixFormat_YUV422_YUYV_709);
+	formatMask.set(kPixFormat_YUV444_Planar_709);
+	formatMask.set(kPixFormat_YUV422_Planar_709);
+	formatMask.set(kPixFormat_YUV420_Planar_709);
+	formatMask.set(kPixFormat_YUV420i_Planar_709);
+	formatMask.set(kPixFormat_YUV420it_Planar_709);
+	formatMask.set(kPixFormat_YUV420ib_Planar_709);
+	formatMask.set(kPixFormat_YUV411_Planar_709);
+	formatMask.set(kPixFormat_YUV410_Planar_709);
+	formatMask.set(kPixFormat_YUV422_UYVY_FR);
+	formatMask.set(kPixFormat_YUV422_YUYV_FR);
+	formatMask.set(kPixFormat_YUV444_Planar_FR);
+	formatMask.set(kPixFormat_YUV422_Planar_FR);
+	formatMask.set(kPixFormat_YUV420_Planar_FR);
+	formatMask.set(kPixFormat_YUV420i_Planar_FR);
+	formatMask.set(kPixFormat_YUV420it_Planar_FR);
+	formatMask.set(kPixFormat_YUV420ib_Planar_FR);
+	formatMask.set(kPixFormat_YUV411_Planar_FR);
+	formatMask.set(kPixFormat_YUV410_Planar_FR);
+	formatMask.set(kPixFormat_YUV422_UYVY_709_FR);
+	formatMask.set(kPixFormat_YUV422_YUYV_709_FR);
+	formatMask.set(kPixFormat_YUV444_Planar_709_FR);
+	formatMask.set(kPixFormat_YUV422_Planar_709_FR);
+	formatMask.set(kPixFormat_YUV420_Planar_709_FR);
+	formatMask.set(kPixFormat_YUV420i_Planar_709_FR);
+	formatMask.set(kPixFormat_YUV420it_Planar_709_FR);
+	formatMask.set(kPixFormat_YUV420ib_Planar_709_FR);
+	formatMask.set(kPixFormat_YUV411_Planar_709_FR);
+	formatMask.set(kPixFormat_YUV410_Planar_709_FR);
+	formatMask.set(kPixFormat_XRGB64);
+	formatMask.set(kPixFormat_YUV444_Planar16);
+	formatMask.set(kPixFormat_YUV422_Planar16);
+	formatMask.set(kPixFormat_YUV420_Planar16);
+	formatMask.set(kPixFormat_Y16);
+	formatMask.set(kPixFormat_YUV444_Alpha_Planar);
+	formatMask.set(kPixFormat_YUV422_Alpha_Planar);
+	formatMask.set(kPixFormat_YUV420_Alpha_Planar);
+	formatMask.set(kPixFormat_YUV444_Alpha_Planar16);
+	formatMask.set(kPixFormat_YUV422_Alpha_Planar16);
+	formatMask.set(kPixFormat_YUV420_Alpha_Planar16);
+}
+
 namespace {
 	void check() {
 		VDASSERTCT(sizeof(g_vdPixmapFormats)/sizeof(g_vdPixmapFormats[0]) == nsVDPixmap::kPixFormat_Max_Standard);
