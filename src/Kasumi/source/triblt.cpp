@@ -1488,6 +1488,7 @@ bool VDPixmapTriFill(VDPixmap& dst, const uint32 c, const VDTriBltVertex *pVerti
 
 bool VDPixmapTriFill(VDPixmap& dst, const VDTriColorVertex *pVertices, int nVertices, const int *pIndices, int nIndices, const float pTransform[16], const float *chroma_yoffset) {
 	VDPixmap pxY;
+	VDPixmap pxA;
 	VDPixmap pxCb;
 	VDPixmap pxCr;
 	bool ycbcr = false;
@@ -1517,11 +1518,23 @@ bool VDPixmapTriFill(VDPixmap& dst, const VDTriColorVertex *pVertices, int nVert
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
 		pxY.format = nsVDPixmap::kPixFormat_Y8;
 		pxY.data = dst.data;
 		pxY.pitch = dst.pitch;
 		pxY.w = dst.w;
 		pxY.h = dst.h;
+
+		pxA.format = 0;
+		pxA.data = dst.data4;
+		pxA.pitch = dst.pitch4;
+		pxA.w = dst.w;
+		pxA.h = dst.h;
 
 		pxCb.format = nsVDPixmap::kPixFormat_Y8;
 		pxCb.data = dst.data2;
@@ -1539,9 +1552,25 @@ bool VDPixmapTriFill(VDPixmap& dst, const VDTriColorVertex *pVertices, int nVert
 		case nsVDPixmap::kPixFormat_YUV444_Planar16:
 		case nsVDPixmap::kPixFormat_YUV422_Planar16:
 		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
 			pxY.format = nsVDPixmap::kPixFormat_Y16;
 			pxCb.format = nsVDPixmap::kPixFormat_Y16;
 			pxCr.format = nsVDPixmap::kPixFormat_Y16;
+			break;
+		}
+
+		switch(dst.format) {
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+			pxA.format = nsVDPixmap::kPixFormat_Y16;
+			break;
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+			pxA.format = nsVDPixmap::kPixFormat_Y8;
 			break;
 		}
 
@@ -1560,6 +1589,8 @@ bool VDPixmapTriFill(VDPixmap& dst, const VDTriColorVertex *pVertices, int nVert
 			case nsVDPixmap::kPixFormat_YUV420_Planar_709:
 			case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
 			case nsVDPixmap::kPixFormat_YUV420_Planar16:
+			case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+			case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
 				pxCr.w = pxCb.w = dst.w >> 1;
 				pxCr.h = pxCb.h = dst.h >> 1;
 				ycbcr_xoffset = 0.5f / (float)pxCr.w;
@@ -1570,6 +1601,8 @@ bool VDPixmapTriFill(VDPixmap& dst, const VDTriColorVertex *pVertices, int nVert
 			case nsVDPixmap::kPixFormat_YUV422_Planar_709:
 			case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
 			case nsVDPixmap::kPixFormat_YUV422_Planar16:
+			case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+			case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
 				pxCr.w = pxCb.w = dst.w >> 1;
 				ycbcr_xoffset = 0.5f / (float)pxCr.w;
 				break;
@@ -1579,6 +1612,8 @@ bool VDPixmapTriFill(VDPixmap& dst, const VDTriColorVertex *pVertices, int nVert
 			case nsVDPixmap::kPixFormat_YUV444_Planar_709:
 			case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
 			case nsVDPixmap::kPixFormat_YUV444_Planar16:
+			case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+			case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
 				pxCr.w = pxCb.w = dst.w;
 				ycbcr_xoffset = 0.0f;
 				break;
@@ -1605,11 +1640,25 @@ bool VDPixmapTriFill(VDPixmap& dst, const VDTriColorVertex *pVertices, int nVert
 	if (!pTransform)
 		pTransform = xf_ident;
 
-	VDTriClipWorkspace clipws;
-	for(int plane=0; plane<(ycbcr?3:1); ++plane) {
-		VDPixmap& pxPlane = ycbcr ? plane == 0 ? pxY : plane == 1 ? pxCb : pxCr : dst;
+	VDPixmap* planes[4] = {&dst,0,0,0};
+	if (ycbcr) {
+		planes[0] = &pxY;
+		planes[1] = &pxCb;
+		planes[2] = &pxCr;
+		if (pxA.format) planes[3] = &pxA;
+	}
 
-		if (ycbcr && plane) {
+	VDTriClipWorkspace clipws;
+	for(int plane=0; plane<4; ++plane) {
+		VDPixmap* pxPlane = planes[plane];
+		if (!pxPlane) break;
+
+		if (plane==3) {
+			TransformVerts(xsrc, pVertices, nVertices, pTransform);
+			for(int i=0; i<nVertices; ++i)
+				xsrc[i].g = xsrc[i].a;
+
+		} else if (ycbcr && plane!=0) {
 			float xf_ycbcr[16];
 			memcpy(xf_ycbcr, pTransform, sizeof(float) * 16);
 
@@ -1665,12 +1714,12 @@ bool VDPixmapTriFill(VDPixmap& dst, const VDTriColorVertex *pVertices, int nVert
 
 						// fan out triangles
 						while(src[1]) {
-							FillTriGrad(pxPlane, src0, src[0], src[1]);
+							FillTriGrad(*pxPlane, src0, src[0], src[1]);
 							++src;
 						}
 					}
 				} else {
-					FillTriGrad(pxPlane, xv0, xv1, xv2);
+					FillTriGrad(*pxPlane, xv0, xv1, xv2);
 				}
 			}
 

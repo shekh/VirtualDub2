@@ -431,20 +431,26 @@ uint32 VDVFilterDrawText::GetParams() {
 	int base_format = ExtractBaseFormat(pxldst.format);
 
 	switch(base_format) {
-		case nsVDXPixmap::kPixFormat_XRGB8888:
-		case nsVDXPixmap::kPixFormat_XRGB64:
-		case nsVDPixmap::kPixFormat_YUV444_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Planar:
-		case nsVDPixmap::kPixFormat_YUV420_Planar:
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Planar16:
-		case nsVDPixmap::kPixFormat_YUV420_Planar16:
-			pxldst.data = pxlsrc.data;
-			pxldst.pitch = pxlsrc.pitch;
-			return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_NORMALIZE16;
+	case nsVDXPixmap::kPixFormat_XRGB8888:
+	case nsVDXPixmap::kPixFormat_XRGB64:
+	case nsVDPixmap::kPixFormat_YUV444_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_Planar:
+	case nsVDPixmap::kPixFormat_YUV420_Planar:
+	case nsVDPixmap::kPixFormat_YUV444_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Planar16:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+		pxldst.data = pxlsrc.data;
+		pxldst.pitch = pxlsrc.pitch;
+		return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_NORMALIZE16;
 
-		default:
-			return FILTERPARAM_NOT_SUPPORTED;
+	default:
+		return FILTERPARAM_NOT_SUPPORTED;
 	}
 }
 
@@ -545,6 +551,12 @@ void VDVFilterDrawText::Run() {
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Planar16:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
 		{
 			color1 = VDConvertRGBToYCbCr(param.color,        colorSpace==kColorSpaceMode_709, colorRange==kColorRangeMode_Full);
 			color0 = VDConvertRGBToYCbCr(param.shadow_color, colorSpace==kColorSpaceMode_709, colorRange==kColorRangeMode_Full);

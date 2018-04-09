@@ -18,11 +18,13 @@
 #include "stdafx.h"
 
 #include <vd2/system/error.h>
+#include <vd2/system/profile.h>
 #include <vd2/Kasumi/region.h>
 #include <vd2/Kasumi/text.h>
 #include <vd2/Kasumi/triblt.h>
 #include <vd2/Kasumi/pixel.h>
 #include <vd2/Kasumi/pixmapops.h>
+#include <vd2/Kasumi/blitter.h>
 
 #include "VideoSource.h"
 #include "InputFile.h"
@@ -135,6 +137,8 @@ const struct VDVideoSourceTest::FormatInfo VDVideoSourceTest::kFormatInfo[]={
 	{	nsVDPixmap::kPixFormat_YUV420i_Planar_709,		true, "4:2:0 YCbCr (interlaced, Rec. 709)"	},
 	{	nsVDPixmap::kPixFormat_YUV420i_Planar_709_FR,	true, "4:2:0 YCbCr (interlaced, Rec. 709, 0-255)"	},
 	{	nsVDPixmap::kPixFormat_YUV444_Planar16,			true, "16-bit 4:4:4 YCbCr"	},
+	{	nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16,	true, "16-bit 4:4:4 YCbCr+A"	},
+	{	nsVDPixmap::kPixFormat_YUV444_Alpha_Planar,		true, "4:4:4 YCbCr+A"	},
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -278,7 +282,7 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 		}
 	}
 
-	if (format==nsVDPixmap::kPixFormat_YUV444_Planar16) {
+	if (format==nsVDPixmap::kPixFormat_YUV444_Planar16 || format==nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16) {
 		switch (mMode) {
 		case 4:
 		case 5:
@@ -326,6 +330,8 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 		case nsVDPixmap::kPixFormat_YUV444_Planar_709:
 		case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
 		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
 			mbUseTempBuffer = false;
 			break;
 		default:
@@ -484,40 +490,53 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 	case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
 	case nsVDPixmap::kPixFormat_YUV444_Planar_709:
 	case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-		{
-			isyuv = true;
-			int gray;
-			if (f1.colorRangeMode==nsVDXPixmap::kColorRangeMode_Limited) {
-				gray = 0x47;
-				if (f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) {
-					textcolor = VDConvertRGBToYCbCr(textcolor, true, false);
-					black = 0xFF801080;
-				} else {
-					textcolor = VDConvertRGBToYCbCr(textcolor, false, false);
-					black = 0xFF801080;
-				}
-			} else {
-				gray = 0x40;
-				if (f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) {
-					textcolor = VDConvertRGBToYCbCr(textcolor, true, true);
-					black = 0xFF800080;
-				} else {
-					textcolor = VDConvertRGBToYCbCr(textcolor, false, true);
-					black = 0xFF800080;
-				}
-			}
+		isyuv = true;
+		break;
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+		isyuv = true;
+		dst->info.ref_a = 0xFFFF;
+		dst->info.alpha_type = FilterModPixmapInfo::kAlphaMask;
+		VDMemset16Rect(dst->data4, dst->pitch4, 0, dstw, dsth);
+		break;
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+		isyuv = true;
+		dst->info.alpha_type = FilterModPixmapInfo::kAlphaMask;
+		VDMemset8Rect(dst->data4, dst->pitch4, 0, dstw, dsth);
+		break;
+	}
 
-			if (dst->format==nsVDPixmap::kPixFormat_YUV444_Planar16) {
-				dst->info.ref_r = 0xFFFF;
-				gray = (gray<<8) | gray;
-				VDMemset16Rect(dst->data, dst->pitch, uint16(gray), dstw, dsth);
-				VDMemset16Rect(dst->data2, dst->pitch2, 0x8080, dstw, dsth);
-				VDMemset16Rect(dst->data3, dst->pitch3, 0x8080, dstw, dsth);
+	if (isyuv) {
+		int gray;
+		if (f1.colorRangeMode==nsVDXPixmap::kColorRangeMode_Limited) {
+			gray = 0x47;
+			if (f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) {
+				textcolor = VDConvertRGBToYCbCr(textcolor, true, false);
+				black = 0xFF801080;
 			} else {
-				VDMemset8Rect(dst->data, dst->pitch, uint8(gray), dstw, dsth);
-				VDMemset8Rect(dst->data2, dst->pitch2, 0x80, dstw, dsth);
-				VDMemset8Rect(dst->data3, dst->pitch3, 0x80, dstw, dsth);
+				textcolor = VDConvertRGBToYCbCr(textcolor, false, false);
+				black = 0xFF801080;
 			}
+		} else {
+			gray = 0x40;
+			if (f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) {
+				textcolor = VDConvertRGBToYCbCr(textcolor, true, true);
+				black = 0xFF800080;
+			} else {
+				textcolor = VDConvertRGBToYCbCr(textcolor, false, true);
+				black = 0xFF800080;
+			}
+		}
+
+		if (dst->format==nsVDPixmap::kPixFormat_YUV444_Planar16 || dst->format==nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16) {
+			dst->info.ref_r = 0xFFFF;
+			gray = (gray<<8) | gray;
+			VDMemset16Rect(dst->data, dst->pitch, uint16(gray), dstw, dsth);
+			VDMemset16Rect(dst->data2, dst->pitch2, 0x8080, dstw, dsth);
+			VDMemset16Rect(dst->data3, dst->pitch3, 0x8080, dstw, dsth);
+		} else {
+			VDMemset8Rect(dst->data, dst->pitch, uint8(gray), dstw, dsth);
+			VDMemset8Rect(dst->data2, dst->pitch2, 0x80, dstw, dsth);
+			VDMemset8Rect(dst->data3, dst->pitch3, 0x80, dstw, dsth);
 		}
 	}
 
