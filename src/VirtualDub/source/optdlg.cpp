@@ -369,11 +369,17 @@ public:
 
 protected:
 	bool OnLoaded();
+	void RebuildList();
 	void OnDataExchange(bool write);
 	void OnSize();
 	bool OnErase(VDZHDC hdc);
+	void OnDestroy() {
+		VDUISaveWindowPlacementW32(mhdlg, "FormatList");
+	}
+	void OnColumnClicked(VDUIProxyListView *source, int column);
 
 	VDUIProxyListView mListView;
+	VDDelegate mDelegateColumnClicked;
 	int mFormat;
 
 	class FormatItem : public IVDUIListViewVirtualItem {
@@ -381,12 +387,20 @@ protected:
 		int AddRef() { return 2; }
 		int Release() { return 1; }
 		void Init(int format);
+		void InitText(int subItem, VDStringW& s) const;
 		void GetText(int subItem, VDStringW& s) const;
 
 		int mFormat;
+		int depth;
+		VDStringW space;
+		VDStringW range;
+		VDStringW enc;
+		VDStringW chroma;
 	};
 
 	struct FormatItemSort {
+		int col;
+		int dir;
 		bool operator()(const FormatItem& x, const FormatItem& y) const;
 	};
 
@@ -396,10 +410,39 @@ protected:
 	VDDialogResizerW32 mResizer;
 };
 
+bool VDDialogSelectVideoFormatW32::FormatItemSort::operator()(const FormatItem& x, const FormatItem& y) const {
+	if (col==2) {
+		if (dir==1)
+			return x.depth < y.depth;
+		else
+			return x.depth > y.depth;
+	}
+
+	VDStringW s;
+	VDStringW t;
+
+	x.GetText(col, s);
+	y.GetText(col, t);
+
+	int r = wcscmp(s.c_str(), t.c_str());
+	if (dir==1)
+		return r < 0;
+	else
+		return r > 0;
+}
+
 VDDialogSelectVideoFormatW32::VDDialogSelectVideoFormatW32(int format)
 	: VDDialogFrameW32(IDD_SELECT_VIDEO_FORMAT)
 	, mFormat(format)
 {
+	mListView.OnColumnClicked() += mDelegateColumnClicked.Bind(this, &VDDialogSelectVideoFormatW32::OnColumnClicked);
+}
+
+void VDDialogSelectVideoFormatW32::OnColumnClicked(VDUIProxyListView *source, int column) {
+	int x = mListView.GetSortIcon(column);
+	mListView.SetSortIcon(column, x==1 ? 2:1);
+	OnDataExchange(true);
+	RebuildList();
 }
 
 bool VDDialogSelectVideoFormatW32::OnLoaded() {
@@ -416,9 +459,40 @@ bool VDDialogSelectVideoFormatW32::OnLoaded() {
 	mListView.SetFullRowSelectEnabled(true);
 	mListView.InsertColumn(0, L"Color space", 100);
 	mListView.InsertColumn(1, L"Range", 100);
-	mListView.InsertColumn(2, L"Encoding", 100);
-	mListView.InsertColumn(3, L"Chroma position", 100);
+	mListView.InsertColumn(2, L"Precision", 100);
+	mListView.InsertColumn(3, L"Encoding", 100);
+	mListView.InsertColumn(4, L"Chroma position", 100);
 
+	RebuildList();
+
+	mListView.AutoSizeColumns();
+	SendMessage(mListView.GetHandle(), LVM_SETCOLUMNWIDTH, 4, LVSCW_AUTOSIZE_USEHEADER);
+
+	SetFocusToControl(IDC_FORMATS);
+	VDUIRestoreWindowPlacementW32(mhdlg, "FormatList", SW_SHOW);
+	return true;
+}
+
+void VDDialogSelectVideoFormatW32::OnDataExchange(bool write) {
+	if (write) {
+		int selIdx = mListView.GetSelectedIndex();
+
+		if (selIdx >= 0)
+			mFormat = mFormatItems[selIdx].mFormat;
+	}
+}
+
+void VDDialogSelectVideoFormatW32::OnSize() {
+	mResizer.Relayout();
+	SendMessage(mListView.GetHandle(), LVM_SETCOLUMNWIDTH, 4, LVSCW_AUTOSIZE_USEHEADER);
+}
+
+bool VDDialogSelectVideoFormatW32::OnErase(VDZHDC hdc) {
+	mResizer.Erase(&hdc);
+	return true;
+}
+
+void VDDialogSelectVideoFormatW32::RebuildList() {
 	static const int kFormats[]={
 		nsVDPixmap::kPixFormat_XRGB1555,
 		nsVDPixmap::kPixFormat_RGB565,
@@ -436,9 +510,8 @@ bool VDDialogSelectVideoFormatW32::OnLoaded() {
 		nsVDPixmap::kPixFormat_YUV420_Planar,
 		nsVDPixmap::kPixFormat_YUV411_Planar,
 		nsVDPixmap::kPixFormat_YUV410_Planar,
-		nsVDPixmap::kPixFormat_YUV422_Planar_Centered,
-		nsVDPixmap::kPixFormat_YUV420_Planar_Centered,
 		nsVDPixmap::kPixFormat_YUV444_V308,
+		nsVDPixmap::kPixFormat_YUV420_NV12,
 		nsVDPixmap::kPixFormat_YUV444_Planar16,
 		nsVDPixmap::kPixFormat_YUV422_Planar16,
 		nsVDPixmap::kPixFormat_YUV420_Planar16,
@@ -450,40 +523,17 @@ bool VDDialogSelectVideoFormatW32::OnLoaded() {
 		nsVDPixmap::kPixFormat_YUV422_P216,
 		nsVDPixmap::kPixFormat_YUV420_P016,
 		nsVDPixmap::kPixFormat_YUVA444_Y416,
-		nsVDPixmap::kPixFormat_YUV422_UYVY_709,
-		nsVDPixmap::kPixFormat_YUV420_NV12,
-		nsVDPixmap::kPixFormat_YUV422_YUYV_709,
-		nsVDPixmap::kPixFormat_YUV444_Planar_709,
-		nsVDPixmap::kPixFormat_YUV422_Planar_709,
-		nsVDPixmap::kPixFormat_YUV420_Planar_709,
-		nsVDPixmap::kPixFormat_YUV411_Planar_709,
-		nsVDPixmap::kPixFormat_YUV410_Planar_709,
-		nsVDPixmap::kPixFormat_YUV422_UYVY_FR,
-		nsVDPixmap::kPixFormat_YUV422_YUYV_FR,
-		nsVDPixmap::kPixFormat_YUV444_Planar_FR,
-		nsVDPixmap::kPixFormat_YUV422_Planar_FR,
-		nsVDPixmap::kPixFormat_YUV420_Planar_FR,
-		nsVDPixmap::kPixFormat_YUV411_Planar_FR,
-		nsVDPixmap::kPixFormat_YUV410_Planar_FR,
-		nsVDPixmap::kPixFormat_YUV422_UYVY_709_FR,
-		nsVDPixmap::kPixFormat_YUV422_YUYV_709_FR,
-		nsVDPixmap::kPixFormat_YUV444_Planar_709_FR,
-		nsVDPixmap::kPixFormat_YUV422_Planar_709_FR,
-		nsVDPixmap::kPixFormat_YUV420_Planar_709_FR,
-		nsVDPixmap::kPixFormat_YUV411_Planar_709_FR,
-		nsVDPixmap::kPixFormat_YUV410_Planar_709_FR,
+		nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16,
+		nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16,
+		nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16,
+		nsVDPixmap::kPixFormat_YUV444_Alpha_Planar,
+		nsVDPixmap::kPixFormat_YUV422_Alpha_Planar,
+		nsVDPixmap::kPixFormat_YUV420_Alpha_Planar,
+		nsVDPixmap::kPixFormat_YUV422_Planar_Centered,
+		nsVDPixmap::kPixFormat_YUV420_Planar_Centered,
 		nsVDPixmap::kPixFormat_YUV420i_Planar,
-		nsVDPixmap::kPixFormat_YUV420i_Planar_FR,
-		nsVDPixmap::kPixFormat_YUV420i_Planar_709,
-		nsVDPixmap::kPixFormat_YUV420i_Planar_709_FR,
 		nsVDPixmap::kPixFormat_YUV420it_Planar,
-		nsVDPixmap::kPixFormat_YUV420it_Planar_FR,
-		nsVDPixmap::kPixFormat_YUV420it_Planar_709,
-		nsVDPixmap::kPixFormat_YUV420it_Planar_709_FR,
 		nsVDPixmap::kPixFormat_YUV420ib_Planar,
-		nsVDPixmap::kPixFormat_YUV420ib_Planar_FR,
-		nsVDPixmap::kPixFormat_YUV420ib_Planar_709,
-		nsVDPixmap::kPixFormat_YUV420ib_Planar_709_FR,
 	};
 
 	mFormatItems.resize(sizeof(kFormats)/sizeof(kFormats[0]));
@@ -493,8 +543,18 @@ bool VDDialogSelectVideoFormatW32::OnLoaded() {
 		mFormatItems[i].Init(format);
 	}
 
-	std::sort(mFormatItems.begin(), mFormatItems.end(), FormatItemSort());
+	FormatItemSort sort;
+	sort.col = -1;
+	{for(int i=0; i<=4; i++){
+		int x = mListView.GetSortIcon(i);
+		if(x){
+			sort.col = i;
+			sort.dir = x;
+		}
+	}}
+	if(sort.col!=-1) std::sort(mFormatItems.begin(), mFormatItems.end(), sort);
 
+	mListView.Clear();
 	int selIdx = 0;
 	for(uint32 i=0; i<sizeof(kFormats)/sizeof(kFormats[0]); ++i) {
 		mListView.InsertVirtualItem(i, &mFormatItems[i]);
@@ -503,428 +563,282 @@ bool VDDialogSelectVideoFormatW32::OnLoaded() {
 			selIdx = i;
 	}
 
-	mListView.AutoSizeColumns();
 	mListView.SetSelectedIndex(selIdx);
 	mListView.EnsureItemVisible(selIdx);
-
-	SetFocusToControl(IDC_FORMATS);
-	return true;
 }
 
-void VDDialogSelectVideoFormatW32::OnDataExchange(bool write) {
-	if (write) {
-		int selIdx = mListView.GetSelectedIndex();
-
-		if (selIdx >= 0)
-			mFormat = mFormatItems[selIdx].mFormat;
+void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s) const {
+	switch(subItem) {
+	case 0:
+		s = space;
+		break;
+	case 1:
+		s = range;
+		break;
+	case 2:
+		s.sprintf(L"%d-bit",depth);
+		break;
+	case 3:
+		s = enc;
+		break;
+	case 4:
+		s = chroma;
+		break;
 	}
-}
-
-void VDDialogSelectVideoFormatW32::OnSize() {
-	mResizer.Relayout();
-}
-
-bool VDDialogSelectVideoFormatW32::OnErase(VDZHDC hdc) {
-	mResizer.Erase(&hdc);
-	return true;
 }
 
 void VDDialogSelectVideoFormatW32::FormatItem::Init(int format) {
 	mFormat = format;
 	VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == nsVDPixmap::kPixFormat_B64A + 1);
+	InitText(0,space);
+	InitText(1,range);
+	InitText(3,enc);
+	InitText(4,chroma);
+	switch(mFormat) {
+	case nsVDPixmap::kPixFormat_XRGB1555:
+	case nsVDPixmap::kPixFormat_RGB565:
+		depth = 5;
+		break;
+	case nsVDPixmap::kPixFormat_XRGB64:
+	case nsVDPixmap::kPixFormat_B64A:
+	case nsVDPixmap::kPixFormat_YUV444_Planar16:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_P216:
+	case nsVDPixmap::kPixFormat_YUV420_P016:
+	case nsVDPixmap::kPixFormat_YUVA444_Y416:
+		depth = 16;
+		break;
+	case nsVDPixmap::kPixFormat_R210:
+	case nsVDPixmap::kPixFormat_R10K:
+	case nsVDPixmap::kPixFormat_YUV422_V210:
+	case nsVDPixmap::kPixFormat_YUV444_V410:
+	case nsVDPixmap::kPixFormat_YUV444_Y410:
+	case nsVDPixmap::kPixFormat_YUV422_P210:
+	case nsVDPixmap::kPixFormat_YUV420_P010:
+		depth = 10;
+		break;
+	default:
+		depth = 8;
+		break;
+	}
 }
 
-void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s) const {
+void VDDialogSelectVideoFormatW32::FormatItem::InitText(int subItem, VDStringW& s) const {
 	switch(subItem) {
-		case 0:
-			switch(mFormat) {
-				case nsVDPixmap::kPixFormat_XRGB1555:
-				case nsVDPixmap::kPixFormat_RGB565:
-				case nsVDPixmap::kPixFormat_RGB888:
-				case nsVDPixmap::kPixFormat_R210:
-				case nsVDPixmap::kPixFormat_R10K:
-					s = L"RGB";
-					break;
-				case nsVDPixmap::kPixFormat_XRGB8888:
-				case nsVDPixmap::kPixFormat_B64A:
-				case nsVDPixmap::kPixFormat_XRGB64:
-					s = L"RGBA";
-					break;
-				case nsVDPixmap::kPixFormat_Y8:
-				case nsVDPixmap::kPixFormat_Y8_FR:
-				case nsVDPixmap::kPixFormat_Y16:
-					s = L"Grayscale";
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_UYVY:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV:
-				case nsVDPixmap::kPixFormat_YUV444_Planar:
-				case nsVDPixmap::kPixFormat_YUV422_Planar:
-				case nsVDPixmap::kPixFormat_YUV420_Planar:
-				case nsVDPixmap::kPixFormat_YUV411_Planar:
-				case nsVDPixmap::kPixFormat_YUV410_Planar:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_FR:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_FR:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_FR:
-					s = L"YCbCr (Rec.601)";
-					break;
+	case 0:
+		switch(mFormat) {
+		case nsVDPixmap::kPixFormat_XRGB1555:
+		case nsVDPixmap::kPixFormat_RGB565:
+		case nsVDPixmap::kPixFormat_RGB888:
+		case nsVDPixmap::kPixFormat_R210:
+		case nsVDPixmap::kPixFormat_R10K:
+			s = L"RGB";
+			break;
+		case nsVDPixmap::kPixFormat_XRGB8888:
+		case nsVDPixmap::kPixFormat_B64A:
+		case nsVDPixmap::kPixFormat_XRGB64:
+			s = L"RGBA";
+			break;
+		case nsVDPixmap::kPixFormat_Y8:
+		case nsVDPixmap::kPixFormat_Y8_FR:
+		case nsVDPixmap::kPixFormat_Y16:
+			s = L"Grayscale";
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_UYVY:
+		case nsVDPixmap::kPixFormat_YUV422_YUYV:
+		case nsVDPixmap::kPixFormat_YUV444_Planar:
+		case nsVDPixmap::kPixFormat_YUV422_Planar:
+		case nsVDPixmap::kPixFormat_YUV420_Planar:
+		case nsVDPixmap::kPixFormat_YUV411_Planar:
+		case nsVDPixmap::kPixFormat_YUV410_Planar:
+		case nsVDPixmap::kPixFormat_YUV420i_Planar:
+		case nsVDPixmap::kPixFormat_YUV420it_Planar:
+		case nsVDPixmap::kPixFormat_YUV420ib_Planar:
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_V210:
+		case nsVDPixmap::kPixFormat_YUV444_V410:
+		case nsVDPixmap::kPixFormat_YUV444_Y410:
+		case nsVDPixmap::kPixFormat_YUV420_NV12:
+		case nsVDPixmap::kPixFormat_YUV444_V308:
+		case nsVDPixmap::kPixFormat_YUV422_P210:
+		case nsVDPixmap::kPixFormat_YUV420_P010:
+		case nsVDPixmap::kPixFormat_YUV422_P216:
+		case nsVDPixmap::kPixFormat_YUV420_P016:
+			s = L"YCbCr";
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
+		case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
+			s = L"YCbCr (601)";
+			break;
+		case nsVDPixmap::kPixFormat_YUVA444_Y416:
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+			s = L"YCbCr + Alpha";
+			break;
+		}
+		break;
 
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_709:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_709:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_709_FR:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_709_FR:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_709_FR:
-					s = L"YCbCr (Rec.709)";
-					break;
+	case 1:
+		switch(mFormat) {
+		case nsVDPixmap::kPixFormat_XRGB1555:
+		case nsVDPixmap::kPixFormat_RGB565:
+		case nsVDPixmap::kPixFormat_RGB888:
+		case nsVDPixmap::kPixFormat_XRGB8888:
+		case nsVDPixmap::kPixFormat_XRGB64:
+		case nsVDPixmap::kPixFormat_B64A:
+		case nsVDPixmap::kPixFormat_R210:
+		case nsVDPixmap::kPixFormat_R10K:
+		case nsVDPixmap::kPixFormat_Y8_FR:
+			s = L"Full";
+			break;
+		case nsVDPixmap::kPixFormat_Y8:
+		case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
+		case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
+			s = L"Limited";
+			break;
+		default:
+			s = L"*";
+			break;
+		}
+		break;
 
-				case nsVDPixmap::kPixFormat_YUV444_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_Planar16:
-				case nsVDPixmap::kPixFormat_YUV420_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_V210:
-				case nsVDPixmap::kPixFormat_YUV444_V410:
-				case nsVDPixmap::kPixFormat_YUV444_Y410:
-				case nsVDPixmap::kPixFormat_YUV420_NV12:
-				case nsVDPixmap::kPixFormat_YUV444_V308:
-				case nsVDPixmap::kPixFormat_YUV422_P210:
-				case nsVDPixmap::kPixFormat_YUV420_P010:
-				case nsVDPixmap::kPixFormat_YUV422_P216:
-				case nsVDPixmap::kPixFormat_YUV420_P016:
-				case nsVDPixmap::kPixFormat_YUVA444_Y416:
-					s = L"YCbCr";
-					break;
-			}
+	case 3:
+		switch(mFormat) {
+		case nsVDPixmap::kPixFormat_XRGB1555:
+			s = L"packed (XRGB1555)";
+			break;
+		case nsVDPixmap::kPixFormat_RGB565:
+			s = L"packed (RGB565)";
+			break;
+		case nsVDPixmap::kPixFormat_RGB888:
+			s = L"packed (RGB24)";
+			break;
+		case nsVDPixmap::kPixFormat_XRGB8888:
+			s = L"packed (RGBA32)";
+			break;
+		case nsVDPixmap::kPixFormat_XRGB64:
+			s = L"packed (RGBA64)";
+			break;
+		case nsVDPixmap::kPixFormat_B64A:
+			s = L"packed (b64a)";
+			break;
+		case nsVDPixmap::kPixFormat_R210:
+			s = L"packed (r210)";
+			break;
+		case nsVDPixmap::kPixFormat_R10K:
+			s = L"packed (R10k)";
+			break;
+		case nsVDPixmap::kPixFormat_Y8:
+		case nsVDPixmap::kPixFormat_Y8_FR:
+			s = L"planar";
+			break;
+		case nsVDPixmap::kPixFormat_YUV444_Planar:
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+			s = L"4:4:4 planar";
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_Planar:
+		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+		case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
+			s = L"4:2:2 planar";
+			break;
+		case nsVDPixmap::kPixFormat_YUV420_Planar:
+		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+		case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
+		case nsVDPixmap::kPixFormat_YUV420i_Planar:
+		case nsVDPixmap::kPixFormat_YUV420it_Planar:
+		case nsVDPixmap::kPixFormat_YUV420ib_Planar:
+			s = L"4:2:0 planar";
+			break;
+		case nsVDPixmap::kPixFormat_YUV411_Planar:
+			s = L"4:1:1 planar";
+			break;
+		case nsVDPixmap::kPixFormat_YUV410_Planar:
+			s = L"4:1:0 planar";
+			break;
+		case nsVDPixmap::kPixFormat_YUV420_NV12:
+			s = L"4:2:2 (NV12)";
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_UYVY:
+			s = L"4:2:2 (UYVY)";
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_YUYV:
+			s = L"4:2:2 (YUYV)";
+			break;
+		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+			s = L"4:4:4 planar";
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+			s = L"4:2:2 planar";
+			break;
+		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+			s = L"4:2:0 planar";
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_V210:
+			s = L"4:2:2 (v210)";
+			break;
+		case nsVDPixmap::kPixFormat_YUV444_V410:
+			s = L"4:4:4 (v410)";
+			break;
+		case nsVDPixmap::kPixFormat_YUV444_Y410:
+			s = L"4:4:4 (Y410)";
+			break;
+		case nsVDPixmap::kPixFormat_YUV444_V308:
+			s = L"4:4:4 (v308)";
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_P210:
+			s = L"4:2:2 (P210)";
+			break;
+		case nsVDPixmap::kPixFormat_YUV420_P010:
+			s = L"4:2:0 (P010)";
+			break;
+		case nsVDPixmap::kPixFormat_YUV422_P216:
+			s = L"4:2:2 (P216)";
+			break;
+		case nsVDPixmap::kPixFormat_YUV420_P016:
+			s = L"4:2:0 (P016)";
+			break;
+		case nsVDPixmap::kPixFormat_YUVA444_Y416:
+			s = L"4:4:4 (Y416)";
+			break;
+		}
+		break;
+
+	case 4:
+		switch(mFormat) {
+		case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
+		case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
+			s = L"centered";
+			break;
+		case nsVDPixmap::kPixFormat_YUV420i_Planar:
+			s = L"interlaced";
 			break;
 
-		case 1:
-			switch(mFormat) {
-				case nsVDPixmap::kPixFormat_XRGB1555:
-				case nsVDPixmap::kPixFormat_RGB565:
-				case nsVDPixmap::kPixFormat_RGB888:
-				case nsVDPixmap::kPixFormat_XRGB8888:
-				case nsVDPixmap::kPixFormat_XRGB64:
-				case nsVDPixmap::kPixFormat_B64A:
-				case nsVDPixmap::kPixFormat_R210:
-				case nsVDPixmap::kPixFormat_R10K:
-				case nsVDPixmap::kPixFormat_Y8_FR:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_FR:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_FR:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_709_FR:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_709_FR:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
-					s = L"Full";
-					break;
-				case nsVDPixmap::kPixFormat_Y8:
-				case nsVDPixmap::kPixFormat_YUV444_Planar:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV:
-				case nsVDPixmap::kPixFormat_YUV422_Planar:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_709:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_709:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420_Planar:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
-				case nsVDPixmap::kPixFormat_YUV420_NV12:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV411_Planar:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV410_Planar:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_709:
-					s = L"Limited";
-					break;
-				case nsVDPixmap::kPixFormat_YUV444_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_Planar16:
-				case nsVDPixmap::kPixFormat_YUV420_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_V210:
-				case nsVDPixmap::kPixFormat_YUV444_V410:
-				case nsVDPixmap::kPixFormat_YUV444_Y410:
-				case nsVDPixmap::kPixFormat_YUV444_V308:
-				case nsVDPixmap::kPixFormat_YUV422_P210:
-				case nsVDPixmap::kPixFormat_YUV420_P010:
-				case nsVDPixmap::kPixFormat_YUV422_P216:
-				case nsVDPixmap::kPixFormat_YUV420_P016:
-				case nsVDPixmap::kPixFormat_YUVA444_Y416:
-					s = L"*";
-					break;
-			}
+		case nsVDPixmap::kPixFormat_YUV420it_Planar:
+			s = L"interlaced top-field";
 			break;
 
-		case 2:
-			switch(mFormat) {
-				case nsVDPixmap::kPixFormat_XRGB1555:
-					s = L"5-bit (XRGB1555)";
-					break;
-				case nsVDPixmap::kPixFormat_RGB565:
-					s = L"5-bit (RGB565)";
-					break;
-				case nsVDPixmap::kPixFormat_RGB888:
-					s = L"8-bit (RGB24)";
-					break;
-				case nsVDPixmap::kPixFormat_XRGB8888:
-					s = L"8-bit (RGBA32)";
-					break;
-				case nsVDPixmap::kPixFormat_XRGB64:
-					s = L"16-bit (RGBA64)";
-					break;
-				case nsVDPixmap::kPixFormat_B64A:
-					s = L"16-bit (b64a)";
-					break;
-				case nsVDPixmap::kPixFormat_R210:
-					s = L"10-bit (r210)";
-					break;
-				case nsVDPixmap::kPixFormat_R10K:
-					s = L"10-bit (R10k)";
-					break;
-				case nsVDPixmap::kPixFormat_Y8:
-				case nsVDPixmap::kPixFormat_Y8_FR:
-					s = L"8-bit";
-					break;
-				case nsVDPixmap::kPixFormat_YUV444_Planar:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-					s = L"4:4:4";
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_Planar:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
-					s = L"4:2:2";
-					break;
-				case nsVDPixmap::kPixFormat_YUV420_Planar:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_709_FR:
-					s = L"4:2:0";
-					break;
-				case nsVDPixmap::kPixFormat_YUV411_Planar:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
-					s = L"4:1:1";
-					break;
-				case nsVDPixmap::kPixFormat_YUV410_Planar:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
-					s = L"4:1:0";
-					break;
-				case nsVDPixmap::kPixFormat_YUV420_NV12:
-					s = L"4:2:2 (NV12)";
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_UYVY:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_709:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_FR:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_709_FR:
-					s = L"4:2:2 (UYVY)";
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_YUYV:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_709:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_FR:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_709_FR:
-					s = L"4:2:2 (YUYV)";
-					break;
-				case nsVDPixmap::kPixFormat_YUV444_Planar16:
-					s = L"4:4:4 16-bit";
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_Planar16:
-					s = L"4:2:2 16-bit";
-					break;
-				case nsVDPixmap::kPixFormat_YUV420_Planar16:
-					s = L"4:2:0 16-bit";
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_V210:
-					s = L"4:2:2 10-bit (v210)";
-					break;
-				case nsVDPixmap::kPixFormat_YUV444_V410:
-					s = L"4:4:4 10-bit (v410)";
-					break;
-				case nsVDPixmap::kPixFormat_YUV444_Y410:
-					s = L"4:4:4 10-bit (Y410)";
-					break;
-				case nsVDPixmap::kPixFormat_YUV444_V308:
-					s = L"4:4:4 (v308)";
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_P210:
-					s = L"4:2:2 10-bit (P210)";
-					break;
-				case nsVDPixmap::kPixFormat_YUV420_P010:
-					s = L"4:2:0 10-bit (P010)";
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_P216:
-					s = L"4:2:2 16-bit (P216)";
-					break;
-				case nsVDPixmap::kPixFormat_YUV420_P016:
-					s = L"4:2:0 16-bit (P016)";
-					break;
-				case nsVDPixmap::kPixFormat_YUVA444_Y416:
-					s = L"4:4:4 16-bit (Y416)";
-					break;
-			}
+		case nsVDPixmap::kPixFormat_YUV420ib_Planar:
+			s = L"interlaced bottom-field";
 			break;
-
-		case 3:
-			switch(mFormat) {
-				case nsVDPixmap::kPixFormat_XRGB1555:
-				case nsVDPixmap::kPixFormat_RGB565:
-				case nsVDPixmap::kPixFormat_RGB888:
-				case nsVDPixmap::kPixFormat_XRGB8888:
-				case nsVDPixmap::kPixFormat_XRGB64:
-				case nsVDPixmap::kPixFormat_B64A:
-				case nsVDPixmap::kPixFormat_R210:
-				case nsVDPixmap::kPixFormat_R10K:
-				case nsVDPixmap::kPixFormat_Y8:
-				case nsVDPixmap::kPixFormat_Y8_FR:
-				case nsVDPixmap::kPixFormat_YUV444_Planar:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV422_Planar:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420_Planar:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV411_Planar:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV410_Planar:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
-				case nsVDPixmap::kPixFormat_YUV420_NV12:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_709:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_FR:
-				case nsVDPixmap::kPixFormat_YUV422_UYVY_709_FR:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_709:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_FR:
-				case nsVDPixmap::kPixFormat_YUV422_YUYV_709_FR:
-				case nsVDPixmap::kPixFormat_YUV444_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_Planar16:
-				case nsVDPixmap::kPixFormat_YUV420_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_V210:
-				case nsVDPixmap::kPixFormat_YUV444_V410:
-				case nsVDPixmap::kPixFormat_YUV444_Y410:
-				case nsVDPixmap::kPixFormat_YUV444_V308:
-				case nsVDPixmap::kPixFormat_YUV422_P210:
-				case nsVDPixmap::kPixFormat_YUV420_P010:
-				case nsVDPixmap::kPixFormat_YUV422_P216:
-				case nsVDPixmap::kPixFormat_YUV420_P016:
-				case nsVDPixmap::kPixFormat_YUVA444_Y416:
-					s = L"-";
-					break;
-				case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
-				case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
-					s = L"centered";
-					break;
-				case nsVDPixmap::kPixFormat_YUV420i_Planar:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420i_Planar_709_FR:
-					s = L"interlaced";
-					break;
-
-				case nsVDPixmap::kPixFormat_YUV420it_Planar:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420it_Planar_709_FR:
-					s = L"interlaced top-field";
-					break;
-
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_FR:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_709:
-				case nsVDPixmap::kPixFormat_YUV420ib_Planar_709_FR:
-					s = L"interlaced bottom-field";
-					break;
-			}
+		default:
+			s = L"-";
 			break;
+		}
+		break;
 	}
-}
-
-bool VDDialogSelectVideoFormatW32::FormatItemSort::operator()(const FormatItem& x, const FormatItem& y) const {
-	// This is a somewhat painful way to a sort... we'll see if it becomes
-	// a problem.
-	VDStringW s;
-	VDStringW t;
-
-	for(int column = 0; column < 2; ++column) {
-		x.GetText(column, s);
-		y.GetText(column, t);
-
-		int r = wcscmp(s.c_str(), t.c_str());
-		if (r)
-			return r < 0;
-	}
-
-	return false;
 }
 
 /////////////////////////////////
@@ -1002,13 +916,10 @@ INT_PTR VDDialogVideoDepthW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPara
 		if (mbInputBrowsePending) {
 			mbInputBrowsePending = false;
 
-			VDDialogSelectVideoFormatW32 dlg(VDPixmapFormatCombine(mInputFormat));
+			VDDialogSelectVideoFormatW32 dlg(VDPixmapFormatNormalize(mInputFormat));
 			if (dlg.ShowDialog((VDGUIHandle)mhdlg)) {
 				int format = dlg.GetSelectedFormat();
-				if (VDPixmapFormatMatrixType(format)==2)
-					mInputFormat = VDPixmapFormatNormalize(format);
-				else
-					mInputFormat.format = format;
+				mInputFormat.format = format;
 			}
 
 			SyncControls();
