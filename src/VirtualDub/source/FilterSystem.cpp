@@ -471,11 +471,11 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 	fa->PrepareReset();
 
 	uint32 flags = fa->Prepare(inputs.data(), inputCount, prepareInfo, alignReq);
-	VDPixmapFormatEx originalFormat = inputs[0].mPixmapLayout.formatEx;
+	VDPixmapFormatEx originalFormat = VDPixmapFormatCombine(inputs[0].mPixmapLayout.formatEx);
 	VDPixmapFormatEx originalReq;
 	bool acceptOriginal = false;
 	if (flags != FILTERPARAM_NOT_SUPPORTED) {
-		originalReq = prepareInfo.mStreams[0].reqFormat;
+		originalReq = VDPixmapFormatCombine(prepareInfo.mStreams[0].reqFormat);
 		acceptOriginal = originalReq.fullEqual(originalFormat);
 	}
 
@@ -526,7 +526,8 @@ void FilterSystem::prepareLinearEntry(PrepareState& state, VDFilterChainEntry *e
 
 				if (flags != FILTERPARAM_NOT_SUPPORTED) {
 					VDFilterPrepareStreamInfo& streamInfo = prepareInfo.mStreams[0];
-					if (match.format.fullEqual(streamInfo.reqFormat)) {
+					VDPixmapFormatEx reqFormat = VDPixmapFormatCombine(streamInfo.reqFormat);
+					if (match.format.fullEqual(reqFormat)) {
 						break;
 					}
 
