@@ -2229,12 +2229,6 @@ void VDCaptureDriverDS::SetDisplayMode(nsVDCapture::DisplayMode mode) {
 		return;
 
 	mDisplayMode = mode;
-
-	if (mode == kDisplayNone) {
-		TearDownGraph();
-		return;
-	}
-
 	UpdateDisplay();
 }
 
@@ -3635,8 +3629,14 @@ void VDCaptureDriverDS::UpdateDisplay() {
 
 		DS_VERBOSE_LOG("DShow: Entering UpdateDisplay().");
 
-		if (BuildPreviewGraph()) StartGraph();
-		//VDVERIFY(BuildPreviewGraph() && StartGraph());
+		bool used = false;
+		if (mDisplayMode != kDisplayNone) used = true;
+		if (mbAudioCaptureEnabled && mbAudioAnalysisEnabled) used = true;
+		if (used) {
+			if (BuildPreviewGraph()) StartGraph();
+		} else {
+			TearDownGraph();
+		}
 
 		DS_VERBOSE_LOG("DShow: Exiting UpdateDisplay().");
 	}
