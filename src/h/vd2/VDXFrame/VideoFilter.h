@@ -117,14 +117,14 @@ public:
 	// Helper functions. Using these is safe for any host version.
 
 	// remove details such as colorspace to help avoid insane switch statements
-	nsVDXPixmap::VDXPixmapFormat ExtractBaseFormat(sint32 format);
+	vd2::VDXPixmapFormat ExtractBaseFormat(sint32 format);
 
 	// extract details from legacy pixmap or from extended pixmap, based on what is available
-	nsVDXPixmap::ColorSpaceMode ExtractColorSpace(const VDXFBitmap* bitmap);
-	nsVDXPixmap::ColorRangeMode ExtractColorRange(const VDXFBitmap* bitmap);
+	vd2::ColorSpaceMode ExtractColorSpace(const VDXFBitmap* bitmap);
+	vd2::ColorRangeMode ExtractColorRange(const VDXFBitmap* bitmap);
 
-	nsVDXPixmap::ColorSpaceMode ExtractColorSpace(sint32 format);
-	nsVDXPixmap::ColorRangeMode ExtractColorRange(sint32 format);
+	vd2::ColorSpaceMode ExtractColorSpace(sint32 format);
+	vd2::ColorRangeMode ExtractColorRange(sint32 format);
 };
 
 ///////////////////////////////////////////////////////////////////////////

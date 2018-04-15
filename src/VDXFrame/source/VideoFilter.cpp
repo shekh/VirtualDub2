@@ -53,8 +53,8 @@ void VDXVideoFilter::SetFilterModVersion(uint32 version) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-nsVDXPixmap::VDXPixmapFormat VDXVideoFilter::ExtractBaseFormat(sint32 format) {
-	using namespace nsVDXPixmap;
+vd2::VDXPixmapFormat VDXVideoFilter::ExtractBaseFormat(sint32 format) {
+	using namespace vd2;
 
 	switch (format) {
 	case kPixFormat_Y8_FR:
@@ -111,11 +111,11 @@ nsVDXPixmap::VDXPixmapFormat VDXVideoFilter::ExtractBaseFormat(sint32 format) {
 		return kPixFormat_YUV420ib_Planar;
 	}
 
-	return (nsVDXPixmap::VDXPixmapFormat)format;
+	return (vd2::VDXPixmapFormat)format;
 }
 
-nsVDXPixmap::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(sint32 format) {
-	using namespace nsVDXPixmap;
+vd2::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(sint32 format) {
+	using namespace vd2;
 
 	switch (format) {
 	case kPixFormat_XRGB1555:
@@ -156,8 +156,8 @@ nsVDXPixmap::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(sint32 format) {
 	return kColorSpaceMode_601;
 }
 
-nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(sint32 format) {
-	using namespace nsVDXPixmap;
+vd2::ColorRangeMode VDXVideoFilter::ExtractColorRange(sint32 format) {
+	using namespace vd2;
 
 	switch (format) {
 	case kPixFormat_XRGB1555:
@@ -196,23 +196,19 @@ nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(sint32 format) {
 	return kColorRangeMode_Limited;
 }
 
-nsVDXPixmap::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(const VDXFBitmap* bitmap) {
-	using namespace nsVDXPixmap;
-
+vd2::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(const VDXFBitmap* bitmap) {
 	if (fma && fma->fmpixmap) {
 		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(bitmap->mpPixmap);
-		if (info->colorSpaceMode!=kColorSpaceMode_None) return info->colorSpaceMode;
+    if (info->colorSpaceMode!=vd2::kColorSpaceMode_None) return info->colorSpaceMode;
 	}
 
 	return ExtractColorSpace(bitmap->mpPixmapLayout->format);
 }
 
-nsVDXPixmap::ColorRangeMode VDXVideoFilter::ExtractColorRange(const VDXFBitmap* bitmap) {
-	using namespace nsVDXPixmap;
-
+vd2::ColorRangeMode VDXVideoFilter::ExtractColorRange(const VDXFBitmap* bitmap) {
 	if (fma && fma->fmpixmap) {
 		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(bitmap->mpPixmap);
-		if (info->colorRangeMode!=kColorRangeMode_None) return info->colorRangeMode;
+    if (info->colorRangeMode!=vd2::kColorRangeMode_None) return info->colorRangeMode;
 	}
 
 	return ExtractColorRange(bitmap->mpPixmapLayout->format);

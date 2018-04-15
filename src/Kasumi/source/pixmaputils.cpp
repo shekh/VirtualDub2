@@ -261,191 +261,191 @@ VDPixmapFormatEx VDPixmapFormatNormalize(VDPixmapFormatEx format) {
 	switch (format) {
 	case kPixFormat_YUV444_Planar_709_FR:
 		r.format = kPixFormat_YUV444_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV444_Planar_FR:
 		r.format = kPixFormat_YUV444_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV444_Planar_709:
 		r.format = kPixFormat_YUV444_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV444_Planar:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV422_Planar_709_FR:
 		r.format = kPixFormat_YUV422_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV422_Planar_FR:
 		r.format = kPixFormat_YUV422_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV422_Planar_709:
 		r.format = kPixFormat_YUV422_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV422_Planar:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV420_Planar_709_FR:
 		r.format = kPixFormat_YUV420_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV420_Planar_FR:
 		r.format = kPixFormat_YUV420_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV420_Planar_709:
 		r.format = kPixFormat_YUV420_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV420_Planar:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV410_Planar_709_FR:
 		r.format = kPixFormat_YUV410_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV410_Planar_FR:
 		r.format = kPixFormat_YUV410_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV410_Planar_709:
 		r.format = kPixFormat_YUV410_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV410_Planar:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV411_Planar_709_FR:
 		r.format = kPixFormat_YUV411_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV411_Planar_FR:
 		r.format = kPixFormat_YUV411_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV411_Planar_709:
 		r.format = kPixFormat_YUV411_Planar;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV411_Planar:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV422_YUYV_709_FR:
 		r.format = kPixFormat_YUV422_YUYV;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV422_YUYV_FR:
 		r.format = kPixFormat_YUV422_YUYV;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV422_YUYV_709:
 		r.format = kPixFormat_YUV422_YUYV;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV422_YUYV:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV422_UYVY_709_FR:
 		r.format = kPixFormat_YUV422_UYVY;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV422_UYVY_FR:
 		r.format = kPixFormat_YUV422_UYVY;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV422_UYVY_709:
 		r.format = kPixFormat_YUV422_UYVY;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV422_UYVY:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV420i_Planar:
 	case kPixFormat_YUV420it_Planar:
 	case kPixFormat_YUV420ib_Planar:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV420i_Planar_FR:
 	case kPixFormat_YUV420it_Planar_FR:
 	case kPixFormat_YUV420ib_Planar_FR:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_601;
 		break;
 
 	case kPixFormat_YUV420i_Planar_709:
 	case kPixFormat_YUV420it_Planar_709:
 	case kPixFormat_YUV420ib_Planar_709:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 
 	case kPixFormat_YUV420i_Planar_709_FR:
 	case kPixFormat_YUV420it_Planar_709_FR:
 	case kPixFormat_YUV420ib_Planar_709_FR:
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_709;
 		break;
 	}
 
@@ -498,84 +498,84 @@ VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format) {
 	int type = VDPixmapFormatMatrixType(format);
 
 	if (type==0) {
-		r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
-		r.colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+		r.colorSpaceMode = vd2::kColorSpaceMode_None;
+		r.colorRangeMode = vd2::kColorRangeMode_None;
 	} else {
-		if (!r.colorSpaceMode) r.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
-		if (!r.colorRangeMode) r.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+		if (!r.colorSpaceMode) r.colorSpaceMode = vd2::kColorSpaceMode_601;
+		if (!r.colorRangeMode) r.colorRangeMode = vd2::kColorRangeMode_Limited;
 	}
 
 	if (type!=2) return r;
 
 	switch (r.format) {
 	case kPixFormat_YUV444_Planar:
-		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV444_Planar_709_FR : kPixFormat_YUV444_Planar_709;
+		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV444_Planar_709_FR : kPixFormat_YUV444_Planar_709;
 		else
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV444_Planar_FR : kPixFormat_YUV444_Planar;
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV444_Planar_FR : kPixFormat_YUV444_Planar;
 		break;
 
 	case kPixFormat_YUV422_Planar:
-		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV422_Planar_709_FR : kPixFormat_YUV422_Planar_709;
+		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV422_Planar_709_FR : kPixFormat_YUV422_Planar_709;
 		else
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV422_Planar_FR : kPixFormat_YUV422_Planar;
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV422_Planar_FR : kPixFormat_YUV422_Planar;
 		break;
 
 	case kPixFormat_YUV420_Planar:
-		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV420_Planar_709_FR : kPixFormat_YUV420_Planar_709;
+		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV420_Planar_709_FR : kPixFormat_YUV420_Planar_709;
 		else
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV420_Planar_FR : kPixFormat_YUV420_Planar;
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV420_Planar_FR : kPixFormat_YUV420_Planar;
 		break;
 
 	case kPixFormat_YUV410_Planar:
-		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV410_Planar_709_FR : kPixFormat_YUV410_Planar_709;
+		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV410_Planar_709_FR : kPixFormat_YUV410_Planar_709;
 		else
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV410_Planar_FR : kPixFormat_YUV410_Planar;
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV410_Planar_FR : kPixFormat_YUV410_Planar;
 		break;
 
 	case kPixFormat_YUV411_Planar:
-		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV411_Planar_709_FR : kPixFormat_YUV411_Planar_709;
+		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV411_Planar_709_FR : kPixFormat_YUV411_Planar_709;
 		else
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV411_Planar_FR : kPixFormat_YUV411_Planar;
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV411_Planar_FR : kPixFormat_YUV411_Planar;
 		break;
 
 	case kPixFormat_YUV422_YUYV:
-		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV422_YUYV_709_FR : kPixFormat_YUV422_YUYV_709;
+		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV422_YUYV_709_FR : kPixFormat_YUV422_YUYV_709;
 		else
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV422_YUYV_FR : kPixFormat_YUV422_YUYV;
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV422_YUYV_FR : kPixFormat_YUV422_YUYV;
 		break;
 
 	case kPixFormat_YUV422_UYVY:
-		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV422_UYVY_709_FR : kPixFormat_YUV422_UYVY_709;
+		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV422_UYVY_709_FR : kPixFormat_YUV422_UYVY_709;
 		else
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV422_UYVY_FR : kPixFormat_YUV422_UYVY;
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV422_UYVY_FR : kPixFormat_YUV422_UYVY;
 		break;
 
 	case kPixFormat_YUV420i_Planar:
-		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV420i_Planar_709_FR : kPixFormat_YUV420i_Planar_709;
+		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV420i_Planar_709_FR : kPixFormat_YUV420i_Planar_709;
 		else
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV420i_Planar_FR : kPixFormat_YUV420i_Planar;
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV420i_Planar_FR : kPixFormat_YUV420i_Planar;
 		break;
 
 	case kPixFormat_YUV420it_Planar:
-		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV420it_Planar_709_FR : kPixFormat_YUV420it_Planar_709;
+		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV420it_Planar_709_FR : kPixFormat_YUV420it_Planar_709;
 		else
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV420it_Planar_FR : kPixFormat_YUV420it_Planar;
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV420it_Planar_FR : kPixFormat_YUV420it_Planar;
 		break;
 
 	case kPixFormat_YUV420ib_Planar:
-		if (r.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV420ib_Planar_709_FR : kPixFormat_YUV420ib_Planar_709;
+		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV420ib_Planar_709_FR : kPixFormat_YUV420ib_Planar_709;
 		else
-			r.format = r.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full ? kPixFormat_YUV420ib_Planar_FR : kPixFormat_YUV420ib_Planar;
+			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV420ib_Planar_FR : kPixFormat_YUV420ib_Planar;
 		break;
 	}
 
@@ -590,8 +590,8 @@ VDStringA VDPixmapFormatPrintSpec(VDPixmapFormatEx format) {
 	VDStringA s(info.name);
 
 	if (type==1 || type==2) {
-		if (format.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) s += "-709";
-		if (format.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) s += "-FR";
+		if (format.colorSpaceMode==vd2::kColorSpaceMode_709) s += "-709";
+		if (format.colorRangeMode==vd2::kColorRangeMode_Full) s += "-FR";
 	}
 
 	return s;
@@ -604,8 +604,8 @@ VDStringA VDPixmapFormatPrintColor(VDPixmapFormatEx format) {
 	VDStringA s;
 
 	if (type==1 || type==2) {
-		if (format.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) s += "Rec. 709";
-		if (format.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) { if(!s.empty()) s += ", "; s += "Full range"; }
+		if (format.colorSpaceMode==vd2::kColorSpaceMode_709) s += "Rec. 709";
+		if (format.colorRangeMode==vd2::kColorRangeMode_Full) { if(!s.empty()) s += ", "; s += "Full range"; }
 	}
 
 	return s;

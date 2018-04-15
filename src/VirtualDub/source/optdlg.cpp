@@ -1000,32 +1000,32 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 				return TRUE;
 
 			case IDC_CS_NONE:
-				mInputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
+				mInputFormat.colorSpaceMode = vd2::kColorSpaceMode_None;
 				InitFinalFormat();
 				return TRUE;
 
 			case IDC_CS_601:
-				mInputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+				mInputFormat.colorSpaceMode = vd2::kColorSpaceMode_601;
 				InitFinalFormat();
 				return TRUE;
 
 			case IDC_CS_709:
-				mInputFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+				mInputFormat.colorSpaceMode = vd2::kColorSpaceMode_709;
 				InitFinalFormat();
 				return TRUE;
 
 			case IDC_CR_NONE:
-				mInputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+				mInputFormat.colorRangeMode = vd2::kColorRangeMode_None;
 				InitFinalFormat();
 				return TRUE;
 
 			case IDC_CR_LIMITED:
-				mInputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+				mInputFormat.colorRangeMode = vd2::kColorRangeMode_Limited;
 				InitFinalFormat();
 				return TRUE;
 
 			case IDC_CR_FULL:
-				mInputFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+				mInputFormat.colorRangeMode = vd2::kColorRangeMode_Full;
 				InitFinalFormat();
 				return TRUE;
 		}
@@ -1125,12 +1125,12 @@ void VDDialogVideoDepthW32::SyncInputColor() {
 	EnableControl(IDC_CR_FULL,   enable);
 	if (enable) {
 		VDPixmapFormatEx& format = mInputFormat;
-		CheckButton(IDC_CS_NONE, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_None);
-		CheckButton(IDC_CS_601, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_601);
-		CheckButton(IDC_CS_709, format.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_709);
-		CheckButton(IDC_CR_NONE, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_None);
-		CheckButton(IDC_CR_LIMITED, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_Limited);
-		CheckButton(IDC_CR_FULL, format.colorRangeMode == nsVDXPixmap::kColorRangeMode_Full);
+		CheckButton(IDC_CS_NONE, format.colorSpaceMode == vd2::kColorSpaceMode_None);
+		CheckButton(IDC_CS_601, format.colorSpaceMode == vd2::kColorSpaceMode_601);
+		CheckButton(IDC_CS_709, format.colorSpaceMode == vd2::kColorSpaceMode_709);
+		CheckButton(IDC_CR_NONE, format.colorRangeMode == vd2::kColorRangeMode_None);
+		CheckButton(IDC_CR_LIMITED, format.colorRangeMode == vd2::kColorRangeMode_Limited);
+		CheckButton(IDC_CR_FULL, format.colorRangeMode == vd2::kColorRangeMode_Full);
 	} else {
 		CheckButton(IDC_CS_NONE,    true);
 		CheckButton(IDC_CS_601,     false);

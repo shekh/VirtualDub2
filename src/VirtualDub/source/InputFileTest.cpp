@@ -271,8 +271,8 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 	}
 
 	VDPixmapFormatEx f1 = VDPixmapFormatNormalize(format);
-	bool Is709 = f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709;
-	bool IsFullRange = f1.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full;
+	bool Is709 = f1.colorSpaceMode==vd2::kColorSpaceMode_709;
+	bool IsFullRange = f1.colorRangeMode==vd2::kColorRangeMode_Full;
 
 	if (format==nsVDPixmap::kPixFormat_XRGB64) {
 		switch (mMode) {
@@ -507,9 +507,9 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 
 	if (isyuv) {
 		int gray;
-		if (f1.colorRangeMode==nsVDXPixmap::kColorRangeMode_Limited) {
+		if (f1.colorRangeMode==vd2::kColorRangeMode_Limited) {
 			gray = 0x47;
-			if (f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) {
+			if (f1.colorSpaceMode==vd2::kColorSpaceMode_709) {
 				textcolor = VDConvertRGBToYCbCr(textcolor, true, false);
 				black = 0xFF801080;
 			} else {
@@ -518,7 +518,7 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 			}
 		} else {
 			gray = 0x40;
-			if (f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) {
+			if (f1.colorSpaceMode==vd2::kColorSpaceMode_709) {
 				textcolor = VDConvertRGBToYCbCr(textcolor, true, true);
 				black = 0xFF800080;
 			} else {
@@ -962,7 +962,7 @@ void VDVideoSourceTest::DrawRotatingCubeFrame(VDPixmap& dst, bool interlaced, bo
 
 		if (isyuv) {
 			float y,cb,cr;
-			VDConvertRGBToYCbCr(r,g,b,y,cb,cr,f1.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709, f1.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full);
+			VDConvertRGBToYCbCr(r,g,b,y,cb,cr,f1.colorSpaceMode==vd2::kColorSpaceMode_709, f1.colorRangeMode==vd2::kColorRangeMode_Full);
 			vertices[i].r = cr;
 			vertices[i].g = y;
 			vertices[i].b = cb;

@@ -724,20 +724,20 @@ static void func_VDVideo_SetOutputFormat(IVDScriptInterpreter *, VDScriptValue *
 static void func_VDVideo_SetInputMatrix(IVDScriptInterpreter *, VDScriptValue *argv, int argc) {
 	int colorSpace = argv[0].asInt();
 	int colorRange = argv[1].asInt();
-	if (colorSpace >= nsVDXPixmap::kColorSpaceModeCount)	colorSpace = nsVDXPixmap::kColorSpaceMode_None;
-	if (colorRange >= nsVDXPixmap::kColorRangeModeCount)	colorRange = nsVDXPixmap::kColorRangeMode_None;
-	g_dubOpts.video.mInputFormat.colorSpaceMode = (nsVDXPixmap::ColorSpaceMode)colorSpace;
-	g_dubOpts.video.mInputFormat.colorRangeMode = (nsVDXPixmap::ColorRangeMode)colorRange;
+	if (colorSpace >= vd2::kColorSpaceModeCount)	colorSpace = vd2::kColorSpaceMode_None;
+	if (colorRange >= vd2::kColorRangeModeCount)	colorRange = vd2::kColorRangeMode_None;
+	g_dubOpts.video.mInputFormat.colorSpaceMode = (vd2::ColorSpaceMode)colorSpace;
+	g_dubOpts.video.mInputFormat.colorRangeMode = (vd2::ColorRangeMode)colorRange;
 	g_project->MarkTimelineRateDirty();
 }
 
 static void func_VDVideo_SetOutputMatrix(IVDScriptInterpreter *, VDScriptValue *argv, int argc) {
 	int colorSpace = argv[0].asInt();
 	int colorRange = argv[1].asInt();
-	if (colorSpace >= nsVDXPixmap::kColorSpaceModeCount)	colorSpace = nsVDXPixmap::kColorSpaceMode_None;
-	if (colorRange >= nsVDXPixmap::kColorRangeModeCount)	colorRange = nsVDXPixmap::kColorRangeMode_None;
-	g_dubOpts.video.mOutputFormat.colorSpaceMode = (nsVDXPixmap::ColorSpaceMode)colorSpace;
-	g_dubOpts.video.mOutputFormat.colorRangeMode = (nsVDXPixmap::ColorRangeMode)colorRange;
+	if (colorSpace >= vd2::kColorSpaceModeCount)	colorSpace = vd2::kColorSpaceMode_None;
+	if (colorRange >= vd2::kColorRangeModeCount)	colorRange = vd2::kColorRangeMode_None;
+	g_dubOpts.video.mOutputFormat.colorSpaceMode = (vd2::ColorSpaceMode)colorSpace;
+	g_dubOpts.video.mOutputFormat.colorRangeMode = (vd2::ColorRangeMode)colorRange;
 	g_project->MarkTimelineRateDirty();
 }
 

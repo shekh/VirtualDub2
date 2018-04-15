@@ -95,32 +95,32 @@ bool VDVFilterConvertFormatConfigDialog::OnCommand(uint32 id, uint32 extcode) {
 	if (extcode == BN_CLICKED) {
 		switch(id) {
 			case IDC_CS_NONE:
-				mFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
+				mFormat.colorSpaceMode = vd2::kColorSpaceMode_None;
 				redo();
 				return TRUE;
 
 			case IDC_CS_601:
-				mFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_601;
+				mFormat.colorSpaceMode = vd2::kColorSpaceMode_601;
 				redo();
 				return TRUE;
 
 			case IDC_CS_709:
-				mFormat.colorSpaceMode = nsVDXPixmap::kColorSpaceMode_709;
+				mFormat.colorSpaceMode = vd2::kColorSpaceMode_709;
 				redo();
 				return TRUE;
 
 			case IDC_CR_NONE:
-				mFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+				mFormat.colorRangeMode = vd2::kColorRangeMode_None;
 				redo();
 				return TRUE;
 
 			case IDC_CR_LIMITED:
-				mFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Limited;
+				mFormat.colorRangeMode = vd2::kColorRangeMode_Limited;
 				redo();
 				return TRUE;
 
 			case IDC_CR_FULL:
-				mFormat.colorRangeMode = nsVDXPixmap::kColorRangeMode_Full;
+				mFormat.colorRangeMode = vd2::kColorRangeMode_Full;
 				redo();
 				return TRUE;
 
@@ -181,12 +181,12 @@ void VDVFilterConvertFormatConfigDialog::SyncInputColor() {
 	EnableControl(IDC_CR_LIMITED,enable);
 	EnableControl(IDC_CR_FULL,   enable);
 	if (enable) {
-		CheckButton(IDC_CS_NONE, mFormat.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_None);
-		CheckButton(IDC_CS_601, mFormat.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_601);
-		CheckButton(IDC_CS_709, mFormat.colorSpaceMode == nsVDXPixmap::kColorSpaceMode_709);
-		CheckButton(IDC_CR_NONE, mFormat.colorRangeMode == nsVDXPixmap::kColorRangeMode_None);
-		CheckButton(IDC_CR_LIMITED, mFormat.colorRangeMode == nsVDXPixmap::kColorRangeMode_Limited);
-		CheckButton(IDC_CR_FULL, mFormat.colorRangeMode == nsVDXPixmap::kColorRangeMode_Full);
+		CheckButton(IDC_CS_NONE, mFormat.colorSpaceMode == vd2::kColorSpaceMode_None);
+		CheckButton(IDC_CS_601, mFormat.colorSpaceMode == vd2::kColorSpaceMode_601);
+		CheckButton(IDC_CS_709, mFormat.colorSpaceMode == vd2::kColorSpaceMode_709);
+		CheckButton(IDC_CR_NONE, mFormat.colorRangeMode == vd2::kColorRangeMode_None);
+		CheckButton(IDC_CR_LIMITED, mFormat.colorRangeMode == vd2::kColorRangeMode_Limited);
+		CheckButton(IDC_CR_FULL, mFormat.colorRangeMode == vd2::kColorRangeMode_Full);
 	} else {
 		CheckButton(IDC_CS_NONE,    true);
 		CheckButton(IDC_CS_601,     false);
@@ -284,9 +284,9 @@ void VDVFilterConvertFormat::GetSettingString(char *buf, int maxlen) {
 	if (mFormat.format==0) s += "*"; else s += VDPixmapGetInfo(mFormat).name;
 	if (mFormat.format==0 || VDPixmapFormatMatrixType(mFormat)) {
 		if (mFormat.colorSpaceMode==0) s += "-*";
-		if (mFormat.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709) s += "-709";
+		if (mFormat.colorSpaceMode==vd2::kColorSpaceMode_709) s += "-709";
 		if (mFormat.colorRangeMode==0) s += "-*";
-		if (mFormat.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) s += "-FR";
+		if (mFormat.colorRangeMode==vd2::kColorRangeMode_Full) s += "-FR";
 	}
 	if (mFormat.fullEqual(0)) s = "No change";
 	SafePrintf(buf, maxlen, " (%s)", s.c_str());
@@ -307,8 +307,8 @@ void VDVFilterConvertFormat::ScriptConfig(IVDXScriptInterpreter *, const VDXScri
 
 void VDVFilterConvertFormat::ScriptConfig3(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc) {
 	mFormat.format = VDPixmapFormatNormalize(argv[0].asInt());
-	mFormat.colorSpaceMode = (nsVDXPixmap::ColorSpaceMode)argv[1].asInt();
-	mFormat.colorRangeMode = (nsVDXPixmap::ColorRangeMode)argv[2].asInt();
+	mFormat.colorSpaceMode = (vd2::ColorSpaceMode)argv[1].asInt();
+	mFormat.colorRangeMode = (vd2::ColorRangeMode)argv[2].asInt();
 }
 
 VDXVF_BEGIN_SCRIPT_METHODS(VDVFilterConvertFormat)

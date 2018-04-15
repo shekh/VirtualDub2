@@ -139,20 +139,20 @@ struct VDPixmap {
 
 struct VDPixmapFormatEx {
 	sint32			format;
-	nsVDXPixmap::ColorSpaceMode colorSpaceMode;
-	nsVDXPixmap::ColorRangeMode colorRangeMode;
+	vd2::ColorSpaceMode colorSpaceMode;
+	vd2::ColorRangeMode colorRangeMode;
 
 	operator int() const { return format; }
 
 	VDPixmapFormatEx() {
 		format = 0;
-		colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
-		colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+		colorSpaceMode = vd2::kColorSpaceMode_None;
+		colorRangeMode = vd2::kColorRangeMode_None;
 	}
 	VDPixmapFormatEx(sint32 v) {
 		format = v;
-		colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
-		colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+		colorSpaceMode = vd2::kColorSpaceMode_None;
+		colorRangeMode = vd2::kColorRangeMode_None;
 	}
 	VDPixmapFormatEx(const VDPixmap& v) {
 		format = v.format;
@@ -170,7 +170,7 @@ struct VDPixmapFormatEx {
 		colorRangeMode == v.colorRangeMode);
 	}
 	bool defaultMode() const {
-		return colorSpaceMode == nsVDXPixmap::kColorSpaceMode_None && colorRangeMode == nsVDXPixmap::kColorRangeMode_None;
+		return colorSpaceMode == vd2::kColorSpaceMode_None && colorRangeMode == vd2::kColorRangeMode_None;
 	}
 };
 

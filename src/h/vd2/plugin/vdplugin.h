@@ -159,7 +159,7 @@ struct VDXRect {
 	sint32	bottom;
 };
 
-namespace nsVDXPixmap {
+namespace vd2 {
 	enum ColorSpaceMode {
 		kColorSpaceMode_None,
 		kColorSpaceMode_601,
@@ -198,8 +198,8 @@ struct FilterModPixmapInfo {
 	int64 frame_num;
 
 	// FilterModVersion>=5
-	nsVDXPixmap::ColorSpaceMode colorSpaceMode;
-	nsVDXPixmap::ColorRangeMode colorRangeMode;
+	vd2::ColorSpaceMode colorSpaceMode;
+	vd2::ColorRangeMode colorRangeMode;
 
 	FilterModPixmapInfo() {
 		clear();
@@ -213,8 +213,8 @@ struct FilterModPixmapInfo {
 		transfer_type = kTransferUnknown;
 		alpha_type = kAlphaInvalid;
 		frame_num = -1;
-		colorSpaceMode = nsVDXPixmap::kColorSpaceMode_None;
-		colorRangeMode = nsVDXPixmap::kColorRangeMode_None;
+		colorSpaceMode = vd2::kColorSpaceMode_None;
+		colorRangeMode = vd2::kColorRangeMode_None;
 	}
 
 	void copy_ref(const FilterModPixmapInfo& a) {
@@ -285,7 +285,7 @@ public:
 	virtual uint64 GetFormat_XRGB64()=0;
 };
 
-namespace nsVDXPixmap {
+namespace vd2 {
 	enum VDXPixmapFormat {
 		kPixFormat_Null						= 0,
 		kPixFormat_XRGB1555					= 5,
@@ -366,6 +366,8 @@ namespace nsVDXPixmap {
 		kPixFormat_VDXA_YUV			= 0x10002
 	};
 };
+
+namespace nsVDXPixmap = vd2;
 
 #define VDXMAKEFOURCC(a, b, c, d) ((uint32)(uint8)(d) + ((uint32)(uint8)(c) << 8) + ((uint32)(uint8)(b) << 16) + ((uint32)(uint8)(a) << 24))
 

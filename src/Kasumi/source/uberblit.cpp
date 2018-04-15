@@ -1373,18 +1373,18 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 
 	if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_YCC_601) {
 		if (VDPixmapFormatMatrixType(src.format)==1) {
-			uint32 srcSpace = (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
-			if (src.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-				srcSpace = (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
+			uint32 srcSpace = (src.formatEx.colorRangeMode==vd2::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
+			if (src.formatEx.colorSpaceMode==vd2::kColorSpaceMode_709)
+				srcSpace = (src.formatEx.colorRangeMode==vd2::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
 			srcToken = (srcToken & ~kVDPixSpace_Mask) | srcSpace;
 		}
 	}
 
 	if ((dstToken & kVDPixSpace_Mask)==kVDPixSpace_YCC_601) {
 		if (VDPixmapFormatMatrixType(dst.format)==1) {
-			uint32 dstSpace = (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
-			if (dst.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
-				dstSpace = (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
+			uint32 dstSpace = (dst.formatEx.colorRangeMode==vd2::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
+			if (dst.formatEx.colorSpaceMode==vd2::kColorSpaceMode_709)
+				dstSpace = (dst.formatEx.colorRangeMode==vd2::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
 			dstToken = (dstToken & ~kVDPixSpace_Mask) | dstSpace;
 		}
 	}
@@ -1562,9 +1562,9 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 			uint32 dstSpace = dstToken & kVDPixSpace_Mask;
 			bool studioRGB = true;
 			const VDPixmapGenYCbCrBasis* basis = &g_VDPixmapGenYCbCrBasis_601;
-			if (dst.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
+			if (dst.formatEx.colorSpaceMode==vd2::kColorSpaceMode_709)
 				basis = &g_VDPixmapGenYCbCrBasis_709;
-			if (dst.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full)
+			if (dst.formatEx.colorRangeMode==vd2::kColorRangeMode_Full)
 				studioRGB = false;
 			gen.rgb32f_to_ycbcr_generic(*basis, studioRGB, dstSpace);
 			srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | dstSpace | kVDPixType_32F_32F_32F_LE;
@@ -1575,9 +1575,9 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 			if ((dstToken & kVDPixSpace_Mask)==kVDPixSpace_BGR) {
 				bool studioRGB = true;
 				const VDPixmapGenYCbCrBasis* basis = &g_VDPixmapGenYCbCrBasis_601;
-				if (src.formatEx.colorSpaceMode==nsVDXPixmap::kColorSpaceMode_709)
+				if (src.formatEx.colorSpaceMode==vd2::kColorSpaceMode_709)
 					basis = &g_VDPixmapGenYCbCrBasis_709;
-				if (src.formatEx.colorRangeMode==nsVDXPixmap::kColorRangeMode_Full)
+				if (src.formatEx.colorRangeMode==vd2::kColorRangeMode_Full)
 					studioRGB = false;
 				gen.ycbcr_to_rgb64_generic(*basis, studioRGB);
 				srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_BGR | kVDPixType_16x4_LE;
