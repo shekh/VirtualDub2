@@ -41,6 +41,11 @@ public:
 		mpSrcR->TransformPixmapInfo(src,unused);
 		mpSrcG->TransformPixmapInfo(src,unused);
 		mpSrcB->TransformPixmapInfo(src,unused);
+		if (dst.colorRangeMode==vd2::kColorRangeMode_Full)
+			max_value = 0x3FF;
+		else
+			max_value = 0x3FC;
+		bias = -128.0f / 255.0f + 512.0f / max_value;
 	}
 
 	uint32 GetType(uint32 output) const;
@@ -55,6 +60,9 @@ public:
 	virtual const char* dump_name(){ return "32F_To_V210"; }
 
 protected:
+	int max_value;
+	float bias;
+
 	void Compute(void *dst0, sint32 y);
 
 	IVDPixmapGen *mpSrcR;
@@ -74,6 +82,15 @@ protected:
 class VDPixmapGen_V210_To_32F : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
 	void Start();
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		VDPixmapGenWindowBasedOneSourceSimple::TransformPixmapInfo(src,dst);
+		if (src.colorRangeMode==vd2::kColorRangeMode_Full)
+			max_value = 0x3FF;
+		else
+			max_value = 0x3FC;
+		bias = 128.0f / 255.0f - 512.0f / max_value;
+	}
+
 	const void *GetRow(sint32 y, uint32 index);
 
 	sint32 GetWidth(int index) const;
@@ -82,6 +99,9 @@ public:
 	virtual const char* dump_name(){ return "V210_To_32F"; }
 
 protected:
+	int max_value;
+	float bias;
+
 	void Compute(void *dst0, sint32 y);
 };
 
@@ -102,7 +122,10 @@ public:
 		mpSrc->TransformPixmapInfo(src,unused);
 		dst.colorSpaceMode = src.colorSpaceMode;
 		dst.colorRangeMode = src.colorRangeMode;
-		dst.ref_r = 0x3FF;
+		if (src.colorRangeMode==vd2::kColorRangeMode_Full)
+			dst.ref_r = 0x3FF;
+		else
+			dst.ref_r = 0x3FC;
 		dst.ref_g = 0;
 		dst.ref_b = 0;
 		dst.ref_a = 0;
@@ -234,6 +257,11 @@ public:
 		mpSrcR->TransformPixmapInfo(src,unused);
 		mpSrcG->TransformPixmapInfo(src,unused);
 		mpSrcB->TransformPixmapInfo(src,unused);
+		if (dst.colorRangeMode==vd2::kColorRangeMode_Full)
+			max_value = 0x3FF;
+		else
+			max_value = 0x3FC;
+		bias = -128.0f / 255.0f + 512.0f / max_value;
 	}
 
 	uint32 GetType(uint32 output) const;
@@ -248,6 +276,9 @@ public:
 	virtual const char* dump_name(){ return "32F_To_V410"; }
 
 protected:
+	int max_value;
+	float bias;
+
 	void Compute(void *dst0, sint32 y);
 
 	IVDPixmapGen *mpSrcR;
@@ -267,6 +298,15 @@ protected:
 class VDPixmapGen_V410_To_32F : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
 	void Start();
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		VDPixmapGenWindowBasedOneSourceSimple::TransformPixmapInfo(src,dst);
+		if (src.colorRangeMode==vd2::kColorRangeMode_Full)
+			max_value = 0x3FF;
+		else
+			max_value = 0x3FC;
+		bias = 128.0f / 255.0f - 512.0f / max_value;
+	}
+
 	const void *GetRow(sint32 y, uint32 index);
 
 	uint32 GetType(uint32 output) const;
@@ -274,6 +314,9 @@ public:
 	virtual const char* dump_name(){ return "V410_To_32F"; }
 
 protected:
+	int max_value;
+	float bias;
+
 	void Compute(void *dst0, sint32 y);
 };
 
@@ -294,7 +337,10 @@ public:
 		mpSrc->TransformPixmapInfo(src,unused);
 		dst.colorSpaceMode = src.colorSpaceMode;
 		dst.colorRangeMode = src.colorRangeMode;
-		dst.ref_r = 0x3FF;
+		if (src.colorRangeMode==vd2::kColorRangeMode_Full)
+			dst.ref_r = 0x3FF;
+		else
+			dst.ref_r = 0x3FC;
 		dst.ref_g = 0;
 		dst.ref_b = 0;
 		dst.ref_a = 0;

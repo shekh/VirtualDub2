@@ -97,6 +97,7 @@ inline VDPixmapLayout VDPixmapToLayout(const VDPixmap& px, void *&p) {
 
 bool VDPixmapFormatHasAlpha(sint32 format);
 bool VDPixmapFormatHasAlphaPlane(sint32 format);
+bool VDPixmapFormatHasYUV16(sint32 format);
 int VDPixmapFormatMatrixType(sint32 format);
 int VDPixmapFormatDifference(VDPixmapFormatEx src, VDPixmapFormatEx dst);
 int VDPixmapFormatGroup(int src);

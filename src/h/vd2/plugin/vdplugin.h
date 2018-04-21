@@ -173,6 +173,9 @@ namespace vd2 {
 		kColorRangeMode_Full,
 		kColorRangeModeCount
 	};
+
+	// converts 0xFF -> 0x80, 0xFF0 -> 0x800 etc
+	inline int chroma_neutral(int ref) { return (ref + (ref & -ref))/2; }
 };
 
 struct FilterModPixmapInfo {

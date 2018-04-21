@@ -49,11 +49,18 @@ protected:
 class VDPixmapGen_32F_To_16 : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
 
+	VDPixmapGen_32F_To_16(bool chroma){ isChroma = chroma; }
+
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
 		FilterModPixmapInfo unused;
 		mpSrc->TransformPixmapInfo(src,unused);
-		dst.ref_r = 0xFFFF;
+		if (dst.colorRangeMode==vd2::kColorRangeMode_Full)
+			dst.ref_r = 0xFFFF;
+		else
+			dst.ref_r = 0xFF00;
 		m = float(dst.ref_r);
+		bias = 0;
+		if (isChroma) bias = 0x8000 - 128.0f / 255.0f * m;
 	}
 
 	void Start();
@@ -63,7 +70,9 @@ public:
 	virtual const char* dump_name(){ return "32F_To_16"; }
 
 protected:
+	bool isChroma;
 	float m;
+	float bias;
 
 	void Compute(void *dst0, sint32 y);
 };
@@ -77,11 +86,16 @@ protected:
 class VDPixmapGen_16_To_32F : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
 
+	VDPixmapGen_16_To_32F(bool chroma){ isChroma = chroma; }
+
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
 		FilterModPixmapInfo buf;
 		mpSrc->TransformPixmapInfo(src,buf);
 		ref = buf.ref_r;
 		m = float(1.0/buf.ref_r);
+		bias = 0;
+		int mref = vd2::chroma_neutral(ref);
+		if (isChroma) bias = -mref*m + 128.0f / 255.0f;
 	}
 
 	void Start();
@@ -91,8 +105,10 @@ public:
 	virtual const char* dump_name(){ return "16_To_32F"; }
 
 protected:
+	bool isChroma;
 	int ref;
 	float m;
+	float bias;
 
 	void Compute(void *dst0, sint32 y);
 };
@@ -103,19 +119,15 @@ protected:
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-class VDPixmapGen_8_To_16 : public VDPixmapGenWindowBasedOneSourceSimple {
+class VDPixmapGen_8_To_16 : public VDPixmapGenWindowBasedOneSourceAlign8to16 {
 public:
 
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
 		FilterModPixmapInfo buf;
 		mpSrc->TransformPixmapInfo(src,buf);
 		dst.copy_frame(buf);
-		dst.ref_r = 0xFFFF;
+		dst.ref_r = 0xFF00;
 		invalid = false;
-	}
-
-	void Start() {
-		StartWindow(mWidth * 2);
 	}
 
 	uint32 GetType(uint32 output) const {
@@ -127,33 +139,7 @@ public:
 protected:
 	bool invalid;
 
-	void Compute(void *dst0, sint32 y);
-};
-
-class VDPixmapGen_16_To_8 : public VDPixmapGenWindowBasedOneSourceSimple {
-public:
-
-	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
-		FilterModPixmapInfo buf;
-		mpSrc->TransformPixmapInfo(src,buf);
-		dst.copy_frame(buf);
-		ref = buf.ref_r;
-		m = 0xFF0000/buf.ref_r;
-		invalid = false;
-	}
-
-	void Start();
-
-	uint32 GetType(uint32 output) const;
-
-	virtual const char* dump_name(){ return "16_To_8"; }
-
-protected:
-	int ref;
-	uint32 m;
-	bool invalid;
-
-	void Compute(void *dst0, sint32 y);
+	int ComputeSpan(uint16* dst, const uint8* src, int n);
 };
 
 class VDPixmapGen_A8_To_A16 : public VDPixmapGen_8_To_16 {
@@ -165,66 +151,59 @@ public:
 		dst.ref_a = 0xFFFF;
 		invalid = !dst.alpha_type;
 	}
-};
 
-class VDPixmapGen_A16_To_A8 : public VDPixmapGen_16_To_8 {
-public:
-	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
-		FilterModPixmapInfo buf;
-		mpSrc->TransformPixmapInfo(src,buf);
-		dst.copy_alpha(buf);
-		ref = buf.ref_a;
-		invalid = !dst.alpha_type;
-		if (!invalid) m = 0xFF0000/buf.ref_a;
-	}
+	int ComputeSpan(uint16* dst, const uint8* src, int n);
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-class VDPixmapGen_Y16_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
+class VDPixmapGen_16_To_8 : public VDPixmapGenWindowBasedOneSourceAlign16to8 {
+public:
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst);
+	void Start();
+
+	uint32 GetType(uint32 output) const;
+
+	virtual const char* dump_name(){ return "16_To_8"; }
+
+protected:
+	int ref;
+	uint32 m;
+	bool invalid;
+
+	int ComputeSpan(uint8* dst, const uint16* src, int n);
+};
+
+class VDPixmapGen_A16_To_A8 : public VDPixmapGen_16_To_8 {
+public:
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+class VDPixmapGen_Y16_Normalize : public VDPixmapGenWindowBasedOneSourceAlign16 {
 public:
 
-	VDPixmapGen_Y16_Normalize(){ max_value = 0xFFFF; mask = 0xFFFF; }
+	VDPixmapGen_Y16_Normalize(bool chroma=false){ max_value = 0xFFFF; mask = 0xFFFF; isChroma = chroma; }
 
 	uint32 max_value;
 	uint16 mask;
 
-	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
-		mpSrc->TransformPixmapInfo(src,dst);
-		if (dst.ref_r==max_value) {
-			do_normalize = false;
-			ref = dst.ref_r;
-		} else {
-			do_normalize = true;
-			ref = dst.ref_r;
-			m = max_value*0x10000/ref;
-			dst.ref_r = max_value;
-			scale_down = true;
-			if (m>=0x10000) scale_down = false;
-		}
-	}
-
-	void Start() {
-		int type = mpSrc->GetType(0);
-		bpp = 2;
-		if ((type & kVDPixType_Mask)==kVDPixType_16x2_LE) bpp = 4;
-		if ((type & kVDPixType_Mask)==kVDPixType_16x4_LE) bpp = 8;
-		if ((type & kVDPixType_Mask)==kVDPixType_YU64) bpp = 4;
-		StartWindow(mWidth * bpp);
-	}
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst);
 
 	virtual const char* dump_name(){ return "Y16_Normalize"; }
 
 protected:
-	int bpp;
 	int ref;
 	uint32 m;
+	int bias;
+	bool isChroma;
 	bool do_normalize;
-	bool scale_down;
 
-	void Compute(void *dst0, sint32 y);
-	void ComputeNormalize(void *dst0, sint32 y);
-	void ComputeMask(void *dst0, sint32 y);
+	int ComputeSpan(uint16* dst, const uint16* src, int n);
+	void ComputeNormalize(uint16* dst, const uint16* src, int n);
+	void ComputeNormalizeBias(uint16* dst, const uint16* src, int n);
+	void ComputeMask(uint16* dst, const uint16* src, int n);
 };
 
 class VDPixmapGen_A16_Normalize : public VDPixmapGen_Y16_Normalize {
@@ -247,8 +226,7 @@ public:
 				ref = dst.ref_a;
 				m = max_value*0x10000/ref;
 				dst.ref_a = max_value;
-				scale_down = true;
-				if (m>=0x10000) scale_down = false;
+				bias = 0;
 			}
 		}
 	}
@@ -258,8 +236,8 @@ public:
 protected:
 	uint32 a_mask;
 
-	void Compute(void *dst0, sint32 y);
-	void ComputeWipeAlpha(void *dst0, sint32 y);
+	virtual int ComputeSpan(uint16* dst, const uint16* src, int n);
+	void ComputeWipeAlpha(uint16* dst, int n);
 };
 
 class VDPixmapGen_A8_Normalize : public VDPixmapGenWindowBasedOneSourceSimple {
@@ -289,9 +267,10 @@ protected:
 class ExtraGen_YUV_Normalize : public IVDPixmapExtraGen {
 public:
 	uint32 max_value;
+	uint32 max_a_value;
 	uint16 mask;
 
-	ExtraGen_YUV_Normalize(){ max_value=0xFFFF; mask=0xFFFF; }
+	ExtraGen_YUV_Normalize(){ max_value=0xFFFF; max_a_value=0xFFFF; mask=0xFFFF; }
 	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst);
 };
 
@@ -306,6 +285,6 @@ bool inline VDPixmap_YUV_IsNormalized(const FilterModPixmapInfo& info, uint32 ma
 	return true;
 }
 
-void VDPixmap_YUV_Normalize(VDPixmap& dst, const VDPixmap& src, uint32 max_value=0xFFFF);
+//void VDPixmap_YUV_Normalize(VDPixmap& dst, const VDPixmap& src, uint32 max_value=0xFFFF);
 
 #endif

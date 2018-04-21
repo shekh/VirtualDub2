@@ -6,6 +6,8 @@
 #include <vd2/Kasumi/pixmaputils.h>
 #include "../../Kasumi/h/uberblit.h"
 #include "../../Kasumi/h/uberblit_16f.h"
+#include "../../Kasumi/h/uberblit_rgb64.h"
+#include "../../Kasumi/h/uberblit_input.h"
 
 namespace {
 	bool can_sample(const VDPixmap& px) {
@@ -53,8 +55,84 @@ namespace {
 	}
 }
 
+void test_normalize() {
+  int width = 65536;
+  /*
+  uint16* data = (uint16*)malloc(width*2);
+  uint16* data2 = (uint16*)malloc(width*2);
+
+  {for(int i=0; i<width; i++) data[i] = i; }
+
+  VDPixmapGenSrc src;
+  src.Init(width,1,kVDPixType_16_LE,width*2);
+  src.SetSource(data,width*2,0);
+
+  FilterModPixmapInfo info;
+  info.ref_r = 0x3FF;
+  FilterModPixmapInfo info2;
+
+  VDPixmapGen_Y16_Normalize gen(true);
+  gen.max_value = 0xFF;
+  gen.Init(&src,0);
+  gen.TransformPixmapInfo(info,info2);
+  gen.AddWindowRequest(1,1);
+  gen.Start();
+
+  gen.ProcessRow(data2,0);
+  */
+  /*
+  uint8* data = (uint8*)malloc(width);
+  uint16* data2 = (uint16*)malloc(width*2);
+
+  {for(int i=0; i<width; i++) data[i] = i; }
+
+  VDPixmapGenSrc src;
+  src.Init(width,1,kVDPixType_8,width);
+  src.SetSource(data,width,0);
+
+  FilterModPixmapInfo info;
+  FilterModPixmapInfo info2;
+  VDPixmapGen_8_To_16 gen;
+  gen.Init(&src,0);
+  gen.TransformPixmapInfo(info,info2);
+  gen.AddWindowRequest(1,1);
+  gen.Start();
+
+  gen.ProcessRow(data2,0);
+  */
+
+  uint16* data = (uint16*)malloc(width*2);
+  uint16* data2 = (uint16*)malloc(width*2);
+
+  {for(int i=0; i<width; i++) data[i] = i; }
+
+  VDPixmapGenSrc src;
+  src.Init(width/4,1,kVDPixType_16x4_LE,width*2);
+  src.SetSource(data,width*2,0);
+
+  FilterModPixmapInfo info;
+  info.ref_r = 0xFF;
+  info.ref_g = 0xFF;
+  info.ref_b = 0xFF;
+  FilterModPixmapInfo info2;
+
+  VDPixmapGen_X16R16G16B16_Normalize gen;
+  gen.max_r = 0xFFFF;
+  gen.Init(&src,0);
+  gen.TransformPixmapInfo(info,info2);
+  gen.AddWindowRequest(1,1);
+  gen.Start();
+
+  gen.ProcessRow(data2,0);
+
+  free(data);
+  free(data2);
+}
+
 DEFINE_TEST(Uberblit) {
 	using namespace nsVDPixmap;
+
+  //test_normalize();
 
 	// test primary color conversion
 
@@ -94,6 +172,7 @@ DEFINE_TEST(Uberblit) {
 	IVDPixmapExtraGen* extraDst = 0;
 	#if 0
 	ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
+	normalize->max_value = 1020;
 	extraDst = normalize;
 	#endif
 

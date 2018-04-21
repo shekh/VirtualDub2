@@ -97,6 +97,7 @@ IVDPixmapExtraGen* VDPixmapCreateNormalizer(int format, FilterModPixmapInfo& out
 		{
 			ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
 			normalize->max_value = out_info.ref_r;
+			normalize->max_a_value = out_info.ref_a;
 			return normalize;
 		}
 	case nsVDPixmap::kPixFormat_YUV422_P210:

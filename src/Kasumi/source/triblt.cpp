@@ -1678,14 +1678,18 @@ bool VDPixmapTriFill(VDPixmap& dst, const VDTriColorVertex *pVertices, int nVert
 
 			TransformVerts(xsrc, pVertices, nVertices, xf_ycbcr);
 
+			float bias = 0;
+			if (pxPlane->format==nsVDPixmap::kPixFormat_Y16)
+				bias = float(0x8000)/0xFFFF - 128.0f / 255.0f;
+
 			switch(plane) {
 				case 1:
 					for(int i=0; i<nVertices; ++i)
-						xsrc[i].g = xsrc[i].b;
+						xsrc[i].g = xsrc[i].b + bias;
 					break;
 				case 2:
 					for(int i=0; i<nVertices; ++i)
-						xsrc[i].g = xsrc[i].r;
+						xsrc[i].g = xsrc[i].r + bias;
 					break;
 			}
 		} else {

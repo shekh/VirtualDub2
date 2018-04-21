@@ -656,6 +656,7 @@ const VDPixmap& VDVideoSourcePlugin::getTargetFormat() {
 		mTargetFormat.format = format;
 		mTargetFormat.info.colorRangeMode = format.colorRangeMode;
 		mTargetFormat.info.colorSpaceMode = format.colorSpaceMode;
+		VDAdjustPixmapInfoForRange(mTargetFormat.info, mTargetFormat.format);
 	}
 
 	return mTargetFormat;

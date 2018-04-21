@@ -137,6 +137,25 @@ bool VDPixmapFormatHasAlphaPlane(sint32 format) {
 	return false;
 }
 
+bool VDPixmapFormatHasYUV16(sint32 format) {
+	switch (format) {
+	case nsVDPixmap::kPixFormat_YUV444_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Planar16:
+	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+	case nsVDPixmap::kPixFormat_YUVA444_Y416:
+	case nsVDPixmap::kPixFormat_YUV422_YU64:
+	case nsVDPixmap::kPixFormat_YUV422_P210:
+	case nsVDPixmap::kPixFormat_YUV422_P216:
+	case nsVDPixmap::kPixFormat_YUV420_P010:
+	case nsVDPixmap::kPixFormat_YUV420_P016:
+		return true;
+	}
+	return false;
+}
+
 VDPixmap VDPixmap::copy(const VDXPixmap& a) {
 	VDPixmap b;
 	b.data = a.data;

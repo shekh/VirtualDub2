@@ -48,6 +48,7 @@ uint32 VDMakeBitmapCompatiblePixmapLayout(VDPixmapLayout& layout, sint32 w, sint
 bool VDGetPixmapLayoutForBitmapFormat(const VDAVIBitmapInfoHeader& hdr, uint32 hdrsize, VDPixmapLayout& layout);
 VDPixmap VDGetPixmapForBitmap(const VDAVIBitmapInfoHeader& hdr, const void *data);
 void VDSetPixmapInfoForBitmap(FilterModPixmapInfo& info, int format, int variant=0);
+void VDAdjustPixmapInfoForRange(FilterModPixmapInfo& info, int format);
 
 VDStringA print_fourcc(uint32 a);
 VDStringW printW_fourcc(uint32 a);

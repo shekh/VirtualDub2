@@ -1209,11 +1209,13 @@ VDDubVideoProcessor::VideoWriteResult VDDubVideoProcessor::ProcessVideoFrame() {
 		pBuffer->mPixmap.info.colorRangeMode = bufferFormatEx.colorRangeMode;
 	}
 	if (!mpOutputBlitter && !mbPreview) {
-		FilterModPixmapInfo out_info;
+		FilterModPixmapInfo out_info = pBuffer->mPixmap.info;
 		VDSetPixmapInfoForBitmap(out_info, pBuffer->mPixmap.format);
 
 		if (mpVideoCompressor) {
-			if (!mpVideoCompressor->GetInputFormat(&out_info)) {
+			if (mpVideoCompressor->GetInputFormat(&out_info)) {
+				VDAdjustPixmapInfoForRange(out_info, pBuffer->mPixmap.format);
+			} else {
 				vdstructex<tagBITMAPINFOHEADER> bm;
 				mpVideoCompressor->GetInputBitmapFormat(bm);
 				int variant;

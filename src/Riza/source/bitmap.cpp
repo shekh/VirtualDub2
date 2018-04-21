@@ -664,11 +664,17 @@ void VDSetPixmapInfoForBitmap(FilterModPixmapInfo& info, int format, int variant
 
 	case kPixFormat_YUV420_Planar16:
 	case kPixFormat_YUV422_Planar16:
-		info.ref_r = 0xFFFF;
+		if (info.colorRangeMode==vd2::kColorRangeMode_Full)
+			info.ref_r = 0xFFFF;
+		else
+			info.ref_r = 0xFF00;
 
 		if (variant==2) {
 			// ffmpeg, 10 bit
-			info.ref_r = 0x3FF;
+			if (info.colorRangeMode==vd2::kColorRangeMode_Full)
+				info.ref_r = 0x3FF;
+			else
+				info.ref_r = 0x3FC;
 		}
 		break;
 
@@ -676,20 +682,48 @@ void VDSetPixmapInfoForBitmap(FilterModPixmapInfo& info, int format, int variant
 	case kPixFormat_YUV420_Alpha_Planar16:
 	case kPixFormat_YUV422_Alpha_Planar16:
 	case kPixFormat_YUV444_Alpha_Planar16:
-		info.ref_r = 0xFFFF;
+		if (info.colorRangeMode==vd2::kColorRangeMode_Full)
+			info.ref_r = 0xFFFF;
+		else
+			info.ref_r = 0xFF00;
 		info.ref_a = 0xFFFF;
 		break;
 
 	case kPixFormat_YUV422_P210:
 	case kPixFormat_YUV420_P010:
+		if (info.colorRangeMode==vd2::kColorRangeMode_Full)
+			info.ref_r = 0xFFC0;
+		else
+			info.ref_r = 0xFF00;
+		break;
+
 	case kPixFormat_YUV422_P216:
 	case kPixFormat_YUV420_P016:
-		info.ref_r = 0xFF00;
+		if (info.colorRangeMode==vd2::kColorRangeMode_Full)
+			info.ref_r = 0xFFFF;
+		else
+			info.ref_r = 0xFF00;
 		break;
 
 	case kPixFormat_YUVA444_Y416:
-		info.ref_r = 0xFF00;
+		if (info.colorRangeMode==vd2::kColorRangeMode_Full)
+			info.ref_r = 0xFFFF;
+		else
+			info.ref_r = 0xFF00;
 		info.ref_a = 0xFFFF;
 		break;
+	}
+}
+
+// purpose: convert YCbCr bitmask of type 2^n-1 to FF*2^(n-8)
+// do nothing otherwise
+void VDAdjustPixmapInfoForRange(FilterModPixmapInfo& info, int format) {
+	if (VDPixmapFormatHasYUV16(format) && info.colorRangeMode!=vd2::kColorRangeMode_Full) {
+		int range = info.ref_r+1;
+		int lsb = (range & -range);
+		if (range==lsb) {
+			int x = (lsb>>1) + (lsb>>2) + (lsb>>3) + (lsb>>4);
+			info.ref_r = x + (x>>4);
+		}
 	}
 }

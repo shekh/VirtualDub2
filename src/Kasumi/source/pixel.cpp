@@ -466,7 +466,7 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 
 	case nsVDPixmap::kPixFormat_YUV444_V410:
 		{
-			int ref = 1023;
+			int ref = px.info.colorRangeMode==vd2::kColorRangeMode_Full ? 0x3FF:0x3FC;
 			VDPixmapFormatEx f = px.format;
 			f.colorRangeMode = px.info.colorRangeMode;
 			f.colorSpaceMode = px.info.colorSpaceMode;
@@ -482,7 +482,7 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 
 	case nsVDPixmap::kPixFormat_YUV444_Y410:
 		{
-			int ref = 1023;
+			int ref = px.info.colorRangeMode==vd2::kColorRangeMode_Full ? 0x3FF:0x3FC;
 			VDPixmapFormatEx f = px.format;
 			f.colorRangeMode = px.info.colorRangeMode;
 			f.colorSpaceMode = px.info.colorSpaceMode;
@@ -696,7 +696,8 @@ uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y) {
 			f.colorRangeMode = px.info.colorRangeMode;
 			uint16 py = VDPixmapSample16U(px.data, px.pitch, x, y);
 			float r,g,b;
-			VDConvertYCbCrToRGB(py,(ref+1)/2,(ref+1)/2,ref,f,r,g,b);
+			int n0 = vd2::chroma_neutral(ref);
+			VDConvertYCbCrToRGB(py,n0,n0,ref,f,r,g,b);
 			return VDPackRGB(r,g,b);
 		}
 		break;
@@ -1055,6 +1056,19 @@ namespace {
 		r = 1.1643836f*y + 1.5960268f*cr - (222.92157f / 255.0f);
 		g = 1.1643836f*y - 0.3917623f*cb - 0.8129676f*cr + (135.57529f / 255.0f);
 		b = 1.1643836f*y + 2.0172321f*cb - (276.83585f / 255.0f);
+
+		/*
+		const float kCoeffCr[3] = { 1.596f, -0.813f, 0 };
+		const float kCoeffCb[3] = { 0, -0.391f, 2.018f };
+		const float kCoeffY = 1.164f;
+		const float kBiasY = -16.0f / 255.0f;
+		const float kBiasC = -128.0f / 255.0f;
+
+		float y2 = y * kCoeffY;
+		float r2 = y2 + kCoeffCr[0]*cr + kCoeffCb[0]*cb + kCoeffY * kBiasY + (kCoeffCr[0] + kCoeffCb[0]) * kBiasC;
+		float g2 = y2 + kCoeffCr[1]*cr + kCoeffCb[1]*cb + kCoeffY * kBiasY + (kCoeffCr[1] + kCoeffCb[1]) * kBiasC;
+		float b2 = y2 + kCoeffCr[2]*cr + kCoeffCb[2]*cb + kCoeffY * kBiasY + (kCoeffCr[2] + kCoeffCb[2]) * kBiasC;
+		*/
 	}
 
 	uint32 ConvertYCC72ToRGB24_FR(sint32 iy, sint32 icb, sint32 icr) {
@@ -1079,6 +1093,19 @@ namespace {
 		r = y + 1.4020000f*cr - (179.456f / 255.0f);
 		g = y - 0.3441363f*cb - 0.7141363f*cr + (135.45889f / 255.0f);
 		b = y + 1.7720000f*cb - (226.816f / 255.0f);
+
+		/*
+		const float kCoeffCr[3] = { 1.402f, -0.7141363f, 0 };
+		const float kCoeffCb[3] = { 0, -0.3441363f, 1.772f };
+		const float kCoeffY = 1.0f;
+		const float kBiasY = 0.0f;
+		const float kBiasC = -128.0f / 255.0f;
+
+		float y2 = y * kCoeffY;
+		float r2 = y2 + kCoeffCr[0]*cr + kCoeffCb[0]*cb + kCoeffY * kBiasY + (kCoeffCr[0] + kCoeffCb[0]) * kBiasC;
+		float g2 = y2 + kCoeffCr[1]*cr + kCoeffCb[1]*cb + kCoeffY * kBiasY + (kCoeffCr[1] + kCoeffCb[1]) * kBiasC;
+		float b2 = y2 + kCoeffCr[2]*cr + kCoeffCb[2]*cb + kCoeffY * kBiasY + (kCoeffCr[2] + kCoeffCb[2]) * kBiasC;
+		*/
 	}
 
 	uint32 ConvertYCC72ToRGB24_709(sint32 iy, sint32 icb, sint32 icr) {
@@ -1584,19 +1611,19 @@ uint32 VDConvertYCbCrToRGB(uint8 y0, uint8 cb0, uint8 cr0, bool use709, bool use
 }
 
 void VDConvertYCbCrToRGB(int y0, int cb0, int cr0, int ref, VDPixmapFormatEx& format, float& r, float& g, float& b) {
-	using namespace nsVDXPixmap;
+	int mref = vd2::chroma_neutral(ref);
 	float  y =  float(y0)/ref;
-	float cb = float(cb0)/ref;
-	float cr = float(cr0)/ref;
+	float cb = float(cb0-mref)/ref + 128.0f / 255.0f;
+	float cr = float(cr0-mref)/ref + 128.0f / 255.0f;
 
-	if (format.colorSpaceMode==kColorSpaceMode_709) {
-		if (format.colorRangeMode==kColorRangeMode_Full) {
+	if (format.colorSpaceMode==vd2::kColorSpaceMode_709) {
+		if (format.colorRangeMode==vd2::kColorRangeMode_Full) {
 			ConvertYCC72ToRGB_709_FR(y,cb,cr,r,g,b);
 		} else {
 			ConvertYCC72ToRGB_709(y,cb,cr,r,g,b);
 		}
 	} else {
-		if (format.colorRangeMode==kColorRangeMode_Full) {
+		if (format.colorRangeMode==vd2::kColorRangeMode_Full) {
 			ConvertYCC72ToRGB_FR(y,cb,cr,r,g,b);
 		} else {
 			ConvertYCC72ToRGB(y,cb,cr,r,g,b);
@@ -1676,26 +1703,42 @@ uint32 VDConvertRGBToYCbCr(uint8 r8, uint8 g8, uint8 b8, bool use709, bool useFu
 }
 
 void VDConvertRGBToYCbCr(float r, float g, float b, float& y, float& cb, float& cr, bool use709, bool useFullRange) {
-  float scale = 0xFF00;
+	float scale = 0x10000;
 	if (use709) {
 		if (useFullRange) {
-			y  = ( 13933*r + 46871*g +  4732*b +   0x80) / scale;
-			cb = ( -7509*r - 25259*g + 32768*b + 0x8080) / scale;
-			cr = ( 32768*r - 29763*g -  3005*b + 0x8080) / scale;
+			y  = ( 13933*r + 46871*g +  4732*b +      0) / scale;
+			cb = ( -7509*r - 25259*g + 32768*b + 0x8000) / scale;
+			cr = ( 32768*r - 29763*g -  3005*b + 0x8000) / scale;
 		} else {
-			y =  ( 11966*r + 40254*g +  4064*b + 0x1080) / scale;
-			cb = ( -6596*r - 22189*g + 28784*b + 0x8080) / scale;
-			cr = ( 28784*r - 26145*g -  2639*b + 0x8080) / scale;
+			y =  ( 11966*r + 40254*g +  4064*b + 0x1000) / scale;
+			cb = ( -6596*r - 22189*g + 28784*b + 0x8000) / scale;
+			cr = ( 28784*r - 26145*g -  2639*b + 0x8000) / scale;
 		}
 	} else {
 		if (useFullRange) {
-			y =  ( 19595*r + 38470*g +  7471*b +   0x80) / scale;
-			cb = (-11058*r - 21710*g + 32768*b + 0x8080) / scale;
-			cr = ( 32768*r - 27439*g -  5329*b + 0x8080) / scale;
+			y =  ( 19595*r + 38470*g +  7471*b +      0) / scale;
+			cb = (-11058*r - 21710*g + 32768*b + 0x8000) / scale;
+			cr = ( 32768*r - 27439*g -  5329*b + 0x8000) / scale;
 		} else {
-			y  = ( 16829*r + 33039*g +  6416*b + 0x1080) / scale;
-			cb = ( -9714*r - 19071*g + 28784*b + 0x8080) / scale;
-			cr = ( 28784*r - 24103*g -  4681*b + 0x8080) / scale;
+			y  = ( 16829*r + 33039*g +  6416*b + 0x1000) / scale;
+			cb = ( -9714*r - 19071*g + 28784*b + 0x8000) / scale;
+			cr = ( 28784*r - 24103*g -  4681*b + 0x8000) / scale;
 		}
 	}
+
+	cb += 0.5f / 255.0f;
+	cr += 0.5f / 255.0f;
 }
+
+//---------------------------------------------------------------------------------
+// notes:
+// floating point chroma is neutral at 128/255 ~= 0.50196...
+// integer chroma (std) = (128+x)*2^(n-8)
+// integer chroma (full) = 128*2^(n-8) + x*2^(n-1) -> max x (8bit) = 127/255 ~= 0.498, thus 0xFF converts to 0xFF7F
+
+// other instances of ycbcr coefficients:
+// uberblit_ycbcr* (multiple places)
+// Riza\utils.fxh
+// VDDisplay\utils.fxh
+
+//---------------------------------------------------------------------------------

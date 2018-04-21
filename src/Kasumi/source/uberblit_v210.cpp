@@ -37,14 +37,14 @@ void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 
 	int w6 = mWidth / 6;
 	for(sint32 i=0; i<w6; ++i) {
-		float r0 = srcR[0];
-		float r1 = srcR[1];
-		float r2 = srcR[2];
+		float r0 = srcR[0] + bias;
+		float r1 = srcR[1] + bias;
+		float r2 = srcR[2] + bias;
 		srcR += 3;
 
-		float b0 = srcB[0];
-		float b1 = srcB[1];
-		float b2 = srcB[2];
+		float b0 = srcB[0] + bias;
+		float b1 = srcB[1] + bias;
+		float b2 = srcB[2] + bias;
 		srcB += 3;
 
 		float g0 = srcG[0];
@@ -68,18 +68,18 @@ void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 		if (b1 < 0.0f) b1 = 0.0f; else if (b1 > 1.0f) b1 = 1.0f;
 		if (b2 < 0.0f) b2 = 0.0f; else if (b2 > 1.0f) b2 = 1.0f;
 
-		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * 1023.0f);
-		uint32 ir1 = (uint32)VDRoundToIntFast(r1 * 1023.0f);
-		uint32 ir2 = (uint32)VDRoundToIntFast(r2 * 1023.0f);
-		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * 1023.0f);
-		uint32 ib1 = (uint32)VDRoundToIntFast(b1 * 1023.0f);
-		uint32 ib2 = (uint32)VDRoundToIntFast(b2 * 1023.0f);
-		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * 1023.0f);
-		uint32 ig1 = (uint32)VDRoundToIntFast(g1 * 1023.0f);
-		uint32 ig2 = (uint32)VDRoundToIntFast(g2 * 1023.0f);
-		uint32 ig3 = (uint32)VDRoundToIntFast(g3 * 1023.0f);
-		uint32 ig4 = (uint32)VDRoundToIntFast(g4 * 1023.0f);
-		uint32 ig5 = (uint32)VDRoundToIntFast(g5 * 1023.0f);
+		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * max_value);
+		uint32 ir1 = (uint32)VDRoundToIntFast(r1 * max_value);
+		uint32 ir2 = (uint32)VDRoundToIntFast(r2 * max_value);
+		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * max_value);
+		uint32 ib1 = (uint32)VDRoundToIntFast(b1 * max_value);
+		uint32 ib2 = (uint32)VDRoundToIntFast(b2 * max_value);
+		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * max_value);
+		uint32 ig1 = (uint32)VDRoundToIntFast(g1 * max_value);
+		uint32 ig2 = (uint32)VDRoundToIntFast(g2 * max_value);
+		uint32 ig3 = (uint32)VDRoundToIntFast(g3 * max_value);
+		uint32 ig4 = (uint32)VDRoundToIntFast(g4 * max_value);
+		uint32 ig5 = (uint32)VDRoundToIntFast(g5 * max_value);
 
 		// dword 0: XX Cr0 Y0 Cb0
 		// dword 1: XX Y2 Cb1 Y1
@@ -108,17 +108,22 @@ void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 		float b2 = 0;
 
 		switch(leftovers) {
-			case 5:	r2 = srcR[2];
-					b2 = srcB[2];
-					g4 = srcG[4];
-			case 4:	g3 = srcG[3];
-			case 3:	r1 = srcR[1];
-					b1 = srcB[1];
-					g2 = srcG[2];
-			case 2:	g1 = srcG[1];
-			case 1:	r0 = srcR[0];
-					b0 = srcB[0];
-					g0 = srcG[0];
+		case 5:	
+			r2 = srcR[2] + bias;
+			b2 = srcB[2] + bias;
+			g4 = srcG[4];
+		case 4:	
+			g3 = srcG[3];
+		case 3:	
+			r1 = srcR[1] + bias;
+			b1 = srcB[1] + bias;
+			g2 = srcG[2];
+		case 2:	
+			g1 = srcG[1];
+		case 1:	
+			r0 = srcR[0] + bias;
+			b0 = srcB[0] + bias;
+			g0 = srcG[0];
 		}
 
 		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 1.0f) r0 = 1.0f;
@@ -133,17 +138,17 @@ void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 		if (b1 < 0.0f) b1 = 0.0f; else if (b1 > 1.0f) b1 = 1.0f;
 		if (b2 < 0.0f) b2 = 0.0f; else if (b2 > 1.0f) b2 = 1.0f;
 
-		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * 1023.0f);
-		uint32 ir1 = (uint32)VDRoundToIntFast(r1 * 1023.0f);
-		uint32 ir2 = (uint32)VDRoundToIntFast(r2 * 1023.0f);
-		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * 1023.0f);
-		uint32 ib1 = (uint32)VDRoundToIntFast(b1 * 1023.0f);
-		uint32 ib2 = (uint32)VDRoundToIntFast(b2 * 1023.0f);
-		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * 1023.0f);
-		uint32 ig1 = (uint32)VDRoundToIntFast(g1 * 1023.0f);
-		uint32 ig2 = (uint32)VDRoundToIntFast(g2 * 1023.0f);
-		uint32 ig3 = (uint32)VDRoundToIntFast(g3 * 1023.0f);
-		uint32 ig4 = (uint32)VDRoundToIntFast(g4 * 1023.0f);
+		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * max_value);
+		uint32 ir1 = (uint32)VDRoundToIntFast(r1 * max_value);
+		uint32 ir2 = (uint32)VDRoundToIntFast(r2 * max_value);
+		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * max_value);
+		uint32 ib1 = (uint32)VDRoundToIntFast(b1 * max_value);
+		uint32 ib2 = (uint32)VDRoundToIntFast(b2 * max_value);
+		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * max_value);
+		uint32 ig1 = (uint32)VDRoundToIntFast(g1 * max_value);
+		uint32 ig2 = (uint32)VDRoundToIntFast(g2 * max_value);
+		uint32 ig3 = (uint32)VDRoundToIntFast(g3 * max_value);
+		uint32 ig4 = (uint32)VDRoundToIntFast(g4 * max_value);
 
 		// dword 0: XX Cr0 Y0 Cb0
 		// dword 1: XX Y2 Cb1 Y1
@@ -202,18 +207,18 @@ void VDPixmapGen_V210_To_32F::Compute(void *dst0, sint32 y) {
 		const uint32 w3 = src[3];
 		src += 4;
 
-		dstB[0] = (float)( w0        & 0x3ff) / 1023.0f;
-		dstG[0] = (float)((w0 >> 10) & 0x3ff) / 1023.0f;
-		dstR[0] = (float)((w0 >> 20) & 0x3ff) / 1023.0f;
-		dstG[1] = (float)( w1        & 0x3ff) / 1023.0f;
-		dstB[1] = (float)((w1 >> 10) & 0x3ff) / 1023.0f;
-		dstG[2] = (float)((w1 >> 20) & 0x3ff) / 1023.0f;
-		dstR[1] = (float)( w2        & 0x3ff) / 1023.0f;
-		dstG[3] = (float)((w2 >> 10) & 0x3ff) / 1023.0f;
-		dstB[2] = (float)((w2 >> 20) & 0x3ff) / 1023.0f;
-		dstG[4] = (float)( w3        & 0x3ff) / 1023.0f;
-		dstR[2] = (float)((w3 >> 10) & 0x3ff) / 1023.0f;
-		dstG[5] = (float)((w3 >> 20) & 0x3ff) / 1023.0f;
+		dstB[0] = (float)( w0        & 0x3ff) / max_value + bias;
+		dstG[0] = (float)((w0 >> 10) & 0x3ff) / max_value;
+		dstR[0] = (float)((w0 >> 20) & 0x3ff) / max_value + bias;
+		dstG[1] = (float)( w1        & 0x3ff) / max_value;
+		dstB[1] = (float)((w1 >> 10) & 0x3ff) / max_value + bias;
+		dstG[2] = (float)((w1 >> 20) & 0x3ff) / max_value;
+		dstR[1] = (float)( w2        & 0x3ff) / max_value + bias;
+		dstG[3] = (float)((w2 >> 10) & 0x3ff) / max_value;
+		dstB[2] = (float)((w2 >> 20) & 0x3ff) / max_value + bias;
+		dstG[4] = (float)( w3        & 0x3ff) / max_value;
+		dstR[2] = (float)((w3 >> 10) & 0x3ff) / max_value + bias;
+		dstG[5] = (float)((w3 >> 20) & 0x3ff) / max_value;
 
 		dstR += 3;
 		dstG += 6;
@@ -360,10 +365,10 @@ void VDPixmapGen_32F_To_V410::Compute(void *dst0, sint32 y) {
 	VDCPUCleanupExtensions();
 
 	for(sint32 i=0; i<mWidth; ++i) {
-		float r0 = srcR[0];
+		float r0 = srcR[0] + bias;
 		srcR++;
 
-		float b0 = srcB[0];
+		float b0 = srcB[0] + bias;
 		srcB++;
 
 		float g0 = srcG[0];
@@ -373,9 +378,9 @@ void VDPixmapGen_32F_To_V410::Compute(void *dst0, sint32 y) {
 		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 1.0f) g0 = 1.0f;
 		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 1.0f) b0 = 1.0f;
 
-		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * 1023.0f);
-		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * 1023.0f);
-		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * 1023.0f);
+		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * max_value);
+		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * max_value);
+		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * max_value);
 
 		// dword: Cr Y Cb XX
 		dst[0] = (ir0 << 22) + (ig0 << 12) + (ib0 << 2);
@@ -411,9 +416,9 @@ void VDPixmapGen_V410_To_32F::Compute(void *dst0, sint32 y) {
 		const uint32 w0 = src[0];
 		src++;
 
-		dstB[0] = (float)((w0 >> 2)  & 0x3ff) / 1023.0f;
-		dstG[0] = (float)((w0 >> 12) & 0x3ff) / 1023.0f;
-		dstR[0] = (float)((w0 >> 22) & 0x3ff) / 1023.0f;
+		dstB[0] = (float)((w0 >> 2)  & 0x3ff) / max_value + bias;
+		dstG[0] = (float)((w0 >> 12) & 0x3ff) / max_value;
+		dstR[0] = (float)((w0 >> 22) & 0x3ff) / max_value + bias;
 
 		dstR++;
 		dstG++;
@@ -472,22 +477,22 @@ void VDPixmapGen_32F_To_Y410::Compute(void *dst0, sint32 y) {
 	VDCPUCleanupExtensions();
 
 	for(sint32 i=0; i<mWidth; ++i) {
-		float r0 = srcR[0];
+		float r0 = srcR[0] + bias;
 		srcR++;
 
 		float b0 = srcB[0];
 		srcB++;
 
-		float g0 = srcG[0];
+		float g0 = srcG[0] + bias;
 		srcG++;
 
 		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 1.0f) r0 = 1.0f;
 		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 1.0f) g0 = 1.0f;
 		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 1.0f) b0 = 1.0f;
 
-		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * 1023.0f);
-		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * 1023.0f);
-		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * 1023.0f);
+		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * max_value);
+		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * max_value);
+		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * max_value);
 
 		// dword: XX Cr Y Cb
 		dst[0] = (ir0 << 20) + (ig0 << 10) + ib0;
@@ -511,9 +516,9 @@ void VDPixmapGen_Y410_To_32F::Compute(void *dst0, sint32 y) {
 		const uint32 w0 = src[0];
 		src++;
 
-		dstB[0] = (float)(w0         & 0x3ff) / 1023.0f;
-		dstG[0] = (float)((w0 >> 10) & 0x3ff) / 1023.0f;
-		dstR[0] = (float)((w0 >> 20) & 0x3ff) / 1023.0f;
+		dstB[0] = (float)(w0         & 0x3ff) / max_value + bias;
+		dstG[0] = (float)((w0 >> 10) & 0x3ff) / max_value;
+		dstR[0] = (float)((w0 >> 20) & 0x3ff) / max_value + bias;
 
 		dstR++;
 		dstG++;

@@ -146,6 +146,85 @@ public:
 	}
 };
 
+class VDPixmapGenWindowBasedOneSourceAlign16 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+  int bpp;
+
+	void Start() {
+		int type = mpSrc->GetType(0);
+		bpp = 2;
+		if ((type & kVDPixType_Mask)==kVDPixType_16x2_LE) bpp = 4;
+		if ((type & kVDPixType_Mask)==kVDPixType_16x4_LE) bpp = 8;
+		if ((type & kVDPixType_Mask)==kVDPixType_YU64) bpp = 4;
+		StartWindow(mWidth * bpp);
+	}
+	void Compute(void *dst0, sint32 y) {
+		uint16 *dst = (uint16 *)dst0;
+		const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex);
+		int w = mWidth*bpp/2;
+		int w0 = ComputeSpan(dst,src,w);
+		if (w0<w) {
+			src += w0;
+			dst += w0;
+			w -= w0;
+			uint16 src1[8];
+			uint16 dst1[8];
+			memcpy(src1,src,w*2);
+			ComputeSpan(dst1,src1,8);
+			memcpy(dst,dst1,w*2);
+		}
+	}
+	virtual int ComputeSpan(uint16* dst, const uint16* src, int n) = 0;
+};
+
+class VDPixmapGenWindowBasedOneSourceAlign8to16 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+	void Start() {
+		StartWindow(mWidth * 2);
+	}
+	void Compute(void *dst0, sint32 y) {
+		uint16 *dst = (uint16 *)dst0;
+		const uint8 *src = (const uint8 *)mpSrc->GetRow(y, mSrcIndex);
+		int w = mWidth;
+		int w0 = ComputeSpan(dst,src,w);
+		if (w0<w) {
+			src += w0;
+			dst += w0;
+			w -= w0;
+			uint8 src1[16];
+			uint16 dst1[16];
+			memcpy(src1,src,w);
+			ComputeSpan(dst1,src1,16);
+			memcpy(dst,dst1,w*2);
+		}
+	}
+	virtual int ComputeSpan(uint16* dst, const uint8* src, int n) = 0;
+};
+
+class VDPixmapGenWindowBasedOneSourceAlign16to8 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+	void Start() {
+		StartWindow(mWidth);
+	}
+	void Compute(void *dst0, sint32 y) {
+		uint8 *dst = (uint8 *)dst0;
+		const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex);
+		int w = mWidth;
+		int w0 = ComputeSpan(dst,src,w);
+		if (w0<w) {
+			src += w0;
+			dst += w0;
+			w -= w0;
+			uint16 src1[16];
+			uint8 dst1[16];
+			memcpy(src1,src,w*2);
+			ComputeSpan(dst1,src1,16);
+			memcpy(dst,dst1,w);
+		}
+	}
+	virtual int ComputeSpan(uint8* dst, const uint16* src, int n) = 0;
+};
+
 class VDPixmapUberBlitterGenerator;
 
 class IVDPixmapExtraGen {

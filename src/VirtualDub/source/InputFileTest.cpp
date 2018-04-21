@@ -531,8 +531,8 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 			dst->info.ref_r = 0xFFFF;
 			gray = (gray<<8) | gray;
 			VDMemset16Rect(dst->data, dst->pitch, uint16(gray), dstw, dsth);
-			VDMemset16Rect(dst->data2, dst->pitch2, 0x8080, dstw, dsth);
-			VDMemset16Rect(dst->data3, dst->pitch3, 0x8080, dstw, dsth);
+			VDMemset16Rect(dst->data2, dst->pitch2, 0x8000, dstw, dsth);
+			VDMemset16Rect(dst->data3, dst->pitch3, 0x8000, dstw, dsth);
 		} else {
 			VDMemset8Rect(dst->data, dst->pitch, uint8(gray), dstw, dsth);
 			VDMemset8Rect(dst->data2, dst->pitch2, 0x80, dstw, dsth);

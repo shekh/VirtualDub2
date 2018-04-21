@@ -3520,16 +3520,21 @@ void VDCaptureData::createOutputBlitter() {
 
 	VDPixmap pxsrc(VDPixmapFromLayout(mOutputLayout, 0));
 	VDSetPixmapInfoForBitmap(pxsrc.info, pxsrc.format, mInputFormatVariant);
-	FilterModPixmapInfo out_info;
-	VDSetPixmapInfoForBitmap(out_info, driverLayout.format);
 
 	if (driverLayout.format) {
+		VDPixmapFormatEx fmt = VDPixmapFormatCombineOpt(driverLayout.format,VDPixmapFormatNormalize(pxsrc.format));
+		FilterModPixmapInfo out_info;
+		out_info.colorRangeMode = fmt.colorRangeMode;
+		out_info.colorSpaceMode = fmt.colorSpaceMode;
+
+		VDSetPixmapInfoForBitmap(out_info, fmt);
 		if (mpVideoCompressor) {
-			mpVideoCompressor->GetInputFormat(&out_info);
+			if (mpVideoCompressor->GetInputFormat(&out_info)) {
+				VDAdjustPixmapInfoForRange(out_info, fmt);
+			}
 		}
 
-		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(driverLayout.format, out_info);
-		VDPixmapFormatEx fmt = VDPixmapFormatCombineOpt(driverLayout.format,VDPixmapFormatNormalize(pxsrc.format));
+		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(fmt, out_info);
 		if (pxsrc.format!=fmt.format || extraDst) {
 			repack_buffer.init(driverLayout);
 			repack_buffer.format = fmt.format;
@@ -3541,6 +3546,11 @@ void VDCaptureData::createOutputBlitter() {
 		}
 
 	} else if (vfwLayout.format) {
+		VDPixmapFormatEx fmt = VDPixmapFormatCombineOpt(vfwLayout.format,VDPixmapFormatNormalize(pxsrc.format));
+		FilterModPixmapInfo out_info;
+		out_info.colorRangeMode = fmt.colorRangeMode;
+		out_info.colorSpaceMode = fmt.colorSpaceMode;
+
 		if (mpVideoCompressor) {
 			vdstructex<tagBITMAPINFOHEADER> bm;
 			mpVideoCompressor->GetInputBitmapFormat(bm);
@@ -3549,8 +3559,7 @@ void VDCaptureData::createOutputBlitter() {
 			VDSetPixmapInfoForBitmap(out_info, vfwLayout.format, variant);
 		}
 
-		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(driverLayout.format, out_info);
-		VDPixmapFormatEx fmt = VDPixmapFormatCombineOpt(vfwLayout.format,VDPixmapFormatNormalize(pxsrc.format));
+		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(fmt, out_info);
 		if (pxsrc.format!=fmt.format || extraDst) {
 			repack_buffer.init(vfwLayout);
 			repack_buffer.format = fmt.format;

@@ -247,6 +247,7 @@ void VDPixmapGenYCbCrToRGB64Generic::UpdateParams() {
 
 	int max_value = 0xFFFF;
 	float m = float(max_value)/ref_r;
+	int n0 = vd2::chroma_neutral(ref_r);
 
 	mCoY = scale;
 	mCoRCr = basis.mToRGB[1][0] * scale2;
@@ -258,9 +259,9 @@ void VDPixmapGenYCbCrToRGB64Generic::UpdateParams() {
 	mCoGCr *= m;
 	mCoGCb *= m;
 	mCoBCb *= m;
-	mBiasR = bias*scale*max_value - (128.0f / 255.0f)*mCoRCr*ref_r;
-	mBiasG = bias*scale*max_value - (128.0f / 255.0f)*(mCoGCr + mCoGCb)*ref_r;
-	mBiasB = bias*scale*max_value - (128.0f / 255.0f)*mCoBCb*ref_r;
+	mBiasR = bias*scale*max_value - n0*mCoRCr;
+	mBiasG = bias*scale*max_value - n0*(mCoGCr + mCoGCb);
+	mBiasB = bias*scale*max_value - n0*mCoBCb;
 }
 
 uint32 VDPixmapGenYCbCrToRGB64Generic::GetType(uint32 output) const {
