@@ -1550,6 +1550,24 @@ int BlitterSplitAlpha(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& s
 	return -1;
 }
 
+int BlitterDummyAlpha(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst, int alpha_type) {
+	int w = dst.w;
+	int h = dst.h;
+
+	if (alpha_type==kVDPixType_8){
+		gen.ldconst(0xFF, w, w, h, kVDPixType_8);
+		gen.move_to(0);
+		return 0;
+	}
+	if (alpha_type==kVDPixType_16_LE){
+		gen.ldconst(0xFF, w*2, w, h, kVDPixType_16_LE);
+		gen.move_to(0);
+		return 0;
+	}
+
+	return -1;
+}
+
 //-------------------------------------------------------------------------------------------------------------------------------------------
 
 IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmap& dst, const VDPixmap& src, IVDPixmapExtraGen* extraDst) {
@@ -1824,6 +1842,8 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 
 		if (VDPixmapFormatHasAlpha(src.format))
 			alpha_src = BlitterSplitAlpha(gen, src, srcToken, alpha_type);
+		else 
+			alpha_src = BlitterDummyAlpha(gen, dst, alpha_type);
 
 		dstToken = proxy_dst;
 

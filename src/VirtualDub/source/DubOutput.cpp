@@ -673,11 +673,16 @@ int VDAVIOutputImagesSystem::GetVideoOutputFormatOverride(int last_format) {
 		case kPixFormat_XRGB1555:
 		case kPixFormat_XRGB64:
 			return last_format;
-		case kPixFormat_YUV444_Planar16:
-		case kPixFormat_YUV422_Planar16:
-		case kPixFormat_YUV420_Planar16:
+		case kPixFormat_Y16:
+		case kPixFormat_R210:
+		case kPixFormat_R10K:
+		case kPixFormat_B64A:
+		case kPixFormat_YUV444_V410:
+		case kPixFormat_YUV444_Y410:
+		case kPixFormat_YUV422_V210:
 			return kPixFormat_XRGB64;
 		}
+		if (VDPixmapFormatHasYUV16(last_format)) return kPixFormat_XRGB64;
 		return kPixFormat_RGB888;
 	case AVIOutputImages::kFormatTGA:
 	case AVIOutputImages::kFormatTGAUncompressed:

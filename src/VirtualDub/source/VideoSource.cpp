@@ -732,7 +732,7 @@ bool VDVideoDecompressorDIB::QueryTargetFormat(const void *format) {
 }
 
 bool VDVideoDecompressorDIB::SetTargetFormat(int format) {
-	bool enable_convert = true;
+	bool enable_convert = false;
 
 	if (mSrcFormatVariant!=1)
 		enable_convert = false;

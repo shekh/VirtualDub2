@@ -1549,6 +1549,7 @@ void VDSaveImageDialogW32::ChangeExtension(const wchar_t *newExtension) {
 	VDStringW base = VDFileSplitExtLeft(name);
 	VDStringW new_name = base+newExtension;
 	CommDlg_OpenSave_SetControlText(parent, cmb13, new_name.c_str());
+	CommDlg_OpenSave_SetDefExt(parent, newExtension+1);
 }
 
 int FormatFromName(const wchar_t *cname) {
