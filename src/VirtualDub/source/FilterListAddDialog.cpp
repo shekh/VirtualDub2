@@ -53,7 +53,7 @@ protected:
 	bool OnLoaded();
 	void OnDataExchange(bool write);
 	bool OnCommand(uint32 id, uint32 extcode);
-	void RebuildList(bool reset_tag=false);
+	void RebuildList();
 	void ReloadCheck();
 	void OnItemCheckedChanged(VDUIProxyListView *sender, int item);
 	void OnSelectionChanged(VDUIProxyListView *sender, int selIdx);
@@ -67,8 +67,8 @@ protected:
 	FilterDefinitionInstance	*mpFilterDefInst;
 	std::list<FilterBlurb>		mFilterList;
 	vdfastvector<const FilterBlurb *>	mSortedFilters;
+	VDStringW mShowModule;
 	bool mbShowAll;
-	bool mbShowLoaded;
 	bool mbShowCheck;
 
 	VDDelegate					mDelegateCheckedChanged;
@@ -146,9 +146,8 @@ bool VDDialogFilterListW32::OnLoaded() {
 	mListView.SetSortIcon(0, 1);
 
 	mbShowAll = false;
-	mbShowLoaded = false;
 	mbShowCheck = false;
-	RebuildList(true);
+	RebuildList();
 
 	SetFocusToControl(IDC_FILTER_LIST);
 	VDUIRestoreWindowPlacementW32(mhdlg, "FilterListAdd", SW_SHOW);
@@ -198,7 +197,7 @@ bool VDDialogFilterListW32::OnCommand(uint32 id, uint32 extcode) {
 		if (!filename.empty()) {
 			try {
 				VDAddPluginModule(filename.c_str());
-				mbShowLoaded = true;
+				mShowModule = filename;
 				mbShowAll = false;
 				mbShowCheck = false;
 				mListView.SetItemCheckboxesEnabled(false);
@@ -226,8 +225,8 @@ bool VDDialogFilterListW32::OnCommand(uint32 id, uint32 extcode) {
 	}
 
 	if (id == IDC_SHOWALL) {
-		if (mbShowLoaded) {
-			mbShowLoaded = false;
+		if (!mShowModule.empty()) {
+			mShowModule.clear();
 		} else {
 			mbShowAll = true;
 			mListView.SetItemCheckboxesEnabled(true);
@@ -240,7 +239,7 @@ bool VDDialogFilterListW32::OnCommand(uint32 id, uint32 extcode) {
 	return false;
 }
 
-void VDDialogFilterListW32::RebuildList(bool reset_tag) {
+void VDDialogFilterListW32::RebuildList() {
 	FilterDefinitionInstance* sel = 0;
 	ListItem *item = (ListItem *)mListView.GetSelectedVirtualItem();
 	if (item)
@@ -258,17 +257,12 @@ void VDDialogFilterListW32::RebuildList(bool reset_tag) {
 		FilterBlurb& item = *it;
 		VDString s = format_hide_key(item);
 		item.hide = key.getBool(s.c_str());
-		item.module = VDFileSplitPathRight(item.module);
+		VDStringW module = item.module;
+		item.module = VDFileSplitPathRight(module);
 
-		if (mbShowLoaded) {
-			if (item.key) {
-				int tag = item.key->tag;
-				if (tag!=0) continue;
-			}
+		if (!mShowModule.empty()) {
+			if (module!=mShowModule) continue;
 		} else {
-			if (reset_tag && item.key) {
-				item.key->tag = 1;
-			}
 			if (item.hide && !mbShowAll) {
 				hide_count++;
 				continue;
@@ -303,7 +297,7 @@ void VDDialogFilterListW32::RebuildList(bool reset_tag) {
 	if (sel_idx!=-1)
 		mListView.SetSelectedIndex(sel_idx);
 
-	EnableWindow(GetDlgItem(mhdlg,IDC_SHOWALL),hide_count>0 || mbShowLoaded);
+	EnableWindow(GetDlgItem(mhdlg,IDC_SHOWALL),hide_count>0 || !mShowModule.empty());
 	SendMessage(mListView.GetHandle(), LVM_SETCOLUMNWIDTH, 2, LVSCW_AUTOSIZE_USEHEADER);
 }
 
