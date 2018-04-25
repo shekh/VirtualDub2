@@ -184,10 +184,10 @@ public:
 class VDPixmapGen_Y16_Normalize : public VDPixmapGenWindowBasedOneSourceAlign16 {
 public:
 
-	VDPixmapGen_Y16_Normalize(bool chroma=false){ max_value = 0xFFFF; mask = 0xFFFF; isChroma = chroma; }
+	VDPixmapGen_Y16_Normalize(bool chroma=false){ max_value = 0xFFFF; round = 1; isChroma = chroma; }
 
 	uint32 max_value;
-	uint16 mask;
+	uint16 round;
 
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst);
 
@@ -209,27 +209,7 @@ protected:
 class VDPixmapGen_A16_Normalize : public VDPixmapGen_Y16_Normalize {
 public:
 
-	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
-		mpSrc->TransformPixmapInfo(src,dst);
-
-		a_mask = 0;
-		if(dst.alpha_type==FilterModPixmapInfo::kAlphaInvalid){
-			a_mask = max_value;
-			do_normalize = false;
-			ref = 0;
-		} else {
-			if (dst.ref_a==max_value) {
-				do_normalize = false;
-				ref = dst.ref_a;
-			} else {
-				do_normalize = true;
-				ref = dst.ref_a;
-				m = max_value*0x10000/ref;
-				dst.ref_a = max_value;
-				bias = 0;
-			}
-		}
-	}
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst);
 
 	virtual const char* dump_name(){ return "A16_Normalize"; }
 
@@ -268,9 +248,9 @@ class ExtraGen_YUV_Normalize : public IVDPixmapExtraGen {
 public:
 	uint32 max_value;
 	uint32 max_a_value;
-	uint16 mask;
+	uint16 round;
 
-	ExtraGen_YUV_Normalize(){ max_value=0xFFFF; max_a_value=0xFFFF; mask=0xFFFF; }
+	ExtraGen_YUV_Normalize(){ max_value=0xFFFF; max_a_value=0xFFFF; round=1; }
 	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst);
 };
 
@@ -279,12 +259,14 @@ public:
 	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst);
 };
 
+/*
 bool inline VDPixmap_YUV_IsNormalized(const FilterModPixmapInfo& info, uint32 max_value=0xFFFF) {
 	if (info.ref_r!=max_value)
 		return false;
 	return true;
 }
 
-//void VDPixmap_YUV_Normalize(VDPixmap& dst, const VDPixmap& src, uint32 max_value=0xFFFF);
+void VDPixmap_YUV_Normalize(VDPixmap& dst, const VDPixmap& src, uint32 max_value=0xFFFF);
+*/
 
 #endif

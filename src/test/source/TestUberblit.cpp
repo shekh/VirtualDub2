@@ -55,6 +55,51 @@ namespace {
 	}
 }
 
+void test_normalize_bias() {
+  int width = 4;
+  uint16 data[4];
+  uint16 data2[4];
+
+  VDPixmapGenSrc src;
+  src.Init(width,1,kVDPixType_16_LE,width*2);
+  src.SetSource(data,width*2,0);
+
+  {for(int x=0; x<8; x++){
+    FilterModPixmapInfo info;
+    info.ref_r = (256<<x)-1;
+    data[0] = 0;
+    data[1] = 128<<x;
+    data[2] = (256<<x)-1;
+    data[3] = 65535;
+
+    {for(int y=0; y<8; y++){
+      if(x==y) continue;
+
+      FilterModPixmapInfo info2;
+
+      VDPixmapGen_Y16_Normalize gen(true);
+      gen.max_value = (256<<y)-1;
+      gen.Init(&src,0);
+      gen.TransformPixmapInfo(info,info2);
+      gen.AddWindowRequest(1,1);
+      gen.Start();
+
+      gen.ProcessRow(data2,0);
+
+      double f1 = (double(info.ref_r)-(128<<x))/info.ref_r*gen.max_value+(128<<y);
+      double f0 = (double(0)-(128<<x))/info.ref_r*gen.max_value+(128<<y);
+      
+      int d1 = ((info.ref_r-(128<<x))*gen.max_value*2/info.ref_r+1)/2 + (128<<y);
+      int d0 = ((int64(0)-(128<<x))*gen.max_value*2/info.ref_r-1)/2 + (128<<y);
+      if(d0<0) d0=0;
+
+      if(data2[1]!=128<<y) VDASSERT(false);
+      if(data2[0]!=d0) VDASSERT(false);
+      if(data2[2]!=d1) VDASSERT(false);
+    }}
+  }}
+}
+
 void test_normalize() {
   int width = 65536;
   /*
@@ -132,6 +177,7 @@ void test_normalize() {
 DEFINE_TEST(Uberblit) {
 	using namespace nsVDPixmap;
 
+  test_normalize_bias();
   //test_normalize();
 
 	// test primary color conversion

@@ -105,7 +105,7 @@ IVDPixmapExtraGen* VDPixmapCreateNormalizer(int format, FilterModPixmapInfo& out
 		{
 			ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
 			normalize->max_value = out_info.ref_r;
-			normalize->mask = 0xFFC0;
+			normalize->round = 0x40;
 			return normalize;
 		}
 	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:

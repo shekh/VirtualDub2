@@ -222,6 +222,8 @@ void VDPixmapGen_Y16_Normalize::TransformPixmapInfo(const FilterModPixmapInfo& s
 	if (dst.ref_r==max_value) {
 		do_normalize = false;
 		ref = dst.ref_r;
+		m = 1;
+		bias = 0;
 	} else {
 		do_normalize = true;
 		ref = dst.ref_r;
@@ -237,14 +239,38 @@ void VDPixmapGen_Y16_Normalize::TransformPixmapInfo(const FilterModPixmapInfo& s
 	}
 }
 
+void VDPixmapGen_A16_Normalize::TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+	mpSrc->TransformPixmapInfo(src,dst);
+
+	a_mask = 0;
+	if(dst.alpha_type==FilterModPixmapInfo::kAlphaInvalid){
+		a_mask = max_value;
+		do_normalize = false;
+		ref = 0;
+		m = 1;
+		bias = 0;
+	} else {
+		if (dst.ref_a==max_value) {
+			do_normalize = false;
+			ref = dst.ref_a;
+		} else {
+			do_normalize = true;
+			ref = dst.ref_a;
+			m = (uint64(max_value)*0x20000/ref+1)/2;
+			dst.ref_a = max_value;
+			bias = 0;
+		}
+	}
+}
+
 int VDPixmapGen_Y16_Normalize::ComputeSpan(uint16* dst, const uint16* src, int n) {
-	if (!do_normalize && mask==0xFFFF) {
+	if (!do_normalize && round==1) {
 		memcpy(dst,src,n*2);
 		return n;
 	}
 	n = n & ~7;
 	if (n==0) return 0;
-	if (do_normalize && bias!=0)
+	if (do_normalize && (bias!=0 || round>1))
 		ComputeNormalizeBias(dst,src,n);
 	else if (do_normalize)
 		ComputeNormalize(dst,src,n);
@@ -299,14 +325,16 @@ void VDPixmapGen_A8_Normalize::ComputeWipeAlpha(void *dst0, sint32 y) {
 }
 
 void VDPixmapGen_Y16_Normalize::ComputeMask(uint16* dst, const uint16* src, int n) {
-	uint16 s = 0x10000-ref;
+	uint16 s = 0xFFFF-ref;
+	__m128i rn = _mm_set1_epi16(round/2);
 	__m128i sat = _mm_set1_epi16(s);
-	__m128i cmask = _mm_set1_epi16(mask);
+	__m128i rmask = _mm_set1_epi16(-round);
 	{for(int x=0; x<n/8; x++) {
 		__m128i c = _mm_loadu_si128((const __m128i*)src);
+		c = _mm_adds_epu16(c,rn);
 		c = _mm_adds_epu16(c,sat);
 		c = _mm_sub_epi16(c,sat);
-		c = _mm_and_si128(c,cmask);
+		c = _mm_and_si128(c,rmask);
 		_mm_storeu_si128((__m128i*)dst,c);
 		src+=8;
 		dst+=8;
@@ -317,7 +345,6 @@ void VDPixmapGen_Y16_Normalize::ComputeNormalize(uint16* dst, const uint16* src,
 	uint16 s = 0xFFFF-ref;
 	__m128i sat = _mm_set1_epi16(s);
 	__m128i mm = _mm_set1_epi16(m);
-	__m128i cmask = _mm_set1_epi16(mask);
 
 	if(m<0x10000){
 		{for(int x=0; x<n/8; x++) {
@@ -328,7 +355,6 @@ void VDPixmapGen_Y16_Normalize::ComputeNormalize(uint16* dst, const uint16* src,
 			a = _mm_srli_epi16(a,15);
 			c = _mm_mulhi_epu16(c,mm);
 			c = _mm_adds_epu16(c,a);
-			c = _mm_and_si128(c,cmask);
 			_mm_storeu_si128((__m128i*)dst,c);
 			src+=8;
 			dst+=8;
@@ -345,7 +371,6 @@ void VDPixmapGen_Y16_Normalize::ComputeNormalize(uint16* dst, const uint16* src,
 			c = _mm_mulhi_epu16(c,mm);
 			c = _mm_adds_epu16(c,a);
 			c = _mm_adds_epu16(c,b);
-			c = _mm_and_si128(c,cmask);
 			_mm_storeu_si128((__m128i*)dst,c);
 			src+=8;
 			dst+=8;
@@ -354,48 +379,83 @@ void VDPixmapGen_Y16_Normalize::ComputeNormalize(uint16* dst, const uint16* src,
 }
 
 void VDPixmapGen_Y16_Normalize::ComputeNormalizeBias(uint16* dst, const uint16* src, int n) {
+	// round is actually used only with 0xFF00 range - safely saturates at 0xFFFF
+	// bias does not produce out of range values (test_normalize_bias)
 	uint16 s = 0xFFFF-ref;
 	__m128i sat = _mm_set1_epi16(s);
 	__m128i mm = _mm_set1_epi16(m);
-	__m128i cmask = _mm_set1_epi16(mask);
-	__m128i bias1 = _mm_set1_epi16(bias>0 ? +bias:0);
-	__m128i bias2 = _mm_set1_epi16(bias<0 ? -bias:0);
+	int br = bias + round/2;
+	__m128i bias1 = _mm_set1_epi16(br>0 ? +br:0);
+	__m128i bias2 = _mm_set1_epi16(br<0 ? -br:0);
 
-	if(m<0x10000){
-		{for(int x=0; x<n/8; x++) {
-			__m128i c = _mm_loadu_si128((const __m128i*)src);
-			c = _mm_adds_epu16(c,sat);
-			c = _mm_sub_epi16(c,sat);
-			__m128i a = _mm_mullo_epi16(c,mm);
-			a = _mm_srli_epi16(a,15);
-			c = _mm_mulhi_epu16(c,mm);
-			c = _mm_adds_epu16(c,a);
-			c = _mm_adds_epu16(c,bias1);
-			c = _mm_subs_epu16(c,bias2);
-			c = _mm_and_si128(c,cmask);
-			_mm_storeu_si128((__m128i*)dst,c);
-			src+=8;
-			dst+=8;
-		}}
+	if(round>1){
+		__m128i rmask = _mm_set1_epi16(-round);
+
+		if(m<0x10000){
+			{for(int x=0; x<n/8; x++) {
+				__m128i c = _mm_loadu_si128((const __m128i*)src);
+				c = _mm_adds_epu16(c,sat);
+				c = _mm_sub_epi16(c,sat);
+				c = _mm_mulhi_epu16(c,mm);
+				c = _mm_adds_epu16(c,bias1);
+				c = _mm_subs_epu16(c,bias2);
+				c = _mm_and_si128(c,rmask);
+				_mm_storeu_si128((__m128i*)dst,c);
+				src+=8;
+				dst+=8;
+			}}
+		} else {
+			__m128i mmh = _mm_set1_epi16(m >> 16);
+			{for(int x=0; x<n/8; x++) {
+				__m128i c = _mm_loadu_si128((const __m128i*)src);
+				c = _mm_adds_epu16(c,sat);
+				c = _mm_sub_epi16(c,sat);
+				__m128i b = _mm_mullo_epi16(c,mmh);
+				c = _mm_mulhi_epu16(c,mm);
+				c = _mm_adds_epu16(c,b);
+				c = _mm_adds_epu16(c,bias1);
+				c = _mm_subs_epu16(c,bias2);
+				c = _mm_and_si128(c,rmask);
+				_mm_storeu_si128((__m128i*)dst,c);
+				src+=8;
+				dst+=8;
+			}}
+		}
 	} else {
-		__m128i mmh = _mm_set1_epi16(m >> 16);
-		{for(int x=0; x<n/8; x++) {
-			__m128i c = _mm_loadu_si128((const __m128i*)src);
-			c = _mm_adds_epu16(c,sat);
-			c = _mm_sub_epi16(c,sat);
-			__m128i a = _mm_mullo_epi16(c,mm);
-			a = _mm_srli_epi16(a,15);
-			__m128i b = _mm_mullo_epi16(c,mmh);
-			c = _mm_mulhi_epu16(c,mm);
-			c = _mm_adds_epu16(c,a);
-			c = _mm_adds_epu16(c,b);
-			c = _mm_adds_epu16(c,bias1);
-			c = _mm_subs_epu16(c,bias2);
-			c = _mm_and_si128(c,cmask);
-			_mm_storeu_si128((__m128i*)dst,c);
-			src+=8;
-			dst+=8;
-		}}
+		if(m<0x10000){
+			{for(int x=0; x<n/8; x++) {
+				__m128i c = _mm_loadu_si128((const __m128i*)src);
+				c = _mm_adds_epu16(c,sat);
+				c = _mm_sub_epi16(c,sat);
+				__m128i a = _mm_mullo_epi16(c,mm);
+				a = _mm_srli_epi16(a,15);
+				c = _mm_mulhi_epu16(c,mm);
+				c = _mm_adds_epu16(c,a);
+				c = _mm_adds_epu16(c,bias1);
+				c = _mm_subs_epu16(c,bias2);
+				_mm_storeu_si128((__m128i*)dst,c);
+				src+=8;
+				dst+=8;
+			}}
+		} else {
+			__m128i mmh = _mm_set1_epi16(m >> 16);
+			{for(int x=0; x<n/8; x++) {
+				__m128i c = _mm_loadu_si128((const __m128i*)src);
+				c = _mm_adds_epu16(c,sat);
+				c = _mm_sub_epi16(c,sat);
+				__m128i a = _mm_mullo_epi16(c,mm);
+				a = _mm_srli_epi16(a,15);
+				__m128i b = _mm_mullo_epi16(c,mmh);
+				c = _mm_mulhi_epu16(c,mm);
+				c = _mm_adds_epu16(c,a);
+				c = _mm_adds_epu16(c,b);
+				c = _mm_adds_epu16(c,bias1);
+				c = _mm_subs_epu16(c,bias2);
+				_mm_storeu_si128((__m128i*)dst,c);
+				src+=8;
+				dst+=8;
+			}}
+		}
 	}
 }
 
@@ -403,7 +463,7 @@ void ExtraGen_YUV_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDP
 	//               0,  1,  2,  3
 	// YUVA inputs:  Cr, Y,  Cb, A
 	// YUV inputs:   Cr, Y,  Cb
-	// YC inputs:    C,  Y
+	// YC inputs:    Y,  C (P210)
 	// Y16 input:    Y
 	if (dst.pitch4) {
 		VDPixmapGen_A16_Normalize* normalize3 = new VDPixmapGen_A16_Normalize;
@@ -412,21 +472,29 @@ void ExtraGen_YUV_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDP
 	}
 	if (dst.pitch3) {
 		VDPixmapGen_Y16_Normalize* normalize2 = new VDPixmapGen_Y16_Normalize(true);
-		normalize2->max_value = max_value; normalize2->mask = mask;
+		normalize2->max_value = max_value; normalize2->round = round;
 		gen.swap(normalize2,2);
-	}
-	if (dst.pitch2) {
+
 		VDPixmapGen_Y16_Normalize* normalize0 = new VDPixmapGen_Y16_Normalize;
-		normalize0->max_value = max_value; normalize0->mask = mask;
+		normalize0->max_value = max_value; normalize0->round = round;
 		gen.swap(normalize0,1);
 
 		VDPixmapGen_Y16_Normalize* normalize1 = new VDPixmapGen_Y16_Normalize(true);
-		normalize1->max_value = max_value; normalize1->mask = mask;
+		normalize1->max_value = max_value; normalize1->round = round;
 		gen.swap(normalize1,0);
+
+	} else if (dst.pitch2) {
+		VDPixmapGen_Y16_Normalize* normalize1 = new VDPixmapGen_Y16_Normalize(true);
+		normalize1->max_value = max_value; normalize1->round = round;
+		gen.swap(normalize1,1);
+
+		VDPixmapGen_Y16_Normalize* normalize0 = new VDPixmapGen_Y16_Normalize;
+		normalize0->max_value = max_value; normalize0->round = round;
+		gen.swap(normalize0,0);
 
 	} else {
 		VDPixmapGen_Y16_Normalize* normalize0 = new VDPixmapGen_Y16_Normalize;
-		normalize0->max_value = max_value; normalize0->mask = mask;
+		normalize0->max_value = max_value; normalize0->round = round;
 		gen.swap(normalize0,0);
 	}
 }
