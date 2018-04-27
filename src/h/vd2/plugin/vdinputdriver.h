@@ -645,6 +645,7 @@ enum {
 	VDICM_GETSTREAMINFO = 12,         // fill values in VDXStreamInfo
 	VDICM_STREAMCONTROL = 13,         // adjust encoding options for given container
 	VDICM_COMPRESS_TRUNCATE = 14,     // do not receive more frames, just flush delayed
+	VDICM_GETHANDLER = 15,            // fourcc to identify codec in AVI (instead of icinfo)
 };
 
 enum {

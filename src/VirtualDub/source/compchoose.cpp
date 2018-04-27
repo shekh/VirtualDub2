@@ -134,6 +134,7 @@ protected:
 	void RebuildCodecList();
 	void UpdateEnables();
 	void UpdateFormat();
+	void PrintFCC(DWORD code);
 	void SelectCompressor(CodecInfo *pii);
 
 	void OnCodecSelectionChanged(VDUIProxyListBoxControl *sender, int index);
@@ -661,6 +662,9 @@ void VDUIDialogChooseVideoCompressorW32::UpdateEnables() {
 
 			static_cast<ICINFO&>(*mpCurrent) = info;
 			mpCurrent->fccHandler = fccHandler;
+
+			FOURCC rh = mhCodec->getHandler();
+			if (rh!=-1) PrintFCC(rh);
 		}
 
 		// Query compressor for caps and enable buttons as appropriate.
@@ -765,6 +769,24 @@ void set_depth(BITMAPINFO& bi, int k) {
 	bi.bmiHeader.biCompression = g_depths_fcc[k];
 }
 
+void VDUIDialogChooseVideoCompressorW32::PrintFCC(DWORD code) {
+	// Show driver fourCC code.
+
+	wchar_t fccbuf[7];
+	for(int i=0; i<4; ++i) {
+		char c = ((char *)&code)[i];
+
+		if (isprint((unsigned char)c))
+			fccbuf[i+1] = c;
+		else
+			fccbuf[i+1] = ' ';
+	}
+
+	fccbuf[0] = fccbuf[5] = '\'';
+	fccbuf[6] = 0;
+	SetControlText(IDC_STATIC_FOURCC, fccbuf);
+}
+
 void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 	// Clear restrictions box.
 
@@ -789,21 +811,7 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 
 	SetControlText(IDC_STATIC_DELTA, (pii->dwFlags & (VIDCF_TEMPORAL|VIDCF_FASTTEMPORALC)) ? g_szYes : g_szNo);
 
-	// Show driver fourCC code.
-
-	wchar_t fccbuf[7];
-	for(int i=0; i<4; ++i) {
-		char c = ((char *)&pii->fccHandler)[i];
-
-		if (isprint((unsigned char)c))
-			fccbuf[i+1] = c;
-		else
-			fccbuf[i+1] = ' ';
-	}
-
-	fccbuf[0] = fccbuf[5] = '\'';
-	fccbuf[6] = 0;
-	SetControlText(IDC_STATIC_FOURCC, fccbuf);
+	PrintFCC(pii->fccHandler);
 
 	if(pii->path.empty())
 		SetControlText(IDC_STATIC_DRIVER, VDFileSplitPath(pii->szDriver));

@@ -990,6 +990,13 @@ DWORD EncoderHIC::getNext(DWORD handler) {
 	return -1;
 }
 
+DWORD EncoderHIC::getHandler() {
+	if(vdproc) {
+		return vdproc(obj,0,VDICM_GETHANDLER,0,0);
+	}
+	return -1;
+}
+
 int EncoderHIC::getInfo(ICINFO& info) {
 	if(obj) return proc(obj,0,ICM_GETINFO,(LPARAM)&info,sizeof(info));
 	if(hic) return ICGetInfo(hic,&info,sizeof(info));

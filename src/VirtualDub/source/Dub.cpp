@@ -1072,6 +1072,10 @@ void Dubber::InitOutputFile() {
 			if (mpVideoCompressor) {
 				hdr.fccHandler	= compVars->fccHandler;
 				hdr.dwQuality	= compVars->lQ;
+				if (compVars->driver) {
+					DWORD rh = compVars->driver->getHandler();
+					if (rh!=-1) hdr.fccHandler = rh;
+				}
 			} else {
 				hdr.fccHandler	= VDMAKEFOURCC('D','I','B',' ');
 				selectFcchandlerBasedOnFormat = true;
