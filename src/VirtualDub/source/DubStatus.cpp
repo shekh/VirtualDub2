@@ -129,7 +129,7 @@ public:
 		pvinfo->cur_proc_src = pos;
 		PostMessage(hwndStatus, MYWM_NOTIFY_POSITION_CHANGE,0,0); 
 	}
-	void Freeze();
+	void Freeze(bool, bool);
 	bool isVisible();
 	bool isFrameVisible(bool fOutput);
 	bool ToggleFrame(bool fOutput);
@@ -1148,7 +1148,7 @@ void DubStatus::SetLastPosition(VDPosition pos, bool fast_update) {
 					pvinfo->end_src, mProgress, fast_update, mpPositionCallbackCookie);
 }
 
-void DubStatus::Freeze() {
+void DubStatus::Freeze(bool failed, bool completed) {
 	fFrozen = true;
 	painfo = 0;
 	pvinfo = 0;
@@ -1163,7 +1163,7 @@ void DubStatus::Freeze() {
 		EnableWindow(GetDlgItem(hwndStatus,IDC_DRAW_INPUT),false);
 		EnableWindow(GetDlgItem(hwndStatus,IDC_BACKGROUND),false);
 		EnableWindow(GetDlgItem(hwndStatus,IDC_LIMIT),false);
-		SendMessage(hwndStatus, WM_SETTEXT, 0, (LPARAM)"Error...");
+		if (failed) SendMessage(hwndStatus, WM_SETTEXT, 0, (LPARAM)"Error...");
 		SendMessage(GetDlgItem(hwndStatus,IDC_ABORT), WM_SETTEXT, 0, (LPARAM)"Close");
 	}
 }

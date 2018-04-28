@@ -46,7 +46,7 @@ public:
 	virtual bool ToggleStatus()=0;
 	virtual void SetLastPosition(VDPosition pos, bool fast_update)=0;
 	virtual void NotifyPositionChange(VDPosition pos)=0;
-	virtual void Freeze()=0;
+	virtual void Freeze(bool failed, bool completed)=0;
 	virtual bool isVisible()=0;
 	virtual bool isFrameVisible(bool)=0;
 	virtual bool ToggleFrame(bool)=0;

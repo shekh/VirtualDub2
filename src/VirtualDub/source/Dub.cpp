@@ -2030,7 +2030,7 @@ void Dubber::Stop() {
 	mpIODirect = 0;
 
 	if (pStatusHandler)
-		pStatusHandler->Freeze();
+		pStatusHandler->Freeze(fError, mbCompleted);
 
 	mpVideoCompressor = NULL;
 
