@@ -1070,10 +1070,10 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 				int ymask = ~((1 << (formatInfo.qhbits + formatInfo.auxhbits)) - 1);
 
 				if (mbPreciseCrop) {
-					if ((mCropX1 | mCropY1) & ~xmask)
+					if ((mCropX1 | mCropX2) & ~xmask)
 						invalidCrop = true;
 
-					if ((mCropX2 | mCropY2) & ~ymask)
+					if ((mCropY1 | mCropY2) & ~ymask)
 						invalidCrop = true;
 				}
 

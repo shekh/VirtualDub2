@@ -695,6 +695,9 @@ void FilterSystem::initLinearChain(IVDFilterSystemScheduler *scheduler, uint32 f
 				case nsVDPixmap::kPixFormat_YUV420_Planar16:
 				case nsVDPixmap::kPixFormat_YUV422_Planar16:
 				case nsVDPixmap::kPixFormat_YUV444_Planar16:
+				case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+				case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+				case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
 					normalizeRequired = true;
 					break;
 				}

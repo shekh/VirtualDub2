@@ -112,8 +112,9 @@ struct MatchFilterFormat {
 	VDPixmapFormatEx original;
 	VDPixmapFormatEx format;
 	int base;
-	int base2;
-	bool follow_base;
+	int base1;
+	int* follow_list;
+	int pos;
 	int backup;
 	int legacy;
 

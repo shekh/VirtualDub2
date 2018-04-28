@@ -631,8 +631,12 @@ VDStringA VDPixmapFormatPrintColor(VDPixmapFormatEx format) {
 }
 
 // search logic (rules):
-// 1. search through same precision group (from specific to more generic),
-// 2. switch precision and search again
+// 1. repack to universal formats
+// 2. follow prerendered list organized in this order:
+//   a. 16bit<->8bit
+//   b. alpha->no alpha
+//   c. upsample 420->422->444
+//   d. yuv<->rgb
 // 3. try some backup formats (drop colorspaces now)
 // 4. try all legacy formats
 
@@ -646,6 +650,21 @@ void MatchFilterFormat::next1() {
 		if (base) {
 			format = VDPixmapFormatCombineOpt(base, original);
 			return;
+		}
+	}
+
+	if (follow_list) {
+		while(1) {
+			int i = follow_list[pos];
+			if (!i) {
+				follow_list = 0;
+				break;
+			}
+			pos++;
+			if (formatMask.test(i)) {
+				format = VDPixmapFormatCombineOpt(i, original);
+				return;
+			}
 		}
 	}
 
@@ -686,41 +705,93 @@ void MatchFilterFormat::initBase() {
 	using namespace nsVDPixmap;
 
 	base = original;
-	base2 = 0;
-	follow_base = true;
+	base1 = 0;
+	follow_list = 0;
+	pos = 0;
 
 	switch(original) {
+	case kPixFormat_Y8:
+	case kPixFormat_Y8_FR:
+		base1 = kPixFormat_Y8;
+		{
+			static int list[] = {
+				kPixFormat_Y16,
+				0
+			};
+			follow_list = list;
+		}
+		break;
+
+	case kPixFormat_Y16:
+		base1 = kPixFormat_Y16;
+		{
+			static int list[] = {
+				kPixFormat_Y8,
+				0
+			};
+			follow_list = list;
+		}
+		break;
+
 	case kPixFormat_YUV420_Planar:
 	case kPixFormat_YUV410_Planar:
 	case kPixFormat_YUV420_NV12:
-		base2 = kPixFormat_YUV420_Planar16;
+		base1 = kPixFormat_YUV420_Planar;
+		{
+			static int list[] = {
+				kPixFormat_YUV420_Planar16,
+				kPixFormat_YUV422_Planar, kPixFormat_YUV422_Planar16,
+				kPixFormat_YUV444_Planar, kPixFormat_YUV444_Planar16,
+				kPixFormat_XRGB8888, kPixFormat_XRGB64,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUV422_UYVY:
 	case kPixFormat_YUV422_YUYV:
 	case kPixFormat_YUV422_Planar:
 	case kPixFormat_YUV411_Planar:
-		base2 = kPixFormat_YUV422_Planar16;
-		break;
-
-	case kPixFormat_Y8:
-	case kPixFormat_Y8_FR:
-		base2 = kPixFormat_Y16;
-		break;
-
-	case kPixFormat_Y16:
-		base2 = kPixFormat_Y8;
+		base1 = kPixFormat_YUV422_Planar;
+		{
+			static int list[] = {
+				kPixFormat_YUV422_Planar16,
+				kPixFormat_YUV444_Planar, kPixFormat_YUV444_Planar16,
+				kPixFormat_XRGB8888, kPixFormat_XRGB64,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUV444_V308:
 	case kPixFormat_YUV444_Planar:
-		base2 = kPixFormat_YUV444_Planar16;
+		base1 = kPixFormat_YUV444_Planar;
+		{
+			static int list[] = {
+				kPixFormat_YUV444_Planar16,
+				kPixFormat_XRGB8888, kPixFormat_XRGB64,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUV420_P010:
 	case kPixFormat_YUV420_P016:
 	case kPixFormat_YUV420_Planar16:
-		base2 = kPixFormat_YUV420_Planar;
+		base1 = kPixFormat_YUV420_Planar16;
+		{
+			static int list[] = {
+				kPixFormat_YUV420_Planar, 
+				kPixFormat_YUV422_Planar16, kPixFormat_YUV422_Planar, 
+				kPixFormat_YUV444_Planar16, kPixFormat_YUV444_Planar,
+				kPixFormat_XRGB64, kPixFormat_XRGB8888,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUV422_V210:
@@ -728,52 +799,151 @@ void MatchFilterFormat::initBase() {
 	case kPixFormat_YUV422_P216:
 	case kPixFormat_YUV422_YU64:
 	case kPixFormat_YUV422_Planar16:
-		base2 = kPixFormat_YUV422_Planar;
+		base1 = kPixFormat_YUV422_Planar16;
+		{
+			static int list[] = {
+				kPixFormat_YUV422_Planar,
+				kPixFormat_YUV444_Planar16, kPixFormat_YUV444_Planar,
+				kPixFormat_XRGB64, kPixFormat_XRGB8888,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUV444_V410:
 	case kPixFormat_YUV444_Y410:
 	case kPixFormat_YUV444_Planar16:
-		base2 = kPixFormat_YUV444_Planar;
+		base1 = kPixFormat_YUV444_Planar16;
+		{
+			static int list[] = {
+				kPixFormat_YUV444_Planar,
+				kPixFormat_XRGB64, kPixFormat_XRGB8888,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUVA444_Y416:
 	case kPixFormat_YUV444_Alpha_Planar16:
-		base2 = kPixFormat_YUV444_Alpha_Planar;
+		base1 = kPixFormat_YUV444_Alpha_Planar16;
+		{
+			static int list[] = {
+				kPixFormat_YUV444_Alpha_Planar,
+				kPixFormat_YUV444_Planar16, kPixFormat_YUV444_Planar,
+				kPixFormat_XRGB64, kPixFormat_XRGB8888,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUV422_Alpha_Planar16:
-		base2 = kPixFormat_YUV422_Alpha_Planar;
+		base1 = kPixFormat_YUV422_Alpha_Planar16;
+		{
+			static int list[] = {
+				kPixFormat_YUV422_Alpha_Planar, 
+				kPixFormat_YUV444_Alpha_Planar16, kPixFormat_YUV444_Alpha_Planar,
+				kPixFormat_YUV422_Planar16, kPixFormat_YUV422_Planar, 
+				kPixFormat_YUV444_Planar16, kPixFormat_YUV444_Planar,
+				kPixFormat_XRGB64, kPixFormat_XRGB8888,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUV420_Alpha_Planar16:
-		base2 = kPixFormat_YUV420_Alpha_Planar;
+		base1 = kPixFormat_YUV420_Alpha_Planar16;
+		{
+			static int list[] = {
+				kPixFormat_YUV420_Alpha_Planar, 
+				kPixFormat_YUV422_Alpha_Planar16, kPixFormat_YUV422_Alpha_Planar, 
+				kPixFormat_YUV444_Alpha_Planar16, kPixFormat_YUV444_Alpha_Planar,
+				kPixFormat_YUV420_Planar16, kPixFormat_YUV420_Planar, 
+				kPixFormat_YUV422_Planar16, kPixFormat_YUV422_Planar, 
+				kPixFormat_YUV444_Planar16, kPixFormat_YUV444_Planar,
+				kPixFormat_XRGB64, kPixFormat_XRGB8888,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUV444_Alpha_Planar:
-		base2 = kPixFormat_YUV444_Alpha_Planar16;
+		base1 = kPixFormat_YUV444_Alpha_Planar;
+		{
+			static int list[] = {
+				kPixFormat_YUV444_Alpha_Planar16,
+				kPixFormat_YUV444_Planar, kPixFormat_YUV444_Planar16,
+				kPixFormat_XRGB8888, kPixFormat_XRGB64,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUV422_Alpha_Planar:
-		base2 = kPixFormat_YUV422_Alpha_Planar16;
+		base1 = kPixFormat_YUV422_Alpha_Planar;
+		{
+			static int list[] = {
+				kPixFormat_YUV422_Alpha_Planar16,
+				kPixFormat_YUV444_Alpha_Planar, kPixFormat_YUV444_Alpha_Planar16,
+				kPixFormat_YUV422_Planar, kPixFormat_YUV422_Planar16,
+				kPixFormat_YUV444_Planar, kPixFormat_YUV444_Planar16,
+				kPixFormat_XRGB8888, kPixFormat_XRGB64,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_YUV420_Alpha_Planar:
-		base2 = kPixFormat_YUV420_Alpha_Planar16;
+		base1 = kPixFormat_YUV420_Alpha_Planar;
+		{
+			static int list[] = {
+				kPixFormat_YUV420_Alpha_Planar16,
+				kPixFormat_YUV422_Alpha_Planar, kPixFormat_YUV422_Alpha_Planar16,
+				kPixFormat_YUV444_Alpha_Planar, kPixFormat_YUV444_Alpha_Planar16,
+				kPixFormat_YUV420_Planar, kPixFormat_YUV420_Planar16,
+				kPixFormat_YUV422_Planar, kPixFormat_YUV422_Planar16,
+				kPixFormat_YUV444_Planar, kPixFormat_YUV444_Planar16,
+				kPixFormat_XRGB8888, kPixFormat_XRGB64,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_R210:
 	case kPixFormat_R10K:
 	case kPixFormat_B64A:
 	case kPixFormat_XRGB64:
-		base2 = kPixFormat_XRGB8888;
+		base1 = kPixFormat_XRGB64;
+		{
+			static int list[] = {
+				kPixFormat_XRGB8888,
+				kPixFormat_YUV444_Planar16, kPixFormat_YUV444_Planar,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 
 	case kPixFormat_XRGB1555:
 	case kPixFormat_RGB565:
 	case kPixFormat_RGB888:
 	case kPixFormat_XRGB8888:
-		base2 = kPixFormat_XRGB64;
+		base1 = kPixFormat_XRGB8888;
+		{
+			static int list[] = {
+				kPixFormat_XRGB64,
+				kPixFormat_YUV444_Planar, kPixFormat_YUV444_Planar16,
+				0
+			};
+			follow_list = list;
+		}
 		break;
 	}
 }
@@ -781,7 +951,7 @@ void MatchFilterFormat::initBase() {
 int MatchFilterFormat::next_base() {
 	using namespace nsVDPixmap;
 
-	if (follow_base) switch(base) {
+	switch(base) {
 	case kPixFormat_YUV422_UYVY:
 		if (formatMask.test(kPixFormat_YUV422_YUYV))
 			return kPixFormat_YUV422_YUYV;
@@ -796,84 +966,11 @@ int MatchFilterFormat::next_base() {
 
 	case kPixFormat_Y8:
 	case kPixFormat_Y8_FR:
-	case kPixFormat_YUV422_Planar:
-	case kPixFormat_YUV444_V308:
-		return kPixFormat_YUV444_Planar;
-
-	case kPixFormat_YUV420_Planar:
-	case kPixFormat_YUV411_Planar:
-		return kPixFormat_YUV422_Planar;
-
-	case kPixFormat_YUV410_Planar:
-	case kPixFormat_YUV420_NV12:
-		return kPixFormat_YUV420_Planar;
-
-	case kPixFormat_YUV420_P010:
-	case kPixFormat_YUV420_P016:
-		return kPixFormat_YUV420_Planar16;
-
-	case kPixFormat_YUV422_V210:
-	case kPixFormat_YUV422_P210:
-	case kPixFormat_YUV422_P216:
-	case kPixFormat_YUV422_YU64:
-		return kPixFormat_YUV422_Planar16;
-
-	case kPixFormat_YUVA444_Y416:
-		return kPixFormat_YUV444_Alpha_Planar16;
-
-	case kPixFormat_YUV444_Alpha_Planar16:
-		return kPixFormat_YUV444_Planar16;
-
-	case kPixFormat_YUV422_Alpha_Planar16:
-		return kPixFormat_YUV422_Planar16;
-
-	case kPixFormat_YUV420_Alpha_Planar16:
-		return kPixFormat_YUV420_Planar16;
-
-	case kPixFormat_YUV444_Alpha_Planar:
-		return kPixFormat_YUV444_Planar;
-
-	case kPixFormat_YUV422_Alpha_Planar:
-		return kPixFormat_YUV422_Planar;
-
-	case kPixFormat_YUV420_Alpha_Planar:
-		return kPixFormat_YUV420_Planar;
-
-	case kPixFormat_YUV444_V410:
-	case kPixFormat_YUV444_Y410:
-		return kPixFormat_YUV444_Planar16;
-
-	case kPixFormat_R210:
-	case kPixFormat_R10K:
-	case kPixFormat_B64A:
-		return kPixFormat_XRGB64;
-
-	case kPixFormat_XRGB1555:
-	case kPixFormat_RGB565:
-	case kPixFormat_RGB888:
-		return kPixFormat_XRGB8888;
-
-	case kPixFormat_YUV444_Planar16:
-		follow_base = false;
-		return kPixFormat_XRGB64;
-
-	case kPixFormat_XRGB64:
-		follow_base = false;
-		return kPixFormat_YUV444_Planar16;
-
-	case kPixFormat_YUV444_Planar:
-		follow_base = false;
-		return kPixFormat_XRGB8888;
-
-	case kPixFormat_XRGB8888:
-		follow_base = false;
 		return kPixFormat_YUV444_Planar;
 	}
 
-	int r = base2;
-	base2 = 0;
-	follow_base = true;
-	return r;
+	if (base!=base1) return base1;
+	return 0;
 }
 
 void MatchFilterFormat::initMask() {

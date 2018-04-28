@@ -1418,6 +1418,7 @@ bool VDVideoDisplayWindow::InitMiniDriver() {
 	GetMonitorRect(&mMonitorRect, mhLastMonitor);
 
 	mpMiniDriver->SetFilterMode((IVDVideoDisplayMinidriver::FilterMode)mFilterMode);
+	mpMiniDriver->SetDisplayMode((IVDVideoDisplayMinidriver::DisplayMode)mDisplayMode);
 	mpMiniDriver->SetSubrect(mbUseSubrect ? &mSourceSubrect : NULL);
 	mpMiniDriver->SetDisplayDebugInfo(sbEnableDebugInfo);
 	mpMiniDriver->SetFullScreen(mbFullScreen, mFullScreenWidth, mFullScreenHeight, mFullScreenRefreshRate);
