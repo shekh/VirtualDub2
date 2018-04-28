@@ -70,6 +70,8 @@ int VDFilterFrameConverter::AllocateNodes(int threads) {
 	IVDPixmapExtraGen* extraDst = 0;
 	if (mNormalize16) {
 		FilterModPixmapInfo out_info;
+		out_info.colorRangeMode = mLayout.formatEx.colorRangeMode;
+		out_info.colorSpaceMode = mLayout.formatEx.colorSpaceMode;
 		VDSetPixmapInfoForBitmap(out_info, mLayout.format);
 		extraDst = VDPixmapCreateNormalizer(mLayout.format, out_info);
 	}

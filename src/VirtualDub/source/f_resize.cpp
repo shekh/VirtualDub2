@@ -248,6 +248,11 @@ namespace {
 	void VDPixmapRectFillRGB32(const VDPixmap& px, const vdrect32f& rDst, uint32 c) {
 		using namespace nsVDPixmap;
 
+		int r = (c >> 16) & 0xff;
+		int g = (c >> 8) & 0xff;
+		int b = c & 0xff;
+		uint32 ycbcr = VDConvertRGBToYCbCr(uint8(r),uint8(g),uint8(b), px.info.colorSpaceMode==vd2::kColorSpaceMode_709, px.info.colorRangeMode==vd2::kColorRangeMode_Full);
+
 		switch(px.format) {
 		case kPixFormat_Pal1:
 		case kPixFormat_Pal2:
@@ -271,11 +276,11 @@ namespace {
 			break;
 
 		case kPixFormat_Y8:
-			VDPixmapRectFillRaw(px, rDst, (VDConvertRGBToYCbCr(c) >> 8) & 0xff);
+			VDPixmapRectFillRaw(px, rDst, ycbcr & 0xff);
 			break;
 
 		case kPixFormat_Y8_FR:
-			VDPixmapRectFillRaw(px, rDst, (VDConvertRGBToYCbCr((uint8)((c >> 16) & 0xff), (uint8)((c >> 8) & 0xff), (uint8)(c & 0xff), false, true) >> 8) & 0xff);
+			VDPixmapRectFillRaw(px, rDst, ycbcr & 0xff);
 			break;
 
 		case kPixFormat_YUV444_Planar:
@@ -292,7 +297,7 @@ namespace {
 		case kPixFormat_YUV420_Alpha_Planar:
 		case kPixFormat_YUV422_Alpha_Planar:
 		case kPixFormat_YUV444_Alpha_Planar:
-			VDPixmapRectFillRaw(px, rDst, VDConvertRGBToYCbCr(c));
+			VDPixmapRectFillRaw(px, rDst, ycbcr);
 			break;
 
 		case kPixFormat_YUV444_Planar_FR:
@@ -300,7 +305,7 @@ namespace {
 		case kPixFormat_YUV420_Planar_FR:
 		case kPixFormat_YUV411_Planar_FR:
 		case kPixFormat_YUV410_Planar_FR:
-			VDPixmapRectFillRaw(px, rDst, VDConvertRGBToYCbCr((uint8)((c >> 16) & 0xff), (uint8)((c >> 8) & 0xff), (uint8)(c & 0xff), false, true));
+			VDPixmapRectFillRaw(px, rDst, ycbcr);
 			break;
 
 		case kPixFormat_YUV444_Planar_709:
@@ -308,7 +313,7 @@ namespace {
 		case kPixFormat_YUV420_Planar_709:
 		case kPixFormat_YUV411_Planar_709:
 		case kPixFormat_YUV410_Planar_709:
-			VDPixmapRectFillRaw(px, rDst, VDConvertRGBToYCbCr((uint8)((c >> 16) & 0xff), (uint8)((c >> 8) & 0xff), (uint8)(c & 0xff), true, false));
+			VDPixmapRectFillRaw(px, rDst, ycbcr);
 			break;
 
 		case kPixFormat_YUV444_Planar_709_FR:
@@ -316,7 +321,7 @@ namespace {
 		case kPixFormat_YUV420_Planar_709_FR:
 		case kPixFormat_YUV411_Planar_709_FR:
 		case kPixFormat_YUV410_Planar_709_FR:
-			VDPixmapRectFillRaw(px, rDst, VDConvertRGBToYCbCr((uint8)((c >> 16) & 0xff), (uint8)((c >> 8) & 0xff), (uint8)(c & 0xff), true, true));
+			VDPixmapRectFillRaw(px, rDst, ycbcr);
 			break;
 		}
 	}

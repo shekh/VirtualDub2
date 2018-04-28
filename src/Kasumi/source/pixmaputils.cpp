@@ -951,6 +951,8 @@ void MatchFilterFormat::initBase() {
 int MatchFilterFormat::next_base() {
 	using namespace nsVDPixmap;
 
+	formatMask.reset(base);
+
 	switch(base) {
 	case kPixFormat_YUV422_UYVY:
 		if (formatMask.test(kPixFormat_YUV422_YUYV))

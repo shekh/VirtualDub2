@@ -1341,7 +1341,7 @@ uint32 FilterInstance::Prepare(const VFBitmapInternal *inputs, uint32 numInputs,
 				mRealDst.mPixmapLayout.pitch2 = 0;
 				mRealDst.mPixmapLayout.pitch3 = 0;
 			} else {
-				VDPixmapCreateLinearLayout(mRealDst.mPixmapLayout, mRealDst.mPixmapLayout.format, mRealDst.mPixmapLayout.w, mRealDst.mPixmapLayout.h, exitAlign);
+				VDPixmapCreateLinearLayout(mRealDst.mPixmapLayout, mRealDst.mPixmapLayout.formatEx, mRealDst.mPixmapLayout.w, mRealDst.mPixmapLayout.h, exitAlign);
 
 				if (mRealDst.mPixmapLayout.format == nsVDPixmap::kPixFormat_XRGB8888)
 					VDPixmapLayoutFlipV(mRealDst.mPixmapLayout);
