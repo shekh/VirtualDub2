@@ -89,43 +89,51 @@ bool VDPixmapResampler::Init(uint32 dw, uint32 dh, int dstformat, uint32 sw, uin
 }
 
 bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, int dstformat, const vdrect32f& srcrect0, uint32 sw, uint32 sh, int srcformat) {
+	using namespace nsVDPixmap;
+
 	Shutdown();
 
 	if (dstformat != srcformat)
 		return false;
 	
 	switch(srcformat) {
-		case nsVDPixmap::kPixFormat_XRGB8888:
-		case nsVDPixmap::kPixFormat_XRGB64:
-		case nsVDPixmap::kPixFormat_Y8:
-		case nsVDPixmap::kPixFormat_Y8_FR:
-		case nsVDPixmap::kPixFormat_YUV444_Planar:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV422_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV420_Planar:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV411_Planar:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV410_Planar:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Planar16:
-		case nsVDPixmap::kPixFormat_YUV420_Planar16:
-			break;
+	case kPixFormat_XRGB8888:
+	case kPixFormat_XRGB64:
+	case kPixFormat_Y8:
+	case kPixFormat_Y8_FR:
+	case kPixFormat_YUV444_Planar:
+	case kPixFormat_YUV444_Planar_FR:
+	case kPixFormat_YUV444_Planar_709:
+	case kPixFormat_YUV444_Planar_709_FR:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV422_Planar_FR:
+	case kPixFormat_YUV422_Planar_709:
+	case kPixFormat_YUV422_Planar_709_FR:
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV420_Planar_FR:
+	case kPixFormat_YUV420_Planar_709:
+	case kPixFormat_YUV420_Planar_709_FR:
+	case kPixFormat_YUV411_Planar:
+	case kPixFormat_YUV411_Planar_FR:
+	case kPixFormat_YUV411_Planar_709:
+	case kPixFormat_YUV411_Planar_709_FR:
+	case kPixFormat_YUV410_Planar:
+	case kPixFormat_YUV410_Planar_FR:
+	case kPixFormat_YUV410_Planar_709:
+	case kPixFormat_YUV410_Planar_709_FR:
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+		break;
 
-		default:
-			return false;
+	default:
+		return false;
 	}
 
 	// convert destination flips to source flips
@@ -200,39 +208,45 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 		dstrect2.scale(invxf2, invyf2);
 
 		switch(srcformat) {
-		case nsVDPixmap::kPixFormat_YUV444_Planar:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
+		case kPixFormat_YUV444_Planar:
+		case kPixFormat_YUV444_Planar_FR:
+		case kPixFormat_YUV444_Planar_709:
+		case kPixFormat_YUV444_Planar_709_FR:
+		case kPixFormat_YUV444_Planar16:
+		case kPixFormat_YUV444_Alpha_Planar16:
+		case kPixFormat_YUV444_Alpha_Planar:
 			break;
-		case nsVDPixmap::kPixFormat_YUV422_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV422_Planar16:
+		case kPixFormat_YUV422_Planar:
+		case kPixFormat_YUV422_Planar_FR:
+		case kPixFormat_YUV422_Planar_709:
+		case kPixFormat_YUV422_Planar_709_FR:
+		case kPixFormat_YUV422_Planar16:
+		case kPixFormat_YUV422_Alpha_Planar16:
+		case kPixFormat_YUV422_Alpha_Planar:
 			srcrect2.translate(0.25f, 0.0f);
 			dstrect2.translate(0.25f, 0.0f);
 			break;
-		case nsVDPixmap::kPixFormat_YUV420_Planar:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV420_Planar16:
+		case kPixFormat_YUV420_Planar:
+		case kPixFormat_YUV420_Planar_FR:
+		case kPixFormat_YUV420_Planar_709:
+		case kPixFormat_YUV420_Planar_709_FR:
+		case kPixFormat_YUV420_Planar16:
+		case kPixFormat_YUV420_Alpha_Planar16:
+		case kPixFormat_YUV420_Alpha_Planar:
 			srcrect2.translate(0.25f, 0.0f);
 			dstrect2.translate(0.25f, 0.0f);
 			break;
-		case nsVDPixmap::kPixFormat_YUV411_Planar:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
+		case kPixFormat_YUV411_Planar:
+		case kPixFormat_YUV411_Planar_FR:
+		case kPixFormat_YUV411_Planar_709:
+		case kPixFormat_YUV411_Planar_709_FR:
 			srcrect2.translate(0.375f, 0.0f);
 			dstrect2.translate(0.375f, 0.0f);
 			break;
-		case nsVDPixmap::kPixFormat_YUV410_Planar:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
+		case kPixFormat_YUV410_Planar:
+		case kPixFormat_YUV410_Planar_FR:
+		case kPixFormat_YUV410_Planar_709:
+		case kPixFormat_YUV410_Planar_709_FR:
 			break;
 		default:
 			VDASSERT(false);
@@ -250,71 +264,80 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 	VDPixmapUberBlitterGenerator gen;
 
 	switch(srcformat) {
-		case nsVDPixmap::kPixFormat_XRGB8888:
-			gen.ldsrc(0, 0, 0, 0, sw, sh, VDPixmapGetFormatTokenFromFormat(srcformat), sw*4);
-			ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
-			break;
+	case kPixFormat_XRGB8888:
+		gen.ldsrc(0, 0, 0, 0, sw, sh, VDPixmapGetFormatTokenFromFormat(srcformat), sw*4);
+		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
+		break;
 
-		case nsVDPixmap::kPixFormat_XRGB64:
-			gen.ldsrc(0, 0, 0, 0, sw, sh, VDPixmapGetFormatTokenFromFormat(srcformat), sw*8);
-			ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
-			break;
+	case kPixFormat_XRGB64:
+		gen.ldsrc(0, 0, 0, 0, sw, sh, VDPixmapGetFormatTokenFromFormat(srcformat), sw*8);
+		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
+		break;
 
-		case nsVDPixmap::kPixFormat_Y8:
-			gen.ldsrc(0, 0, 0, 0, sw, sh, kVDPixType_8, sw);
-			ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
-			break;
+	case kPixFormat_Y8:
+		gen.ldsrc(0, 0, 0, 0, sw, sh, kVDPixType_8, sw);
+		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
+		break;
 
-		case nsVDPixmap::kPixFormat_YUV444_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Planar:
-		case nsVDPixmap::kPixFormat_YUV420_Planar:
-		case nsVDPixmap::kPixFormat_YUV411_Planar:
-		case nsVDPixmap::kPixFormat_YUV410_Planar:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Planar16:
-		case nsVDPixmap::kPixFormat_YUV420_Planar16:
-			{
-				int plane_format = kVDPixType_8;
-				int bpp = 1;
-				switch (srcformat) {
-				case nsVDPixmap::kPixFormat_YUV444_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_Planar16:
-				case nsVDPixmap::kPixFormat_YUV420_Planar16:
-					plane_format = kVDPixType_16_LE;
-					bpp = 2;
-					break;
-				}
-
-				gen.ldsrc(0, 0, 0, 0, sw, sh, plane_format, sw*bpp);
-				ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
-
-				const VDPixmapFormatInfo& info = VDPixmapGetInfo(dstformat);
-				uint32 subsw = -(-(sint32)sw >> info.auxwbits);
-				uint32 subsh = -(-(sint32)sh >> info.auxhbits);
-
-				VDPixmapUberBlitterGenerator gen2;
-				gen2.ldsrc(0, 0, 0, 0, subsw, subsh, plane_format, subsw*bpp);
-				ApplyFilters(gen2, mDstRectPlane12.width(), mDstRectPlane12.height(), xoffset2, yoffset2, xfactor, yfactor);
-				mpBlitter2 = gen2.create();
-				if (!mpBlitter2)
-					return false;
+	case kPixFormat_YUV444_Planar:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV411_Planar:
+	case kPixFormat_YUV410_Planar:
+	case kPixFormat_YUV444_Planar_FR:
+	case kPixFormat_YUV422_Planar_FR:
+	case kPixFormat_YUV420_Planar_FR:
+	case kPixFormat_YUV411_Planar_FR:
+	case kPixFormat_YUV410_Planar_FR:
+	case kPixFormat_YUV444_Planar_709:
+	case kPixFormat_YUV422_Planar_709:
+	case kPixFormat_YUV420_Planar_709:
+	case kPixFormat_YUV411_Planar_709:
+	case kPixFormat_YUV410_Planar_709:
+	case kPixFormat_YUV444_Planar_709_FR:
+	case kPixFormat_YUV422_Planar_709_FR:
+	case kPixFormat_YUV420_Planar_709_FR:
+	case kPixFormat_YUV411_Planar_709_FR:
+	case kPixFormat_YUV410_Planar_709_FR:
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+		{
+			int plane_format = kVDPixType_8;
+			int bpp = 1;
+			switch (srcformat) {
+			case kPixFormat_YUV444_Planar16:
+			case kPixFormat_YUV422_Planar16:
+			case kPixFormat_YUV420_Planar16:
+			case kPixFormat_YUV444_Alpha_Planar16:
+			case kPixFormat_YUV422_Alpha_Planar16:
+			case kPixFormat_YUV420_Alpha_Planar16:
+				plane_format = kVDPixType_16_LE;
+				bpp = 2;
+				break;
 			}
-			break;
+
+			gen.ldsrc(0, 0, 0, 0, sw, sh, plane_format, sw*bpp);
+			ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
+
+			const VDPixmapFormatInfo& info = VDPixmapGetInfo(dstformat);
+			uint32 subsw = -(-(sint32)sw >> info.auxwbits);
+			uint32 subsh = -(-(sint32)sh >> info.auxhbits);
+
+			VDPixmapUberBlitterGenerator gen2;
+			gen2.ldsrc(0, 0, 0, 0, subsw, subsh, plane_format, subsw*bpp);
+			ApplyFilters(gen2, mDstRectPlane12.width(), mDstRectPlane12.height(), xoffset2, yoffset2, xfactor, yfactor);
+			mpBlitter2 = gen2.create();
+			if (!mpBlitter2)
+				return false;
+		}
+		break;
 	}
 
 	mpBlitter = gen.create();
@@ -330,77 +353,107 @@ void VDPixmapResampler::Shutdown() {
 }
 
 void VDPixmapResampler::Process(const VDPixmap& dst, const VDPixmap& src) {
+	using namespace nsVDPixmap;
+
 	if (!mpBlitter)
 		return;
 
 	switch(dst.format) {
-		case nsVDPixmap::kPixFormat_XRGB8888:
-		case nsVDPixmap::kPixFormat_XRGB64:
-		case nsVDPixmap::kPixFormat_Y8:
-			mpBlitter->Blit(dst, &mDstRectPlane0, src);
-			break;
+	case kPixFormat_XRGB8888:
+	case kPixFormat_XRGB64:
+	case kPixFormat_Y8:
+		mpBlitter->Blit(dst, &mDstRectPlane0, src);
+		return;
+	}
 
-		case nsVDPixmap::kPixFormat_YUV444_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Planar:
-		case nsVDPixmap::kPixFormat_YUV420_Planar:
-		case nsVDPixmap::kPixFormat_YUV411_Planar:
-		case nsVDPixmap::kPixFormat_YUV410_Planar:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_709:
-		case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV411_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Planar16:
-		case nsVDPixmap::kPixFormat_YUV420_Planar16:
-			// blit primary plane
-			mpBlitter->Blit(dst, &mDstRectPlane0, src);
+	int plane_format = kPixFormat_Y8;
+	switch(dst.format) {
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+	plane_format = kPixFormat_Y16;
 
-			// slice and blit secondary planes
-			{
-				int plane_format = nsVDPixmap::kPixFormat_Y8;
-				switch(dst.format) {
-				case nsVDPixmap::kPixFormat_YUV444_Planar16:
-				case nsVDPixmap::kPixFormat_YUV422_Planar16:
-				case nsVDPixmap::kPixFormat_YUV420_Planar16:
-					plane_format = nsVDPixmap::kPixFormat_Y16;
-					break;
-				}
+	case kPixFormat_YUV444_Planar:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV411_Planar:
+	case kPixFormat_YUV410_Planar:
+	case kPixFormat_YUV444_Planar_FR:
+	case kPixFormat_YUV422_Planar_FR:
+	case kPixFormat_YUV420_Planar_FR:
+	case kPixFormat_YUV411_Planar_FR:
+	case kPixFormat_YUV410_Planar_FR:
+	case kPixFormat_YUV444_Planar_709:
+	case kPixFormat_YUV422_Planar_709:
+	case kPixFormat_YUV420_Planar_709:
+	case kPixFormat_YUV411_Planar_709:
+	case kPixFormat_YUV410_Planar_709:
+	case kPixFormat_YUV444_Planar_709_FR:
+	case kPixFormat_YUV422_Planar_709_FR:
+	case kPixFormat_YUV420_Planar_709_FR:
+	case kPixFormat_YUV411_Planar_709_FR:
+	case kPixFormat_YUV410_Planar_709_FR:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+		// blit primary plane
+		mpBlitter->Blit(dst, &mDstRectPlane0, src);
 
-				const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(dst.format);
-				VDPixmap pxdst;
-				pxdst.format	= plane_format;
-				pxdst.w			= -(-dst.w >> formatInfo.auxwbits);
-				pxdst.h			= -(-dst.h >> formatInfo.auxhbits);
-				pxdst.pitch		= dst.pitch2;
-				pxdst.data		= dst.data2;
+		// slice and blit secondary planes
+		{
+			const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(dst.format);
+			VDPixmap pxdst;
+			pxdst.format	= plane_format;
+			pxdst.w			= -(-dst.w >> formatInfo.auxwbits);
+			pxdst.h			= -(-dst.h >> formatInfo.auxhbits);
+			pxdst.pitch		= dst.pitch2;
+			pxdst.data		= dst.data2;
 
-				VDPixmap pxsrc;
-				pxsrc.format	= plane_format;
-				pxsrc.w			= -(-src.w >> formatInfo.auxwbits);
-				pxsrc.h			= -(-src.h >> formatInfo.auxhbits);
-				pxsrc.pitch		= src.pitch2;
-				pxsrc.data		= src.data2;
+			VDPixmap pxsrc;
+			pxsrc.format	= plane_format;
+			pxsrc.w			= -(-src.w >> formatInfo.auxwbits);
+			pxsrc.h			= -(-src.h >> formatInfo.auxhbits);
+			pxsrc.pitch		= src.pitch2;
+			pxsrc.data		= src.data2;
 
-				mpBlitter2->Blit(pxdst, &mDstRectPlane12, pxsrc);
+			mpBlitter2->Blit(pxdst, &mDstRectPlane12, pxsrc);
 
-				pxdst.pitch		= dst.pitch3;
-				pxdst.data		= dst.data3;
-				pxsrc.pitch		= src.pitch3;
-				pxsrc.data		= src.data3;
-				mpBlitter2->Blit(pxdst, &mDstRectPlane12, pxsrc);
-			}
-			break;
+			pxdst.pitch		= dst.pitch3;
+			pxdst.data		= dst.data3;
+			pxsrc.pitch		= src.pitch3;
+			pxsrc.data		= src.data3;
+			mpBlitter2->Blit(pxdst, &mDstRectPlane12, pxsrc);
+		}
+		break;
+	}
+
+	if (src.info.alpha_type) switch(dst.format) {
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+		{
+			VDPixmap pxdst;
+			pxdst.format	= plane_format;
+			pxdst.w			= dst.w;
+			pxdst.h			= dst.h;
+			pxdst.pitch		= dst.pitch4;
+			pxdst.data		= dst.data4;
+
+			VDPixmap pxsrc;
+			pxsrc.format	= plane_format;
+			pxsrc.w			= src.w;
+			pxsrc.h			= src.h;
+			pxsrc.pitch		= src.pitch4;
+			pxsrc.data		= src.data4;
+			mpBlitter->Blit(pxdst, &mDstRectPlane0, pxsrc);
+		}
+		break;
 	}
 }
 

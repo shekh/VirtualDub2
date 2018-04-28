@@ -1730,6 +1730,20 @@ void VDConvertRGBToYCbCr(float r, float g, float b, float& y, float& cb, float& 
 	cr += 0.5f / 255.0f;
 }
 
+void VDRoundYCbCr(float y, float cb, float cr, int ref, int& iy, int& icb, int& icr) {
+	int mref = vd2::chroma_neutral(ref);
+	iy = VDRoundToInt(y*ref);
+	icb = VDRoundToInt((cb-(128.0f / 255.0f))*ref) + mref;
+	icr = VDRoundToInt((cr-(128.0f / 255.0f))*ref) + mref;
+
+	if (iy<0) iy = 0;
+	if (icb<0) icb = 0;
+	if (icr<0) icr = 0;
+	if (iy>ref) iy = ref;
+	if (icb>ref) icb = ref;
+	if (icr>ref) icr = ref;
+}
+
 //---------------------------------------------------------------------------------
 // notes:
 // floating point chroma is neutral at 128/255 ~= 0.50196...

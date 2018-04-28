@@ -65,5 +65,6 @@ uint32 VDPackRGBA8(float r, float g, float b, uint8 a);
 uint32 VDConvertRGBToYCbCr(uint32 c, bool use709=false, bool useFullRange=false);
 uint32 VDConvertRGBToYCbCr(uint8 r, uint8 g, uint8 b, bool use709, bool useFullRange);
 void VDConvertRGBToYCbCr(float r, float g, float b, float& y, float& cb, float& cr, bool use709, bool useFullRange);
+void VDRoundYCbCr(float y, float cb, float cr, int ref, int& iy, int& icb, int& icr);
 
 #endif
