@@ -1048,6 +1048,7 @@ void VDDialogVideoDepthW32::OnDataExchange(bool write) {
 		mOpts = mInputFormat;
 	} else {
 		mInputFormat = VDPixmapFormatNormalize(mOpts);
+		if (mInputFormat==mOpts.format) mInputFormat = mOpts;
 		SyncControls();
 	}
 }

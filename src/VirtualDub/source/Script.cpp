@@ -160,10 +160,13 @@ void RunProject(const wchar_t *name, void *hwnd) {
 	g_project->OpenProject(name);
 }
 
-void RunScriptMemory(const char *mem, bool stopAtReloadMarker) {
+// partial = single cmd from commandline
+void RunScriptMemory(const char *mem, bool stopAtReloadMarker, bool partial) {
 	g_project->BeginLoading();
-	g_project->CloseAVI();
-	g_project->CloseWAV();
+	if (!partial) {
+		g_project->CloseAVI();
+		g_project->CloseWAV();
+	}
 
 	vdautoptr<IVDScriptInterpreter> isi(VDCreateScriptInterpreter());
 	const char *errorLineStart = mem;
@@ -708,16 +711,16 @@ static void func_VDVideo_SetDepth(IVDScriptInterpreter *, VDScriptValue *arglist
 }
 
 static void func_VDVideo_SetInputFormat(IVDScriptInterpreter *, VDScriptValue *argv, int argc) {
-	g_dubOpts.video.mInputFormat = argv[0].asInt();
-	if (g_dubOpts.video.mInputFormat >= nsVDPixmap::kPixFormat_Max_Standard)
-		g_dubOpts.video.mInputFormat = nsVDPixmap::kPixFormat_RGB888;
+	int format = argv[0].asInt();
+	if (format >= nsVDPixmap::kPixFormat_Max_Standard) format = nsVDPixmap::kPixFormat_RGB888;
+	g_dubOpts.video.mInputFormat.format = format;
 	g_project->MarkTimelineRateDirty();
 }
 
 static void func_VDVideo_SetOutputFormat(IVDScriptInterpreter *, VDScriptValue *argv, int argc) {
-	g_dubOpts.video.mOutputFormat = argv[0].asInt();
-	if (g_dubOpts.video.mOutputFormat >= nsVDPixmap::kPixFormat_Max_Standard)
-		g_dubOpts.video.mOutputFormat = nsVDPixmap::kPixFormat_RGB888;
+	int format = argv[0].asInt();
+	if (format >= nsVDPixmap::kPixFormat_Max_Standard) format = nsVDPixmap::kPixFormat_RGB888;
+	g_dubOpts.video.mOutputFormat.format = format;
 	g_project->MarkTimelineRateDirty();
 }
 
