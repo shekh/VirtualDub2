@@ -574,6 +574,13 @@ VDVideoSourcePlugin::VDVideoSourcePlugin(IVDXVideoSource *pVS, VDInputDriverCont
 	mSampleFirst = 0;
 	mSampleLast = mSSInfo.mInfo.mSampleCount;
 
+	vdwithinputplugin(mpContext) {
+		if (mpXVDec->SetTargetFormat(0, false)) {
+			const VDXPixmap &px = mpXVDec->GetFrameBuffer();
+			mDefaultFormat = px.format;
+		}
+	}
+
 	LoadFormat();
 
 	streamInfo.fccType			= VDAVIStreamInfo::kTypeVideo;

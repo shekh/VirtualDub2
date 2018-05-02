@@ -42,6 +42,7 @@ public:
 	virtual const void *getFrameBuffer() = 0;
 	virtual const VDFraction getPixelAspectRatio() const = 0;
 
+	virtual VDPixmapFormatEx getDefaultFormat() = 0;
 	virtual VDPixmapFormatEx getSourceFormat() = 0;
 	virtual const VDPixmap& getTargetFormat() = 0;
 	virtual bool		setTargetFormat(VDPixmapFormatEx format) = 0;
@@ -105,6 +106,7 @@ protected:
 	vdstructex<VDAVIBitmapInfoHeader> mpTargetFormatHeader;
 	VDPixmap	mTargetFormat;
 	int			mTargetFormatVariant;
+	VDPixmapFormatEx	mDefaultFormat;
 	VDPixmapFormatEx	mSourceFormat;
 	VDPosition	stream_desired_frame;
 	VDPosition	stream_current_frame;
@@ -148,6 +150,7 @@ public:
 		return mpFrameBuffer;
 	}
 
+	virtual VDPixmapFormatEx getDefaultFormat() { return mDefaultFormat; }
 	virtual VDPixmapFormatEx getSourceFormat() { return mSourceFormat; }
 	virtual const VDPixmap& getTargetFormat() { return mTargetFormat; }
 	virtual bool setTargetFormat(VDPixmapFormatEx format);

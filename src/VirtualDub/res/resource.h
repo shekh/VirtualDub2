@@ -244,6 +244,7 @@
 #define IDD_SAVEVIDEO_FORMAT            309
 #define IDD_OPENVIDEO                   310
 #define IDD_CAPTURE_AUDIO_MASK          312
+#define IDD_VIDEO_DECFORMAT             313
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -1003,7 +1004,9 @@
 #define IDC_ORIGINAL                    1562
 #define IDC_CH_SPIN1                    1563
 #define IDC_CH_2                        1564
+#define IDC_ACTIVEDRIVER                1564
 #define IDC_CH_SPIN2                    1565
+#define IDC_DEFAULT                     1565
 #define IDC_CH_3                        1570
 #define IDC_CH_SPIN3                    1571
 #define IDC_CH_4                        1572
@@ -1584,7 +1587,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        312
 #define _APS_NEXT_COMMAND_VALUE         40605
-#define _APS_NEXT_CONTROL_VALUE         1564
+#define _APS_NEXT_CONTROL_VALUE         1566
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

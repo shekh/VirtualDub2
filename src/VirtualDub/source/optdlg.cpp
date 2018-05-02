@@ -42,6 +42,8 @@
 
 extern HINSTANCE g_hInst;
 extern vdrefptr<IVDVideoSource> inputVideo;
+extern VDProject *g_project;
+int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx format);
 
 #define VD_FOURCC(fcc) (((fcc&0xff000000)>>24)+((fcc&0xff0000)>>8)+((fcc&0xff00)<<8)+((fcc&0xff)<<24))
 
@@ -845,13 +847,17 @@ void VDDialogSelectVideoFormatW32::FormatItem::InitText(int subItem, VDStringW& 
 
 class VDDialogVideoDepthW32 : public VDDialogFrameW32 {
 public:
+	bool didChanges;
+
 	inline VDDialogVideoDepthW32(VDPixmapFormatEx& opts, int type, int lockFormat)
-		: VDDialogFrameW32(IDD_VIDEO_DEPTH)
+		: VDDialogFrameW32(TemplateFromType(type))
 		, mOpts(opts)
 		, mbInputBrowsePending(false)
 		, mType(type)
 		, mLockFormat(lockFormat)
-	{}
+	{
+		didChanges = false;
+	}
 
 	inline bool Activate(VDGUIHandle hParent) { return 0!=ShowDialog(hParent); }
 
@@ -862,8 +868,13 @@ protected:
 	void OnDataExchange(bool write);
 	void InitFocus();
 	void InitFinalFormat();
+	void ApplyChanges();
 	void SyncControls();
 	void SyncInputColor();
+	static int TemplateFromType(int type) {
+		if (type==DepthDialog_input) return IDD_VIDEO_DECFORMAT;
+		return IDD_VIDEO_DEPTH;
+	}
 
 	VDPixmapFormatEx mInputFormat;
 	VDPixmapFormatEx& mOpts;
@@ -922,8 +933,8 @@ INT_PTR VDDialogVideoDepthW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPara
 				mInputFormat.format = format;
 			}
 
+			ApplyChanges();
 			SyncControls();
-			InitFinalFormat();
 		}
 
 		return TRUE;
@@ -937,9 +948,11 @@ bool VDDialogVideoDepthW32::OnLoaded() {
 	InitFocus();
 	InitFinalFormat();
 	if (mType==DepthDialog_input) {
-		SetWindowText(mhdlg,"Decompression format");
-		SetDlgItemText(mhdlg,IDC_MATRIX_TITLE, "Interpret as:");
-		SetDlgItemText(mhdlg,IDC_INPUT_AUTOSELECT, "Autoselect");
+		if (inputAVI) {
+			SetDlgItemTextW(mhdlg,IDC_ACTIVEDRIVER,g_inputDriver.c_str());
+		} else {
+			SetDlgItemTextW(mhdlg,IDC_ACTIVEDRIVER,L"None");
+		}
 	} else {
 		SetWindowText(mhdlg,"Output format to compressor");
 		SetDlgItemText(mhdlg,IDC_MATRIX_TITLE, "Convert to:");
@@ -1001,32 +1014,32 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 
 			case IDC_CS_NONE:
 				mInputFormat.colorSpaceMode = vd2::kColorSpaceMode_None;
-				InitFinalFormat();
+				ApplyChanges();
 				return TRUE;
 
 			case IDC_CS_601:
 				mInputFormat.colorSpaceMode = vd2::kColorSpaceMode_601;
-				InitFinalFormat();
+				ApplyChanges();
 				return TRUE;
 
 			case IDC_CS_709:
 				mInputFormat.colorSpaceMode = vd2::kColorSpaceMode_709;
-				InitFinalFormat();
+				ApplyChanges();
 				return TRUE;
 
 			case IDC_CR_NONE:
 				mInputFormat.colorRangeMode = vd2::kColorRangeMode_None;
-				InitFinalFormat();
+				ApplyChanges();
 				return TRUE;
 
 			case IDC_CR_LIMITED:
 				mInputFormat.colorRangeMode = vd2::kColorRangeMode_Limited;
-				InitFinalFormat();
+				ApplyChanges();
 				return TRUE;
 
 			case IDC_CR_FULL:
 				mInputFormat.colorRangeMode = vd2::kColorRangeMode_Full;
-				InitFinalFormat();
+				ApplyChanges();
 				return TRUE;
 		}
 
@@ -1034,8 +1047,8 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 			const FormatButtonMapping& fbm = kFormatButtonMappings[i];
 			if (fbm.mInputButton == id) {
 				mInputFormat.format = fbm.mFormat;
+				ApplyChanges();
 				SyncInputColor();
-				InitFinalFormat();
 			}
 		}
 	}
@@ -1053,14 +1066,37 @@ void VDDialogVideoDepthW32::OnDataExchange(bool write) {
 	}
 }
 
+void VDDialogVideoDepthW32::ApplyChanges() {
+	if (mType==DepthDialog_input) {
+		if (inputVideo) {
+			didChanges = true;
+			g_project->StopFilters();
+			VDRenderSetVideoSourceInputFormat(inputVideo, mInputFormat);
+		}
+	}
+	
+	InitFinalFormat();
+}
+
 void VDDialogVideoDepthW32::InitFinalFormat() {
-	ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), (mType==DepthDialog_input || mType==DepthDialog_output) && inputVideo ? SW_SHOW:SW_HIDE);
-	if (mType==DepthDialog_input && inputVideo) {
-		VDPixmapFormatEx inputFormat = inputVideo->getSourceFormat();
+	if (mType==DepthDialog_input) {
+		VDPixmapFormatEx format;
+		bool isDefault = false;
+		if (inputVideo) {
+			format = VDPixmapFormatNormalize(inputVideo->getTargetFormat());
+			VDPixmapFormatEx dformat = VDPixmapFormatNormalize(inputVideo->getDefaultFormat());
+			isDefault = format.fullEqual(dformat);
+		} else {
+			format = mInputFormat;
+		}
 		VDString s;
-		s += " Current format: ";
-		s += VDPixmapFormatPrintSpec(VDPixmapFormatCombineOpt(inputFormat,mInputFormat));
+		s += " ";
+		s += VDPixmapFormatPrintSpec(format);
 		SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
+		ShowWindow(GetDlgItem(mhdlg,IDC_DEFAULT), isDefault ? SW_SHOW:SW_HIDE);
+	}
+	if (mType==DepthDialog_output) {
+		ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), inputVideo ? SW_SHOW:SW_HIDE);
 	}
 	if (mType==DepthDialog_output && inputVideo) {
 		VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat();
@@ -1068,6 +1104,9 @@ void VDDialogVideoDepthW32::InitFinalFormat() {
 		s += " Decoding format: ";
 		s += VDPixmapFormatPrintSpec(inputFormat);
 		SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
+	}
+	if (mType==DepthDialog_cap_output) {
+		ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), SW_HIDE);
 	}
 }
 
@@ -1108,8 +1147,8 @@ void VDDialogVideoDepthW32::SyncInputColor() {
 	int format = mLockFormat!=-1 ? mLockFormat : mInputFormat;
 	bool enable = VDPixmapFormatMatrixType(format)!=0;
 	if (format==0 && mType==DepthDialog_input && inputVideo) {
-		VDPixmapFormatEx inputFormat = inputVideo->getSourceFormat();
-		enable = VDPixmapFormatMatrixType(inputFormat)!=0;
+		VDPixmapFormatEx src = inputVideo->getTargetFormat();
+		enable = VDPixmapFormatMatrixType(src)!=0;
 	}
 	if (mType==DepthDialog_cap_output) {
 		enable = false;
@@ -1144,8 +1183,9 @@ void VDDialogVideoDepthW32::SyncInputColor() {
 
 bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, VDPixmapFormatEx& opts, int type, int lockFormat) {
 	VDDialogVideoDepthW32 dlg(opts,type,lockFormat);
+	dlg.Activate(hParent);
 
-	return dlg.Activate(hParent);
+	return dlg.didChanges;
 }
 
 ///////////////////////////////////////////////////////////////////////////

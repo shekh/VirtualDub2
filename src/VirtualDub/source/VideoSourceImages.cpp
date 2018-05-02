@@ -384,6 +384,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 		if (format==0)
 			mInitFormat = bHasAlpha ? nsVDPixmap::kPixFormat_XRGB8888 : nsVDPixmap::kPixFormat_RGB888;
 		mInitAlpha = bHasAlpha;
+		mSourceFormat = mInitFormat;
 
 		pFormat->biSize				= sizeof(BITMAPINFOHEADER);
 		pFormat->biWidth			= w;

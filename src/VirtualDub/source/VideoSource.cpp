@@ -940,6 +940,7 @@ VideoSource::VideoSource()
 	, mpFrameBuffer(NULL)
 	, mFrameBufferSize(0)
 	, mpStreamOwner(NULL)
+	, mDefaultFormat(0)
 	, mSourceFormat(0)
 {
 }
@@ -1474,6 +1475,10 @@ bool VideoSourceAVI::_construct(int streamIndex) {
 						"suitable."
 					,fcc.c_str()
 					,s ? s : "unknown");
+	}
+
+	if (setTargetFormat(0)) {
+		mDefaultFormat = getTargetFormat();
 	}
 
 	return true;
