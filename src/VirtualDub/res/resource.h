@@ -68,7 +68,6 @@
 #define IDD_DUBBING                     103
 #define IDD_INTERLEAVE                  104
 #define IDD_OUTPUT_FORMAT               105
-#define IDD_VIDEO_DEPTH                 105
 #define IDD_PERFORMANCE                 106
 #define IDD_VIDEO_FRAMERATE             107
 #define IDR_RESOURCES                   107
@@ -245,6 +244,7 @@
 #define IDD_OPENVIDEO                   310
 #define IDD_CAPTURE_AUDIO_MASK          312
 #define IDD_VIDEO_DECFORMAT             313
+#define IDD_VIDEO_ENCFORMAT             314
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -963,7 +963,9 @@
 #define IDC_FORMAT_INFO                 1535
 #define IDS_HELP_CONTENTS               1536
 #define IDC_CROP_SIZE                   1536
+#define IDC_FLTFORMAT                   1536
 #define IDC_SAVE_AUDIO                  1537
+#define IDC_OUTFORMAT                   1537
 #define IDS_HELP_RELEASENOTES           1538
 #define IDC_AUDIO_INFO                  1538
 #define IDS_HELP_ABOUT                  1539
@@ -1007,10 +1009,18 @@
 #define IDC_ACTIVEDRIVER                1564
 #define IDC_CH_SPIN2                    1565
 #define IDC_DEFAULT                     1565
+#define IDC_SRCFORMAT                   1567
+#define IDC_DECFORMAT                   1567
+#define IDC_LINK_DEC                    1568
+#define IDC_LINK_FLT                    1569
 #define IDC_CH_3                        1570
+#define IDC_LINK_OUT                    1570
 #define IDC_CH_SPIN3                    1571
+#define IDC_DEC_CHECK                   1571
 #define IDC_CH_4                        1572
+#define IDC_FLT_CHECK                   1572
 #define IDC_CH_SPIN4                    1573
+#define IDC_OUT_MSG                     1573
 #define IDC_CH_5                        1576
 #define IDC_CH_SPIN5                    1577
 #define IDC_CH_6                        1578
@@ -1585,9 +1595,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        312
+#define _APS_NEXT_RESOURCE_VALUE        313
 #define _APS_NEXT_COMMAND_VALUE         40605
-#define _APS_NEXT_CONTROL_VALUE         1566
+#define _APS_NEXT_CONTROL_VALUE         1572
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

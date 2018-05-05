@@ -796,15 +796,20 @@ void VDSaveVideoDialogW32::InitCodec() {
 
 	SetDlgItemTextW(mhdlg,IDC_COMPRESSION,name.c_str());
 
-	VDString s;
+	MakeOutputFormat make;
+	make.initGlobal();
+	make.initComp(&g_Vcompression);
+	make.option = format;
+	make.combine();
+	make.combineComp();
 
-	if (format==0) {
-		VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat();
-		if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) inputFormat = inputVideo->getSourceFormat();
-		s += VDPixmapFormatPrintSpec(inputFormat);
-	} else {
-		s += VDPixmapFormatPrintSpec(format);
-	}
+	VDString s;
+	if (!make.error.empty())
+		s += "Format not accepted";
+	else if (make.mode == DubVideoOptions::M_FASTREPACK)
+		s += "autodetect";
+	else
+		s += VDPixmapFormatPrintSpec(make.out);
 
 	SetDlgItemText(mhdlg,IDC_COMPRESSION2,s.c_str());
 

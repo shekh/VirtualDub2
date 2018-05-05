@@ -60,6 +60,7 @@
 #include "crash.h"
 #include "gui.h"
 #include "oshelper.h"
+#include "dub.h"
 #include "filters.h"
 #include "capture.h"
 #include "helpfile.h"
@@ -2101,7 +2102,7 @@ unknown_PCM_format:
 		VDAVIBitmapInfoHeader *bmiToFile = bmiInput.data();
 		biSizeToFile = bmiInput.size();
 
-		icd.mInputLayout.format = 0;
+		icd.mInputLayout.clear();
 
 		VDFraction outputFrameRate(inputFrameRate);
 		if (InitFilter()) {		// This also sets mFilterInputLayout even if it returns false.
@@ -2112,32 +2113,38 @@ unknown_PCM_format:
 			bmiToFile = &*filteredFormat;
 			biSizeToFile = filteredFormat.size();
 			outputFrameRate = mpFilterSys->GetOutputFrameRate();
+		} else {
+			mFilterOutputLayout = mFilterInputLayout;
 		}
 
 		icd.mInputLayout = mFilterInputLayout;
 		icd.mInputFormatVariant = mInputFormatVariant;
-		VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.mOutputLayout);
-		icd.vfwLayout.format = 0;
+		if (!VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.mOutputLayout)) icd.mOutputLayout.clear();
+		icd.vfwLayout.clear();
 
 		// initialize final conversion
 		vdstructex<VDAVIBitmapInfoHeader> convertedFormat;
-		if (g_compformat!=0 && g_compression.driver) {
-			//! compchoose does not let to select uncompressed format
-			// explicit: convert to selected as "Pixel Format"
-			if (icd.mOutputLayout.format!=g_compformat) {
-				VDMakeBitmapFormatFromPixmapFormat(convertedFormat, g_compformat, 0, bmiToFile->biWidth, bmiToFile->biHeight);
-				bmiToFile = &*convertedFormat;
-				biSizeToFile = convertedFormat.size();
-				VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.vfwLayout);
+		if (icd.mOutputLayout.format) { // otherwise dealing with unknown format - not convertible
+			MakeOutputFormat make;
+			make.initCapture((BITMAPINFOHEADER*)bmiInput.data());
+			make.initComp(&g_compression);
+			make.option = g_compformat;
+			if (make.option==0 || !g_compression.driver) make.option = make.dec;
+			if (g_compression.driver) {
+				int format = g_compression.driver->queryInputFormat(0);
+				if (format) make.option = format;
 			}
-		} else {
-			// auto: convert back to capture format
-			int format2 = VDBitmapFormatToPixmapFormat(*bmiInput);
-			if (icd.mOutputLayout.format!=format2) {
-				VDMakeBitmapFormatFromPixmapFormat(convertedFormat, format2, 0, bmiToFile->biWidth, bmiToFile->biHeight);
+			make.out = make.option;
+			make.combineComp();
+			if (!make.error.empty()) throw MyError(make.error.c_str());
+
+			if (icd.mOutputLayout.format!=make.out) {
+				VDMakeBitmapFormatFromPixmapFormat(convertedFormat, make.out, 0, bmiToFile->biWidth, bmiToFile->biHeight);
 				bmiToFile = &*convertedFormat;
 				biSizeToFile = convertedFormat.size();
 				VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.vfwLayout);
+			} else {
+				icd.vfwLayout = icd.mOutputLayout;
 			}
 		}
 
@@ -2157,9 +2164,11 @@ unknown_PCM_format:
 				if (mFilterInputLayout.format==0)
 					throw MyError("The current video capture format is not supported");
 			} else {
-				icd.driverLayout.format = 0;
+				icd.driverLayout.clear();
 
 				DWORD icErr = g_compression.driver->compressQuery(bmiToFile, NULL);
+				if (icErr == ICERR_ERROR)
+					throw MyError("Video compressor error: format not accepted.");
 				if (icErr != ICERR_OK)
 					throw MyICError("Video compressor", icErr);
 			}

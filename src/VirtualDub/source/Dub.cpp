@@ -152,6 +152,7 @@ DubOptions g_dubOpts = {
 	{
 		0,								// input: autodetect
 		nsVDPixmap::kPixFormat_RGB888,	// output: 24bit
+		1,								// reference:  input
 		DubVideoOptions::M_FULL,	// mode: full
 		false,						// use smart encoding
 		false,						// preserve empty frames
@@ -1095,50 +1096,24 @@ void Dubber::InitOutputFile() {
 
 		// initialize compression
 
-		int last_format = vSrc->getTargetFormat().format;
-		if(mOptions.video.mode == DubVideoOptions::M_FULL)
-			last_format = filters.GetOutputLayout().format;
+		MakeOutputFormat make;
+		make.init(mOptions, vSrc);
+		make.initComp(mpOutputSystem, mpVideoCompressor);
+		make.combine();
+		make.combineComp();
 
-		VDPixmapFormatEx outputFormatID = 0;
+		if (!make.error.empty()) throw MyError(make.error.c_str());
+
+		VDPixmapFormatEx outputFormatID = make.comp;
+		VDPixmapFormatEx outputFormatID0 = make.out;
 		int outputVariantID = 0;
-		FilterModPixmapInfo outputFormatInfo;
-		outputFormatInfo.clear();
 		VDPixmapLayout driverLayout = {0};
-		bool useOverride = false;
 
-		if (mpOutputSystem) {
-			outputFormatID = mpOutputSystem->GetVideoOutputFormatOverride(last_format);
-			if (outputFormatID) useOverride = true;
-		}
-
-		if (!useOverride) {
-			outputFormatID = mOptions.video.mOutputFormat;
-			if (mOptions.video.mode <= DubVideoOptions::M_FASTREPACK) outputFormatID = 0;
-
-			if (mpVideoCompressor) {
-				int codec_format = mpVideoCompressor->QueryInputFormat(&outputFormatInfo);
-				if (codec_format) outputFormatID.format = codec_format;
-			}
-
-			if (!outputFormatID) outputFormatID = vSrc->getTargetFormat();
-
-			outputFormatID = VDPixmapFormatCombine(outputFormatID);
-
-			if (!mpVideoCompressor) {
-				// select reasonable uncompressed format
-				if (outputFormatID==nsVDPixmap::kPixFormat_XRGB64)
-					outputFormatID = nsVDPixmap::kPixFormat_B64A;
-			}
-		}
-
-		VDPixmapFormatEx outputFormatID0 = outputFormatID;
-
-		VDPixmapCreateLinearLayout(driverLayout,VDPixmapFormatNormalize(outputFormatID),outputWidth,outputHeight,16);
-		if (mpVideoCompressor && mpVideoCompressor->Query(&driverLayout, NULL)) {
-			// use layout
-			driverLayout.formatEx = outputFormatID;
-		} else {
-			driverLayout.format = 0;
+		if (mpVideoCompressor && make.use_vc_format) {
+			VDPixmapCreateLinearLayout(driverLayout,VDPixmapFormatNormalize(outputFormatID),outputWidth,outputHeight,16);
+			if (!mpVideoCompressor->Query(&driverLayout, NULL)) 
+				throw MyError("Unable to initialize video compression. Check that the video codec is compatible with the output video frame size and that the settings are correct, or try a different one.");
+			driverLayout.formatEx = outputFormatID; //! is this needed here?
 		}
 
 		if (!driverLayout.format) {
@@ -1148,97 +1123,13 @@ void Dubber::InitOutputFile() {
 
 			} else if (mOptions.video.mode == DubVideoOptions::M_FASTREPACK) {
 				// For fast recompress mode, the format must be already negotiated.
-				const VDAVIBitmapInfoHeader *pSrcFormat = vSrc->getDecompressedFormat();
-				const uint32 srcFormatLen = vSrc->getDecompressedFormatLen();
-				if (!pSrcFormat)
+				if (make.srcDib.empty())
 					throw MyError("Unable to initialize video compression: The selected output format is not compatible with the Windows video codec API. Choose a different format.");
-				mpCompressorVideoFormat.assign(pSrcFormat, srcFormatLen);
+				mpCompressorVideoFormat = make.srcDib;
 
 			} else {
-				// For full recompression mode, we allow any format variant that the codec can accept.
-				// Try to find a variant that works.
-				vdfastvector<VDPixmapFormatEx> test_list;
-				test_list.push_back(outputFormatID);
-				// try to drop qualifiers and use proxy format (the only exception is HDYC)
-				// color is still converted as originally requested
-				VDPixmapFormatEx f = VDPixmapFormatNormalize(outputFormatID);
-				int proxy_index = -1;
-				if (f.format!=outputFormatID) {
-					test_list.push_back(f.format);
-					proxy_index = 1;
-				}
-				if (outputFormatID==nsVDPixmap::kPixFormat_XRGB64) {
-					test_list.push_back(nsVDPixmap::kPixFormat_B64A);
-					test_list.push_back(nsVDPixmap::kPixFormat_R10K);
-					test_list.push_back(nsVDPixmap::kPixFormat_R210);
-				}
-				if (outputFormatID==nsVDPixmap::kPixFormat_YUV444_Planar16) {
-					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV444_V410, outputFormatID));
-					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV444_Y410, outputFormatID));
-				}
-				if (outputFormatID==nsVDPixmap::kPixFormat_YUV422_Planar16) {
-					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV422_P216, outputFormatID));
-					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV422_P210, outputFormatID));
-					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV422_V210, outputFormatID));
-				}
-				if (outputFormatID==nsVDPixmap::kPixFormat_YUV420_Planar16) {
-					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV420_P016, outputFormatID));
-					test_list.push_back(VDPixmapFormatCombineOpt(nsVDPixmap::kPixFormat_YUV420_P010, outputFormatID));
-				}
-
-				bool foundDibCompatibleFormat = false;
-				bool foundResult = false;
-
-				{for(int test=0; test<test_list.size(); test++){
-					VDPixmapFormatEx format = test_list[test];
-					const int variants = VDGetPixmapToBitmapVariants(format);
-
-					const VDAVIBitmapInfoHeader *pSrcFormat = vSrc->getDecompressedFormat();
-					const uint32 srcFormatLen = vSrc->getDecompressedFormatLen();
-					vdstructex<VDAVIBitmapInfoHeader> srcFormat;
-					srcFormat.assign(pSrcFormat, srcFormatLen);
-
-					for(int variant=1; variant <= variants; ++variant) {
-						bool dibCompatible;
-						if (srcFormat.empty()) {
-							dibCompatible = VDMakeBitmapFormatFromPixmapFormat(mpCompressorVideoFormat, format, variant, outputWidth, outputHeight);
-						} else {
-							dibCompatible = VDMakeBitmapFormatFromPixmapFormat(mpCompressorVideoFormat, srcFormat, format, variant, outputWidth, outputHeight);
-						}
-						foundDibCompatibleFormat |= dibCompatible;
-
-						// If we have a video compressor, then we need a format that is DIB compatible. Otherwise,
-						// we can go ahead and use a pixmap-only format.
-						if (mpVideoCompressor) {
-							if (dibCompatible)
-								foundResult = mpVideoCompressor->Query((LPBITMAPINFO)&*mpCompressorVideoFormat, NULL);
-						} else {
-							if (dibCompatible) {
-								foundResult = true;
-							} else {
-								mpCompressorVideoFormat.clear();
-								foundResult = mpOutputSystem->IsVideoImageOutputEnabled();
-							}
-						}
-
-						if (foundResult) {
-							outputFormatID = format;
-							outputVariantID = variant;
-							if (test!=proxy_index) outputFormatID0 = format;
-							break;
-						}
-					}
-
-					if (foundResult) break;
-				}}
-
-				if (!foundResult) {
-					if (foundDibCompatibleFormat) {
-						throw MyError("Unable to initialize video compression. Check that the video codec is compatible with the output video frame size and that the settings are correct, or try a different one.");
-					} else {
-						throw MyError("Unable to initialize video compression: The selected output format is not compatible with the Windows video codec API. Choose a different format.");
-					}
-				}
+				outputVariantID = make.compVariant;
+				mpCompressorVideoFormat = make.compDib;
 			}
 		}
 
@@ -1274,6 +1165,9 @@ void Dubber::InitOutputFile() {
 			}
 
 			if (driverLayout.format) {
+				FilterModPixmapInfo outputFormatInfo;
+				outputFormatInfo.clear();
+				mpVideoCompressor->QueryInputFormat(&outputFormatInfo);
 				mpVideoCompressor->Start(driverLayout, outputFormatInfo, &*outputFormat, outputFormat.size(), vInfo.mFrameRate, vInfo.end_proc_dst);
 				outputFormat.assign((const VDAVIBitmapInfoHeader *)mpVideoCompressor->GetOutputFormat(), mpVideoCompressor->GetOutputFormatSize());
 			} else {
@@ -1677,24 +1571,14 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 		filters.initLinearChain(mProcessThread.GetVideoFilterScheduler(), fPreview ? VDXFilterStateInfo::kStateRealTime | VDXFilterStateInfo::kStatePreview : 0, &g_filterChain, mpVideoFrameSource, px.w, px.h, px, px.palette, vInfo.mFrameRatePreFilter, srcFrames, vSrc->getPixelAspectRatio());
 
 		InitVideoStreamValuesStatic2(vInfo, &mOptions, &filters, frameRateTimeline);
-		
+
+		MakeOutputFormat make;
+		make.init(mOptions, vSrc);
+		make.initComp(pOutputSystem, mpVideoCompressor);
+		make.combine();
+		int outputFormat = VDPixmapFormatNormalize(make.out);
 		const VDPixmapLayout& output = filters.GetOutputLayout();
-
-		int outputFormat = 0;
 		
-		if (pOutputSystem)
-			outputFormat = pOutputSystem->GetVideoOutputFormatOverride(output.format);
-
-		if (!outputFormat && mpVideoCompressor)
-			outputFormat = mpVideoCompressor->QueryInputFormat(0);
-
-		if (!outputFormat) {
-			outputFormat = mOptions.video.mOutputFormat;
-
-			if (!outputFormat)
-				outputFormat = vSrc->getTargetFormat().format;
-		}
-
 		if (!CheckFormatSizeCompatibility(outputFormat, output.w, output.h)) {
 			const VDPixmapFormatInfo& formatInfo = VDPixmapGetInfo(outputFormat);
 
@@ -2225,4 +2109,217 @@ void Dubber::GetPerfStatus(VDDubPerfStatus& status) {
 
 void Dubber::DumpStatus(VDTextOutputStream& os) {
 	mProcessThread.DumpStatus(os);
+}
+
+void MakeOutputFormat::init(DubOptions& opts, IVDVideoSource* vs) {
+	mode = opts.video.mode;
+	reference = opts.video.outputReference;
+	option = VDPixmapFormatNormalizeOpt(opts.video.mOutputFormat);
+	dec = VDPixmapFormatNormalizeOpt(opts.video.mInputFormat);
+
+	if (mode <= DubVideoOptions::M_FASTREPACK) {
+		option = 0;
+		if (vs) dec = VDPixmapFormatNormalize(vs->getSourceFormat());
+	} else {
+		if (vs) dec = VDPixmapFormatNormalize(vs->getTargetFormat());
+	}
+
+	if (mode == DubVideoOptions::M_FULL) {
+		const VDPixmapLayout& px = filters.GetOutputLayout();
+		flt = px.formatEx;
+		w = px.w;
+		h = px.h;
+	} else {
+		flt = dec;
+		reference = 1;
+		if (vs) {
+			const VDPixmap& px = vs->getTargetFormat();
+			w = px.w;
+			h = px.h;
+		}
+	}
+
+	if (mode < DubVideoOptions::M_FULL && vs) {
+		const VDAVIBitmapInfoHeader *pSrcFormat = vs->getDecompressedFormat();
+		const uint32 srcFormatLen = vs->getDecompressedFormatLen();
+		srcDib.assign(pSrcFormat, srcFormatLen);
+	}
+}
+
+void MakeOutputFormat::initCapture(BITMAPINFOHEADER* bm) {
+	if (bm) {
+		int variant;
+		dec = VDBitmapFormatToPixmapFormat(*(VDAVIBitmapInfoHeader*)bm, variant);
+		w = bm->biWidth;
+		h = bm->biHeight;
+	} else {
+		w = 320;
+		h = 240;
+	}
+	flt = dec;
+}
+
+void MakeOutputFormat::initComp(IVDDubberOutputSystem* os, IVDVideoCompressor* vc) {
+	this->os = os;
+	this->vc = vc;
+	if (os) {
+		int cf = os->GetVideoOutputFormatOverride(flt.format);
+		if (cf) {
+			reference = 0;
+			option = cf;
+			use_os_format = false;
+			return;
+		}
+	}
+	if (vc) {
+		int cf = vc->QueryInputFormat(0);
+		if (cf) {
+			option.format = cf;
+			use_vc_format = true;
+		}
+	}
+}
+
+void MakeOutputFormat::initComp(COMPVARS2* compVars) {
+	if (mode==DubVideoOptions::M_NONE) return;
+	if (!compVars) return;
+	if ((compVars->dwFlags & ICMF_COMPVARS_VALID) && compVars->driver) {
+		IVDVideoCompressor* vc = VDCreateVideoCompressorVCM(compVars->driver, compVars->lDataRate*1024, compVars->lQ, compVars->lKey, false);
+		initComp(0,vc);
+		own_vc = true;
+	}
+}
+
+void MakeOutputFormat::initGlobal() {
+	init(g_dubOpts, inputVideo);
+}
+
+void MakeOutputFormat::combine() {
+	VDPixmapFormatEx s;
+	if (reference==1) s = dec;
+	if (reference==2) s = flt;
+	out = option;
+	if (!out.format) out.format = s.format;
+	if (!out.colorSpaceMode) out.colorSpaceMode = s.colorSpaceMode;
+	if (!out.colorRangeMode) out.colorRangeMode = s.colorRangeMode;
+	out = VDPixmapFormatCombine(out);
+}
+
+void MakeOutputFormat::combineComp() {
+	comp = out;
+	if (use_os_format) return;
+	if (use_vc_format) return;
+	if (!out) return;
+
+	if (!vc) {
+		// select reasonable uncompressed format
+		if (out==nsVDPixmap::kPixFormat_XRGB64) {
+			out = nsVDPixmap::kPixFormat_B64A;
+			comp = out;
+		}
+	}
+
+	if (mode > DubVideoOptions::M_FASTREPACK) combineComp_repack();
+}
+
+void MakeOutputFormat::combineComp_repack() {
+	using namespace nsVDPixmap;
+	// For full recompression mode, we allow any format variant that the codec can accept.
+	// Try to find a variant that works.
+	vdfastvector<int> test_list;
+	test_list.push_back(out);
+	// try to drop qualifiers and use proxy format (the only exception is HDYC)
+	// color is still converted as originally requested
+	VDPixmapFormatEx f = VDPixmapFormatNormalize(out);
+	if (f.format!=out) {
+		test_list.push_back(f.format);
+	}
+	if (f==kPixFormat_RGB888) {
+		test_list.push_back(kPixFormat_XRGB8888);
+	}
+	if (f==kPixFormat_XRGB64) {
+		test_list.push_back(kPixFormat_B64A);
+		test_list.push_back(kPixFormat_R10K);
+		test_list.push_back(kPixFormat_R210);
+	}
+	if (f==kPixFormat_YUV420_Planar) {
+		test_list.push_back(kPixFormat_YUV420_NV12);
+	}
+	if (f==kPixFormat_YUV422_Planar) {
+		test_list.push_back(kPixFormat_YUV422_UYVY);
+		test_list.push_back(kPixFormat_YUV422_YUYV);
+	}
+	if (f==kPixFormat_YUV422_YUYV) {
+		test_list.push_back(kPixFormat_YUV422_UYVY);
+		test_list.push_back(kPixFormat_YUV422_Planar);
+	}
+	if (f==kPixFormat_YUV422_UYVY) {
+		test_list.push_back(kPixFormat_YUV422_YUYV);
+		test_list.push_back(kPixFormat_YUV422_Planar);
+	}
+	if (f==kPixFormat_YUV444_Planar16) {
+		test_list.push_back(kPixFormat_YUV444_V410);
+		test_list.push_back(kPixFormat_YUV444_Y410);
+	}
+	if (f==kPixFormat_YUV422_Planar16) {
+		test_list.push_back(kPixFormat_YUV422_P216);
+		test_list.push_back(kPixFormat_YUV422_P210);
+		test_list.push_back(kPixFormat_YUV422_V210);
+	}
+	if (f==kPixFormat_YUV420_Planar16) {
+		test_list.push_back(kPixFormat_YUV420_P016);
+		test_list.push_back(kPixFormat_YUV420_P010);
+	}
+
+	bool foundDibCompatibleFormat = false;
+	bool os_image_enabled = os && os->IsVideoImageOutputEnabled();
+
+	{for(int test=0; test<test_list.size(); test++){
+		VDPixmapFormatEx format = test_list[test];
+		const int variants = VDGetPixmapToBitmapVariants(format);
+		bool use_proxy = test>0;
+
+		for(int variant=1; variant <= variants; ++variant) {
+			bool dibCompatible;
+			if (srcDib.empty()) {
+				dibCompatible = VDMakeBitmapFormatFromPixmapFormat(compDib, format, variant, w, h);
+			} else {
+				//! preserve palette during copy? chances are this will never get tested
+				dibCompatible = VDMakeBitmapFormatFromPixmapFormat(compDib, srcDib, format, variant, w, h);
+			}
+			foundDibCompatibleFormat |= dibCompatible;
+
+			// If we have a video compressor, then we need a format that is DIB compatible. Otherwise,
+			// we can go ahead and use a pixmap-only format.
+			bool foundResult = false;
+			if (vc) {
+				if (dibCompatible)
+					foundResult = vc->Query((LPBITMAPINFO)&*compDib, NULL);
+			} else {
+				if (dibCompatible) {
+					foundResult = true;
+				} else {
+					compDib.clear();
+					foundResult = os_image_enabled;
+				}
+			}
+
+			if (foundResult) {
+				comp = VDPixmapFormatCombine(format);
+				compVariant = variant;
+				if (use_proxy) {
+					out.format = format;
+					out = VDPixmapFormatCombine(out);
+				}
+				return;
+			}
+		}
+	}}
+
+	// nothing found
+	if (foundDibCompatibleFormat) {
+		error = "Unable to initialize video compression. Check that the video codec is compatible with the output video frame size and that the settings are correct, or try a different one.";
+	} else {
+		error = "Unable to initialize video compression: The selected output format is not compatible with the Windows video codec API. Choose a different format.";
+	}
 }

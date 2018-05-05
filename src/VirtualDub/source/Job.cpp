@@ -329,6 +329,8 @@ void JobCreateScript(JobScriptOutput& output, bool project_relative, const DubOp
 	output.addf("VirtualDub.video.SetOutputFormat(%d);", opt->video.mOutputFormat.format);
 	if (!opt->video.mOutputFormat.defaultMode())
 		output.addf("VirtualDub.video.SetOutputMatrix(%d,%d);", opt->video.mOutputFormat.colorSpaceMode, opt->video.mOutputFormat.colorRangeMode);
+	if (opt->video.outputReference!=1)
+		output.addf("VirtualDub.video.SetOutputReference(%d);", opt->video.outputReference);
 
 	output.addf("VirtualDub.video.SetMode(%d);", opt->video.mode);
 	output.addf("VirtualDub.video.SetSmartRendering(%d);", opt->video.mbUseSmartRendering);

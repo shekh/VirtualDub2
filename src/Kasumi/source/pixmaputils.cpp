@@ -495,6 +495,13 @@ VDPixmapFormatEx VDPixmapFormatNormalize(VDPixmapFormatEx format) {
 	return r;
 }
 
+// expand only special combined formats
+VDPixmapFormatEx VDPixmapFormatNormalizeOpt(VDPixmapFormatEx format) {
+	VDPixmapFormatEx r = VDPixmapFormatNormalize(format);
+	if (r==format) return format;
+	return r;
+}
+
 // apply matrix tweaks and combine
 VDPixmapFormatEx VDPixmapFormatCombineOpt(VDPixmapFormatEx format, VDPixmapFormatEx opt) {
 	int opt_type = VDPixmapFormatMatrixType(opt);
@@ -602,6 +609,8 @@ VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format) {
 }
 
 VDStringA VDPixmapFormatPrintSpec(VDPixmapFormatEx format) {
+	if (format==0) return VDStringA("(?)");
+
 	int type = VDPixmapFormatMatrixType(format);
 
 	format = VDPixmapFormatNormalize(format);

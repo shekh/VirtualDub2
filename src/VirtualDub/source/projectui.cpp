@@ -1800,7 +1800,7 @@ void VDProjectUI::SetVideoFramerateOptionsAsk() {
 }
 
 void VDProjectUI::SetVideoDepthOptionsAsk() {
-	bool changed = VDDisplayVideoDepthDialog(mhwnd, g_dubOpts.video.mInputFormat, DepthDialog_input, -1);
+	bool changed = VDDisplayVideoDepthDialog(mhwnd, g_dubOpts.video.mInputFormat, DepthDialog_input, -1, 0);
 	if (changed && inputVideo) {
 		StopFilters();
 		VDRenderSetVideoSourceInputFormat(inputVideo, g_dubOpts.video.mInputFormat);
@@ -5043,6 +5043,7 @@ void VDProjectUI::LoadSettings() {
 
 	g_dubOpts.video.mOutputFormat.colorSpaceMode = (vd2::ColorSpaceMode)keyPrefs.getInt("Output space", g_dubOpts.video.mOutputFormat.colorSpaceMode);
 	g_dubOpts.video.mOutputFormat.colorRangeMode = (vd2::ColorRangeMode)keyPrefs.getInt("Output range", g_dubOpts.video.mOutputFormat.colorRangeMode);
+	g_dubOpts.video.outputReference = keyPrefs.getInt("Output reference", 1);
 }
 
 void VDProjectUI::SaveSettings() {

@@ -35,10 +35,13 @@
 #include "oshelper.h"
 #include "misc.h"
 #include "gui.h"
+#include "filters.h"
 
 #include "AudioSource.h"
 #include "VideoSource.h"
 #include "Dub.h"
+#include "project.h"
+#include "command.h"
 
 extern HINSTANCE g_hInst;
 extern vdrefptr<IVDVideoSource> inputVideo;
@@ -500,6 +503,7 @@ void VDDialogSelectVideoFormatW32::RebuildList() {
 		nsVDPixmap::kPixFormat_RGB565,
 		nsVDPixmap::kPixFormat_RGB888,
 		nsVDPixmap::kPixFormat_XRGB8888,
+		nsVDPixmap::kPixFormat_XRGB64,
 		nsVDPixmap::kPixFormat_B64A,
 		nsVDPixmap::kPixFormat_R210,
 		nsVDPixmap::kPixFormat_R10K,
@@ -849,17 +853,19 @@ class VDDialogVideoDepthW32 : public VDDialogFrameW32 {
 public:
 	bool didChanges;
 
-	inline VDDialogVideoDepthW32(VDPixmapFormatEx& opts, int type, int lockFormat)
+	inline VDDialogVideoDepthW32(VDPixmapFormatEx& opts, int type, int lockFormat, COMPVARS2* compVars)
 		: VDDialogFrameW32(TemplateFromType(type))
 		, mOpts(opts)
 		, mbInputBrowsePending(false)
 		, mType(type)
 		, mLockFormat(lockFormat)
+		, compVars(compVars)
 	{
 		didChanges = false;
 	}
 
 	inline bool Activate(VDGUIHandle hParent) { return 0!=ShowDialog(hParent); }
+	void setCapture(BITMAPINFOHEADER* bm) { capSrc = bm; }
 
 protected:
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
@@ -873,15 +879,19 @@ protected:
 	void SyncInputColor();
 	static int TemplateFromType(int type) {
 		if (type==DepthDialog_input) return IDD_VIDEO_DECFORMAT;
-		return IDD_VIDEO_DEPTH;
+		return IDD_VIDEO_ENCFORMAT;
 	}
 
+	COMPVARS2* compVars;
+	BITMAPINFOHEADER* capSrc;
 	VDPixmapFormatEx mInputFormat;
 	VDPixmapFormatEx& mOpts;
 	bool mbInputBrowsePending;
 	bool mEnableMatrix;
 	int mLockFormat;
 	int mType;
+	int outputReference;
+	bool enableReference;
 
 	struct FormatButtonMapping {
 		int mFormat;
@@ -953,15 +963,6 @@ bool VDDialogVideoDepthW32::OnLoaded() {
 		} else {
 			SetDlgItemTextW(mhdlg,IDC_ACTIVEDRIVER,L"None");
 		}
-	} else {
-		SetWindowText(mhdlg,"Output format to compressor");
-		SetDlgItemText(mhdlg,IDC_MATRIX_TITLE, "Convert to:");
-	}
-	if (mType==DepthDialog_output) {
-		SetDlgItemText(mhdlg,IDC_INPUT_AUTOSELECT, "Same as decoding");
-	}
-	if (mType==DepthDialog_cap_output) {
-		SetDlgItemText(mhdlg,IDC_INPUT_AUTOSELECT, "Same as capture");
 	}
 	if (mLockFormat!=-1) {
 		EnableControl(IDC_INPUT_OTHER,false);
@@ -993,6 +994,9 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 					else
 						key.setInt("Output format", format);
 
+					if (enableReference)
+						key.setInt("Output reference", outputReference);
+
 					if (mEnableMatrix) {
 						if (mType==DepthDialog_input) {
 							key.setInt("Input space", mInputFormat.colorSpaceMode);
@@ -1015,32 +1019,63 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 			case IDC_CS_NONE:
 				mInputFormat.colorSpaceMode = vd2::kColorSpaceMode_None;
 				ApplyChanges();
+				SyncInputColor();
 				return TRUE;
 
 			case IDC_CS_601:
 				mInputFormat.colorSpaceMode = vd2::kColorSpaceMode_601;
 				ApplyChanges();
+				SyncInputColor();
 				return TRUE;
 
 			case IDC_CS_709:
 				mInputFormat.colorSpaceMode = vd2::kColorSpaceMode_709;
 				ApplyChanges();
+				SyncInputColor();
 				return TRUE;
 
 			case IDC_CR_NONE:
 				mInputFormat.colorRangeMode = vd2::kColorRangeMode_None;
 				ApplyChanges();
+				SyncInputColor();
 				return TRUE;
 
 			case IDC_CR_LIMITED:
 				mInputFormat.colorRangeMode = vd2::kColorRangeMode_Limited;
 				ApplyChanges();
+				SyncInputColor();
 				return TRUE;
 
 			case IDC_CR_FULL:
 				mInputFormat.colorRangeMode = vd2::kColorRangeMode_Full;
 				ApplyChanges();
+				SyncInputColor();
 				return TRUE;
+		}
+
+		if (mType!=DepthDialog_input) {
+			bool ref_changed = false;
+			if (id==IDC_DEC_CHECK) {
+				ref_changed = true;
+				outputReference = IsButtonChecked(IDC_DEC_CHECK) ? 1:0;
+				CheckButton(IDC_FLT_CHECK, false);
+				if (outputReference) mInputFormat = 0;
+			}
+			if (id==IDC_FLT_CHECK) {
+				ref_changed = true;
+				outputReference = IsButtonChecked(IDC_FLT_CHECK) ? 2:0;
+				CheckButton(IDC_DEC_CHECK, false);
+				if (outputReference) mInputFormat = 0;
+			}
+			if (ref_changed) {
+				if (outputReference==0) {
+					if (mInputFormat.format==0) mInputFormat.format = nsVDPixmap::kPixFormat_RGB888;
+					if (mInputFormat.colorRangeMode==0) mInputFormat.colorRangeMode = vd2::kColorRangeMode_Limited;
+					if (mInputFormat.colorSpaceMode==0) mInputFormat.colorSpaceMode = vd2::kColorSpaceMode_601;
+				}
+				ApplyChanges();
+				SyncControls();
+			}
 		}
 
 		for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
@@ -1059,10 +1094,21 @@ bool VDDialogVideoDepthW32::OnCommand(uint32 id, uint32 extcode) {
 void VDDialogVideoDepthW32::OnDataExchange(bool write) {
 	if (write) {
 		mOpts = mInputFormat;
+		if (enableReference) g_dubOpts.video.outputReference = outputReference;
 	} else {
-		mInputFormat = VDPixmapFormatNormalize(mOpts);
-		if (mInputFormat==mOpts.format) mInputFormat = mOpts;
+		outputReference = g_dubOpts.video.outputReference;
+		enableReference = mType==DepthDialog_output;
+		if (g_dubOpts.video.mode<DubVideoOptions::M_FULL) enableReference = false;
+		if (!enableReference) outputReference = 1;
+		mInputFormat = VDPixmapFormatNormalizeOpt(mOpts);
 		SyncControls();
+		if (mType!=DepthDialog_input) {
+			CheckButton(IDC_DEC_CHECK, outputReference==1);
+			CheckButton(IDC_FLT_CHECK, outputReference==2);
+			EnableControl(IDC_DEC_CHECK, true);
+			EnableControl(IDC_FLT_CHECK, enableReference);
+			EnableControl(IDC_FLTFORMAT, enableReference);
+		}
 	}
 }
 
@@ -1093,20 +1139,59 @@ void VDDialogVideoDepthW32::InitFinalFormat() {
 		s += " ";
 		s += VDPixmapFormatPrintSpec(format);
 		SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
-		ShowWindow(GetDlgItem(mhdlg,IDC_DEFAULT), isDefault ? SW_SHOW:SW_HIDE);
+		ShowControl(IDC_DEFAULT, isDefault);
 	}
 	if (mType==DepthDialog_output) {
-		ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), inputVideo ? SW_SHOW:SW_HIDE);
-	}
-	if (mType==DepthDialog_output && inputVideo) {
-		VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat();
+		MakeOutputFormat make;
+		make.initGlobal();
+		make.reference = outputReference;
+		make.mode = DubVideoOptions::M_FULL;
+		make.option = mInputFormat;
+		if (mLockFormat!=-1) make.option.format = mLockFormat;
+		make.initComp(compVars);
+		make.combine();
+		if (make.w==0){ make.w = 320; make.h = 240; }
+		make.combineComp();
+
 		VDString s;
-		s += " Decoding format: ";
-		s += VDPixmapFormatPrintSpec(inputFormat);
-		SetDlgItemText(mhdlg,IDC_ACTIVEFORMAT,s.c_str());
+		s = " ";
+		s += VDPixmapFormatPrintSpec(make.dec);
+		SetDlgItemText(mhdlg,IDC_DECFORMAT,s.c_str());
+
+		s = " ";
+		s += VDPixmapFormatPrintSpec(make.flt);
+		SetDlgItemText(mhdlg,IDC_FLTFORMAT,s.c_str());
+
+		s = " ";
+		s += VDPixmapFormatPrintSpec(make.out);
+		SetDlgItemText(mhdlg,IDC_OUTFORMAT,s.c_str());
+
+		ShowControl(IDC_OUT_MSG, !make.error.empty());
 	}
 	if (mType==DepthDialog_cap_output) {
-		ShowWindow(GetDlgItem(mhdlg,IDC_ACTIVEFORMAT), SW_HIDE);
+		MakeOutputFormat make;
+		make.initCapture(capSrc);
+		make.option = mInputFormat;
+		if (mLockFormat!=-1) make.option.format = mLockFormat;
+		make.initComp(compVars);
+		make.out = make.option;
+		if (!make.option) make.out = make.dec;
+		make.combineComp();
+
+		VDString s;
+		s = " ";
+		s += VDPixmapFormatPrintSpec(make.dec);
+		SetDlgItemText(mhdlg,IDC_DECFORMAT,s.c_str());
+
+		s = " ";
+		s += VDPixmapFormatPrintSpec(make.dec);
+		SetDlgItemText(mhdlg,IDC_FLTFORMAT,s.c_str());
+
+		s = " ";
+		s += VDPixmapFormatPrintSpec(make.out);
+		SetDlgItemText(mhdlg,IDC_OUTFORMAT,s.c_str());
+
+		ShowControl(IDC_OUT_MSG, !make.error.empty());
 	}
 }
 
@@ -1125,21 +1210,25 @@ void VDDialogVideoDepthW32::InitFocus() {
 }
 
 void VDDialogVideoDepthW32::SyncControls() {
-	uint32 inputButton = IDC_INPUT_OTHER;
 	int format = mLockFormat!=-1 ? mLockFormat : mInputFormat;
 
-	// We have to force the 'other' buttons off in case we're being called from
-	// a BN_CHECKED handler.
-	CheckButton(inputButton, false);
+	bool enableDefault = mLockFormat==-1;
+	if (mType!=DepthDialog_input) {
+		if (outputReference==0) enableDefault = false;
+	}
+	EnableControl(IDC_INPUT_AUTOSELECT,enableDefault);
 
+	uint32 inputButton = 0;
 	for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
 		const FormatButtonMapping& fbm = kFormatButtonMappings[i];
 
 		if (fbm.mFormat == format)
 			inputButton = fbm.mInputButton;
+
+		CheckButton(fbm.mInputButton, fbm.mFormat == format);
 	}
 
-	CheckButton(inputButton, true);
+	CheckButton(IDC_INPUT_OTHER, inputButton==0);
 	SyncInputColor();
 }
 
@@ -1153,18 +1242,47 @@ void VDDialogVideoDepthW32::SyncInputColor() {
 	if (mType==DepthDialog_cap_output) {
 		enable = false;
 	}
+	bool enableDefault = true;
+	if (mType==DepthDialog_output) {
+		MakeOutputFormat make;
+		make.initGlobal();
+		make.reference = outputReference;
+		make.mode = DubVideoOptions::M_FULL;
+		make.option = format;
+		make.combine();
+		enable = VDPixmapFormatMatrixType(make.out)!=0;
+		if (outputReference==0) enableDefault = false;
+		if (outputReference==1) enableDefault = VDPixmapFormatMatrixType(make.dec)!=0;
+		if (outputReference==2) enableDefault = VDPixmapFormatMatrixType(make.flt)!=0;
+		bool use_ref = false;
+		if (mInputFormat.format==0 && mLockFormat==-1) use_ref = true;
+		if (mInputFormat.colorRangeMode==0 && enable) use_ref = true;
+		if (mInputFormat.colorSpaceMode==0 && enable) use_ref = true;
+		ShowControl(IDC_LINK_DEC, outputReference==1 && use_ref);
+		ShowControl(IDC_LINK_FLT, outputReference==2 && use_ref);
+		ShowControl(IDC_LINK_OUT, outputReference && use_ref);
+	}
+	if (mType==DepthDialog_cap_output) {
+		bool use_ref = false;
+		if (mInputFormat.format==0 && mLockFormat==-1) use_ref = true;
+		ShowControl(IDC_LINK_DEC, outputReference==1 && use_ref);
+		ShowControl(IDC_LINK_FLT, outputReference==2 && use_ref);
+		ShowControl(IDC_LINK_OUT, outputReference && use_ref);
+	}
 	mEnableMatrix = enable;
 
 	EnableControl(IDC_STATIC_COLORSPACE, enable);
 	EnableControl(IDC_STATIC_COLORRANGE, enable);
-	EnableControl(IDC_CS_NONE,   enable);
+	EnableControl(IDC_CS_NONE,   enable && enableDefault);
 	EnableControl(IDC_CS_601,    enable);
 	EnableControl(IDC_CS_709,    enable);
-	EnableControl(IDC_CR_NONE,   enable);
+	EnableControl(IDC_CR_NONE,   enable && enableDefault);
 	EnableControl(IDC_CR_LIMITED,enable);
 	EnableControl(IDC_CR_FULL,   enable);
 	if (enable) {
-		VDPixmapFormatEx& format = mInputFormat;
+		VDPixmapFormatEx format = mInputFormat;
+		if (!enableDefault && !format.colorSpaceMode) format.colorSpaceMode = vd2::kColorSpaceMode_601;
+		if (!enableDefault && !format.colorRangeMode) format.colorRangeMode = vd2::kColorRangeMode_Limited;
 		CheckButton(IDC_CS_NONE, format.colorSpaceMode == vd2::kColorSpaceMode_None);
 		CheckButton(IDC_CS_601, format.colorSpaceMode == vd2::kColorSpaceMode_601);
 		CheckButton(IDC_CS_709, format.colorSpaceMode == vd2::kColorSpaceMode_709);
@@ -1181,8 +1299,9 @@ void VDDialogVideoDepthW32::SyncInputColor() {
 	}
 }
 
-bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, VDPixmapFormatEx& opts, int type, int lockFormat) {
-	VDDialogVideoDepthW32 dlg(opts,type,lockFormat);
+bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, VDPixmapFormatEx& opts, int type, int lockFormat, COMPVARS2* compVars, BITMAPINFOHEADER* capSrc) {
+	VDDialogVideoDepthW32 dlg(opts,type,lockFormat,compVars);
+	dlg.setCapture(capSrc);
 	dlg.Activate(hParent);
 
 	return dlg.didChanges;

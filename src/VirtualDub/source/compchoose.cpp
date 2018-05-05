@@ -125,6 +125,7 @@ protected:
 
 	bool OnLoaded();
 	void OnDestroy();
+	void SaveCompVars(COMPVARS2* vars);
 	void OnDataExchange(bool write);
 	bool OnCommand(uint32 id, uint32 extcode);
 	void OnHScroll(uint32 id, int code);
@@ -245,7 +246,15 @@ bool VDUIDialogChooseVideoCompressorW32::OnLoaded() {
 		CheckButton(IDC_USE_DATARATE, BST_UNCHECKED);
 
 	SetFocusToControl(IDC_COMP_LIST);
-	EnableControl(IDC_PIXELFORMAT, (g_dubOpts.video.mode > DubVideoOptions::M_FASTREPACK));
+
+	if (mCapture) {
+		if (mpSrcFormat && !VDBitmapFormatToPixmapFormat((VDAVIBitmapInfoHeader&)*mpSrcFormat)) {
+			// source format is unknown so conversion is not possible
+			EnableControl(IDC_PIXELFORMAT, false);
+		}
+	} else {
+		EnableControl(IDC_PIXELFORMAT, (g_dubOpts.video.mode > DubVideoOptions::M_FASTREPACK));
+	}
 	return true;
 }
 
@@ -268,41 +277,45 @@ void VDUIDialogChooseVideoCompressorW32::OnDestroy() {
 	}
 }
 
+void VDUIDialogChooseVideoCompressorW32::SaveCompVars(COMPVARS2* vars) {
+	if (!(vars->dwFlags & ICMF_COMPVARS_VALID)) {
+		vars->clear();
+
+		vars->dwFlags = ICMF_COMPVARS_VALID;
+	}
+	vars->fccType = 'CDIV';
+
+	int ind = mCodecList.GetSelection();
+	if (ind > 0) {
+		ind = mCodecList.GetItemData(ind);
+
+		vars->fccHandler = mCodecs[ind]->fccHandler;
+	} else
+		vars->fccHandler = 0;
+
+	if (IsButtonChecked(IDC_USE_KEYFRAMES))
+		vars->lKey = GetControlValueSint32(IDC_KEYRATE);
+	else
+		vars->lKey = 0;
+
+	if (IsButtonChecked(IDC_USE_DATARATE))
+		vars->lDataRate = GetControlValueSint32(IDC_DATARATE);
+	else
+		vars->lDataRate = 0;
+
+	vars->lQ = TBGetValue(IDC_QUALITY_SLIDER)*100;
+
+	if (mhCodec)
+		mhCodec->sendMessage(ICM_SETQUALITY, (DWORD_PTR)&vars->lQ, 0);
+
+	delete vars->driver;
+	vars->driver = mhCodec;
+}
+
 void VDUIDialogChooseVideoCompressorW32::OnDataExchange(bool write) {
 	if (write) {
-		if (!(mpCompVars->dwFlags & ICMF_COMPVARS_VALID)) {
-			mpCompVars->clear();
-
-			mpCompVars->dwFlags = ICMF_COMPVARS_VALID;
-		}
-		mpCompVars->fccType = 'CDIV';
-
-		int ind = mCodecList.GetSelection();
-		if (ind > 0) {
-			ind = mCodecList.GetItemData(ind);
-
-			mpCompVars->fccHandler = mCodecs[ind]->fccHandler;
-		} else
-			mpCompVars->fccHandler = 0;
-
-		if (IsButtonChecked(IDC_USE_KEYFRAMES))
-			mpCompVars->lKey = GetControlValueSint32(IDC_KEYRATE);
-		else
-			mpCompVars->lKey = 0;
-
-		if (IsButtonChecked(IDC_USE_DATARATE))
-			mpCompVars->lDataRate = GetControlValueSint32(IDC_DATARATE);
-		else
-			mpCompVars->lDataRate = 0;
-
-		mpCompVars->lQ = TBGetValue(IDC_QUALITY_SLIDER)*100;
-
-		if (mhCodec)
-			mhCodec->sendMessage(ICM_SETQUALITY, (DWORD_PTR)&mpCompVars->lQ, 0);
-
-		delete mpCompVars->driver;
-		mpCompVars->driver = mhCodec;
-		mhCodec = NULL;
+		SaveCompVars(mpCompVars);
+		mhCodec = 0;
 	}
 }
 
@@ -1017,38 +1030,58 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	}
 
 	VDString s;
+	VDPixmapFormatEx src;
+	bool codec_failed = false;
 
-	if(format==0) {
-		if (mCapture) {
-			s += "as capture";
-		} else if (inputVideo) {
-			VDPixmapFormatEx inputFormat = inputVideo->getTargetFormat();
-			if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) inputFormat = inputVideo->getSourceFormat();
-			format = inputFormat;
-			s += VDPixmapFormatPrintSpec(format);
-		} else {
-			s += "as decoding";
-		}
-	} else {
-		s += VDPixmapFormatPrintSpec(format);
+	if (mCapture) {
+		src = filter_format;
+		MakeOutputFormat make;
+		make.initCapture(mpSrcFormat);
+		COMPVARS2 vars;
+		SaveCompVars(&vars);
+		make.initComp(&vars);
+		vars.driver = 0;
+		make.option = format;
+		make.out = format;
+		make.combineComp();
+		format = make.out;
+		if (!make.error.empty()) codec_failed = true;
+		if (format==0) s += "as capture";
 	}
+
+	if (!mCapture){
+		MakeOutputFormat make;
+		make.initGlobal();
+		COMPVARS2 vars;
+		SaveCompVars(&vars);
+		make.initComp(&vars);
+		vars.driver = 0;
+		make.option = format;
+		make.combine();
+		make.combineComp();
+		format = make.out;
+		src = make.flt;
+		if (!make.error.empty()) codec_failed = true;
+		if (make.mode == DubVideoOptions::M_FASTREPACK) format = 0;
+
+		if (format==0) {
+			if (make.mode > DubVideoOptions::M_FASTREPACK) {
+				if (make.reference==1)  s += "as decoding";
+				if (make.reference==2)  s += "as filters";
+			} else {
+				s += "autodetect";
+			}
+		}
+	}
+
+	if (format) s += VDPixmapFormatPrintSpec(format);
 
 	VDStringW msg;
 	format = VDPixmapFormatCombine(format);
 	if (mhCodec && format) {
-		int test = testVDFormat(mhCodec,format,"selected");
-		if((test & format_compress_ready)!=format_compress_ready) {
-			msg = VDStringW(L"(?) Format not accepted by codec, YMMV");
-			// codec is vfw and format decision is too convolved to show precise answer
+		if(codec_failed) {
+			msg = VDStringW(L"(!) Format not accepted by codec");
 		} else {
-			VDPixmapFormatEx src;
-			if (mCapture) {
-				src = filter_format;
-			} else if (inputVideo) {
-				src = inputVideo->getTargetFormat().format;
-				if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) src = inputVideo->getSourceFormat();
-				if (g_dubOpts.video.mode == DubVideoOptions::M_FULL) src = filters.GetOutputLayout().formatEx;
-			}
 			src = VDPixmapFormatCombine(src);
 			if (src) {
 				if (src.fullEqual(format)){
@@ -1085,7 +1118,10 @@ void VDUIDialogChooseVideoCompressorW32::SetVideoDepthOptionsAsk() {
 	VDPixmapFormatEx* target = mCapture ? &g_compformat : &g_dubOpts.video.mOutputFormat;
 	int type = mCapture ? DepthDialog_cap_output : DepthDialog_output;
 	VDPixmapFormatEx outputFormatOld = *target;
-	VDDisplayVideoDepthDialog((VDGUIHandle)mhdlg, *target, type, lockFormat);
+	COMPVARS2 vars;
+	SaveCompVars(&vars);
+	VDDisplayVideoDepthDialog((VDGUIHandle)mhdlg, *target, type, lockFormat, &vars, mpSrcFormat);
+	vars.driver = 0;
 	bool changed = !outputFormatOld.fullEqual(*target);
 	if (changed) {
 		SelectCompressor(mpCurrent);

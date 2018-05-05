@@ -21,6 +21,7 @@
 #include <windows.h>
 
 struct VDPixmapFormatEx;
+struct COMPVARS2;
 
 /////////////////
 
@@ -40,6 +41,6 @@ enum {
 	DepthDialog_cap_output=3,
 };
 
-bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, VDPixmapFormatEx& opts, int type, int lockFormat);
+bool VDDisplayVideoDepthDialog(VDGUIHandle hParent, VDPixmapFormatEx& opts, int type, int lockFormat, COMPVARS2* compVars, BITMAPINFOHEADER* capSrc=0);
 
 #endif

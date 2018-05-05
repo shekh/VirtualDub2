@@ -27,6 +27,7 @@
 #include <vd2/system/VDString.h>
 #include <vd2/system/fraction.h>
 #include <vd2/system/event.h>
+#include <vd2/system/vdstl.h>
 #include <vd2/kasumi/pixmap.h>
 #include <vd2/Riza/videocodec.h>
 #include "audio.h"
@@ -46,6 +47,7 @@ class IVDDubberOutputSystem;
 struct VDAudioFilterGraph;
 class FilterSystem;
 class VDTextOutputStream;
+struct VDAVIBitmapInfoHeader;
 
 ////////////////////////
 
@@ -115,6 +117,7 @@ public:
 	
 	VDPixmapFormatEx		mInputFormat;
 	VDPixmapFormatEx		mOutputFormat;
+	int		outputReference;
 	char	mode;
 	bool	mbUseSmartRendering;
 	bool	mbPreserveEmptyFrames;
@@ -260,6 +263,51 @@ void VDConvertSelectionTimesToFrames(const DubOptions& opt, const FrameSubset& s
 void InitVideoStreamValuesStatic(DubVideoStreamInfo& vInfo, IVDVideoSource *video, AudioSource *audio, const DubOptions *opt, const FrameSubset *pfs, const VDPosition *pSelectionStartFrame, const VDPosition *pSelectionEndFrame);
 void InitVideoStreamValuesStatic2(DubVideoStreamInfo& vInfo, const DubOptions *opt, const FilterSystem *filtsys, const VDFraction& frameRateTimeline);
 void InitAudioStreamValuesStatic(DubAudioStreamInfo& aInfo, AudioSource *audio, const DubOptions *opt);
+
+struct MakeOutputFormat {
+	VDPixmapFormatEx option;
+	VDPixmapFormatEx dec;
+	VDPixmapFormatEx flt;
+	VDPixmapFormatEx out;
+	VDPixmapFormatEx comp;
+	IVDDubberOutputSystem* os;
+	IVDVideoCompressor* vc;
+	vdstructex<VDAVIBitmapInfoHeader> srcDib;
+	vdstructex<VDAVIBitmapInfoHeader> compDib;
+	int compVariant;
+
+	int mode;
+	int reference;
+	int w,h;
+	bool use_os_format;
+	bool use_vc_format;
+	bool own_vc;
+	VDStringA error;
+
+	MakeOutputFormat() {
+		os = 0;
+		vc = 0;
+		own_vc = false;
+		mode = DubVideoOptions::M_FULL;
+		reference = 1;
+		w = 0; h = 0;
+		use_os_format = false;
+		use_vc_format = false;
+		compVariant = 0;
+	}
+	~MakeOutputFormat() {
+		if (own_vc) delete vc;
+	}
+
+	void init(DubOptions& opts, IVDVideoSource* vs);
+	void initCapture(BITMAPINFOHEADER* bm);
+	void initComp(IVDDubberOutputSystem* os, IVDVideoCompressor* vc);
+	void initComp(COMPVARS2* compvars);
+	void initGlobal();
+	void combine();
+	void combineComp();
+	void combineComp_repack();
+};
 
 #ifndef f_DUB_CPP
 

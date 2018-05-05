@@ -724,6 +724,14 @@ static void func_VDVideo_SetOutputFormat(IVDScriptInterpreter *, VDScriptValue *
 	g_project->MarkTimelineRateDirty();
 }
 
+static void func_VDVideo_SetOutputReference(IVDScriptInterpreter *, VDScriptValue *argv, int argc) {
+	int v = argv[0].asInt();
+	if (v < 0) v = 0;
+	if (v > 2) v = 2;
+	g_dubOpts.video.outputReference = v;
+	g_project->MarkTimelineRateDirty();
+}
+
 static void func_VDVideo_SetInputMatrix(IVDScriptInterpreter *, VDScriptValue *argv, int argc) {
 	int colorSpace = argv[0].asInt();
 	int colorRange = argv[1].asInt();
@@ -1200,6 +1208,7 @@ static const VDScriptFunctionDef obj_VDVideo_functbl[]={
 	{ func_VDVideo_SetOutputFormat	, "SetOutputFormat", "0i" },
 	{ func_VDVideo_SetInputMatrix	, "SetInputMatrix", "0ii" },
 	{ func_VDVideo_SetOutputMatrix	, "SetOutputMatrix", "0ii" },
+	{ func_VDVideo_SetOutputReference, "SetOutputReference", "0i" },
 	{ func_VDVideo_GetSmartRendering, "GetSmartRendering", "i" },
 	{ func_VDVideo_SetSmartRendering, "SetSmartRendering", "0i" },
 	{ func_VDVideo_GetPreserveEmptyFrames, "GetPreserveEmptyFrames", "i" },

@@ -103,6 +103,7 @@ int VDPixmapFormatDifference(VDPixmapFormatEx src, VDPixmapFormatEx dst);
 int VDPixmapFormatGroup(int src);
 VDPixmapFormatEx VDPixmapFormatNormalize(VDPixmapFormatEx format);
 VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format);
+VDPixmapFormatEx VDPixmapFormatNormalizeOpt(VDPixmapFormatEx format);
 VDPixmapFormatEx VDPixmapFormatCombineOpt(VDPixmapFormatEx format, VDPixmapFormatEx opt);
 VDStringA VDPixmapFormatPrintSpec(VDPixmapFormatEx format);
 VDStringA VDPixmapFormatPrintColor(VDPixmapFormatEx format);
