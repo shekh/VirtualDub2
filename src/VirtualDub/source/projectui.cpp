@@ -3201,8 +3201,10 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 		break;
 
 	case WM_SIZE:
-		UpdateMaximize();
-		OnSize();
+		if (!IsIconic((HWND)mhwnd)) {
+			UpdateMaximize();
+			OnSize();
+		}
 		return 0;
 
 	case WM_DESTROY:                  // message: window being destroyed
@@ -3830,32 +3832,47 @@ void VDProjectUI::RepositionPanes(bool reset) {
 
 					w->SetZoom(w->GetMaxZoomForArea(s1.w, s1.h), n==1);
 				}
+
+				// move all at once
+				int x = 0;
+				int y = 0;
+
+				for(int i=0; i<n; ++i) {
+					HWND hwndPane = panes[i];
+
+					RECT r;
+					GetWindowRect(hwndPane, &r);
+
+					IVDVideoWindow *w = VDGetIVideoWindow(hwndPane);
+					w->Move(x, y);
+
+					if (g_vertical)
+						y += r.bottom - r.top;
+					else
+						x += r.right - r.left;
+				}
 			}
 		}
 	} else {
-		for(int i=reset ? 0:1; i<n; ++i) {
+		// move & size in order
+		int x = 0;
+		int y = 0;
+
+		for(int i=0; i<n; ++i) {
 			HWND hwndPane = panes[i];
+
 			IVDVideoWindow *w = VDGetIVideoWindow(hwndPane);
-			w->Resize(false);
+			w->Move(x, y);
+			if (reset || i>0) w->Resize(true);
+
+			RECT r;
+			GetWindowRect(hwndPane, &r);
+
+			if (g_vertical)
+				y += r.bottom - r.top;
+			else
+				x += r.right - r.left;
 		}
-	}
-
-	int x = 0;
-	int y = 0;
-
-	for(int i=0; i<n; ++i) {
-		HWND hwndPane = panes[i];
-
-		RECT r;
-		GetWindowRect(hwndPane, &r);
-
-		IVDVideoWindow *w = VDGetIVideoWindow(hwndPane);
-		w->Move(x, y);
-
-		if (g_vertical)
-			y += r.bottom - r.top;
-		else
-			x += r.right - r.left;
 	}
 
 	mbPaneLayoutBusy = false;
