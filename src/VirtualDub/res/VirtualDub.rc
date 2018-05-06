@@ -660,7 +660,7 @@ IDR_BATCHWIZARD_MENU MENU
 BEGIN
     POPUP "AddToQueue"
     BEGIN
-        MENUITEM "Re-save as &AVI",             ID_ADDTOQUEUE_R
+        MENUITEM "Re-save in &format: AVI",     ID_ADDTOQUEUE_R
         MENUITEM "Extract audio to &WAV",       ID_ADDTOQUEUE_EXTRACTAUDIOTOWAV
         MENUITEM "Extract &raw audio",          ID_ADDTOQUEUE_EXTRACTRAWAUDIO
         MENUITEM "Run video &analysis pass",    ID_ADDTOQUEUE_RUNVIDEOANALYSISPASS

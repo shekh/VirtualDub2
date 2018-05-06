@@ -11,9 +11,11 @@
 #include <vd2/VDLib/Dialog.h>
 #include <vd2/VDLib/UIProxies.h>
 #include "ExternalEncoderProfile.h"
+#include "avioutputplugin.h"
 #include "resource.h"
 #include "gui.h"
 #include "job.h"
+#include "command.h"
 
 namespace {
 	enum {
@@ -88,6 +90,7 @@ protected:
 	VDZINT_PTR DlgProc(VDZUINT msg, VDZWPARAM wParam, VDZLPARAM lParam);
 	static LRESULT CALLBACK ListProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	bool OnLoaded();
+	void InitCommands();
 	void SetOutputAbsolute();
 	void OnDestroy();
 	void OnSize();
@@ -97,6 +100,7 @@ protected:
 	void DeleteSelected();
 
 	bool mbOutputRelative;
+	VDStringW resave_ext;
 
 	VDDialogResizerW32	mResizer;
 	VDUIProxyListView	mList;
@@ -185,7 +189,50 @@ bool VDUIBatchWizard::OnLoaded() {
 		CheckButton(IDC_OUTPUT_ABSOLUTE, true);
 	if (!mbOutputRelative) SetOutputAbsolute();
 
+	InitCommands();
+
 	return false;
+}
+
+void VDUIBatchWizard::InitCommands() {
+	resave_ext = L".avi";
+
+	if (g_FileOutDriver.empty()) {
+		return;
+	}
+
+	IVDOutputDriver *driver = VDGetOutputDriverByName(g_FileOutDriver.c_str());
+	if (!driver) {
+		g_FileOutDriver.clear();
+		return;
+	}
+	for(int i=0; ; i++){
+		wchar_t filter[128];
+		wchar_t ext[128];
+		char name[128];
+		if (!driver->GetDriver()->EnumFormats(i,filter,ext,name)) {
+			g_FileOutDriver.clear();
+			return;
+		}
+
+		if (g_FileOutFormat == name) {
+			VDStringW cmdname;
+			cmdname += L"Re-save in &format: ";
+			cmdname += filter;
+			HMENU hmenuQ = GetSubMenu(mhmenuPopups, 0);
+			MENUITEMINFOW info = {0};
+			info.cbSize = sizeof(info);
+			info.fMask = MIIM_STRING|MIIM_FTYPE;
+			info.fType = MFT_STRING;
+			info.dwTypeData = (wchar_t*)cmdname.c_str();
+			SetMenuItemInfoW(hmenuQ,ID_ADDTOQUEUE_RESAVEASAVI,false,&info);
+			if (ext[0]=='*') resave_ext = ext+1; // skip *
+			return;
+		}
+	}
+
+	g_FileOutDriver.clear();
+	return;
 }
 
 void VDUIBatchWizard::SetOutputAbsolute() {
@@ -533,7 +580,7 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 						else
 							outputFileName = VDMakePath(outputPath.c_str(), outputName);
 
-						outputFileName = VDFileSplitExtLeft(outputFileName) + L".avi";
+						outputFileName = VDFileSplitExtLeft(outputFileName) + resave_ext;
 
 						JobAddBatchFile(item->GetFileName(), outputFileName.c_str());
 					}
