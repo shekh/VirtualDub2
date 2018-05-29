@@ -839,14 +839,17 @@ public:
 	VDDialogPreferences(VDPreferences2& p) : mPrefs(p) {}
 
 	bool HandleUIEvent(IVDUIBase *pBase, IVDUIWindow *pWin, uint32 id, eEventType type, int item) {
+		static int g_prefsPage = 0;
+
 		if (type == kEventAttach) {
 			mpBase = pBase;
-			SetValue(100, 0);
+			SetValue(100, g_prefsPage);
 			pBase->ExecuteAllLinks();
 		} else if (id == 101 && type == kEventSelect) {
 			IVDUIBase *pSubDialog = vdpoly_cast<IVDUIBase *>(pBase->GetControl(101)->GetStartingChild());
 
 			if (pSubDialog) {
+				g_prefsPage = item;
 				switch(item) {
 				case 0:	pSubDialog->SetCallback(new VDDialogPreferencesGeneral(mPrefs), true); break;
 				case 1:	pSubDialog->SetCallback(new VDDialogPreferencesDisplay(mPrefs), true); break;
@@ -907,6 +910,9 @@ int VDShowPreferencesDialog(VDGUIHandle h) {
 	if (result) {
 		if (g_prefs2.displayChanged(temp))
 			part_mask |= PREFERENCES_DISPLAY;
+
+		if (g_prefs2.mEnabledCPUFeatures!=temp.mEnabledCPUFeatures)
+			part_mask |= PREFERENCES_OPTF;
 
 		g_prefs2 = temp;
 		g_prefs = g_prefs2.mOldPrefs;

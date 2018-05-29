@@ -2564,6 +2564,13 @@ bool VDProjectUI::MenuHit(UINT id) {
 
 				UpdateMRUList();
 
+				if (result & PREFERENCES_OPTF) {
+					StopFilters();
+					VDPosition timelinePos = GetCurrentFrame();
+					RefilterFrame(timelinePos);
+					// also could reset cached blitters
+				}
+
 				if (result & PREFERENCES_DISPLAY)
 					UiDisplayPreferencesUpdated();
 			}
