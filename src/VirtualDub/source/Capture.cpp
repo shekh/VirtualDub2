@@ -2119,8 +2119,11 @@ unknown_PCM_format:
 
 		icd.mInputLayout = mFilterInputLayout;
 		icd.mInputFormatVariant = mInputFormatVariant;
-		if (!VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.mOutputLayout)) icd.mOutputLayout.clear();
 		icd.vfwLayout.clear();
+		icd.mOutputLayout.clear();
+		int outputVariant = -1;
+		if (VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.mOutputLayout))
+			VDBitmapFormatToPixmapFormat(*bmiToFile, outputVariant);
 
 		// initialize final conversion
 		vdstructex<VDAVIBitmapInfoHeader> convertedFormat;
@@ -2138,8 +2141,8 @@ unknown_PCM_format:
 			make.combineComp();
 			if (!make.error.empty()) throw MyError(make.error.c_str());
 
-			if (icd.mOutputLayout.format!=make.out) {
-				VDMakeBitmapFormatFromPixmapFormat(convertedFormat, make.out, 0, bmiToFile->biWidth, bmiToFile->biHeight);
+			if (icd.mOutputLayout.format!=make.out || outputVariant!=make.compVariant) {
+				VDMakeBitmapFormatFromPixmapFormat(convertedFormat, make.out, make.compVariant, bmiToFile->biWidth, bmiToFile->biHeight);
 				bmiToFile = &*convertedFormat;
 				biSizeToFile = convertedFormat.size();
 				VDGetPixmapLayoutForBitmapFormat(*bmiToFile, biSizeToFile, icd.vfwLayout);
@@ -3560,12 +3563,18 @@ void VDCaptureData::createOutputBlitter() {
 		out_info.colorRangeMode = fmt.colorRangeMode;
 		out_info.colorSpaceMode = fmt.colorSpaceMode;
 
+		VDSetPixmapInfoForBitmap(out_info, fmt);
 		if (mpVideoCompressor) {
 			vdstructex<tagBITMAPINFOHEADER> bm;
 			mpVideoCompressor->GetInputBitmapFormat(bm);
 			int variant;
 			VDBitmapFormatToPixmapFormat((VDAVIBitmapInfoHeader&)*bm.data(),variant);
 			VDSetPixmapInfoForBitmap(out_info, vfwLayout.format, variant);
+		} else {
+			if (pxsrc.format==fmt.format && !mpFilterSys) {
+				// there is nothing to do
+				return;
+			}
 		}
 
 		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(fmt, out_info);

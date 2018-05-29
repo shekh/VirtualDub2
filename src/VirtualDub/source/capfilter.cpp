@@ -713,6 +713,7 @@ void VDCaptureFilterChainFrameSource::Push(const VDPixmap& px) {
 		mpBlitter = VDPixmapCreateBlitter(pxdst, px);
 
 	mpBlitter->Blit(pxdst, px);
+	buf->info = pxdst.info;
 	buf->Unlock();
 	++mWindowFrameCount;
 }
@@ -846,6 +847,7 @@ bool VDCaptureFilterChainAdapter::ProcessOut(VDPixmap& px) {
 
 	VDFilterFrameBuffer *buf = mpRequest->GetResultBuffer();
 	px = VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead());
+	px.info = buf->info;
 	mbFlushRequestNextCall = true;
 	return true;
 }
@@ -1125,6 +1127,7 @@ bool VDCaptureFilterSystem::ProcessOut(VDPixmap& px, void*& outputData, uint32& 
 	if (mbCropEnable || mbChainEnable) {
 		VDPROFILEBEGIN("V-BlitFilterOut");
 		VDPixmap pxLinear(VDPixmapFromLayout(mLinearLayout, mLinearBuffer.data()));
+		pxLinear.info = px.info;
 		VDPixmapBlt(pxLinear, px);
 		px = pxLinear;
 		VDPROFILEEND();

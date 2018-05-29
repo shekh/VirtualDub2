@@ -31,6 +31,7 @@
 #include <vd2/system/VDRingBuffer.h>
 #include <vd2/VDDisplay/display.h>
 #include <vd2/Riza/audioout.h>
+#include <vd2/Kasumi/pixmaputils.h>
 #include "InputFile.h"
 #include "VideoSource.h"
 #include "AudioSource.h"
@@ -706,8 +707,10 @@ void VDCaptureDriverEmulation::OnTick() {
 		if (mbCapturing && mLastCapturedFrame != mFrame) {
 			mLastCapturedFrame = mFrame;
 			const VDPixmap& px = mpVideo->getTargetFormat();
+			void* base;
+			uint32 size = VDPixmapLayoutGetMinSize(VDPixmapToLayout(px,base));
 			if (mpCB)
-				mpCB->CapProcessData(0, mpVideo->getFrameBuffer(), (px.pitch<0?-px.pitch:px.pitch) * px.h, clk, true, clk);
+				mpCB->CapProcessData(0, mpVideo->getFrameBuffer(), size, clk, true, clk);
 		}
 	} catch(MyError& e) {
 		m = 0;
@@ -727,9 +730,11 @@ void VDCaptureDriverEmulation::OnTick() {
 		++mPreviewFrameCount;
 		if (!mbCapturing && m == kDisplayAnalyze) {
 			const VDPixmap& px = mpVideo->getTargetFormat();
+			void* base;
+			uint32 size = VDPixmapLayoutGetMinSize(VDPixmapToLayout(px,base));
 			if (mpCB) {
 				try {
-					mpCB->CapProcessData(-1, mpVideo->getFrameBuffer(), (px.pitch < 0 ? -px.pitch : px.pitch) * px.h, clk, true, clk);
+					mpCB->CapProcessData(-1, mpVideo->getFrameBuffer(), size, clk, true, clk);
 				} catch(const MyError&) {
 					// eat the error
 				}
