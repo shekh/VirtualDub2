@@ -2167,7 +2167,7 @@ void MakeOutputFormat::initComp(IVDDubberOutputSystem* os, IVDVideoCompressor* v
 		if (cf) {
 			reference = 0;
 			option = cf;
-			use_os_format = false;
+			use_os_format = true;
 			return;
 		}
 	}
