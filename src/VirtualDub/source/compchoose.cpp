@@ -607,16 +607,12 @@ void VDUIDialogChooseVideoCompressorW32::EnumeratePluginCodecs() {
 void VDUIDialogChooseVideoCompressorW32::RebuildCodecList() {
 	const bool showAll = filter_mode==1;
 
-	if (mpSrcFormat && mpSrcFormat->biCompression != BI_RGB) {
-		union {
-			char fccbuf[5];
-			FOURCC fcc;
-		};
+	bool allow_convert = true;
+	if (mpSrcFormat && !VDBitmapFormatToPixmapFormat((VDAVIBitmapInfoHeader&)*mpSrcFormat)) allow_convert = false;
 
-		fcc = mpSrcFormat->biCompression;
-		fccbuf[4] = 0;
-
-		mCurrentCompression.sprintf(L"(No recompression: %hs)", fccbuf);
+	if (!allow_convert) {
+		VDString fcc = print_fourcc(mpSrcFormat->biCompression);
+		mCurrentCompression.sprintf(L"(No recompression: %hs)", fcc.c_str());
 	} else
 		mCurrentCompression = L"(Uncompressed RGB/YCbCr)";
 
@@ -1015,7 +1011,7 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	VDPixmapFormatEx format = 0;
 	if (mCapture) {
 		format = g_compformat;
-		if (format==0 || !mhCodec) format = filter_format;
+		if (format==0) format = filter_format;
 	} else {
 		format = g_dubOpts.video.mOutputFormat;
 		if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) format = 0;
@@ -1111,8 +1107,6 @@ void VDUIDialogChooseVideoCompressorW32::SetVideoDepthOptionsAsk() {
 	if (mhCodec) {
 		int codec_format = mhCodec->queryInputFormat(0);
 		if (codec_format) lockFormat = codec_format;
-	} else {
-		if (mCapture) lockFormat = 0;
 	}
 
 	VDPixmapFormatEx* target = mCapture ? &g_compformat : &g_dubOpts.video.mOutputFormat;

@@ -2132,7 +2132,7 @@ unknown_PCM_format:
 			make.initCapture((BITMAPINFOHEADER*)bmiInput.data());
 			make.initComp(&g_compression);
 			make.option = g_compformat;
-			if (make.option==0 || !g_compression.driver) make.option = make.dec;
+			if (make.option==0) make.option = make.dec;
 			if (g_compression.driver) {
 				int format = g_compression.driver->queryInputFormat(0);
 				if (format) make.option = format;
