@@ -1263,7 +1263,7 @@ void Dubber::InitOutputFile() {
 
 			const char *s = VDPixmapGetInfo(mVideoFilterOutputPixmapLayout.format).name;
 
-			if(mOptions.video.mode == DubVideoOptions::M_FULL)
+			if(mOptions.video.mode > DubVideoOptions::M_FASTREPACK)
 				VDLogAppMessage(kVDLogInfo, kVDST_Dub, kVDM_FullUsingOutputFormat, 1, &s);
 
 			if(mOptions.video.mode != DubVideoOptions::M_NONE && mOptions.video.mbUseSmartRendering)
@@ -1465,7 +1465,7 @@ void Dubber::InitSelectInputFormat() {
 
 	const char *s = VDPixmapGetInfo(vSrc->getTargetFormat().format).name;
 
-	VDLogAppMessage(kVDLogInfo, kVDST_Dub, (mOptions.video.mode == DubVideoOptions::M_FULL) ? kVDM_FullUsingInputFormat : kVDM_SlowRecompressUsingFormat, 1, &s);
+	VDLogAppMessage(kVDLogInfo, kVDST_Dub, (mOptions.video.mode > DubVideoOptions::M_FASTREPACK) ? kVDM_FullUsingInputFormat : kVDM_SlowRecompressUsingFormat, 1, &s);
 }
 
 AudioStream* Dubber::InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources) {
