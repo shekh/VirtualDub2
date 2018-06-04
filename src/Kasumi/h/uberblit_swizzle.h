@@ -66,7 +66,11 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8;
 	}
 
-	virtual const char* dump_name(){ return "8In16"; }
+	virtual const char* dump_name(){
+		if(mOffset==0) return "8In16.0";
+		if(mOffset==1) return "8In16.1";
+		return "8In16";
+	}
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -99,7 +103,13 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_8;
 	}
 
-	virtual const char* dump_name(){ return "8In32"; }
+	virtual const char* dump_name(){
+		if(mOffset==0) return "8In32.0";
+		if(mOffset==1) return "8In32.1";
+		if(mOffset==2) return "8In32.2";
+		if(mOffset==3) return "8In32.3";
+		return "8In32";
+	}
 
 protected:
 	void Compute(void *dst0, sint32 y) {
@@ -132,7 +142,11 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16_LE;
 	}
 
-	virtual const char* dump_name(){ return "16In32"; }
+	virtual const char* dump_name(){
+		if(mOffset==0) return "16In32.0";
+		if(mOffset==1) return "16In32.1";
+		return "16In32";
+	}
 
 protected:
 	void Compute(void *dst0, sint32 y);
@@ -157,7 +171,44 @@ public:
 		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16_LE;
 	}
 
-	virtual const char* dump_name(){ return "16In64"; }
+	virtual const char* dump_name(){
+		if(mOffset==0) return "16In64.0";
+		if(mOffset==1) return "16In64.1";
+		if(mOffset==2) return "16In64.2";
+		if(mOffset==3) return "16In64.3";
+		return "16In64";
+	}
+
+protected:
+	void Compute(void *dst0, sint32 y);
+
+	int mOffset;
+};
+
+class VDPixmapGen_32In128 : public VDPixmapGenWindowBasedOneSource {
+public:
+	void Init(IVDPixmapGen *gen, int srcIndex, int offset, uint32 w, uint32 h) {
+		InitSource(gen, srcIndex);
+		mOffset = offset;
+		SetOutputSize(w, h);
+		gen->AddWindowRequest(0, 0);
+	}
+
+	void Start() {
+		StartWindow(mWidth*4);
+	}
+
+	uint32 GetType(uint32 index) const {
+		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_32F_LE;
+	}
+
+	virtual const char* dump_name(){
+		if(mOffset==0) return "32In128.0";
+		if(mOffset==1) return "32In128.1";
+		if(mOffset==2) return "32In128.2";
+		if(mOffset==3) return "32In128.3";
+		return "32In128";
+	}
 
 protected:
 	void Compute(void *dst0, sint32 y);
@@ -422,9 +473,9 @@ public:
 	}
 
 	virtual IVDPixmapGen* dump_src(int index){
-		if(index==0) return mpSrcY;
-		if(index==1) return mpSrcCb;
-		if(index==2) return mpSrcCr;
+		if(index==0) return mpSrcCr;
+		if(index==1) return mpSrcY;
+		if(index==2) return mpSrcCb;
 		return 0; 
 	}
 
@@ -456,6 +507,91 @@ protected:
 	uint32 mSrcIndexCb;
 	IVDPixmapGen *mpSrcCr;
 	uint32 mSrcIndexCr;
+};
+
+class VDPixmapGen_B8x4_To_A8R8G8B8 : public VDPixmapGenWindowBased {
+public:
+	void Init(IVDPixmapGen *srcR, uint32 srcindexR, IVDPixmapGen *srcG, uint32 srcindexG, IVDPixmapGen *srcB, uint32 srcindexB, IVDPixmapGen *srcA, uint32 srcindexA) {
+		mpSrcR = srcR;
+		mSrcIndexR = srcindexR;
+		mpSrcG = srcG;
+		mSrcIndexG = srcindexG;
+		mpSrcB = srcB;
+		mSrcIndexB = srcindexB;
+		mpSrcA = srcA;
+		mSrcIndexA = srcindexA;
+		mWidth = srcR->GetWidth(srcindexR);
+		mHeight = srcR->GetHeight(srcindexR);
+
+		srcR->AddWindowRequest(0, 0);
+		srcG->AddWindowRequest(0, 0);
+		srcB->AddWindowRequest(0, 0);
+		srcA->AddWindowRequest(0, 0);
+	}
+
+	void Start() {
+		mpSrcR->Start();
+		mpSrcG->Start();
+		mpSrcB->Start();
+		mpSrcA->Start();
+
+		StartWindow(mWidth * 4);
+	}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo unused;
+		mpSrcR->TransformPixmapInfo(src,unused);
+		mpSrcG->TransformPixmapInfo(src,unused);
+		mpSrcB->TransformPixmapInfo(src,unused);
+		FilterModPixmapInfo buf;
+		mpSrcA->TransformPixmapInfo(src,buf);
+		dst.copy_alpha(buf);
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrcR->GetType(mSrcIndexR) & ~kVDPixType_Mask) | kVDPixType_8888;
+	}
+
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcR;
+		if(index==1) return mpSrcG;
+		if(index==2) return mpSrcB;
+		if(index==3) return mpSrcA;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "B8x4_To_A8R8G8B8"; }
+
+protected:
+	void Compute(void *dst0, sint32 y) {
+		uint8 *dst = (uint8 *)dst0;
+		const uint8 *srcR = (const uint8 *)mpSrcR->GetRow(y, mSrcIndexR);
+		const uint8 *srcG = (const uint8 *)mpSrcG->GetRow(y, mSrcIndexG);
+		const uint8 *srcB = (const uint8 *)mpSrcB->GetRow(y, mSrcIndexB);
+		const uint8 *srcA = (const uint8 *)mpSrcA->GetRow(y, mSrcIndexA);
+
+		for(sint32 x=0; x<mWidth; ++x) {
+			uint8 r = *srcR++;
+			uint8 g = *srcG++;
+			uint8 b = *srcB++;
+			uint8 a = *srcA++;
+
+			dst[0] = b;
+			dst[1] = g;
+			dst[2] = r;
+			dst[3] = a;
+			dst += 4;
+		}
+	}
+
+	IVDPixmapGen *mpSrcR;
+	uint32 mSrcIndexR;
+	IVDPixmapGen *mpSrcG;
+	uint32 mSrcIndexG;
+	IVDPixmapGen *mpSrcB;
+	uint32 mSrcIndexB;
+	IVDPixmapGen *mpSrcA;
+	uint32 mSrcIndexA;
 };
 
 class VDPixmapGen_B16x3_To_Y416 : public VDPixmapGenWindowBased {
@@ -496,9 +632,9 @@ public:
 	}
 
 	virtual IVDPixmapGen* dump_src(int index){
-		if(index==0) return mpSrcY;
-		if(index==1) return mpSrcCb;
-		if(index==2) return mpSrcCr;
+		if(index==0) return mpSrcCr;
+		if(index==1) return mpSrcY;
+		if(index==2) return mpSrcCb;
 		return 0; 
 	}
 
@@ -530,6 +666,164 @@ protected:
 	uint32 mSrcIndexCb;
 	IVDPixmapGen *mpSrcCr;
 	uint32 mSrcIndexCr;
+};
+
+class VDPixmapGen_B16x3_To_RGB64 : public VDPixmapGenWindowBased {
+public:
+	void Init(IVDPixmapGen *srcR, uint32 srcindexR, IVDPixmapGen *srcG, uint32 srcindexG, IVDPixmapGen *srcB, uint32 srcindexB) {
+		mpSrcR = srcR;
+		mSrcIndexR = srcindexR;
+		mpSrcG = srcG;
+		mSrcIndexG = srcindexG;
+		mpSrcB = srcB;
+		mSrcIndexB = srcindexB;
+		mWidth = srcR->GetWidth(srcindexR);
+		mHeight = srcR->GetHeight(srcindexR);
+
+		srcR->AddWindowRequest(0, 0);
+		srcG->AddWindowRequest(0, 0);
+		srcB->AddWindowRequest(0, 0);
+	}
+
+	void Start() {
+		mpSrcR->Start();
+		mpSrcG->Start();
+		mpSrcB->Start();
+
+		StartWindow(mWidth * 8);
+	}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo buf;
+		mpSrcR->TransformPixmapInfo(src,dst);
+		mpSrcG->TransformPixmapInfo(src,buf); dst.ref_g = buf.ref_r;
+		mpSrcB->TransformPixmapInfo(src,buf); dst.ref_b = buf.ref_r;
+		dst.alpha_type = 0;
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrcR->GetType(mSrcIndexR) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
+	}
+
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcR;
+		if(index==1) return mpSrcG;
+		if(index==2) return mpSrcB;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "B16x3_To_RGB64"; }
+
+protected:
+	void Compute(void *dst0, sint32 y) {
+		uint16 *dst = (uint16 *)dst0;
+		const uint16 *srcR = (const uint16 *)mpSrcR->GetRow(y, mSrcIndexR);
+		const uint16 *srcG = (const uint16 *)mpSrcG->GetRow(y, mSrcIndexG);
+		const uint16 *srcB = (const uint16 *)mpSrcB->GetRow(y, mSrcIndexB);
+
+		for(sint32 x=0; x<mWidth; ++x) {
+			uint16 r = *srcR++;
+			uint16 g = *srcG++;
+			uint16 b = *srcB++;
+
+			dst[0] = b;
+			dst[1] = g;
+			dst[2] = r;
+			dst[3] = 0;
+			dst += 4;
+		}
+	}
+
+	IVDPixmapGen *mpSrcR;
+	uint32 mSrcIndexR;
+	IVDPixmapGen *mpSrcG;
+	uint32 mSrcIndexG;
+	IVDPixmapGen *mpSrcB;
+	uint32 mSrcIndexB;
+};
+
+class VDPixmapGen_B16x4_To_RGB64 : public VDPixmapGenWindowBased {
+public:
+	void Init(IVDPixmapGen *srcR, uint32 srcindexR, IVDPixmapGen *srcG, uint32 srcindexG, IVDPixmapGen *srcB, uint32 srcindexB, IVDPixmapGen *srcA, uint32 srcindexA) {
+		mpSrcR = srcR;
+		mSrcIndexR = srcindexR;
+		mpSrcG = srcG;
+		mSrcIndexG = srcindexG;
+		mpSrcB = srcB;
+		mSrcIndexB = srcindexB;
+		mpSrcA = srcA;
+		mSrcIndexA = srcindexA;
+		mWidth = srcR->GetWidth(srcindexR);
+		mHeight = srcR->GetHeight(srcindexR);
+
+		srcR->AddWindowRequest(0, 0);
+		srcG->AddWindowRequest(0, 0);
+		srcB->AddWindowRequest(0, 0);
+		srcA->AddWindowRequest(0, 0);
+	}
+
+	void Start() {
+		mpSrcR->Start();
+		mpSrcG->Start();
+		mpSrcB->Start();
+		mpSrcA->Start();
+
+		StartWindow(mWidth * 8);
+	}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo buf;
+		mpSrcR->TransformPixmapInfo(src,dst);
+		mpSrcG->TransformPixmapInfo(src,buf); dst.ref_g = buf.ref_r;
+		mpSrcB->TransformPixmapInfo(src,buf); dst.ref_b = buf.ref_r;
+		mpSrcA->TransformPixmapInfo(src,buf); dst.ref_a = buf.ref_a;
+		dst.copy_alpha(buf);
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrcR->GetType(mSrcIndexR) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
+	}
+
+	virtual IVDPixmapGen* dump_src(int index){
+		if(index==0) return mpSrcR;
+		if(index==1) return mpSrcG;
+		if(index==2) return mpSrcB;
+		if(index==3) return mpSrcA;
+		return 0; 
+	}
+
+	virtual const char* dump_name(){ return "B16x4_To_RGB64"; }
+
+protected:
+	void Compute(void *dst0, sint32 y) {
+		uint16 *dst = (uint16 *)dst0;
+		const uint16 *srcR = (const uint16 *)mpSrcR->GetRow(y, mSrcIndexR);
+		const uint16 *srcG = (const uint16 *)mpSrcG->GetRow(y, mSrcIndexG);
+		const uint16 *srcB = (const uint16 *)mpSrcB->GetRow(y, mSrcIndexB);
+		const uint16 *srcA = (const uint16 *)mpSrcA->GetRow(y, mSrcIndexA);
+
+		for(sint32 x=0; x<mWidth; ++x) {
+			uint16 r = *srcR++;
+			uint16 g = *srcG++;
+			uint16 b = *srcB++;
+			uint16 a = *srcA++;
+
+			dst[0] = b;
+			dst[1] = g;
+			dst[2] = r;
+			dst[3] = a;
+			dst += 4;
+		}
+	}
+
+	IVDPixmapGen *mpSrcR;
+	uint32 mSrcIndexR;
+	IVDPixmapGen *mpSrcG;
+	uint32 mSrcIndexG;
+	IVDPixmapGen *mpSrcB;
+	uint32 mSrcIndexB;
+	IVDPixmapGen *mpSrcA;
+	uint32 mSrcIndexA;
 };
 
 class VDPixmapGen_X8R8G8B8_To_A8R8G8B8 : public VDPixmapGenWindowBased {

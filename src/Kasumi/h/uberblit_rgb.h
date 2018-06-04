@@ -399,6 +399,8 @@ protected:
 
 class VDPixmapGen_32F_To_8 : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
+	VDPixmapGen_32F_To_8(){ invalid = false; }
+
 	void Start() {
 		StartWindow(mWidth);
 	}
@@ -411,6 +413,7 @@ public:
 
 protected:
 	void Compute(void *dst0, sint32 y) {
+		if (invalid) return;
 		uint8 *dst = (uint8 *)dst0;
 		const float *src = (const float *)mpSrc->GetRow(y, mSrcIndex);
 		sint32 w = mWidth;
@@ -424,6 +427,18 @@ protected:
 
 			dst[i] = (uint8)ib;
 		}
+	}
+
+	bool invalid;
+};
+
+class VDPixmapGen_a32F_To_a8 : public VDPixmapGen_32F_To_8 {
+public:
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo buf;
+		mpSrc->TransformPixmapInfo(src,buf);
+		dst.copy_alpha(buf);
+		invalid = !dst.alpha_type;
 	}
 };
 

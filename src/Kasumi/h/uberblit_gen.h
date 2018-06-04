@@ -43,6 +43,7 @@ protected:
 
 	struct SourceEntry {
 		IVDPixmapGenSrc *mpSrc;
+		IVDPixmapGen *mpGen;
 		int mSrcIndex;
 		int mSrcPlane;
 		int mSrcX;
@@ -58,10 +59,21 @@ protected:
 	bool mbIndependentChromaPlanes;
 	bool mbIndependentPlanes;
 	bool mbIndependentAlpha;
+	bool mbRGB;
 };
 
 class VDPixmapUberBlitterGenerator {
 public:
+	bool mbRGB;
+
+	struct StackEntry {
+		IVDPixmapGen *mpSrc;
+		uint32 mSrcIndex;
+
+		StackEntry() {}
+		StackEntry(IVDPixmapGen *src, uint32 index) : mpSrc(src), mSrcIndex(index) {}
+	};
+
 	VDPixmapUberBlitterGenerator();
 	~VDPixmapUberBlitterGenerator();
 
@@ -70,6 +82,8 @@ public:
 	void move_to(int index);
 	void dup();
 	void pop();
+	void pop(StackEntry& se);
+	void push(StackEntry& se);
 	void swap(VDPixmapGenWindowBasedOneSourceSimple* extra, int srcIndex=0);
 
 	void ldsrc(int srcIndex, int srcPlane, int x, int y, uint32 w, uint32 h, uint32 type, uint32 bpr);
@@ -82,6 +96,7 @@ public:
 	void extract_16in32(int offset, uint32 w, uint32 h);
 	void extract_16in64(int offset, uint32 w, uint32 h, bool alpha=false);
 	void swap_8in16(uint32 w, uint32 h, uint32 bpr);
+	void extract_32in128(int offset, uint32 w, uint32 h, bool alpha=false);
 
 	void conv_Pal1_to_8888(int srcIndex);
 	void conv_Pal2_to_8888(int srcIndex);
@@ -97,6 +112,7 @@ public:
 	void conv_8_to_32F();
 	void conv_8_to_16();
 	void conv_a8_to_a16();
+	void conv_r8_to_r16();
 	void conv_16F_to_32F();
 	void conv_16_to_32F(bool chroma=false);
 	void conv_16_to_8();
@@ -116,9 +132,11 @@ public:
 	void conv_8888_to_565();
 	void conv_8888_to_888();
 	void conv_32F_to_8();
+	void conv_a32F_to_a8();
 	void conv_X32F_to_8888();
 	void conv_32F_to_16F();
 	void conv_32F_to_16(bool chroma=false);
+	void conv_32F_to_r16();
 	void conv_32F_to_V210();
 	void conv_32F_to_V410();
 	void conv_32F_to_Y410();
@@ -130,7 +148,8 @@ public:
 
 	void interleave_B8G8_R8G8();
 	void interleave_G8B8_G8R8();
-	void interleave_X8R8G8B8();
+	void interleave_X8R8G8B8(uint32 type);
+	void interleave_RGB64(uint32 type);
 	void interleave_Y416();
 	void interleave_B8R8();
 	void interleave_B16R16();
@@ -188,14 +207,6 @@ public:
 
 protected:
 	void MarkDependency(IVDPixmapGen *dst, IVDPixmapGen *src);
-
-	struct StackEntry {
-		IVDPixmapGen *mpSrc;
-		uint32 mSrcIndex;
-
-		StackEntry() {}
-		StackEntry(IVDPixmapGen *src, uint32 index) : mpSrc(src), mSrcIndex(index) {}
-	};
 
 	vdfastvector<StackEntry> mStack;
 

@@ -91,6 +91,14 @@ namespace nsVDPixmap {
 		kPixFormat_YUV420_Alpha_Planar16,
 		kPixFormat_YUV422_YU64,
 		kPixFormat_B64A,
+
+		kPixFormat_RGB_Planar,
+		kPixFormat_RGB_Planar16,
+		kPixFormat_RGB_Planar32F,
+		kPixFormat_RGBA_Planar,
+		kPixFormat_RGBA_Planar16,
+		kPixFormat_RGBA_Planar32F,
+
 		kPixFormat_Max_Standard
 	};
 }

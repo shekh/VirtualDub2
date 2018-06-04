@@ -24,133 +24,175 @@
 #include <vd2/system/memory.h>
 
 extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
-									// name         qchnk qw qh qwb qhb  qs ab aw ah as   ps
-	/* Null */						{ "null",		false, 1, 1,  0,  0,  0, 0, 0, 0, 0,   0 },
-	/* Pal1 */						{ "Pal1",		 true, 8, 1,  3,  0,  1, 0, 0, 0, 0,   2 },
-	/* Pal2 */						{ "Pal2",		 true, 4, 1,  2,  0,  1, 0, 0, 0, 0,   4 },
-	/* Pal4 */						{ "Pal4",		 true, 2, 1,  1,  0,  1, 0, 0, 0, 0,  16 },
-	/* Pal8 */						{ "Pal8",		false, 1, 1,  0,  0,  1, 0, 0, 0, 0, 256 },
-	/* RGB16_555 */					{ "XRGB1555",	false, 1, 1,  0,  0,  2, 0, 0, 0, 0,   0 },
-	/* RGB16_565 */					{ "RGB565",		false, 1, 1,  0,  0,  2, 0, 0, 0, 0,   0 },
-	/* RGB24 */						{ "RGB24",		false, 1, 1,  0,  0,  3, 0, 0, 0, 0,   0 },
-	/* RGB32 */						{ "RGBA32",		false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
-	/* Y8 */						{ "Y8",			false, 1, 1,  0,  0,  1, 0, 0, 0, 0,   0 },
-	/* YUV422_UYVY */				{ "UYVY",		 true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
-	/* YUV422_YUYV */				{ "YUYV",		 true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
-	/* YUV444_XVYU */				{ "XVYU",		false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
-	/* YUV444_Planar */				{ "YUV444",		false, 1, 1,  0,  0,  1, 2, 0, 0, 1,   0 },
-	/* YUV422_Planar */				{ "YUV422",		false, 1, 1,  0,  0,  1, 2, 1, 0, 1,   0 },
-	/* YUV420_Planar */				{ "YUV420",		false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV411_Planar */				{ "YUV411",		false, 1, 1,  0,  0,  1, 2, 2, 0, 1,   0 },
-	/* YUV410_Planar */				{ "YUV410",		false, 1, 1,  0,  0,  1, 2, 2, 2, 1,   0 },
-	/* YUV422_Planar_Centered */	{ "YUV422C",	false, 1, 1,  0,  0,  1, 2, 1, 0, 1,   0 },
-	/* YUV420_Planar_Centered */	{ "YUV420C",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV422_Planar_16F */			{ "YUV422_16F",	false, 1, 1,  0,  0,  2, 2, 1, 0, 2,   0 },
-	/* V210 */						{ "v210",		 true,24, 1,  2,  0, 64, 0, 0, 0, 1,   0 },
-	/* YUV422_UYVY_709 */			{ "UYVY-709",	 true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
-	/* NV12 */						{ "NV12",		false, 1, 1,  0,  0,  1, 1, 1, 1, 2,   0 },
-	/* Y8-FR */						{ "I8",			false, 1, 1,  1,  0,  1, 0, 0, 0, 0,   0 },
-	/* YUV422_YUYV_709 */			{ "YUYV-709",	 true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
-	/* YUV444_Planar_709 */			{ "YUV444-709",	false, 1, 1,  0,  0,  1, 2, 0, 0, 1,   0 },
-	/* YUV422_Planar_709 */			{ "YUV422-709",	false, 1, 1,  0,  0,  1, 2, 1, 0, 1,   0 },
-	/* YUV420_Planar_709 */			{ "YUV420-709",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV411_Planar_709 */			{ "YUV411-709",	false, 1, 1,  0,  0,  1, 2, 2, 0, 1,   0 },
-	/* YUV410_Planar_709 */			{ "YUV410-709",	false, 1, 1,  0,  0,  1, 2, 2, 2, 1,   0 },
-	/* YUV422_UYVY_FR */			{ "UYVY-FR",	 true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
-	/* YUV422_YUYV_FR */			{ "YUYV-FR",	 true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
-	/* YUV444_Planar_FR */			{ "YUV444-FR",	false, 1, 1,  0,  0,  1, 2, 0, 0, 1,   0 },
-	/* YUV422_Planar_FR */			{ "YUV422-FR",	false, 1, 1,  0,  0,  1, 2, 1, 0, 1,   0 },
-	/* YUV420_Planar_FR */			{ "YUV420-FR",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV411_Planar_FR */			{ "YUV411-FR",	false, 1, 1,  0,  0,  1, 2, 2, 0, 1,   0 },
-	/* YUV410_Planar_FR */			{ "YUV410-FR",	false, 1, 1,  0,  0,  1, 2, 2, 2, 1,   0 },
-	/* YUV422_UYVY_FR_709 */		{ "UYVY-709-FR",	 true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
-	/* YUV422_YUYV_FR_709 */		{ "YUYV-709-FR",	 true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
-	/* YUV444_Planar_FR_709 */		{ "YUV444-709-FR",	false, 1, 1,  0,  0,  1, 2, 0, 0, 1,   0 },
-	/* YUV422_Planar_FR_709 */		{ "YUV422-709-FR",	false, 1, 1,  0,  0,  1, 2, 1, 0, 1,   0 },
-	/* YUV420_Planar_FR_709 */		{ "YUV420-709-FR",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV411_Planar_FR_709 */		{ "YUV411-709-FR",	false, 1, 1,  0,  0,  1, 2, 2, 0, 1,   0 },
-	/* YUV410_Planar_FR_709 */		{ "YUV410-709-FR",	false, 1, 1,  0,  0,  1, 2, 2, 2, 1,   0 },
-	/* YUV420i_Planar */			{ "YUV420i",		false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420i_Planar_FR */			{ "YUV420i-FR",		false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420i_Planar_709 */		{ "YUV420i-709",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420i_Planar_709_FR */		{ "YUV420i-709-FR",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420it_Planar */			{ "YUV420it",		false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420it_Planar_FR */		{ "YUV420it-FR",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420it_Planar_709 */		{ "YUV420it-709",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420it_Planar_709_FR */	{ "YUV420it-709-FR",false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420ib_Planar */			{ "YUV420ib",		false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420ib_Planar_FR */		{ "YUV420ib-FR",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420ib_Planar_709 */		{ "YUV420ib-709",	false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* YUV420ib_Planar_709_FR */	{ "YUV420ib-709-FR",false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
-	/* RGB64 */						{ "RGBA64",			false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
-	/* YUV444_Planar16 */			{ "YUV444P16",		false, 1, 1,  0,  0,  2, 2, 0, 0, 2,   0 },
-	/* YUV422_Planar16 */			{ "YUV422P16",		false, 1, 1,  0,  0,  2, 2, 1, 0, 2,   0 },
-	/* YUV420_Planar16 */			{ "YUV420P16",		false, 1, 1,  0,  0,  2, 2, 1, 1, 2,   0 },
-	/* Y16 */						{ "I16",			false, 1, 1,  1,  0,  2, 0, 0, 0, 0,   0 },
-	/* YUVA444_Y416 */				{ "Y416",			false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
-	/* YUV444_V410 */				{ "v410",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
-	/* YUV444_Y410 */				{ "Y410",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
-	/* r210 */						{ "r210",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
-	/* r10k */						{ "R10k",			false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
-	/* YUV444_V308 */				{ "v308",			false, 1, 1,  0,  0,  3, 0, 0, 0, 0,   0 },
-	/* YUV422_P210 */				{ "P210",			false, 1, 1,  0,  0,  2, 1, 1, 0, 4,   0 },
-	/* YUV420_P010 */				{ "P010",			false, 1, 1,  0,  0,  2, 1, 1, 1, 4,   0 },
-	/* YUV422_P216 */				{ "P216",			false, 1, 1,  0,  0,  2, 1, 1, 0, 4,   0 },
-	/* YUV420_P016 */				{ "P016",			false, 1, 1,  0,  0,  2, 1, 1, 1, 4,   0 },
-	/* YUV444_Alpha_Planar */			{ "YUVA444",		false, 1, 1,  0,  0,  1, 3, 0, 0, 1,   0, 1 },
-	/* YUV422_Alpha_Planar */			{ "YUVA422",		false, 1, 1,  0,  0,  1, 3, 1, 0, 1,   0, 1 },
-	/* YUV420_Alpha_Planar */			{ "YUVA420",		false, 1, 1,  0,  0,  1, 3, 1, 1, 1,   0, 1 },
-	/* YUV444_Alpha_Planar16 */			{ "YUVA444P16",		false, 1, 1,  0,  0,  2, 3, 0, 0, 2,   0, 2 },
-	/* YUV422_Alpha_Planar16 */			{ "YUVA422P16",		false, 1, 1,  0,  0,  2, 3, 1, 0, 2,   0, 2 },
-	/* YUV420_Alpha_Planar16 */			{ "YUVA420P16",		false, 1, 1,  0,  0,  2, 3, 1, 1, 2,   0, 2 },
-	/* YUV422_YU64 */				{ "YU64",			true, 2, 1,  1,  0,  8, 0, 0, 0, 0,   0 },
-	/* B64A */						{ "b64a",			false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
+                                    // name         qchnk qw qh qwb qhb  qs ab aw ah as   ps
+    /* Null */                      { "null",       false, 1, 1,  0,  0,  0, 0, 0, 0, 0,   0 },
+    /* Pal1 */                      { "Pal1",        true, 8, 1,  3,  0,  1, 0, 0, 0, 0,   2 },
+    /* Pal2 */                      { "Pal2",        true, 4, 1,  2,  0,  1, 0, 0, 0, 0,   4 },
+    /* Pal4 */                      { "Pal4",        true, 2, 1,  1,  0,  1, 0, 0, 0, 0,  16 },
+    /* Pal8 */                      { "Pal8",       false, 1, 1,  0,  0,  1, 0, 0, 0, 0, 256 },
+    /* RGB16_555 */                 { "XRGB1555",   false, 1, 1,  0,  0,  2, 0, 0, 0, 0,   0 },
+    /* RGB16_565 */                 { "RGB565",     false, 1, 1,  0,  0,  2, 0, 0, 0, 0,   0 },
+    /* RGB24 */                     { "RGB24",      false, 1, 1,  0,  0,  3, 0, 0, 0, 0,   0 },
+    /* RGB32 */                     { "RGBA32",     false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
+    /* Y8 */                        { "Y8",         false, 1, 1,  0,  0,  1, 0, 0, 0, 0,   0 },
+    /* YUV422_UYVY */               { "UYVY",        true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
+    /* YUV422_YUYV */               { "YUYV",        true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
+    /* YUV444_XVYU */               { "XVYU",       false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
+    /* YUV444_Planar */             { "YUV444",     false, 1, 1,  0,  0,  1, 2, 0, 0, 1,   0 },
+    /* YUV422_Planar */             { "YUV422",     false, 1, 1,  0,  0,  1, 2, 1, 0, 1,   0 },
+    /* YUV420_Planar */             { "YUV420",     false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV411_Planar */             { "YUV411",     false, 1, 1,  0,  0,  1, 2, 2, 0, 1,   0 },
+    /* YUV410_Planar */             { "YUV410",     false, 1, 1,  0,  0,  1, 2, 2, 2, 1,   0 },
+    /* YUV422_Planar_Centered */    { "YUV422C",    false, 1, 1,  0,  0,  1, 2, 1, 0, 1,   0 },
+    /* YUV420_Planar_Centered */    { "YUV420C",    false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV422_Planar_16F */         { "YUV422_16F", false, 1, 1,  0,  0,  2, 2, 1, 0, 2,   0 },
+    /* V210 */                      { "v210",        true,24, 1,  2,  0, 64, 0, 0, 0, 1,   0 },
+    /* YUV422_UYVY_709 */           { "UYVY-709",    true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
+    /* NV12 */                      { "NV12",       false, 1, 1,  0,  0,  1, 1, 1, 1, 2,   0 },
+    /* Y8-FR */                     { "I8",         false, 1, 1,  1,  0,  1, 0, 0, 0, 0,   0 },
+    /* YUV422_YUYV_709 */           { "YUYV-709",    true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
+    /* YUV444_Planar_709 */         { "YUV444-709", false, 1, 1,  0,  0,  1, 2, 0, 0, 1,   0 },
+    /* YUV422_Planar_709 */         { "YUV422-709", false, 1, 1,  0,  0,  1, 2, 1, 0, 1,   0 },
+    /* YUV420_Planar_709 */         { "YUV420-709", false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV411_Planar_709 */         { "YUV411-709", false, 1, 1,  0,  0,  1, 2, 2, 0, 1,   0 },
+    /* YUV410_Planar_709 */         { "YUV410-709", false, 1, 1,  0,  0,  1, 2, 2, 2, 1,   0 },
+    /* YUV422_UYVY_FR */            { "UYVY-FR",     true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
+    /* YUV422_YUYV_FR */            { "YUYV-FR",     true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
+    /* YUV444_Planar_FR */          { "YUV444-FR",  false, 1, 1,  0,  0,  1, 2, 0, 0, 1,   0 },
+    /* YUV422_Planar_FR */          { "YUV422-FR",  false, 1, 1,  0,  0,  1, 2, 1, 0, 1,   0 },
+    /* YUV420_Planar_FR */          { "YUV420-FR",  false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV411_Planar_FR */          { "YUV411-FR",  false, 1, 1,  0,  0,  1, 2, 2, 0, 1,   0 },
+    /* YUV410_Planar_FR */          { "YUV410-FR",  false, 1, 1,  0,  0,  1, 2, 2, 2, 1,   0 },
+                                    // name              qchnk qw qh qwb qhb  qs ab aw ah as   ps
+    /* YUV422_UYVY_FR_709 */        { "UYVY-709-FR",     true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
+    /* YUV422_YUYV_FR_709 */        { "YUYV-709-FR",     true, 2, 1,  1,  0,  4, 0, 0, 0, 0,   0 },
+    /* YUV444_Planar_FR_709 */      { "YUV444-709-FR",  false, 1, 1,  0,  0,  1, 2, 0, 0, 1,   0 },
+    /* YUV422_Planar_FR_709 */      { "YUV422-709-FR",  false, 1, 1,  0,  0,  1, 2, 1, 0, 1,   0 },
+    /* YUV420_Planar_FR_709 */      { "YUV420-709-FR",  false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV411_Planar_FR_709 */      { "YUV411-709-FR",  false, 1, 1,  0,  0,  1, 2, 2, 0, 1,   0 },
+    /* YUV410_Planar_FR_709 */      { "YUV410-709-FR",  false, 1, 1,  0,  0,  1, 2, 2, 2, 1,   0 },
+    /* YUV420i_Planar */            { "YUV420i",        false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420i_Planar_FR */         { "YUV420i-FR",     false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420i_Planar_709 */        { "YUV420i-709",    false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420i_Planar_709_FR */     { "YUV420i-709-FR", false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420it_Planar */           { "YUV420it",       false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420it_Planar_FR */        { "YUV420it-FR",    false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420it_Planar_709 */       { "YUV420it-709",   false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420it_Planar_709_FR */    { "YUV420it-709-FR",false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420ib_Planar */           { "YUV420ib",       false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420ib_Planar_FR */        { "YUV420ib-FR",    false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420ib_Planar_709 */       { "YUV420ib-709",   false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* YUV420ib_Planar_709_FR */    { "YUV420ib-709-FR",false, 1, 1,  0,  0,  1, 2, 1, 1, 1,   0 },
+    /* RGB64 */                     { "RGBA64",         false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
+    /* YUV444_Planar16 */           { "YUV444P16",      false, 1, 1,  0,  0,  2, 2, 0, 0, 2,   0 },
+    /* YUV422_Planar16 */           { "YUV422P16",      false, 1, 1,  0,  0,  2, 2, 1, 0, 2,   0 },
+    /* YUV420_Planar16 */           { "YUV420P16",      false, 1, 1,  0,  0,  2, 2, 1, 1, 2,   0 },
+    /* Y16 */                       { "I16",            false, 1, 1,  1,  0,  2, 0, 0, 0, 0,   0 },
+    /* YUVA444_Y416 */              { "Y416",           false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0 },
+    /* YUV444_V410 */               { "v410",           false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
+    /* YUV444_Y410 */               { "Y410",           false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
+    /* r210 */                      { "r210",           false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
+    /* r10k */                      { "R10k",           false, 1, 1,  0,  0,  4, 0, 0, 0, 0,   0 },
+    /* YUV444_V308 */               { "v308",           false, 1, 1,  0,  0,  3, 0, 0, 0, 0,   0 },
+    /* YUV422_P210 */               { "P210",           false, 1, 1,  0,  0,  2, 1, 1, 0, 4,   0 },
+    /* YUV420_P010 */               { "P010",           false, 1, 1,  0,  0,  2, 1, 1, 1, 4,   0 },
+    /* YUV422_P216 */               { "P216",           false, 1, 1,  0,  0,  2, 1, 1, 0, 4,   0 },
+    /* YUV420_P016 */               { "P016",           false, 1, 1,  0,  0,  2, 1, 1, 1, 4,   0 },
+                                    // name              qchnk qw qh qwb qhb  qs ab aw ah as   ps  as4
+    /* YUV444_Alpha_Planar */       { "YUVA444",        false, 1, 1,  0,  0,  1, 3, 0, 0, 1,   0,  1 },
+    /* YUV422_Alpha_Planar */       { "YUVA422",        false, 1, 1,  0,  0,  1, 3, 1, 0, 1,   0,  1 },
+    /* YUV420_Alpha_Planar */       { "YUVA420",        false, 1, 1,  0,  0,  1, 3, 1, 1, 1,   0,  1 },
+    /* YUV444_Alpha_Planar16 */     { "YUVA444P16",     false, 1, 1,  0,  0,  2, 3, 0, 0, 2,   0,  2 },
+    /* YUV422_Alpha_Planar16 */     { "YUVA422P16",     false, 1, 1,  0,  0,  2, 3, 1, 0, 2,   0,  2 },
+    /* YUV420_Alpha_Planar16 */     { "YUVA420P16",     false, 1, 1,  0,  0,  2, 3, 1, 1, 2,   0,  2 },
+    /* YUV422_YU64 */               { "YU64",           true,  2, 1,  1,  0,  8, 0, 0, 0, 0,   0,  0 },
+    /* B64A */                      { "b64a",           false, 1, 1,  0,  0,  8, 0, 0, 0, 0,   0,  0 },
+    /* RGB_Planar */                { "RGB-P8",         false, 1, 1,  0,  0,  1, 2, 0, 0, 1,   0,  0 },
+    /* RGB_Planar16 */              { "RGB-P16",        false, 1, 1,  0,  0,  2, 2, 0, 0, 2,   0,  0 },
+    /* RGB_Planar32F */             { "RGB-Float",      false, 1, 1,  0,  0,  4, 2, 0, 0, 4,   0,  0 },
+    /* RGBA_Planar */               { "RGBA-P8",        false, 1, 1,  0,  0,  1, 3, 0, 0, 1,   0,  1 },
+    /* RGBA_Planar16 */             { "RGBA-P16",       false, 1, 1,  0,  0,  2, 3, 0, 0, 2,   0,  2 },
+    /* RGBA_Planar32F */            { "RGBA-Float",     false, 1, 1,  0,  0,  4, 3, 0, 0, 4,   0,  4 },
 };
 
 bool VDPixmapFormatHasAlpha(sint32 format) {
+	using namespace nsVDPixmap;
 	switch (format) {
-	case nsVDPixmap::kPixFormat_XRGB8888:
-	case nsVDPixmap::kPixFormat_XRGB64:
-	case nsVDPixmap::kPixFormat_B64A:
-	case nsVDPixmap::kPixFormat_YUVA444_Y416:
-	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+	case kPixFormat_XRGB8888:
+	case kPixFormat_XRGB64:
+	case kPixFormat_B64A:
+	case kPixFormat_RGBA_Planar:
+	case kPixFormat_RGBA_Planar16:
+	case kPixFormat_RGBA_Planar32F:
+	case kPixFormat_YUVA444_Y416:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
 		return true;
 	}
 	return false;
 }
 
 bool VDPixmapFormatHasAlphaPlane(sint32 format) {
+	using namespace nsVDPixmap;
 	switch (format) {
-	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+	case kPixFormat_RGBA_Planar:
+	case kPixFormat_RGBA_Planar16:
+	case kPixFormat_RGBA_Planar32F:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+		return true;
+	}
+	return false;
+}
+
+bool VDPixmapFormatHasRGBPlane(sint32 format) {
+	using namespace nsVDPixmap;
+	switch (format) {
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGB_Planar32F:
+	case kPixFormat_RGBA_Planar:
+	case kPixFormat_RGBA_Planar16:
+	case kPixFormat_RGBA_Planar32F:
 		return true;
 	}
 	return false;
 }
 
 bool VDPixmapFormatHasYUV16(sint32 format) {
+	using namespace nsVDPixmap;
 	switch (format) {
-	case nsVDPixmap::kPixFormat_YUV444_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_Planar16:
-	case nsVDPixmap::kPixFormat_YUV420_Planar16:
-	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUVA444_Y416:
-	case nsVDPixmap::kPixFormat_YUV422_YU64:
-	case nsVDPixmap::kPixFormat_YUV422_P210:
-	case nsVDPixmap::kPixFormat_YUV422_P216:
-	case nsVDPixmap::kPixFormat_YUV420_P010:
-	case nsVDPixmap::kPixFormat_YUV420_P016:
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+	case kPixFormat_YUVA444_Y416:
+	case kPixFormat_YUV422_YU64:
+	case kPixFormat_YUV422_P210:
+	case kPixFormat_YUV422_P216:
+	case kPixFormat_YUV420_P010:
+	case kPixFormat_YUV420_P016:
+		return true;
+	}
+	return false;
+}
+
+bool VDPixmapFormatGray(sint32 format) {
+	using namespace nsVDPixmap;
+	switch (format) {
+	case kPixFormat_Y8:
+	case kPixFormat_Y8_FR:
+	case kPixFormat_Y16:
 		return true;
 	}
 	return false;
@@ -179,37 +221,39 @@ VDPixmap VDPixmap::copy(const VDXPixmap& a) {
 }
 
 int VDPixmapFormatMatrixType(sint32 format) {
+	using namespace nsVDPixmap;
 	switch (VDPixmapFormatNormalize(format)) {
-	case nsVDPixmap::kPixFormat_YUV420_NV12:
-	case nsVDPixmap::kPixFormat_YUV422_V210:
-	case nsVDPixmap::kPixFormat_YUV444_V410:
-	case nsVDPixmap::kPixFormat_YUV444_Y410:
-	case nsVDPixmap::kPixFormat_YUV444_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_Planar16:
-	case nsVDPixmap::kPixFormat_YUV420_Planar16:
-	case nsVDPixmap::kPixFormat_YUVA444_Y416:
-	case nsVDPixmap::kPixFormat_YUV444_V308:
-	case nsVDPixmap::kPixFormat_YUV422_P216:
-	case nsVDPixmap::kPixFormat_YUV420_P016:
-	case nsVDPixmap::kPixFormat_YUV422_P210:
-	case nsVDPixmap::kPixFormat_YUV420_P010:
-	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_YU64:
-	case nsVDPixmap::kPixFormat_Y16:
+	case kPixFormat_Y16:
+	case kPixFormat_YUV420_NV12:
+	case kPixFormat_YUV422_V210:
+	case kPixFormat_YUV444_V410:
+	case kPixFormat_YUV444_Y410:
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUVA444_Y416:
+	case kPixFormat_YUV444_V308:
+	case kPixFormat_YUV422_P216:
+	case kPixFormat_YUV420_P016:
+	case kPixFormat_YUV422_P210:
+	case kPixFormat_YUV420_P010:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+	case kPixFormat_YUV422_YU64:
 		return 1; // flexible
 
-	case nsVDPixmap::kPixFormat_YUV444_Planar:
-	case nsVDPixmap::kPixFormat_YUV422_Planar:
-	case nsVDPixmap::kPixFormat_YUV420_Planar:
-	case nsVDPixmap::kPixFormat_YUV410_Planar:
-	case nsVDPixmap::kPixFormat_YUV411_Planar:
-	case nsVDPixmap::kPixFormat_YUV422_YUYV:
-	case nsVDPixmap::kPixFormat_YUV422_UYVY:
+	case kPixFormat_Y8:
+	case kPixFormat_YUV444_Planar:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV410_Planar:
+	case kPixFormat_YUV411_Planar:
+	case kPixFormat_YUV422_YUYV:
+	case kPixFormat_YUV422_UYVY:
 		return 2; // combined
 	}
 
@@ -224,11 +268,15 @@ int VDPixmapFormatGroup(int src) {
 	case kPixFormat_RGB565:
 	case kPixFormat_XRGB1555:
 	case kPixFormat_RGB888:
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGBA_Planar:
 		return kPixFormat_XRGB8888;
 
 	case kPixFormat_R210:
 	case kPixFormat_R10K:
 	case kPixFormat_B64A:
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGBA_Planar16:
 		return kPixFormat_XRGB64;
 
 	case kPixFormat_YUV420_NV12:
@@ -279,6 +327,18 @@ VDPixmapFormatEx VDPixmapFormatNormalize(VDPixmapFormatEx format) {
 	VDPixmapFormatEx r = format;
 
 	switch (format) {
+	case kPixFormat_Y8:
+		r.format = kPixFormat_Y8;
+		r.colorRangeMode = vd2::kColorRangeMode_Limited;
+		r.colorSpaceMode = vd2::kColorSpaceMode_None;
+		break;
+
+	case kPixFormat_Y8_FR:
+		r.format = kPixFormat_Y8;
+		r.colorRangeMode = vd2::kColorRangeMode_Full;
+		r.colorSpaceMode = vd2::kColorSpaceMode_None;
+		break;
+
 	case kPixFormat_YUV444_Planar_709_FR:
 		r.format = kPixFormat_YUV444_Planar;
 		r.colorRangeMode = vd2::kColorRangeMode_Full;
@@ -535,6 +595,10 @@ VDPixmapFormatEx VDPixmapFormatCombine(VDPixmapFormatEx format) {
 	if (type!=2) return r;
 
 	switch (r.format) {
+	case kPixFormat_Y8:
+		r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_Y8_FR : kPixFormat_Y8;
+		break;
+
 	case kPixFormat_YUV444_Planar:
 		if (r.colorSpaceMode==vd2::kColorSpaceMode_709)
 			r.format = r.colorRangeMode==vd2::kColorRangeMode_Full ? kPixFormat_YUV444_Planar_709_FR : kPixFormat_YUV444_Planar_709;
@@ -928,11 +992,13 @@ void MatchFilterFormat::initBase() {
 
 	case kPixFormat_R210:
 	case kPixFormat_R10K:
-	case kPixFormat_B64A:
-	case kPixFormat_XRGB64:
+	case kPixFormat_RGB_Planar16:
 		base1 = kPixFormat_XRGB64;
 		{
 			static int list[] = {
+				kPixFormat_RGB_Planar16,
+				kPixFormat_RGB_Planar32F,
+				kPixFormat_RGB_Planar,
 				kPixFormat_XRGB8888,
 				kPixFormat_YUV444_Planar16, kPixFormat_YUV444_Planar,
 				0
@@ -941,14 +1007,52 @@ void MatchFilterFormat::initBase() {
 		}
 		break;
 
-	case kPixFormat_XRGB1555:
+	case kPixFormat_B64A:
+	case kPixFormat_XRGB64:
+	case kPixFormat_RGBA_Planar16:
+	case kPixFormat_RGBA_Planar32F:
+		base1 = kPixFormat_XRGB64;
+		{
+			static int list[] = {
+				kPixFormat_RGBA_Planar16,
+				kPixFormat_RGBA_Planar32F,
+				kPixFormat_XRGB8888,
+				kPixFormat_RGBA_Planar,
+				kPixFormat_YUV444_Planar16, kPixFormat_YUV444_Planar,
+				0
+			};
+			follow_list = list;
+		}
+		break;
+
 	case kPixFormat_RGB565:
 	case kPixFormat_RGB888:
-	case kPixFormat_XRGB8888:
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGB_Planar32F:
 		base1 = kPixFormat_XRGB8888;
 		{
 			static int list[] = {
+				kPixFormat_RGB_Planar,
 				kPixFormat_XRGB64,
+				kPixFormat_RGB_Planar16,
+				kPixFormat_RGB_Planar32F,
+				kPixFormat_YUV444_Planar, kPixFormat_YUV444_Planar16,
+				0
+			};
+			follow_list = list;
+		}
+		break;
+
+	case kPixFormat_XRGB1555:
+	case kPixFormat_XRGB8888:
+	case kPixFormat_RGBA_Planar:
+		base1 = kPixFormat_XRGB8888;
+		{
+			static int list[] = {
+				kPixFormat_RGBA_Planar,
+				kPixFormat_XRGB64,
+				kPixFormat_RGBA_Planar16,
+				kPixFormat_RGBA_Planar32F,
 				kPixFormat_YUV444_Planar, kPixFormat_YUV444_Planar16,
 				0
 			};
@@ -1045,6 +1149,12 @@ void MatchFilterFormat::initMask() {
 	formatMask.set(kPixFormat_YUV444_Alpha_Planar16);
 	formatMask.set(kPixFormat_YUV422_Alpha_Planar16);
 	formatMask.set(kPixFormat_YUV420_Alpha_Planar16);
+	formatMask.set(kPixFormat_RGB_Planar);
+	formatMask.set(kPixFormat_RGB_Planar16);
+	formatMask.set(kPixFormat_RGB_Planar32F);
+	formatMask.set(kPixFormat_RGBA_Planar);
+	formatMask.set(kPixFormat_RGBA_Planar16);
+	formatMask.set(kPixFormat_RGBA_Planar32F);
 }
 
 namespace {

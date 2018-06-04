@@ -594,38 +594,46 @@ void VDDialogSelectVideoFormatW32::FormatItem::GetText(int subItem, VDStringW& s
 }
 
 void VDDialogSelectVideoFormatW32::FormatItem::Init(int format) {
+	using namespace nsVDPixmap;
+
 	mFormat = format;
-	VDASSERTCT(nsVDPixmap::kPixFormat_Max_Standard == nsVDPixmap::kPixFormat_B64A + 1);
+	VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_RGBA_Planar32F + 1);
 	InitText(0,space);
 	InitText(1,range);
 	InitText(3,enc);
 	InitText(4,chroma);
 	switch(mFormat) {
-	case nsVDPixmap::kPixFormat_XRGB1555:
-	case nsVDPixmap::kPixFormat_RGB565:
+	case kPixFormat_XRGB1555:
+	case kPixFormat_RGB565:
 		depth = 5;
 		break;
-	case nsVDPixmap::kPixFormat_XRGB64:
-	case nsVDPixmap::kPixFormat_B64A:
-	case nsVDPixmap::kPixFormat_YUV444_Planar16:
-	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV420_Planar16:
-	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_P216:
-	case nsVDPixmap::kPixFormat_YUV420_P016:
-	case nsVDPixmap::kPixFormat_YUVA444_Y416:
+	case kPixFormat_XRGB64:
+	case kPixFormat_B64A:
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+	case kPixFormat_YUV422_P216:
+	case kPixFormat_YUV420_P016:
+	case kPixFormat_YUVA444_Y416:
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGBA_Planar16:
 		depth = 16;
 		break;
-	case nsVDPixmap::kPixFormat_R210:
-	case nsVDPixmap::kPixFormat_R10K:
-	case nsVDPixmap::kPixFormat_YUV422_V210:
-	case nsVDPixmap::kPixFormat_YUV444_V410:
-	case nsVDPixmap::kPixFormat_YUV444_Y410:
-	case nsVDPixmap::kPixFormat_YUV422_P210:
-	case nsVDPixmap::kPixFormat_YUV420_P010:
+	case kPixFormat_R210:
+	case kPixFormat_R10K:
+	case kPixFormat_YUV422_V210:
+	case kPixFormat_YUV444_V410:
+	case kPixFormat_YUV444_Y410:
+	case kPixFormat_YUV422_P210:
+	case kPixFormat_YUV420_P010:
 		depth = 10;
+		break;
+	case kPixFormat_RGB_Planar32F:
+	case kPixFormat_RGBA_Planar32F:
+		depth = 32;
 		break;
 	default:
 		depth = 8;
@@ -634,61 +642,68 @@ void VDDialogSelectVideoFormatW32::FormatItem::Init(int format) {
 }
 
 void VDDialogSelectVideoFormatW32::FormatItem::InitText(int subItem, VDStringW& s) const {
+	using namespace nsVDPixmap;
 	switch(subItem) {
 	case 0:
 		switch(mFormat) {
-		case nsVDPixmap::kPixFormat_XRGB1555:
-		case nsVDPixmap::kPixFormat_RGB565:
-		case nsVDPixmap::kPixFormat_RGB888:
-		case nsVDPixmap::kPixFormat_R210:
-		case nsVDPixmap::kPixFormat_R10K:
+		case kPixFormat_XRGB1555:
+		case kPixFormat_RGB565:
+		case kPixFormat_RGB888:
+		case kPixFormat_R210:
+		case kPixFormat_R10K:
+		case kPixFormat_RGB_Planar:
+		case kPixFormat_RGB_Planar16:
+		case kPixFormat_RGB_Planar32F:
 			s = L"RGB";
 			break;
-		case nsVDPixmap::kPixFormat_XRGB8888:
-		case nsVDPixmap::kPixFormat_B64A:
-		case nsVDPixmap::kPixFormat_XRGB64:
+		case kPixFormat_XRGB8888:
+		case kPixFormat_B64A:
+		case kPixFormat_XRGB64:
+		case kPixFormat_RGBA_Planar:
+		case kPixFormat_RGBA_Planar16:
+		case kPixFormat_RGBA_Planar32F:
 			s = L"RGBA";
 			break;
-		case nsVDPixmap::kPixFormat_Y8:
-		case nsVDPixmap::kPixFormat_Y8_FR:
-		case nsVDPixmap::kPixFormat_Y16:
+		case kPixFormat_Y8:
+		case kPixFormat_Y8_FR:
+		case kPixFormat_Y16:
 			s = L"Grayscale";
 			break;
-		case nsVDPixmap::kPixFormat_YUV422_UYVY:
-		case nsVDPixmap::kPixFormat_YUV422_YUYV:
-		case nsVDPixmap::kPixFormat_YUV444_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Planar:
-		case nsVDPixmap::kPixFormat_YUV420_Planar:
-		case nsVDPixmap::kPixFormat_YUV411_Planar:
-		case nsVDPixmap::kPixFormat_YUV410_Planar:
-		case nsVDPixmap::kPixFormat_YUV420i_Planar:
-		case nsVDPixmap::kPixFormat_YUV420it_Planar:
-		case nsVDPixmap::kPixFormat_YUV420ib_Planar:
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Planar16:
-		case nsVDPixmap::kPixFormat_YUV420_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_V210:
-		case nsVDPixmap::kPixFormat_YUV444_V410:
-		case nsVDPixmap::kPixFormat_YUV444_Y410:
-		case nsVDPixmap::kPixFormat_YUV420_NV12:
-		case nsVDPixmap::kPixFormat_YUV444_V308:
-		case nsVDPixmap::kPixFormat_YUV422_P210:
-		case nsVDPixmap::kPixFormat_YUV420_P010:
-		case nsVDPixmap::kPixFormat_YUV422_P216:
-		case nsVDPixmap::kPixFormat_YUV420_P016:
+		case kPixFormat_YUV422_UYVY:
+		case kPixFormat_YUV422_YUYV:
+		case kPixFormat_YUV444_Planar:
+		case kPixFormat_YUV422_Planar:
+		case kPixFormat_YUV420_Planar:
+		case kPixFormat_YUV411_Planar:
+		case kPixFormat_YUV410_Planar:
+		case kPixFormat_YUV420i_Planar:
+		case kPixFormat_YUV420it_Planar:
+		case kPixFormat_YUV420ib_Planar:
+		case kPixFormat_YUV444_Planar16:
+		case kPixFormat_YUV422_Planar16:
+		case kPixFormat_YUV420_Planar16:
+		case kPixFormat_YUV422_V210:
+		case kPixFormat_YUV444_V410:
+		case kPixFormat_YUV444_Y410:
+		case kPixFormat_YUV420_NV12:
+		case kPixFormat_YUV444_V308:
+		case kPixFormat_YUV422_P210:
+		case kPixFormat_YUV420_P010:
+		case kPixFormat_YUV422_P216:
+		case kPixFormat_YUV420_P016:
 			s = L"YCbCr";
 			break;
-		case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
+		case kPixFormat_YUV422_Planar_Centered:
+		case kPixFormat_YUV420_Planar_Centered:
 			s = L"YCbCr (601)";
 			break;
-		case nsVDPixmap::kPixFormat_YUVA444_Y416:
-		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
-		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
-		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+		case kPixFormat_YUVA444_Y416:
+		case kPixFormat_YUV444_Alpha_Planar:
+		case kPixFormat_YUV422_Alpha_Planar:
+		case kPixFormat_YUV420_Alpha_Planar:
+		case kPixFormat_YUV444_Alpha_Planar16:
+		case kPixFormat_YUV422_Alpha_Planar16:
+		case kPixFormat_YUV420_Alpha_Planar16:
 			s = L"YCbCr + Alpha";
 			break;
 		}
@@ -696,20 +711,20 @@ void VDDialogSelectVideoFormatW32::FormatItem::InitText(int subItem, VDStringW& 
 
 	case 1:
 		switch(mFormat) {
-		case nsVDPixmap::kPixFormat_XRGB1555:
-		case nsVDPixmap::kPixFormat_RGB565:
-		case nsVDPixmap::kPixFormat_RGB888:
-		case nsVDPixmap::kPixFormat_XRGB8888:
-		case nsVDPixmap::kPixFormat_XRGB64:
-		case nsVDPixmap::kPixFormat_B64A:
-		case nsVDPixmap::kPixFormat_R210:
-		case nsVDPixmap::kPixFormat_R10K:
-		case nsVDPixmap::kPixFormat_Y8_FR:
+		case kPixFormat_XRGB1555:
+		case kPixFormat_RGB565:
+		case kPixFormat_RGB888:
+		case kPixFormat_XRGB8888:
+		case kPixFormat_XRGB64:
+		case kPixFormat_B64A:
+		case kPixFormat_R210:
+		case kPixFormat_R10K:
+		case kPixFormat_Y8_FR:
 			s = L"Full";
 			break;
-		case nsVDPixmap::kPixFormat_Y8:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
+		case kPixFormat_Y8:
+		case kPixFormat_YUV422_Planar_Centered:
+		case kPixFormat_YUV420_Planar_Centered:
 			s = L"Limited";
 			break;
 		default:
@@ -720,103 +735,109 @@ void VDDialogSelectVideoFormatW32::FormatItem::InitText(int subItem, VDStringW& 
 
 	case 3:
 		switch(mFormat) {
-		case nsVDPixmap::kPixFormat_XRGB1555:
+		case kPixFormat_XRGB1555:
 			s = L"packed (XRGB1555)";
 			break;
-		case nsVDPixmap::kPixFormat_RGB565:
+		case kPixFormat_RGB565:
 			s = L"packed (RGB565)";
 			break;
-		case nsVDPixmap::kPixFormat_RGB888:
+		case kPixFormat_RGB888:
 			s = L"packed (RGB24)";
 			break;
-		case nsVDPixmap::kPixFormat_XRGB8888:
+		case kPixFormat_XRGB8888:
 			s = L"packed (RGBA32)";
 			break;
-		case nsVDPixmap::kPixFormat_XRGB64:
+		case kPixFormat_XRGB64:
 			s = L"packed (RGBA64)";
 			break;
-		case nsVDPixmap::kPixFormat_B64A:
+		case kPixFormat_B64A:
 			s = L"packed (b64a)";
 			break;
-		case nsVDPixmap::kPixFormat_R210:
+		case kPixFormat_R210:
 			s = L"packed (r210)";
 			break;
-		case nsVDPixmap::kPixFormat_R10K:
+		case kPixFormat_R10K:
 			s = L"packed (R10k)";
 			break;
-		case nsVDPixmap::kPixFormat_Y8:
-		case nsVDPixmap::kPixFormat_Y8_FR:
+		case kPixFormat_RGB_Planar:
+		case kPixFormat_RGB_Planar16:
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar:
+		case kPixFormat_RGBA_Planar16:
+		case kPixFormat_RGBA_Planar32F:
+		case kPixFormat_Y8:
+		case kPixFormat_Y8_FR:
 			s = L"planar";
 			break;
-		case nsVDPixmap::kPixFormat_YUV444_Planar:
-		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+		case kPixFormat_YUV444_Planar:
+		case kPixFormat_YUV444_Alpha_Planar:
 			s = L"4:4:4 planar";
 			break;
-		case nsVDPixmap::kPixFormat_YUV422_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
-		case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
+		case kPixFormat_YUV422_Planar:
+		case kPixFormat_YUV422_Alpha_Planar:
+		case kPixFormat_YUV422_Planar_Centered:
 			s = L"4:2:2 planar";
 			break;
-		case nsVDPixmap::kPixFormat_YUV420_Planar:
-		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
-		case nsVDPixmap::kPixFormat_YUV420i_Planar:
-		case nsVDPixmap::kPixFormat_YUV420it_Planar:
-		case nsVDPixmap::kPixFormat_YUV420ib_Planar:
+		case kPixFormat_YUV420_Planar:
+		case kPixFormat_YUV420_Alpha_Planar:
+		case kPixFormat_YUV420_Planar_Centered:
+		case kPixFormat_YUV420i_Planar:
+		case kPixFormat_YUV420it_Planar:
+		case kPixFormat_YUV420ib_Planar:
 			s = L"4:2:0 planar";
 			break;
-		case nsVDPixmap::kPixFormat_YUV411_Planar:
+		case kPixFormat_YUV411_Planar:
 			s = L"4:1:1 planar";
 			break;
-		case nsVDPixmap::kPixFormat_YUV410_Planar:
+		case kPixFormat_YUV410_Planar:
 			s = L"4:1:0 planar";
 			break;
-		case nsVDPixmap::kPixFormat_YUV420_NV12:
+		case kPixFormat_YUV420_NV12:
 			s = L"4:2:2 (NV12)";
 			break;
-		case nsVDPixmap::kPixFormat_YUV422_UYVY:
+		case kPixFormat_YUV422_UYVY:
 			s = L"4:2:2 (UYVY)";
 			break;
-		case nsVDPixmap::kPixFormat_YUV422_YUYV:
+		case kPixFormat_YUV422_YUYV:
 			s = L"4:2:2 (YUYV)";
 			break;
-		case nsVDPixmap::kPixFormat_YUV444_Planar16:
-		case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
+		case kPixFormat_YUV444_Planar16:
+		case kPixFormat_YUV444_Alpha_Planar16:
 			s = L"4:4:4 planar";
 			break;
-		case nsVDPixmap::kPixFormat_YUV422_Planar16:
-		case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
+		case kPixFormat_YUV422_Planar16:
+		case kPixFormat_YUV422_Alpha_Planar16:
 			s = L"4:2:2 planar";
 			break;
-		case nsVDPixmap::kPixFormat_YUV420_Planar16:
-		case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
+		case kPixFormat_YUV420_Planar16:
+		case kPixFormat_YUV420_Alpha_Planar16:
 			s = L"4:2:0 planar";
 			break;
-		case nsVDPixmap::kPixFormat_YUV422_V210:
+		case kPixFormat_YUV422_V210:
 			s = L"4:2:2 (v210)";
 			break;
-		case nsVDPixmap::kPixFormat_YUV444_V410:
+		case kPixFormat_YUV444_V410:
 			s = L"4:4:4 (v410)";
 			break;
-		case nsVDPixmap::kPixFormat_YUV444_Y410:
+		case kPixFormat_YUV444_Y410:
 			s = L"4:4:4 (Y410)";
 			break;
-		case nsVDPixmap::kPixFormat_YUV444_V308:
+		case kPixFormat_YUV444_V308:
 			s = L"4:4:4 (v308)";
 			break;
-		case nsVDPixmap::kPixFormat_YUV422_P210:
+		case kPixFormat_YUV422_P210:
 			s = L"4:2:2 (P210)";
 			break;
-		case nsVDPixmap::kPixFormat_YUV420_P010:
+		case kPixFormat_YUV420_P010:
 			s = L"4:2:0 (P010)";
 			break;
-		case nsVDPixmap::kPixFormat_YUV422_P216:
+		case kPixFormat_YUV422_P216:
 			s = L"4:2:2 (P216)";
 			break;
-		case nsVDPixmap::kPixFormat_YUV420_P016:
+		case kPixFormat_YUV420_P016:
 			s = L"4:2:0 (P016)";
 			break;
-		case nsVDPixmap::kPixFormat_YUVA444_Y416:
+		case kPixFormat_YUVA444_Y416:
 			s = L"4:4:4 (Y416)";
 			break;
 		}
@@ -824,19 +845,19 @@ void VDDialogSelectVideoFormatW32::FormatItem::InitText(int subItem, VDStringW& 
 
 	case 4:
 		switch(mFormat) {
-		case nsVDPixmap::kPixFormat_YUV422_Planar_Centered:
-		case nsVDPixmap::kPixFormat_YUV420_Planar_Centered:
+		case kPixFormat_YUV422_Planar_Centered:
+		case kPixFormat_YUV420_Planar_Centered:
 			s = L"centered";
 			break;
-		case nsVDPixmap::kPixFormat_YUV420i_Planar:
+		case kPixFormat_YUV420i_Planar:
 			s = L"interlaced";
 			break;
 
-		case nsVDPixmap::kPixFormat_YUV420it_Planar:
+		case kPixFormat_YUV420it_Planar:
 			s = L"interlaced top-field";
 			break;
 
-		case nsVDPixmap::kPixFormat_YUV420ib_Planar:
+		case kPixFormat_YUV420ib_Planar:
 			s = L"interlaced bottom-field";
 			break;
 		default:

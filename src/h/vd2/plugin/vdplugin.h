@@ -367,6 +367,14 @@ namespace vd2 {
 		kPixFormat_YUV420_Alpha_Planar16 = 77,
 
 		kPixFormat_YUV422_YU64 = 78,
+		kPixFormat_B64A = 79,
+
+		kPixFormat_RGB_Planar = 80,
+		kPixFormat_RGB_Planar16 = 81,
+		kPixFormat_RGB_Planar32F = 82,
+		kPixFormat_RGBA_Planar = 83,
+		kPixFormat_RGBA_Planar16 = 84,
+		kPixFormat_RGBA_Planar32F = 85,
 
 		kPixFormat_VDXA_RGB			= 0x10001,
 		kPixFormat_VDXA_YUV			= 0x10002

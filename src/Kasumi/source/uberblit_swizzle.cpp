@@ -160,3 +160,15 @@ void VDPixmapGen_16In64::Compute(void *dst0, sint32 y) {
 		src += 4;
 	}
 }
+
+void VDPixmapGen_32In128::Compute(void *dst0, sint32 y) {
+	const int *src = (const int *)mpSrc->GetRow(y, mSrcIndex) + mOffset;
+	int *dst = (int *)dst0;
+
+	sint32 w = mWidth;
+
+	for(sint32 x=0; x<w; ++x) {
+		*dst++ = *src;
+		src += 4;
+	}
+}

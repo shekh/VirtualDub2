@@ -77,6 +77,25 @@ protected:
 	void Compute(void *dst0, sint32 y);
 };
 
+class VDPixmapGen_32F_To_r16 : public VDPixmapGen_32F_To_16 {
+public:
+
+  VDPixmapGen_32F_To_r16():VDPixmapGen_32F_To_16(false){}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo unused;
+		mpSrc->TransformPixmapInfo(src,unused);
+		dst.ref_r = 0xFFFF;
+		dst.ref_g = 0xFFFF;
+		dst.ref_b = 0xFFFF;
+		dst.ref_a = 0xFFFF;
+		m = float(dst.ref_r);
+		bias = 0;
+	}
+
+	virtual const char* dump_name(){ return "32F_To_r16"; }
+};
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //	16 -> 32F
@@ -153,6 +172,19 @@ public:
 	}
 
 	int ComputeSpan(uint16* dst, const uint8* src, int n);
+};
+
+class VDPixmapGen_R8_To_R16 : public VDPixmapGen_A8_To_A16 {
+public:
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo buf;
+		mpSrc->TransformPixmapInfo(src,buf);
+		dst.copy_frame(buf);
+		dst.ref_r = 0xFFFF;
+		dst.ref_g = 0xFFFF;
+		dst.ref_b = 0xFFFF;
+		invalid = false;
+	}
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

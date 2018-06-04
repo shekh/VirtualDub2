@@ -36,6 +36,7 @@ struct VDSample{
 void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& s);
 uint32 VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y);
 uint32 VDPixmapInterpolateSampleRGB24(const VDPixmap& px, sint32 x, sint32 y);
+uint32 VDPixmapSamplePalRGB(const VDPixmap& px, sint32 x, sint32 y);
 
 inline uint8 VDPixmapSample8(const void *data, ptrdiff_t pitch, sint32 x, sint32 y) {
 	return ((const uint8 *)data)[pitch*y + x];

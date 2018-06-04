@@ -12,10 +12,15 @@ public:
 
 	void Init(IVDPixmapGen *src, int srcIndex) {
 		InitSource(src, srcIndex);
+		mPlane = -1;
 	}
 
 	void SetSource(const void *src, ptrdiff_t pitch, const uint32 *palette) {
 		mpPal = palette;
+	}
+
+	void SetPlane(int i) {
+		mPlane = i;
 	}
 
 	uint32 GetType(uint32 output) const {
@@ -26,6 +31,7 @@ public:
 
 protected:
 	const uint32 *mpPal;
+	int		mPlane;
 };
 
 class VDPixmapGen_Pal1_To_X8R8G8B8 : public VDPixmapGenBase_Pal_To_X8R8G8B8 {
