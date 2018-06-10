@@ -151,5 +151,6 @@ int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	UnmapViewOfFile(ipcData);
 	CloseHandle(hFileMapping);
 
+	ExitProcess(rc);
 	return (int)rc;
 }
