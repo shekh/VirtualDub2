@@ -158,6 +158,7 @@ enum VDCaptureInfoId {
 	kVDCaptureInfo_AudioChannelMask,
 	kVDCaptureInfo_AudioResample,
 
+	kVDCaptureInfo_CPUUsage2,
 	kVDCaptureInfo_CPUPower,
 };
 

@@ -61,7 +61,7 @@ public:
 	void Init();
 	void Shutdown();
 
-	int read();
+	void read(int& vd, int& sys);
 
 private:
 	bool fNTMethod;
@@ -71,6 +71,7 @@ private:
 	uint64 ut_last;
 	uint64 skt_last;
 	uint64 sut_last;
+	uint64 idle_last;
 };
 
 void VDEnableSampling(bool bEnable);

@@ -3968,6 +3968,10 @@ namespace {
 void VDCaptureProjectUI::GetPanelItems(VDCapturePreferences::InfoItems& items) {
 	items = mPreferences.mInfoItems;
 
+	{
+		VDCapturePreferences::InfoItems::iterator x = find(items.begin(),items.end(),kVDCaptureInfo_CPUUsage);
+		if (x!=items.end()) items.push_back(kVDCaptureInfo_CPUUsage2);
+	}
 	if (enable_power_scheme) items.push_back(kVDCaptureInfo_CPUPower);
 
 	const VDCaptureFilterSetup& filtsetup = mpProject->GetFilterSetup();
@@ -4196,6 +4200,9 @@ void VDCaptureProjectUI::UpdatePanel(VDCaptureStatus& status) {
 	if (status.mAudioLastFrameTimeMS >= 1000)
 		audio_rate = (long)((status.mTotalAudioSize*1000 + status.mElapsedTimeMS/2) / status.mAudioLastFrameTimeMS);
 
+	int vd, sys;
+	mCPUReader.read(vd,sys);
+
 	wchar_t buf[256];
 	for(int i=0; i<n; ++i) {
 		const HWND hwndChild = mInfoPanelChildren[i];
@@ -4237,10 +4244,15 @@ void VDCaptureProjectUI::UpdatePanel(VDCaptureStatus& status) {
 
 			case kVDCaptureInfo_CPUUsage:
 				{
-					int cpuUsage = mCPUReader.read();
+					if (vd >= 0)
+						swprintf(buf, sizeof buf / sizeof buf[0], L"%d%%", vd);
+				}
+				break;
 
-					if (cpuUsage >= 0)
-						swprintf(buf, sizeof buf / sizeof buf[0], L"%d%%", cpuUsage);
+			case kVDCaptureInfo_CPUUsage2:
+				{
+					if (sys >= 0)
+						swprintf(buf, sizeof buf / sizeof buf[0], L"%d%%", sys);
 				}
 				break;
 

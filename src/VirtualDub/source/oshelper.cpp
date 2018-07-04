@@ -595,7 +595,7 @@ VDCPUUsageReader::~VDCPUUsageReader() {
 }
 
 void VDCPUUsageReader::Init() {
-	FILETIME ftCreate, ftExit, ftIdle;
+	FILETIME ftCreate, ftExit;
 
 	hkeyKernelCPU = NULL;
 	fNTMethod = false;
@@ -603,7 +603,7 @@ void VDCPUUsageReader::Init() {
 	if (GetProcessTimes(GetCurrentProcess(), &ftCreate, &ftExit, (FILETIME *)&kt_last, (FILETIME *)&ut_last)) {
 
 		// Using Windows NT/2000 method
-		GetSystemTimes(&ftIdle, (FILETIME *)&skt_last, (FILETIME *)&sut_last);
+		GetSystemTimes((FILETIME *)&idle_last, (FILETIME *)&skt_last, (FILETIME *)&sut_last);
 
 		fNTMethod = true;
 
@@ -630,39 +630,44 @@ void VDCPUUsageReader::Shutdown() {
 	}
 }
 
-int VDCPUUsageReader::read() {
+void VDCPUUsageReader::read(int& vd, int& sys) {
 
 	if (hkeyKernelCPU) {
 		DWORD type;
 		DWORD dwUsage;
 		DWORD size = sizeof dwUsage;
 
-		if (ERROR_SUCCESS == RegQueryValueEx(hkeyKernelCPU, "KERNEL\\CPUUsage", 0, &type, (LPBYTE)&dwUsage, (LPDWORD)&size))
-			return (int)dwUsage;
-		
-		return -1;
+		if (ERROR_SUCCESS == RegQueryValueEx(hkeyKernelCPU, "KERNEL\\CPUUsage", 0, &type, (LPBYTE)&dwUsage, (LPDWORD)&size)) {
+			sys = (int)dwUsage;
+			vd = -1;
+			return;
+		}
+
 	} else if (fNTMethod) {
-		FILETIME ftCreate, ftExit, ftIdle;
-		unsigned __int64 kt, ut, skt, sut;
-		int cpu;
+		FILETIME ftCreate, ftExit;
+		unsigned __int64 kt, ut, skt, sut, idle;
 
 		GetProcessTimes(GetCurrentProcess(), &ftCreate, &ftExit, (FILETIME *)&kt, (FILETIME *)&ut);
-		GetSystemTimes(&ftIdle, (FILETIME *)&skt, (FILETIME *)&sut);
+		GetSystemTimes((FILETIME *)&idle, (FILETIME *)&skt, (FILETIME *)&sut);
 
 		unsigned __int64 sd = (skt - skt_last) + (sut - sut_last);
 
-		if (sd==0)
-			return 100;
-		else
-			cpu = (int)((100 * (kt + ut - kt_last - ut_last) + sd/2) / sd);
+		if (sd==0) {
+			vd = 100;
+			sys = 100;
+		} else {
+			vd = (int)((100 * (kt + ut - kt_last - ut_last) + sd/2) / sd);
+			sys = (int)((100 * (sd - (idle-idle_last)) + sd/2) / sd);
+		}
 
 		kt_last = kt;
 		ut_last = ut;
 		skt_last = skt;
 		sut_last = sut;
-
-		return cpu;
+		idle_last = idle;
+		return;
 	}
 
-	return -1;
+	vd = -1;
+	sys = -1;
 }

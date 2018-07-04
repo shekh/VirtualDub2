@@ -89,7 +89,7 @@ stringset 8 {		// kVDST_CaptureUI
 	message 102, "Time left";
 	message 103, "Total file size";
 	message 104, "Disk space free";
-	message 105, "CPU usage";
+	message 105, "CPU usage (process)";
 	message 106, "Spill status";
 
 	// video
@@ -122,7 +122,8 @@ stringset 8 {		// kVDST_CaptureUI
 	message 127, "Drop/Insert frames";
 	message 128, "Channel mask";
 	message 129, "Resample";
-	message 130, "CPU power";
+	message 130, "CPU usage (system)";
+	message 131, "CPU power";
 	
 	////////// capture group names
 	message 201, "Video";
