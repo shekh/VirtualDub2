@@ -27,6 +27,7 @@ namespace {
 		sint64	timestamp;
 		uint32	size;
 		uint8	stream;
+		int rep;
 		bool	key;
 	};
 
@@ -117,7 +118,7 @@ void VDCaptureLogFilter::WriteLog(const wchar_t *pszName) {
 	VDFileStream stream(pszName, nsVDFile::kWrite | nsVDFile::kDenyAll | nsVDFile::kCreateAlways);
 	VDTextOutputStream fout(&stream);
 
-	fout.PutLine("VFrames,VCapTime,VGlobalTime,VSize,VKey,AFrames,ABytes,AGlobalTime,ASize");
+	fout.PutLine("VFrames,VReps,VCapTime,VGlobalTime,VSize,VKey,AFrames,ABytes,AGlobalTime,ASize");
 
 	CapBlockIterator itV(mpBlockHead, mNextEntry);
 	CapBlockIterator itA(mpBlockHead, mNextEntry);
@@ -138,13 +139,13 @@ void VDCaptureLogFilter::WriteLog(const wchar_t *pszName) {
 
 			if (!vent.stream) {
 				videoOK = true;
-				s += sprintf(s, "%u,%.3f,%.3f,%u,%d,", ++vframes, vent.timestamp / 1000.0, vent.global_clock / 1000.0, vent.size, vent.key);
+				s += sprintf(s, "%u,%d,%.3f,%.3f,%u,%d,", ++vframes, vent.rep, vent.timestamp / 1000.0, vent.global_clock / 1000.0, vent.size, vent.key);
 				break;
 			}
 		}
 
 		if (!videoOK)
-			s += sprintf(s, ",,,,,");
+			s += sprintf(s, ",,,,,,");
 
 		while(!!itA) {
 			const CapEntry& aent = *itA;
@@ -181,6 +182,14 @@ void VDCaptureLogFilter::CapEnd(const MyError *pError) {
 }
 
 bool VDCaptureLogFilter::CapEvent(nsVDCapture::DriverEvent event, int data) {
+	if (event==nsVDCapture::kEventVideoFramesDropped) {
+		CapEntry& ent = mpBlockTail->mEntries[mNextEntry-1];
+		ent.rep -= data;
+	}
+	if (event==nsVDCapture::kEventVideoFramesInserted) {
+		CapEntry& ent = mpBlockTail->mEntries[mNextEntry-1];
+		ent.rep += data;
+	}
 	return mpCB->CapEvent(event, data);
 }
 
@@ -203,13 +212,15 @@ void VDCaptureLogFilter::CapProcessData(int stream, const void *data, uint32 siz
 					mNextEntry = 0;
 				}
 
-				CapEntry& ent = mpBlockTail->mEntries[mNextEntry++];
+				CapEntry& ent = mpBlockTail->mEntries[mNextEntry];
+				mNextEntry++;
 
 				ent.global_clock	= global_clock;
 				ent.timestamp		= timestamp;
 				ent.size			= size;
 				ent.stream			= stream;
 				ent.key				= key;
+				ent.rep				= 0;
 			} while(false);
 		}
 	}

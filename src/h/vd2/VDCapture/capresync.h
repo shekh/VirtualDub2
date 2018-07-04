@@ -68,6 +68,7 @@ public:
 	virtual ~IVDCaptureResyncFilter() {}
 
 	virtual void SetChildCallback(IVDCaptureDriverCallback *pChild) = 0;
+	virtual void SetLogCallback(IVDCaptureDriverCallback *pLog) = 0;
 	virtual void SetProfiler(IVDCaptureProfiler *pProfiler) = 0;
 	virtual void SetVideoRate(double fps) = 0;
 	virtual void SetAudioRate(double bytesPerSec) = 0;

@@ -595,6 +595,7 @@ public:
 	~VDCaptureResyncFilter();
 
 	void SetChildCallback(IVDCaptureDriverCallback *pChild);
+	void SetLogCallback(IVDCaptureDriverCallback *pChild);
 	void SetProfiler(IVDCaptureProfiler *pProfiler);
 	void SetVideoRate(double fps);
 	void SetAudioRate(double bytesPerSec);
@@ -622,6 +623,7 @@ protected:
 	void UnpackSamples(sint16 *dst, ptrdiff_t dstStride, const void *src, uint32 samples, uint32 channels);
 
 	IVDCaptureDriverCallback *mpCB;
+	IVDCaptureDriverCallback *mpLog;
 	IVDCaptureProfiler *mpProfiler;
 
 	bool		mbAdjustVideoTime;
@@ -678,6 +680,7 @@ protected:
 
 VDCaptureResyncFilter::VDCaptureResyncFilter()
 	: mpCB(NULL)
+	, mpLog(NULL)
 	, mpProfiler(NULL)
 	, mbAdjustVideoTime(true)
 	, mbAllowDrops(true)
@@ -713,6 +716,10 @@ IVDCaptureResyncFilter *VDCreateCaptureResyncFilter() {
 
 void VDCaptureResyncFilter::SetChildCallback(IVDCaptureDriverCallback *pChild) {
 	mpCB = pChild;
+}
+
+void VDCaptureResyncFilter::SetLogCallback(IVDCaptureDriverCallback *pLog) {
+	mpLog = pLog;
 }
 
 void VDCaptureResyncFilter::SetProfiler(IVDCaptureProfiler *pProfiler) {
@@ -900,8 +907,10 @@ void VDCaptureResyncFilter::CapProcessData(int stream, const void *data, uint32 
 
 			if (frameError < -0.75 && mbAllowDrops) {
 				// don't flag event for null frames
-				if (size)
+				if (size) {
+					if (mpLog) mpLog->CapEvent(nsVDCapture::kEventVideoFramesDropped, 1);
 					mpCB->CapEvent(nsVDCapture::kEventVideoFramesDropped, 1);
+				}
 				frameKill = true;
 			} else {
 				double threshold = +0.75;
@@ -915,6 +924,7 @@ void VDCaptureResyncFilter::CapProcessData(int stream, const void *data, uint32 
 					if (framesToInsert > mInsertLimit)
 						framesToInsert = mInsertLimit;
 
+					if (mpLog) mpLog->CapEvent(nsVDCapture::kEventVideoFramesInserted, framesToInsert);
 					mpCB->CapEvent(nsVDCapture::kEventVideoFramesInserted, framesToInsert);
 					frameError -= framesToInsert;
 					mVideoFramesWritten += framesToInsert;

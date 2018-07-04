@@ -2294,6 +2294,7 @@ unknown_PCM_format:
 		if (mpLogFilter) {
 			mpLogFilter->SetChildCallback(pCurrentCB);
 			pCurrentCB = mpLogFilter;
+			pResyncFilter->SetLogCallback(mpLogFilter);
 		}
 
 		mpDriver->SetCallback(pCurrentCB);
