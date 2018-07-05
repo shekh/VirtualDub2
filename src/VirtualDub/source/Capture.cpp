@@ -3563,11 +3563,13 @@ void VDCaptureData::createOutputBlitter() {
 		FilterModPixmapInfo out_info;
 		out_info.colorRangeMode = fmt.colorRangeMode;
 		out_info.colorSpaceMode = fmt.colorSpaceMode;
+		bool useAlpha = true;
 
 		VDSetPixmapInfoForBitmap(out_info, fmt);
 		if (mpVideoCompressor) {
 			vdstructex<tagBITMAPINFOHEADER> bm;
 			mpVideoCompressor->GetInputBitmapFormat(bm);
+			fourcc_codec_info(((BITMAPINFOHEADER*)mpVideoCompressor->GetOutputFormat())->biCompression, useAlpha);
 			int variant;
 			VDBitmapFormatToPixmapFormat((VDAVIBitmapInfoHeader&)*bm.data(),variant);
 			VDSetPixmapInfoForBitmap(out_info, vfwLayout.format, variant);
@@ -3578,7 +3580,7 @@ void VDCaptureData::createOutputBlitter() {
 			}
 		}
 
-		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(fmt, out_info);
+		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(fmt, out_info, useAlpha);
 		if (pxsrc.format!=fmt.format || extraDst) {
 			repack_buffer.init(vfwLayout);
 			repack_buffer.format = fmt.format;

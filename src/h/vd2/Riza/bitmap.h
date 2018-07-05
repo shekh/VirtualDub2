@@ -53,4 +53,6 @@ void VDAdjustPixmapInfoForRange(FilterModPixmapInfo& info, int format);
 VDStringA print_fourcc(uint32 a);
 VDStringW printW_fourcc(uint32 a);
 
+void fourcc_codec_info(uint32 a, bool& useAlpha);
+
 #endif

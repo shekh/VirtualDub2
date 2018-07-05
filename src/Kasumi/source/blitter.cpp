@@ -71,10 +71,12 @@ void VDPixmapCachedBlitter::Invalidate() {
 	}
 }
 
-IVDPixmapExtraGen* VDPixmapCreateNormalizer(int format, FilterModPixmapInfo& out_info) {
+IVDPixmapExtraGen* VDPixmapCreateNormalizer(int format, FilterModPixmapInfo& out_info, bool useAlpha) {
 	switch (format) {
 	case nsVDPixmap::kPixFormat_XRGB8888:
 		{
+			// skip normalization when codec is not going to use alpha (guessed by codec fourcc)
+			if (!useAlpha) return false;
 			ExtraGen_X8R8G8B8_Normalize* normalize = new ExtraGen_X8R8G8B8_Normalize;
 			return normalize;
 		}

@@ -21,6 +21,20 @@
 #include <vd2/Kasumi/pixmaputils.h>
 #include <../Kasumi/h/uberblit_rgb64.h>
 
+void fourcc_codec_info(uint32 a, bool& useAlpha) {
+	useAlpha = false;
+
+	// utvideo alpha sources
+	if (a==VDMAKEFOURCC('U', 'L', 'R', 'A')) useAlpha = true;
+	if (a==VDMAKEFOURCC('U', 'Q', 'R', 'A')) useAlpha = true;
+
+	// magicyuv alpha sources
+	if (a==VDMAKEFOURCC('M', '8', 'R', 'A')) useAlpha = true;
+	if (a==VDMAKEFOURCC('M', '8', 'Y', 'A')) useAlpha = true;
+	if (a==VDMAKEFOURCC('M', '0', 'R', 'A')) useAlpha = true;
+	if (a==VDMAKEFOURCC('M', '2', 'R', 'A')) useAlpha = true;
+}
+
 VDString print_fourcc(uint32 a) {
 	uint8 fcc[4];
 	*(uint32 *)fcc = a;
