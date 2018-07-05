@@ -74,7 +74,6 @@ VDScreenGrabberGDI::VDScreenGrabberGDI()
 	, mbDrawMousePointer(true)
 	, mCaptureWidth(320)
 	, mCaptureHeight(240)
-	, mProfileChannel("Capture driver")
 {
 	mbExcludeSelf = true;
 }
@@ -229,7 +228,7 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 		}
 	}
 
-	mProfileChannel.Begin(0xf0d0d0, "Capture (GDI)");
+	VDPROFILEBEGIN("Capture (GDI)");
 	if (HDC hdc = GetDC(NULL)) {
 		static DWORD sBitBltMode = AutodetectCaptureBltMode();
 
@@ -252,7 +251,7 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 			srcy = 0;
 
 		BitBlt(mhdcOffscreen, 0, 0, w, h, hdc, srcx, srcy, sBitBltMode);
-		if (mbExcludeSelf) {
+		if (mbExcludeSelf && mbVisible) { // nothing to hide if preview is hidden
 			if (HDC hdcw = GetDC(mhwnd)) {
 				HRGN rgn0 = CreateRectRgn(0,0,0,0); 
 				GetRandomRgn(hdcw,rgn0,SYSRGN);
@@ -270,15 +269,15 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 
 		ReleaseDC(NULL, hdc);
 	}
-	mProfileChannel.End();
+	VDPROFILEEND();
 
 	if (mbVisible && mhwnd && mbDisplayPreview) {
-		mProfileChannel.Begin(0xe0e0e0, "Preview (GDI)");
+		VDPROFILEBEGIN("Preview (GDI)");
 		if (HDC hdc = GetDC(mhwnd)) {
 			BitBlt(hdc, 0, 0, w, h, mhdcOffscreen, 0, 0, SRCCOPY);
 			ReleaseDC(mhwnd, hdc);
 		}
-		mProfileChannel.End();
+		VDPROFILEEND();
 	}
 
 	if (dispatch) {
@@ -289,7 +288,7 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 	}
 	
 	if (mbVisible && mhwnd && !mbDisplayPreview) {
-		mProfileChannel.Begin(0xe0e0e0, "Overlay (GDI)");
+		VDPROFILEBEGIN("Overlay (GDI)");
 		if (HDC hdcScreen = GetDC(NULL)) {
 			if (HDC hdc = GetDC(mhwnd)) {
 				int srcx = mTrackX;
@@ -310,7 +309,7 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 				if (srcy < 0)
 					srcy = 0;
 				
-				if( mbExcludeSelf) {
+				if (mbExcludeSelf) {
 					POINT p0 = {0,0};
 					MapWindowPoints(mhwnd,0,&p0,1);
 
@@ -342,7 +341,7 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 			}
 			ReleaseDC(NULL, hdcScreen);
 		}
-		mProfileChannel.End();
+		VDPROFILEEND();
 	}
 
 	return true;

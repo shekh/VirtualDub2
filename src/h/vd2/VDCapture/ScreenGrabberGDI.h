@@ -77,8 +77,6 @@ protected:
 
 	uint32	mCaptureWidth;
 	uint32	mCaptureHeight;
-
-	VDRTProfileChannel mProfileChannel;
 };
 
 #endif

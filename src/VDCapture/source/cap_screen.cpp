@@ -223,7 +223,6 @@ VDCaptureDriverScreen::VDCaptureDriverScreen()
 	, mPreviewFrameTimer(0)
 	, mhMixer(NULL)
 	, mhWaveIn(NULL)
-	, mProfileChannel("Capture driver")
 {
 	memset(mWaveBufHdrs, 0, sizeof mWaveBufHdrs);
 

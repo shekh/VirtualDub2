@@ -121,8 +121,6 @@ protected:
 
 	IVDScreenGrabberCallback	*mpCB;
 
-	VDRTProfileChannel mProfileChannel;
-
 	ATOM	mWndClassGL;
 };
 

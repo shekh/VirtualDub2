@@ -220,8 +220,6 @@ protected:
 
 	MyError	mCaptureError;
 
-	VDRTProfileChannel mProfileChannel;
-
 	static ATOM sWndClass;
 };
 

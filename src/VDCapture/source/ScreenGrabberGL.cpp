@@ -70,7 +70,6 @@ VDScreenGrabberGL::VDScreenGrabberGL()
 	, mCaptureDstHeight(240)
 	, mCaptureFormat(kVDScreenGrabberFormat_XRGB32)
 	, mpCB(NULL)
-	, mProfileChannel("Capture driver")
 	, mWndClassGL(NULL)
 {
 	mGLOcclusionQueries[0] = 0;
@@ -450,7 +449,7 @@ bool VDScreenGrabberGL::AcquireFrame(bool dispatch) {
 			VDASSERT(!mGL.glGetError());
 			mGL.glReadBuffer(GL_FRONT);
 
-			mProfileChannel.Begin(0xd0e0f0, "GL:ReadScreen");
+			VDPROFILEBEGIN("GL:ReadScreen");
 			if (!mbRescaleImage || mbDrawMousePointer) {
 				mGL.glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, srcx, srcy, srcw, srch);
 				mGL.glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -564,7 +563,7 @@ bool VDScreenGrabberGL::AcquireFrame(bool dispatch) {
 					srch = dsth;
 				} while(srcw != w || srch != h);
 			}
-			mProfileChannel.End();
+			VDPROFILEEND();
 
 			VDASSERT(!mGL.glGetError());
 
@@ -581,7 +580,7 @@ bool VDScreenGrabberGL::AcquireFrame(bool dispatch) {
 						mbGLOcclusionPrevFrameValid = true;
 						mbFrameValid[0] = true;
 					} else {
-						mProfileChannel.Begin(0xa0c0f0, "GL:OcclusionQuery");
+						VDPROFILEBEGIN("GL:OcclusionQuery");
 						mGL.glActiveTextureARB(GL_TEXTURE1_ARB);
 						mGL.glEnable(GL_TEXTURE_2D);
 						mGL.glBindTexture(GL_TEXTURE_2D, mGLTextures[1]);
@@ -637,14 +636,14 @@ bool VDScreenGrabberGL::AcquireFrame(bool dispatch) {
 
 						VDASSERT(!mGL.glGetError());
 						std::swap(mbFrameValid[0], mbFrameValid[1]);
-						mProfileChannel.End();
+						VDPROFILEEND();
 					}
 				} else
 					mbFrameValid[0] = mbFrameValid[1] = true;
 			} else
 				mbFrameValid[0] = mbFrameValid[1] = true;
 
-			mProfileChannel.Begin(0xa0ffa0, "GL:ConvertAndRead");
+			VDPROFILEBEGIN("GL:ConvertAndRead");
 			switch(mCaptureFormat) {
 			case kVDScreenGrabberFormat_YV12:
 				if (mGL.ATI_fragment_shader)
@@ -676,7 +675,7 @@ bool VDScreenGrabberGL::AcquireFrame(bool dispatch) {
 
 				break;
 			}
-			mProfileChannel.End();
+			VDPROFILEEND();
 
 			// readback!
 
@@ -688,9 +687,9 @@ bool VDScreenGrabberGL::AcquireFrame(bool dispatch) {
 				if (mGL.EXT_pixel_buffer_object) {
 					if (mbFrameValid[0]) {
 						mGL.glBindBufferARB(GL_PIXEL_PACK_BUFFER_ARB, mGLBuffers[1]);
-						mProfileChannel.Begin(0xa0a0ff, "GL:MapBuffer");
+						VDPROFILEBEGIN("GL:MapBuffer");
 						void *p = mGL.glMapBufferARB(GL_PIXEL_PACK_BUFFER_ARB, GL_READ_ONLY_ARB);
-						mProfileChannel.End();
+						VDPROFILEEND();
 						DispatchFrame(p, mOffscreenPitch, globalTime);
 						mGL.glUnmapBufferARB(GL_PIXEL_PACK_BUFFER_ARB);
 					} else
@@ -724,7 +723,7 @@ bool VDScreenGrabberGL::AcquireFrame(bool dispatch) {
 		GetClientRect(mhwndGLDraw, &rdraw);
 
 		if (rdraw.right && rdraw.bottom) {
-			mProfileChannel.Begin(0xe0e0e0, "Overlay (OpenGL)");
+			VDPROFILEBEGIN("Overlay (OpenGL)");
 			if (HDC hdcDraw = GetDC(mhwndGLDraw)) {
 				if (mGL.Begin(hdcDraw)) {
 					VDASSERT(!mGL.glGetError());
@@ -789,7 +788,7 @@ bool VDScreenGrabberGL::AcquireFrame(bool dispatch) {
 				}
 				ReleaseDC(mhwndGLDraw, hdcDraw);
 			}
-			mProfileChannel.End();
+			VDPROFILEEND();
 		}
 	}
 
