@@ -3897,6 +3897,7 @@ IDC_DRAGPOINT           CURSOR                  "dragpoint.cur"
 IDC_ADDPOINT            CURSOR                  "addpoint.cur"
 IDC_REMOVEPOINT         CURSOR                  "removepoint.cur"
 IDC_MODIFYPOINT         CURSOR                  "modifypoint.cur"
+IDC_CAP_POINT           CURSOR                  "cap_point.cur"
 
 /////////////////////////////////////////////////////////////////////////////
 //

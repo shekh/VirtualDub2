@@ -245,6 +245,7 @@
 #define IDD_CAPTURE_AUDIO_MASK          312
 #define IDD_VIDEO_DECFORMAT             313
 #define IDD_VIDEO_ENCFORMAT             314
+#define IDC_CAP_POINT                   315
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -1595,7 +1596,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        313
+#define _APS_NEXT_RESOURCE_VALUE        316
 #define _APS_NEXT_COMMAND_VALUE         40605
 #define _APS_NEXT_CONTROL_VALUE         1572
 #define _APS_NEXT_SYMED_VALUE           111

@@ -2,6 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by VDCapture.rc
 //
+#define IDC_CAP_POINT                   315
 #define IDC_RESCALE_IMAGE               1003
 #define IDC_USE_OPENGL                  1004
 #define IDC_REMOVE_DUPES                1005

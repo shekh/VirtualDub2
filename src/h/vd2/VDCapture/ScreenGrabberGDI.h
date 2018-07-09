@@ -64,6 +64,7 @@ protected:
 	HBITMAP	mhbmCursorBuffer;
 	HGDIOBJ	mhbmCursorBufferOld;
 	uint32	*mpCursorBuffer;
+	HCURSOR cap_cursor;
 
 	bool	mbVisible;
 	bool	mbDisplayPreview;

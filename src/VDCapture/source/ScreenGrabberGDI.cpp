@@ -25,9 +25,12 @@
 #include <vd2/system/registry.h>
 #include <vd2/system/w32assist.h>
 #include <vd2/VDCapture/ScreenGrabberGDI.h>
+#include "resource.h"
 #include <windows.h>
 #include <tchar.h>
 #include <dwmapi.h>
+
+extern HINSTANCE g_hInst;
 
 namespace {
 	DWORD AutodetectCaptureBltMode() {
@@ -76,6 +79,7 @@ VDScreenGrabberGDI::VDScreenGrabberGDI()
 	, mCaptureHeight(240)
 {
 	mbExcludeSelf = true;
+	cap_cursor = LoadCursor(g_hInst, MAKEINTRESOURCE(IDC_CAP_POINT));
 }
 
 VDScreenGrabberGDI::~VDScreenGrabberGDI() {
@@ -200,6 +204,7 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 	// Check for cursor update.
 	CURSORINFO ci = {sizeof(CURSORINFO)};
 	bool cursorImageUpdated = false;
+	POINT cursorPt;
 
 	if (mbDrawMousePointer) {
 		if (!::GetCursorInfo(&ci)) {
@@ -223,6 +228,7 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 				}
 			}
 
+			cursorPt = ci.ptScreenPos;
 			ci.ptScreenPos.x -= mCachedCursorHotspotX;
 			ci.ptScreenPos.y -= mCachedCursorHotspotY;
 		}
@@ -308,7 +314,13 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 
 				if (srcy < 0)
 					srcy = 0;
-				
+
+				ICONINFO ii;
+				if (::GetIconInfo(cap_cursor, &ii)) {
+					cursorPt.x -= ii.xHotspot;
+					cursorPt.y -= ii.yHotspot;
+				}
+
 				if (mbExcludeSelf) {
 					POINT p0 = {0,0};
 					MapWindowPoints(mhwnd,0,&p0,1);
@@ -331,14 +343,23 @@ bool VDScreenGrabberGDI::AcquireFrame(bool dispatch) {
 
 					DeleteObject(rgn0);
 					DeleteObject(rgn1);
-					
+					SelectClipRgn(hdc, 0);
+
+					if (ci.hCursor)
+						DrawIcon(hdc, cursorPt.x - srcx, cursorPt.y - srcy, cap_cursor);
+
 					ReleaseDC(mhwnd, hdc);
 					ValidateRect(mhwnd,0);
 				} else {
 					BitBlt(hdc, 0, 0, w, h, hdcScreen, srcx, srcy, SRCCOPY);
+
+					if (ci.hCursor)
+						DrawIcon(hdc, cursorPt.x - srcx, cursorPt.y - srcy, cap_cursor);
+
 					ReleaseDC(mhwnd, hdc);
 				}
 			}
+
 			ReleaseDC(NULL, hdcScreen);
 		}
 		VDPROFILEEND();
