@@ -1489,6 +1489,34 @@ uint32 ConvertSpace(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint32 d
 
 uint32 ConvertSpace_BGR(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint32 dstToken, sint32 w, sint32 h, int target_quality) {
 	uint32 srcSpace = srcToken & kVDPixSpace_Mask;
+
+	if (target_quality) switch(srcToken & kVDPixType_Mask) {
+	case kVDPixType_8_8_8:
+		srcToken = BlitterConvertType(gen, srcToken, kVDPixType_16_16_16_LE, w, h);
+	}
+
+	if ((srcToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE) {
+		const VDPixmapGenYCbCrBasis* srcBasis = 0;
+		bool src_fr = false;
+
+		switch(srcSpace) {
+		case kVDPixSpace_YCC_601_FR:
+			src_fr = true;
+		case kVDPixSpace_YCC_601:
+			srcBasis = &g_VDPixmapGenYCbCrBasis_601;
+			break;
+		case kVDPixSpace_YCC_709_FR:
+			src_fr = true;
+		case kVDPixSpace_YCC_709:
+			srcBasis = &g_VDPixmapGenYCbCrBasis_709;
+			break;
+		}
+
+		gen.ycbcr_to_rgb64_generic(*srcBasis, !src_fr);
+		srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_BGR | kVDPixType_16x4_LE;
+		return srcToken;
+	}
+
 	switch(srcSpace) {
 	case kVDPixSpace_YCC_709:
 		switch(srcToken & kVDPixType_Mask) {
@@ -1821,6 +1849,13 @@ uint32 ConvertSpace_YCC(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint
 		return srcToken;
 	}
 
+	if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_BGR && target_quality) {
+		srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32Fx4_LE, w, h);
+		gen.rgb32f_to_ycbcr_generic(*dstBasis, !dst_fr, dstSpace);
+		srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | dstSpace | kVDPixType_32F_32F_32F_LE;
+		return srcToken;
+	}
+
 	if (srcSpace==kVDPixSpace_BGR) {
 		switch(dstSpace) {
 		case kVDPixSpace_YCC_601:
@@ -1888,9 +1923,123 @@ uint32 ConvertSpace(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint32 d
 }
 
 uint32 BlitterConvertSpace(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint32 dstToken, sint32 w, sint32 h, int target_quality) {
+	if ((srcToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE) {
+		if ((dstToken & kVDPixSpace_Mask)!=kVDPixSpace_BGR) {
+			uint32 dstSpace = dstToken & kVDPixSpace_Mask;
+			uint32 srcSpace = srcToken & kVDPixSpace_Mask;
+			bool convert_float = true;
+			if (srcSpace==kVDPixSpace_YCC_601 && dstSpace==kVDPixSpace_Y_601) convert_float = false;
+			if (srcSpace==kVDPixSpace_YCC_601_FR && dstSpace==kVDPixSpace_Y_601_FR) convert_float = false;
+			if (convert_float) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
+		}
+	}
+	
 	while((srcToken ^ dstToken) & kVDPixSpace_Mask) {
 		srcToken = ConvertSpace(gen, srcToken, dstToken, 0, w, h, target_quality);
 	}
+	return srcToken;
+}
+
+//-------------------------------------------------------------------------------------------------------------------------------------------
+
+uint32 BlitterDeinterleave(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& src, uint32 srcToken) {
+	int w = src.w;
+	int h = src.h;
+
+	uint32 type = srcToken & kVDPixType_Mask;
+
+	// why not just use ConvertType for everything?
+	switch(type) {
+	case kVDPixType_B8G8_R8G8:
+		gen.dup();
+		gen.dup();
+		gen.extract_8in32(2, (w + 1) >> 1, h);
+		gen.swap(2);
+		gen.extract_8in16(1, w, h);
+		gen.swap(1);
+		gen.extract_8in32(0, (w + 1) >> 1, h);
+		type = kVDPixType_8_8_8;
+		break;
+
+	case kVDPixType_G8B8_G8R8:
+		gen.dup();
+		gen.dup();
+		gen.extract_8in32(3, (w + 1) >> 1, h);
+		gen.swap(2);
+		gen.extract_8in16(0, w, h);
+		gen.swap(1);
+		gen.extract_8in32(1, (w + 1) >> 1, h);
+		type = kVDPixType_8_8_8;
+		break;
+
+	case kVDPixType_8_B8R8:
+		gen.dup();
+		gen.extract_8in16(1, (w + 1) >> 1, (h + 1) >> 1);
+		gen.swap(2);
+		gen.swap(1);
+		gen.extract_8in16(0, (w + 1) >> 1, (h + 1) >> 1);
+		type = kVDPixType_8_8_8;
+		break;
+
+	case kVDPixType_V210:
+		gen.conv_V210_to_P16();
+		type = kVDPixType_16_16_16_LE;
+		break;
+
+	case kVDPixType_YU64:
+		gen.conv_YU64_to_P16();
+		type = kVDPixType_16_16_16_LE;
+		break;
+
+	case kVDPixType_V410:
+		gen.conv_V410_to_P16();
+		type = kVDPixType_16_16_16_LE;
+		break;
+
+	case kVDPixType_Y410:
+		gen.conv_Y410_to_P16();
+		type = kVDPixType_16_16_16_LE;
+		break;
+
+	case kVDPixType_V308:
+		gen.conv_V308_to_P8();
+		type = kVDPixType_8_8_8;
+		break;
+
+	case kVDPixType_16x4_LE:
+		if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_BGR) {
+			gen.conv_X16_to_X32F();
+			type = kVDPixType_32Fx4_LE;
+		} else {
+			srcToken = BlitterConvertType(gen, srcToken, kVDPixType_16_16_16_LE, w, h);
+			type = kVDPixType_16_16_16_LE;
+		}
+		break;
+	}
+
+	return (srcToken & ~kVDPixType_Mask) | type;
+}
+
+//-------------------------------------------------------------------------------------------------------------------------------------------
+
+uint32 BlitterConvergeSampling(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& src, uint32 srcToken) {
+	// In theory don't need chroma for Y-only. Doesn't work.
+	/*
+	switch(dstToken & kVDPixSpace_Mask) {
+	case kVDPixSpace_Y_601:
+	case kVDPixSpace_Y_709:
+	case kVDPixSpace_Y_601_FR:
+	case kVDPixSpace_Y_709_FR:
+		return srcToken;
+	}
+	*/
+
+	const VDPixmapSamplingInfo& sampInfo = VDPixmapGetSamplingInfo(srcToken);
+	int w = src.w;
+	int h = src.h;
+
+	if (sampInfo.mPlane1Cb.mXBits |	sampInfo.mPlane1Cb.mYBits |	sampInfo.mPlane1Cb.mX |	sampInfo.mPlane1Cb.mY |	sampInfo.mPlane1Cr.mX |	sampInfo.mPlane1Cr.mY)
+		srcToken = BlitterConvertSampling(gen, srcToken, kVDPixSamp_444, w, h);
 	return srcToken;
 }
 
@@ -2309,100 +2458,9 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 	// check if we need a color space change
 	if ((srcToken ^ dstToken) & kVDPixSpace_Mask) {
 		// first, if we're dealing with an interleaved format, deinterleave it
-		switch(srcToken & kVDPixType_Mask) {
-		case kVDPixType_B8G8_R8G8:
-			gen.dup();
-			gen.dup();
-			gen.extract_8in32(2, (w + 1) >> 1, h);
-			gen.swap(2);
-			gen.extract_8in16(1, w, h);
-			gen.swap(1);
-			gen.extract_8in32(0, (w + 1) >> 1, h);
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
-			break;
-
-		case kVDPixType_G8B8_G8R8:
-			gen.dup();
-			gen.dup();
-			gen.extract_8in32(3, (w + 1) >> 1, h);
-			gen.swap(2);
-			gen.extract_8in16(0, w, h);
-			gen.swap(1);
-			gen.extract_8in32(1, (w + 1) >> 1, h);
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
-			break;
-
-		case kVDPixType_8_B8R8:
-			gen.dup();
-			gen.extract_8in16(1, (w + 1) >> 1, (h + 1) >> 1);
-			gen.swap(2);
-			gen.swap(1);
-			gen.extract_8in16(0, (w + 1) >> 1, (h + 1) >> 1);
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
-			break;
-
-		case kVDPixType_V210:
-			gen.conv_V210_to_P16();
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
-			break;
-
-		case kVDPixType_YU64:
-			gen.conv_YU64_to_P16();
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
-			break;
-
-		case kVDPixType_V410:
-			gen.conv_V410_to_P16();
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
-			break;
-
-		case kVDPixType_Y410:
-			gen.conv_Y410_to_P16();
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_16_16_16_LE;
-			break;
-
-		case kVDPixType_V308:
-			gen.conv_V308_to_P8();
-			srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_8_8_8;
-			break;
-
-		case kVDPixType_16x4_LE:
-			if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_BGR) {
-				gen.conv_X16_to_X32F();
-				srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_32Fx4_LE;
-			} else {
-				srcToken = BlitterConvertType(gen, srcToken, kVDPixType_16_16_16_LE, w, h);
-			}
-			break;
-		}
-
+		srcToken = BlitterDeinterleave(gen,src,srcToken);
 		// if the source is subsampled, converge on 4:4:4 subsampling, but only if we actually need
-		// the auxiliary channels
-		const VDPixmapSamplingInfo& sampInfo = VDPixmapGetSamplingInfo(srcToken);
-
-#if 0
-		// This check is currently disabled because we currently do need the chroma planes
-		// if we're doing a color space conversion, even if we are going to Y-only.
-		switch(dstToken & kVDPixSpace_Mask) {
-//			case kVDPixSpace_Y_601:
-//			case kVDPixSpace_Y_709:
-//			case kVDPixSpace_Y_601_FR:
-//			case kVDPixSpace_Y_709_FR:
-//				break;
-
-			default:
-#endif
-				if (sampInfo.mPlane1Cb.mXBits |
-					sampInfo.mPlane1Cb.mYBits |
-					sampInfo.mPlane1Cb.mX |
-					sampInfo.mPlane1Cb.mY |
-					sampInfo.mPlane1Cr.mX |
-					sampInfo.mPlane1Cr.mY)
-					srcToken = BlitterConvertSampling(gen, srcToken, kVDPixSamp_444, w, h);
-#if 0
-				break;
-		}
-#endif
+		srcToken = BlitterConvergeSampling(gen,src,srcToken);
 
 		// When target is high bit depth we need to upconvert as soon as possible
 		int target_quality = 0;
@@ -2424,42 +2482,8 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 			break;
 		}
 
-		if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_BGR && target_quality) {
-			srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32Fx4_LE, w, h);
-			uint32 dstSpace = dstToken & kVDPixSpace_Mask;
-			bool studioRGB = true;
-			const VDPixmapGenYCbCrBasis* basis = &g_VDPixmapGenYCbCrBasis_601;
-			if (dst.formatEx.colorSpaceMode==vd2::kColorSpaceMode_709)
-				basis = &g_VDPixmapGenYCbCrBasis_709;
-			if (dst.formatEx.colorRangeMode==vd2::kColorRangeMode_Full)
-				studioRGB = false;
-			gen.rgb32f_to_ycbcr_generic(*basis, studioRGB, dstSpace);
-			srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | dstSpace | kVDPixType_32F_32F_32F_LE;
-		}
-
-		// Do this here before range/space mode is fully established
-		if ((srcToken & kVDPixType_Mask)==kVDPixType_16_16_16_LE) {
-			if ((dstToken & kVDPixSpace_Mask)==kVDPixSpace_BGR) {
-				bool studioRGB = true;
-				const VDPixmapGenYCbCrBasis* basis = &g_VDPixmapGenYCbCrBasis_601;
-				if (src.formatEx.colorSpaceMode==vd2::kColorSpaceMode_709)
-					basis = &g_VDPixmapGenYCbCrBasis_709;
-				if (src.formatEx.colorRangeMode==vd2::kColorRangeMode_Full)
-					studioRGB = false;
-				gen.ycbcr_to_rgb64_generic(*basis, studioRGB);
-				srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_BGR | kVDPixType_16x4_LE;
-			} else {
-				uint32 dstSpace = dstToken & kVDPixSpace_Mask;
-				uint32 srcSpace = srcToken & kVDPixSpace_Mask;
-				bool convert_float = true;
-				if (srcSpace==kVDPixSpace_YCC_601 && dstSpace==kVDPixSpace_Y_601) convert_float = false;
-				if (srcSpace==kVDPixSpace_YCC_601_FR && dstSpace==kVDPixSpace_Y_601_FR) convert_float = false;
-				if (convert_float) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
-			}
-		}
-
 		// change color spaces
-    srcToken = BlitterConvertSpace(gen, srcToken, dstToken, w, h, target_quality);
+		srcToken = BlitterConvertSpace(gen, srcToken, dstToken, w, h, target_quality);
 	}
 
 	// check if we need a type change
