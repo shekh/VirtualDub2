@@ -98,9 +98,27 @@ extern void VDOpenLogWindow() {
 }
 
 
+class VDProfileSampleThread : public VDThread {
+public:
+	int close;
+	VDCPUUsageReader reader;
+	VDProfileSampleThread(){ close=0; }
+
+	void ThreadRun() {
+		reader.Init();
+		while (close==0) {
+			int vd,sys;
+			reader.read(vd,sys);
+			if (g_pVDEventProfiler && sys!=-1) g_pVDEventProfiler->InsertSample(IVDEventProfiler::sample_cpu, sys);
+			Sleep(20);
+		}
+	}
+};
+
 class VDProfileWindowThread : public VDThread {
 public:
 	VDSignal mReady;
+	VDProfileSampleThread sample;
 	int start_mode;
 
 	VDProfileWindowThread() : VDThread("Profile Window") { start_mode=1; }
@@ -111,8 +129,15 @@ public:
 		// but that is not a big deal.
 		if (!g_hwndProfileWindow) {
 			VDInitProfilingSystem();
+			sample.close = 0;
+			sample.ThreadStart();
 			DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_PROFILER), NULL, ProfileDlgProc, start_mode);
 			g_hwndProfileWindow = 0;
+
+			if(sample.isThreadActive()){
+				sample.close = 1;
+				sample.ThreadWait();
+			}
 		} else
 			SetWindowPos(g_hwndProfileWindow, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE);
 	}

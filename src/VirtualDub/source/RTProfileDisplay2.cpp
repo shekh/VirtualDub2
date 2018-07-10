@@ -38,6 +38,16 @@ extern sint32 VDPreferencesGetFilterThreadCount();
 
 /////////////////////////////////////////////////////////////////////////////
 
+struct VDProfileSample {
+	uint64	mTimestamp;
+	uint64	data;
+};
+
+struct VDSampleBlock {
+	enum { N = 1024 };
+	VDProfileSample mSample[N];
+};
+
 struct VDThreadEvent {
 	uint64	mTimestamp;
 	uint32	mScopeId;
@@ -73,6 +83,7 @@ public:
 	void Attach();
 	void Detach();
 
+	void InsertSample(int name, uint64 data);
 	void BeginScope(const char *name, uintptr *cache, uint32 data, uint32 flags=0);
 	void BeginDynamicScope(const char *name, uintptr *cache, uint32 data, uint32 flags=0);
 	void SetComment(uintptr scopeId, const char* data);
@@ -85,6 +96,8 @@ public:
 	void UpdateThreadInfo(uint32 threadIndex, VDThreadEventInfo& info) const;
 
 	void UpdateScopes(vdfastvector<VDThreadEventScope>& scopes) const;
+
+	void UpdateSample(int name, vdfastvector<VDProfileSample>& sample) const;
 
 	VDAtomicInt	reset_count;
 
@@ -110,11 +123,26 @@ protected:
 		}
 	};
 
+	struct PerSampleInfo {
+		vdfastvector<VDSampleBlock *> mBlocks;
+		VDSampleBlock *mpCurrentBlock;
+		VDAtomicInt mCurrentIndex;
+		uint32		mStartIndex;
+
+		PerSampleInfo()
+			: mpCurrentBlock(NULL)
+			, mCurrentIndex(VDSampleBlock::N)
+			, mStartIndex(0)
+		{
+		}
+	};
+
 	uintptr InitScope(const char *name, uint32 flags, uintptr *cache);
 	uintptr InitDynamicScope(const char *name, uint32 flags, uintptr *cache);
 
 	PerThreadInfo *AllocPerThreadInfo();
 	bool AllocBlock(PerThreadInfo *pti);
+	bool AllocSampleBlock(PerSampleInfo *psi);
 
 	uint32	mTlsIndex;
 	VDAtomicInt	mEnableCount;
@@ -125,6 +153,7 @@ protected:
 
 	typedef vdfastvector<PerThreadInfo *> Threads; 
 	Threads mThreads;
+	PerSampleInfo mSample[sample_count];
 };
 
 VDEventProfilerW32::VDEventProfilerW32()
@@ -157,6 +186,15 @@ VDEventProfilerW32::~VDEventProfilerW32() {
 		mDynScopeStrings.pop_back();
 	}
 
+	{for(int i=0; i<sample_count; i++){
+		PerSampleInfo* psi = &mSample[i];
+
+		while(!psi->mBlocks.empty()) {
+			delete psi->mBlocks.back();
+			psi->mBlocks.pop_back();
+		}
+	}}
+
 	::TlsFree(mTlsIndex);
 }
 
@@ -186,6 +224,27 @@ void VDEventProfilerW32::SetComment(uintptr scopeId, const char* data) {
 			scope.comment = dynData;
 		}
 	}
+}
+
+void VDEventProfilerW32::InsertSample(int name, uint64 data) {
+	if (!mEnableCount)
+		return;
+
+	PerSampleInfo* psi = &mSample[name];
+
+	uint32 idx = psi->mCurrentIndex;
+
+	if (idx >= VDSampleBlock::N) {
+		if (!AllocSampleBlock(psi))
+			return;
+
+		idx = 0;
+	}
+
+	VDProfileSample& ev = psi->mpCurrentBlock->mSample[idx++];
+	ev.mTimestamp = VDGetPreciseTick();
+	ev.data = data;
+	psi->mCurrentIndex = idx;
 }
 
 void VDEventProfilerW32::BeginScope(const char *name, uintptr *cache, uint32 data, uint32 flags) {
@@ -303,6 +362,22 @@ void VDEventProfilerW32::Clear() {
 		mScopes[i].comment = 0;
 	}
 
+	{for(int i=0; i<sample_count; i++){
+		PerSampleInfo* psi = &mSample[i];
+
+		while(!psi->mBlocks.empty()) {
+			VDSampleBlock *b = psi->mBlocks.back();
+
+			if (b && b != psi->mpCurrentBlock)
+				delete b;
+
+			psi->mBlocks.pop_back();
+		}
+
+		psi->mBlocks.push_back(psi->mpCurrentBlock);
+		psi->mStartIndex = psi->mCurrentIndex;
+	}}
+
 	mMutex.Unlock();
 }
 
@@ -351,6 +426,24 @@ void VDEventProfilerW32::UpdateScopes(vdfastvector<VDThreadEventScope>& scopes) 
 		scopes[i].comment = mScopes[i].comment;
 	}
 	
+	mMutex.Unlock();
+}
+
+void VDEventProfilerW32::UpdateSample(int name, vdfastvector<VDProfileSample>& sample) const {
+	mMutex.Lock();
+
+	const PerSampleInfo& psi = mSample[name];
+	int n = VDSampleBlock::N * psi.mBlocks.size() - VDSampleBlock::N + psi.mCurrentIndex - psi.mStartIndex;
+	int n0 = sample.size();
+	sample.resize(n);
+
+	{for(int i=n0; i<n; i++){
+		int idx = i+psi.mStartIndex;
+		const VDProfileSample& ev = psi.mBlocks[idx / VDSampleBlock::N]->mSample[idx % VDSampleBlock::N];
+		sample[i].mTimestamp = ev.mTimestamp;
+		sample[i].data = ev.data;
+	}}
+
 	mMutex.Unlock();
 }
 
@@ -435,6 +528,25 @@ bool VDEventProfilerW32::AllocBlock(PerThreadInfo *pti) {
 		}
 
 		delete pti;
+	}
+	mMutex.Unlock();
+
+	return enabled;
+}
+
+bool VDEventProfilerW32::AllocSampleBlock(PerSampleInfo *psi) {
+	mMutex.Lock();
+	bool enabled = mEnableCount > 0;
+	if (enabled) {
+		VDSampleBlock *block = new VDSampleBlock;
+		psi->mBlocks.push_back(block);
+		psi->mpCurrentBlock = block;
+		psi->mCurrentIndex = 0;
+	} else {
+		while(!psi->mBlocks.empty()) {
+			delete psi->mBlocks.back();
+			psi->mBlocks.pop_back();
+		}
 	}
 	mMutex.Unlock();
 
@@ -587,10 +699,12 @@ protected:
 	HFONT		mhfont;
 	HPEN    pen1;
 	HPEN    pen2;
+	HPEN    pen5;
 	HBRUSH  br1;
 	HBRUSH  br2;
 	HBRUSH  br3;
 	HBRUSH  br4;
+	HBRUSH  br5;
 	HCURSOR cr_hand;
 	VDRTProfiler	*mpProfiler;
 	int     mode;
@@ -607,6 +721,7 @@ protected:
 	int			mFontHeight;
 	int			mFontAscent;
 	int			mFontInternalLeading;
+	int			mScrollHeight;
 
 	int			mWheelDeltaAccum;
 	int			mDragOffsetX;
@@ -629,6 +744,7 @@ protected:
 	vdfastvector<VDEventProfileThreadTracker *> mThreadProfiles;
 	vdfastvector<VDThreadEventScope> mScopes;
 	vdfastvector<const VDProfileTrackedEvent *>	mSortedList;
+	vdfastvector<VDProfileSample>	sample_cpu;
 	const VDProfileTrackedEvent* selection;
 
 	friend bool VDRegisterRTProfileDisplayControl2();
@@ -664,17 +780,21 @@ VDRTProfileDisplay2::VDRTProfileDisplay2(HWND hwnd)
 	selection = 0;
 	pen1 = 0;
 	pen2 = 0;
+	pen5 = 0;
 	br1 = 0;
 	br2 = 0;
 	br3 = 0;
 	br4 = 0;
+	br5 = 0;
 
 	pen1 = CreatePen(PS_SOLID,1,RGB(0,0,0));
 	pen2 = CreatePen(PS_SOLID,1,RGB(0,100,255));
+	pen5 = CreatePen(PS_SOLID,1,RGB(0,150,0));
 	br1 = CreateSolidBrush(RGB(240,240,240));
 	br2 = CreateSolidBrush(RGB(0,100,255));
 	br3 = CreateSolidBrush(RGB(255,200,200));
 	br4 = CreateSolidBrush(RGB(255,255,0));
+	br5 = CreateSolidBrush(RGB(90,255,90));
 	cr_hand = LoadCursor(0,IDC_HAND);
 }
 
@@ -686,6 +806,8 @@ VDRTProfileDisplay2::~VDRTProfileDisplay2() {
 		DeleteObject(pen1);
 	if(pen2)
 		DeleteObject(pen2);
+	if(pen5)
+		DeleteObject(pen5);
 	if(br1)
 		DeleteObject(br1);
 	if(br2)
@@ -694,6 +816,8 @@ VDRTProfileDisplay2::~VDRTProfileDisplay2() {
 		DeleteObject(br3);
 	if(br4)
 		DeleteObject(br4);
+	if(br5)
+		DeleteObject(br5);
 }
 
 VDRTProfileDisplay2 *VDRTProfileDisplay2::Create(HWND hwndParent, int x, int y, int cx, int cy, UINT id) {
@@ -843,7 +967,7 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 				}
 				int tc2 = VDPreferencesGetFilterThreadCount()+2;
 				if(tc2>tc) tc = tc2;
-				int maxH = tc*20+50;
+				int maxH = tc*20+55+mFontHeight;
 				mmi.ptMaxTrackSize.y = maxH;
 			}
 			return 0;
@@ -903,7 +1027,7 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 				RECT r;
 				GetClientRect(mhwnd,&r);
 				MapWindowPoints(0,mhwnd,&pt,1);
-				if (pt.y<r.bottom-mFontHeight) {
+				if (pt.y<r.bottom-mScrollHeight) {
 					::SetFocus(mhwnd);
 					GoToEvent(LOWORD(lParam),HIWORD(lParam));
 					UpdateListTop(false);
@@ -953,7 +1077,7 @@ LRESULT VDRTProfileDisplay2::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 				RECT r;
 				GetClientRect(mhwnd,&r);
 				MapWindowPoints(0,mhwnd,&pt,1);
-				if (pt.y>r.bottom-mFontHeight) {
+				if (pt.y>r.bottom-mScrollHeight) {
 					SetCursor(cr_hand);
 					return TRUE;
 				}
@@ -1109,6 +1233,19 @@ void VDRTProfileDisplay2::OnPaint() {
 		double pixelsPerTick = VDGetPreciseSecondsPerTick() * 1000000.0 * pixelsPerMicrosec;
 
 		size_t threadCount = mThreadProfiles.size();
+		size_t actualCount = 0;
+		for(size_t i=0; i<threadCount; ++i) {
+			VDEventProfileThreadTracker *tracker = mThreadProfiles[i];
+
+			if (!tracker)
+				continue;
+
+			const vdspan<VDProfileTrackedEvent>& events = tracker->GetEvents();
+			size_t n = events.size();
+			if(!n) continue;
+
+			actualCount++;
+		}
 
 		sint64 timeStartOffset = VDRoundToInt64((ps.rcPaint.left + mBasePixelOffset) * microsecsPerPixel);
 		sint64 majorTick = timeStartOffset;
@@ -1116,11 +1253,69 @@ void VDRTProfileDisplay2::OnPaint() {
 		--majorTick;
 		majorTick -= majorTick % mMajorScaleInterval;
 
+		HPEN pen0 = (HPEN)SelectObject(hdc,pen1);
+		HBRUSH br0 = (HBRUSH)SelectObject(hdc,br5);
+
+		// cpu usage
+		{
+			int y1 = actualCount*20;
+			int y2 = y1 + 50;
+			int ix0 = 0;
+			int y0 = 0;
+			uint64 sw = 0;
+			uint64 sm = 0;
+
+			const vdspan<VDProfileSample>& events = sample_cpu;
+			size_t n = events.size();
+			MoveToEx(hdc,ps.rcPaint.left, y2-41, 0);
+			LineTo(hdc,ps.rcPaint.right,y2-41);
+			MoveToEx(hdc,ps.rcPaint.left, y2-1, 0);
+			LineTo(hdc,ps.rcPaint.right,y2-1);
+			SelectObject(hdc,pen5);
+
+			{for(uint32 j=0; j<n; ++j) {
+				const VDProfileSample& ev = events[j];
+
+				double xf1 = (double)(sint64)(ev.mTimestamp - baseTime) * pixelsPerTick;
+
+				sint64 x1 = VDCeilToInt64(xf1 - 0.5) - mBasePixelOffset;
+
+				if (ix0-3 >= ps.rcPaint.right)
+					break;
+
+				int ix1 = VDClampToSint32(x1);
+				if ((ix1<ix0+3) && j>0) {
+					uint64 d1 = ev.mTimestamp-events[j-1].mTimestamp;
+					sw += d1;
+					sm += d1*ev.data;
+					continue;
+				}
+
+				uint64 data = ev.data;
+				if (sw>0) data = sm/sw;
+				int y = y2 - int(40*data/100);
+
+				if (x1+3 > ps.rcPaint.left) {
+					if (microsecsPerPixel<5000) {
+						Rectangle(hdc, ix0-1, y, ix1, y2);
+					} else {
+						POINT p[2] = {ix0,y0,ix1,y};
+						Polyline(hdc,p,2);
+					}
+				}
+
+				ix0 = ix1;
+				y0 = y;
+				sw = 0;
+				sm = 0;
+			}}
+		}
+
 		::SetTextAlign(hdc, TA_LEFT | TA_BOTTOM);
 		::SetTextColor(hdc, 0);
 		SetBkMode(hdc,TRANSPARENT);
-		HPEN pen0 = (HPEN)SelectObject(hdc,pen1);
-		HBRUSH br0 = (HBRUSH)SelectObject(hdc,br1);
+		SelectObject(hdc,pen1);
+		SelectObject(hdc,br1);
 		for(;;) {
 			int x = VDFloorToInt(majorTick * pixelsPerMicrosec) - (int)mBasePixelOffset;
 
@@ -1351,8 +1546,27 @@ void VDRTProfileDisplay2::UpdateSummary() {
 	}
 
 	if (use_range_start && use_range_end) {
+		SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)"");
+
 		double d = (double)(range_end-range_start) * msPerTick;
-		mTempStr.sprintf("1 \t %5.1fms \t  \t  \t %s", d, "Benchmark total");
+		mTempStr.sprintf("  \t \t %5.1fms \t \t %s", d, "Benchmark total");
+		SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)mTempStr.c_str());
+
+		uint64 sw = 0;
+		uint64 sm = 0;
+
+		const vdspan<VDProfileSample>& events = sample_cpu;
+		size_t n = events.size();
+		{for(uint32 j=1; j<n; ++j) {
+			const VDProfileSample& ev = events[j];
+			if (ev.mTimestamp<range_start) continue;
+			if (ev.mTimestamp>range_end) break;
+			uint64 d1 = ev.mTimestamp-events[j-1].mTimestamp;
+			sw += d1;
+			sm += d1*ev.data;
+		}}
+
+		mTempStr.sprintf("  \t \t %d%% \t \t %s", int(sm/sw), "CPU usage");
 		SendMessage(wnd, LB_ADDSTRING, 0, (LPARAM)mTempStr.c_str());
 	}
 
@@ -1481,6 +1695,7 @@ void VDRTProfileDisplay2::OnTimer() {
 		if (event_count!=display_event_count || event_count>0){
 			InvalidateRect(mhwnd, NULL, TRUE);
 			UpdateWindow(mhwnd);
+			SendMessage(GetParent(mhwnd),WM_SIZE,0,0);
 		}
 		if (event_count!=list_event_count || event_count>0){
 			UpdateList();
@@ -1502,6 +1717,7 @@ void VDRTProfileDisplay2::OnTimer() {
 			if (use_range_end) SetDisplayAutoZoom();
 			InvalidateRect(mhwnd, NULL, TRUE);
 			UpdateWindow(mhwnd);
+			SendMessage(GetParent(mhwnd),WM_SIZE,0,0);
 			VDPROFILEEND();
 		}
 
@@ -1524,6 +1740,7 @@ void VDRTProfileDisplay2::OnSetFont(HFONT hfont, bool bRedraw) {
 	mFontHeight				= 16;
 	mFontAscent				= 12;
 	mFontInternalLeading	= 0;
+	mScrollHeight	= 60;
 
 	// measure font metrics
 	if (HDC hdc = GetDC(mhwnd)) {
@@ -1594,6 +1811,8 @@ void VDRTProfileDisplay2::DeleteThreadProfiles() {
 
 		delete p;
 	}
+
+	sample_cpu.clear();
 }
 
 void VDRTProfileDisplay2::UpdateThreadProfiles() {
@@ -1626,6 +1845,8 @@ void VDRTProfileDisplay2::UpdateThreadProfiles() {
 	}
 
 	p->UpdateScopes(mScopes);
+
+	p->UpdateSample(IVDEventProfiler::sample_cpu,sample_cpu);
 
 	UpdateRange();
 }

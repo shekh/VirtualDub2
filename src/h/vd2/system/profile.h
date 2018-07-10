@@ -167,6 +167,12 @@ protected:
 
 class IVDEventProfiler {
 public:
+	enum {
+		sample_cpu = 0,
+		sample_count = 1,
+	};
+
+	virtual void InsertSample(int name, uint64 data) = 0;
 	virtual void BeginScope(const char *name, uintptr *cache, uint32 data, uint32 flags) = 0;
 	virtual void BeginDynamicScope(const char *name, uintptr *cache, uint32 data, uint32 flags) = 0;
 	virtual void SetComment(uintptr scopeId, const char* data) = 0;

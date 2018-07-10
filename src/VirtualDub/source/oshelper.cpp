@@ -653,8 +653,8 @@ void VDCPUUsageReader::read(int& vd, int& sys) {
 		unsigned __int64 sd = (skt - skt_last) + (sut - sut_last);
 
 		if (sd==0) {
-			vd = 100;
-			sys = 100;
+			vd = -1;
+			sys = -1;
 		} else {
 			vd = (int)((100 * (kt + ut - kt_last - ut_last) + sd/2) / sd);
 			sys = (int)((100 * (sd - (idle-idle_last)) + sd/2) / sd);
