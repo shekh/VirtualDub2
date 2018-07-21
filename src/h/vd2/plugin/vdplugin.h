@@ -174,6 +174,9 @@ namespace vd2 {
 		kColorRangeModeCount
 	};
 
+	// converts 0xF0 -> 0xFF etc
+	inline int depth_mask(int ref) { return (ref + (ref & -ref))-1; }
+
 	// converts 0xFF -> 0x80, 0xFF0 -> 0x800 etc
 	inline int chroma_neutral(int ref) { return (ref + (ref & -ref))/2; }
 };

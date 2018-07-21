@@ -196,6 +196,7 @@ public:
 protected:
 	int ref;
 	uint32 m;
+	uint16 s;
 	int bias;
 	bool isChroma;
 	bool do_normalize;

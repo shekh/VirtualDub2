@@ -219,6 +219,8 @@ int VDPixmapGen_16_To_8::ComputeSpan(uint8* dst, const uint16* src, int n) {
 
 void VDPixmapGen_Y16_Normalize::TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
 	mpSrc->TransformPixmapInfo(src,dst);
+	int mask = vd2::depth_mask(max_value);
+	s = 0xFFFF-mask;
 	if (dst.ref_r==max_value) {
 		do_normalize = false;
 		ref = dst.ref_r;
@@ -228,6 +230,10 @@ void VDPixmapGen_Y16_Normalize::TransformPixmapInfo(const FilterModPixmapInfo& s
 		do_normalize = true;
 		ref = dst.ref_r;
 		m = (uint64(max_value)*0x20000/ref+1)/2;
+		int ext = mask*0x10000/m;
+		if (ext>0xFFFF) ext = 0xFFFF;
+		while (ext<0xFFFF && ((uint64(ext+1)*m+0x8000)>>16)<=mask) ext++;
+		s = 0xFFFF-ext;
 		if (isChroma) {
 			int n1 = vd2::chroma_neutral(max_value);
 			int n0 = vd2::chroma_neutral(ref);
@@ -261,6 +267,7 @@ void VDPixmapGen_A16_Normalize::TransformPixmapInfo(const FilterModPixmapInfo& s
 			bias = 0;
 		}
 	}
+	s = 0xFFFF-ref;
 }
 
 int VDPixmapGen_Y16_Normalize::ComputeSpan(uint16* dst, const uint16* src, int n) {
@@ -325,7 +332,6 @@ void VDPixmapGen_A8_Normalize::ComputeWipeAlpha(void *dst0, sint32 y) {
 }
 
 void VDPixmapGen_Y16_Normalize::ComputeMask(uint16* dst, const uint16* src, int n) {
-	uint16 s = 0xFFFF-ref;
 	__m128i rn = _mm_set1_epi16(round/2);
 	__m128i sat = _mm_set1_epi16(s);
 	__m128i rmask = _mm_set1_epi16(-round);
@@ -342,7 +348,6 @@ void VDPixmapGen_Y16_Normalize::ComputeMask(uint16* dst, const uint16* src, int 
 }
 
 void VDPixmapGen_Y16_Normalize::ComputeNormalize(uint16* dst, const uint16* src, int n) {
-	uint16 s = 0xFFFF-ref;
 	__m128i sat = _mm_set1_epi16(s);
 	__m128i mm = _mm_set1_epi16(m);
 
@@ -381,7 +386,6 @@ void VDPixmapGen_Y16_Normalize::ComputeNormalize(uint16* dst, const uint16* src,
 void VDPixmapGen_Y16_Normalize::ComputeNormalizeBias(uint16* dst, const uint16* src, int n) {
 	// round is actually used only with 0xFF00 range - safely saturates at 0xFFFF
 	// bias does not produce out of range values (test_normalize_bias)
-	uint16 s = 0xFFFF-ref;
 	__m128i sat = _mm_set1_epi16(s);
 	__m128i mm = _mm_set1_epi16(m);
 	int br = bias + round/2;
