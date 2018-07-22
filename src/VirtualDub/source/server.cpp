@@ -129,6 +129,7 @@ private:
 	vdrefptr<VDFilterFrameVideoSource>	mpVideoFrameSource;
 	VDPixmapLayout		mFrameLayout;
 	uint32				mFrameSize;
+	vdautoptr<IVDPixmapBlitter>	mpOutputBlitter;
 
 	long			lRequestCount, lFrameCount, lAudioSegCount;
 
@@ -581,11 +582,9 @@ LRESULT Frameserver::SessionFormat(LPARAM lParam, WPARAM stream) {
 		len = sizeof(BITMAPINFOHEADER);
 		if (len > fs->arena_size) return VDSRVERR_TOOBIG;
 
-		memcpy(fs->arena, vSrc->getDecompressedFormat(), len);
-
 		const VDPixmapLayout& output = filters.GetOutputLayout();
 		bmih = (BITMAPINFOHEADER *)fs->arena;
-//		bmih->biSize		= sizeof(BITMAPINFOHEADER);
+		bmih->biSize		= sizeof(BITMAPINFOHEADER);
 		bmih->biWidth		= output.w;
 		bmih->biHeight		= output.h;
 		bmih->biPlanes		= 1;
@@ -594,6 +593,12 @@ LRESULT Frameserver::SessionFormat(LPARAM lParam, WPARAM stream) {
 		bmih->biSizeImage	= ((bmih->biWidth*3+3)&-4)*abs(bmih->biHeight);
 		bmih->biClrUsed		= 0;
 		bmih->biClrImportant= 0;
+
+		VDAVIBitmapInfoHeader* bm1 = vSrc->getDecompressedFormat();
+		if (bm1) {
+			bmih->biXPelsPerMeter = bm1->biXPelsPerMeter;
+			bmih->biYPelsPerMeter = bm1->biYPelsPerMeter;
+		}
 	}
 
 	return len;
@@ -637,7 +642,9 @@ LRESULT Frameserver::SessionFrame(LPARAM lParam, WPARAM original_frame) {
 		VDFilterFrameBuffer *buf = creq->GetResultBuffer();
 		VDPixmap px = VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead());
 		px.info = buf->info;
-		VDPixmapBlt(pxdst, px);
+		if (!mpOutputBlitter)
+			mpOutputBlitter = VDPixmapCreateBlitter(pxdst, px);
+		mpOutputBlitter->Blit(pxdst, px);
 		buf->Unlock();
 	} catch(const MyError&) {
 		return VDSRVERR_FAILED;
