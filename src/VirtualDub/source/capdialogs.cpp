@@ -1363,7 +1363,7 @@ public:
 
 					IVDUITrackbar *track = vdpoly_cast<IVDUITrackbar *>(child);
 
-					track->SetRange(minVal, maxVal);
+					track->SetRangeStep(minVal, maxVal, step);
 					child->SetValue(mpProject->GetPropertyInt(prop, NULL));
 
 					child = VDCreateUINumericLabel();

@@ -291,6 +291,7 @@ public:
 	enum { kTypeID = 'trck' };
 
 	virtual void SetRange(sint32 mn, sint32 mx) = 0;
+	virtual void SetRangeStep(sint32 mn, sint32 mx, sint32 step) = 0;
 };
 
 class VDINTERFACE IVDUIGrid : public IVDUnknown {
