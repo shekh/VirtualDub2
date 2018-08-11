@@ -3094,10 +3094,22 @@ LRESULT VDProjectUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 	return (this->*mpWndProc)(msg, wParam, lParam);
 }
 
+bool VDProjectUI::HotkeyProc(UINT msg, WPARAM wParam, LPARAM lParam) {
+	switch (msg) {
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		if (mShuttleMode && !mStickyShuttle) {
+			SceneShuttleStop();
+		}
+		return false;
+	}
+	return false;
+}
+
 LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 	static HWND hwndItem0 = NULL;
 
-    switch (msg) {
+	switch (msg) {
  
 	case WM_INITMENU:
 		UpdateMainMenu((HMENU)wParam);
@@ -3268,13 +3280,6 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 		}
 		return 0;
-
-  case WM_KEYUP:
-  case WM_SYSKEYUP:
-    if (mShuttleMode && !mStickyShuttle) {
-      SceneShuttleStop();
-    }
-    return 0;
 
 	case WM_DROPFILES:
 		HandleDragDrop((HDROP)wParam);

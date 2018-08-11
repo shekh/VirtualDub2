@@ -119,8 +119,9 @@ protected:
 	LRESULT WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	LRESULT MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam);
 	LRESULT DubWndProc(UINT msg, WPARAM wParam, LPARAM lParam);
-	virtual bool Intercept_WM_KEYUP(WPARAM wParam, LPARAM lParam) { WndProc((HWND)mhwnd, WM_KEYUP, wParam, lParam); return false; }
-	virtual bool Intercept_WM_SYSKEYUP(WPARAM wParam, LPARAM lParam) { WndProc((HWND)mhwnd, WM_SYSKEYUP, wParam, lParam); return false; }
+	bool HotkeyProc(UINT msg, WPARAM wParam, LPARAM lParam);
+	virtual bool Intercept_WM_KEYUP(WPARAM wParam, LPARAM lParam) { return HotkeyProc(WM_KEYUP, wParam, lParam); }
+	virtual bool Intercept_WM_SYSKEYUP(WPARAM wParam, LPARAM lParam) { return HotkeyProc(WM_KEYUP, wParam, lParam); }
 	void OnGetMinMaxInfo(MINMAXINFO& mmi);
 	void OnPositionNotify(int cmd);
 	void OnSize();
