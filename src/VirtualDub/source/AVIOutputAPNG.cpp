@@ -34,9 +34,12 @@ public:
 
 	void init(int frameCount, int loopCount, int alpha, int grayscale, int rate, int scale, FILE * pFile);
 	void finalize();
-	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples, FilterModPixmapInfo* info);
+	void write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& packetInfo, FilterModPixmapInfo* info);
 	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples) {
-		write(flags, pBuffer, cbBuffer, lSamples, 0);
+		IVDXOutputFile::PacketInfo packetInfo;
+		packetInfo.flags = flags;
+		packetInfo.samples = lSamples;
+		write(pBuffer,cbBuffer,packetInfo,0);
 	}
 	void partialWriteBegin(uint32 flags, uint32 bytes, uint32 samples);
 	void partialWrite(const void *pBuffer, uint32 cbBuffer);
@@ -1044,7 +1047,7 @@ void AVIVideoAPNGOutputStream::prepare_buffer(uint8 **pp1, uint8 **pp2, uint32 x
 	}
 }
 
-void AVIVideoAPNGOutputStream::write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples, FilterModPixmapInfo* info) 
+void AVIVideoAPNGOutputStream::write(const void *pBuffer, uint32 cbBuffer, IVDXOutputFile::PacketInfo& packetInfo, FilterModPixmapInfo* info) 
 {
 	uint32 i, j;
 	uint32 area_none, area_prev, area_back;

@@ -1326,6 +1326,7 @@ namespace {
 
 					VDRegistryAppKey appKey("Persistence");
 					appKey.setInt("AnimGIF: Loop count", mLoopCount);
+					VDSetLastLoadSavePath(kFileDialog_GIFOut, mFileName.c_str());
 
 					pBase->EndModal(true);
 					return true;
@@ -1404,6 +1405,7 @@ namespace {
 					appKey.setInt("AnimPNG: Loop count", mLoopCount);
 					appKey.setInt("AnimPNG: Alpha channel", mAlpha);
 					appKey.setInt("AnimPNG: Grayscale", mGrayscale);
+					VDSetLastLoadSavePath(kFileDialog_PNGOut, mFileName.c_str());
 
 					pBase->EndModal(true);
 					return true;

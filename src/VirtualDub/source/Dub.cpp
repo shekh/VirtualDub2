@@ -2207,8 +2207,12 @@ void MakeOutputFormat::combine() {
 
 void MakeOutputFormat::combineComp() {
 	comp = out;
-	if (use_os_format) return;
 	if (use_vc_format) return;
+	if (use_os_format) {
+		// legacy path for gif etc
+		combineComp_repack();
+		return;
+	}
 	if (!out) return;
 
 	if (!vc) {
