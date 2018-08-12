@@ -200,6 +200,7 @@ int VDPixmapFormatMatrixType(sint32 format) {
 	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
 	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
 	case nsVDPixmap::kPixFormat_YUV422_YU64:
+	case nsVDPixmap::kPixFormat_Y16:
 		return 1; // flexible
 
 	case nsVDPixmap::kPixFormat_YUV444_Planar:

@@ -1074,7 +1074,7 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 
 	VDStringW msg;
 	format = VDPixmapFormatCombine(format);
-	if (mhCodec && format) {
+	if (format) {
 		if(codec_failed) {
 			msg = VDStringW(L"(!) Format not accepted by codec");
 		} else {

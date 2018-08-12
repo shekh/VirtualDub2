@@ -54,6 +54,7 @@ static long flipv_param(VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 	case kPixFormat_RGB888:
 	case kPixFormat_XRGB8888:
 	case kPixFormat_Y8:
+	case kPixFormat_Y16:
 	case kPixFormat_YUV422_UYVY:
 	case kPixFormat_YUV422_UYVY_FR:
 	case kPixFormat_YUV422_UYVY_709:

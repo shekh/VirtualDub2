@@ -34,6 +34,7 @@ uint32 VDVFNull::GetParams() {
 	case nsVDXPixmap::kPixFormat_RGB888:
 	case nsVDXPixmap::kPixFormat_XRGB8888:
 	case nsVDXPixmap::kPixFormat_Y8:
+	case nsVDXPixmap::kPixFormat_Y16:
 	case nsVDXPixmap::kPixFormat_YUV422_UYVY:
 	case nsVDXPixmap::kPixFormat_YUV422_YUYV:
 	case nsVDXPixmap::kPixFormat_YUV444_Planar:
