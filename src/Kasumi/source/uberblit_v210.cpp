@@ -55,18 +55,18 @@ void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 		float g5 = srcG[5];
 		srcG += 6;
 
-		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 1.0f) r0 = 1.0f;
-		if (r1 < 0.0f) r1 = 0.0f; else if (r1 > 1.0f) r1 = 1.0f;
-		if (r2 < 0.0f) r2 = 0.0f; else if (r2 > 1.0f) r2 = 1.0f;
-		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 1.0f) g0 = 1.0f;
-		if (g1 < 0.0f) g1 = 0.0f; else if (g1 > 1.0f) g1 = 1.0f;
-		if (g2 < 0.0f) g2 = 0.0f; else if (g2 > 1.0f) g2 = 1.0f;
-		if (g3 < 0.0f) g3 = 0.0f; else if (g3 > 1.0f) g3 = 1.0f;
-		if (g4 < 0.0f) g4 = 0.0f; else if (g4 > 1.0f) g4 = 1.0f;
-		if (g5 < 0.0f) g5 = 0.0f; else if (g5 > 1.0f) g5 = 1.0f;
-		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 1.0f) b0 = 1.0f;
-		if (b1 < 0.0f) b1 = 0.0f; else if (b1 > 1.0f) b1 = 1.0f;
-		if (b2 < 0.0f) b2 = 0.0f; else if (b2 > 1.0f) b2 = 1.0f;
+		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 2.0f) r0 = 2.0f;
+		if (r1 < 0.0f) r1 = 0.0f; else if (r1 > 2.0f) r1 = 2.0f;
+		if (r2 < 0.0f) r2 = 0.0f; else if (r2 > 2.0f) r2 = 2.0f;
+		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 2.0f) g0 = 2.0f;
+		if (g1 < 0.0f) g1 = 0.0f; else if (g1 > 2.0f) g1 = 2.0f;
+		if (g2 < 0.0f) g2 = 0.0f; else if (g2 > 2.0f) g2 = 2.0f;
+		if (g3 < 0.0f) g3 = 0.0f; else if (g3 > 2.0f) g3 = 2.0f;
+		if (g4 < 0.0f) g4 = 0.0f; else if (g4 > 2.0f) g4 = 2.0f;
+		if (g5 < 0.0f) g5 = 0.0f; else if (g5 > 2.0f) g5 = 2.0f;
+		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 2.0f) b0 = 2.0f;
+		if (b1 < 0.0f) b1 = 0.0f; else if (b1 > 2.0f) b1 = 2.0f;
+		if (b2 < 0.0f) b2 = 0.0f; else if (b2 > 2.0f) b2 = 2.0f;
 
 		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * max_value);
 		uint32 ir1 = (uint32)VDRoundToIntFast(r1 * max_value);
@@ -80,6 +80,19 @@ void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 		uint32 ig3 = (uint32)VDRoundToIntFast(g3 * max_value);
 		uint32 ig4 = (uint32)VDRoundToIntFast(g4 * max_value);
 		uint32 ig5 = (uint32)VDRoundToIntFast(g5 * max_value);
+
+		if (ir0>0x3FF) ir0 = 0x3FF;
+		if (ir1>0x3FF) ir1 = 0x3FF;
+		if (ir2>0x3FF) ir2 = 0x3FF;
+		if (ib0>0x3FF) ib0 = 0x3FF;
+		if (ib1>0x3FF) ib1 = 0x3FF;
+		if (ib2>0x3FF) ib2 = 0x3FF;
+		if (ig0>0x3FF) ig0 = 0x3FF;
+		if (ig1>0x3FF) ig1 = 0x3FF;
+		if (ig2>0x3FF) ig2 = 0x3FF;
+		if (ig3>0x3FF) ig3 = 0x3FF;
+		if (ig4>0x3FF) ig4 = 0x3FF;
+		if (ig5>0x3FF) ig5 = 0x3FF;
 
 		// dword 0: XX Cr0 Y0 Cb0
 		// dword 1: XX Y2 Cb1 Y1
@@ -126,17 +139,17 @@ void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 			g0 = srcG[0];
 		}
 
-		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 1.0f) r0 = 1.0f;
-		if (r1 < 0.0f) r1 = 0.0f; else if (r1 > 1.0f) r1 = 1.0f;
-		if (r2 < 0.0f) r2 = 0.0f; else if (r2 > 1.0f) r2 = 1.0f;
-		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 1.0f) g0 = 1.0f;
-		if (g1 < 0.0f) g1 = 0.0f; else if (g1 > 1.0f) g1 = 1.0f;
-		if (g2 < 0.0f) g2 = 0.0f; else if (g2 > 1.0f) g2 = 1.0f;
-		if (g3 < 0.0f) g3 = 0.0f; else if (g3 > 1.0f) g3 = 1.0f;
-		if (g4 < 0.0f) g4 = 0.0f; else if (g4 > 1.0f) g4 = 1.0f;
-		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 1.0f) b0 = 1.0f;
-		if (b1 < 0.0f) b1 = 0.0f; else if (b1 > 1.0f) b1 = 1.0f;
-		if (b2 < 0.0f) b2 = 0.0f; else if (b2 > 1.0f) b2 = 1.0f;
+		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 2.0f) r0 = 2.0f;
+		if (r1 < 0.0f) r1 = 0.0f; else if (r1 > 2.0f) r1 = 2.0f;
+		if (r2 < 0.0f) r2 = 0.0f; else if (r2 > 2.0f) r2 = 2.0f;
+		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 2.0f) g0 = 2.0f;
+		if (g1 < 0.0f) g1 = 0.0f; else if (g1 > 2.0f) g1 = 2.0f;
+		if (g2 < 0.0f) g2 = 0.0f; else if (g2 > 2.0f) g2 = 2.0f;
+		if (g3 < 0.0f) g3 = 0.0f; else if (g3 > 2.0f) g3 = 2.0f;
+		if (g4 < 0.0f) g4 = 0.0f; else if (g4 > 2.0f) g4 = 2.0f;
+		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 2.0f) b0 = 2.0f;
+		if (b1 < 0.0f) b1 = 0.0f; else if (b1 > 2.0f) b1 = 2.0f;
+		if (b2 < 0.0f) b2 = 0.0f; else if (b2 > 2.0f) b2 = 2.0f;
 
 		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * max_value);
 		uint32 ir1 = (uint32)VDRoundToIntFast(r1 * max_value);
@@ -149,6 +162,18 @@ void VDPixmapGen_32F_To_V210::Compute(void *dst0, sint32 y) {
 		uint32 ig2 = (uint32)VDRoundToIntFast(g2 * max_value);
 		uint32 ig3 = (uint32)VDRoundToIntFast(g3 * max_value);
 		uint32 ig4 = (uint32)VDRoundToIntFast(g4 * max_value);
+
+		if (ir0>0x3FF) ir0 = 0x3FF;
+		if (ir1>0x3FF) ir1 = 0x3FF;
+		if (ir2>0x3FF) ir2 = 0x3FF;
+		if (ib0>0x3FF) ib0 = 0x3FF;
+		if (ib1>0x3FF) ib1 = 0x3FF;
+		if (ib2>0x3FF) ib2 = 0x3FF;
+		if (ig0>0x3FF) ig0 = 0x3FF;
+		if (ig1>0x3FF) ig1 = 0x3FF;
+		if (ig2>0x3FF) ig2 = 0x3FF;
+		if (ig3>0x3FF) ig3 = 0x3FF;
+		if (ig4>0x3FF) ig4 = 0x3FF;
 
 		// dword 0: XX Cr0 Y0 Cb0
 		// dword 1: XX Y2 Cb1 Y1
@@ -374,13 +399,17 @@ void VDPixmapGen_32F_To_V410::Compute(void *dst0, sint32 y) {
 		float g0 = srcG[0];
 		srcG++;
 
-		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 1.0f) r0 = 1.0f;
-		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 1.0f) g0 = 1.0f;
-		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 1.0f) b0 = 1.0f;
+		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 2.0f) r0 = 2.0f;
+		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 2.0f) g0 = 2.0f;
+		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 2.0f) b0 = 2.0f;
 
 		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * max_value);
 		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * max_value);
 		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * max_value);
+
+		if (ir0>0x3FF) ir0 = 0x3FF;
+		if (ib0>0x3FF) ib0 = 0x3FF;
+		if (ig0>0x3FF) ig0 = 0x3FF;
 
 		// dword: Cr Y Cb XX
 		dst[0] = (ir0 << 22) + (ig0 << 12) + (ib0 << 2);
@@ -486,13 +515,17 @@ void VDPixmapGen_32F_To_Y410::Compute(void *dst0, sint32 y) {
 		float g0 = srcG[0] + bias;
 		srcG++;
 
-		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 1.0f) r0 = 1.0f;
-		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 1.0f) g0 = 1.0f;
-		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 1.0f) b0 = 1.0f;
+		if (r0 < 0.0f) r0 = 0.0f; else if (r0 > 2.0f) r0 = 2.0f;
+		if (g0 < 0.0f) g0 = 0.0f; else if (g0 > 2.0f) g0 = 2.0f;
+		if (b0 < 0.0f) b0 = 0.0f; else if (b0 > 2.0f) b0 = 2.0f;
 
 		uint32 ir0 = (uint32)VDRoundToIntFast(r0 * max_value);
 		uint32 ib0 = (uint32)VDRoundToIntFast(b0 * max_value);
 		uint32 ig0 = (uint32)VDRoundToIntFast(g0 * max_value);
+
+		if (ir0>0x3FF) ir0 = 0x3FF;
+		if (ib0>0x3FF) ib0 = 0x3FF;
+		if (ig0>0x3FF) ig0 = 0x3FF;
 
 		// dword: XX Cr Y Cb
 		dst[0] = (ir0 << 20) + (ig0 << 10) + ib0;
