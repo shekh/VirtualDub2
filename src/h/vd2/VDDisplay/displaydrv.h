@@ -108,6 +108,7 @@ public:
 	virtual void SetLogicalPalette(const uint8 *pLogicalPalette) = 0;
 
 	virtual float GetSyncDelta() const = 0;
+	virtual bool GetMaxArea(int& w, int& h) { return false; }
 };
 
 class VDINTERFACE VDVideoDisplayMinidriver : public IVDVideoDisplayMinidriver {

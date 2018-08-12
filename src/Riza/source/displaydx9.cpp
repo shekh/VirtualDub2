@@ -3563,6 +3563,14 @@ protected:
 
 	void SetLogicalPalette(const uint8 *pLogicalPalette);
 	float GetSyncDelta() const { return mSyncDelta; }
+	bool GetMaxArea(int& w, int& h) {
+		if (mpManager) {
+			w = mpManager->GetCaps().MaxTextureWidth;
+			h = mpManager->GetCaps().MaxTextureHeight;
+			return true;
+		}
+		return false;
+	}
 
 protected:
 	void OnPreDeviceReset();

@@ -328,6 +328,11 @@ void VDVideoWindow::InitSourcePAR() {
 }
 
 void VDVideoWindow::SetZoom(double zoom, bool useWorkArea) {
+	int w,h;
+	if (mSourceWidth > 0 && mSourceHeight > 0 && mpDisplay->GetMaxArea(w,h)) {
+		double z1 = GetMaxZoomForArea(w,h,0);
+		if (z1<zoom) zoom = z1;
+	}
 	mZoom = zoom;
 	Resize(useWorkArea);
 }

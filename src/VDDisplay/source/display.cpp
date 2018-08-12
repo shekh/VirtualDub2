@@ -121,6 +121,10 @@ protected:
 	DisplayMode GetDisplayMode();
 	void SetDisplayMode(DisplayMode mode);
 	float GetSyncDelta() const { return mSyncDelta; }
+	bool GetMaxArea(int& w, int& h) {
+		if (mpMiniDriver) return mpMiniDriver->GetMaxArea(w,h);
+		return false;
+	}
 
 	void OnTick() {
 		if (mpMiniDriver)
