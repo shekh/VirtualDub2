@@ -1418,3 +1418,22 @@ void VDDubVideoProcessor::OnAsyncCompressDone(VDThreadedVideoCompressor *compres
 void VDDubVideoProcessor::OnClockUpdated(VDDubPreviewClock *clock, const uint32& val) {
 	ActivatePaths(kPath_SkipLatePreviewFrames);
 }
+
+//-------------------------------------------------------------------------------------------------------------
+// overview
+/*
+
+RequestNextVideoFrame
+Output frame requested from filter instance:
+request is added instance internal list, (multiple) source requests are made from upstream filters and so on,
+finally video source request list is populated.
+If filters are bypassed it is the same end result.
+
+ReadVideoFrame
+Pick requests from video source and execute them.
+Marking requests as completed allows dependent filter instances to continue.
+How the hell mPendingSourceFrames and VDRenderVideoPipeFrameInfo relate?
+mPendingSourceFrames -> mpVideoRequestQueue -> mpVideoPipe -> pFrameInfo
+
+*/
+
