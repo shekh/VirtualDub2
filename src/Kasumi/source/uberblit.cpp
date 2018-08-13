@@ -1517,6 +1517,44 @@ uint32 ConvertSpace_BGR(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint
 		return srcToken;
 	}
 
+	// expand grayscale to planar rgb
+
+	if ((srcToken & kVDPixType_Mask)==kVDPixType_8) {
+		switch(srcSpace) {
+		case kVDPixSpace_Y_601_FR:
+		case kVDPixSpace_Y_709_FR:
+			gen.dup();
+			gen.dup();
+			srcToken = kVDPixSpace_BGR | kVDPixSamp_444 | kVDPixType_8_8_8;
+			return srcToken;
+		}
+	}
+
+	if ((srcToken & kVDPixType_Mask)==kVDPixType_16_LE) {
+		switch(srcSpace) {
+		case kVDPixSpace_Y_601_FR:
+		case kVDPixSpace_Y_709_FR:
+			gen.dup_r16();
+			gen.dup();
+			gen.dup();
+			srcToken = kVDPixSpace_BGR | kVDPixSamp_444 | kVDPixType_16_16_16_LE;
+			return srcToken;
+		}
+	}
+
+	if ((srcToken & kVDPixType_Mask)==kVDPixType_32F_LE) {
+		switch(srcSpace) {
+		case kVDPixSpace_Y_601_FR:
+		case kVDPixSpace_Y_709_FR:
+			gen.dup();
+			gen.dup();
+			srcToken = kVDPixSpace_BGR | kVDPixSamp_444 | kVDPixType_32F_32F_32F_LE;
+			return srcToken;
+		}
+	}
+
+	// generic
+
 	switch(srcSpace) {
 	case kVDPixSpace_YCC_709:
 		switch(srcToken & kVDPixType_Mask) {
@@ -1753,32 +1791,38 @@ uint32 ConvertSpace_YCC(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint
 	}
 
 	if (expand_Y) {
-		if ((srcToken & kVDPixType_Mask)==kVDPixType_8){
-			srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | dstSpace | kVDPixType_8;
+		uint32 dstSamp = dstToken & kVDPixSamp_Mask;
+		const VDPixmapSamplingInfo& sinfo = VDPixmapGetSamplingInfo(dstSamp);
+		int cw = ((w - 1) >> sinfo.mPlane1Cb.mXBits) + 1;
+		int ch = ((h - 1) >> sinfo.mPlane1Cb.mYBits) + 1;
 
-			const VDPixmapSamplingInfo& sinfo = VDPixmapGetSamplingInfo(srcToken); //! sampling info of what?
-			int cw = ((w - 1) >> sinfo.mPlane1Cb.mXBits) + 1;
-			int ch = ((h - 1) >> sinfo.mPlane1Cb.mYBits) + 1;
-			gen.ldconst(0x80, cw, cw, ch, srcToken);
+		if ((srcToken & kVDPixType_Mask)==kVDPixType_8){
+			uint32 yccToken = (srcToken & ~kVDPixSpace_Mask) | dstSpace;
+			gen.ldconst(0x80, cw, cw, ch, yccToken);
 
 			gen.dup();
 			gen.swap(2);
 			gen.swap(1);
-			srcToken = dstSpace | kVDPixType_8_8_8 | (srcToken & kVDPixSamp_Mask);
+			srcToken = dstSpace | dstSamp | kVDPixType_8_8_8;
+
+		} else if ((srcToken & kVDPixType_Mask)==kVDPixType_16_LE){
+			uint32 yccToken = (srcToken & ~kVDPixSpace_Mask) | dstSpace;
+			gen.ldconst16c(cw, cw, ch, yccToken);
+
+			gen.dup();
+			gen.swap(2);
+			gen.swap(1);
+			srcToken = dstSpace | dstSamp | kVDPixType_16_16_16_LE;
 
 		} else {
 			srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_LE, w, h);
-			srcToken = (srcToken & ~kVDPixSpace_Mask) | dstSpace;
-
-			const VDPixmapSamplingInfo& sinfo = VDPixmapGetSamplingInfo(srcToken); //! sampling info of what?
-			int cw = ((w - 1) >> sinfo.mPlane1Cb.mXBits) + 1;
-			int ch = ((h - 1) >> sinfo.mPlane1Cb.mYBits) + 1;
-			gen.ldconstF(128.0/255.0, cw, cw, ch, srcToken);
+			uint32 yccToken = (srcToken & ~kVDPixSpace_Mask) | dstSpace;
+			gen.ldconstF(128.0/255.0, cw, cw, ch, yccToken);
 
 			gen.dup();
 			gen.swap(2);
 			gen.swap(1);
-			srcToken = dstSpace | kVDPixType_32F_32F_32F_LE | (srcToken & kVDPixSamp_Mask);
+			srcToken = dstSpace | dstSamp | kVDPixType_32F_32F_32F_LE;
 		}
 
 		return srcToken;
@@ -1786,19 +1830,19 @@ uint32 ConvertSpace_YCC(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint
 
 	switch(srcSpace) {
 	case kVDPixSpace_Y_601:
-		srcToken = ConvertSpace(gen, srcToken, dstToken, kVDPixSpace_YCC_601, w, h, target_quality);
+		srcToken = ConvertSpace(gen, srcToken, (dstToken & ~kVDPixSamp_Mask) | kVDPixSamp_444, kVDPixSpace_YCC_601, w, h, target_quality);
 		return srcToken;
 		
 	case kVDPixSpace_Y_709:
-		srcToken = ConvertSpace(gen, srcToken, dstToken, kVDPixSpace_YCC_709, w, h, target_quality);
+		srcToken = ConvertSpace(gen, srcToken, (dstToken & ~kVDPixSamp_Mask) | kVDPixSamp_444, kVDPixSpace_YCC_709, w, h, target_quality);
 		return srcToken;
 
 	case kVDPixSpace_Y_601_FR:
-		srcToken = ConvertSpace(gen, srcToken, dstToken, kVDPixSpace_YCC_601_FR, w, h, target_quality);
+		srcToken = ConvertSpace(gen, srcToken, (dstToken & ~kVDPixSamp_Mask) | kVDPixSamp_444, kVDPixSpace_YCC_601_FR, w, h, target_quality);
 		return srcToken;
 
 	case kVDPixSpace_Y_709_FR:
-		srcToken = ConvertSpace(gen, srcToken, dstToken, kVDPixSpace_YCC_709_FR, w, h, target_quality);
+		srcToken = ConvertSpace(gen, srcToken, (dstToken & ~kVDPixSamp_Mask) | kVDPixSamp_444, kVDPixSpace_YCC_709_FR, w, h, target_quality);
 		return srcToken;
 	}
 
@@ -1835,6 +1879,8 @@ uint32 ConvertSpace_YCC(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint
 
 	if (srcBasis) {
 		switch(srcToken & kVDPixType_Mask) {
+		case kVDPixType_16_16_16_LE:
+			srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
 		case kVDPixType_8_8_8:
 		case kVDPixType_32F_32F_32F_LE:
 			if(target_quality) srcToken = BlitterConvertType(gen, srcToken, kVDPixType_32F_32F_32F_LE, w, h);
@@ -2381,6 +2427,20 @@ IVDPixmapBlitter *VDPixmapCreateBlitter(const VDPixmapLayout& dst, const VDPixma
 			uint32 dstSpace = (dst.formatEx.colorRangeMode==vd2::kColorRangeMode_Full) ? kVDPixSpace_YCC_601_FR : kVDPixSpace_YCC_601;
 			if (dst.formatEx.colorSpaceMode==vd2::kColorSpaceMode_709)
 				dstSpace = (dst.formatEx.colorRangeMode==vd2::kColorRangeMode_Full) ? kVDPixSpace_YCC_709_FR : kVDPixSpace_YCC_709;
+			dstToken = (dstToken & ~kVDPixSpace_Mask) | dstSpace;
+		}
+	}
+
+	if ((srcToken & kVDPixSpace_Mask)==kVDPixSpace_Y_601) {
+		if (VDPixmapFormatMatrixType(src.format)==1) {
+			uint32 srcSpace = (src.formatEx.colorRangeMode==vd2::kColorRangeMode_Full) ? kVDPixSpace_Y_601_FR : kVDPixSpace_Y_601;
+			srcToken = (srcToken & ~kVDPixSpace_Mask) | srcSpace;
+		}
+	}
+
+	if ((dstToken & kVDPixSpace_Mask)==kVDPixSpace_Y_601) {
+		if (VDPixmapFormatMatrixType(dst.format)==1) {
+			uint32 dstSpace = (dst.formatEx.colorRangeMode==vd2::kColorRangeMode_Full) ? kVDPixSpace_Y_601_FR : kVDPixSpace_Y_601;
 			dstToken = (dstToken & ~kVDPixSpace_Mask) | dstSpace;
 		}
 	}

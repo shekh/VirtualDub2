@@ -789,6 +789,15 @@ void VDPixmapUberBlitterGenerator::ldconst(uint8 fill, uint32 bpr, uint32 w, uin
 	mStack.push_back(StackEntry(src, 0));
 }
 
+void VDPixmapUberBlitterGenerator::ldconst16c(uint32 bpr, uint32 w, uint32 h, uint32 type) {
+	VDPixmapGenFill16c *src = new VDPixmapGenFill16c;
+
+	src->Init(bpr, w, h, type);
+
+	mGenerators.push_back(src);
+	mStack.push_back(StackEntry(src, 0));
+}
+
 void VDPixmapUberBlitterGenerator::ldconstF(float fill, uint32 bpr, uint32 w, uint32 h, uint32 type) {
 	VDPixmapGenFillF *src = new VDPixmapGenFillF;
 
@@ -796,6 +805,17 @@ void VDPixmapUberBlitterGenerator::ldconstF(float fill, uint32 bpr, uint32 w, ui
 
 	mGenerators.push_back(src);
 	mStack.push_back(StackEntry(src, 0));
+}
+
+void VDPixmapUberBlitterGenerator::dup_r16() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_dup_r16 *src = new VDPixmapGen_dup_r16;
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
 }
 
 void VDPixmapUberBlitterGenerator::extract_8in16(int offset, uint32 w, uint32 h) {
