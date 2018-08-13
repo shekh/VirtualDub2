@@ -247,8 +247,14 @@ int VideoSourceImages::_read(VDPosition lStart, uint32 lCount, void *lpBuffer, u
 bool VideoSourceImages::setTargetFormat(VDPixmapFormatEx format) {
 	if (!format) {
 		format = nsVDPixmap::kPixFormat_XRGB8888;
-		if (mInitFormat==nsVDPixmap::kPixFormat_XRGB64)
+    switch (mInitFormat) {
+    case nsVDPixmap::kPixFormat_XRGB64:
+    case nsVDPixmap::kPixFormat_Y16:
+    case nsVDPixmap::kPixFormat_Y8:
+    case nsVDPixmap::kPixFormat_Y8_FR:
 			format = mInitFormat;
+      break;
+    }
 	}
 
 	int w = getImageFormat()->biWidth;
@@ -272,24 +278,71 @@ bool VideoSourceImages::setTargetFormat(VDPixmapFormatEx format) {
 		return true;
 
 	case nsVDPixmap::kPixFormat_XRGB64:
-		if (!mpTIFFDecoder) break; // legacy code path does not use this format
-		if (!AllocFrameBuffer(((w+3)&~3) * h * 8))
-			throw MyMemoryError();
+		{
+			if (!mpTIFFDecoder) break; // legacy code path does not use this format
+			if (!AllocFrameBuffer(((w+3)&~3) * h * 8))
+				throw MyMemoryError();
 
-		if (!VideoSource::setTargetFormat(format))
-			return false;
+			if (!VideoSource::setTargetFormat(format))
+				return false;
 
-		VDPixmap px = {0};
-		px.format = format;
-		px.w = w;
-		px.h = h;
-		px.pitch = w*8;
-		px.data = mpFrameBuffer;
-		mTargetFormat = px;
+			VDPixmap px = {0};
+			px.format = format;
+			px.w = w;
+			px.h = h;
+			px.pitch = w*8;
+			px.data = mpFrameBuffer;
+			mTargetFormat = px;
 
-		invalidateFrameBuffer();
-		
-		return true;
+			invalidateFrameBuffer();
+			
+			return true;
+		}
+
+	case nsVDPixmap::kPixFormat_Y16:
+		{
+			if (!mpTIFFDecoder) break; // legacy code path does not use this format
+			if (!AllocFrameBuffer(w * h * 2))
+				throw MyMemoryError();
+
+			if (!VideoSource::setTargetFormat(format))
+				return false;
+
+			VDPixmap px = {0};
+			px.format = format;
+			px.w = w;
+			px.h = h;
+			px.pitch = w*2;
+			px.data = mpFrameBuffer;
+			mTargetFormat = px;
+
+			invalidateFrameBuffer();
+			
+			return true;
+		}
+
+	case nsVDPixmap::kPixFormat_Y8:
+	case nsVDPixmap::kPixFormat_Y8_FR:
+		{
+			if (!mpTIFFDecoder) break; // legacy code path does not use this format
+			if (!AllocFrameBuffer(w * h))
+				throw MyMemoryError();
+
+			if (!VideoSource::setTargetFormat(format))
+				return false;
+
+			VDPixmap px = {0};
+			px.format = format;
+			px.w = w;
+			px.h = h;
+			px.pitch = w;
+			px.data = mpFrameBuffer;
+			mTargetFormat = px;
+
+			invalidateFrameBuffer();
+			
+			return true;
+		}
 	}
 
 	return false;

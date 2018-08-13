@@ -117,6 +117,10 @@ AV_PIX_FMT_RGBA,
 AV_PIX_FMT_RGB24,
 AV_PIX_FMT_GBRP,
 AV_PIX_FMT_GBRAP,
+AV_PIX_FMT_GRAY16LE,
+AV_PIX_FMT_GRAY16BE,
+AV_PIX_FMT_MONOBLACK,
+AV_PIX_FMT_GRAY8,
 };
 
 typedef struct AVCodecContext {
@@ -181,6 +185,10 @@ static int ff_thread_get_buffer(AVCodecContext* s, ThreadFrame* frame, int x)
   if(s->pix_fmt==AV_PIX_FMT_RGBA64BE) bpp=8;
   if(s->pix_fmt==AV_PIX_FMT_RGBA) bpp=4;
   if(s->pix_fmt==AV_PIX_FMT_RGB24) bpp=3;
+  if(s->pix_fmt==AV_PIX_FMT_GRAY16LE) bpp=2;
+  if(s->pix_fmt==AV_PIX_FMT_GRAY16BE) bpp=2;
+  if(s->pix_fmt==AV_PIX_FMT_GRAY8) bpp=1;
+  if(s->pix_fmt==AV_PIX_FMT_PAL8) bpp=1;
 
   frame->f->width = s->width;
   frame->f->height = s->height;

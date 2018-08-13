@@ -709,7 +709,6 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
     int create_gray_palette = 0;
 
     switch (s->planar * 1000 + s->bpp * 10 + s->bppcount) {
-      /*
     case 11:
         if (!s->palette_is_set) {
             s->avctx->pix_fmt = AV_PIX_FMT_MONOBLACK;
@@ -725,7 +724,6 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
     case 81:
         s->avctx->pix_fmt = s->palette_is_set ? AV_PIX_FMT_PAL8 : AV_PIX_FMT_GRAY8;
         break;
-        */
     case 243:
         if (s->photometric == TIFF_PHOTOMETRIC_YCBCR) {
           /*
@@ -750,10 +748,10 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
         } else
             s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
         break;
-        /*
     case 161:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GRAY16LE : AV_PIX_FMT_GRAY16BE;
         break;
+        /*
     case 162:
         s->avctx->pix_fmt = AV_PIX_FMT_YA8;
         break;

@@ -72,6 +72,11 @@ int VDImageDecoderTIFF::GetFormat()
   case AV_PIX_FMT_RGB48BE:
   case AV_PIX_FMT_RGB48LE:
     return nsVDPixmap::kPixFormat_XRGB64;
+  case AV_PIX_FMT_GRAY16LE:
+  case AV_PIX_FMT_GRAY16BE:
+    return nsVDPixmap::kPixFormat_Y16;
+  case AV_PIX_FMT_GRAY8:
+    return nsVDPixmap::kPixFormat_Y8_FR;
   default:
     return nsVDPixmap::kPixFormat_XRGB8888;
   }
@@ -88,6 +93,11 @@ void VDImageDecoderTIFF::GetPixmapInfo(FilterModPixmapInfo& info)
     info.ref_g = 0xFFFF;
     info.ref_b = 0xFFFF;
     info.ref_a = 0xFFFF;
+    break;
+  case AV_PIX_FMT_GRAY16LE:
+  case AV_PIX_FMT_GRAY16BE:
+    info.ref_r = 0xFFFF;
+    info.colorRangeMode = vd2::kColorRangeMode_Full;
     break;
   }
 
@@ -123,6 +133,9 @@ void VDImageDecoderTIFF::Decode(const void *src, uint32 srclen)
   case AV_PIX_FMT_RGB48LE:
   case AV_PIX_FMT_RGB24:
   case AV_PIX_FMT_RGBA:
+  case AV_PIX_FMT_GRAY16LE:
+  case AV_PIX_FMT_GRAY16BE:
+  case AV_PIX_FMT_GRAY8:
     break;
   default:
 		throw MyError("Cannot read TIFF file: The format is unsupported.");
@@ -153,6 +166,22 @@ void VDImageDecoderTIFF::GetImage(void *p, int pitch, int format)
       uint8_t* s = frame->data[0] + frame->linesize[0]*y;
 
       {for(int x=0; x<frame->width*3; x++){
+        int a = s[0];
+        int b = s[1];
+        s[0] = b;
+        s[1] = a;
+
+        s+=2;
+      }}
+    }}
+  }
+
+  if(frame->pix_fmt==AV_PIX_FMT_GRAY16BE){
+    frame->pix_fmt = AV_PIX_FMT_GRAY16LE;
+    {for(int y=0; y<frame->height; y++){
+      uint8_t* s = frame->data[0] + frame->linesize[0]*y;
+
+      {for(int x=0; x<frame->width; x++){
         int a = s[0];
         int b = s[1];
         s[0] = b;
@@ -236,6 +265,18 @@ void VDImageDecoderTIFF::GetImage(void *p, int pitch, int format)
     }}
   }}
 
+  if(format==nsVDPixmap::kPixFormat_Y16) {for(int y=0; y<frame->height; y++){
+    uint16_t* d = (uint16_t*)(size_t(p) + pitch*y);
+    uint16_t* s = (uint16_t*)(frame->data[0] + frame->linesize[0]*y);
+    memcpy(d,s,frame->width*2);
+  }}
+
+  if(format==nsVDPixmap::kPixFormat_Y8_FR) {for(int y=0; y<frame->height; y++){
+    uint16_t* d = (uint16_t*)(size_t(p) + pitch*y);
+    uint16_t* s = (uint16_t*)(frame->data[0] + frame->linesize[0]*y);
+    memcpy(d,s,frame->width);
+  }}
+
   av_frame_free(&frame);
 }
 
@@ -250,6 +291,13 @@ void VDImageEncoderTIFF::Encode(const VDPixmap& px, void *&p, uint32& len, int c
     temp_format = px.format;
     break;
   case nsVDPixmap::kPixFormat_XRGB64:
+    temp_format = px.format;
+    break;
+  case nsVDPixmap::kPixFormat_Y16:
+    temp_format = px.format;
+    break;
+  case nsVDPixmap::kPixFormat_Y8:
+  case nsVDPixmap::kPixFormat_Y8_FR:
     temp_format = px.format;
     break;
   default:
@@ -324,6 +372,13 @@ void VDImageEncoderTIFF::Encode(const VDPixmap& px, void *&p, uint32& len, int c
     break;
   case nsVDPixmap::kPixFormat_XRGB64:
     frame.pix_fmt = alpha ? AV_PIX_FMT_RGBA64LE : AV_PIX_FMT_RGB48LE;
+    break;
+  case nsVDPixmap::kPixFormat_Y16:
+    frame.pix_fmt = AV_PIX_FMT_GRAY16LE;
+    break;
+  case nsVDPixmap::kPixFormat_Y8:
+  case nsVDPixmap::kPixFormat_Y8_FR:
+    frame.pix_fmt = AV_PIX_FMT_GRAY8;
     break;
   }
 

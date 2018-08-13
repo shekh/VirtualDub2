@@ -289,6 +289,16 @@ int tiff_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
       s->bpp_tab_size = 3;
       bpp_c = 8;
       break;
+    case AV_PIX_FMT_GRAY16LE:
+      s->bpp = 16;
+      s->bpp_tab_size = 1;
+      bpp_c = 16;
+      break;
+    case AV_PIX_FMT_GRAY8:
+      s->bpp = 8;
+      s->bpp_tab_size = 1;
+      bpp_c = 8;
+      break;
     }
 
     //avctx->bits_per_coded_sample = s->bpp;
@@ -300,6 +310,10 @@ int tiff_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_RGB48LE:
     case AV_PIX_FMT_RGB24:
         s->photometric_interpretation = TIFF_PHOTOMETRIC_RGB;
+        break;
+    case AV_PIX_FMT_GRAY16LE:
+    case AV_PIX_FMT_GRAY8:
+        s->photometric_interpretation = TIFF_PHOTOMETRIC_BLACK_IS_ZERO;
         break;
         /*
     case AV_PIX_FMT_GRAY8:
