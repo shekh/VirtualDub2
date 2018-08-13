@@ -314,6 +314,7 @@ public:
 	bool isPreviewEnabled();
 	bool IsPreviewDisplayed();
 	void InitButton(VDXHWND);
+	void ClearWindow();
 	void Toggle(VDXHWND);
 	void Display(VDXHWND, bool);
 	void DisplayEx(VDXHWND, PreviewExInfo& info);
@@ -627,6 +628,8 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 
 		DestroyWindow(mhwndPosHost);
 		mhwndPosHost = NULL;
+		mhwndPosition = NULL;
+		mpPosition = NULL;
 
 		g_projectui->DisplayPreview(false);
 		return TRUE;
@@ -1350,9 +1353,7 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		if (mpButtonCallback)
 			mpButtonCallback(false, mpvButtonCBData);
 
-		SetActiveWindow(mhwndParent);
-		DestroyWindow(mhdlg);
-		mhdlg = NULL;
+		ClearWindow();
 		UndoSystem();
 
 		UpdateButton();
@@ -1661,6 +1662,12 @@ void FilterPreview::InitButton(VDXHWND hwnd) {
 	}
 }
 
+void FilterPreview::ClearWindow() {
+	SetActiveWindow(mhwndParent);
+	DestroyWindow(mhdlg);
+	mhdlg = NULL;
+}
+
 void FilterPreview::Toggle(VDXHWND hwndParent) {
 	Display(hwndParent, !mhdlg);
 }
@@ -1670,9 +1677,7 @@ void FilterPreview::Display(VDXHWND hwndParent, bool fDisplay) {
 		return;
 
 	if (mhdlg) {
-		SetActiveWindow(mhwndParent);
-		DestroyWindow(mhdlg);
-		mhdlg = NULL;
+		ClearWindow();
 		UndoSystem();
 	} else if (mpFilterChainDesc) {
 		mhwndParent = (HWND)hwndParent;
