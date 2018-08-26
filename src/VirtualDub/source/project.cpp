@@ -1667,7 +1667,7 @@ void VDProject::Reopen() {
 	if (oldFrameCount > newFrameCount)
 		fs.trimInputRange(newFrameCount);
 	else if (oldFrameCount < newFrameCount)
-		fs.addRange(oldFrameCount, newFrameCount - oldFrameCount, false, 0);
+		fs.addRangeMerge(oldFrameCount, newFrameCount - oldFrameCount, false, 0);
 
 	mpCB->UITimelineUpdated();
 	SetAudioSource();
