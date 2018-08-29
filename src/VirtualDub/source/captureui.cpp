@@ -174,7 +174,15 @@ static const char *const g_szCapVideoProcAmpItems[]={
 	"Color enable",
 	"White balance",
 	"Backlight compensation",
-	"Gain"
+	"Gain",
+  
+	"Exposure",
+	"Focus",
+	"Iris",
+	"Pan",
+	"Roll",
+	"Tilt",
+	"Zoom",
 };
 
 extern HINSTANCE g_hInst;

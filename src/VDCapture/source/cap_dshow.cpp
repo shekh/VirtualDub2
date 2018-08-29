@@ -277,6 +277,7 @@ namespace {
 	I_HATE(IKsPropertySet);
 	I_HATE(IClassFactory);
 	I_HATE(IAMVideoProcAmp);
+	I_HATE(IAMCameraControl);
 
 	#undef I_HATE
 }
@@ -1723,6 +1724,7 @@ protected:
 	IAMTunerPtr			mpTuner;
 	IAMTVTunerPtr		mpTVTuner;
 	IAMVideoProcAmpPtr	mpVideoProcAmp;
+	IAMCameraControlPtr	mpCameraControl;
 	IVideoWindowPtr		mpVideoWindow;
 	typedef std::list<IVideoWindowPtr> VideoWindows;
 	VideoWindows		mVideoWindows;
@@ -2041,6 +2043,7 @@ bool VDCaptureDriverDS::Init(VDGUIHandle hParent) {
 
 	mpCapGraphBuilder2->FindInterface(NULL, NULL, mpCapFilt, IID_IAMAnalogVideoDecoder, (void **)~mpAnalogVideoDecoder);
 	mpCapGraphBuilder2->FindInterface(NULL, NULL, mpCapFilt, IID_IAMVideoProcAmp, (void **)~mpVideoProcAmp);
+	mpCapGraphBuilder2->FindInterface(NULL, NULL, mpCapFilt, IID_IAMCameraControl, (void **)~mpCameraControl);
 
 	// If there is at least one crossbar, examine the crossbars to see if we can spot
 	// an audio input switch.
@@ -2168,6 +2171,7 @@ void VDCaptureDriverDS::Shutdown() {
 	mpTuner				= NULL;
 	mpTVTuner			= NULL;
 	mpVideoProcAmp		= NULL;
+	mpCameraControl		= NULL;
 	mpVideoGrabber		= NULL;
 	mpVFWDialogs		= NULL;
 	mpVideoConfigCap	= NULL;
@@ -3364,45 +3368,116 @@ namespace {
 				return false;
 		}
 	}
+
+	bool VDGetDShowCameraControlPropertyFromCaptureProperty(uint32 id, CameraControlProperty& dshowPropId) {
+		switch(id) {
+			case kExposure:
+				dshowPropId = CameraControl_Exposure;
+				return true;
+
+			case kFocus:
+				dshowPropId = CameraControl_Focus;
+				return true;
+
+			case kIris:
+				dshowPropId = CameraControl_Iris;
+				return true;
+
+			case kPan:
+				dshowPropId = CameraControl_Pan;
+				return true;
+
+			case kRoll:
+				dshowPropId = CameraControl_Roll;
+				return true;
+
+			case kTilt:
+				dshowPropId = CameraControl_Tilt;
+				return true;
+
+			case kZoom:
+				dshowPropId = CameraControl_Zoom;
+				return true;
+
+			default:
+				return false;
+		}
+	}
 }
 
 bool VDCaptureDriverDS::IsPropertySupported(uint32 id) {
-	if (!mpVideoProcAmp)
-		return false;
+	if (mpVideoProcAmp) {
+		VideoProcAmpProperty prop;
+		if (VDGetDShowProcAmpPropertyFromCaptureProperty(id, prop)) {
+			long minVal, maxVal, steppingDelta, defaultVal, capsFlags;
+			HRESULT hr = mpVideoProcAmp->GetRange(prop, &minVal, &maxVal, &steppingDelta, &defaultVal, &capsFlags);
+			return SUCCEEDED(hr);
+		}
+	}
 
-	VideoProcAmpProperty prop;
-	if (!VDGetDShowProcAmpPropertyFromCaptureProperty(id, prop))
-		return false;
+	if (mpCameraControl) {
+		CameraControlProperty prop;
+		if (VDGetDShowCameraControlPropertyFromCaptureProperty(id, prop)) {
+			long minVal, maxVal, steppingDelta, defaultVal, capsFlags;
+			HRESULT hr = mpCameraControl->GetRange(prop, &minVal, &maxVal, &steppingDelta, &defaultVal, &capsFlags);
+			return SUCCEEDED(hr);
+		}
+	}
 
-	long minVal, maxVal, steppingDelta, defaultVal, capsFlags;
-	HRESULT hr = mpVideoProcAmp->GetRange(prop, &minVal, &maxVal, &steppingDelta, &defaultVal, &capsFlags);
-	return SUCCEEDED(hr);
+	return false;
 }
 
 sint32 VDCaptureDriverDS::GetPropertyInt(uint32 id, bool *pAutomatic) {
-	VideoProcAmpProperty prop;
-	if (!mpVideoProcAmp || !VDGetDShowProcAmpPropertyFromCaptureProperty(id, prop))
-		return false;
+	if (mpVideoProcAmp) {
+		VideoProcAmpProperty prop;
+		if (VDGetDShowProcAmpPropertyFromCaptureProperty(id, prop)) {
+			long lValue, lFlags;
+			HRESULT hr = mpVideoProcAmp->Get(prop, &lValue, &lFlags);
 
-	long lValue, lFlags;
-	HRESULT hr = mpVideoProcAmp->Get(prop, &lValue, &lFlags);
+			if (FAILED(hr))
+				lValue = lFlags = 0;
 
-	if (FAILED(hr))
-		lValue = lFlags = 0;
+			if (pAutomatic)
+				*pAutomatic = (lFlags == VideoProcAmp_Flags_Auto);
 
-	if (pAutomatic)
-		*pAutomatic = (lFlags == VideoProcAmp_Flags_Auto);
+			return lValue;
+		}
+	}
 
-	return lValue;
+	if (mpCameraControl) {
+		CameraControlProperty prop;
+		if (VDGetDShowCameraControlPropertyFromCaptureProperty(id, prop)) {
+			long lValue, lFlags;
+			HRESULT hr = mpCameraControl->Get(prop, &lValue, &lFlags);
+
+			if (FAILED(hr))
+				lValue = lFlags = 0;
+
+			if (pAutomatic)
+				*pAutomatic = (lFlags == CameraControl_Flags_Auto);
+
+			return lValue;
+		}
+	}
+
+	return false;
 }
 
 void VDCaptureDriverDS::SetPropertyInt(uint32 id, sint32 value, bool automatic) {
-	VideoProcAmpProperty prop;
-	if (!mpVideoProcAmp || !VDGetDShowProcAmpPropertyFromCaptureProperty(id, prop))
-		return;
-
-	HRESULT hr = mpVideoProcAmp->Set(prop, value, automatic ? VideoProcAmp_Flags_Auto : VideoProcAmp_Flags_Manual);
-	VDASSERT(SUCCEEDED(hr));
+	if (mpVideoProcAmp) {
+		VideoProcAmpProperty prop;
+		if (VDGetDShowProcAmpPropertyFromCaptureProperty(id, prop)) {
+			HRESULT hr = mpVideoProcAmp->Set(prop, value, automatic ? VideoProcAmp_Flags_Auto : VideoProcAmp_Flags_Manual);
+			VDASSERT(SUCCEEDED(hr));
+		}
+	}
+	if (mpCameraControl) {
+		CameraControlProperty prop;
+		if (VDGetDShowCameraControlPropertyFromCaptureProperty(id, prop)) {
+			HRESULT hr = mpCameraControl->Set(prop, value, automatic ? CameraControl_Flags_Auto : CameraControl_Flags_Manual);
+			VDASSERT(SUCCEEDED(hr));
+		}
+	}
 }
 
 void VDCaptureDriverDS::GetPropertyInfoInt(uint32 id, sint32& minVal, sint32& maxVal, sint32& step, sint32& defaultVal, bool& automatic, bool& manual) {
@@ -3412,19 +3487,36 @@ void VDCaptureDriverDS::GetPropertyInfoInt(uint32 id, sint32& minVal, sint32& ma
 	automatic = false;
 	manual = false;
 
-	VideoProcAmpProperty prop;
-	if (!mpVideoProcAmp || !VDGetDShowProcAmpPropertyFromCaptureProperty(id, prop))
-		return;
+	if (mpVideoProcAmp) {
+		VideoProcAmpProperty prop;
+		if (VDGetDShowProcAmpPropertyFromCaptureProperty(id, prop)) {
+			long lMinVal, lMaxVal, lSteppingDelta, lDefaultVal, lCapsFlags;
+			HRESULT hr = mpVideoProcAmp->GetRange(prop, &lMinVal, &lMaxVal, &lSteppingDelta, &lDefaultVal, &lCapsFlags);
+			if (SUCCEEDED(hr)) {
+				minVal = lMinVal;
+				maxVal = lMaxVal;
+				step = lSteppingDelta;
+				defaultVal = lDefaultVal;
+				automatic = (lCapsFlags & VideoProcAmp_Flags_Auto) != 0;
+				manual = (lCapsFlags & VideoProcAmp_Flags_Manual) != 0;
+			}
+		}
+	}
 
-	long lMinVal, lMaxVal, lSteppingDelta, lDefaultVal, lCapsFlags;
-	HRESULT hr = mpVideoProcAmp->GetRange(prop, &lMinVal, &lMaxVal, &lSteppingDelta, &lDefaultVal, &lCapsFlags);
-	if (SUCCEEDED(hr)) {
-		minVal = lMinVal;
-		maxVal = lMaxVal;
-		step = lSteppingDelta;
-		defaultVal = lDefaultVal;
-		automatic = (lCapsFlags & VideoProcAmp_Flags_Auto) != 0;
-		manual = (lCapsFlags & VideoProcAmp_Flags_Manual) != 0;
+	if (mpCameraControl) {
+		CameraControlProperty prop;
+		if (VDGetDShowCameraControlPropertyFromCaptureProperty(id, prop)) {
+			long lMinVal, lMaxVal, lSteppingDelta, lDefaultVal, lCapsFlags;
+			HRESULT hr = mpCameraControl->GetRange(prop, &lMinVal, &lMaxVal, &lSteppingDelta, &lDefaultVal, &lCapsFlags);
+			if (SUCCEEDED(hr)) {
+				minVal = lMinVal;
+				maxVal = lMaxVal;
+				step = lSteppingDelta;
+				defaultVal = lDefaultVal;
+				automatic = (lCapsFlags & CameraControl_Flags_Auto) != 0;
+				manual = (lCapsFlags & CameraControl_Flags_Manual) != 0;
+			}
+		}
 	}
 }
 

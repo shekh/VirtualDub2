@@ -1334,8 +1334,18 @@ public:
 				L"Color enable",
 				L"White balance",
 				L"Backlight compensation",
-				L"Gain"
+				L"Gain",
+
+				L"Exposure",
+				L"Focus",
+				L"Iris",
+				L"Pan",
+				L"Roll",
+				L"Tilt",
+				L"Zoom",
 			};
+
+			//VDString buf;
 
 			int propcount = 0;
 			for(int prop = 0; prop < nsVDCapture::kPropCount; ++prop) {
@@ -1347,6 +1357,8 @@ public:
 
 					if (!manual)
 						continue;
+
+					//buf.append_sprintf("%ls: min %d, max %d, step %d, default %d, val %d\n", kPropertyNames[prop], minVal, maxVal, step, defaultVal, mpProject->GetPropertyInt(prop, NULL));
 
 					child = VDCreateUILabel();
 					child->SetCaption(kPropertyNames[prop]);
@@ -1388,6 +1400,8 @@ public:
 					++propcount;
 				}
 			}
+
+			//MessageBox(0,buf.c_str(),"property info",MB_OK);
 
 			if (propcount == 0) {
 				child = VDCreateUILabel();

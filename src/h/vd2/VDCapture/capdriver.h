@@ -87,7 +87,15 @@ namespace nsVDCapture {
 		kPropWhiteBalance,
 		kPropBacklightCompensation,
 		kPropGain,
-		kPropCount
+    
+		kExposure,
+		kFocus,
+		kIris,
+		kPan,
+		kRoll,
+		kTilt,
+		kZoom,
+		kPropCount,
 	};
 };
 
