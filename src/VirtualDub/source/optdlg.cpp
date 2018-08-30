@@ -1991,6 +1991,7 @@ INT_PTR VDDialogVideoRangeW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPara
 				mOpts.audio.fStartAudio		= !!IsDlgButtonChecked(mhdlg, IDC_OFFSET_AUDIO);
 				mOpts.audio.fEndAudio		= !!IsDlgButtonChecked(mhdlg, IDC_CLIP_AUDIO);
 				mOpts.audio.mbApplyVideoTimeline = !!IsDlgButtonChecked(mhdlg, IDC_EDIT_AUDIO);
+				g_project->SetAudioEditMode();
 				End(true);
 				return TRUE;
 			case IDCANCEL:

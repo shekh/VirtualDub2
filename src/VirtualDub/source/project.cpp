@@ -2162,6 +2162,11 @@ void VDProject::SetAudioMode(int mode) {
 		mpCB->UIAudioSourceUpdated();
 }
 
+void VDProject::SetAudioEditMode() {
+	if (mpCB)
+		mpCB->UIAudioSourceUpdated();
+}
+
 void VDProject::SetAudioErrorMode(int errorMode0) {
 	DubSource::ErrorMode errorMode = (DubSource::ErrorMode)errorMode0;
 

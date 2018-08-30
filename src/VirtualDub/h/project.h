@@ -222,6 +222,7 @@ public:
 	void SetAudioSource();
 
 	void SetAudioMode(int mode);
+	void SetAudioEditMode();
 	void SetAudioErrorMode(int errorMode);
 	void MoveToFrame(VDPosition pos, int sync_mode=0);
 	void MoveToStart();

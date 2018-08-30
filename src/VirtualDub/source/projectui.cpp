@@ -4061,7 +4061,9 @@ bool VDProjectUI::TickAudioDisplay() {
 
 	for(;;) {
 		sint64 len = 1;
-		sint64 vframesrc = subset.lookupRange(vframe, len);
+		sint64 vframesrc = vframe;
+		if (g_dubOpts.audio.mbApplyVideoTimeline)
+			vframesrc = subset.lookupRange(vframe, len);
 
 		if (vframesrc < 0) {
 			sint64 vend;

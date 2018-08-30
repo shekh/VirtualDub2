@@ -1598,8 +1598,7 @@ static void func_VDAudio_GetEditMode(IVDScriptInterpreter *, VDScriptValue *argl
 
 static void func_VDAudio_SetEditMode(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 	g_dubOpts.audio.mbApplyVideoTimeline = !!arglist[0].asInt();
-	g_dubOpts.audio.fStartAudio	= !!arglist[0].asInt();
-	g_dubOpts.audio.fEndAudio	= !!arglist[1].asInt();
+	g_project->SetAudioEditMode();
 }
 
 static void func_VDAudio_GetConversion(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
