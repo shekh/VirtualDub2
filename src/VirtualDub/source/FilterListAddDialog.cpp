@@ -191,7 +191,14 @@ void VDDialogFilterListW32::OnDataExchange(bool write) {
 
 bool VDDialogFilterListW32::OnCommand(uint32 id, uint32 extcode) {
 	if (id == IDC_LOAD) {
-		const VDStringW filename(VDGetLoadFileName(kFileDialog_LoadPlugin, (VDGUIHandle)mhdlg, L"Load external filter", L"VirtualDub filter (*.vdf)\0*.vdf\0Windows Dynamic-Link Library (*.dll)\0*.dll\0All files (*.*)\0*.*\0", NULL, NULL, NULL));
+		VDStringW title(L"Load external filter");
+		#ifdef _M_AMD64
+		title += L" (x64)";
+		#else
+		title += L" (x86)";
+		#endif
+
+		const VDStringW filename(VDGetLoadFileName(kFileDialog_LoadPlugin, (VDGUIHandle)mhdlg, title.c_str(), L"VirtualDub filter (*.vdf)\0*.vdf\0Windows Dynamic-Link Library (*.dll)\0*.dll\0All files (*.*)\0*.*\0", NULL, NULL, NULL));
 
 		SetFocusToControl(IDC_FILTER_LIST);
 		if (!filename.empty()) {
