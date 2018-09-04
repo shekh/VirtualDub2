@@ -67,6 +67,7 @@ namespace {
 		uint32			mRenderThrottlePercent;
 		bool			mbRenderBackgroundPriority;
 		bool			mbRenderInhibitSystemSleep;
+		bool			mbRenderShowFrames;
 
 		VDStringW		mD3DFXFile;
 		uint32			mFileAsyncDefaultMode;
@@ -462,12 +463,14 @@ public:
 			SetValue(100, mPrefs.mbConfirmRenderAbort);
 			SetValue(101, mPrefs.mbRenderWarnNoAudio);
 			SetValue(102, mPrefs.mbRenderInhibitSystemSleep);
+			SetValue(103, mPrefs.mbRenderShowFrames);
 			return true;
 		case kEventDetach:
 		case kEventSync:
 			mPrefs.mbConfirmRenderAbort = 0 != GetValue(100);
 			mPrefs.mbRenderWarnNoAudio = 0 != GetValue(101);
 			mPrefs.mbRenderInhibitSystemSleep = 0 != GetValue(102);
+			mPrefs.mbRenderShowFrames = 0 != GetValue(103);
 			return true;
 		}
 		return false;
@@ -968,6 +971,7 @@ void LoadPreferences() {
 	g_prefs2.mRenderThrottlePercent = std::max<uint32>(10, std::min<uint32>(100, key.getInt("Render: Default throttle percent", 100)));
 	g_prefs2.mbRenderInhibitSystemSleep = key.getBool("Render: Inhibit system sleep", true);
 	g_prefs2.mbRenderBackgroundPriority = key.getBool("Render: Use background priority", false);
+	g_prefs2.mbRenderShowFrames = key.getBool("Render: Show frames", true);
 	g_prefs2.mFileAsyncDefaultMode = std::min<uint32>(IVDFileAsync::kModeCount-1, key.getInt("File: Async mode", IVDFileAsync::kModeAsynchronous));
 	g_prefs2.mAVISuperindexLimit = key.getInt("AVI: Superindex entry limit", 256);
 	g_prefs2.mAVISubindexLimit = key.getInt("AVI: Subindex entry limit", 8192);
@@ -1042,6 +1046,7 @@ void VDSavePreferences(VDPreferences2& prefs) {
 	key.setInt("Render: Default throttle percent", prefs.mRenderThrottlePercent);
 	key.setBool("Render: Inhibit system sleep", prefs.mbRenderInhibitSystemSleep);
 	key.setBool("Render: Use background priority", prefs.mbRenderBackgroundPriority);
+	key.setBool("Render: Show frames", prefs.mbRenderShowFrames);
 	key.setInt("File: Async mode", prefs.mFileAsyncDefaultMode);
 	key.setInt("AVI: Superindex entry limit", prefs.mAVISuperindexLimit);
 	key.setInt("AVI: Subindex entry limit", prefs.mAVISubindexLimit);
@@ -1197,6 +1202,10 @@ bool VDPreferencesGetRenderInhibitSystemSleepEnabled() {
 
 bool VDPreferencesGetRenderBackgroundPriority() {
 	return g_prefs2.mbRenderBackgroundPriority;
+}
+
+bool VDPreferencesGetRenderShowFrames() {
+	return g_prefs2.mbRenderShowFrames;
 }
 
 bool VDPreferencesGetAutoRecoverEnabled() {

@@ -2619,6 +2619,14 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 
 	DubOptions tempOpts(pOptions ? *pOptions : g_dubOpts);
 
+	if (!g_fJobMode && !pOutputSystem->IsRealTime()) {
+		extern bool VDPreferencesGetRenderShowFrames();
+		if (!VDPreferencesGetRenderShowFrames()) {
+			tempOpts.video.fShowInputFrame = false;
+			tempOpts.video.fShowOutputFrame = false;
+		}
+	}
+
 	mbPositionCallbackEnabled = true;
 
 	try {

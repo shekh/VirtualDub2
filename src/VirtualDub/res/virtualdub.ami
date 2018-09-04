@@ -526,6 +526,7 @@ dialog 1016, "" : fill, child {
 		group 0, "Render options" {
 			set 0: vertical, spacing=3 {
 				now valign=top, align=left;
+				checkbox 103, "Show input/output frames";
 				checkbox 100, "Confirm when abort button is pressed";
 				checkbox 101, "Warn if no audio is written";
 				checkbox 102, "Prevent system from going to sleep during render";
