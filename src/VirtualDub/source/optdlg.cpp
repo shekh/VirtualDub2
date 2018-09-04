@@ -2160,10 +2160,26 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 			break;
 		case IDOK:
 			if (IsDlgButtonChecked(mhdlg, IDC_JUMPTOFRAME)) {
-				BOOL fOk;
-				UINT uiFrame = GetDlgItemInt(mhdlg, IDC_FRAMENUMBER, &fOk, FALSE);
 
-				if (!fOk) {
+				GetDlgItemText(mhdlg, IDC_FRAMENUMBER, buf, sizeof buf);
+				int n;
+				VDPosition uiFrame;
+
+				if (buf[0]=='+') {
+					UINT d;
+					n = sscanf(buf+1, "%u", &d);
+					uiFrame = mFrame+d;
+				} else if (buf[0]=='-') {
+					UINT d;
+					n = sscanf(buf+1, "%u", &d);
+					if (d<mFrame) uiFrame = mFrame-d; else uiFrame = 0;
+				} else {
+					UINT d;
+					n = sscanf(buf, "%u", &d);
+					uiFrame = d;
+				}
+
+				if (n!=1) {
 					SetFocus(GetDlgItem(mhdlg, IDC_FRAMENUMBER));
 					MessageBeep(MB_ICONEXCLAMATION);
 					return TRUE;

@@ -712,7 +712,14 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 				}
 			} else if (PtInRect(&mPositionArea, pt)) {
 				VDPosition prev = mPosition;
-				mPosition = mRangeStart + (sint64)floor((pt.x - mTrack.left) * mFramesPerPixel + 0.5);
+				extern bool VDPreferencesGetTimelinePageMode();
+				extern int VDPreferencesGetTimelinePageSize();
+				if (VDPreferencesGetTimelinePageMode()) {
+					if(pt.x>mThumbRect.right) mPosition += VDPreferencesGetTimelinePageSize();
+					if(pt.x<mThumbRect.left) mPosition -= VDPreferencesGetTimelinePageSize();
+				} else {
+					mPosition = mRangeStart + (sint64)floor((pt.x - mTrack.left) * mFramesPerPixel + 0.5);
+				}
 				if (mPosition < mRangeStart)
 					mPosition = mRangeStart;
 				if (mPosition > mRangeEnd)

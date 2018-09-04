@@ -46,7 +46,10 @@ namespace {
 	struct VDPreferences2 {
 		Preferences		mOldPrefs;
 		VDStringW		mTimelineFormat;
+		uint32			mTimelinePageSize;
+		bool			mbTimelinePageMode;
 		bool			mbTimelineWarnReloadTruncation;
+
 		bool			mbAllowDirectYCbCrDecoding;
 		bool			mbDisplayEnableDebugInfo;
 		bool			mbConfirmRenderAbort;
@@ -439,11 +442,18 @@ public:
 			pBase->ExecuteAllLinks();
 			SetCaption(200, mPrefs.mTimelineFormat.c_str());
 			SetValue(100, mPrefs.mbTimelineWarnReloadTruncation);
+			{
+				unsigned v = mPrefs.mTimelinePageSize;
+				SetCaption(101, VDswprintf(L"%u", 1, &v).c_str());
+			}
+			SetValue(102, mPrefs.mbTimelinePageMode);
 			return true;
 		case kEventDetach:
 		case kEventSync:
 			mPrefs.mTimelineFormat = GetCaption(200);
 			mPrefs.mbTimelineWarnReloadTruncation = 0 != GetValue(100);
+			mPrefs.mTimelinePageSize = (uint32)wcstoul(GetCaption(101).c_str(), 0, 10);
+			mPrefs.mbTimelinePageMode = GetValue(102) != 0;
 			return true;
 		}
 		return false;
@@ -945,6 +955,8 @@ void LoadPreferences() {
 	if (!key.getString("Timeline format", g_prefs2.mTimelineFormat))
 		g_prefs2.mTimelineFormat = L"Frame %f (%h:%02m:%02s.%03t) [%c]";
 
+	g_prefs2.mTimelinePageSize = key.getInt("Timeline: Page size", 50);
+	g_prefs2.mbTimelinePageMode = key.getBool("Timeline: Page mode", false);
 	g_prefs2.mbTimelineWarnReloadTruncation = key.getBool("Timeline: Warn on truncation when reloading", true);
 
 	if (!key.getString("Direct3D FX file", g_prefs2.mD3DFXFile))
@@ -1022,6 +1034,8 @@ void VDSavePreferences(VDPreferences2& prefs) {
 
 	VDRegistryAppKey key("Preferences");
 	key.setString("Timeline format", prefs.mTimelineFormat.c_str());
+	key.setInt("Timeline: Page size", g_prefs2.mTimelinePageSize);
+	key.setBool("Timeline: Page mode", g_prefs2.mbTimelinePageMode);
 	key.setBool("Timeline: Warn on truncation when reloading", g_prefs2.mbTimelineWarnReloadTruncation);
 
 	key.setBool("Allow direct YCbCr decoding", prefs.mbAllowDirectYCbCrDecoding);
@@ -1230,6 +1244,14 @@ bool VDPreferencesGetConfirmExit() {
 
 bool VDPreferencesGetTimelineWarnReloadTruncation() {
 	return g_prefs2.mbTimelineWarnReloadTruncation;
+}
+
+int VDPreferencesGetTimelinePageSize() {
+	return g_prefs2.mTimelinePageSize;
+}
+
+bool VDPreferencesGetTimelinePageMode() {
+	return g_prefs2.mbTimelinePageMode;
 }
 
 void VDPreferencesUpdated() {

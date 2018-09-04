@@ -510,12 +510,24 @@ dialog 1015, "" : fill, child {
 							"%B, %L: byte position and length of source frame\n"
 							"%D: distance from last key frame\n"
 							"%[>]...: use end instead of current position\n"
-							: minh=100, readonly;
+							: minh=70, readonly;
 			}
 		}
 		
 		group 0, "Timeline options" {
-			checkbox 100, "Warn if reload would change edits";
+			set 0: vertical, spacing=3 {
+				grid 0 : spacing=2, align=left {
+					now valign = center;
+					label 0, "Page size:": align=left, marginr=5;
+					textedit 101, "" : minw=50, sunken, align=left;
+				}
+				label 0, "Clicking on timeline behavior:" : readonly, multiline;
+				set 0: marginl=10, vertical {
+					option 102, "Jump to frame";
+					option 103, "Page forward/backward";
+				}
+				checkbox 100, "Warn if reload would change edits";
+			}
 		}
 	}
 }

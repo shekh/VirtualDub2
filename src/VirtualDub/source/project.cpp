@@ -2446,14 +2446,16 @@ void VDProject::MoveToNextKey() {
 	MoveToFrame(pos, 1);
 }
 
+extern int VDPreferencesGetTimelinePageSize();
+
 void VDProject::MoveBackSome() {
 	if (inputVideo)
-		MoveToFrame(GetCurrentFrame() - 50, 1);
+		MoveToFrame(GetCurrentFrame() - VDPreferencesGetTimelinePageSize(), 1);
 }
 
 void VDProject::MoveForwardSome() {
 	if (inputVideo)
-		MoveToFrame(GetCurrentFrame() + 50, 1);
+		MoveToFrame(GetCurrentFrame() + VDPreferencesGetTimelinePageSize(), 1);
 }
 
 void VDProject::StartShuttle(int d, bool sticky) {
