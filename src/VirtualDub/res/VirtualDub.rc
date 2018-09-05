@@ -2801,6 +2801,18 @@ BEGIN
     LTEXT           "<",IDC_LINK_OUT,217,43,8,8
 END
 
+IDD_JUMPTOFRAME2 DIALOGEX 0, 0, 335, 58
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Jump to frame"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    CONTROL         "Jump to frame &number:",IDC_JUMPTOFRAME,"Button",BS_AUTORADIOBUTTON | WS_GROUP,7,7,87,12
+    CONTROL         "Jump to frame at &time:",IDC_JUMPTOTIME,"Button",BS_AUTORADIOBUTTON,178,7,85,12
+    EDITTEXT        IDC_FRAMENUMBER,107,7,50,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_FRAMETIME,278,7,50,12,ES_AUTOHSCROLL
+    CONTROL         "",IDC_POSITION,"birdyPositionControl",WS_TABSTOP | 0x8,7,26,321,26
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3747,6 +3759,14 @@ BEGIN
         VERTGUIDE, 136
         TOPMARGIN, 7
         BOTTOMMARGIN, 231
+    END
+
+    IDD_JUMPTOFRAME2, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 328
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 51
     END
 END
 #endif    // APSTUDIO_INVOKED

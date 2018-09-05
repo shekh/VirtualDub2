@@ -214,6 +214,8 @@ protected:
 		kDragThumbSlow
 	} mDragMode;
 
+	bool mbHasPosText;
+	bool mbHasNavControls;
 	bool mbHasPlaybackControls;
 	bool mbHasMarkControls;
 	bool mbHasSceneControls;
@@ -285,6 +287,8 @@ VDPositionControlW32::VDPositionControlW32(HWND hwnd)
 	, mFramesPerPixel(0)
 	, mWheelAccum(0)
 	, mDragMode(kDragNone)
+	, mbHasPosText(false)
+	, mbHasNavControls(false)
 	, mbHasPlaybackControls(false)
 	, mbHasMarkControls(false)
 	, mbHasSceneControls(false)
@@ -319,7 +323,9 @@ VDPositionControlW32::~VDPositionControlW32() {
 ///////////////////////////////////////////////////////////////////////////
 
 int VDPositionControlW32::GetNiceHeight() {
-	return mButtonSize + mFrameNumberHeight*11/4;		// Don't ask about the 11/4 constant.  It's tuned to achieve a nice ratio on my system.
+	int s = mButtonSize;
+	if (mbHasPosText) s += mFrameNumberHeight*11/4;		// Don't ask about the 11/4 constant.  It's tuned to achieve a nice ratio on my system.
+	return s;
 }
 
 void VDPositionControlW32::SetFrameTypeCallback(IVDPositionControlCallback *pCB) {
@@ -869,6 +875,8 @@ void VDPositionControlW32::OnCreate() {
 	mbHasPlaybackControls	= !!(dwStyles & PCS_PLAYBACK);
 	mbHasMarkControls		= !!(dwStyles & PCS_MARK);
 	mbHasSceneControls		= !!(dwStyles & PCS_SCENE);
+	mbHasNavControls		= !(dwStyles & PCS_XNAV);
+	mbHasPosText		= !(dwStyles & PCS_XNAV);
 
 	// We use 24px at 96 dpi.
 	int ht = 24;
@@ -935,20 +943,23 @@ void VDPositionControlW32::OnCreate() {
 
 	mThumbWidth = mFrameNumberHeight * 5 / 12;
 
-	CreateWindowEx(WS_EX_STATICEDGE,"EDIT",NULL,WS_CHILD|WS_VISIBLE|ES_READONLY,0,0,0,ht,mhwnd,(HMENU)IDC_FRAME,g_hInst,NULL);
+	if (mbHasPosText) {
+		CreateWindowEx(WS_EX_STATICEDGE,"EDIT",NULL,WS_CHILD|WS_VISIBLE|ES_READONLY,0,0,0,ht,mhwnd,(HMENU)IDC_FRAME,g_hInst,NULL);
+	}
 
 	if (mbHasPlaybackControls) {
 		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_STOP		, g_hInst, NULL);
 		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_PLAY		, g_hInst, NULL);
 		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_PLAYPREVIEW	, g_hInst, NULL);
 	}
-	CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_START		, g_hInst, NULL);
-	CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_BACKWARD	, g_hInst, NULL);
-	CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_FORWARD	, g_hInst, NULL);
-	CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_END		, g_hInst, NULL);
-	CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_KEYPREV	, g_hInst, NULL);
-	CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_KEYNEXT	, g_hInst, NULL);
-
+	if (mbHasNavControls) {
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_START		, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_BACKWARD	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_FORWARD	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_END		, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_KEYPREV	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_KEYNEXT	, g_hInst, NULL);
+	}
 	if (mbHasSceneControls) {
 		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_PUSHLIKE | BS_ICON	,0,0,ht,ht,mhwnd, (HMENU)IDC_SCENEREV, g_hInst, NULL);
 		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_PUSHLIKE | BS_ICON	,0,0,ht,ht,mhwnd, (HMENU)IDC_SCENEFWD, g_hInst, NULL);
@@ -988,6 +999,8 @@ void VDPositionControlW32::OnCreate() {
 }
 
 void VDPositionControlW32::UpdateString(VDPosition pos) {
+	if (!mbHasPosText) return;
+
 	wchar_t buf[512];
 
 	if (pos < 0)
@@ -1019,6 +1032,7 @@ void VDPositionControlW32::UpdateString(VDPosition pos) {
 }
 
 void VDPositionControlW32::SetMessage(const wchar_t* s) {
+	if (!mbHasPosText) return;
 	HWND hwndFrame = GetDlgItem(mhwnd, IDC_FRAME);
 	VDSetWindowTextW32(hwndFrame, s);
 }
@@ -1047,13 +1061,15 @@ void VDPositionControlW32::OnSize() {
 		x+=mGapSize;
 	}
 
-	for(id = IDC_START; id < IDC_MARKIN; id++) {
-		if (hwndButton = GetDlgItem(mhwnd,id)) {
-			SetWindowPos(hwndButton, NULL, x, y, 0, 0, SWP_NOACTIVATE|SWP_NOSIZE|SWP_NOZORDER);
-			x += mButtonSize;
+	if (mbHasNavControls) {
+		for(id = IDC_START; id < IDC_MARKIN; id++) {
+			if (hwndButton = GetDlgItem(mhwnd,id)) {
+				SetWindowPos(hwndButton, NULL, x, y, 0, 0, SWP_NOACTIVATE|SWP_NOSIZE|SWP_NOZORDER);
+				x += mButtonSize;
+			}
 		}
+		x+=mGapSize;
 	}
-	x+=mGapSize;
 
 	if (mbHasMarkControls) {
 		for(id = IDC_MARKIN; id <= IDC_MARKOUT; id++) {
@@ -1064,8 +1080,9 @@ void VDPositionControlW32::OnSize() {
 		x+=mGapSize;
 	}
 
-	SetWindowPos(GetDlgItem(mhwnd, IDC_FRAME), NULL, x, y+((mButtonSize - nFrameCtlHeight)>>1), std::min<int>(wndr.right - x, 320), nFrameCtlHeight, SWP_NOACTIVATE|SWP_NOZORDER);
-
+	if (mbHasPosText) {
+		SetWindowPos(GetDlgItem(mhwnd, IDC_FRAME), NULL, x, y+((mButtonSize - nFrameCtlHeight)>>1), std::min<int>(wndr.right - x, 320), nFrameCtlHeight, SWP_NOACTIVATE|SWP_NOZORDER);
+	}
 }
 
 void VDPositionControlW32::OnPaint() {
@@ -1323,7 +1340,7 @@ void VDPositionControlW32::RecomputeMetrics() {
 	VDVERIFY(GetClientRect(mhwnd, &r));
 
 	mPositionArea = r;
-	mPositionArea.bottom -= mButtonSize;
+	if (mbHasPosText) mPositionArea.bottom -= mButtonSize;
 
 	// Compute space we need for the ticks.
 	int labelDigits = mRangeEnd > 0 ? ((int)floor(log10((double)mRangeEnd)) + 1) : 1;

@@ -1942,8 +1942,21 @@ void VDProjectUI::SetAudioErrorModeAsk() {
 void VDProjectUI::JumpToFrameAsk() {
 	if (inputAVI) {
 		extern VDPosition VDDisplayJumpToPositionDialog(VDGUIHandle hParent, VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& trueRate);
+		extern VDPosition VDDisplayJumpToPositionDialog2(VDGUIHandle hParent, VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& trueRate);
 
-		VDPosition pos = VDDisplayJumpToPositionDialog(mhwnd, GetCurrentFrame(), inputVideo, mVideoInputFrameRate);
+		bool usePos = false;
+		IVDVideoWindow *w1 = VDGetIVideoWindow(mhwndInputFrame);
+		IVDVideoWindow *w2 = VDGetIVideoWindow(mhwndOutputFrame);
+
+		if (w1->IsFullscreen()) usePos = true;
+		if (w2->IsFullscreen()) usePos = true;
+		if (!mbPositionControlVisible) usePos = true;
+
+		VDPosition pos;
+		if(usePos)
+			pos = VDDisplayJumpToPositionDialog2(mhwnd, GetCurrentFrame(), inputVideo, mVideoInputFrameRate);
+		else
+			pos = VDDisplayJumpToPositionDialog(mhwnd, GetCurrentFrame(), inputVideo, mVideoInputFrameRate);
 
 		if (pos >= 0) {
 			if (mbZoomEnabled && ((pos<mposZoomStart) || (pos>mposZoomEnd))) ToggleZoomRange();

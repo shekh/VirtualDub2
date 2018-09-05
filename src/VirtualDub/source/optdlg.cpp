@@ -29,6 +29,7 @@
 #include <utility>
 
 #include "optdlg.h"
+#include "positionControl.h"
 
 #include "resource.h"
 #include "helpfile.h"
@@ -2132,17 +2133,28 @@ bool VDDisplayAudioVolumeDialog(VDGUIHandle hParent, DubOptions& opts) {
 
 class VDDialogJumpToPositionW32 : public VDDialogBaseW32 {
 public:
-	inline VDDialogJumpToPositionW32(VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate) : VDDialogBaseW32(IDD_JUMPTOFRAME), mFrame(currentFrame), mpVideo(pVS), mRealRate(realRate) {}
+	inline VDDialogJumpToPositionW32(VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate, bool usePos=false) 
+		: VDDialogBaseW32(usePos ? IDD_JUMPTOFRAME2 : IDD_JUMPTOFRAME)
+		, mFrame(currentFrame)
+		, mpVideo(pVS)
+		, mRealRate(realRate) 
+	{
+		mbUsePos = usePos;
+	}
 
 	VDPosition Activate(VDGUIHandle hParent) { return ActivateDialog(hParent) ? mFrame : -1; }
 
 protected:
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 	void ReinitDialog();
+	void ReinitEdit();
+	void OnPositionNotify(int code);
 
 	VDPosition mFrame;
 	IVDVideoSource *const mpVideo;
 	VDFraction	mRealRate;
+	IVDPositionControl* mpPosition;
+	bool mbUsePos;
 };
 
 INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -2152,6 +2164,18 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 	case WM_INITDIALOG:
 		ReinitDialog();
 		return FALSE;
+
+	case WM_NOTIFY:
+		{
+			LPNMHDR nmh = (LPNMHDR)lParam;
+
+			switch(nmh->idFrom) {
+			case IDC_POSITION:
+				OnPositionNotify(nmh->code);
+				break;
+			}
+		}
+		return 0;
 
 	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
@@ -2244,15 +2268,12 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 	return FALSE;
 }
 
-void VDDialogJumpToPositionW32::ReinitDialog() {
+void VDDialogJumpToPositionW32::ReinitEdit() {
+	SetDlgItemInt(mhdlg, IDC_FRAMENUMBER, (UINT)mFrame, FALSE);
+
 	long ticks = VDRoundToLong(mFrame * 1000.0 / mRealRate.asDouble());
 	long ms, sec, min;
 	char buf[64];
-
-	SendDlgItemMessage(mhdlg, IDC_FRAMETIME, EM_LIMITTEXT, 30, 0);
-	SetDlgItemInt(mhdlg, IDC_FRAMENUMBER, (UINT)mFrame, FALSE);
-	SetFocus(GetDlgItem(mhdlg, IDC_FRAMENUMBER));
-	SendDlgItemMessage(mhdlg, IDC_FRAMENUMBER, EM_SETSEL, 0, -1);
 
 	ms  = ticks %1000; ticks /= 1000;
 	sec	= ticks %  60; ticks /=  60;
@@ -2264,13 +2285,52 @@ void VDDialogJumpToPositionW32::ReinitDialog() {
 		wsprintf(buf, "%d:%02d.%03d", min, sec, ms);
 
 	SetDlgItemText(mhdlg, IDC_FRAMETIME, buf);
+}
+
+void VDDialogJumpToPositionW32::ReinitDialog() {
+	SendDlgItemMessage(mhdlg, IDC_FRAMETIME, EM_LIMITTEXT, 30, 0);
+	ReinitEdit();
+	SetFocus(GetDlgItem(mhdlg, IDC_FRAMENUMBER));
+	SendDlgItemMessage(mhdlg, IDC_FRAMENUMBER, EM_SETSEL, 0, -1);
 
 	CheckDlgButton(mhdlg, IDC_JUMPTOFRAME, BST_CHECKED);
 	CheckDlgButton(mhdlg, IDC_JUMPTOTIME, BST_UNCHECKED);
+
+	if (mbUsePos) {
+		mpPosition = VDGetIPositionControl((VDGUIHandle)GetDlgItem(mhdlg,IDC_POSITION));
+		mpPosition->SetRange(0, g_project->GetFrameCount());
+		mpPosition->SetPosition(mFrame);
+		VDPosition start(g_project->GetSelectionStartFrame());
+		VDPosition end(g_project->GetSelectionEndFrame());
+		mpPosition->SetSelection(start, end);
+		mpPosition->SetTimeline(g_project->GetTimeline());
+	} else {
+		mpPosition = 0;
+	}
+}
+
+void VDDialogJumpToPositionW32::OnPositionNotify(int code) {
+	switch(code) {
+	case PCN_THUMBPOSITION:
+	case PCN_THUMBPOSITIONPREV:
+	case PCN_THUMBPOSITIONNEXT:
+	case PCN_THUMBTRACK:
+	case PCN_PAGELEFT:
+	case PCN_PAGERIGHT:
+		mFrame = mpPosition->GetPosition();
+		ReinitEdit();
+		g_project->MoveToFrame(mFrame);
+	}
 }
 
 VDPosition VDDisplayJumpToPositionDialog(VDGUIHandle hParent, VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate) {
 	VDDialogJumpToPositionW32 dlg(currentFrame, pVS, realRate);
+
+	return dlg.Activate(hParent);
+}
+
+VDPosition VDDisplayJumpToPositionDialog2(VDGUIHandle hParent, VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate) {
+	VDDialogJumpToPositionW32 dlg(currentFrame, pVS, realRate, true);
 
 	return dlg.Activate(hParent);
 }
