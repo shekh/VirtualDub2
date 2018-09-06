@@ -554,10 +554,10 @@ dialog 1017, "" : fill, child {
 			set 0: vertical {
 				label 0, "Disk I/O write mode:" : marginb=5;
 				set 0: marginl=10, vertical {
-					option 100, "Buffered - slowest, but most compatible";
+					option 100, "Buffered - slowest";
 					option 101, "Write through - slower";
 					option 102, "Unbuffered - faster";
-					option 103, "Asynchronous unbuffered - fastest (Windows NT only)";
+					option 103, "Asynchronous unbuffered - fastest";
 				}
 			}
 		}

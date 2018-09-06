@@ -149,9 +149,9 @@ BEGIN
             MENUITEM "Pan && zoom: &Center",        ID_PAN_CENTER
             MENUITEM "Pan && zoom: &Top-Left",      ID_PAN_TOPLEFT
         END
-        MENUITEM "&Input video pane\tF9",       ID_OPTIONS_DISPLAYINPUTVIDEO, CHECKED
-        MENUITEM "&Output video pane\tF10",     ID_OPTIONS_DISPLAYOUTPUTVIDEO, CHECKED
-        MENUITEM "Arrange video panes vertically", ID_OPTIONS_VERTICALDISPLAY
+        MENUITEM "Enable &input pane\tF9",      ID_OPTIONS_DISPLAYINPUTVIDEO, CHECKED
+        MENUITEM "Enable &output pane\tF10",    ID_OPTIONS_DISPLAYOUTPUTVIDEO, CHECKED
+        MENUITEM "Arrange panes vertically",    ID_OPTIONS_VERTICALDISPLAY
         MENUITEM "Swap input/output panes",     ID_OPTIONS_SWAPPANES
         MENUITEM "Full screen",                 ID_VIEW_FULLSCREEN
         MENUITEM SEPARATOR
@@ -272,9 +272,9 @@ BEGIN
     END
     POPUP "V&iew"
     BEGIN
-        MENUITEM "&Input video pane\tF9",       ID_OPTIONS_DISPLAYINPUTVIDEO, CHECKED
-        MENUITEM "&Output video pane\tF10",     ID_OPTIONS_DISPLAYOUTPUTVIDEO, CHECKED
-        MENUITEM "Arrange video panes vertically", ID_OPTIONS_VERTICALDISPLAY
+        MENUITEM "Enable &input pane\tF9",      ID_OPTIONS_DISPLAYINPUTVIDEO, CHECKED
+        MENUITEM "Enable &output pane\tF10",    ID_OPTIONS_DISPLAYOUTPUTVIDEO, CHECKED
+        MENUITEM "Arrange panes vertically",    ID_OPTIONS_VERTICALDISPLAY
         MENUITEM "Swap input/output panes",     ID_OPTIONS_SWAPPANES
         MENUITEM "Full screen",                 ID_VIEW_FULLSCREEN
         MENUITEM SEPARATOR
