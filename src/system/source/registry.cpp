@@ -329,15 +329,25 @@ void VDSetRegistryProvider(IVDRegistryProvider *provider) {
 
 ///////////////////////////////////////////////////////////////////////////
 
+VDRegistryKey::VDRegistryKey(IVDRegistryProvider *provider, const char *keyName, bool global, bool write) {
+	if (!provider) provider = VDGetRegistryProvider();
+	this->provider = provider;
+	void *rootKey = global ? provider->GetMachineKey() : provider->GetUserKey();
+
+	mKey = provider->CreateKey(rootKey, keyName, write);
+}
+
 VDRegistryKey::VDRegistryKey(const char *keyName, bool global, bool write) {
 	IVDRegistryProvider *provider = VDGetRegistryProvider();
+	this->provider = provider;
 	void *rootKey = global ? provider->GetMachineKey() : provider->GetUserKey();
 
 	mKey = provider->CreateKey(rootKey, keyName, write);
 }
 
 VDRegistryKey::VDRegistryKey(VDRegistryKey& baseKey, const char *name, bool write) {
-	IVDRegistryProvider *provider = VDGetRegistryProvider();
+	IVDRegistryProvider *provider = baseKey.provider;
+	this->provider = provider;
 	void *rootKey = baseKey.getRawHandle();
 
 	mKey = rootKey ? provider->CreateKey(rootKey, name, write) : NULL;
@@ -345,34 +355,34 @@ VDRegistryKey::VDRegistryKey(VDRegistryKey& baseKey, const char *name, bool writ
 
 VDRegistryKey::~VDRegistryKey() {
 	if (mKey)
-		VDGetRegistryProvider()->CloseKey(mKey);
+		provider->CloseKey(mKey);
 }
 
 bool VDRegistryKey::setBool(const char *name, bool v) const {
-	return mKey && VDGetRegistryProvider()->SetBool(mKey, name, v);
+	return mKey && provider->SetBool(mKey, name, v);
 }
 
 bool VDRegistryKey::setInt(const char *name, int i) const {
-	return mKey && VDGetRegistryProvider()->SetInt(mKey, name, i);
+	return mKey && provider->SetInt(mKey, name, i);
 }
 
 bool VDRegistryKey::setString(const char *name, const char *s) const {
-	return mKey && VDGetRegistryProvider()->SetString(mKey, name, s);
+	return mKey && provider->SetString(mKey, name, s);
 }
 
 bool VDRegistryKey::setString(const char *name, const wchar_t *s) const {
-	return mKey && VDGetRegistryProvider()->SetString(mKey, name, s);
+	return mKey && provider->SetString(mKey, name, s);
 }
 
 bool VDRegistryKey::setBinary(const char *name, const char *data, int len) const {
-	return mKey && VDGetRegistryProvider()->SetBinary(mKey, name, data, len);
+	return mKey && provider->SetBinary(mKey, name, data, len);
 }
 
 VDRegistryKey::Type VDRegistryKey::getValueType(const char *name) const {
 	Type type = kTypeUnknown;
 
 	if (mKey) {
-		switch(VDGetRegistryProvider()->GetType(mKey, name)) {
+		switch(provider->GetType(mKey, name)) {
 			case IVDRegistryProvider::kTypeInt:
 				type = kTypeInt;
 				break;
@@ -392,12 +402,12 @@ VDRegistryKey::Type VDRegistryKey::getValueType(const char *name) const {
 
 bool VDRegistryKey::getBool(const char *name, bool def) const {
 	bool v;
-	return mKey && VDGetRegistryProvider()->GetBool(mKey, name, v) ? v : def;
+	return mKey && provider->GetBool(mKey, name, v) ? v : def;
 }
 
 int VDRegistryKey::getInt(const char *name, int def) const {
 	int v;
-	return mKey && VDGetRegistryProvider()->GetInt(mKey, name, v) ? v : def;
+	return mKey && provider->GetInt(mKey, name, v) ? v : def;
 }
 
 int VDRegistryKey::getEnumInt(const char *pszName, int maxVal, int def) const {
@@ -410,27 +420,27 @@ int VDRegistryKey::getEnumInt(const char *pszName, int maxVal, int def) const {
 }
 
 bool VDRegistryKey::getString(const char *name, VDStringA& str) const {
-	return mKey && VDGetRegistryProvider()->GetString(mKey, name, str);
+	return mKey && provider->GetString(mKey, name, str);
 }
 
 bool VDRegistryKey::getString(const char *name, VDStringW& str) const {
-	return mKey && VDGetRegistryProvider()->GetString(mKey, name, str);
+	return mKey && provider->GetString(mKey, name, str);
 }
 
 int VDRegistryKey::getBinaryLength(const char *name) const {
-	return mKey ? VDGetRegistryProvider()->GetBinaryLength(mKey, name) : -1;
+	return mKey ? provider->GetBinaryLength(mKey, name) : -1;
 }
 
 bool VDRegistryKey::getBinary(const char *name, char *buf, int maxlen) const {
-	return mKey && VDGetRegistryProvider()->GetBinary(mKey, name, buf, maxlen);
+	return mKey && provider->GetBinary(mKey, name, buf, maxlen);
 }
 
 bool VDRegistryKey::removeValue(const char *name) {
-	return mKey && VDGetRegistryProvider()->RemoveValue(mKey, name);
+	return mKey && provider->RemoveValue(mKey, name);
 }
 
 bool VDRegistryKey::removeKey(const char *name) {
-	return mKey && VDGetRegistryProvider()->RemoveKey(mKey, name);
+	return mKey && provider->RemoveKey(mKey, name);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -467,11 +477,16 @@ const char *VDRegistryKeyIterator::Next() {
 
 VDString VDRegistryAppKey::s_appbase;
 
-VDRegistryAppKey::VDRegistryAppKey() : VDRegistryKey(s_appbase.c_str()) {
+VDRegistryAppKey::VDRegistryAppKey(IVDRegistryProvider *provider) : VDRegistryKey(provider, s_appbase.c_str()) {
 }
 
 VDRegistryAppKey::VDRegistryAppKey(const char *pszKey, bool write, bool global)
 	: VDRegistryKey((s_appbase + pszKey).c_str(), global, write)
+{
+}
+
+VDRegistryAppKey::VDRegistryAppKey(IVDRegistryProvider *provider, const char *pszKey, bool write, bool global)
+	: VDRegistryKey(provider, (s_appbase + pszKey).c_str(), global, write)
 {
 }
 

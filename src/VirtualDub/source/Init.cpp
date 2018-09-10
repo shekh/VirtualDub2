@@ -91,6 +91,7 @@ extern void VDInitVideoCodecBugTrap();
 extern void VDInitProtectedScopeHook();
 extern void VDInitTools();
 extern void VDShutdownTools();
+extern void VDDeletePreferencesShadow();
 
 extern uint32 VDPreferencesGetEnabledCPUFeatures();
 extern void VDPreferencesSetFilterAccelVisualDebugEnabled(bool);
@@ -654,6 +655,7 @@ void Deinit() {
 		g_pPortableRegistry = NULL;
 	}
 
+	VDDeletePreferencesShadow();
 	VDDeinitResourceSystem();
 	VDShutdownEventProfiler();
 	VDDeinitProfilingSystem();

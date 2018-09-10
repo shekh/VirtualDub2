@@ -30,6 +30,7 @@
 #include <vd2/system/fileasync.h>
 #include <vd2/system/cpuaccel.h>
 #include <vd2/VDDisplay/display.h>
+#include <vd2/system/registrymemory.h>
 
 #include "resource.h"
 #include "helpfile.h"
@@ -145,6 +146,8 @@ Preferences g_prefs={
 };
 
 static char g_szMainPrefs[]="Main prefs";
+
+VDRegistryProviderMemory* g_pShadowRegistry;
 
 void VDPreferencesUpdated();
 
@@ -857,6 +860,8 @@ public:
 		if (type == kEventAttach) {
 			mpBase = pBase;
 			SetValue(100, g_prefsPage);
+			IVDUIWindow *pSave = mpBase->GetControl(12);
+			pSave->SetEnabled(!g_pShadowRegistry);
 			pBase->ExecuteAllLinks();
 		} else if (id == 101 && type == kEventSelect) {
 			IVDUIBase *pSubDialog = vdpoly_cast<IVDUIBase *>(pBase->GetControl(101)->GetStartingChild());
@@ -936,7 +941,9 @@ int VDShowPreferencesDialog(VDGUIHandle h) {
 }
 
 void LoadPreferences() {
-	VDRegistryAppKey baseKey;
+	IVDRegistryProvider *reg = g_pShadowRegistry;
+
+	VDRegistryAppKey baseKey(reg);
 
 	DWORD dwSize;
 	Preferences tempPrefs(g_prefs);
@@ -950,7 +957,7 @@ void LoadPreferences() {
 			memcpy(&g_prefs, &tempPrefs, dwSize);
 	}
 
-	VDRegistryAppKey key("Preferences");
+	VDRegistryAppKey key(reg, "Preferences");
 
 	if (!key.getString("Timeline format", g_prefs2.mTimelineFormat))
 		g_prefs2.mTimelineFormat = L"Frame %f (%h:%02m:%02s.%03t) [%c]";
@@ -1029,10 +1036,12 @@ void LoadPreferences() {
 }
 
 void VDSavePreferences(VDPreferences2& prefs) {
-	VDRegistryAppKey baseKey;
+	IVDRegistryProvider *reg = g_pShadowRegistry;
+
+	VDRegistryAppKey baseKey(reg);
 	baseKey.setBinary(g_szMainPrefs, (char *)&prefs.mOldPrefs, sizeof prefs.mOldPrefs);
 
-	VDRegistryAppKey key("Preferences");
+	VDRegistryAppKey key(reg, "Preferences");
 	key.setString("Timeline format", prefs.mTimelineFormat.c_str());
 	key.setInt("Timeline: Page size", g_prefs2.mTimelinePageSize);
 	key.setBool("Timeline: Page mode", g_prefs2.mbTimelinePageMode);
@@ -1095,6 +1104,37 @@ void VDSavePreferences(VDPreferences2& prefs) {
 
 void VDSavePreferences() {
 	VDSavePreferences(g_prefs2);
+}
+
+void VDSavePreferencesShadow() {
+	if (!g_pShadowRegistry) g_pShadowRegistry = new VDRegistryProviderMemory;
+	VDSavePreferences();
+}
+
+void VDDeletePreferencesShadow() {
+	delete g_pShadowRegistry;
+	g_pShadowRegistry = 0;
+}
+
+void VDSetPreferencesBool(const char *name, bool v) {
+	VDSavePreferencesShadow();
+	VDRegistryAppKey key(g_pShadowRegistry, "Preferences");
+	key.setBool(name,v);
+	LoadPreferences();
+}
+
+void VDSetPreferencesInt(const char *name, int v) {
+	VDSavePreferencesShadow();
+	VDRegistryAppKey key(g_pShadowRegistry, "Preferences");
+	key.setInt(name,v);
+	LoadPreferences();
+}
+
+void VDSetPreferencesString(const char *name, const char *s) {
+	VDSavePreferencesShadow();
+	VDRegistryAppKey key(g_pShadowRegistry, "Preferences");
+	key.setString(name,s);
+	LoadPreferences();
 }
 
 const VDStringW& VDPreferencesGetTimelineFormat() {

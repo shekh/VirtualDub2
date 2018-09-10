@@ -2255,6 +2255,22 @@ static void func_VirtualDub_StartServer(IVDScriptInterpreter *, VDScriptValue *a
 	g_project->StartServer(*arglist[0].asString());
 }
 
+void VDSetPreferencesBool(const char *name, bool v);
+void VDSetPreferencesInt(const char *name, int v);
+void VDSetPreferencesString(const char *name, const char *s);
+
+static void func_VirtualDub_SetPreferencesBool(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	VDSetPreferencesBool(*arglist[0].asString(), arglist[1].asInt()!=0);
+}
+
+static void func_VirtualDub_SetPreferencesInt(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	VDSetPreferencesInt(*arglist[0].asString(), arglist[1].asInt());
+}
+
+static void func_VirtualDub_SetPreferencesString(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	VDSetPreferencesString(*arglist[0].asString(), *arglist[1].asString());
+}
+
 extern "C" unsigned long version_num;
 
 static VDScriptValue obj_VirtualDub_lookup(IVDScriptInterpreter *isi, const VDScriptObject *obj, void *lpVoid, char *szName) {
@@ -2309,6 +2325,9 @@ static const VDScriptFunctionDef obj_VirtualDub_functbl[]={
 	{ func_VirtualDub_Log,				"Log",					"0s" },
 	{ func_VirtualDub_Exit,				"Exit",					"0i" },
 	{ func_VirtualDub_StartServer,		"StartServer",			"0s" },
+	{ func_VirtualDub_SetPreferencesBool,		"SetPreferencesBool",			"0si" },
+	{ func_VirtualDub_SetPreferencesInt,		"SetPreferencesInt",			"0si" },
+	{ func_VirtualDub_SetPreferencesString,		"SetPreferencesString",			"0ss" },
 	{ NULL }
 };
 

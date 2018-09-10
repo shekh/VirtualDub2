@@ -83,6 +83,7 @@ public:
 		kTypeBinary
 	};
 
+	VDRegistryKey(IVDRegistryProvider *provider, const char *pszKey, bool global = false, bool write = true);
 	VDRegistryKey(const char *pszKey, bool global = false, bool write = true);
 	VDRegistryKey(VDRegistryKey& baseKey, const char *name, bool write = true);
 	~VDRegistryKey();
@@ -109,9 +110,10 @@ public:
 	bool getBinary(const char *name, char *buf, int maxlen) const;
 
 	bool removeValue(const char *);
-    bool removeKey(const char *);
+	bool removeKey(const char *);
 
 private:
+	IVDRegistryProvider *provider;
 	void *mKey;
 };
 
@@ -146,8 +148,9 @@ private:
 	static VDString s_appbase;
 
 public:
-	VDRegistryAppKey();
+	VDRegistryAppKey(IVDRegistryProvider *provider=0);
 	VDRegistryAppKey(const char *pszKey, bool write = true, bool global = false);
+	VDRegistryAppKey(IVDRegistryProvider *provider, const char *pszKey, bool write = true, bool global = false);
 
 	static void setDefaultKey(const char *pszAppName);
 };
