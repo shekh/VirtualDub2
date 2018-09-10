@@ -1542,6 +1542,12 @@
 #define ID_PAN_CENTER                   40602
 #define ID_PAN_TOPLEFT                  40603
 #define ID_ADDTOQUEUE_CLI               40604
+#define ID_AUDIODISPLAY_WAVEFORMSCALE   40605
+#define ID_WAVEFORMSCALE_X1             40606
+#define ID_WAVEFORMSCALE_X2             40607
+#define ID_WAVEFORMSCALE_X4             40608
+#define ID_WAVEFORMSCALE_X8             40609
+#define ID_WAVEFORMSCALE_X16            40610
 #define ID_AUDIOMODE_11KHZ_8MONO        41000
 #define ID_AUDIOMODE_11KHZ_8STEREO      41001
 #define ID_AUDIOMODE_11KHZ_16MONO       41002
@@ -1598,7 +1604,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        316
-#define _APS_NEXT_COMMAND_VALUE         40605
+#define _APS_NEXT_COMMAND_VALUE         40611
 #define _APS_NEXT_CONTROL_VALUE         1572
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

@@ -646,6 +646,14 @@ BEGIN
         MENUITEM MFT_SEPARATOR
         MENUITEM "Zoom in",                     ID_AUDIODISPLAY_ZOOMIN,MFT_STRING,MFS_ENABLED
         MENUITEM "Zoom out",                    ID_AUDIODISPLAY_ZOOMOUT,MFT_STRING,MFS_ENABLED
+        POPUP "Waveform Scale",                 65535,MFT_STRING,MFS_ENABLED
+        BEGIN
+            MENUITEM "x16",                         ID_WAVEFORMSCALE_X16,MFT_STRING,MFS_ENABLED
+            MENUITEM "x8",                          ID_WAVEFORMSCALE_X8,MFT_STRING,MFS_ENABLED
+            MENUITEM "x4",                          ID_WAVEFORMSCALE_X4,MFT_STRING,MFS_ENABLED
+            MENUITEM "x2",                          ID_WAVEFORMSCALE_X2,MFT_STRING,MFS_ENABLED
+            MENUITEM "x1",                          ID_WAVEFORMSCALE_X1,MFT_STRING,MFS_ENABLED
+        END
         POPUP "Spectral Boost",                 65535,MFT_STRING,MFS_ENABLED
         BEGIN
             MENUITEM "20 dB",                       ID_AUDIODISPLAY_BOOST_20DB,MFT_STRING | MFT_RIGHTJUSTIFY,MFS_ENABLED

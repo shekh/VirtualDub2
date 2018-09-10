@@ -592,6 +592,7 @@ public:
 	void *AsInterface(uint32 id);
 
 	void SetSpectralPaletteDefault();
+	void SetWaveformScale(int scale);
 	void SetSpectralBoost(int boost);
 
 	Mode GetMode();
@@ -680,6 +681,7 @@ protected:
 	bool		mbPointsDirty;
 	bool		mbSolidWaveform;
 	int			mSpectralBoost;
+	int			mScale;
 
 	int			mUpdateX1;
 	int			mUpdateX2;
@@ -772,6 +774,7 @@ VDAudioDisplayControl::VDAudioDisplayControl(HWND hwnd)
 	, mbPointsDirty(false)
 	, mbSolidWaveform(false)
 	, mSpectralBoost(0)
+	, mScale(1)
 	, mUpdateX1(INT_MAX)
 	, mUpdateX2(INT_MIN)
 	, mUpdateTimer(0)
@@ -886,10 +889,17 @@ void VDAudioDisplayControl::SetSpectralPaletteDefault() {
 	}
 }
 
+void VDAudioDisplayControl::SetWaveformScale(int scale) {
+	if (mScale != scale) {
+		mScale = scale;
+		if (!mbSpectrumMode) Rescan();
+	}
+}
+
 void VDAudioDisplayControl::SetSpectralBoost(int boost) {
 	if (mSpectralBoost != boost) {
 		mSpectralBoost = boost;
-		Rescan();
+		if (mbSpectrumMode) Rescan();
 	}
 }
 
@@ -1269,6 +1279,26 @@ void VDAudioDisplayControl::OnCommand(int command) {
 			SetZoom(GetZoom() << 1);
 			break;
 
+		case ID_WAVEFORMSCALE_X1:
+			SetWaveformScale(1);
+			break;
+
+		case ID_WAVEFORMSCALE_X2:
+			SetWaveformScale(2);
+			break;
+
+		case ID_WAVEFORMSCALE_X4:
+			SetWaveformScale(4);
+			break;
+
+		case ID_WAVEFORMSCALE_X8:
+			SetWaveformScale(8);
+			break;
+
+		case ID_WAVEFORMSCALE_X16:
+			SetWaveformScale(16);
+			break;
+
 		case ID_AUDIODISPLAY_BOOST_20DB:
 			SetSpectralBoost(3);
 			break;
@@ -1288,6 +1318,11 @@ void VDAudioDisplayControl::OnCommand(int command) {
 }
 
 void VDAudioDisplayControl::OnInitMenu(HMENU hmenu) {
+	VDCheckRadioMenuItemByCommandW32(hmenu, ID_WAVEFORMSCALE_X1, mScale == 1);
+	VDCheckRadioMenuItemByCommandW32(hmenu, ID_WAVEFORMSCALE_X2, mScale == 2);
+	VDCheckRadioMenuItemByCommandW32(hmenu, ID_WAVEFORMSCALE_X4, mScale == 4);
+	VDCheckRadioMenuItemByCommandW32(hmenu, ID_WAVEFORMSCALE_X8, mScale == 8);
+	VDCheckRadioMenuItemByCommandW32(hmenu, ID_WAVEFORMSCALE_X16, mScale == 16);
 	VDCheckRadioMenuItemByCommandW32(hmenu, ID_AUDIODISPLAY_BOOST_0DB, mSpectralBoost == 0);
 	VDCheckRadioMenuItemByCommandW32(hmenu, ID_AUDIODISPLAY_BOOST_6DB, mSpectralBoost == 1);
 	VDCheckRadioMenuItemByCommandW32(hmenu, ID_AUDIODISPLAY_BOOST_12DB, mSpectralBoost == 2);
@@ -1795,7 +1830,7 @@ bool VDAudioDisplayControl::ProcessAudio(const void *src, int count, int chanStr
 				uint8 *dst8 = dst + ch;
 
 				for(int i=0; i<count; ++i) {
-					int s = int(*srcf*128) + 0x80;
+					int s = int(*srcf*128*mScale) + 0x80;
 					if(s<0) s=0; 
 					if(s>255) s=255;
 					*dst8 = (uint8)(s);
@@ -1809,7 +1844,10 @@ bool VDAudioDisplayControl::ProcessAudio(const void *src, int count, int chanStr
 				uint8 *dst8 = dst + ch;
 
 				for(int i=0; i<count; ++i) {
-					*dst8 = (uint8)((*src16 + 0x8000) >> 8);
+					int s = ((*src16*mScale)>>8) + 0x80;
+					if(s<0) s=0; 
+					if(s>255) s=255;
+					*dst8 = (uint8)s;
 					dst8 += mChanCount;
 					src16 = (const sint16 *)((const char *)src16 + sampleStride);
 				}
@@ -1820,7 +1858,10 @@ bool VDAudioDisplayControl::ProcessAudio(const void *src, int count, int chanStr
 				uint8 *dst8 = dst + ch;
 
 				for(int i=0; i<count; ++i) {
-					*dst8 = *src8;
+					int s = (*src8-0x80)*mScale + 0x80;
+					if(s<0) s=0; 
+					if(s>255) s=255;
+					*dst8 = (uint8)s;
 					dst8 += mChanCount;
 					src8 += sampleStride;
 				}
