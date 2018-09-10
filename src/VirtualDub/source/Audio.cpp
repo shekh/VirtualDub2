@@ -476,20 +476,22 @@ long AudioStreamSource::_Read(void *buffer, long max_samples, long *lplBytes) {
 	// add filler samples as necessary
 
 	if (mPrefill > 0) {
+		const VDWaveFormat *wfex = GetFormat();
 		long tc = max_samples;
-		const int mBlockSize = GetFormat()->mBlockSize;
+		const int mBlockSize = wfex->mBlockSize;
 
 		if (tc > mPrefill)
 			tc = (long)mPrefill;
 
-		const VDWaveFormat *wfex = GetFormat();
-
-		if (wfex->mTag == WAVE_FORMAT_PCM) {
-			if (GetFormat()->mSampleBits >= 16)
+		if (is_audio_pcm(wfex)) {
+			if (wfex->mSampleBits >= 16)
 				memset(buffer, 0, mBlockSize*tc);
 			else
 				memset(buffer, 0x80, mBlockSize*tc);
 
+			buffer = (char *)buffer + mBlockSize*tc;
+		} else if (is_audio_float(wfex)) {
+			memset(buffer, 0, mBlockSize*tc);
 			buffer = (char *)buffer + mBlockSize*tc;
 		} else {
 			uint32 actualBytes, actualSamples;

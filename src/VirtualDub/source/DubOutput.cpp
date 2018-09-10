@@ -355,7 +355,8 @@ void VDAVIOutputPluginSystem::SetTextInfo(const std::list<std::pair<uint32, VDSt
 bool VDAVIOutputPluginSystem::GetInterleavingOverride(DubAudioOptions& opt) {
 	opt.interval = 1;
 	opt.is_ms = false;
-	opt.offset = 0; // TODO: implement this
+  // nothing to do, delay_offset is handler by source/filtering system, not output
+	//opt.delay_offset = 0;
 	opt.preload = 0;
 	return true;
 }

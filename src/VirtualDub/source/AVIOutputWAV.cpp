@@ -183,7 +183,8 @@ void AVIOutputWAV::WriteHeader(bool initial) {
 
 	uint32 audioFmtLen = audioOut->getFormatLen();
 	const WAVEFORMATEX& wfex = *(const WAVEFORMATEX *)audioOut->getFormat();
-	bool compressed = wfex.wFormatTag != WAVE_FORMAT_PCM;
+	bool compressed = true;
+	if (is_audio_pcm((VDWaveFormat*)&wfex) || is_audio_float((VDWaveFormat*)&wfex)) compressed = false;
 
 	// WAV format:
 	//		RIFF	<riff_size>	WAVE
