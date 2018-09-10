@@ -216,14 +216,14 @@ void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first) {
 	}
 }
 
-void SaveWAV(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts) {
+void SaveWAV(const wchar_t *szFilename, bool auto_w64, bool fProp, DubOptions *quick_opts) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
 
 	if (!inputAudio)
 		throw MyError("No audio stream to process.");
 
-	VDAVIOutputWAVSystem wavout(szFilename);
+	VDAVIOutputWAVSystem wavout(szFilename, auto_w64);
 	g_project->RunOperation(&wavout, TRUE, quick_opts, 0, fProp);
 }
 

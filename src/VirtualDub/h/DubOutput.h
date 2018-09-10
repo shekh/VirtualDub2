@@ -143,7 +143,7 @@ private:
 
 class VDAVIOutputWAVSystem : public VDDubberOutputSystem {
 public:
-	VDAVIOutputWAVSystem(const wchar_t *pszFilename);
+	VDAVIOutputWAVSystem(const wchar_t *pszFilename, bool auto_w64=true);
 	~VDAVIOutputWAVSystem();
 
 	void SetBuffer(int size);
@@ -154,6 +154,7 @@ public:
 private:
 	VDStringW	mFilename;
 	int			mBufferSize;
+	bool		auto_w64;
 };
 
 class VDAVIOutputPluginSystem : public VDDubberOutputSystem {

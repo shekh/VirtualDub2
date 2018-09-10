@@ -41,13 +41,14 @@ public:
 
 	void write(const void *pBuffer, uint32 cbBuffer);
 
+	bool		mbAutoWriteWAVE64;
+
 private:
 	void WriteHeader(bool initial);
 
 	vdautoptr<IVDFileAsync>	mpFileAsync;
 	bool		mbHeaderOpen;
 	bool		mbWriteWAVE64;
-	bool		mbAutoWriteWAVE64;
 	bool		mbPipeMode;
 	uint64		mBytesWritten;
 	uint32		mHeaderSize;

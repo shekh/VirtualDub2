@@ -299,10 +299,11 @@ bool VDAVIOutputStripedSystem::AcceptsAudio() {
 //
 ///////////////////////////////////////////////////////////////////////////
 
-VDAVIOutputWAVSystem::VDAVIOutputWAVSystem(const wchar_t *pszFilename)
+VDAVIOutputWAVSystem::VDAVIOutputWAVSystem(const wchar_t *pszFilename, bool auto_w64)
 	: mFilename(pszFilename)
 	, mBufferSize(1048576)
 {
+	this->auto_w64 = auto_w64;
 }
 
 VDAVIOutputWAVSystem::~VDAVIOutputWAVSystem() {
@@ -318,6 +319,7 @@ IVDMediaOutput *VDAVIOutputWAVSystem::CreateSegment() {
 	pOutput->createAudioStream()->setFormat(&mAudioFormat[0], mAudioFormat.size());
 
 	pOutput->setBufferSize(mBufferSize);
+	pOutput->mbAutoWriteWAVE64 = auto_w64;
 
 	pOutput->init(mFilename.c_str());
 

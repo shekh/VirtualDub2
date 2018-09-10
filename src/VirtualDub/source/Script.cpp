@@ -2176,7 +2176,10 @@ static void func_VirtualDub_SaveWAV(IVDScriptInterpreter *, VDScriptValue *argli
 	DubOptions opts(g_dubOpts);
 	InitBatchOptions(opts);
 
-	SaveWAV(filename.c_str(), true, &opts);
+	bool auto_w64 = false;
+	if (arg_count>0) auto_w64 = arglist[1].asInt()!=0;
+
+	SaveWAV(filename.c_str(), auto_w64, true, &opts);
 }
 
 static void func_VirtualDub_SaveRawAudio(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
@@ -2297,6 +2300,7 @@ static const VDScriptFunctionDef obj_VirtualDub_functbl[]={
 	{ func_VirtualDub_SaveImageSequence,	"SaveImageSequence",	"0ssii" },
 	{ func_VirtualDub_SaveImageSequence,	NULL,					"0ssiii" },
 	{ func_VirtualDub_SaveWAV,			"SaveWAV",				"0s" },
+	{ func_VirtualDub_SaveWAV,			NULL,					"0si" },
 	{ func_VirtualDub_SaveRawAudio,		"SaveRawAudio",			"0s" },
 	{ func_VirtualDub_SaveRawVideo,		"SaveRawVideo",			"0siiii" },
 	{ func_VirtualDub_SaveAnimatedGIF,	"SaveAnimatedGIF",		"0si" },
