@@ -663,8 +663,19 @@ void VDProject::Cut() {
 }
 
 void VDProject::Copy() {
+	VDPosition pos = GetCurrentFrame();
+	VDPosition start = GetSelectionStartFrame();
+	VDPosition end = GetSelectionEndFrame();
+
 	FrameSubset& s = mTimeline.GetSubset();
-	mClipboard.assign(s, mposSelectionStart, mposSelectionEnd - mposSelectionStart);
+	VDPosition len = 1;
+
+	if (IsSelectionEmpty())
+		start = pos;
+	else
+		len = end-start;
+
+	mClipboard.assign(s, start, len);
 }
 
 void VDProject::Paste() {
@@ -686,6 +697,7 @@ void VDProject::Paste() {
 	}
 	
 	EndTimelineUpdate();
+	MoveToFrame(start);
 }
 
 void VDProject::Delete() {
