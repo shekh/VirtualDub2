@@ -199,7 +199,7 @@ vd2::ColorRangeMode VDXVideoFilter::ExtractColorRange(sint32 format) {
 vd2::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(const VDXFBitmap* bitmap) {
 	if (fma && fma->fmpixmap) {
 		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(bitmap->mpPixmap);
-    if (info->colorSpaceMode!=vd2::kColorSpaceMode_None) return info->colorSpaceMode;
+		if (info->colorSpaceMode!=vd2::kColorSpaceMode_None) return info->colorSpaceMode;
 	}
 
 	return ExtractColorSpace(bitmap->mpPixmapLayout->format);
@@ -208,10 +208,58 @@ vd2::ColorSpaceMode VDXVideoFilter::ExtractColorSpace(const VDXFBitmap* bitmap) 
 vd2::ColorRangeMode VDXVideoFilter::ExtractColorRange(const VDXFBitmap* bitmap) {
 	if (fma && fma->fmpixmap) {
 		FilterModPixmapInfo* info = fma->fmpixmap->GetPixmapInfo(bitmap->mpPixmap);
-    if (info->colorRangeMode!=vd2::kColorRangeMode_None) return info->colorRangeMode;
+		if (info->colorRangeMode!=vd2::kColorRangeMode_None) return info->colorRangeMode;
 	}
 
 	return ExtractColorRange(bitmap->mpPixmapLayout->format);
+}
+
+int VDXVideoFilter::ExtractWidth2(sint32 format, sint32 w) {
+	using namespace vd2;
+
+	switch (ExtractBaseFormat(format)) {
+	case kPixFormat_YUV422_UYVY:
+	case kPixFormat_YUV422_YUYV:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV422_V210:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV422_P210:
+	case kPixFormat_YUV422_P216:
+		return (w+1)/2;
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+	case kPixFormat_YUV420_NV12:
+	case kPixFormat_YUV420i_Planar:
+	case kPixFormat_YUV420it_Planar:
+	case kPixFormat_YUV420ib_Planar:
+	case kPixFormat_YUV420_P010:
+	case kPixFormat_YUV420_P016:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+		return (w+1)/2;
+	}
+	return w;
+}
+
+int VDXVideoFilter::ExtractHeight2(sint32 format, sint32 w) {
+	using namespace vd2;
+
+	switch (ExtractBaseFormat(format)) {
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+	case kPixFormat_YUV420_NV12:
+	case kPixFormat_YUV420i_Planar:
+	case kPixFormat_YUV420it_Planar:
+	case kPixFormat_YUV420ib_Planar:
+	case kPixFormat_YUV420_P010:
+	case kPixFormat_YUV420_P016:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+		return (w+1)/2;
+	}
+	return w;
 }
 
 ///////////////////////////////////////////////////////////////////////////

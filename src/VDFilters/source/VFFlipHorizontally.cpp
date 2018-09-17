@@ -22,15 +22,22 @@ class VDVFFlipHorizontally : public VDXVideoFilter {
 public:
 	uint32 GetParams();
 	void Run();
+	void Run32();
 	void Run64();
+	void Run8();
+	void Run16();
 };
 
 uint32 VDVFFlipHorizontally::GetParams() {
+	using namespace vd2;
 	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
 
 	switch(pxlsrc.format) {
-		case nsVDXPixmap::kPixFormat_XRGB8888:
-		case nsVDPixmap::kPixFormat_XRGB64:
+		case kPixFormat_XRGB8888:
+		case kPixFormat_XRGB64:
+		case kPixFormat_Y8:
+		case kPixFormat_Y8_FR:
+		case kPixFormat_Y16:
 			break;
 
 		default:
@@ -41,12 +48,26 @@ uint32 VDVFFlipHorizontally::GetParams() {
 }
 
 void VDVFFlipHorizontally::Run() {
+	using namespace vd2;
 	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
-	if (pxlsrc.format == nsVDPixmap::kPixFormat_XRGB64) {
+	switch (pxlsrc.format) {
+	case kPixFormat_XRGB8888:
+		Run32();
+		return;
+	case kPixFormat_XRGB64:
 		Run64();
 		return;
+	case kPixFormat_Y8:
+	case kPixFormat_Y8_FR:
+		Run8();
+		return;
+	case kPixFormat_Y16:
+		Run16();
+		return;
 	}
+}
 
+void VDVFFlipHorizontally::Run32() {
 	uint32 *src = fa->src.data, *srct;
 	uint32 *dst = fa->dst.data-1;
 	unsigned long h, w;
@@ -68,6 +89,34 @@ void VDVFFlipHorizontally::Run64() {
 	{for(int y=0; y<fa->dst.h; y++){
 		uint64 *src = (uint64*)(size_t(fa->src.data) + fa->src.pitch*y);
 		uint64 *dst = (uint64*)(size_t(fa->dst.data) + fa->dst.pitch*y + w*8);
+
+		{for(int x=0; x<w; x++){
+			dst--;
+			*dst = *src;
+			src++;
+		}}
+	}}
+}
+
+void VDVFFlipHorizontally::Run8() {
+	int w = fa->dst.w;
+	{for(int y=0; y<fa->dst.h; y++){
+		uint8 *src = (uint8*)(size_t(fa->src.data) + fa->src.pitch*y);
+		uint8 *dst = (uint8*)(size_t(fa->dst.data) + fa->dst.pitch*y + w);
+
+		{for(int x=0; x<w; x++){
+			dst--;
+			*dst = *src;
+			src++;
+		}}
+	}}
+}
+
+void VDVFFlipHorizontally::Run16() {
+	int w = fa->dst.w;
+	{for(int y=0; y<fa->dst.h; y++){
+		uint16 *src = (uint16*)(size_t(fa->src.data) + fa->src.pitch*y);
+		uint16 *dst = (uint16*)(size_t(fa->dst.data) + fa->dst.pitch*y + w*2);
 
 		{for(int x=0; x<w; x++){
 			dst--;

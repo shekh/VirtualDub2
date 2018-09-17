@@ -1085,7 +1085,7 @@ int MatchFilterFormat::next_base() {
 		return kPixFormat_YUV444_Planar;
 	}
 
-	if (base!=base1) return base1;
+	if (formatMask.test(base1)) return base1;
 	return 0;
 }
 

@@ -10,8 +10,7 @@
 #include "winresrc.h"
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
-#endif
-
+#endif
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -564,6 +563,22 @@ BEGIN
     LTEXT           "Bottom",IDC_STATIC,190,84,33,10
 END
 
+IDD_FILTER_CONVERTGRAY DIALOGEX 0, 0, 187, 109
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Filter: Convert to Gray"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Show preview",IDC_PREVIEW,7,88,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,130,88,50,14
+    DEFPUSHBUTTON   "OK",IDOK,76,88,50,14
+    CONTROL         "8-bit (Y8)",IDC_INPUT_Y8,"Button",BS_AUTORADIOBUTTON | WS_GROUP,10,10,46,10
+    CONTROL         "16-bit (Y16)",IDC_INPUT_Y16,"Button",BS_AUTORADIOBUTTON,10,22,54,10
+    LTEXT           "Component range",IDC_STATIC_COLORRANGE,12,41,69,10,SS_CENTERIMAGE
+    CONTROL         "No change",IDC_CR_NONE,"Button",BS_AUTORADIOBUTTON | WS_GROUP,82,41,50,10
+    CONTROL         "Limited (Y: 16-235)",IDC_CR_LIMITED,"Button",BS_AUTORADIOBUTTON,82,52,77,10
+    CONTROL         "Full (0-255)",IDC_CR_FULL,"Button",BS_AUTORADIOBUTTON,82,62,53,10
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -790,6 +805,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 175
     END
+
+    IDD_FILTER_CONVERTGRAY, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 180
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 102
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -803,8 +826,7 @@ END
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-
-
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

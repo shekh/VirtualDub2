@@ -101,6 +101,7 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 	case kPixFormat_XRGB64:
 	case kPixFormat_Y8:
 	case kPixFormat_Y8_FR:
+	case kPixFormat_Y16:
 	case kPixFormat_YUV444_Planar:
 	case kPixFormat_YUV444_Planar_FR:
 	case kPixFormat_YUV444_Planar_709:
@@ -275,7 +276,13 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 		break;
 
 	case kPixFormat_Y8:
+	case kPixFormat_Y8_FR:
 		gen.ldsrc(0, 0, 0, 0, sw, sh, kVDPixType_8, sw);
+		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
+		break;
+
+	case kPixFormat_Y16:
+		gen.ldsrc(0, 0, 0, 0, sw, sh, kVDPixType_16_LE, sw*2);
 		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
 		break;
 
@@ -362,6 +369,8 @@ void VDPixmapResampler::Process(const VDPixmap& dst, const VDPixmap& src) {
 	case kPixFormat_XRGB8888:
 	case kPixFormat_XRGB64:
 	case kPixFormat_Y8:
+	case kPixFormat_Y8_FR:
+	case kPixFormat_Y16:
 		mpBlitter->Blit(dst, &mDstRectPlane0, src);
 		return;
 	}

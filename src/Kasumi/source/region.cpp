@@ -681,6 +681,7 @@ namespace {
 			RenderABuffer64(dst, y, alpha, w, color);
 			return;
 		case nsVDPixmap::kPixFormat_Y8:
+		case nsVDPixmap::kPixFormat_Y8_FR:
 			RenderABuffer8(dst, y, alpha, w, color);
 			return;
 		case nsVDPixmap::kPixFormat_Y16:
@@ -1276,8 +1277,12 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 	switch(dst.format) {
 	case nsVDPixmap::kPixFormat_XRGB8888:
 	case nsVDPixmap::kPixFormat_XRGB64:
+		break;
+
 	case nsVDPixmap::kPixFormat_Y8:
+	case nsVDPixmap::kPixFormat_Y8_FR:
 	case nsVDPixmap::kPixFormat_Y16:
+		color = (color >> 8) & 0xff;
 		break;
 	default:
 		return false;

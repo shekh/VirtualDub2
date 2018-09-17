@@ -61,7 +61,7 @@ namespace {
 	}
 
 	void VDPixmapRectFillRaw(const VDPixmap& px, const vdrect32f& r0, uint32 c) {
-		using namespace nsVDPixmap;
+		using namespace vd2;
 
 		vdrect32f r(r0);
 
@@ -111,16 +111,17 @@ namespace {
 		}
 
 		switch(px.format) {
-		case kPixFormat_Pal1:
-		case kPixFormat_Pal2:
-		case kPixFormat_Pal4:
-		case kPixFormat_Pal8:
+		case nsVDPixmap::kPixFormat_Pal1:
+		case nsVDPixmap::kPixFormat_Pal2:
+		case nsVDPixmap::kPixFormat_Pal4:
+		case nsVDPixmap::kPixFormat_Pal8:
 		case kPixFormat_Y8:
 		case kPixFormat_Y8_FR:
 			VDPixmapRectFillPlane8(px.data, px.pitch, ix, iy, iw, ih, (uint8)c);
 			break;
 		case kPixFormat_XRGB1555:
 		case kPixFormat_RGB565:
+		case kPixFormat_Y16:
 			VDPixmapRectFillPlane16(px.data, px.pitch, ix, iy, iw, ih, (uint16)c);
 			break;
 		case kPixFormat_RGB888:
@@ -246,7 +247,7 @@ namespace {
 	}
 
 	void VDPixmapRectFillRGB32(const VDPixmap& px, const vdrect32f& rDst, uint32 c) {
-		using namespace nsVDPixmap;
+		using namespace vd2;
 
 		int r = (c >> 16) & 0xff;
 		int g = (c >> 8) & 0xff;
@@ -254,10 +255,10 @@ namespace {
 		uint32 ycbcr = VDConvertRGBToYCbCr(uint8(r),uint8(g),uint8(b), px.info.colorSpaceMode==vd2::kColorSpaceMode_709, px.info.colorRangeMode==vd2::kColorRangeMode_Full);
 
 		switch(px.format) {
-		case kPixFormat_Pal1:
-		case kPixFormat_Pal2:
-		case kPixFormat_Pal4:
-		case kPixFormat_Pal8:
+		case nsVDPixmap::kPixFormat_Pal1:
+		case nsVDPixmap::kPixFormat_Pal2:
+		case nsVDPixmap::kPixFormat_Pal4:
+		case nsVDPixmap::kPixFormat_Pal8:
 			VDASSERT(false);
 			break;
 
@@ -276,11 +277,9 @@ namespace {
 			break;
 
 		case kPixFormat_Y8:
-			VDPixmapRectFillRaw(px, rDst, ycbcr & 0xff);
-			break;
-
 		case kPixFormat_Y8_FR:
-			VDPixmapRectFillRaw(px, rDst, ycbcr & 0xff);
+		case kPixFormat_Y16:
+			VDPixmapRectFillRaw(px, rDst, (ycbcr>>8) & 0xff);
 			break;
 
 		case kPixFormat_YUV444_Planar:
@@ -480,42 +479,33 @@ void VDVideoFilterResize::Run() {
 }
 
 uint32 VDVideoFilterResize::GetParams() {
-	switch(fa->src.mpPixmapLayout->format) {
-		case nsVDXPixmap::kPixFormat_XRGB8888:
-		case nsVDXPixmap::kPixFormat_XRGB64:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar16:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar16:
-		case nsVDXPixmap::kPixFormat_YUV422_Alpha_Planar16:
-		case nsVDXPixmap::kPixFormat_YUV444_Alpha_Planar16:
-		case nsVDXPixmap::kPixFormat_YUV422_Alpha_Planar:
-		case nsVDXPixmap::kPixFormat_YUV444_Alpha_Planar:
+	using namespace vd2;
+	const VDXPixmapLayout& src = *fa->src.mpPixmapLayout;
+	VDPixmapFormatEx format = ExtractBaseFormat(src.format);
+
+	switch(format) {
+		case kPixFormat_XRGB8888:
+		case kPixFormat_XRGB64:
+		case kPixFormat_YUV444_Planar:
+		case kPixFormat_YUV422_Planar:
+		case kPixFormat_YUV411_Planar:
+		case kPixFormat_YUV422_Planar16:
+		case kPixFormat_YUV444_Planar16:
+		case kPixFormat_YUV422_Alpha_Planar16:
+		case kPixFormat_YUV444_Alpha_Planar16:
+		case kPixFormat_YUV422_Alpha_Planar:
+		case kPixFormat_YUV444_Alpha_Planar:
+		case kPixFormat_Y8:
+		case kPixFormat_Y16:
 			break;
 
-		case nsVDXPixmap::kPixFormat_VDXA_RGB:
-		case nsVDXPixmap::kPixFormat_VDXA_YUV:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar_FR:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar_709:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar_709_FR:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar16:
-		case nsVDXPixmap::kPixFormat_YUV420_Alpha_Planar16:
-		case nsVDXPixmap::kPixFormat_YUV420_Alpha_Planar:
+		case kPixFormat_VDXA_RGB:
+		case kPixFormat_VDXA_YUV:
+		case kPixFormat_YUV420_Planar:
+		case kPixFormat_YUV410_Planar:
+		case kPixFormat_YUV420_Planar16:
+		case kPixFormat_YUV420_Alpha_Planar16:
+		case kPixFormat_YUV420_Alpha_Planar:
 			if (mConfig.mbInterlaced)
 				return FILTERPARAM_NOT_SUPPORTED;
 

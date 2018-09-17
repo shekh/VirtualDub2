@@ -25,6 +25,20 @@
 ///////////////////////////////////
 
 namespace {
+	void VDInvertRect8(uint8 *data, long w, long h, ptrdiff_t pitch) {
+		pitch -= w;
+
+		do {
+			long wt = w;
+			do {
+				*data = *data ^ 0xFF;
+				++data;
+			} while(--wt);
+
+			data = (uint8 *)((char *)data + pitch);
+		} while(--h);
+	}
+
 	void VDInvertRect32(uint32 *data, long w, long h, ptrdiff_t pitch) {
 		pitch -= 4*w;
 
@@ -36,6 +50,20 @@ namespace {
 			} while(--wt);
 
 			data = (uint32 *)((char *)data + pitch);
+		} while(--h);
+	}
+
+	void VDInvertRect16(uint16 *data, long w, long h, ptrdiff_t pitch) {
+		pitch -= 2*w;
+
+		do {
+			long wt = w;
+			do {
+				*data = *data ^ 0xFFFF;
+				++data;
+			} while(--wt);
+
+			data = (uint16 *)((char *)data + pitch);
 		} while(--h);
 	}
 
@@ -78,33 +106,99 @@ VDVideoFilterInvert::VDVideoFilterInvert()
 }
 
 uint32 VDVideoFilterInvert::GetParams() {
+	using namespace vd2;
 	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
 	VDXPixmapLayout& pxldst = *fa->dst.mpPixmapLayout;
+	VDPixmapFormatEx format = ExtractBaseFormat(pxlsrc.format);
 
-	switch(pxlsrc.format) {
-		case nsVDXPixmap::kPixFormat_XRGB8888:
-			pxldst.pitch = pxlsrc.pitch;
-			return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
+	switch(format) {
+	case kPixFormat_XRGB8888:
+	case kPixFormat_Y8:
+	case kPixFormat_YUV444_Planar:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+		pxldst.pitch = pxlsrc.pitch;
+		return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
 
-		case nsVDXPixmap::kPixFormat_XRGB64:
-			pxldst.pitch = pxlsrc.pitch;
-			return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_NORMALIZE16;
+	case kPixFormat_XRGB64:
+	case kPixFormat_Y16:
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+		pxldst.pitch = pxlsrc.pitch;
+		return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_NORMALIZE16;
 
-		case nsVDXPixmap::kPixFormat_VDXA_RGB:
-		case nsVDXPixmap::kPixFormat_VDXA_YUV:
-			return FILTERPARAM_SWAP_BUFFERS | FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
+	case kPixFormat_VDXA_RGB:
+	case kPixFormat_VDXA_YUV:
+		return FILTERPARAM_SWAP_BUFFERS | FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
 
-		default:
-			return FILTERPARAM_NOT_SUPPORTED;
+	default:
+		return FILTERPARAM_NOT_SUPPORTED;
 	}
 }
 
 void VDVideoFilterInvert::Run() {
+	using namespace vd2;
 	const VDXPixmap& src = *fa->src.mpPixmap;
-	if (src.format==nsVDXPixmap::kPixFormat_XRGB8888)
+	VDPixmapFormatEx format = ExtractBaseFormat(src.format);
+
+	switch(format) {
+	case kPixFormat_XRGB8888:
 		VDInvertRect32((uint32*)src.data, src.w, src.h, src.pitch);
-	if (src.format==nsVDXPixmap::kPixFormat_XRGB64)
+		return;
+	case kPixFormat_XRGB64:
 		VDInvertRect64((uint32*)src.data, src.w, src.h, src.pitch);
+		return;
+	case kPixFormat_Y8:
+	case kPixFormat_YUV444_Planar:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+		VDInvertRect8((uint8*)src.data, src.w, src.h, src.pitch);
+		break;
+	case kPixFormat_Y16:
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+		VDInvertRect16((uint16*)src.data, src.w, src.h, src.pitch);
+		break;
+	}
+
+	int w2 = ExtractWidth2(format, src.w);
+	int h2 = ExtractHeight2(format, src.h);
+
+	switch (format) {
+	case kPixFormat_YUV444_Planar:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
+		VDInvertRect8((uint8*)src.data2, w2, h2, src.pitch2);
+		VDInvertRect8((uint8*)src.data3, w2, h2, src.pitch3);
+		break;
+	case kPixFormat_Y16:
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+		VDInvertRect16((uint16*)src.data2, w2, h2, src.pitch2);
+		VDInvertRect16((uint16*)src.data3, w2, h2, src.pitch3);
+		break;
+	}
 }
 
 void VDVideoFilterInvert::StartAccel(IVDXAContext *vdxa) {

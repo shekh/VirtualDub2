@@ -125,6 +125,9 @@ public:
 
 	vd2::ColorSpaceMode ExtractColorSpace(sint32 format);
 	vd2::ColorRangeMode ExtractColorRange(sint32 format);
+
+	int ExtractWidth2(sint32 format, sint32 w);
+	int ExtractHeight2(sint32 format, sint32 h);
 };
 
 ///////////////////////////////////////////////////////////////////////////
