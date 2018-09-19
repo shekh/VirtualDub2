@@ -34,17 +34,10 @@ static long flipv_param(VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 	pxdst.data += pxdst.pitch*(pxdst.h - 1);
 	pxdst.pitch = -pxdst.pitch;
 
-	switch(pxsrc.format) {
-	case kPixFormat_YUV444_Alpha_Planar16:
-	case kPixFormat_YUV422_Alpha_Planar16:
-	case kPixFormat_YUV420_Alpha_Planar16:
-	case kPixFormat_YUV444_Alpha_Planar:
-	case kPixFormat_YUV422_Alpha_Planar:
-	case kPixFormat_YUV420_Alpha_Planar:
+	if (VDPixmapFormatHasAlphaPlane(pxsrc.format)) {
 		VDXPixmapLayoutAlpha& pxdsta = (VDXPixmapLayoutAlpha&)pxdst;
 		pxdsta.data4 += pxdsta.pitch4*(pxdst.h - 1);
 		pxdsta.pitch4 = -pxdsta.pitch4;
-		break;
 	}
 
 	int subh;
@@ -65,6 +58,17 @@ static long flipv_param(VDXFilterActivation *fa, const VDXFilterFunctions *ff) {
 	case kPixFormat_YUV422_YUYV_709:
 	case kPixFormat_YUV422_YUYV_709_FR:
 	case kPixFormat_XRGB64:
+    break;
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGB_Planar32F:
+	case kPixFormat_RGBA_Planar:
+	case kPixFormat_RGBA_Planar16:
+	case kPixFormat_RGBA_Planar32F:
+		pxdst.data2 += pxdst.pitch2*(pxdst.h - 1);
+		pxdst.pitch2 = -pxdst.pitch2;
+		pxdst.data3 += pxdst.pitch3*(pxdst.h - 1);
+		pxdst.pitch3 = -pxdst.pitch3;
 		break;
 	case kPixFormat_YUV444_Planar:
 	case kPixFormat_YUV444_Planar_FR:

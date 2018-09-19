@@ -10,7 +10,8 @@
 #include "winresrc.h"
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
-#endif
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -2336,22 +2337,22 @@ BEGIN
     GROUPBOX        "Bit rate support",IDC_STATIC,7,7,286,101
 END
 
-IDD_FILTER_PREVIEW_ZOOM DIALOGEX 0, 0, 108, 78
+IDD_FILTER_PREVIEW_ZOOM DIALOGEX 0, 0, 115, 78
 STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_THICKFRAME
 EXSTYLE WS_EX_NOPARENTNOTIFY | WS_EX_WINDOWEDGE
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     LTEXT           "(0, 0)",IDC_POSITION,49,2,52,8
     LTEXT           "#FFFFFF",IDC_COLOR,47,10,54,8
-    LTEXT           "Static",IDC_IMAGE,43,20,63,56,NOT WS_VISIBLE
+    LTEXT           "Static",IDC_IMAGE,50,20,63,56,NOT WS_VISIBLE
     LTEXT           "R: 0",IDC_RED,2,2,41,8
     LTEXT           "G: 0",IDC_GREEN,2,10,41,8
     LTEXT           "B: 0",IDC_BLUE,2,18,41,8
     LTEXT           "A: 0",IDC_ALPHA,2,26,41,8
-    LTEXT           "R: 0",IDC_RED2,2,42,41,8
-    LTEXT           "G: 0",IDC_GREEN2,2,50,41,8
-    LTEXT           "B: 0",IDC_BLUE2,2,58,41,8
-    LTEXT           "A: 0",IDC_ALPHA2,2,66,41,8
+    LTEXT           "R: 0",IDC_RED2,2,42,48,8
+    LTEXT           "G: 3F8A8C8D",IDC_GREEN2,2,50,48,8
+    LTEXT           "B: 0",IDC_BLUE2,2,58,48,8
+    LTEXT           "A: 0",IDC_ALPHA2,2,66,48,8
 END
 
 IDD_BATCH_WIZARD DIALOGEX 0, 0, 384, 220
@@ -3568,7 +3569,7 @@ BEGIN
     IDD_FILTER_PREVIEW_ZOOM, DIALOG
     BEGIN
         LEFTMARGIN, 2
-        RIGHTMARGIN, 106
+        RIGHTMARGIN, 113
         VERTGUIDE, 43
         TOPMARGIN, 2
         BOTTOMMARGIN, 76
@@ -4114,7 +4115,8 @@ END
 //
 #include "version.rc"
 IDR_RESOURCES      STUFF   DISCARDABLE     "virtualdub.vdres"
-
+
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

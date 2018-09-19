@@ -416,8 +416,8 @@ bool VDFontRendererD3D9::Init(VDD3D9Manager *d3dmgr) {
 			rast.ScanConvert(charRegion);
 			VDPixmapConvolveRegion(charOutlineRegion, charRegion, outlineRegion);
 
-			VDPixmapFillRegionAntialiased8x(temppx, charOutlineRegion, x*8+16, y*8+16, 0x000000FF);
-			VDPixmapFillRegionAntialiased8x(temppx, charRegion, x*8+16, y*8+16, 0xFFFFFFFF);
+			VDPixmapFillPixmapAntialiased8x(temppx, charOutlineRegion, x*8+16, y*8+16, 0x000000FF);
+			VDPixmapFillPixmapAntialiased8x(temppx, charRegion, x*8+16, y*8+16, 0xFFFFFFFF);
 
 			pgi->mAdvance = metrics.mAdvance;
 			pgi->mPos.set((float)(ix1 - 2), (float)(iy1 - 2), (float)(ix2 + 2), (float)(iy2 + 2));

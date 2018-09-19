@@ -1128,40 +1128,119 @@ bool VDPixmapFillRegionAntialiased_16x_8x(const VDPixmap& dst, const VDPixmapReg
 	return true;
 }
 
-bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& region, int x, int y, uint32 color) {
+bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& region, int x, int y, uint32 color);
+
+bool VDPixmapFillPixmapAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& region, int x, int y, uint32 color) {
+	using namespace vd2;
 	switch(dst.format) {
-	case nsVDPixmap::kPixFormat_YUV444_Planar:
-	case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-	case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-	case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-	case nsVDPixmap::kPixFormat_YUV422_Planar:
-	case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
-	case nsVDPixmap::kPixFormat_YUV422_Planar_709:
-	case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
-	case nsVDPixmap::kPixFormat_YUV420_Planar:
-	case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
-	case nsVDPixmap::kPixFormat_YUV420_Planar_709:
-	case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
-	case nsVDPixmap::kPixFormat_YUV410_Planar:
-	case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
-	case nsVDPixmap::kPixFormat_YUV410_Planar_709:
-	case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
-	case nsVDPixmap::kPixFormat_YUV444_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_Planar16:
-	case nsVDPixmap::kPixFormat_YUV420_Planar16:
-	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
-	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
-	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_XRGB8888:
+	case nsVDPixmap::kPixFormat_XRGB64:
+		return VDPixmapFillRegionAntialiased8x(dst, region, x, y, color);
+
+	case nsVDPixmap::kPixFormat_Y8:
+	case nsVDPixmap::kPixFormat_Y8_FR:
+	case nsVDPixmap::kPixFormat_Y16:
+		{
+			int colorY = (color >> 8) & 0xff;
+			return VDPixmapFillRegionAntialiased8x(dst, region, x, y, colorY);
+		}
+
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGBA_Planar:
+	case kPixFormat_RGBA_Planar16:
+		{
+			VDPixmap pxR;
+			VDPixmap pxG;
+			VDPixmap pxB;
+			VDPixmap pxA;
+
+			pxR.format = kPixFormat_Y8;
+			pxR.data = dst.data;
+			pxR.pitch = dst.pitch;
+			pxR.w = dst.w;
+			pxR.h = dst.h;
+
+			pxG.format = kPixFormat_Y8;
+			pxG.data = dst.data2;
+			pxG.pitch = dst.pitch2;
+			pxG.w = dst.w;
+			pxG.h = dst.h;
+
+			pxB.format = kPixFormat_Y8;
+			pxB.data = dst.data3;
+			pxB.pitch = dst.pitch3;
+			pxB.w = dst.w;
+			pxB.h = dst.h;
+
+			pxA.format = 0;
+			pxA.data = dst.data4;
+			pxA.pitch = dst.pitch4;
+			pxA.w = dst.w;
+			pxA.h = dst.h;
+
+			switch(dst.format) {
+			case kPixFormat_RGB_Planar16:
+			case kPixFormat_RGBA_Planar16:
+				pxR.format = kPixFormat_Y16;
+				pxG.format = kPixFormat_Y16;
+				pxB.format = kPixFormat_Y16;
+				break;
+			}
+
+			switch(dst.format) {
+			case kPixFormat_RGBA_Planar:
+				pxA.format = kPixFormat_Y8;
+				VDPixmapFillRegionAntialiased8x(pxA, region, x, y, 0xff);
+				break;
+			case kPixFormat_RGBA_Planar16:
+				pxA.format = kPixFormat_Y16;
+				VDPixmapFillRegionAntialiased8x(pxA, region, x, y, 0xff);
+				break;
+			}
+
+			uint32 colorG = (color >> 8) & 0xff;
+			uint32 colorB = (color >> 0) & 0xff;
+			uint32 colorR = (color >> 16) & 0xff;
+
+			VDPixmapFillRegionAntialiased8x(pxR, region, x, y, colorR);
+			VDPixmapFillRegionAntialiased8x(pxG, region, x, y, colorG);
+			VDPixmapFillRegionAntialiased8x(pxB, region, x, y, colorB);
+			return true;
+		}
+
+	case kPixFormat_YUV444_Planar:
+	case kPixFormat_YUV444_Planar_FR:
+	case kPixFormat_YUV444_Planar_709:
+	case kPixFormat_YUV444_Planar_709_FR:
+	case kPixFormat_YUV422_Planar:
+	case kPixFormat_YUV422_Planar_FR:
+	case kPixFormat_YUV422_Planar_709:
+	case kPixFormat_YUV422_Planar_709_FR:
+	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV420_Planar_FR:
+	case kPixFormat_YUV420_Planar_709:
+	case kPixFormat_YUV420_Planar_709_FR:
+	case kPixFormat_YUV410_Planar:
+	case kPixFormat_YUV410_Planar_FR:
+	case kPixFormat_YUV410_Planar_709:
+	case kPixFormat_YUV410_Planar_709_FR:
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar16:
+	case kPixFormat_YUV422_Alpha_Planar16:
+	case kPixFormat_YUV420_Alpha_Planar16:
+	case kPixFormat_YUV444_Alpha_Planar:
+	case kPixFormat_YUV422_Alpha_Planar:
+	case kPixFormat_YUV420_Alpha_Planar:
 		{
 			VDPixmap pxY;
 			VDPixmap pxA;
 			VDPixmap pxCb;
 			VDPixmap pxCr;
 
-			pxY.format = nsVDPixmap::kPixFormat_Y8;
+			pxY.format = kPixFormat_Y8;
 			pxY.data = dst.data;
 			pxY.pitch = dst.pitch;
 			pxY.w = dst.w;
@@ -1173,41 +1252,41 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 			pxA.w = dst.w;
 			pxA.h = dst.h;
 
-			pxCb.format = nsVDPixmap::kPixFormat_Y8;
+			pxCb.format = kPixFormat_Y8;
 			pxCb.data = dst.data2;
 			pxCb.pitch = dst.pitch2;
 			pxCb.w = dst.w;
 			pxCb.h = dst.h;
 
-			pxCr.format = nsVDPixmap::kPixFormat_Y8;
+			pxCr.format = kPixFormat_Y8;
 			pxCr.data = dst.data3;
 			pxCr.pitch = dst.pitch3;
 			pxCr.w = dst.w;
 			pxCr.h = dst.h;
 
 			switch(dst.format) {
-			case nsVDPixmap::kPixFormat_YUV444_Planar16:
-			case nsVDPixmap::kPixFormat_YUV422_Planar16:
-			case nsVDPixmap::kPixFormat_YUV420_Planar16:
-			case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-			case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-			case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
-				pxY.format = nsVDPixmap::kPixFormat_Y16;
-				pxCb.format = nsVDPixmap::kPixFormat_Y16;
-				pxCr.format = nsVDPixmap::kPixFormat_Y16;
+			case kPixFormat_YUV444_Planar16:
+			case kPixFormat_YUV422_Planar16:
+			case kPixFormat_YUV420_Planar16:
+			case kPixFormat_YUV444_Alpha_Planar16:
+			case kPixFormat_YUV422_Alpha_Planar16:
+			case kPixFormat_YUV420_Alpha_Planar16:
+				pxY.format = kPixFormat_Y16;
+				pxCb.format = kPixFormat_Y16;
+				pxCr.format = kPixFormat_Y16;
 				break;
 			}
 
 			switch(dst.format) {
-			case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-			case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-			case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
-				pxA.format = nsVDPixmap::kPixFormat_Y16;
+			case kPixFormat_YUV444_Alpha_Planar16:
+			case kPixFormat_YUV422_Alpha_Planar16:
+			case kPixFormat_YUV420_Alpha_Planar16:
+				pxA.format = kPixFormat_Y16;
 				break;
-			case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
-			case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
-			case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
-				pxA.format = nsVDPixmap::kPixFormat_Y8;
+			case kPixFormat_YUV444_Alpha_Planar:
+			case kPixFormat_YUV422_Alpha_Planar:
+			case kPixFormat_YUV420_Alpha_Planar:
+				pxA.format = kPixFormat_Y8;
 				break;
 			}
 
@@ -1221,10 +1300,10 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 				VDPixmapFillRegionAntialiased8x(pxA, region, x, y, 0xff);
 
 			switch(dst.format) {
-			case nsVDPixmap::kPixFormat_YUV410_Planar:
-			case nsVDPixmap::kPixFormat_YUV410_Planar_FR:
-			case nsVDPixmap::kPixFormat_YUV410_Planar_709:
-			case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
+			case kPixFormat_YUV410_Planar:
+			case kPixFormat_YUV410_Planar_FR:
+			case kPixFormat_YUV410_Planar_709:
+			case kPixFormat_YUV410_Planar_709_FR:
 				pxCr.w = pxCb.w = dst.w >> 2;
 				pxCr.h = pxCb.h = dst.h >> 2;
 				x >>= 2;
@@ -1232,13 +1311,13 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 				VDPixmapFillRegionAntialiased_32x_32x(pxCb, region, x, y, colorCb);
 				VDPixmapFillRegionAntialiased_32x_32x(pxCr, region, x, y, colorCr);
 				return true;
-			case nsVDPixmap::kPixFormat_YUV420_Planar:
-			case nsVDPixmap::kPixFormat_YUV420_Planar_FR:
-			case nsVDPixmap::kPixFormat_YUV420_Planar_709:
-			case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
-			case nsVDPixmap::kPixFormat_YUV420_Planar16:
-			case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar16:
-			case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
+			case kPixFormat_YUV420_Planar:
+			case kPixFormat_YUV420_Planar_FR:
+			case kPixFormat_YUV420_Planar_709:
+			case kPixFormat_YUV420_Planar_709_FR:
+			case kPixFormat_YUV420_Planar16:
+			case kPixFormat_YUV420_Alpha_Planar16:
+			case kPixFormat_YUV420_Alpha_Planar:
 				pxCr.w = pxCb.w = dst.w >> 1;
 				pxCr.h = pxCb.h = dst.h >> 1;
 				x >>= 1;
@@ -1247,26 +1326,26 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 				VDPixmapFillRegionAntialiased_16x_16x(pxCb, region, x, y, colorCb);
 				VDPixmapFillRegionAntialiased_16x_16x(pxCr, region, x, y, colorCr);
 				return true;
-			case nsVDPixmap::kPixFormat_YUV422_Planar:
-			case nsVDPixmap::kPixFormat_YUV422_Planar_FR:
-			case nsVDPixmap::kPixFormat_YUV422_Planar_709:
-			case nsVDPixmap::kPixFormat_YUV422_Planar_709_FR:
-			case nsVDPixmap::kPixFormat_YUV422_Planar16:
-			case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar16:
-			case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
+			case kPixFormat_YUV422_Planar:
+			case kPixFormat_YUV422_Planar_FR:
+			case kPixFormat_YUV422_Planar_709:
+			case kPixFormat_YUV422_Planar_709_FR:
+			case kPixFormat_YUV422_Planar16:
+			case kPixFormat_YUV422_Alpha_Planar16:
+			case kPixFormat_YUV422_Alpha_Planar:
 				pxCr.w = pxCb.w = dst.w >> 1;
 				x >>= 1;
 				x += 2;
 				VDPixmapFillRegionAntialiased_16x_8x(pxCb, region, x, y, colorCb);
 				VDPixmapFillRegionAntialiased_16x_8x(pxCr, region, x, y, colorCr);
 				return true;
-			case nsVDPixmap::kPixFormat_YUV444_Planar:
-			case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
-			case nsVDPixmap::kPixFormat_YUV444_Planar_709:
-			case nsVDPixmap::kPixFormat_YUV444_Planar_709_FR:
-			case nsVDPixmap::kPixFormat_YUV444_Planar16:
-			case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16:
-			case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+			case kPixFormat_YUV444_Planar:
+			case kPixFormat_YUV444_Planar_FR:
+			case kPixFormat_YUV444_Planar_709:
+			case kPixFormat_YUV444_Planar_709_FR:
+			case kPixFormat_YUV444_Planar16:
+			case kPixFormat_YUV444_Alpha_Planar16:
+			case kPixFormat_YUV444_Alpha_Planar:
 				VDPixmapFillRegionAntialiased8x(pxCb, region, x, y, colorCb);
 				VDPixmapFillRegionAntialiased8x(pxCr, region, x, y, colorCr);
 				return true;
@@ -1274,20 +1353,11 @@ bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 		}
 	}
 
-	switch(dst.format) {
-	case nsVDPixmap::kPixFormat_XRGB8888:
-	case nsVDPixmap::kPixFormat_XRGB64:
-		break;
+	return false;
+}
 
-	case nsVDPixmap::kPixFormat_Y8:
-	case nsVDPixmap::kPixFormat_Y8_FR:
-	case nsVDPixmap::kPixFormat_Y16:
-		color = (color >> 8) & 0xff;
-		break;
-	default:
-		return false;
-	}
-
+bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& region, int x, int y, uint32 color)
+{
 	// fast out
 	if (region.mSpans.empty())
 		return true;

@@ -99,6 +99,10 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 	switch(srcformat) {
 	case kPixFormat_XRGB8888:
 	case kPixFormat_XRGB64:
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGBA_Planar:
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGBA_Planar16:
 	case kPixFormat_Y8:
 	case kPixFormat_Y8_FR:
 	case kPixFormat_Y16:
@@ -209,6 +213,10 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 		dstrect2.scale(invxf2, invyf2);
 
 		switch(srcformat) {
+		case kPixFormat_RGB_Planar:
+		case kPixFormat_RGBA_Planar:
+		case kPixFormat_RGB_Planar16:
+		case kPixFormat_RGBA_Planar16:
 		case kPixFormat_YUV444_Planar:
 		case kPixFormat_YUV444_Planar_FR:
 		case kPixFormat_YUV444_Planar_709:
@@ -277,11 +285,15 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 
 	case kPixFormat_Y8:
 	case kPixFormat_Y8_FR:
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGBA_Planar:
 		gen.ldsrc(0, 0, 0, 0, sw, sh, kVDPixType_8, sw);
 		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
 		break;
 
 	case kPixFormat_Y16:
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGBA_Planar16:
 		gen.ldsrc(0, 0, 0, 0, sw, sh, kVDPixType_16_LE, sw*2);
 		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
 		break;
@@ -377,6 +389,8 @@ void VDPixmapResampler::Process(const VDPixmap& dst, const VDPixmap& src) {
 
 	int plane_format = kPixFormat_Y8;
 	switch(dst.format) {
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGBA_Planar16:
 	case kPixFormat_YUV444_Planar16:
 	case kPixFormat_YUV422_Planar16:
 	case kPixFormat_YUV420_Planar16:
@@ -385,6 +399,8 @@ void VDPixmapResampler::Process(const VDPixmap& dst, const VDPixmap& src) {
 	case kPixFormat_YUV420_Alpha_Planar16:
 	plane_format = kPixFormat_Y16;
 
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGBA_Planar:
 	case kPixFormat_YUV444_Planar:
 	case kPixFormat_YUV422_Planar:
 	case kPixFormat_YUV420_Planar:
@@ -428,18 +444,26 @@ void VDPixmapResampler::Process(const VDPixmap& dst, const VDPixmap& src) {
 			pxsrc.pitch		= src.pitch2;
 			pxsrc.data		= src.data2;
 
-			mpBlitter2->Blit(pxdst, &mDstRectPlane12, pxsrc);
+			if (mpBlitter2)
+				mpBlitter2->Blit(pxdst, &mDstRectPlane12, pxsrc);
+			else
+				mpBlitter->Blit(pxdst, &mDstRectPlane12, pxsrc);
 
 			pxdst.pitch		= dst.pitch3;
 			pxdst.data		= dst.data3;
 			pxsrc.pitch		= src.pitch3;
 			pxsrc.data		= src.data3;
-			mpBlitter2->Blit(pxdst, &mDstRectPlane12, pxsrc);
+			if (mpBlitter2)
+				mpBlitter2->Blit(pxdst, &mDstRectPlane12, pxsrc);
+			else
+				mpBlitter->Blit(pxdst, &mDstRectPlane12, pxsrc);
 		}
 		break;
 	}
 
 	if (src.info.alpha_type) switch(dst.format) {
+	case kPixFormat_RGBA_Planar16:
+	case kPixFormat_RGBA_Planar:
 	case kPixFormat_YUV444_Alpha_Planar16:
 	case kPixFormat_YUV422_Alpha_Planar16:
 	case kPixFormat_YUV420_Alpha_Planar16:

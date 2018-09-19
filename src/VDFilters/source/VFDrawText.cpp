@@ -434,6 +434,10 @@ uint32 VDVFilterDrawText::GetParams() {
 	switch(base_format) {
 	case kPixFormat_XRGB8888:
 	case kPixFormat_XRGB64:
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGBA_Planar:
+	case kPixFormat_RGBA_Planar16:
 	case kPixFormat_YUV444_Planar:
 	case kPixFormat_YUV422_Planar:
 	case kPixFormat_YUV420_Planar:
@@ -570,9 +574,9 @@ void VDVFilterDrawText::Run() {
 	}
 
 	if (!mTextBorderRegion.mSpans.empty())
-		VDPixmapFillRegionAntialiased8x(VDPixmap::copy(pxdst), mTextBorderRegion, 0, 0, color0);
+		VDPixmapFillPixmapAntialiased8x(VDPixmap::copy(pxdst), mTextBorderRegion, 0, 0, color0);
 
-	VDPixmapFillRegionAntialiased8x(VDPixmap::copy(pxdst), mTextRegion, 0, 0, color1);
+	VDPixmapFillPixmapAntialiased8x(VDPixmap::copy(pxdst), mTextRegion, 0, 0, color1);
 }
 
 void VDVFilterDrawText::ScriptConfig(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc) {

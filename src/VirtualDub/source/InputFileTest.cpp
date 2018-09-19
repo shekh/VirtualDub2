@@ -686,8 +686,8 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 			VDPixmapCreateRoundRegion(brush, 16.0f * mScale);
 			VDPixmapConvolveRegion(border, region, brush);
 
-			VDPixmapFillRegionAntialiased8x(*dst, border, 0, 0, black);
-			VDPixmapFillRegionAntialiased8x(*dst, region, 0, 0, textcolor);
+			VDPixmapFillPixmapAntialiased8x(*dst, border, 0, 0, black);
+			VDPixmapFillPixmapAntialiased8x(*dst, region, 0, 0, textcolor);
 
 			if ((mMode == 9 || mMode == 10) && channel == 1) {
 				// Draw double limited range ramp
@@ -760,8 +760,8 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 					VDPixmapCreateRoundRegion(brush, 16.0f * mScale);
 					VDPixmapConvolveRegion(border, region, brush);
 
-					VDPixmapFillRegionAntialiased8x(*dst, border, 0, 0, black);
-					VDPixmapFillRegionAntialiased8x(*dst, region, 0, 0, textcolor);
+					VDPixmapFillPixmapAntialiased8x(*dst, border, 0, 0, black);
+					VDPixmapFillPixmapAntialiased8x(*dst, region, 0, 0, textcolor);
 				}
 			}
 		}
@@ -910,8 +910,8 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 
 	VDPixmapConvolveRegion(mTextBorderRegion, mTextRegion, mTextOutlineBrush, &mTempRegion);
 
-	VDPixmapFillRegionAntialiased8x(*dst, mTextBorderRegion, 0, 0, black);
-	VDPixmapFillRegionAntialiased8x(*dst, mTextRegion, 0, 0, textcolor);
+	VDPixmapFillPixmapAntialiased8x(*dst, mTextBorderRegion, 0, 0, black);
+	VDPixmapFillPixmapAntialiased8x(*dst, mTextRegion, 0, 0, textcolor);
 
 	if (&mTargetFormat != dst) {
 		mCachedBlitter.Update(mTargetFormat, *dst);
