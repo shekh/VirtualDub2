@@ -83,12 +83,13 @@ public:
   VDPixmapGen_32F_To_r16():VDPixmapGen_32F_To_16(false){}
 
 	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
-		FilterModPixmapInfo unused;
-		mpSrc->TransformPixmapInfo(src,unused);
+		FilterModPixmapInfo buf;
+		mpSrc->TransformPixmapInfo(src,buf);
 		dst.ref_r = 0xFFFF;
 		dst.ref_g = 0xFFFF;
 		dst.ref_b = 0xFFFF;
 		dst.ref_a = 0xFFFF;
+		dst.copy_alpha(buf);
 		m = float(dst.ref_r);
 		bias = 0;
 	}
@@ -115,6 +116,7 @@ public:
 		bias = 0;
 		int mref = vd2::chroma_neutral(ref);
 		if (isChroma) bias = -mref*m + 128.0f / 255.0f;
+		invalid = false;
 	}
 
 	void Start();
@@ -125,11 +127,27 @@ public:
 
 protected:
 	bool isChroma;
+	bool invalid;
 	int ref;
 	float m;
 	float bias;
 
 	void Compute(void *dst0, sint32 y);
+};
+
+class VDPixmapGen_A16_To_A32F : public VDPixmapGen_16_To_32F {
+public:
+  VDPixmapGen_A16_To_A32F():VDPixmapGen_16_To_32F(false){}
+
+	void TransformPixmapInfo(const FilterModPixmapInfo& src, FilterModPixmapInfo& dst) {
+		FilterModPixmapInfo buf;
+		mpSrc->TransformPixmapInfo(src,buf);
+		ref = buf.ref_a;
+		m = float(1.0/buf.ref_a);
+		bias = 0;
+		dst.copy_alpha(buf);
+		invalid = !dst.alpha_type;
+	}
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

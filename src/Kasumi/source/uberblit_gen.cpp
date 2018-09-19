@@ -1364,6 +1364,17 @@ void VDPixmapUberBlitterGenerator::conv_16_to_32F(bool chroma) {
 	args[0] = StackEntry(src, 0);
 }
 
+void VDPixmapUberBlitterGenerator::conv_a16_to_a32F() {
+	StackEntry *args = &mStack.back();
+	VDPixmapGen_A16_To_A32F *src = new VDPixmapGen_A16_To_A32F();
+
+	src->Init(args[0].mpSrc, args[0].mSrcIndex);
+
+	mGenerators.push_back(src);
+	MarkDependency(src, args[0].mpSrc);
+	args[0] = StackEntry(src, 0);
+}
+
 void VDPixmapUberBlitterGenerator::conv_16_to_8() {
 	StackEntry *args = &mStack.back();
 	VDPixmapGen_16_To_8 *src = new VDPixmapGen_16_To_8;

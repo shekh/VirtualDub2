@@ -117,6 +117,7 @@ public:
 	void conv_r8_to_r16();
 	void conv_16F_to_32F();
 	void conv_16_to_32F(bool chroma=false);
+	void conv_a16_to_a32F();
 	void conv_16_to_8();
 	void conv_a16_to_a8();
 	void conv_V210_to_32F();

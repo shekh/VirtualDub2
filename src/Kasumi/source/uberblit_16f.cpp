@@ -105,6 +105,7 @@ uint32 VDPixmapGen_16_To_32F::GetType(uint32 output) const {
 
 void VDPixmapGen_16_To_32F::Compute(void *dst0, sint32 y) {
 	VDCPUCleanupExtensions();
+	if (invalid) return;
 
 	float *dst = (float *)dst0;
 	const uint16 *src = (const uint16 *)mpSrc->GetRow(y, mSrcIndex);

@@ -1054,7 +1054,7 @@ namespace {
 						case kVDPixType_16_16_16_16_LE:
 							if ((srcToken & kVDPixSpace_Mask) == kVDPixSpace_BGR) {
 								VDPixmapUberBlitterGenerator::StackEntry s1,s2,s3;
-								gen.conv_16_to_32F();
+								gen.conv_a16_to_a32F();
 								gen.pop(s3);
 								gen.conv_16_to_32F();
 								gen.pop(s2);
