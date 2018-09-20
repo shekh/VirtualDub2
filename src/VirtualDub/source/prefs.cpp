@@ -62,6 +62,8 @@ namespace {
 		bool			mbPreferInternalVideoDecoders;
 		bool			mbPreferInternalAudioDecoders;
 		bool			mbUseVideoFccHandler;
+		bool			mbAVIIgnoreIndex;
+		bool			mbAVIRekey;
 
 		uint32			mAVIAlignmentThreshold;
 		uint32			mRenderOutputBufferSize;
@@ -407,6 +409,8 @@ public:
 			SetValue(106, mPrefs.mbEnableAVIVBRWarning);
 			SetValue(108, mPrefs.mbEnableAVINonZeroStartWarning);
 			SetValue(107, mPrefs.mbUseVideoFccHandler);
+			SetValue(109, mPrefs.mbAVIIgnoreIndex);
+			SetValue(110, mPrefs.mbAVIRekey);
 			pBase->ExecuteAllLinks();
 			return true;
 		case kEventDetach:
@@ -427,6 +431,8 @@ public:
 			mPrefs.mbEnableAVIVBRWarning = 0!=GetValue(106);
 			mPrefs.mbEnableAVINonZeroStartWarning = 0 != GetValue(108);
 			mPrefs.mbUseVideoFccHandler = 0 != GetValue(107);
+			mPrefs.mbAVIIgnoreIndex = 0 != GetValue(109);
+			mPrefs.mbAVIRekey = 0 != GetValue(110);
 			return true;
 		}
 		return false;
@@ -982,6 +988,8 @@ void LoadPreferences() {
 	g_prefs2.mbPreferInternalVideoDecoders = key.getBool("AVI: Prefer internal decoders", false);
 	g_prefs2.mbPreferInternalAudioDecoders = key.getBool("AVI: Prefer internal audio decoders", false);
 	g_prefs2.mbUseVideoFccHandler = key.getBool("AVI: Use video stream fccHandler in codec search", false);
+	g_prefs2.mbAVIRekey = key.getBool("AVI: Rekey", false);
+	g_prefs2.mbAVIIgnoreIndex = key.getBool("AVI: Ignore index", false);
 
 	g_prefs2.mRenderOutputBufferSize = std::max<uint32>(65536, std::min<uint32>(0x10000000, key.getInt("Render: Output buffer size", 2097152)));
 	g_prefs2.mRenderWaveBufferSize = std::max<uint32>(65536, std::min<uint32>(0x10000000, key.getInt("Render: Wave buffer size", 65536)));
@@ -1060,6 +1068,8 @@ void VDSavePreferences(VDPreferences2& prefs) {
 	key.setBool("AVI: Prefer internal decoders", prefs.mbPreferInternalVideoDecoders);
 	key.setBool("AVI: Prefer internal audio decoders", prefs.mbPreferInternalAudioDecoders);
 	key.setBool("AVI: Use video stream fccHandler in codec search", prefs.mbUseVideoFccHandler);
+	key.setBool("AVI: Rekey", g_prefs2.mbAVIRekey);
+	key.setBool("AVI: Ignore index", g_prefs2.mbAVIIgnoreIndex);
 
 	key.setString("Direct3D FX file", prefs.mD3DFXFile.c_str());
 	key.setInt("Render: Output buffer size", prefs.mRenderOutputBufferSize);
@@ -1172,6 +1182,14 @@ bool VDPreferencesIsAVINonZeroStartWarningEnabled() {
 
 bool VDPreferencesIsPreferInternalVideoDecodersEnabled() {
 	return g_prefs2.mbPreferInternalVideoDecoders;
+}
+
+bool VDPreferencesAVIIgnoreIndex() {
+	return g_prefs2.mbAVIIgnoreIndex;
+}
+
+bool VDPreferencesAVIRekey() {
+	return g_prefs2.mbAVIRekey;
 }
 
 bool VDPreferencesIsPreferInternalAudioDecodersEnabled() {

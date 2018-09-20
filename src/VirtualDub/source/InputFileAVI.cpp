@@ -54,6 +54,8 @@ extern const wchar_t fileFiltersAppendAVI[];
 extern HWND g_hWnd;
 
 bool VDPreferencesIsPreferInternalVideoDecodersEnabled();
+bool VDPreferencesAVIRekey();
+bool VDPreferencesAVIIgnoreIndex();
 
 namespace {
 	enum { kVDST_InputFileAVI = 4 };
@@ -279,8 +281,8 @@ InputFileAVI::InputFileAVI() {
 	pAVIFile = NULL;
 
 	fCompatibilityMode = false;
-	fIgnoreIndex = false;
-	fRedoKeyFlags = false;
+	fIgnoreIndex = VDPreferencesAVIIgnoreIndex();
+	fRedoKeyFlags = VDPreferencesAVIRekey();
 
 	fAutoscanSegments = false;
 }
@@ -306,6 +308,20 @@ public:
 		char indexFlags;
 		bool fInternalDecoder;
 		bool fDisableFastIO;
+
+		InputFileAVIOpts() {
+			iMJPEGMode = 0;
+			fccForceVideo = 0;
+			fccForceVideoHandler = 0;
+			lForceAudioHz = 0;
+			fCompatibilityMode = false;
+			fAcceptPartial = false;
+			indexFlags = 0;
+			if (VDPreferencesAVIRekey()) indexFlags|=1;
+			if (VDPreferencesAVIIgnoreIndex()) indexFlags|=2;
+			fInternalDecoder = VDPreferencesIsPreferInternalVideoDecodersEnabled();
+			fDisableFastIO = false;
+		}
 	} opts;
 		
 	~InputFileAVIOptions();
@@ -351,9 +367,13 @@ INT_PTR APIENTRY InputFileAVIOptions::SetupDlgProc( HWND hDlg, UINT message, WPA
 
 	switch(message) {
 		case WM_INITDIALOG:
+			thisPtr = (InputFileAVIOptions *)lParam;
 			SetWindowLongPtr(hDlg, DWLP_USER, lParam);
 			SendDlgItemMessage(hDlg, IDC_FORCE_FOURCC, EM_LIMITTEXT, 4, 0);
 			CheckDlgButton(hDlg, IDC_IF_NORMAL, BST_CHECKED);
+			CheckDlgButton(hDlg, IDC_AVI_INTERNALDECODER, thisPtr->opts.fInternalDecoder);
+			CheckDlgButton(hDlg, IDC_AVI_REKEY, (thisPtr->opts.indexFlags&1)!=0);
+			CheckDlgButton(hDlg, IDC_AVI_IGNIDX, (thisPtr->opts.indexFlags&2)!=0);
 			return TRUE;
 
 		case WM_COMMAND:

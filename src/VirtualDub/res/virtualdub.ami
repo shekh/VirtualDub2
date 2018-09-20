@@ -492,6 +492,8 @@ dialog 1014, "" : fill, child {
 			checkbox 106, "Warn when VBR audio is detected";
 			checkbox 108, "Warn when non-zero starting offset is detected";
 			checkbox 107, "Use video stream fccHandler in codec search";
+			checkbox 109, "Ignore index";
+			checkbox 110, "Re-derive keyframe flags";
 		}
 	}
 }
