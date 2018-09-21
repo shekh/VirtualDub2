@@ -609,7 +609,6 @@ VDProjectUI::VDProjectUI()
 	, mbLockPreviewRestart(false)
 	, mPaneLayoutMode(kPaneLayoutDual)
 	, mbPaneLayoutBusy(false)
-	, mbAutoSizePanes(false)
 	, mbPanesNeedUpdate(false)
 	, mMRUList(0, "MRU List")
 {
@@ -619,6 +618,10 @@ VDProjectUI::VDProjectUI()
 	mbFiltersPreview = false;
 	mbMaximize = false;
 	mbMaximizeChanging = false;
+	mbAutoSizeInput = false;
+	mbAutoSizeOutput = false;
+	mInputZoom = 1;
+	mOutputZoom = 1;
 }
 
 VDProjectUI::~VDProjectUI() {
@@ -766,8 +769,10 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	pOutputWindow->SetChild(mhwndOutputDisplay);
 	pOutputWindow->SetDisplay(mpOutputDisplay);
 	pOutputWindow->SetMaxDisplayHost(mhwndMaxDisplay);
-	pInputWindow->SetAutoSize(mbAutoSizePanes);
-	pOutputWindow->SetAutoSize(mbAutoSizePanes);
+	pInputWindow->SetZoom(mInputZoom,false);
+	pOutputWindow->SetZoom(mOutputZoom,false);
+	pInputWindow->SetAutoSize(mbAutoSizeInput);
+	pOutputWindow->SetAutoSize(mbAutoSizeOutput);
 	pInputWindow->InitSourcePAR();
 	pOutputWindow->InitSourcePAR();
 
@@ -2399,7 +2404,13 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 
 		case ID_PANELAYOUT_AUTOSIZE:
-			mbAutoSizePanes = !mbAutoSizePanes;
+			if (mbAutoSizeInput && mbAutoSizeOutput) {
+				mbAutoSizeInput = false;
+				mbAutoSizeOutput = false;
+			} else {
+				mbAutoSizeInput = true;
+				mbAutoSizeOutput = true;
+			}
 			RepositionPanes(true);
 			break;
 
@@ -2823,7 +2834,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDCheckRadioMenuItemByCommandW32(hMenu, ID_PANELAYOUT_OUTPUTPANEONLY, mPaneLayoutMode == kPaneLayoutOutput);
 	VDCheckRadioMenuItemByCommandW32(hMenu, ID_PANELAYOUT_BOTHPANES, mPaneLayoutMode == kPaneLayoutDual);
 
-	VDCheckMenuItemW32(hMenu, ID_PANELAYOUT_AUTOSIZE, mbAutoSizePanes);
+	VDCheckMenuItemW32(hMenu, ID_PANELAYOUT_AUTOSIZE, mbAutoSizeInput && mbAutoSizeOutput);
 
 	int audioSourceMode = GetAudioSourceMode();
 	VDCheckRadioMenuItemByCommandW32(hMenu, ID_AUDIO_SOURCE_NONE, audioSourceMode == kVDAudioSourceMode_None);
@@ -3802,6 +3813,7 @@ void VDProjectUI::RepositionPanes(bool reset) {
 
 	const int n2 = n;
 	n = 0;
+	int last_fixed = -1;
 
 	for(int i=0; i<n2; ++i) {
 		HWND h = panes[i];
@@ -3811,15 +3823,17 @@ void VDProjectUI::RepositionPanes(bool reset) {
 			w->SetWorkArea(rWork, true);
 			w->SyncMonitorChange();
 			if (reset) {
-				w->SetAutoSize(mbAutoSizePanes);
+				if (h==mhwndInputFrame) w->SetAutoSize(mbAutoSizeInput);
+				if (h==mhwndOutputFrame) w->SetAutoSize(mbAutoSizeOutput);
 			} else {
-				if (!w->GetAutoSize())
-					mbAutoSizePanes = false;
+				if (h==mhwndInputFrame) mbAutoSizeInput = w->GetAutoSize();
+				if (h==mhwndOutputFrame) mbAutoSizeOutput = w->GetAutoSize();
 			}
+			if (!w->GetAutoSize()) last_fixed = n-1;
 		}
 	}
 
-	if (mbAutoSizePanes) {
+	if (last_fixed<n-1) {
 		vdsize32 size = mpUIPaneSet->GetArea().size();
 
 		if (size.w && size.h) {
@@ -3828,6 +3842,15 @@ void VDProjectUI::RepositionPanes(bool reset) {
 
 			for(int i=0; i<n; ++i) {
 				IVDVideoWindow *w = VDGetIVideoWindow(panes[i]);
+				if (i<=last_fixed) {
+					RECT r;
+					GetWindowRect(panes[i], &r);
+					if (g_vertical)
+						size.h -= r.bottom - r.top;
+					else
+						size.w -= r.right - r.left;
+					continue;
+				}
 
 				int srcw;
 				int srch;
@@ -3851,6 +3874,7 @@ void VDProjectUI::RepositionPanes(bool reset) {
 			if (weightTotal > 0) {
 				for(int i=0; i<n; ++i) {
 					IVDVideoWindow *w = VDGetIVideoWindow(panes[i]);
+					if (i<=last_fixed) continue;
 					vdsize32 s1 = size;
 					if (g_vertical)
 						s1.h = VDFloorToInt((double)size.h * weights[i] / weightTotal);
@@ -3900,6 +3924,13 @@ void VDProjectUI::RepositionPanes(bool reset) {
 			else
 				x += r.right - r.left;
 		}
+	}
+
+	for(int i=0; i<n; ++i) {
+		HWND h = panes[i];
+		IVDVideoWindow *w = VDGetIVideoWindow(h);
+		if (h==mhwndInputFrame) mInputZoom = w->GetZoom();
+		if (h==mhwndOutputFrame) mOutputZoom = w->GetZoom();
 	}
 
 	mbPaneLayoutBusy = false;
@@ -5069,7 +5100,10 @@ void VDProjectUI::LoadSettings() {
 	g_dubOpts.video.fSyncToAudio		= key.getBool("Preview audio sync", g_dubOpts.video.fSyncToAudio);
 	g_dubOpts.perf.useDirectDraw		= key.getBool("Accelerate preview", g_dubOpts.perf.useDirectDraw);
 	mPaneLayoutMode						= (PaneLayoutMode)key.getEnumInt("Pane layout mode", kPaneLayoutModeCount, mPaneLayoutMode);
-	mbAutoSizePanes						= key.getBool("Auto-size panes", mbAutoSizePanes);
+	mbAutoSizeInput						= key.getBool("Auto-size input pane", key.getBool("Auto-size panes", mbAutoSizeInput));
+	mbAutoSizeOutput					= key.getBool("Auto-size output pane", key.getBool("Auto-size panes", mbAutoSizeOutput));
+	mInputZoom							= key.getInt("Input pane size", 100)*0.01;
+	mOutputZoom							= key.getInt("Output pane size", 100)*0.01;
 	mbMaximize							= key.getBool("Maximize main layout", mbMaximize);
 
 	// these are only saved from the Video Depth dialog.
@@ -5107,7 +5141,11 @@ void VDProjectUI::SaveSettings() {
 	key.setBool("Preview audio sync", g_dubOpts.video.fSyncToAudio);
 	key.setBool("Accelerate preview", g_dubOpts.perf.useDirectDraw);
 	key.setInt("Pane layout mode", mPaneLayoutMode);
-	key.setBool("Auto-size panes", mbAutoSizePanes);
+	key.setBool("Auto-size panes", mbAutoSizeInput && mbAutoSizeOutput);
+	key.setBool("Auto-size input pane", mbAutoSizeInput);
+	key.setBool("Auto-size output pane", mbAutoSizeOutput);
+	key.setInt("Input pane size", mInputZoom*100);
+	key.setInt("Output pane size", mOutputZoom*100);
 	key.setBool("Maximize main layout", mbMaximize);
 }
 

@@ -130,6 +130,7 @@ private:
 	void SetAspectRatio(double ar, bool bFrame);
 	void SetAspectRatioSourcePAR();
 	void SetZoom(double zoom, bool useWorkArea=true);
+	double GetZoom(){ return mZoom; }
 	void EvalZoom();
 	double EvalWidth(double zoom);
 	double EvalWidth();

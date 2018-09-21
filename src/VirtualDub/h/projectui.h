@@ -239,8 +239,11 @@ protected:
 
 	PaneLayoutMode	mPaneLayoutMode;
 	bool		mbPaneLayoutBusy;
-	bool		mbAutoSizePanes;
+	bool		mbAutoSizeInput;
+	bool		mbAutoSizeOutput;
 	bool		mbPanesNeedUpdate;
+	float		mInputZoom;
+	float		mOutputZoom;
 
 	VDThreadID	mThreadId;
 

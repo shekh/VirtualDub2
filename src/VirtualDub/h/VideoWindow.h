@@ -32,6 +32,7 @@ public:
 	virtual const VDFraction GetSourcePAR() = 0;
 	virtual void SetSourcePAR(const VDFraction& fr) = 0;
 	virtual void SetZoom(double zoom, bool useWorkArea=true) = 0;
+	virtual double GetZoom() = 0;
 	virtual double GetMaxZoomForArea(int w, int h) = 0;
 	virtual void SetBorder(int v=4, int ht=-1) = 0;
 	virtual bool GetAutoSize() = 0;
