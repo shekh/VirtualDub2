@@ -21,6 +21,7 @@
 #include <vfw.h>
 
 #include <vd2/system/error.h>
+#include <vd2/Riza/audiocodec.h>
 
 #include "AVIOutputWAV.h"
 
