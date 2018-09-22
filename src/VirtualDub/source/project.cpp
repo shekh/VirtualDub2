@@ -2682,6 +2682,9 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 				else
 					mpDubStatus->SetPositionCallback(StaticPositionCallback, this);
 			}
+		} else {
+			if (pOutputSystem->IsNull())
+				mpDubStatus->SetPositionCallback(StaticFinalPositionCallback, this);
 		}
 
 		// Initialize the dubber.
@@ -3070,6 +3073,18 @@ void VDProject::StaticFastPositionCallback(VDPosition start, VDPosition cur, VDP
 	VDProject *pthis = (VDProject *)cookie;
 
 	if (pthis->mbPositionCallbackEnabled) {
+		VDPosition frame = std::max<VDPosition>(0, std::min<VDPosition>(cur, pthis->GetFrameCount()));
+
+		pthis->mposCurrentFrame = frame;
+		if (pthis->mpCB)
+			pthis->mpCB->UICurrentPositionUpdated(fast_update);
+	}
+}
+
+void VDProject::StaticFinalPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie) {
+	VDProject *pthis = (VDProject *)cookie;
+
+	if (pthis->mbPositionCallbackEnabled && cur==end-1) {
 		VDPosition frame = std::max<VDPosition>(0, std::min<VDPosition>(cur, pthis->GetFrameCount()));
 
 		pthis->mposCurrentFrame = frame;

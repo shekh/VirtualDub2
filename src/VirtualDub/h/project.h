@@ -290,6 +290,7 @@ protected:
 
 	static void StaticPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie);
 	static void StaticFastPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie);
+	static void StaticFinalPositionCallback(VDPosition start, VDPosition cur, VDPosition end, int progress, bool fast_update, void *cookie);
 
 	void UpdateDubParameters(bool forceUpdate = false);
 

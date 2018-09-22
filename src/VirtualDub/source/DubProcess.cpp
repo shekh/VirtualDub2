@@ -311,11 +311,13 @@ void VDDubProcessThread::ThreadRun() {
 	mbAudioEnded = !(mbAudioPresent && mpOutputSystem->AcceptsAudio());
 	mbFirstPacket = false;
 	mbPreview = mpOutputSystem->IsRealTime();
+	bool showLast = mpOutputSystem->IsNull();
 
 	if (VDPreferencesGetRenderInhibitSystemSleepEnabled())
 		VDSetThreadExecutionStateW32(mbPreview ? ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED | ES_CONTINUOUS : ES_SYSTEM_REQUIRED | ES_CONTINUOUS);
 
 	mVideoProcessor.SetPreview(mbPreview);
+	mVideoProcessor.SetShowLast(showLast);
 
 	IVDMediaOutputAutoInterleave *pOutAI = vdpoly_cast<IVDMediaOutputAutoInterleave *>(mpAVIOut);
 
@@ -413,6 +415,8 @@ abort_requested:
 		if (mpOutputSystem->IsRealTime()) {
 			if (mpAudioOut)
 				static_cast<AVIAudioPreviewOutputStream *>(mpAudioOut)->stop();
+			mpBlitter->stop();
+		} else if (mpOutputSystem->IsNull()) {
 			mpBlitter->stop();
 		}
 

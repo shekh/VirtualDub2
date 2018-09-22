@@ -77,7 +77,8 @@ public:
 	void SetOptions(const DubOptions *opts);
 	void SetThreadSignals(const char *volatile *pStatus, VDLoopThrottle *pLoopThrottle);
 	void SetVideoStreamInfo(DubVideoStreamInfo *vinfo);
-	void SetPreview(bool preview);
+	void SetPreview(bool v){ mbPreview = v; }
+	void SetShowLast(bool v){ mbShowLast = v; }
 	void SetInputDisplay(IVDVideoDisplay *pVideoDisplay);
 	void SetOutputDisplay(IVDVideoDisplay *pVideoDisplay);
 	void SetVideoFilterOutput(const VDPixmapLayout& layout);
@@ -175,6 +176,7 @@ protected:
 	bool				mbVideoPushEnded;
 	bool				mbVideoEnded;
 	bool				mbPreview;
+	bool				mbShowLast;
 	bool				mbFirstFrame;
 	VDAtomicInt			*mpAbort;
 	const char			*volatile *mppCurrentAction;

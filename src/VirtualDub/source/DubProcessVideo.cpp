@@ -74,6 +74,7 @@ VDDubVideoProcessor::VDDubVideoProcessor()
 	, mbVideoPushEnded(false)
 	, mbVideoEnded(false)
 	, mbPreview(false)
+	, mbShowLast(false)
 	, mbFirstFrame(true)
 	, mppCurrentAction(NULL)
 	, mpCB(NULL)
@@ -162,10 +163,6 @@ void VDDubVideoProcessor::SetThreadSignals(const char *volatile *pStatus, VDLoop
 
 void VDDubVideoProcessor::SetVideoStreamInfo(DubVideoStreamInfo *vinfo) {
 	mpVInfo = vinfo;
-}
-
-void VDDubVideoProcessor::SetPreview(bool preview) {
-	mbPreview = preview;
 }
 
 void VDDubVideoProcessor::SetInputDisplay(IVDVideoDisplay *pVideoDisplay) {
@@ -1338,7 +1335,8 @@ void VDDubVideoProcessor::WriteFinishedVideoFrame(const void *data, uint32 size,
 		mpLoopThrottle->EndWait();
 		VDPROFILEEND();
 
-		mpProcDisplay->UnlockAndDisplay(mbPreview, pBuffer, size != 0);
+		bool protect = mbShowLast && (pBuffer->mTimelineFrame==mpVInfo->end_src-1);
+		mpProcDisplay->UnlockAndDisplay(mbPreview || protect, pBuffer, size != 0);
 	}
 
 	if (mpOptions->perf.fDropFrames && mbPreview) {
