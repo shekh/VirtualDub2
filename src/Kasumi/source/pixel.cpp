@@ -49,6 +49,7 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 
 	bool valid_rgb = false;
 	bool valid_yuv = false;
+	bool valid_y = false;
 	int yuv_ref = 255;
 
 	switch(px.format) {
@@ -489,7 +490,7 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 			int n0 = vd2::chroma_neutral(yuv_ref);
 			ps.scb = n0;
 			ps.scr = n0;
-			valid_yuv = true;
+			valid_y = true;
 		}
 		break;
 
@@ -500,7 +501,7 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 			ps.sy = luma;
 			ps.scb = 0x80;
 			ps.scr = 0x80;
-			valid_yuv = true;
+			valid_y = true;
 		}
 		break;
 
@@ -518,7 +519,7 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 		}
 	}
 
-	if (valid_yuv) {
+	if (valid_yuv || valid_y) {
 		VDPixmapFormatEx f = VDPixmapFormatCombine(px);
 		VDConvertYCbCrToRGB(ps.sy,ps.scb,ps.scr,yuv_ref,f,ps.r,ps.g,ps.b);
 		ps.r*=255; ps.g*=255; ps.b*=255;
@@ -526,7 +527,8 @@ void VDPixmapSample(const VDPixmap& px, sint32 x, sint32 y, VDSample& ps) {
 
 	if(!px.info.alpha_type){ ps.sa=-1; ps.a=0; }
 	if(!valid_rgb){ ps.sr=-1; ps.sg=-1; ps.sb=-1; }
-	if(!valid_yuv){ ps.sy=-1; ps.scb=-1; ps.scr=-1; }
+	if(!valid_yuv){ ps.scb=-1; ps.scr=-1; }
+	if(!valid_y && !valid_yuv) ps.sy=-1;
 }
 
 uint32 VDPixmapSamplePalRGB(const VDPixmap& px, sint32 x, sint32 y) {

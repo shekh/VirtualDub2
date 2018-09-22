@@ -330,6 +330,7 @@
 #define IDC_MATRIX_7                    1034
 #define IDS_FILE_SAVEIMAGESEQ           1034
 #define IDC_OUTPUT_Y8                   1034
+#define IDC_INPUT_Y16                   1034
 #define IDC_MATRIX_8                    1035
 #define IDS_FILE_SAVECOMPATIBLEAVI      1035
 #define IDC_INPUT_AUTOSELECT            1035

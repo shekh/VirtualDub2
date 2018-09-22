@@ -99,6 +99,7 @@ const struct VDVideoSourceTest::FormatInfo VDVideoSourceTest::kFormatInfo[]={
 	{	nsVDPixmap::kPixFormat_XRGB8888,				false, "RGBA32"	},
 	{	nsVDPixmap::kPixFormat_Y8,						false, "8-bit Y (16-235)"	},
 	{	nsVDPixmap::kPixFormat_Y8_FR,					false, "8-bit Y (0-255)"	},
+	{	nsVDPixmap::kPixFormat_Y16,						false, "16-bit Y"	},
 	{	nsVDPixmap::kPixFormat_XRGB64,					false, "RGBA64"	},
 	{	nsVDPixmap::kPixFormat_YUV422_UYVY,				true, "4:2:2 YCbCr (UYVY)"	},
 	{	nsVDPixmap::kPixFormat_YUV422_YUYV,				true, "4:2:2 YCbCr (YUYV)"	},

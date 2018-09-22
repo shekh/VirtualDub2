@@ -10,8 +10,7 @@
 #include "winresrc.h"
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
-#endif
-
+#endif
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -2730,6 +2729,7 @@ BEGIN
     CONTROL         "4:1:0 planar YCbCr (YVU9)",IDC_INPUT_YUV410_PLANAR,
                     "Button",BS_AUTORADIOBUTTON,14,152,100,10
     CONTROL         "Luminance only (Y8, 16-235)",IDC_INPUT_Y8,"Button",BS_AUTORADIOBUTTON,14,162,107,10
+    CONTROL         "Luminance only 16-bit",IDC_INPUT_Y16,"Button",BS_AUTORADIOBUTTON,136,162,85,10
     CONTROL         "Grayscale (0-255)",IDC_INPUT_I8,"Button",BS_AUTORADIOBUTTON,14,172,73,10
     CONTROL         "4:2:2 YCbCr HD (HDYC)",IDC_INPUT_YUV422_UYVY_709,"Button",BS_AUTORADIOBUTTON,14,182,92,10
     CONTROL         "4:2:0 YCbCr (NV12)",IDC_INPUT_YUV420_NV12,"Button",BS_AUTORADIOBUTTON,14,192,79,10
@@ -2789,6 +2789,7 @@ BEGIN
     CONTROL         "4:1:0 planar YCbCr (YVU9)",IDC_INPUT_YUV410_PLANAR,
                     "Button",BS_AUTORADIOBUTTON,14,162,100,10
     CONTROL         "Luminance only (Y8, 16-235)",IDC_INPUT_Y8,"Button",BS_AUTORADIOBUTTON,14,172,107,10
+    CONTROL         "Luminance only 16-bit",IDC_INPUT_Y16,"Button",BS_AUTORADIOBUTTON,136,172,85,10
     CONTROL         "Grayscale (0-255)",IDC_INPUT_I8,"Button",BS_AUTORADIOBUTTON,14,182,73,10
     CONTROL         "4:2:2 YCbCr HD (HDYC)",IDC_INPUT_YUV422_UYVY_709,"Button",BS_AUTORADIOBUTTON,14,192,92,10
     CONTROL         "4:2:0 YCbCr (NV12)",IDC_INPUT_YUV420_NV12,"Button",BS_AUTORADIOBUTTON,14,202,79,10
@@ -4115,8 +4116,7 @@ END
 //
 #include "version.rc"
 IDR_RESOURCES      STUFF   DISCARDABLE     "virtualdub.vdres"
-
-
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

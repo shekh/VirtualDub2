@@ -338,6 +338,10 @@ void VDUIDialogExtEncVideo::OnDataExchange(bool write) {
 			mProfile.mPixelFormat = L"bgra";
 		if (sel==8)
 			mProfile.mPixelFormat = L"bgra64le";
+		if (sel==9)
+			mProfile.mPixelFormat = L"gray8";
+		if (sel==10)
+			mProfile.mPixelFormat = L"gray16le";
 
 	} else {
 		SendMessage(cb,WM_SETFONT,(WPARAM)fixed_font,0);
@@ -351,6 +355,8 @@ void VDUIDialogExtEncVideo::OnDataExchange(bool write) {
 		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgr24       :   8 bit RGB");
 		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgra        :   8 bit RGBA");
 		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"bgra64le    :  16 bit RGBA");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"gray8       :  8 bit Y");
+		SendMessage(cb,CB_ADDSTRING, 0, (LPARAM)"gray16le    :  16 bit Y");
 
 		int sel = 0;
 		if (mProfile.mPixelFormat==L"yuv420p")
@@ -371,6 +377,10 @@ void VDUIDialogExtEncVideo::OnDataExchange(bool write) {
 			sel = 7;
 		if (mProfile.mPixelFormat==L"bgra64le")
 			sel = 8;
+		if (mProfile.mPixelFormat==L"gray8")
+			sel = 9;
+		if (mProfile.mPixelFormat==L"gray16le")
+			sel = 10;
 
 		SendMessage(cb,CB_SETCURSEL, sel, 0);
 	}

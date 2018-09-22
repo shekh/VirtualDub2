@@ -510,6 +510,7 @@ void VDDialogSelectVideoFormatW32::RebuildList() {
 		nsVDPixmap::kPixFormat_R10K,
 		nsVDPixmap::kPixFormat_Y8,
 		nsVDPixmap::kPixFormat_Y8_FR,
+		nsVDPixmap::kPixFormat_Y16,
 		nsVDPixmap::kPixFormat_YUV422_UYVY,
 		nsVDPixmap::kPixFormat_YUV422_YUYV,
 		nsVDPixmap::kPixFormat_YUV444_Planar,
@@ -621,6 +622,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::Init(int format) {
 	case kPixFormat_YUVA444_Y416:
 	case kPixFormat_RGB_Planar16:
 	case kPixFormat_RGBA_Planar16:
+	case kPixFormat_Y16:
 		depth = 16;
 		break;
 	case kPixFormat_R210:
@@ -768,6 +770,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::InitText(int subItem, VDStringW& 
 		case kPixFormat_RGBA_Planar32F:
 		case kPixFormat_Y8:
 		case kPixFormat_Y8_FR:
+		case kPixFormat_Y16:
 			s = L"planar";
 			break;
 		case kPixFormat_YUV444_Planar:
@@ -935,6 +938,7 @@ const VDDialogVideoDepthW32::FormatButtonMapping VDDialogVideoDepthW32::kFormatB
 	{	nsVDPixmap::kPixFormat_YUV410_Planar,	IDC_INPUT_YUV410_PLANAR},
 	{	nsVDPixmap::kPixFormat_Y8,				IDC_INPUT_Y8},
 	{	nsVDPixmap::kPixFormat_Y8_FR,			IDC_INPUT_I8},
+	{	nsVDPixmap::kPixFormat_Y16,				IDC_INPUT_Y16},
 	{	nsVDPixmap::kPixFormat_YUV444_Planar,	IDC_INPUT_YUV444_PLANAR},
 	{	nsVDPixmap::kPixFormat_YUV422_V210,		IDC_INPUT_YUV422_V210},
 	{	nsVDPixmap::kPixFormat_YUV422_UYVY_709,	IDC_INPUT_YUV422_UYVY_709},
@@ -959,7 +963,10 @@ INT_PTR VDDialogVideoDepthW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPara
 		if (mbInputBrowsePending) {
 			mbInputBrowsePending = false;
 
-			VDDialogSelectVideoFormatW32 dlg(VDPixmapFormatNormalize(mInputFormat));
+			int fmt = VDPixmapFormatNormalize(mInputFormat);
+			if (VDPixmapFormatCombine(mInputFormat)==vd2::kPixFormat_Y8_FR) fmt = vd2::kPixFormat_Y8_FR;
+
+			VDDialogSelectVideoFormatW32 dlg(fmt);
 			if (dlg.ShowDialog((VDGUIHandle)mhdlg)) {
 				int format = dlg.GetSelectedFormat();
 				mInputFormat.format = format;

@@ -945,6 +945,12 @@ void InitOutputFormat(VDAVIOutputRawVideoFormat& format, const VDExtEncProfile* 
 
 	if (vp->mPixelFormat==L"bgra64le")
 		format.mOutputFormat = nsVDPixmap::kPixFormat_XRGB64;
+
+	if (vp->mPixelFormat==L"gray8")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_Y8;
+
+	if (vp->mPixelFormat==L"gray16le")
+		format.mOutputFormat = nsVDPixmap::kPixFormat_Y16;
 }
 
 IVDMediaOutputStream *AVIOutputCLI::createVideoStream() {
