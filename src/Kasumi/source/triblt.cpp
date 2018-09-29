@@ -1491,6 +1491,8 @@ bool VDPixmapTriFill(VDPixmap& dst, const VDTriColorVertex *pVertices, int nVert
 	case nsVDPixmap::kPixFormat_XRGB8888:
 	case nsVDPixmap::kPixFormat_XRGB64:
 	case nsVDPixmap::kPixFormat_Y8:
+	case nsVDPixmap::kPixFormat_Y8_FR:
+	case nsVDPixmap::kPixFormat_Y16:
 		break;
 	case nsVDPixmap::kPixFormat_YUV444_Planar:
 	case nsVDPixmap::kPixFormat_YUV444_Planar_FR:

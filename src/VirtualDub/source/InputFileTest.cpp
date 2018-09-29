@@ -326,6 +326,9 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 		switch(format) {
 		case nsVDPixmap::kPixFormat_XRGB8888:
 		case nsVDPixmap::kPixFormat_XRGB64:
+		case nsVDPixmap::kPixFormat_Y8:
+		case nsVDPixmap::kPixFormat_Y8_FR:
+		case nsVDPixmap::kPixFormat_Y16:
 		case nsVDPixmap::kPixFormat_YUV444_Planar:
 		case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
 		case nsVDPixmap::kPixFormat_YUV444_Planar_709:
@@ -486,6 +489,9 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 		dst->info.alpha_type = FilterModPixmapInfo::kAlphaMask;
 		VDMemset64Rect(dst->data, dst->pitch, 0x0000404040404040, dstw, dsth);
 		break;
+	case nsVDPixmap::kPixFormat_Y8:
+	case nsVDPixmap::kPixFormat_Y8_FR:
+	case nsVDPixmap::kPixFormat_Y16:
 	case nsVDPixmap::kPixFormat_YUV444_Planar16:
 	case nsVDPixmap::kPixFormat_YUV444_Planar:
 	case nsVDPixmap::kPixFormat_YUV444_Planar_FR:
@@ -528,7 +534,13 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 			}
 		}
 
-		if (dst->format==nsVDPixmap::kPixFormat_YUV444_Planar16 || dst->format==nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16) {
+		if (dst->format==nsVDPixmap::kPixFormat_Y8 || dst->format==nsVDPixmap::kPixFormat_Y8_FR) {
+			VDMemset8Rect(dst->data, dst->pitch, uint8(gray), dstw, dsth);
+		} else if (dst->format==nsVDPixmap::kPixFormat_Y16) {
+			dst->info.ref_r = 0xFFFF;
+			gray = (gray<<8) | gray;
+			VDMemset16Rect(dst->data, dst->pitch, uint16(gray), dstw, dsth);
+		} else if (dst->format==nsVDPixmap::kPixFormat_YUV444_Planar16 || dst->format==nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16) {
 			dst->info.ref_r = 0xFFFF;
 			gray = (gray<<8) | gray;
 			VDMemset16Rect(dst->data, dst->pitch, uint16(gray), dstw, dsth);

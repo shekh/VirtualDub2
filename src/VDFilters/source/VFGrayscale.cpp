@@ -149,6 +149,7 @@ VDVFGrayscale::VDVFGrayscale()
 
 uint32 VDVFGrayscale::GetParams() {
 	const VDXPixmapLayout& pxsrc = *fa->src.mpPixmapLayout;
+	VDXPixmapLayout& pxdst = *fa->dst.mpPixmapLayout;
 
 	switch(pxsrc.format) {
 		case nsVDXPixmap::kPixFormat_XRGB8888:
@@ -183,6 +184,12 @@ uint32 VDVFGrayscale::GetParams() {
 		case nsVDXPixmap::kPixFormat_YUV420_Planar16:
 		case nsVDXPixmap::kPixFormat_YUV420_Alpha_Planar16:
 			break;
+		case nsVDXPixmap::kPixFormat_Y8:
+		case nsVDXPixmap::kPixFormat_Y8_FR:
+		case nsVDXPixmap::kPixFormat_Y16:
+			fa->dst.depth = 0;
+			pxdst = pxsrc;
+			return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
 
 		case nsVDXPixmap::kPixFormat_VDXA_RGB:
 		case nsVDXPixmap::kPixFormat_VDXA_YUV:
@@ -191,8 +198,6 @@ uint32 VDVFGrayscale::GetParams() {
 		default:
 			return FILTERPARAM_NOT_SUPPORTED;
 	}
-
-	VDXPixmapLayout& pxdst = *fa->dst.mpPixmapLayout;
 
 	fa->dst.depth = 0;
 	pxdst = pxsrc;
