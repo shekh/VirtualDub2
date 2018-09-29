@@ -378,7 +378,7 @@ IVDInputDriver::DetectionConfidence VDTestInputDriverForFile(VDXMediaInfo& info,
 
 	// attempt detection
 
-	IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature2(info, buf, dwBegin, endbuf, dwEnd, fileSize);
+	IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature3(info, buf, dwBegin, endbuf, dwEnd, fileSize, fn);
 
 	if (result == IVDInputDriver::kDC_None && pDriver->DetectByFilename(fn)) {
 		result = IVDInputDriver::kDC_Low;
@@ -443,7 +443,8 @@ int VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags, tVDInputDriv
 		if (pDriver->GetFlags() & IVDInputDriver::kF_Duplicate)
 			continue;
 
-		IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature(buf, dwBegin, endbuf, dwEnd, fileSize);
+		VDXMediaInfo info;
+		IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature3(info, buf, dwBegin, endbuf, dwEnd, fileSize, fn);
 
 		if (result == IVDInputDriver::kDC_None && pDriver->DetectByFilename(fn)) {
 			result = IVDInputDriver::kDC_Low;

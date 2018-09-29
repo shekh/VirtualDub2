@@ -29,6 +29,23 @@
 #include "vdplugin.h"
 #include <string.h>
 
+enum {
+	// V1 (1.7.4.28204): Initial version
+	// V2 (1.7.5): Default I/P frame model fixed.
+	// V3 (1.8.0): VBR audio support.
+	//   NOTE: Due to a bug, VirtualDub never properly announced this version.
+	//         You must declare your input driver as V2 API compatible to work
+	//         on 1.8.x and 1.9.x releases.
+	// V4 (1.10.1): Added NoOptions definition flag.
+	// V4 (FilterMod): Added ForceByName definition flag.
+	// V5 (FilterMod): Extended StreamSource interface
+	// V6 (FilterMod): Extended IFilterModFileTool interface
+	// V7 (FilterMod): Extended IVDXAudioSource interface
+	// V8 (FilterMod): Extended IVDXInputFile interface
+	// V9 (FilterMod): Extended IVDXInputFile interface
+	kVDXPlugin_InputDriverAPIVersion = 9
+};
+
 /// Unsigned 32-bit fraction.
 struct VDXFraction {
 	uint32 mNumerator;
@@ -322,6 +339,11 @@ public:
 		if (r==0) return kDC_Moderate;
 		return kDC_High;
 	}
+	
+	// V9
+	virtual int		VDXAPIENTRY DetectBySignature3(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize, const wchar_t* fileName) {
+		return DetectBySignature2(info, pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
+	}
 };
 
 struct VDXInputDriverContext {
@@ -352,22 +374,6 @@ struct VDXInputDriverDefinition {
 	const wchar_t *mpDriverTagName;
 
 	VDXInputDriverCreateProc		mpCreate;
-};
-
-enum {
-	// V1 (1.7.4.28204): Initial version
-	// V2 (1.7.5): Default I/P frame model fixed.
-	// V3 (1.8.0): VBR audio support.
-	//   NOTE: Due to a bug, VirtualDub never properly announced this version.
-	//         You must declare your input driver as V2 API compatible to work
-	//         on 1.8.x and 1.9.x releases.
-	// V4 (1.10.1): Added NoOptions definition flag.
-	// V4 (FilterMod): Added ForceByName definition flag.
-	// V5 (FilterMod): Extended StreamSource interface
-	// V6 (FilterMod): Extended IFilterModFileTool interface
-	// V7 (FilterMod): Extended IVDXAudioSource interface
-	// V8 (FilterMod): Extended IVDXInputFile interface
-	kVDXPlugin_InputDriverAPIVersion = 8
 };
 
 ///////////////////////////////////////////////////////////////////////////////

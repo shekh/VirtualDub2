@@ -486,6 +486,7 @@ bool VDOpenVideoDialogW32::UpdateFilename() {
 	wchar_t buf[MAX_PATH];
 	CommDlg_OpenSave_GetSpec(GetParent(mhdlg),buf,MAX_PATH);
 	VDStringW s(buf);
+	if (s.length()==0) return false;
 	if (s.length()>=2 && s[0]=='"') {
 		int x0 = 1;
 		{for (int i=s.length()-1; i>x0; i--){

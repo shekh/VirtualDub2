@@ -126,7 +126,7 @@ public:
 	virtual bool			DetectByFilename(const wchar_t *pszFilename) = 0;
 	virtual DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) = 0;
 	virtual InputFile *		CreateInputFile(uint32 flags) = 0;
-	virtual DetectionConfidence DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+	virtual DetectionConfidence DetectBySignature3(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize, const wchar_t* fileName) {
 		return DetectBySignature(pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
 	}
 };

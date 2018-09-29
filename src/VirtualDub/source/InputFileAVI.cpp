@@ -174,7 +174,7 @@ public:
 		return kDC_None;
 	}
 
-	DetectionConfidence DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+	DetectionConfidence DetectBySignature3(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize, const wchar_t* fileName) {
 		detect_avi(info, pHeader, nHeaderSize);
 		return DetectBySignature(pHeader,nHeaderSize,pFooter,nFooterSize,nFileSize);
 	}

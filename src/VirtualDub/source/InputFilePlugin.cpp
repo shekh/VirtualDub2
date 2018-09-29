@@ -1441,11 +1441,8 @@ public:
 	uint32			GetFlags();
 	const wchar_t *	GetFilenamePattern();
 	bool			DetectByFilename(const wchar_t *pszFilename);
-	DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
-		VDXMediaInfo info;
-		return DetectBySignature2(info, pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
-	}
-	DetectionConfidence DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize);
+	DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {	return kDC_None; }
+	DetectionConfidence DetectBySignature3(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize, const wchar_t* fileName);
 	InputFile *		CreateInputFile(uint32 flags);
 
 protected:
@@ -1547,7 +1544,7 @@ bool VDInputDriverPlugin::DetectByFilename(const wchar_t *pszFilename) {
 	return VDFileWildMatch(sig, pszFilename);
 }
 
-VDInputDriverPlugin::DetectionConfidence VDInputDriverPlugin::DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+VDInputDriverPlugin::DetectionConfidence VDInputDriverPlugin::DetectBySignature3(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize, const wchar_t* fileName) {
 	const uint8 *sig = (const uint8 *)mpShadowedDef->mpSignature;
 
 	if (sig) {
@@ -1575,6 +1572,9 @@ VDInputDriverPlugin::DetectionConfidence VDInputDriverPlugin::DetectBySignature2
 	DetectionConfidence retval = kDC_None;
 	if (mpXObject) {
 		vdwithinputplugin(mpContext) {
+			if (mpContext->max_api_version>=9)
+				retval = (DetectionConfidence)mpXObject->DetectBySignature3(info, pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize, fileName);
+			else
 			if (mpContext->max_api_version>=8)
 				retval = (DetectionConfidence)mpXObject->DetectBySignature2(info, pHeader, nHeaderSize, pFooter, nFooterSize, nFileSize);
 			else {
