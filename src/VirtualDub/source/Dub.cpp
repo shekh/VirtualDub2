@@ -1237,7 +1237,9 @@ void Dubber::InitOutputFile() {
 			}
 		}
 
-		if (outputLayout.format && mpOutputSystem->IsVideoImageOutputEnabled()) {
+		if (mpOutputSystem->IsNull() && !mpVideoCompressor) {
+			mpOutputSystem->SetVideoImageLayout(si, outputLayout);
+		} else if (outputLayout.format && mpOutputSystem->IsVideoImageOutputEnabled()) {
 			mpOutputSystem->SetVideoImageLayout(si, outputLayout);
 		} else {
 			if (!fPreview) {
@@ -2216,6 +2218,9 @@ void MakeOutputFormat::combineComp() {
 	if (!out) return;
 
 	if (!vc) {
+		// ignore output of analyzis pass
+		if (os && os->IsNull()) return;
+
 		// select reasonable uncompressed format
 		if (out==nsVDPixmap::kPixFormat_XRGB64) {
 			out = nsVDPixmap::kPixFormat_B64A;

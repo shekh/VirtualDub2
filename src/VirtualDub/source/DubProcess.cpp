@@ -651,7 +651,8 @@ void VDDubProcessThread::UpdateAudioStreamRate() {
 void VDDubProcessThread::OnVideoStreamEnded() {
 	if (mpInterleaver)
 		mpInterleaver->EndStream(0);
-	mpVideoOut->finish();
+	if (mpVideoOut)
+		mpVideoOut->finish();
 	mbVideoEnded = true;
 }
 

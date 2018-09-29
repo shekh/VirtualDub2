@@ -552,15 +552,16 @@ void VDVideoDisplayWindow::SetCompositor(IVDDisplayCompositor *comp) {
 }
 
 void VDVideoDisplayWindow::PostBuffer(VDVideoDisplayFrame *p) {
-	p->AddRef();
-
 	VDASSERT(p->mFlags & IVDVideoDisplay::kAllFields);
 
 	bool wasIdle = false;
 	vdsynchronized(mMutex) {
+		if (mPendingFrames.find(p)!=mPendingFrames.end()) return;
+
 		if (!mpMiniDriver || !mpActiveFrame && mPendingFrames.empty())
 			wasIdle = true;
 
+		p->AddRef();
 		mPendingFrames.push_back(p);
 	}
 

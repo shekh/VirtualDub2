@@ -4580,6 +4580,9 @@ bool VDProjectUI::UIRunDubMessageLoop() {
 		if(process_pane1) SendMessage(mhwndOutputDisplay, MYWM_PROCESSNEXTFRAME, 0, 0);
 	}
 
+	mpInputDisplay->FlushBuffers();
+	mpOutputDisplay->FlushBuffers();
+
 	return true;
 }
 

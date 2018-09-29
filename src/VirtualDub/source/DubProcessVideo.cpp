@@ -320,6 +320,8 @@ void VDDubVideoProcessor::Shutdown() {
 		mpThreadedVideoCompressor = NULL;
 	}
 
+	mpHeldCompressionInputBuffer.clear();
+
 	if (mpDisplayBufferTracker) {
 		mpDisplayBufferTracker->Shutdown();
 		mpDisplayBufferTracker->Release();
@@ -1311,7 +1313,7 @@ void VDDubVideoProcessor::WriteFinishedVideoFrame(const void *data, uint32 size,
 			mpVideoImageOut->WriteVideoImage(&pBuffer->mPixmap);
 		else
 			mpVideoImageOut->WriteVideoImage(NULL);
-	} else {
+	} else if (mpVideoOut) {
 		VDDubAutoThreadLocation loc(*mppCurrentAction, "writing video frame to disk");
 		IVDXOutputFile::PacketInfo packetInfo2;
 		packetInfo2.flags = packetInfo.keyframe ? AVIOutputStream::kFlagKeyFrame : 0;
