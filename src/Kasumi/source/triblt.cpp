@@ -116,13 +116,6 @@ namespace {
 
 		return (r<<16) + (g<<8) + b;
 	}
-
-	inline uint16 ClampedRoundToUInt16(float x) {
-		int v = VDRoundToIntFast(x);
-		if(v<0) v = 0;
-		if(v>0xFFFF) v = 0xFFFF;
-		return v;
-	}
 }
 
 namespace {
@@ -1209,10 +1202,10 @@ namespace {
 						float sb = (float)(b * w);
 						float sa = (float)(a * w);
 
-						uint16 ir = ClampedRoundToUInt16(sr*0xFFFF);
-						uint16 ig = ClampedRoundToUInt16(sg*0xFFFF);
-						uint16 ib = ClampedRoundToUInt16(sb*0xFFFF);
-						uint16 ia = ClampedRoundToUInt16(sa*0xFFFF);
+						uint16 ir = VDClampedRoundFixedToUint16Fast(sr);
+						uint16 ig = VDClampedRoundFixedToUint16Fast(sg);
+						uint16 ib = VDClampedRoundFixedToUint16Fast(sb);
+						uint16 ia = VDClampedRoundFixedToUint16Fast(sa);
 
 						dstp[0] = ib;
 						dstp[1] = ig;
@@ -1234,7 +1227,7 @@ namespace {
 					do {
 						float sg = (float)(g * w);
 
-						uint16 ig = ClampedRoundToUInt16(sg*0xFFFF);
+						uint16 ig = VDClampedRoundFixedToUint16Fast(sg);
 
 						dstp[x1] = ig;
 

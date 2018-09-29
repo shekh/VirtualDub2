@@ -4,6 +4,14 @@
 	Version="8.00"
 	Name="VirtualDub-VC2005-Release"
 	>
+	<Tool
+		Name="VCCLCompilerTool"
+		Optimization="2"
+		InlineFunctionExpansion="2"
+		EnableIntrinsicFunctions="true"
+		FavorSizeOrSpeed="1"
+		OmitFramePointers="true"
+	/>
 	<UserMacro
 		Name="VDConfigDirTag"
 		Value="Release9"

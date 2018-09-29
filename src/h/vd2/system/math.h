@@ -28,6 +28,7 @@
 
 #include <math.h>
 #include <vd2/system/vdtypes.h>
+#include <emmintrin.h>
 
 // Constants
 namespace nsVDMath {
@@ -236,6 +237,17 @@ inline sint16 VDClampedRoundFixedToInt16Fast(float x) {
 }
 
 /// Convert a value from [0..1] to [0..255] with clamping.
+#ifdef VD_CPU_SSE
+inline uint8 VDClampedRoundFixedToUint8Fast(float x) {
+	__m128 v = _mm_set_ss(x);
+	__m128 m0 = _mm_setzero_ps();
+	v = _mm_max_ss(v,m0);
+	__m128 m1 = _mm_set_ss(0xFF);
+	v = _mm_mul_ss(v,m1);
+	v = _mm_min_ss(v,m1);
+	return _mm_cvtss_si32(v);
+}
+#else
 inline uint8 VDClampedRoundFixedToUint8Fast(float x) {
 	union {
 		float f;
@@ -249,6 +261,34 @@ inline uint8 VDClampedRoundFixedToUint8Fast(float x) {
 
 	return (uint8)v;
 }
+#endif
+
+/// Convert a value from [0..1] to [0..65535] with clamping.
+#ifdef VD_CPU_SSE
+inline uint16 VDClampedRoundFixedToUint16Fast(float x) {
+	__m128 v = _mm_set_ss(x);
+	__m128 m0 = _mm_setzero_ps();
+	v = _mm_max_ss(v,m0);
+	__m128 m1 = _mm_set_ss(0xFFFF);
+	v = _mm_mul_ss(v,m1);
+	v = _mm_min_ss(v,m1);
+	return _mm_cvtss_si32(v);
+}
+#else
+inline uint16 VDClampedRoundFixedToUint16Fast(float x) {
+	union {
+		float f;
+		sint32 i;
+	} u = {x * 65535.0f + 12582912.0f};		// 2^22+2^23
+
+	sint32 v = (sint32)u.i - 0x4B400000;
+
+	if ((uint32)v >= 0x10000)
+		v = ~v >> 31;
+
+	return (uint16)v;
+}
+#endif
 
 ///////////////////////////////////////////////////////////////////////////
 

@@ -6,6 +6,7 @@
 	>
 	<Tool
 		Name="VCCLCompilerTool"
+		PreprocessorDefinitions="VD_CPU_SSE"
 		DisableSpecificWarnings="4244;4267"
 	/>
 	<UserMacro

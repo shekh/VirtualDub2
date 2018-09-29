@@ -278,7 +278,19 @@ void VDSubstituteStrings(VDStringW& s) {
 				break;
 
 			case L'k':
-				#if VD_COMPILER_MSVC >= 1600
+				#if VD_COMPILER_MSVC >= 1910
+					#if VD_CPU_AMD64
+						t.append(L"Microsoft Visual Studio 2017 for AMD64");
+					#else
+						t.append(L"Microsoft Visual Studio 2017 for X86");
+					#endif
+				#elif VD_COMPILER_MSVC >= 1900
+					#if VD_CPU_AMD64
+						t.append(L"Microsoft Visual Studio 2015 for AMD64");
+					#else
+						t.append(L"Microsoft Visual Studio 2015 for X86");
+					#endif
+				#elif VD_COMPILER_MSVC >= 1600
 					#if VD_CPU_AMD64
 						t.append(L"Microsoft Visual Studio 2010 for AMD64");
 					#else
