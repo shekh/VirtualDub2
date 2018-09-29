@@ -3420,8 +3420,19 @@ LRESULT VDProjectUI::DubWndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
+	case WM_WINDOWPOSCHANGING:
+		// seems to fix borderless sizing issues
+		if(!(((WINDOWPOS*)lParam)->flags & SWP_NOMOVE) && !mbMaximizeChanging){
+			int style = GetWindowLong((HWND)mhwnd,GWL_STYLE);
+			SetWindowLong((HWND)mhwnd,GWL_STYLE,style | WS_CAPTION);
+		}
+		break;
+
 	case WM_SIZE:
-		OnSize();
+		if (!IsIconic((HWND)mhwnd)) {
+			UpdateMaximize();
+			OnSize();
+		}
 		break;
 
 	case WM_PAINT:

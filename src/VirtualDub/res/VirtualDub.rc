@@ -272,13 +272,13 @@ BEGIN
     END
     POPUP "V&iew"
     BEGIN
-        MENUITEM "Enable &input pane\tF9",      ID_OPTIONS_DISPLAYINPUTVIDEO, CHECKED
-        MENUITEM "Enable &output pane\tF10",    ID_OPTIONS_DISPLAYOUTPUTVIDEO, CHECKED
         MENUITEM "Arrange panes vertically",    ID_OPTIONS_VERTICALDISPLAY
         MENUITEM "Swap input/output panes",     ID_OPTIONS_SWAPPANES
         MENUITEM "Full screen",                 ID_VIEW_FULLSCREEN
         MENUITEM SEPARATOR
         MENUITEM "Show &status window",         ID_OPTIONS_SHOWSTATUSWINDOW, CHECKED
+        MENUITEM "Show &input video\tF9",       ID_OPTIONS_DISPLAYINPUTVIDEO, CHECKED
+        MENUITEM "Show &output video\tF10",     ID_OPTIONS_DISPLAYOUTPUTVIDEO, CHECKED
         MENUITEM SEPARATOR
         MENUITEM "&Log\tF8",                    ID_OPTIONS_SHOWLOG
         MENUITEM "Real-time profiler\tShift+F8", ID_OPTIONS_SHOWPROFILER
