@@ -21,7 +21,7 @@
 			OutputDirectory="$(VDBaseDir)\out\helpfile"
 			IntermediateDirectory="$(VDBaseDir)\out\helpfile"
 			ConfigurationType="0"
-			InheritedPropertySheets="..\VirtualDub-VC2005-IX86.vsprops;..\VirtualDub-VC2005-Debug.vsprops;..\VirtualDub-VC2005.vsprops"
+			InheritedPropertySheets="..\VirtualDub-vc9-IX86.vsprops;..\VirtualDub-vc9-Debug.vsprops;..\VirtualDub-vc9.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>

@@ -49,27 +49,27 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\VirtualDub-VC2005-IX86.props" />
-    <Import Project="..\VirtualDub-VC2005-Debug.props" />
-    <Import Project="..\VirtualDub-VC2005.props" />
+    <Import Project="..\VirtualDub-vc14-IX86.props" />
+    <Import Project="..\VirtualDub-vc14-Debug.props" />
+    <Import Project="..\VirtualDub-vc14.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\VirtualDub-VC2005-IX86.props" />
-    <Import Project="..\VirtualDub-VC2005-Release.props" />
-    <Import Project="..\VirtualDub-VC2005.props" />
+    <Import Project="..\VirtualDub-vc14-IX86.props" />
+    <Import Project="..\VirtualDub-vc14-Release.props" />
+    <Import Project="..\VirtualDub-vc14.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\VirtualDub-VC2005-AMD64.props" />
-    <Import Project="..\VirtualDub-VC2005-Debug.props" />
-    <Import Project="..\VirtualDub-VC2005.props" />
+    <Import Project="..\VirtualDub-vc14-AMD64.props" />
+    <Import Project="..\VirtualDub-vc14-Debug.props" />
+    <Import Project="..\VirtualDub-vc14.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\VirtualDub-VC2005-AMD64.props" />
-    <Import Project="..\VirtualDub-VC2005-Release.props" />
-    <Import Project="..\VirtualDub-VC2005.props" />
+    <Import Project="..\VirtualDub-vc14-AMD64.props" />
+    <Import Project="..\VirtualDub-vc14-Release.props" />
+    <Import Project="..\VirtualDub-vc14.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>

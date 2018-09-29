@@ -2,10 +2,14 @@
 <VisualStudioPropertySheet
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="VirtualDub-VC2005-Debug"
+	Name="VirtualDub-vc9-IX86"
 	>
 	<UserMacro
-		Name="VDConfigDirTag"
-		Value="Debug9"
+		Name="VDPlatformDirTag"
+		Value=""
+	/>
+	<UserMacro
+		Name="YasmFormat"
+		Value="win32"
 	/>
 </VisualStudioPropertySheet>

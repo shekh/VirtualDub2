@@ -2,7 +2,7 @@
 <VisualStudioPropertySheet
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="VirtualDub-VC2005"
+	Name="VirtualDub-vc9"
 	IntermediateDirectory="$(VDObjPath)"
 	>
 	<Tool

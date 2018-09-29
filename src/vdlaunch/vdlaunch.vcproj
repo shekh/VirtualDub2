@@ -23,7 +23,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(VDOutputPath)"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\VirtualDub-VC2005-IX86.vsprops;..\VirtualDub-VC2005-Debug.vsprops;..\VirtualDub-VC2005.vsprops"
+			InheritedPropertySheets="..\VirtualDub-vc9-IX86.vsprops;..\VirtualDub-vc9-Debug.vsprops;..\VirtualDub-vc9.vsprops"
 			CharacterSet="2"
 			>
 			<Tool
@@ -101,7 +101,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(VDOutputPath)"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\VirtualDub-VC2005-IX86.vsprops;..\VirtualDub-VC2005-Release.vsprops;..\VirtualDub-VC2005.vsprops"
+			InheritedPropertySheets="..\VirtualDub-vc9-IX86.vsprops;..\VirtualDub-vc9-Release.vsprops;..\VirtualDub-vc9.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
@@ -181,7 +181,7 @@
 			Name="Debug|x64"
 			OutputDirectory="$(VDOutputPath)"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\VirtualDub-VC2005-AMD64.vsprops;..\VirtualDub-VC2005-Debug.vsprops;..\VirtualDub-VC2005.vsprops"
+			InheritedPropertySheets="..\VirtualDub-vc9-AMD64.vsprops;..\VirtualDub-vc9-Debug.vsprops;..\VirtualDub-vc9.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -261,7 +261,7 @@
 			Name="Release|x64"
 			OutputDirectory="$(VDOutputPath)"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\VirtualDub-VC2005-AMD64.vsprops;..\VirtualDub-VC2005-Release.vsprops;..\VirtualDub-VC2005.vsprops"
+			InheritedPropertySheets="..\VirtualDub-vc9-AMD64.vsprops;..\VirtualDub-vc9-Release.vsprops;..\VirtualDub-vc9.vsprops"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>

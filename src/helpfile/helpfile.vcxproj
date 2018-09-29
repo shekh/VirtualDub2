@@ -22,9 +22,9 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\VirtualDub-VC2005-IX86.props" />
-    <Import Project="..\VirtualDub-VC2005-Debug.props" />
-    <Import Project="..\VirtualDub-VC2005.props" />
+    <Import Project="..\VirtualDub-vc14-IX86.props" />
+    <Import Project="..\VirtualDub-vc14-Debug.props" />
+    <Import Project="..\VirtualDub-vc14.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
