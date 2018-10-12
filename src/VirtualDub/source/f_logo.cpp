@@ -756,15 +756,13 @@ VDXVF_BEGIN_SCRIPT_METHODS(VDVFLogo)
 VDXVF_END_SCRIPT_METHODS()
 
 void VDVFLogo::GetScriptString(char *buf, int buflen) {
-	char tmp[1024];
-
-	strncpy(tmp, strCify(mConfig.szLogoPath), sizeof tmp);
-	tmp[1023] = 0;
+	VDStringA name = VDEncodeScriptString(mConfig.szLogoPath);
+	VDStringA aname = VDEncodeScriptString(mConfig.szAlphaPath);
 
 	if (mConfig.bEnableAlphaBlending && mConfig.bEnableSecondaryAlpha)
-		SafePrintf(buf, buflen, "Config(\"%s\", %d, %d, \"%s\", %d, %d, %d, %d)", tmp, mConfig.pos_x, mConfig.pos_y, strCify(mConfig.szAlphaPath), mConfig.bNonPremultAlpha, mConfig.justify_x, mConfig.justify_y, mConfig.opacity);
+		SafePrintf(buf, buflen, "Config(\"%s\", %d, %d, \"%s\", %d, %d, %d, %d)", name.c_str(), mConfig.pos_x, mConfig.pos_y, aname.c_str(), mConfig.bNonPremultAlpha, mConfig.justify_x, mConfig.justify_y, mConfig.opacity);
 	else
-		SafePrintf(buf, buflen, "Config(\"%s\", %d, %d, %d, %d, %d, %d, %d)", tmp, mConfig.pos_x, mConfig.pos_y, mConfig.bEnableAlphaBlending, mConfig.bNonPremultAlpha, mConfig.justify_x, mConfig.justify_y, mConfig.opacity);
+		SafePrintf(buf, buflen, "Config(\"%s\", %d, %d, %d, %d, %d, %d, %d)", name.c_str(), mConfig.pos_x, mConfig.pos_y, mConfig.bEnableAlphaBlending, mConfig.bNonPremultAlpha, mConfig.justify_x, mConfig.justify_y, mConfig.opacity);
 }
 
 bool VDVFLogo::OnInvalidateCaches() {

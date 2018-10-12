@@ -46,9 +46,8 @@ bool isEqualFOURCC(FOURCC fccA, FOURCC fccB);
 bool isValidFOURCC(FOURCC fcc);
 FOURCC toupperFOURCC(FOURCC fcc);
 
-char *strCify(const char *s);
-VDStringA strCify(const VDStringA& s);
 VDStringA VDEncodeScriptString(const VDStringSpanA& sa);
 VDStringA VDEncodeScriptString(const VDStringW& sw);
+inline VDStringA VDEncodeScriptString(const char* sa){ return VDEncodeScriptString(VDStringSpanA(sa)); }
 
 #endif
