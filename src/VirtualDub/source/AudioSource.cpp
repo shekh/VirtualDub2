@@ -197,7 +197,7 @@ bool AudioSourceAVI::init() {
 			double stddevOut = stddev*0.001;
 			double maxdevOut = maxdev*1000.0;
 
-			VDLogAppMessage(kVDLogWarning, kVDST_AudioSource, kVDM_VBRAudioDetected, 3, &maxdevOut, &meanOut, &stddevOut);
+			if (maxdev>0) VDLogAppMessage(kVDLogWarning, kVDST_AudioSource, kVDM_VBRAudioDetected, 3, &maxdevOut, &meanOut, &stddevOut);
 		}
 	}
 

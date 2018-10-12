@@ -615,7 +615,7 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 						if (id == ID_ADDTOQUEUE_EXTRACTAUDIOASWAV)
 							outputFileName = VDFileSplitExtLeft(outputFileName) + L".wav";
 
-						JobAddConfigurationSaveAudio(0, &g_dubOpts, item->GetFileName(), NULL, 0, NULL, outputFileName.c_str(), raw, false);
+						JobAddConfigurationSaveAudio(0, &g_dubOpts, item->GetFileName(), NULL, 0, NULL, outputFileName.c_str(), raw, false, true);
 					}
 				}
 

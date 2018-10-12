@@ -98,7 +98,7 @@ protected:
 	bool MainAddVideoFrame();
 	void ReadRawVideoFrame(int sourceIndex, VDPosition streamFrame, VDPosition displayFrame, VDPosition targetSample, bool preload, bool direct);
 	void ReadNullVideoFrame(int sourceIndex, VDPosition displayFrame, VDPosition targetSample);
-	bool MainAddAudioFrame();
+	bool MainAddAudioFrame(int& min_space);
 
 	IDubberInternal		*mpParent;
 	MyError				mError;

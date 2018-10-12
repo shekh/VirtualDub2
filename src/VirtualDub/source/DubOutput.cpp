@@ -345,6 +345,7 @@ bool VDAVIOutputWAVSystem::AcceptsAudio() {
 VDAVIOutputPluginSystem::VDAVIOutputPluginSystem(const wchar_t *pszFilename)
 	: mFilename(pszFilename)
 {
+	fAudioOnly = false;
 }
 
 VDAVIOutputPluginSystem::~VDAVIOutputPluginSystem() {

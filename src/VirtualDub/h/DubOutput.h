@@ -159,12 +159,14 @@ private:
 
 class VDAVIOutputPluginSystem : public VDDubberOutputSystem {
 public:
+	bool fAudioOnly;
+
 	VDAVIOutputPluginSystem(const wchar_t *pszFilename);
 	~VDAVIOutputPluginSystem();
 
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
-	bool AcceptsVideo() { return true; }
+	bool AcceptsVideo() { return !fAudioOnly; }
 	bool AcceptsAudio() { return true; }
 	bool IsVideoCompressionEnabled() { return true; }
 	bool AreNullFramesAllowed() { return true; }

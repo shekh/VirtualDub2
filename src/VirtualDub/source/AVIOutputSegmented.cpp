@@ -995,7 +995,7 @@ void VDAVIOutputSegmented::ReinitInterleaver() {
 	if (mpFirstAudioStream) {
 		mStreamInterleaver.Init(2);
 		mStreamInterleaver.EnableInterleaving(true);
-		mStreamInterleaver.InitStream(0, 0, 0, 1, 1, 1);
+		mStreamInterleaver.InitStream(0, 0, 1, 1, 1);
 		const VDWaveFormat& wfex = *(const VDWaveFormat *)mpFirstAudioStream->getFormat();
 		const VDXAVIStreamHeader& hdr = mpFirstVideoStream->getStreamInfo().aviHeader;
 		const VDXAVIStreamHeader& hdra = mpFirstAudioStream->getStreamInfo().aviHeader;
@@ -1003,10 +1003,10 @@ void VDAVIOutputSegmented::ReinitInterleaver() {
 		double invFrameRate = (double)hdr.dwScale / (double)hdr.dwRate;
 		sint32 preloadSamples = VDRoundToInt32(mAudioPreload * samplesPerSecond);
 		double samplesPerFrame = invFrameRate * samplesPerSecond;
-		mStreamInterleaver.InitStream(1, wfex.mBlockSize, preloadSamples, samplesPerFrame, mAudioInterval, 0x7FFFFFFF / wfex.mBlockSize);
+		mStreamInterleaver.InitStream(1, preloadSamples, samplesPerFrame, mAudioInterval, 0x7FFFFFFF / wfex.mBlockSize);
 	} else {
 		mStreamInterleaver.Init(1);
-		mStreamInterleaver.InitStream(0, 0, 0, 1, 1, 1);
+		mStreamInterleaver.InitStream(0, 0, 1, 1, 1);
 	}
 }
 

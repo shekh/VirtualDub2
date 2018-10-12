@@ -754,7 +754,7 @@ void JobAddConfigurationImages(const VDProject* project, const DubOptions *opt, 
 	JobCreateEntry(output, project, dataSubdir, szFileInput, outputFile.c_str());
 }
 
-void JobAddConfigurationSaveAudio(const VDProject* project, const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended, const wchar_t *dstFile, bool raw, bool includeEditList) {
+void JobAddConfigurationSaveAudio(const VDProject* project, const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended, const wchar_t *dstFile, bool raw, bool includeEditList, bool auto_w64) {
 	JobScriptOutput output;
 
 	VDStringW dataSubdir;
@@ -765,7 +765,15 @@ void JobAddConfigurationSaveAudio(const VDProject* project, const DubOptions *op
 	JobAddReloadMarker(output);
 
 	// Add actual run option
-	output.addf("VirtualDub.Save%s(\"%s\");", raw ? "RawAudio" : "WAV", strCify(VDTextWToU8(VDStringW(dstFile)).c_str()));
+	VDString name = strCify(VDTextWToU8(VDStringW(dstFile)));
+	if (raw) {
+		output.addf("VirtualDub.SaveRawAudio(\"%s\");", name);
+	} else {
+		if (auto_w64)
+			output.addf("VirtualDub.SaveWAV(\"%s\");", name);
+		else
+			output.addf("VirtualDub.SaveWAV(\"%s\", 0);", name);
+	}
 
 	JobAddClose(output);
 	JobCreateEntry(output, project, dataSubdir, srcFile, dstFile);

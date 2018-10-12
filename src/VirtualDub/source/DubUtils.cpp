@@ -47,14 +47,13 @@ void VDStreamInterleaver::Init(int streams) {
 	mActiveStreams		= 0;
 }
 
-void VDStreamInterleaver::InitStream(int stream, uint32 nSampleSize, sint32 nPreload, double nSamplesPerFrame, double nInterval, sint32 nMaxPush) {
+void VDStreamInterleaver::InitStream(int stream, sint32 nPreload, double nSamplesPerFrame, double nInterval, sint32 nMaxPush) {
 	VDASSERT(stream>=0 && stream<mStreams.size());
 	VDASSERT(nSamplesPerFrame>0);
 
 	Stream& streaminfo = mStreams[stream];
 
 	streaminfo.mSamplesWrittenToSegment = 0;
-	//streaminfo.mMaxSampleSize		= nSampleSize;
 	streaminfo.mPreloadMicroFrames	= (sint32)((double)nPreload / nSamplesPerFrame * 65536);
 	streaminfo.mSamplesPerFrame		= nSamplesPerFrame;
 	streaminfo.mSamplesPerFramePending	= -1;
@@ -83,6 +82,14 @@ void VDStreamInterleaver::AdjustStreamRate(int stream, double samplesPerFrame) {
 	Stream& streaminfo = mStreams[stream];
 
 	streaminfo.mSamplesPerFramePending = samplesPerFrame;
+}
+
+void VDStreamInterleaver::AdjustSamplesWritten(int stream, sint32 samples) {
+	VDASSERT(stream >= 0 && stream < mStreams.size());
+	Stream& streaminfo = mStreams[stream];
+
+	streaminfo.mSamplesToWrite -= samples;
+	streaminfo.mSamplesWrittenToSegment += samples;
 }
 
 VDStreamInterleaver::Action VDStreamInterleaver::GetNextAction(int& streamID, sint32& samples) {

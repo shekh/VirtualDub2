@@ -440,6 +440,7 @@ private:
 	AudioStream			*audioStream;
 	AudioStream			*audioStatusStream;
 	AudioStreamL3Corrector	*audioCorrector;
+	AudioStats	*audioStats;
 	vdautoptr<VDAudioFilterGraph> mpAudioFilterGraph;
 
 	const FrameSubset		*inputSubsetActive;
@@ -450,8 +451,6 @@ private:
 	vdblock<char>		mAudioCompressionConfig;
 
 	VDPixmapLayout		mVideoFilterOutputPixmapLayout;
-
-	bool				fPhantom;
 
 	IDubStatusHandler	*pStatusHandler;
 
@@ -477,7 +476,6 @@ public:
 	~Dubber();
 
 	void SetAudioCompression(const VDWaveFormat *wf, uint32 cb, const char *pShortNameHint, vdblock<char>& config);
-	void SetPhantomVideoMode();
 	void SetInputDisplay(IVDVideoDisplay *);
 	void SetOutputDisplay(IVDVideoDisplay *);
 	void SetAudioFilterGraph(const VDAudioFilterGraph& graph);
@@ -562,12 +560,12 @@ Dubber::Dubber(DubOptions *xopt)
 	audioStream			= NULL;
 	audioStatusStream	= NULL;
 	audioCorrector		= NULL;
+	audioStats		= NULL;
 
 	inputSubsetActive	= NULL;
 	inputSubsetAlloc	= NULL;
 
 	mbCompleted			= false;
-	fPhantom = false;
 
 	mLiveLockMessages = 0;
 }
@@ -587,11 +585,6 @@ void Dubber::SetAudioCompression(const VDWaveFormat *wf, uint32 cb, const char *
 		
 	mAudioCompressionConfig.resize(config.size());
 	memcpy(mAudioCompressionConfig.data(),config.data(),config.size());
-}
-
-void Dubber::SetPhantomVideoMode() {
-	fPhantom = true;
-	vInfo.fAudioOnly = true;
 }
 
 void Dubber::SetStatusHandler(IDubStatusHandler *pdsh) {
@@ -998,17 +991,56 @@ void Dubber::InitAudioConversionChain() {
 		mAudioStreams.push_back(audioStream);
 	}
 
-	// Check the output format, and if we're compressing to
-	// MPEG Layer III, compensate for the lag and create a bitrate corrector
+	if (pCompressor) {
+		// Check the output format, and if we're compressing to
+		// MPEG Layer III, compensate for the lag and create a bitrate corrector
 
-	if (!g_prefs.fNoCorrectLayer3 && pCompressor && !pCompressor->fNoCorrectLayer3 && pCompressor->GetFormat()->mTag == WAVE_FORMAT_MPEGLAYER3) {
-		pCompressor->CompensateForMP3();
+		VDXStreamInfo si;
+		// Fraunhofer-IIS's MP3 codec has a compression delay that we need to
+		// compensate for.  Comparison of PCM input, F-IIS output, and
+		// WinAmp's Nitrane output reveals that the decompressor half of the
+		// ACM codec is fine, but the compressor inserts a delay of 1373
+		// (0x571) samples at the start.  This is a lag of 2 frames at
+		// 30fps and 22KHz, so it's significant enough to be noticed.  At
+		// 11KHz, this becomes a tenth of a second.  Needless to say, the
+		// F-IIS MP3 codec is a royal piece of sh*t.
+		//
+		// By coincidence, the MPEGLAYER3WAVEFORMAT struct has a field
+		// called nCodecDelay which is set to this value...
 
-		if (!(audioCorrector = new_nothrow AudioStreamL3Corrector(audioStream)))
-			throw MyMemoryError();
+		// Note: old comment said LameACM does not have a codec delay: not consistent with my test
+		// Note: ffmpeg tells different delay
 
-		audioStream = audioCorrector;
-		mAudioStreams.push_back(audioStream);
+		if (pCompressor->GetFormat()->mTag == WAVE_FORMAT_MPEGLAYER3)
+			si.initial_padding = ((MPEGLAYER3WAVEFORMAT *)pCompressor->GetFormat())->nCodecDelay;
+
+		pCompressor->GetStreamInfo(si);
+
+		VDXStreamControl sc;
+		mpOutputSystem->GetStreamControl(sc);
+
+		if (mbDoVideo) {
+			// initial_padding supposed to work in mkv etc
+			if (!sc.use_offsets) pCompressor->SkipSource(si.initial_padding);
+		}
+		if (sc.use_offsets) {
+			aInfo.offset_num = -si.initial_padding;
+			aInfo.offset_den = pCompressor->GetFormat()->mSamplingRate;
+		}
+
+		if (!g_prefs.fNoCorrectLayer3 && pCompressor->GetFormat()->mTag == WAVE_FORMAT_MPEGLAYER3) {
+			if (!(audioCorrector = new_nothrow AudioStreamL3Corrector(audioStream)))
+				throw MyMemoryError();
+
+			audioStream = audioCorrector;
+			mAudioStreams.push_back(audioStream);
+		} else if (pCompressor && pCompressor->IsVBR()) {
+			if (!(audioStats = new_nothrow AudioStats(audioStream)))
+				throw MyMemoryError();
+
+			audioStream = audioStats;
+			mAudioStreams.push_back(audioStream);
+		}
 	}
 
 }
@@ -1039,6 +1071,9 @@ void Dubber::InitOutputFile() {
 		}
 
 		audioStream->GetStreamInfo(si);
+
+		si.start_num = aInfo.offset_num;
+		si.start_den = aInfo.offset_den;
 
 		mpOutputSystem->SetAudio(si, audioStream->GetFormat(), audioStream->GetFormatLen(), mOptions.audio.enabled, audioStream->IsVBR());
 	}
@@ -1663,13 +1698,15 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 
 	// initialize interleaver
 
-	bool bAudio = mbDoAudio;
+	int stream_count = 0;
+	if (mbDoAudio) stream_count++;
+	if (mbDoVideo) stream_count++;
+	//! initialize interleaver anyway because stream ids are hardcoded
+	mInterleaver.Init(mbDoAudio ? 2 : 1);
+	mInterleaver.EnableInterleaving(mOptions.audio.enabled && stream_count>1);
+	mInterleaver.InitStream(0, 0, 1, 1, 1);
 
-	mInterleaver.Init(bAudio ? 2 : 1);
-	mInterleaver.EnableInterleaving(mOptions.audio.enabled);
-	mInterleaver.InitStream(0, lVideoSizeEstimate, 0, 1, 1, 1);
-
-	if (bAudio) {
+	if (mbDoAudio) {
 		double audioBlocksPerVideoFrame;
 
 		if (!mOptions.audio.interval)
@@ -1680,13 +1717,20 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 		} else
 			audioBlocksPerVideoFrame = 1.0 / (double)mOptions.audio.interval;
 
-		const VDWaveFormat *pwfex = audioStream->GetFormat();
-		const VDFraction& samplesPerSec = audioStream->GetSampleRate();
-		sint32 preload = (sint32)(samplesPerSec * Fraction(mOptions.audio.preload, 1000)).roundup32ul();
+		sint32 preload;
+		double samplesPerFrame;
+		if (audioStream->IsVBR()) {
+			// do all math in pcm samples
+			const VDWaveFormat *pwfex = audioStream->GetFormat();
+			preload = (sint32)(Fraction(pwfex->mSamplingRate,1) * Fraction(mOptions.audio.preload, 1000)).roundup32ul();
+			samplesPerFrame = double(pwfex->mSamplingRate) / vInfo.mFrameRate.asDouble();
+		} else {
+			const VDFraction& samplesPerSec = audioStream->GetSampleRate();
+			preload = (sint32)(samplesPerSec * Fraction(mOptions.audio.preload, 1000)).roundup32ul();
+			samplesPerFrame = samplesPerSec.asDouble() / vInfo.mFrameRate.asDouble();
+		}
 
-		double samplesPerFrame = samplesPerSec.asDouble() / vInfo.mFrameRate.asDouble();
-
-		mInterleaver.InitStream(1, pwfex->mBlockSize, preload, samplesPerFrame, audioBlocksPerVideoFrame, 262144);		// don't write TOO many samples at once
+		mInterleaver.InitStream(1, preload, samplesPerFrame, audioBlocksPerVideoFrame, 262144);		// don't write TOO many samples at once
 	}
 
 	// initialize frame iterator
@@ -1727,6 +1771,10 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 		// we should always allocate at least 64K, just to have a decent size buffer
 		if (bytes < 65536)
 			bytes = 65536;
+
+		// no way to know good size yet
+		if (audioStream->IsVBR() && bytes<0x100000)
+			bytes = 0x100000;
 
 		// we must always have at least one block
 		if (bytes < pwfex->mBlockSize)
@@ -1784,6 +1832,7 @@ void Dubber::Go(int iPriority) {
 	mProcessThread.SetVideoSources(mVideoSources.data(), mVideoSources.size());
 	mProcessThread.SetVideoFrameSource(mpVideoFrameSource);
 	mProcessThread.SetAudioCorrector(audioCorrector);
+	mProcessThread.SetAudioStats(audioStats);
 	mProcessThread.SetVideoRequestQueue(mpVideoRequestQueue);
 	mProcessThread.SetVideoFilterSystem(&filters);
 	mProcessThread.SetIODirect(mpIODirect);

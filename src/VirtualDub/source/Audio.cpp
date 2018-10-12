@@ -345,6 +345,17 @@ long AudioStream::Read(void *buffer, long max_samples, long *lplBytes) {
 	return actual;
 }
 
+long AudioStream::ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration) {
+	long actual;
+	actual = _ReadVBR(buffer, size, lplBytes, duration);
+
+	VDASSERT(actual >= 0 && actual <= 1);
+
+	samples_read += actual;
+
+	return actual;
+}
+
 bool AudioStream::Skip(sint64 samples) {
 	return false;
 }
@@ -364,6 +375,13 @@ bool AudioStream::isEnd() {
 
 long AudioStream::_Read(void *buffer, long max_samples, long *lplBytes) {
 	*lplBytes = 0;
+
+	return 0;
+}
+
+long AudioStream::_ReadVBR(void *buffer, long size, long *lplBytes, sint64* duration) {
+	*lplBytes = 0;
+	*duration = -1;
 
 	return 0;
 }
@@ -1459,18 +1477,15 @@ AudioCompressor::AudioCompressor(AudioStream *src, const VDWaveFormat *dst_forma
 		memcpy(oFormat, mpCodec->GetOutputFormat(), dst_format_len);
 		dst_format = oFormat;
 		fVBR = true;
-		fNoCorrectLayer3 = true;
 	} else {
 		VDWaveFormat *oFormat = AllocFormat(dst_format_len);
 		memcpy(oFormat, dst_format, dst_format_len);
 		mpCodec = VDCreateAudioCompressorW32((const VDWaveFormat *)iFormat, dst_format, pShortNameHint, true);
 		fVBR = false;
-		fNoCorrectLayer3 = false;
 	}
 
 	bytesPerInputSample = iFormat->mBlockSize;
 	bytesPerOutputSample = dst_format->mBlockSize;
-	lastPacketDuration = -1;
 
 	fStreamEnded = FALSE;
 }
@@ -1485,8 +1500,14 @@ void AudioCompressor::GetStreamInfo(VDXStreamInfo& si) const {
 
 const VDFraction AudioCompressor::GetSampleRate() const {
 	if (fVBR) {
+		VDXStreamInfo si;
 		VDWaveFormat* format = GetFormat();
-		return VDFraction(format->mSamplingRate,format->mBlockSize);
+		si.aviHeader.dwScale = format->mBlockSize;
+		si.aviHeader.dwRate = format->mSamplingRate;
+		// mp3: dwScale remains 1152
+		// aac: dwScale is changed 1536->1024
+		if (mpCodec) mpCodec->GetStreamInfo(si);
+		return VDFraction(si.aviHeader.dwRate,si.aviHeader.dwScale);
 	} else {
 		return AudioStream::GetSampleRate();
 	}
@@ -1495,70 +1516,57 @@ const VDFraction AudioCompressor::GetSampleRate() const {
 AudioCompressor::~AudioCompressor() {
 }
 
-void AudioCompressor::CompensateForMP3() {
+void AudioCompressor::SkipSource(long samples) {
+	if (samples && !source->Skip(samples)) {
+		int maxRead = bytesPerInputSample > 16384 ? 1 : 16384 / bytesPerInputSample;
 
-	// Fraunhofer-IIS's MP3 codec has a compression delay that we need to
-	// compensate for.  Comparison of PCM input, F-IIS output, and
-	// WinAmp's Nitrane output reveals that the decompressor half of the
-	// ACM codec is fine, but the compressor inserts a delay of 1373
-	// (0x571) samples at the start.  This is a lag of 2 frames at
-	// 30fps and 22KHz, so it's significant enough to be noticed.  At
-	// 11KHz, this becomes a tenth of a second.  Needless to say, the
-	// F-IIS MP3 codec is a royal piece of sh*t.
-	//
-	// By coincidence, the MPEGLAYER3WAVEFORMAT struct has a field
-	// called nCodecDelay which is set to this value...
+		vdblock<char> tempBuf(bytesPerInputSample * maxRead);
+		void *dst = tempBuf.data();
 
-	if (GetFormat()->mTag == WAVE_FORMAT_MPEGLAYER3) {
-		long samples = ((MPEGLAYER3WAVEFORMAT *)GetFormat())->nCodecDelay;
+		long actualBytes, actualSamples;
+		do {
+			long tc = samples;
 
-		// Note: LameACM does not have a codec delay!
+			if (tc > maxRead)
+				tc = maxRead;
+				
+			actualSamples = source->Read(dst, tc, &actualBytes);
 
-		if (samples && !source->Skip(samples)) {
-			int maxRead = bytesPerInputSample > 16384 ? 1 : 16384 / bytesPerInputSample;
+			samples -= actualSamples;
+		} while(samples>0 && actualBytes);
 
-			vdblock<char> tempBuf(bytesPerInputSample * maxRead);
-			void *dst = tempBuf.data();
-
-			long actualBytes, actualSamples;
-			do {
-				long tc = samples;
-
-				if (tc > maxRead)
-					tc = maxRead;
-					
-				actualSamples = source->Read(dst, tc, &actualBytes);
-
-				samples -= actualSamples;
-			} while(samples>0 && actualBytes);
-
-			if (!actualBytes || source->isEnd())
-				fStreamEnded = TRUE;
-		}
+		if (!actualBytes || source->isEnd())
+			fStreamEnded = TRUE;
 	}
 }
 
-long AudioCompressor::_Read(void *buffer, long samples, long *lplBytes) {
+long AudioCompressor::_ReadVBR(void *buffer, long space, long *lplBytes, sint64 *duration) {
+	VDASSERT(fVBR);
 	long bytes = 0;
-	long space = samples * bytesPerOutputSample;
 
-	if (fVBR) {
-		samples = 1;
-		while(!bytes) {
-			bytes = mpCodec->CopyOutput(buffer, space, lastPacketDuration);
-
-			if (!bytes) {
-				if (!Process())
-					break;
-			}
+	while(!bytes) {
+		bytes = mpCodec->CopyOutput(buffer, space, *duration);
+		if (bytes>space) {
+			*lplBytes = bytes;
+			return 0;
 		}
 
-		if (lplBytes)
-			*lplBytes = bytes;
-
-		return bytes ? 1:0;
-
+		if (!bytes) {
+			if (!Process())
+				break;
+		}
 	}
+
+	if (lplBytes)
+		*lplBytes = bytes;
+
+	return bytes ? 1:0;
+}
+
+long AudioCompressor::_Read(void *buffer, long samples, long *lplBytes) {
+	VDASSERT(!fVBR);
+	long bytes = 0;
+	long space = samples * bytesPerOutputSample;
 
 	while(space > 0) {
 		unsigned actualBytes = mpCodec->CopyOutput(buffer, space);
@@ -2074,10 +2082,6 @@ AudioStreamL3Corrector::AudioStreamL3Corrector(AudioStream *src){
 AudioStreamL3Corrector::~AudioStreamL3Corrector() {
 }
 
-const VDFraction AudioStreamL3Corrector::GetSampleRate() const {
-	return source->GetSampleRate();
-}
-
 long AudioStreamL3Corrector::_Read(void *buffer, long samples, long *lplBytes) {
 	long lActualSamples=0;
 	long lBytes;
@@ -2092,12 +2096,52 @@ long AudioStreamL3Corrector::_Read(void *buffer, long samples, long *lplBytes) {
 	return lActualSamples;
 }
 
-bool AudioStreamL3Corrector::_isEnd() {
-	return source->isEnd();
+long AudioStreamL3Corrector::_ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration) {
+	long lActualSamples=0;
+	long lBytes;
+
+	lActualSamples = source->ReadVBR(buffer, size, &lBytes, duration);
+
+	if (lActualSamples)
+		Process(buffer, lBytes);
+
+	if (lplBytes)
+		*lplBytes = lBytes;
+
+	return lActualSamples;
 }
 
-bool AudioStreamL3Corrector::Skip(sint64 samples) {
-	return source->Skip(samples);
+AudioStats::AudioStats(AudioStream *src) {
+	VDWaveFormat *iFormat = src->GetFormat();
+	VDWaveFormat *oFormat;
+
+	memcpy(oFormat = AllocFormat(src->GetFormatLen()), iFormat, src->GetFormatLen());
+
+	SetSource(src);
+	packets = 0;
+	total_bytes = 0;
+	total_duration = 0;
+	max_sample = 0;
+}
+
+long AudioStats::_ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration) {
+	long lActualSamples = source->ReadVBR(buffer, size, lplBytes, duration);
+	if (lActualSamples){
+		packets += lActualSamples;
+		if (*lplBytes>max_sample) max_sample = *lplBytes;
+		total_bytes += *lplBytes;
+		total_duration += *duration;
+	}
+
+	return lActualSamples;
+}
+
+long AudioStats::ComputeByterate() const {
+	return long(total_bytes*GetFormat()->mSamplingRate/total_duration);
+}
+
+double AudioStats::ComputeByterateDouble() const {
+	return (double)total_bytes*GetFormat()->mSamplingRate/total_duration;
 }
 
 ///////////////////////////////////////////////////////////////////////////

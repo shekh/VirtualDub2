@@ -159,17 +159,24 @@ void VDDubIOThread::ThreadRun() {
 							VDDubAutoThreadLocation loc(mpCurrentAction, "reading audio data");
 
 							VDPROFILEBEGIN("Audio-read");
+							bool r = MainAddAudioFrame(minAudioBufferSpace);
+							VDPROFILEEND();
 
-							if (!MainAddAudioFrame() && mpAudio->isEnd()) {
-								if (!mbPreview && !mAudioSamplesWritten && VDPreferencesIsRenderNoAudioWarningEnabled()) {
-									VDLogF(kVDLogWarning, L"Front end: The audio stream is ending with no samples having been sent.");
+							if (!r){
+								if (mpAudio->isEnd()) {
+									if (!mbPreview && !mAudioSamplesWritten && VDPreferencesIsRenderNoAudioWarningEnabled()) {
+										VDLogF(kVDLogWarning, L"Front end: The audio stream is ending with no samples having been sent.");
+									}
+
+									bAudioActive = false;
+									mpAudioPipe->CloseInput();
+								} else if (mpAudioPipe->getSpace() < minAudioBufferSpace) {
+									bBlocked = true;
+									waitingForAudioSpace = true;
+									break;
 								}
-
-								bAudioActive = false;
-								mpAudioPipe->CloseInput();
 							}
 
-							VDPROFILEEND();
 							goto restart_service_loop;
 						}
 						break;
@@ -395,57 +402,50 @@ void VDDubIOThread::ReadNullVideoFrame(int sourceIndex, VDPosition displayFrame,
 	mpVideoPipe->postBuffer(frameInfo);
 }
 
-bool VDDubIOThread::MainAddAudioFrame() {
+bool VDDubIOThread::MainAddAudioFrame(int& min_space) {
 	if (mpAudioPipe->IsVBRModeEnabled()) {
 		int totalSamples = 0;
 
-		const VDWaveFormat *format = mpAudio->GetFormat();
-		const int blocksize = format->mBlockSize;
-		int samplesLeft = mpAudioPipe->getSpace() / blocksize;
-
-		mAudioBuffer.resize(std::max<int>(format->mDataRate / 15, blocksize*4));
-		char *buf = mAudioBuffer.data();
-
-		while(samplesLeft > 0) {
+		while(1) {
 			if (mbAbort)
 				return false;
 
-			if (mpAudioPipe->getSpace() < blocksize + mpAudioPipe->VBRPacketHeaderSize())
-				break;
-
 			long actualBytes, actualSamples;
+			sint64 duration;
 			{
 				VDDubAutoThreadLocation loc(mpCurrentAction, "reading/processing audio data");
-				actualSamples = mpAudio->Read(buf, 1, &actualBytes);
-				VDASSERT(actualBytes <= actualSamples * blocksize);
+				mpAudio->ReadVBR(0, 0, &actualBytes, &duration);
+				int req = actualBytes + mpAudioPipe->VBRPacketHeaderSize();
+				if (mpAudioPipe->getSpace() < req) {
+					min_space = req;
+					break;
+				}
+
+				if (actualBytes>mAudioBuffer.size()) mAudioBuffer.resize(actualBytes);
+				actualSamples = mpAudio->ReadVBR(mAudioBuffer.data(), mAudioBuffer.size(), &actualBytes, &duration);
 			}
 
 			if (actualSamples <= 0)
 				break;
 
-			VDASSERT(actualSamples == 1);
-
-			int sampleSize = actualBytes;
-			sint64 duration = mpAudio->GetLastPacketDuration();
 			{
 				VDDubAutoThreadLocation loc(mpCurrentAction, "pushing audio data to processing thread");
 
 				// VBRPacketHeader size
-				if (!mpAudioPipe->Write(&sampleSize, sizeof(int), &mbAbort))
+				if (!mpAudioPipe->Write(&actualBytes, sizeof(int), &mbAbort))
 					return false;
 
 				// VBRPacketHeader duration
 				if (!mpAudioPipe->Write(&duration, sizeof(duration), &mbAbort))
 					return false;
 
-				if (!mpAudioPipe->Write(buf, actualBytes, &mbAbort))
+				if (!mpAudioPipe->Write(mAudioBuffer.data(), actualBytes, &mbAbort))
 					return false;
 			}
 
 			aInfo.total_size += actualBytes;
 
 			totalSamples += actualSamples;
-			samplesLeft -= actualSamples;
 		}
 
 		mAudioSamplesWritten += totalSamples;

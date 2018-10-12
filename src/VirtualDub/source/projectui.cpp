@@ -154,10 +154,10 @@ extern void VDDisplayLicense(HWND hwndParent, bool conditional);
 extern void OpenInput(bool append=false, bool audio=false);
 extern void SaveAVI(HWND, bool, bool queueAsBatch);
 extern void SaveSegmentedAVI(HWND, bool queueAsBatch);
+extern void SaveAudio(HWND, bool queueAsBatch);
 extern void OpenImageSeq(HWND hwnd);
 extern void SaveImageSeq(HWND, bool queueAsBatch);
 extern void SaveImage(HWND, VDPosition frame, VDPixmap* px);
-extern void SaveWAV(HWND, bool queueAsBatch);
 extern void SaveConfiguration(HWND);
 extern void SaveProject(HWND, bool reset_path);
 extern void CreateExtractSparseAVI(HWND hwndParent, bool bExtract);
@@ -1218,6 +1218,8 @@ void VDProjectUI::SaveSegmentedAVIAsk(bool batchMode) {
 }
 
 void VDProjectUI::SaveWAVAsk(bool batchMode) {
+	SaveAudio((HWND)mhwnd, batchMode);
+	/*
 	if (!inputAudio)
 		throw MyError("No input audio stream to extract.");
 
@@ -1234,6 +1236,7 @@ void VDProjectUI::SaveWAVAsk(bool batchMode) {
 		else
 			SaveWAV(filename.c_str());
 	}
+	*/
 }
 
 void VDProjectUI::SaveFilmstripAsk() {
@@ -1478,7 +1481,7 @@ void VDProjectUI::SaveRawAudioAsk(bool batchMode) {
 	const VDStringW filename(VDGetSaveFileName(kFileDialog_RawAudioOut, mhwnd, L"Save raw audio", L"All types\0*.bin;*.mp3\0Raw audio (*.bin)\0*.bin\0MPEG layer III audio (*.mp3)\0*.mp3\0", NULL));
 	if (!filename.empty()) {
 		if (batchMode)
-			JobAddConfigurationSaveAudio(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), true, true);
+			JobAddConfigurationSaveAudio(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), true, true, false);
 		else
 			SaveRawAudio(filename.c_str(), false);
 	}

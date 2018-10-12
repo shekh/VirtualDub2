@@ -74,6 +74,7 @@ VDDubProcessThread::VDDubProcessThread()
 	, mpOutputSystem(NULL)
 	, mpAudioPipe(NULL)
 	, mpAudioCorrector(NULL)
+	, mpAudioStats(NULL)
 	, mbAudioPresent(false)
 	, mbAudioEnded(false)
 	, mAudioSamplesWritten(0)
@@ -152,6 +153,10 @@ void VDDubProcessThread::SetAudioSourcePresent(bool present) {
 
 void VDDubProcessThread::SetAudioCorrector(AudioStreamL3Corrector *pCorrector) {
 	mpAudioCorrector = pCorrector;
+}
+
+void VDDubProcessThread::SetAudioStats(AudioStats *pStats) {
+	mpAudioStats = pStats;
 }
 
 void VDDubProcessThread::SetVideoCompressor(IVDVideoCompressor *pCompressor, int threadCount) {
@@ -424,7 +429,7 @@ abort_requested:
 		if (!mpOutputSystem->IsRealTime()) {
 			// update audio rate...
 
-			if (mpAudioCorrector) {
+			if (mpAudioCorrector || mpAudioStats) {
 				UpdateAudioStreamRate();
 			}
 
@@ -459,17 +464,13 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 	if (count <= 0)
 		return true;
 
-	const int nBlockAlign = mpAudioPipe->GetSampleSize();
-
 	int totalBytes = 0;
 	int totalSamples = 0;
 
 	if (mpAudioPipe->IsVBRModeEnabled()) {
-		mAudioBuffer.resize(nBlockAlign);
-		char *buf = mAudioBuffer.data();
-
+		sint64 totalDuration = 0;
 		VDPROFILEBEGIN("Audio-write");
-		while(totalSamples < count) {
+		while(totalDuration < count) {
 			while(mpAudioPipe->getLevel() < mpAudioPipe->VBRPacketHeaderSize()) {
 				if (mpAudioPipe->isInputClosed()) {
 					mpAudioPipe->CloseOutput();
@@ -498,7 +499,9 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 			tc = mpAudioPipe->ReadPartial(&duration, sizeof(duration));
 			VDASSERT(tc == sizeof(duration));
 
-			VDASSERT(sampleSize <= nBlockAlign);
+			if (mAudioBuffer.size() < sampleSize)
+				mAudioBuffer.resize(sampleSize);
+			char *buf = mAudioBuffer.data();
 
 			int pos = 0;
 
@@ -544,6 +547,7 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 			VDPROFILEEND();
 
 			totalBytes += sampleSize;
+			totalDuration += duration;
 			++totalSamples;
 		}
 ended:
@@ -551,7 +555,11 @@ ended:
 
 		if (!totalSamples)
 			return true;
+
+		mpInterleaver->AdjustSamplesWritten(1, totalDuration-count);
+
 	} else {
+		const int nBlockAlign = mpAudioPipe->GetSampleSize();
 		int bytes = count * nBlockAlign;
 
 		if (mAudioBuffer.size() < bytes)
@@ -623,12 +631,13 @@ ended:
 	//       is generally under 5% and we don't want the beginning of the stream to go
 	//       nuts.
 	if (mpAudioCorrector && mpAudioCorrector->GetFrameCount() >= 20) {
-		vdstructex<WAVEFORMATEX> wfex((const WAVEFORMATEX *)mpAudioOut->getFormat(), mpAudioOut->getFormatLen());
-		
-		double bytesPerSec = mpAudioCorrector->ComputeByterateDouble(wfex->nSamplesPerSec);
-
-		if (mpInterleaver)
+		// nothing to adjust in vbr mode, rate is known and perfect
+		if (!mpAudioPipe->IsVBRModeEnabled() && mpInterleaver) {
+			vdstructex<WAVEFORMATEX> wfex((const WAVEFORMATEX *)mpAudioOut->getFormat(), mpAudioOut->getFormatLen());
+			double bytesPerSec = mpAudioCorrector->ComputeByterateDouble(wfex->nSamplesPerSec);
 			mpInterleaver->AdjustStreamRate(1, bytesPerSec / mpVInfo->mFrameRate.asDouble());
+		}
+
 		UpdateAudioStreamRate();
 	}
 
@@ -638,14 +647,41 @@ ended:
 void VDDubProcessThread::UpdateAudioStreamRate() {
 	vdstructex<WAVEFORMATEX> wfex((const WAVEFORMATEX *)mpAudioOut->getFormat(), mpAudioOut->getFormatLen());
 	
-	wfex->nAvgBytesPerSec = mpAudioCorrector->ComputeByterate(wfex->nSamplesPerSec);
+	if (mpAudioCorrector)
+		wfex->nAvgBytesPerSec = mpAudioCorrector->ComputeByterate(wfex->nSamplesPerSec);
+
+	if (mpAudioStats) {
+		wfex->nAvgBytesPerSec = mpAudioStats->ComputeByterate();
+		if (mpAudioPipe->IsVBRModeEnabled()) {
+			VDXStreamInfo si(mpAudioOut->getStreamInfo());
+			VDXAVIStreamHeader& hdr = si.aviHeader;
+			if (hdr.dwSampleSize==0)
+				hdr.dwLength = uint32(mpAudioStats->packets);
+			else
+				hdr.dwLength = uint32(mpAudioStats->total_bytes / hdr.dwSampleSize);
+
+			// hack for vorbis
+			// ffmpeg writes empty chunks to align variable-length packets
+			// still vorbis is bad idea (some problems with initial packet/delay)
+			if (wfex->wFormatTag==0x566F && si.avcodec_version)
+				hdr.dwLength = uint32(mpAudioStats->total_duration / si.frame_size);
+
+			mpAudioOut->updateStreamInfo(si);
+		}
+	}
 
 	mpAudioOut->setFormat(&*wfex, wfex.size());
 
-	VDXStreamInfo si(mpAudioOut->getStreamInfo());
-	VDXAVIStreamHeader& hdr = si.aviHeader;
-	hdr.dwRate = wfex->nAvgBytesPerSec * hdr.dwScale;
-	mpAudioOut->updateStreamInfo(si);
+	// this math only works for stupid acm interface which does not break packets
+	// acm case: hdr.dwScale = wfex->nBlockAlign = 1
+	// ffmpeg case: hdr.dwScale = 1152, wfex->nBlockAlign = 1152
+	// truth: packet is 1152 samples, size varies (assumed<1152)
+	if (!mpAudioPipe->IsVBRModeEnabled()) {
+		VDXStreamInfo si(mpAudioOut->getStreamInfo());
+		VDXAVIStreamHeader& hdr = si.aviHeader;
+		hdr.dwRate = wfex->nAvgBytesPerSec * hdr.dwScale;
+		mpAudioOut->updateStreamInfo(si);
+	}
 }
 
 void VDDubProcessThread::OnVideoStreamEnded() {

@@ -64,6 +64,7 @@
 
 enum {
 	kFileDialog_WAVAudioIn		= 'wavi',
+	kFileDialog_WAVAudioOut		= 'wavo',
 	kFileDialog_Config			= 'conf',
 	kFileDialog_ImageDst		= 'imgd',
 	kFileDialog_Project 		= 'proj'
@@ -763,7 +764,7 @@ void OpenInput(bool append, bool audio) {
 
 class VDSaveVideoDialogW32 {
 public:
-	VDSaveVideoDialogW32(){ removeAudio=false; }
+	VDSaveVideoDialogW32(){ removeAudio=false; saveVideo=true; }
 
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 	void InitCodec();
@@ -774,45 +775,48 @@ public:
 	AudioSource* inputAudio;
 	bool removeAudio;
 	bool addJob;
+  bool saveVideo;
 };
 
 void VDSaveVideoDialogW32::InitCodec() {
-	VDStringW name;
-	VDPixmapFormatEx format = g_dubOpts.video.mOutputFormat;
-	if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) format = 0;
-	if (g_Vcompression.driver) {
-		ICINFO ici = { sizeof(ICINFO) };
-		if (g_Vcompression.driver->getInfo(ici)) {
-			name = ici.szDescription;
+	if (saveVideo) {
+		VDStringW name;
+		VDPixmapFormatEx format = g_dubOpts.video.mOutputFormat;
+		if (g_dubOpts.video.mode <= DubVideoOptions::M_FASTREPACK) format = 0;
+		if (g_Vcompression.driver) {
+			ICINFO ici = { sizeof(ICINFO) };
+			if (g_Vcompression.driver->getInfo(ici)) {
+				name = ici.szDescription;
+			}
+			int codec_format = g_Vcompression.driver->queryInputFormat(0);
+			if (codec_format) format.format = codec_format;
+		} else {
+			name = VDStringW(L"(Uncompressed RGB/YCbCr)");
 		}
-		int codec_format = g_Vcompression.driver->queryInputFormat(0);
-		if (codec_format) format.format = codec_format;
-	} else {
-		name = VDStringW(L"(Uncompressed RGB/YCbCr)");
+		if (g_dubOpts.video.mode==DubVideoOptions::M_NONE) {
+			name = VDStringW(L"(Stream copy)");
+			EnableWindow(GetDlgItem(mhdlg,IDC_COMPRESSION_CHANGE),false);
+		}
+
+		SetDlgItemTextW(mhdlg,IDC_COMPRESSION,name.c_str());
+
+		MakeOutputFormat make;
+		make.initGlobal();
+		make.initComp(&g_Vcompression);
+		make.option = format;
+		make.combine();
+		make.combineComp();
+
+		VDString s;
+		if (!make.error.empty())
+			s += "Format not accepted";
+		else if (make.mode == DubVideoOptions::M_FASTREPACK)
+			s += "autodetect";
+		else
+			s += VDPixmapFormatPrintSpec(make.out);
+
+		SetDlgItemText(mhdlg,IDC_COMPRESSION2,s.c_str());
 	}
-	if (g_dubOpts.video.mode==DubVideoOptions::M_NONE) {
-		name = VDStringW(L"(Stream copy)");
-		EnableWindow(GetDlgItem(mhdlg,IDC_COMPRESSION_CHANGE),false);
-	}
-
-	SetDlgItemTextW(mhdlg,IDC_COMPRESSION,name.c_str());
-
-	MakeOutputFormat make;
-	make.initGlobal();
-	make.initComp(&g_Vcompression);
-	make.option = format;
-	make.combine();
-	make.combineComp();
-
-	VDString s;
-	if (!make.error.empty())
-		s += "Format not accepted";
-	else if (make.mode == DubVideoOptions::M_FASTREPACK)
-		s += "autodetect";
-	else
-		s += VDPixmapFormatPrintSpec(make.out);
-
-	SetDlgItemText(mhdlg,IDC_COMPRESSION2,s.c_str());
 
 	if (inputAudio) {
 		CheckDlgButton(mhdlg,IDC_ENABLE_AUDIO,removeAudio ? BST_UNCHECKED:BST_CHECKED);
@@ -992,6 +996,8 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 				wchar_t ext[128];
 				char name[128];
 				if(!driver->GetDriver()->EnumFormats(i,filter,ext,name)) break;
+				uint32 caps = driver->GetFormatCaps(i);
+				if ((caps & kFormatCaps_UseVideo)!=kFormatCaps_UseVideo) continue;
 
 				filters += filter;
 				filters += wchar_t(0);
@@ -1037,13 +1043,151 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 		g_FileOutDriver = driver->GetSignatureName();
 		g_FileOutFormat = name;
 		if (!fname.empty())
-			g_project->SavePlugin(fname.c_str(), driver, name, dlg.addJob, dlg.removeAudio);
+			g_project->SavePlugin(fname.c_str(), driver, name, dlg.addJob, dlg.removeAudio, false);
 
 	} else {
 		g_FileOutDriver.clear();
 		g_FileOutFormat.clear();
 		if (!fname.empty())
 			g_project->SaveAVI(fname.c_str(), fUseCompatibility, dlg.addJob, dlg.removeAudio);
+	}
+}
+
+////////////////////////////////////
+
+UINT_PTR CALLBACK SaveAudioProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch(msg){
+	case WM_INITDIALOG:
+		{
+			OPENFILENAMEW* fn = (OPENFILENAMEW*)lParam;
+			VDSaveVideoDialogW32* dlg = (VDSaveVideoDialogW32*)fn->lCustData;
+			SetWindowLongPtr(hdlg, DWLP_USER, (LONG_PTR)dlg);
+			dlg->mhdlg = hdlg;
+			dlg->DlgProc(msg,wParam,lParam);
+			return TRUE;
+		}
+
+	case WM_SIZE:
+	case WM_COMMAND:
+		{
+			VDSaveVideoDialogW32* dlg = (VDSaveVideoDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
+			dlg->DlgProc(msg,wParam,lParam);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+void SaveAudio(HWND hWnd, bool queueAsJob) {
+	if (!inputAudio) {
+		MessageBox(hWnd, "No input audio stream to extract.", g_szError, MB_OK);
+		return;
+	}
+
+	VDSaveVideoDialogW32 dlg;
+  dlg.saveVideo = false;
+	dlg.inputAudio = inputAudio;
+	dlg.addJob = queueAsJob;
+
+	OPENFILENAMEW fn = {sizeof(fn),0};
+	fn.Flags = OFN_ENABLETEMPLATE | OFN_ENABLEHOOK;
+	fn.hInstance = GetModuleHandle(0);
+	fn.lpTemplateName = MAKEINTRESOURCEW(IDD_SAVEAUDIO_FORMAT);
+	fn.lpfnHook = SaveAudioProc;
+	fn.lCustData = (LONG_PTR)&dlg;
+
+	VDStringW filters;
+	filters += L"Windows audio (*.wav, *.w64)";
+	filters += wchar_t(0);
+	filters += L"*.wav;*.w64";
+	filters += wchar_t(0);
+
+	filters += L"Windows audio (*.wav)";
+	filters += wchar_t(0);
+	filters += L"*.wav";
+	filters += wchar_t(0);
+
+	vdfastvector<IVDOutputDriver*> opt_driver;
+	vdfastvector<int> opt_format;
+	opt_driver.push_back(0);
+	opt_format.push_back(0);
+	opt_driver.push_back(0);
+	opt_format.push_back(0);
+
+	int select_filter = 0;
+	VDStringW selectExt = VDStringW(L"wav");
+	if (g_AudioOutFormat == "old_wav") select_filter = 1;
+
+	tVDOutputDrivers drivers;
+	VDGetOutputDrivers(drivers);
+	for(tVDOutputDrivers::const_iterator it(drivers.begin()), itEnd(drivers.end()); it!=itEnd; ++it) {
+		IVDOutputDriver *driver = *it;
+		bool match_driver = g_AudioOutDriver == driver->GetSignatureName();
+		for(int i=0; ; i++){
+			wchar_t filter[128];
+			wchar_t ext[128];
+			char name[128];
+			if(!driver->GetDriver()->EnumFormats(i,filter,ext,name)) break;
+			uint32 caps = driver->GetFormatCaps(i);
+			if ((caps & (kFormatCaps_UseVideo|kFormatCaps_UseAudio))!=kFormatCaps_UseAudio) continue;
+
+			filters += filter;
+			filters += wchar_t(0);
+			filters += ext;
+			filters += wchar_t(0);
+			opt_driver.push_back(driver);
+			opt_format.push_back(i);
+
+			if (match_driver && g_AudioOutFormat == name) {
+				select_filter = opt_format.size()-1;
+				if (wcscmp(ext,L"*.*")!=0)
+					selectExt = VDFileSplitExt(ext)+1;
+			}
+		}
+	}
+
+	filters +=	L"All files (*.*)";
+	filters += wchar_t(0);
+	filters += L"*.*";
+	filters += wchar_t(0);
+	opt_driver.push_back(0);
+	opt_format.push_back(0);
+
+	const wchar_t* title = L"Save File";
+
+	const VDFileDialogOption opts[]={
+		{ VDFileDialogOption::kSelectedFilter_always, 0, NULL, 0, 0},
+		{0}
+	};
+
+	int optvals[]={ select_filter+1 };
+
+	VDStringW fname = VDGetSaveFileName(kFileDialog_WAVAudioOut, (VDGUIHandle)hWnd, title, filters.c_str(), selectExt.c_str(), opts, optvals, &fn);
+	int type = optvals[0]-1;
+	IVDOutputDriver *driver = opt_driver[type];
+	int format = opt_format[type];
+	if (driver) {
+		wchar_t filter[128];
+		wchar_t ext[128];
+		char name[128];
+		driver->GetDriver()->EnumFormats(format,filter,ext,name);
+		g_AudioOutDriver = driver->GetSignatureName();
+		g_AudioOutFormat = name;
+		if (!fname.empty())
+			g_project->SavePlugin(fname.c_str(), driver, name, dlg.addJob, false, true);
+
+	} else {
+		bool enable_w64 = type==0;
+		g_AudioOutDriver.clear();
+		g_AudioOutFormat.clear();
+		if (!enable_w64) g_AudioOutFormat = "old_wav";
+		if (!fname.empty()) {
+			if (dlg.addJob)
+				JobAddConfigurationSaveAudio(g_project, &g_dubOpts, g_szInputAVIFile, g_project->mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, fname.c_str(), false, true, enable_w64);
+			else
+				SaveWAV(fname.c_str(), enable_w64);
+		}
 	}
 }
 

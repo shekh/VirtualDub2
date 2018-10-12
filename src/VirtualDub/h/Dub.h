@@ -162,6 +162,14 @@ public:
 class DubStreamInfo {
 public:
 	sint64	total_size;
+	sint64	offset_num;
+	sint64	offset_den;
+
+	DubStreamInfo() {
+		total_size = 0;
+		offset_num = 0;
+		offset_den = 1;
+	}
 };
 
 class DubAudioStreamInfo : public DubStreamInfo {
@@ -223,7 +231,6 @@ public:
 	virtual ~IDubber()					=0;
 
 	virtual void SetAudioCompression(const VDWaveFormat *wf, uint32 cb, const char *pShortNameHint, vdblock<char>& config) = 0;
-	virtual void SetPhantomVideoMode()=0;
 	virtual void SetInputDisplay(IVDVideoDisplay *pDisplay) = 0;
 	virtual void SetOutputDisplay(IVDVideoDisplay *pDisplay) = 0;
 	virtual void SetAudioFilterGraph(const VDAudioFilterGraph& graph)=0;

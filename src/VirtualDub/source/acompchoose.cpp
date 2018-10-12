@@ -546,6 +546,12 @@ redisplay_formats:
 					ACMTagEntry *pTag = (ACMTagEntry *)SendMessage((HWND)lParam, LB_GETITEMDATA, idx, 0);
 
 					AudioChooseShowFormats(hdlg, pTag, !IsDlgButtonChecked(hdlg, IDC_SHOWALL));
+					HWND hwndItem = GetDlgItem(hdlg, IDC_FORMAT);
+					int cnt = SendMessage(hwndItem, LB_GETCOUNT, 0, 0);
+					if (cnt>0) {
+						SendMessage(hwndItem, LB_SETCURSEL, 0, 0);
+						SendMessage(hdlg, WM_COMMAND, LBN_SELCHANGE<<16, (LPARAM)hwndItem);
+					}
 
 				}
 				return TRUE;

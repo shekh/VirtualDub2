@@ -54,6 +54,8 @@ extern VDAudioFilterGraph	g_audioFilterGraph;
 
 extern VDStringW		g_FileOutDriver;
 extern VDStringA		g_FileOutFormat;
+extern VDStringW		g_AudioOutDriver;
+extern VDStringA		g_AudioOutFormat;
 
 extern bool				g_drawDecompressedFrame;
 extern bool				g_showStatusWindow;
@@ -65,7 +67,7 @@ int AppendAVIAutoscanEnum(const wchar_t *pszFile);
 void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first=false);
 void SaveWAV(const wchar_t *szFilename, bool auto_w64=true, bool fProp = false, DubOptions *quick_opts=NULL);
 void SaveAVI(const wchar_t *szFilename, bool fProp = false, DubOptions *quick_opts=NULL, bool fCompatibility=false, bool removeAudio=false);
-void SavePlugin(const wchar_t *szFilename, IVDOutputDriver* driver, const char* format, bool fProp = false, DubOptions *quick_opts=NULL, bool removeAudio=false);
+void SavePlugin(const wchar_t *szFilename, IVDOutputDriver* driver, const char* format, bool fProp = false, DubOptions *quick_opts=NULL, bool removeAudio=false, bool removeVideo=false);
 void SaveStripedAVI(const wchar_t *szFile);
 void SaveStripeMaster(const wchar_t *szFile);
 void SaveSegmentedAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, long lSpillThreshold, long lSpillFrameThreshold, int digits);

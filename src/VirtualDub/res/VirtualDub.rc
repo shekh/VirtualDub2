@@ -10,7 +10,8 @@
 #include "winresrc.h"
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
-#endif
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -81,7 +82,7 @@ BEGIN
             MENUITEM "Save old format AVI...",      ID_QUEUEBATCHOPERATION_SAVECOMPATIBLEAVI
             MENUITEM "Save segmented AVI...",       ID_QUEUEBATCHOPERATION_SAVESEGMENTEDAVI
             MENUITEM "Save image sequence...",      ID_QUEUEBATCHOPERATION_SAVEIMAGESEQUENCE
-            MENUITEM "Save WAV...",                 ID_QUEUEBATCHOPERATION_SAVEWAV
+            MENUITEM "Save audio...",               ID_QUEUEBATCHOPERATION_SAVEWAV
             MENUITEM SEPARATOR
             MENUITEM "Export raw audio...",         ID_QUEUEBATCHOPERATION_EXPORTRAWAUDIO
             MENUITEM "Export raw video...",         ID_QUEUEBATCHOPERATION_EXPORTRAWVIDEO
@@ -91,7 +92,7 @@ BEGIN
         END
         MENUITEM "File &Information...",        ID_FILE_AVIINFO
         MENUITEM "Set text information...",     ID_FILE_SETTEXTINFO
-        MENUITEM "&Save WAV...",                ID_FILE_SAVEWAV
+        MENUITEM "&Save audio...",              ID_FILE_SAVEWAV
         MENUITEM SEPARATOR
         MENUITEM "Load processing settings...\tCtrl+L", ID_FILE_LOADCONFIGURATION
         MENUITEM "Save processing settings...\tCtrl+S", ID_FILE_SAVECONFIGURATION
@@ -1414,6 +1415,19 @@ BEGIN
     LTEXT           "Sample layout:",IDC_STATIC,304,48,47,8
     EDITTEXT        IDC_AUDIO_INFO,358,46,143,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_TABSTOP
     PUSHBUTTON      "Change",IDC_COMPRESSION_CHANGE2,506,31,50,14
+END
+
+IDD_SAVEAUDIO_FORMAT DIALOGEX 0, 0, 278, 71
+STYLE DS_SETFONT | DS_3DLOOK | DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS
+FONT 8, "MS Sans Serif", 0, 0, 0x0
+BEGIN
+    CONTROL         "Do now",IDC_SAVE_DONOW,"Button",BS_AUTORADIOBUTTON | WS_GROUP,139,7,41,10
+    CONTROL         "Add to job queue",IDC_SAVE_MAKEJOB,"Button",BS_AUTORADIOBUTTON,195,7,70,10
+    LTEXT           "Compression:",-1,7,32,43,8
+    EDITTEXT        IDC_AUDIO_COMPRESSION,61,31,143,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_TABSTOP
+    LTEXT           "Sample layout:",-1,7,48,47,8
+    EDITTEXT        IDC_AUDIO_INFO,61,46,143,12,ES_AUTOHSCROLL | ES_READONLY | NOT WS_TABSTOP
+    PUSHBUTTON      "Change",IDC_COMPRESSION_CHANGE2,209,31,50,14
 END
 
 IDD_CAPTURE_HITOK DIALOG  0, 0, 186, 85
@@ -3090,6 +3104,14 @@ BEGIN
         BOTTOMMARGIN, 64
     END
 
+    IDD_SAVEAUDIO_FORMAT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 271
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 64
+    END
+
     IDD_CAPTURE_HITOK, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -4116,7 +4138,8 @@ END
 //
 #include "version.rc"
 IDR_RESOURCES      STUFF   DISCARDABLE     "virtualdub.vdres"
-
+
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

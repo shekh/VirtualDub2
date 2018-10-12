@@ -19,7 +19,8 @@ class VDINTERFACE IVDOutputDriver : public IVDRefCount {
 public:
 	virtual const wchar_t *	GetSignatureName() = 0;
 	virtual IVDXOutputFileDriver * GetDriver() = 0;
-  virtual VDOutputDriverContextImpl* GetContext() = 0;
+	virtual VDOutputDriverContextImpl* GetContext() = 0;
+	virtual uint32 GetFormatCaps(int i) = 0;
 };
 
 class VDINTERFACE IVDAudioEnc : public IVDRefCount {

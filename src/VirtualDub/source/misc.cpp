@@ -201,8 +201,7 @@ FOURCC toupperFOURCC(FOURCC fcc) {
 	void VDInitExternalCallTrap() {}
 #endif
 
-char *strCify(const char *s) {
-	static char buf[2048];
+char *strCify(const char *s, char* buf) {
 	char c,*t = buf;
 
 	while(c=*s++) {
@@ -217,6 +216,16 @@ char *strCify(const char *s) {
 	*t=0;
 
 	return buf;
+}
+
+char *strCify(const char *s) {
+	static char buf[2048];
+  return strCify(s, buf);
+}
+
+VDStringA strCify(const VDStringA& s) {
+	static char buf[2048];
+  return VDStringA(strCify(s.c_str(), buf));
 }
 
 VDStringA VDEncodeScriptString(const VDStringSpanA& sa) {

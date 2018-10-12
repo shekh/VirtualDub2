@@ -247,6 +247,7 @@
 #define IDD_VIDEO_ENCFORMAT             314
 #define IDC_CAP_POINT                   315
 #define IDD_JUMPTOFRAME2                315
+#define IDD_SAVEAUDIO_FORMAT            316
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002

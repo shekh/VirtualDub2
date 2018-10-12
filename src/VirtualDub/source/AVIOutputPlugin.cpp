@@ -303,6 +303,11 @@ public:
 		return &context;
 	}
 
+	uint32 GetFormatCaps(int i) {
+		if (info->mTypeAPIVersionUsed<2) return kFormatCaps_UseVideo;
+		return plugin->GetFormatCaps(i);
+	}
+
 	VDPluginDescription *mpDesc;
 	const VDPluginInfo *info;
 	VDXOutputDriverDefinition *mpDef;

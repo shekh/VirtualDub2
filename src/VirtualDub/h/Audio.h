@@ -65,7 +65,8 @@ public:
 
 	virtual long _Read(void *buffer, long max_samples, long *lplBytes);
 	virtual long Read(void *buffer, long max_samples, long *lplBytes);
-	virtual sint64 GetLastPacketDuration(){ return -1; }
+	virtual long _ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration);
+	virtual long ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration);
 	virtual bool Skip(sint64 samples);
 	virtual void SetSource(AudioStream *source);
 	virtual void SetLimit(sint64 limit);
@@ -160,7 +161,6 @@ private:
 	bool fVBR;
 	long bytesPerInputSample;
 	long bytesPerOutputSample;
-	sint64 lastPacketDuration;
 
 	char mDriverName[64];
 
@@ -169,15 +169,13 @@ private:
 public:
 	AudioCompressor(AudioStream *src, const VDWaveFormat *dst_format, long dst_format_len, const char *shortNameHint, vdblock<char>& config);
 	~AudioCompressor();
-	void CompensateForMP3();
+	void SkipSource(long samples);
 	bool IsVBR() const;
 	void GetStreamInfo(VDXStreamInfo& si) const;
 	const VDFraction GetSampleRate() const;
 	long _Read(void *buffer, long samples, long *lplBytes);
-	sint64 GetLastPacketDuration(){ return lastPacketDuration; }
+	long _ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration);
 	bool	isEnd();
-
-	bool fNoCorrectLayer3;
 
 protected:
 	bool Process();
@@ -204,15 +202,30 @@ public:
 	AudioStreamL3Corrector(AudioStream *src);
 	~AudioStreamL3Corrector();
 
-	const VDFraction GetSampleRate() const;
-
+	const VDFraction GetSampleRate() const { return source->GetSampleRate(); }
 	bool IsVBR() const { return source->IsVBR(); }
 	void GetStreamInfo(VDXStreamInfo& si) const { source->GetStreamInfo(si); }
-	sint64 GetLastPacketDuration(){ return source->GetLastPacketDuration(); }
 
 	long _Read(void *buffer, long max_samples, long *lplBytes);
-	bool _isEnd();
-	bool Skip(sint64);
+	long _ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration);
+	bool isEnd(){ return source->isEnd(); }
+	bool Skip(sint64 n){ return source->Skip(n); }
+};
+
+class AudioStats : public AudioStream {
+public:
+	uint64 packets, total_bytes, max_sample, total_duration;
+
+	AudioStats(AudioStream *src);
+	const VDFraction GetSampleRate() const { return source->GetSampleRate(); }
+	bool IsVBR() const { return source->IsVBR(); }
+	void GetStreamInfo(VDXStreamInfo& si) const { source->GetStreamInfo(si); }
+
+	long _ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration);
+	bool isEnd(){ return source->isEnd(); }
+	bool Skip(sint64 n){ return source->Skip(n); }
+	long ComputeByterate() const;
+	double ComputeByterateDouble() const;
 };
 
 class AudioSubset : public AudioStream {

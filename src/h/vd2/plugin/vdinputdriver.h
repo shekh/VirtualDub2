@@ -413,9 +413,13 @@ struct VDXStreamControl {
 	// AVFMT_GLOBALHEADER
 	bool global_header;
 
+	// streams preserve relative timing
+	bool use_offsets;
+
 	VDXStreamControl() {
-		version = 1;
+		version = 2;
 		global_header = false;
+		use_offsets = false;
 	}
 };
 
@@ -466,9 +470,13 @@ struct VDXStreamInfo {
 	int initial_padding;
 	int trailing_padding;
 
+	// version >= 2
+	sint64 start_num;
+	sint64 start_den;
+
 	VDXStreamInfo() {
 		memset(&aviHeader,0,sizeof(aviHeader));
-		version = 1;
+		version = 2;
 		avcodec_version = 0;
 
 		format = -1;
@@ -491,6 +499,9 @@ struct VDXStreamInfo {
 		block_align = 0;
 		initial_padding = 0;
 		trailing_padding = 0;
+
+		start_num = 0;
+		start_den = 1;
 	}
 };
 
@@ -512,6 +523,13 @@ struct VDXPictureCompress {
 		dts = VDX_NOPTS_VALUE;
 		duration = 0;
 	}
+};
+
+enum {
+	kFormatCaps_UseVideo = 1,
+	kFormatCaps_UseAudio = 2,
+	kFormatCaps_Wildcard = 4,
+	kFormatCaps_OffsetStreams = 8,
 };
 
 class IVDXOutputFile : public IVDXUnknown {
@@ -543,8 +561,9 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// IVDXInputFileDriver
+// IVDXOutputFileDriver
 //
+
 class IVDXOutputFileDriver : public IVDXUnknown {
 public:
 	enum { kIID = VDXMAKEFOURCC('X', 'o', 'f', 'd') };
@@ -552,6 +571,9 @@ public:
 	virtual bool	VDXAPIENTRY CreateOutputFile(IVDXOutputFile **ppFile) = 0;
 	virtual bool	VDXAPIENTRY EnumFormats(int i, wchar_t* filter, wchar_t* ext, char* name) = 0; // all buffers are 128 chars
 	virtual bool	VDXAPIENTRY GetStreamControl(const wchar_t *path, const char* format, VDXStreamControl& sc){ return true; }
+
+	// V2
+	virtual uint32	VDXAPIENTRY GetFormatCaps(int i){ return kFormatCaps_UseVideo; }
 };
 
 typedef bool (VDXAPIENTRY *VDXOutputDriverCreateProc)(const VDXInputDriverContext *pContext, IVDXOutputFileDriver **);
@@ -568,7 +590,7 @@ struct VDXOutputDriverDefinition {
 
 enum {
 	// V1 (FilterMod): Initial version
-	kVDXPlugin_OutputDriverAPIVersion = 1
+	kVDXPlugin_OutputDriverAPIVersion = 2
 };
 
 ///////////////////////////////////////////////////////////////////////////////

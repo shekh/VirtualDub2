@@ -56,9 +56,10 @@ public:
 
 	void Init(int streams);
 	void EnableInterleaving(bool bEnableInterleave) { mbInterleavingEnabled = bEnableInterleave; }
-	void InitStream(int stream, uint32 nSampleSize, sint32 nPreload, double nSamplesPerFrame, double nInterval, sint32 nMaxPush);
+	void InitStream(int stream, sint32 nPreload, double nSamplesPerFrame, double nInterval, sint32 nMaxPush);
 	void EndStream(int stream);
 	void AdjustStreamRate(int stream, double samplesPerFrame);
+	void AdjustSamplesWritten(int stream, sint32 samples);
 
 	Action GetNextAction(int& streamID, sint32& samples);
 
@@ -66,7 +67,6 @@ protected:
 	struct Stream {
 		sint64		mSamplesWrittenToSegment;
 		sint32		mSamplesToWrite;
-		//sint32		mMaxSampleSize;
 		double		mSamplesPerFrame;
 		double		mSamplesPerFramePending;
 		sint32		mIntervalMicroFrames;

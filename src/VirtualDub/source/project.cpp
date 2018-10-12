@@ -1981,7 +1981,7 @@ void VDProject::SaveAVI(const wchar_t *filename, bool compat, bool addAsJob, boo
 	}
 }
 
-void VDProject::SavePlugin(const wchar_t *filename, IVDOutputDriver* driver, const char* format, bool addAsJob, bool removeAudio) {
+void VDProject::SavePlugin(const wchar_t *filename, IVDOutputDriver* driver, const char* format, bool addAsJob, bool removeAudio, bool removeVideo) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
 
@@ -1990,7 +1990,7 @@ void VDProject::SavePlugin(const wchar_t *filename, IVDOutputDriver* driver, con
 		opts.removeAudio = removeAudio;
 		JobAddConfiguration(this, &opts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), filename, false, &inputAVI->listFiles, 0, 0, true, 0);
 	} else {
-		::SavePlugin(filename, driver, format, false, NULL, removeAudio);
+		::SavePlugin(filename, driver, format, false, NULL, removeAudio, removeVideo);
 	}
 }
 
@@ -2712,9 +2712,6 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 			segmentedOutput = new VDAVIOutputSegmentedSystem(pOutputSystem, opts->audio.is_ms, opts->audio.is_ms ? opts->audio.interval * 0.001 : opts->audio.interval, (double)opts->audio.preload / 500.0, (sint64)lSpillThreshold << 20, lSpillFrameThreshold);
 			g_dubber->Init(&vsrc, 1, &asrc, asrc ? 1 : 0, segmentedOutput, comp, &mTimeline.GetSubset(), mVideoTimelineFrameRate);
 		} else {
-			if (fAudioOnly == 2)
-				g_dubber->SetPhantomVideoMode();
-
 			g_dubber->Init(&vsrc, 1, &asrc, asrc ? 1 : 0, pOutputSystem, comp, &mTimeline.GetSubset(), mVideoTimelineFrameRate);
 		}
 

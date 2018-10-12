@@ -76,6 +76,8 @@ VDAudioFilterGraph	g_audioFilterGraph;
 
 VDStringW		g_FileOutDriver;
 VDStringA		g_FileOutFormat;
+VDStringW		g_AudioOutDriver;
+VDStringA		g_AudioOutFormat;
 
 extern VDProject *g_project;
 
@@ -229,13 +231,17 @@ void SaveWAV(const wchar_t *szFilename, bool auto_w64, bool fProp, DubOptions *q
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SavePlugin(const wchar_t *szFilename, IVDOutputDriver* driver, const char* format, bool fProp, DubOptions *quick_opts, bool removeAudio) {
+void SavePlugin(const wchar_t *szFilename, IVDOutputDriver* driver, const char* format, bool fProp, DubOptions *quick_opts, bool removeAudio, bool removeVideo) {
 	VDAVIOutputPluginSystem fileout(szFilename);
 
 	fileout.SetDriver(driver,format);
 	fileout.SetTextInfo(g_project->GetTextInfo());
 
-	g_project->RunOperation(&fileout, removeAudio ? 3:FALSE, quick_opts, g_prefs.main.iDubPriority, fProp, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	int type = 0;
+	if (removeVideo){ type = 1; fileout.fAudioOnly = true; }
+	if (removeAudio) type = 3;
+
+	g_project->RunOperation(&fileout, type, quick_opts, g_prefs.main.iDubPriority, fProp, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 void SaveAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, bool fCompatibility, bool removeAudio) {

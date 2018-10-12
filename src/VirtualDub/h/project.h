@@ -196,7 +196,7 @@ public:
 	void Close();
 
 	void SaveAVI(const wchar_t *filename, bool compat, bool addAsJob, bool removeAudio);
-	void SavePlugin(const wchar_t *filename, IVDOutputDriver* driver, const char* format, bool addAsJob, bool removeAudio);
+	void SavePlugin(const wchar_t *filename, IVDOutputDriver* driver, const char* format, bool addAsJob, bool removeAudio, bool removeVideo);
 	void SaveFilmstrip(const wchar_t *pFilename, bool propagateErrors);
 	void SaveAnimatedGIF(const wchar_t *pFilename, int loopCount, bool propagateErrors, DubOptions *optsOverride = NULL);
 	void SaveAnimatedPNG(const wchar_t *pFilename, int loopCount, int alpha, int grayscale, bool propagateErrors, DubOptions *optsOverride = NULL);

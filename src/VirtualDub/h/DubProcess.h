@@ -67,6 +67,7 @@ public:
 	void SetVideoFrameSource(VDFilterFrameManualSource *fs);
 	void SetAudioSourcePresent(bool present);
 	void SetAudioCorrector(AudioStreamL3Corrector *pCorrector);
+	void SetAudioStats(AudioStats *pStats);
 	void SetVideoCompressor(IVDVideoCompressor *pCompressor, int maxThreads);
 	void SetVideoFilterSystem(FilterSystem *fs);
 	void SetVideoRequestQueue(VDDubFrameRequestQueue *q);
@@ -129,6 +130,7 @@ protected:
 	// AUDIO SECTION
 	VDAudioPipeline			*mpAudioPipe;
 	AudioStreamL3Corrector	*mpAudioCorrector;
+	AudioStats	*mpAudioStats;
 	bool				mbAudioPresent;
 	bool				mbAudioEnded;
 	uint64				mAudioSamplesWritten;
