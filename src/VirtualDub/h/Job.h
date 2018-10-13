@@ -102,6 +102,7 @@ void SetProject(JobRequest& req, const VDProject* project);
 void JobAddConfiguration(JobRequestVideo& req);
 void JobAddConfigurationImages(JobRequestImages& req);
 void JobAddConfigurationSaveAudio(JobRequestAudio& req);
+void JobAddConfigurationSaveAudioPlugin(JobRequest& req);
 void JobAddConfigurationSaveRawVideo(JobRequestRawVideo& req);
 void JobAddConfigurationExportViaEncoder(JobRequestExtVideo& req);
 void JobAddConfigurationRunVideoAnalysisPass(JobRequest& req);

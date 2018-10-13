@@ -2012,7 +2012,11 @@ void VDProject::SavePlugin(const wchar_t *filename, IVDOutputDriver* driver, con
 		req.opt = &opts;
 		req.fileOutput = filename;
 
-		JobAddConfiguration(req);
+		if (removeVideo)
+			JobAddConfigurationSaveAudioPlugin(req);
+		else
+			JobAddConfiguration(req);
+
 	} else {
 		::SavePlugin(filename, driver, format, false, NULL, removeAudio, removeVideo);
 	}

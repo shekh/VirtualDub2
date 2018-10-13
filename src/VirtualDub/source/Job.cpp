@@ -408,6 +408,19 @@ void JobCreateScript(JobScriptOutput& output, bool project_relative, const DubOp
 	} else
 		output.addf("VirtualDub.SaveFormatAVI();");
 
+	if (!g_AudioOutDriver.empty()) {
+		const VDStringA driver = VDEncodeScriptString(g_AudioOutDriver);
+		output.addf("VirtualDub.SaveAudioFormat(\"%s\",\"%s\");"
+			,driver.c_str()
+			,g_AudioOutFormat.c_str()
+			);
+
+	} else {
+		output.addf("VirtualDub.SaveAudioFormat(\"%s\");"
+			,g_AudioOutFormat.c_str()
+			);
+	}
+
 	output.addf("VirtualDub.video.filters.BeginUpdate();");
 	output.addf("VirtualDub.video.filters.Clear();");
 
@@ -782,6 +795,17 @@ void JobAddConfigurationSaveAudio(JobRequestAudio& req) {
 	JobCreateEntry(output, req);
 }
 
+void JobAddConfigurationSaveAudioPlugin(JobRequest& req) {
+	JobScriptOutput output;
+	JobWriteContent(output, req);
+
+	// Add actual run option
+	VDStringA name = VDEncodeScriptString(req.fileOutput);
+	output.addf("VirtualDub.SaveAudio(\"%s\");", name.c_str());
+
+	JobAddClose(output);
+	JobCreateEntry(output, req);
+}
 
 void JobAddConfigurationSaveRawVideo(JobRequestRawVideo& req) {
 	JobScriptOutput output;

@@ -2081,6 +2081,16 @@ static void func_VirtualDub_SaveFormat(IVDScriptInterpreter *, VDScriptValue *ar
 	}
 }
 
+static void func_VirtualDub_SaveAudioFormat(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	if (arg_count > 1) {
+		g_AudioOutDriver = VDTextAToW(*arglist[0].asString());
+		g_AudioOutFormat = *arglist[1].asString();
+	} else {
+		g_AudioOutDriver.clear();
+		g_AudioOutFormat = *arglist[0].asString();
+	}
+}
+
 static void func_VirtualDub_Preview(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 	DubOptions opts(g_dubOpts);
 	opts.fShowStatus			= false;
@@ -2180,6 +2190,40 @@ static void func_VirtualDub_SaveWAV(IVDScriptInterpreter *, VDScriptValue *argli
 	if (arg_count>0) auto_w64 = arglist[1].asInt()!=0;
 
 	SaveWAV(filename.c_str(), auto_w64, true, &opts);
+}
+
+static void func_VirtualDub_SaveAudio(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	const VDStringW filename(VDTextU8ToW(VDStringA(*arglist[0].asString())));
+	DubOptions opts(g_dubOpts);
+	InitBatchOptions(opts);
+
+	if (g_AudioOutDriver.empty()) {
+		if (g_AudioOutFormat=="old_wav")
+			SaveWAV(filename.c_str(), false, true, &opts);
+		else
+			SaveWAV(filename.c_str(), true, true, &opts);
+		return;
+	}
+
+	IVDOutputDriver *driver = VDGetOutputDriverByName(g_AudioOutDriver.c_str());
+	if (!driver) {
+		VDString drv = VDTextWToA(g_AudioOutDriver);
+		throw MyError("Cannot save audio with '%s': no such driver loaded", drv.c_str());
+	}
+	for(int i=0; ; i++){
+		wchar_t filter[128];
+		wchar_t ext[128];
+		char name[128];
+		if (!driver->GetDriver()->EnumFormats(i,filter,ext,name)) {
+			VDString drv = VDTextWToA(g_AudioOutDriver);
+			throw MyError("Cannot save audio with '%s / %s': no such format supported by driver", drv.c_str(), g_AudioOutFormat.c_str());
+		}
+
+		if (g_AudioOutFormat == name) {
+			SavePlugin(filename.c_str(), driver, name, true, &opts, false, true);
+			return;
+		}
+	}
 }
 
 static void func_VirtualDub_SaveRawAudio(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
@@ -2307,6 +2351,8 @@ static const VDScriptFunctionDef obj_VirtualDub_functbl[]={
 	{ func_VirtualDub_Close,				"Close",				"0" },
 	{ func_VirtualDub_SaveFormat,			"SaveFormatAVI",		"0" },
 	{ func_VirtualDub_SaveFormat,			"SaveFormat",			"0ss" },
+	{ func_VirtualDub_SaveAudioFormat,		"SaveAudioFormat",		"0s" },
+	{ func_VirtualDub_SaveAudioFormat,		"SaveAudioFormat",		"0ss" },
 	{ func_VirtualDub_Preview,			"Preview",				"0" },
 	{ func_VirtualDub_RunNullVideoPass,	"RunNullVideoPass",		"0" },
 	{ func_VirtualDub_SaveAVI,			"SaveAVI",				"0s" },
@@ -2317,6 +2363,7 @@ static const VDScriptFunctionDef obj_VirtualDub_functbl[]={
 	{ func_VirtualDub_SaveImageSequence,	NULL,					"0ssiii" },
 	{ func_VirtualDub_SaveWAV,			"SaveWAV",				"0s" },
 	{ func_VirtualDub_SaveWAV,			NULL,					"0si" },
+	{ func_VirtualDub_SaveAudio,		"SaveAudio",			"0s" },
 	{ func_VirtualDub_SaveRawAudio,		"SaveRawAudio",			"0s" },
 	{ func_VirtualDub_SaveRawVideo,		"SaveRawVideo",			"0siiii" },
 	{ func_VirtualDub_SaveAnimatedGIF,	"SaveAnimatedGIF",		"0si" },
