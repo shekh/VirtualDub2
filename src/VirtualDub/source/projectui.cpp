@@ -1480,10 +1480,15 @@ void VDProjectUI::SaveRawAudioAsk(bool batchMode) {
 
 	const VDStringW filename(VDGetSaveFileName(kFileDialog_RawAudioOut, mhwnd, L"Save raw audio", L"All types\0*.bin;*.mp3\0Raw audio (*.bin)\0*.bin\0MPEG layer III audio (*.mp3)\0*.mp3\0", NULL));
 	if (!filename.empty()) {
-		if (batchMode)
-			JobAddConfigurationSaveAudio(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), true, true, false);
-		else
+		if (batchMode) {
+			JobRequestAudio req;
+			SetProject(req, this);
+			req.raw = true;
+			req.fileOutput = filename;
+			JobAddConfigurationSaveAudio(req);
+		} else {
 			SaveRawAudio(filename.c_str(), false);
+		}
 	}
 }
 
@@ -1608,10 +1613,15 @@ void VDProjectUI::SaveRawVideoAsk(bool batchMode) {
 
 	const VDStringW filename(VDGetSaveFileName(kFileDialog_RawVideoOut, mhwnd, L"Save raw video", L"All types\0*.bin\0Raw YUV (*.yuv)\0*.yuv\0", NULL));
 	if (!filename.empty()) {
-		if (batchMode)
-			JobAddConfigurationSaveVideo(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), true, format);
-		else
+		if (batchMode) {
+			JobRequestRawVideo req;
+			SetProject(req, this);
+			req.format = format;
+			req.fileOutput = filename;
+			JobAddConfigurationSaveRawVideo(req);
+		} else {
 			SaveRawVideo(filename.c_str(), format, false);
+		}
 	}
 }
 
@@ -1751,10 +1761,15 @@ void VDProjectUI::ExportViaEncoderAsk(bool batch) {
 	
 	const VDStringW filename(VDGetSaveFileName(kFileDialog_ExtOut, mhwnd, L"Export via external encoder", filterSpec.c_str(), ext));
 	if (!filename.empty()) {
-		if (batch)
-			JobAddConfigurationExportViaEncoder(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, filename.c_str(), true, eset->mName.c_str());
-		else
+		if (batch) {
+			JobRequestExtVideo req;
+			SetProject(req, this);
+			req.fileOutput = filename;
+			req.encSetName = eset->mName;
+			JobAddConfigurationExportViaEncoder(req);
+		} else {
 			ExportViaEncoder(filename.c_str(), eset->mName.c_str(), false);
+		}
 	}
 }
 
@@ -3943,8 +3958,8 @@ void VDProjectUI::RepositionPanes(bool reset) {
 	for(int i=0; i<n; ++i) {
 		HWND h = panes[i];
 		IVDVideoWindow *w = VDGetIVideoWindow(h);
-		if (h==mhwndInputFrame) mInputZoom = w->GetZoom();
-		if (h==mhwndOutputFrame) mOutputZoom = w->GetZoom();
+		if (h==mhwndInputFrame) mInputZoom = (float)w->GetZoom();
+		if (h==mhwndOutputFrame) mOutputZoom = (float)w->GetZoom();
 	}
 
 	mbPaneLayoutBusy = false;
@@ -5119,8 +5134,8 @@ void VDProjectUI::LoadSettings() {
 	mPaneLayoutMode						= (PaneLayoutMode)key.getEnumInt("Pane layout mode", kPaneLayoutModeCount, mPaneLayoutMode);
 	mbAutoSizeInput						= key.getBool("Auto-size input pane", key.getBool("Auto-size panes", mbAutoSizeInput));
 	mbAutoSizeOutput					= key.getBool("Auto-size output pane", key.getBool("Auto-size panes", mbAutoSizeOutput));
-	mInputZoom							= key.getInt("Input pane size", 100)*0.01;
-	mOutputZoom							= key.getInt("Output pane size", 100)*0.01;
+	mInputZoom							= float(key.getInt("Input pane size", 100)*0.01);
+	mOutputZoom							= float(key.getInt("Output pane size", 100)*0.01);
 	mbMaximize							= key.getBool("Maximize main layout", mbMaximize);
 
 	// these are only saved from the Video Depth dialog.
@@ -5161,8 +5176,8 @@ void VDProjectUI::SaveSettings() {
 	key.setBool("Auto-size panes", mbAutoSizeInput && mbAutoSizeOutput);
 	key.setBool("Auto-size input pane", mbAutoSizeInput);
 	key.setBool("Auto-size output pane", mbAutoSizeOutput);
-	key.setInt("Input pane size", mInputZoom*100);
-	key.setInt("Output pane size", mOutputZoom*100);
+	key.setInt("Input pane size", int(mInputZoom*100));
+	key.setInt("Output pane size", int(mOutputZoom*100));
 	key.setBool("Maximize main layout", mbMaximize);
 }
 

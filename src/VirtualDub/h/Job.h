@@ -33,12 +33,79 @@ void DeinitJobSystem();
 bool JobPollAutoRun();
 void JobSetQueueFile(const wchar_t *filename, bool distributed, bool autorun);
 void JobFlushFilterConfig();
-void JobAddConfiguration(const VDProject* project, const DubOptions *, const wchar_t *szFileInput, const wchar_t *pszInputDriver, int inputFlags, const wchar_t *szFileOutput, bool fUseCompatibility, List2<InputFilenameNode> *pListAppended, long lSpillThreshold, long lSpillFrameThreshold, bool bIncludeEditList, int digits);
-void JobAddConfigurationImages(const VDProject* project, const DubOptions *opt, const wchar_t *szFileInput, const wchar_t *pszInputDriver, int inputFlags, const wchar_t *szFileOutputPrefix, const wchar_t *szFileOutputSuffix, int minDigits, int imageFormat, int quality, List2<InputFilenameNode> *pListAppended);
-void JobAddConfigurationSaveAudio(const VDProject* project, const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended, const wchar_t *dstFile, bool raw, bool includeEditList, bool auto_w64);
-void JobAddConfigurationSaveVideo(const VDProject* project, const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended, const wchar_t *dstFile, bool includeEditList, const VDAVIOutputRawVideoFormat& format);
-void JobAddConfigurationExportViaEncoder(const VDProject* project, const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended, const wchar_t *dstFile, bool includeEditList, const wchar_t *encSetName);
-void JobAddConfigurationRunVideoAnalysisPass(const VDProject* project, const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended, bool includeEditList);
+
+struct JobRequest{
+	const VDProject* project;
+	const DubOptions *opt;
+	const wchar_t *pszInputDriver;
+	int inputFlags;
+	List2<InputFilenameNode> *pListAppended;
+
+	VDStringW fileInput;
+	VDStringW fileOutput;
+	bool bIncludeEditList;
+
+	VDStringW dataSubdir;
+
+	JobRequest() {
+		project = 0;
+		opt = 0;
+		pszInputDriver = 0;
+		inputFlags = 0;
+		pListAppended = 0;
+
+		bIncludeEditList = true;
+	}
+};
+
+struct JobRequestVideo: public JobRequest{
+	bool fCompatibility;
+	long lSpillThreshold;
+	long lSpillFrameThreshold;
+	int spillDigits;
+
+	JobRequestVideo() {
+		fCompatibility = false;
+		lSpillThreshold = 0;
+		lSpillFrameThreshold = 0;
+		spillDigits = 0;
+	}
+};
+
+struct JobRequestAudio: public JobRequest{
+	bool raw;
+	bool auto_w64;
+
+	JobRequestAudio() {
+		raw = false;
+		auto_w64 = true;
+	}
+};
+
+struct JobRequestImages: public JobRequest{
+	VDStringW filePrefix;
+	VDStringW fileSuffix;
+	int minDigits;
+	int imageFormat;
+	int quality;
+};
+
+struct JobRequestRawVideo: public JobRequest{
+	VDAVIOutputRawVideoFormat format;
+};
+
+struct JobRequestExtVideo: public JobRequest{
+	VDStringW encSetName;
+};
+
+void SetProject(JobRequest& req, const VDProject* project);
+void JobAddConfiguration(JobRequestVideo& req);
+void JobAddConfigurationImages(JobRequestImages& req);
+void JobAddConfigurationSaveAudio(JobRequestAudio& req);
+void JobAddConfigurationSaveRawVideo(JobRequestRawVideo& req);
+void JobAddConfigurationExportViaEncoder(JobRequestExtVideo& req);
+void JobAddConfigurationRunVideoAnalysisPass(JobRequest& req);
+
 void JobWriteProjectScript(VDFile& f, const VDProject* project, bool project_relative, const VDStringW& dataSubdir, DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended);
 void JobWriteConfiguration(const wchar_t *filename, DubOptions *, bool bIncludeEditList = true, bool bIncludeTextInfo = true);
 void JobLockDubber();

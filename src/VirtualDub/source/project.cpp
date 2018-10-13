@@ -1923,7 +1923,9 @@ void VDProject::QueueNullVideoPass() {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
 
-	JobAddConfigurationRunVideoAnalysisPass(this, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, true);
+	JobRequest req;
+	SetProject(req, this);
+	JobAddConfigurationRunVideoAnalysisPass(req);
 }
 
 void VDProject::CloseAVI() {
@@ -1975,7 +1977,13 @@ void VDProject::SaveAVI(const wchar_t *filename, bool compat, bool addAsJob, boo
 	if (addAsJob) {
 		DubOptions opts = g_dubOpts;
 		opts.removeAudio = removeAudio;
-		JobAddConfiguration(this, &opts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), filename, compat, &inputAVI->listFiles, 0, 0, true, 0);
+		JobRequestVideo req;
+		SetProject(req, this);
+		req.opt = &opts;
+		req.fileOutput = filename;
+		req.fCompatibility = compat;
+
+		JobAddConfiguration(req);
 	} else {
 		::SaveAVI(filename, false, NULL, compat, removeAudio);
 	}
@@ -1988,7 +1996,12 @@ void VDProject::SavePlugin(const wchar_t *filename, IVDOutputDriver* driver, con
 	if (addAsJob) {
 		DubOptions opts = g_dubOpts;
 		opts.removeAudio = removeAudio;
-		JobAddConfiguration(this, &opts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), filename, false, &inputAVI->listFiles, 0, 0, true, 0);
+		JobRequestVideo req;
+		SetProject(req, this);
+		req.opt = &opts;
+		req.fileOutput = filename;
+
+		JobAddConfiguration(req);
 	} else {
 		::SavePlugin(filename, driver, format, false, NULL, removeAudio, removeVideo);
 	}

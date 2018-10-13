@@ -1183,10 +1183,15 @@ void SaveAudio(HWND hWnd, bool queueAsJob) {
 		g_AudioOutFormat.clear();
 		if (!enable_w64) g_AudioOutFormat = "old_wav";
 		if (!fname.empty()) {
-			if (dlg.addJob)
-				JobAddConfigurationSaveAudio(g_project, &g_dubOpts, g_szInputAVIFile, g_project->mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles, fname.c_str(), false, true, enable_w64);
-			else
+			if (dlg.addJob) {
+				JobRequestAudio req;
+				SetProject(req, g_project);
+				req.auto_w64 = enable_w64;
+				req.fileOutput = fname;
+				JobAddConfigurationSaveAudio(req);
+			} else {
 				SaveWAV(fname.c_str(), enable_w64);
+			}
 		}
 	}
 }
@@ -1199,7 +1204,7 @@ static const char g_szRegKeySegmentSizeLimit[]="Segment size limit";
 static const char g_szRegKeySaveSelectionAndEditList[]="Save edit list";
 static const char g_szRegKeySaveTextInfo[]="Save text info";
 static const char g_szRegKeySegmentDigitCount[]="Segment digit count";
-  
+
 void SaveSegmentedAVI(HWND hWnd, bool queueAsJob) {
 	if (!inputVideo) {
 		MessageBox(hWnd, "No input video stream to process.", g_szError, MB_OK);
@@ -1326,7 +1331,14 @@ void SaveSegmentedAVI(HWND hWnd, bool queueAsJob) {
 		}
 
 		if (queueAsJob) {
-			JobAddConfiguration(0, &g_dubOpts, g_szInputAVIFile, g_project->mInputDriverName.c_str(), inputAVI->GetFileFlags(), fname.c_str(), true, &inputAVI->listFiles, optVals[3], optVals[1] ? optVals[2] : 0, true, digits);
+			JobRequestVideo req;
+			SetProject(req, g_project);
+			req.fileOutput = fname;
+			req.fCompatibility = true;
+			req.lSpillThreshold = optVals[3];
+			if (optVals[1]) req.lSpillFrameThreshold = optVals[2];
+			req.spillDigits = digits;
+			JobAddConfiguration(req);
 		} else {
 			SaveSegmentedAVI(fname.c_str(), false, NULL, optVals[3], optVals[1] ? optVals[2] : 0, digits);
 		}
@@ -1636,10 +1648,18 @@ void SaveImageSeq(HWND hwnd, bool queueAsJob) {
 		if (dlg.mFormat == AVIOutputImages::kFormatPNG)
 			q = dlg.mbQuickCompress ? 0 : 100;
 
-		if (queueAsJob)
-			JobAddConfigurationImages(0, &g_dubOpts, g_szInputAVIFile, g_project->mInputDriverName.c_str(), inputAVI->GetFileFlags(), dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, dlg.mFormat, q, &inputAVI->listFiles);
-		else
+		if (queueAsJob) {
+			JobRequestImages req;
+			SetProject(req, g_project);
+			req.filePrefix = dlg.mFormatString;
+			req.fileSuffix = dlg.mPostfix;
+			req.minDigits = dlg.digits;
+			req.imageFormat = dlg.mFormat;
+			req.quality = q;
+			JobAddConfigurationImages(req);
+		} else {
 			SaveImageSequence(dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, false, NULL, dlg.mFormat, q);
+		}
 	}
 }
 

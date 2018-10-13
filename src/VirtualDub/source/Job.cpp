@@ -678,16 +678,16 @@ static void JobAddClose(JobScriptOutput& output) {
 	output.adds("VirtualDub.Close();");
 }
 
-static void JobCreateEntry(JobScriptOutput& output, const VDProject* project, const VDStringW& dataSubdir, const wchar_t *inputPath, const wchar_t *outputPath) {
+static void JobCreateEntry(JobScriptOutput& output, JobRequest& req) {
 	vdautoptr<VDJob> vdj(new VDJob);
-	vdj->SetInputFile(inputPath);
+	vdj->SetInputFile(req.fileInput.c_str());
 
-	if (outputPath)
-		vdj->SetOutputFile(outputPath);
+	if (!req.fileOutput.empty())
+		vdj->SetOutputFile(req.fileOutput.c_str());
 
-	if (project) {
-		vdj->SetName(project->mProjectName.c_str());
-		vdj->SetProjectSubdir(VDTextWToU8(dataSubdir).c_str());
+	if (req.project) {
+		vdj->SetName(req.project->mProjectName.c_str());
+		vdj->SetProjectSubdir(VDTextWToU8(req.dataSubdir).c_str());
 	}
 
 	const JobScriptOutput::Script& script = output.getscript();
@@ -723,137 +723,108 @@ void JobSaveProjectData(const VDProject* project, VDStringW& dataSubdir) {
 	}
 }
 
-void JobAddConfiguration(const VDProject* project, const DubOptions *opt, const wchar_t *szFileInput, const wchar_t *pszInputDriver, int inputFlags, const wchar_t *szFileOutput, bool fCompatibility, List2<InputFilenameNode> *pListAppended, long lSpillThreshold, long lSpillFrameThreshold, bool bIncludeEditList, int digits) {
-	JobScriptOutput output;
+void JobWriteContent(JobScriptOutput& output, JobRequest& req) {
+	JobSaveProjectData(req.project,req.dataSubdir);
 
-	VDStringW dataSubdir;
-	JobSaveProjectData(project,dataSubdir);
-
-	JobAddConfigurationInputs(output, 0, szFileInput, pszInputDriver, inputFlags, pListAppended);
-	JobCreateScript(output, false, opt, bIncludeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
+	JobAddConfigurationInputs(output, 0, req.fileInput.c_str(), req.pszInputDriver, req.inputFlags, req.pListAppended);
+	JobCreateScript(output, false, req.opt, req.bIncludeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
 	JobAddReloadMarker(output);
+}
 
-	VDStringA sname = VDEncodeScriptString(VDStringW(szFileOutput));
+void JobAddConfiguration(JobRequestVideo& req) {
+	JobScriptOutput output;
+	JobWriteContent(output, req);
+
+	VDStringA sname = VDEncodeScriptString(req.fileOutput);
 
 	// Add actual run option
-	if (lSpillThreshold)
-		output.addf("VirtualDub.SaveSegmentedAVI(\"%s\", %d, %d, %d);", sname.c_str(), lSpillThreshold, lSpillFrameThreshold, digits);
+	if (req.lSpillThreshold)
+		output.addf("VirtualDub.SaveSegmentedAVI(\"%s\", %d, %d, %d);", sname.c_str(), req.lSpillThreshold, req.lSpillFrameThreshold, req.spillDigits);
 	else
-		output.addf("VirtualDub.Save%sAVI(\"%s\");", fCompatibility ? "Compatible" : "", sname.c_str());
+		output.addf("VirtualDub.Save%sAVI(\"%s\");", req.fCompatibility ? "Compatible" : "", sname.c_str());
 
 	JobAddClose(output);
-	JobCreateEntry(output, project, dataSubdir, szFileInput, szFileOutput);
+	JobCreateEntry(output, req);
 }
 
-void JobAddConfigurationImages(const VDProject* project, const DubOptions *opt, const wchar_t *szFileInput, const wchar_t *pszInputDriver, int inputFlags, const wchar_t *szFilePrefix, const wchar_t *szFileSuffix, int minDigits, int imageFormat, int quality, List2<InputFilenameNode> *pListAppended) {
+void JobAddConfigurationImages(JobRequestImages& req) {
 	JobScriptOutput output;
-
-	VDStringW dataSubdir;
-	JobSaveProjectData(project,dataSubdir);
-
-	JobAddConfigurationInputs(output, 0, szFileInput, pszInputDriver, inputFlags, pListAppended);
-	JobCreateScript(output, false, opt);
-	JobAddReloadMarker(output);
+	JobWriteContent(output, req);
 
 	// Add actual run option
-	VDStringA sprefix = VDEncodeScriptString(VDStringW(szFilePrefix));
-	VDStringA ssuffix = VDEncodeScriptString(VDStringW(szFileSuffix));
+	VDStringA sprefix = VDEncodeScriptString(req.filePrefix);
+	VDStringA ssuffix = VDEncodeScriptString(req.fileSuffix);
 
-	output.addf("VirtualDub.SaveImageSequence(\"%s\", \"%s\", %d, %d, %d);", sprefix.c_str(), ssuffix.c_str(), minDigits, imageFormat, quality);
+	output.addf("VirtualDub.SaveImageSequence(\"%s\", \"%s\", %d, %d, %d);", sprefix.c_str(), ssuffix.c_str(), req.minDigits, req.imageFormat, req.quality);
 
 	JobAddClose(output);
 
-	VDStringW outputFile;
-	outputFile.sprintf(L"%ls*%ls", szFilePrefix, szFileSuffix);
-	JobCreateEntry(output, project, dataSubdir, szFileInput, outputFile.c_str());
+	req.fileOutput.sprintf(L"%ls*%ls", req.filePrefix, req.fileSuffix);
+	JobCreateEntry(output, req);
 }
 
-void JobAddConfigurationSaveAudio(const VDProject* project, const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended, const wchar_t *dstFile, bool raw, bool includeEditList, bool auto_w64) {
+void JobAddConfigurationSaveAudio(JobRequestAudio& req) {
 	JobScriptOutput output;
-
-	VDStringW dataSubdir;
-	JobSaveProjectData(project,dataSubdir);
-
-	JobAddConfigurationInputs(output, 0, srcFile, srcInputDriver, inputFlags, pListAppended);
-	JobCreateScript(output, false, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
-	JobAddReloadMarker(output);
+	JobWriteContent(output, req);
 
 	// Add actual run option
-	VDStringA name = VDEncodeScriptString(VDStringW(dstFile));
-	if (raw) {
+	VDStringA name = VDEncodeScriptString(req.fileOutput);
+	if (req.raw) {
 		output.addf("VirtualDub.SaveRawAudio(\"%s\");", name.c_str());
 	} else {
-		if (auto_w64)
+		if (req.auto_w64)
 			output.addf("VirtualDub.SaveWAV(\"%s\");", name.c_str());
 		else
 			output.addf("VirtualDub.SaveWAV(\"%s\", 0);", name.c_str());
 	}
 
 	JobAddClose(output);
-	JobCreateEntry(output, project, dataSubdir, srcFile, dstFile);
+	JobCreateEntry(output, req);
 }
 
 
-void JobAddConfigurationSaveVideo(const VDProject* project, const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended, const wchar_t *dstFile, bool includeEditList, const VDAVIOutputRawVideoFormat& format) {
+void JobAddConfigurationSaveRawVideo(JobRequestRawVideo& req) {
 	JobScriptOutput output;
+	JobWriteContent(output, req);
 
-	VDStringW dataSubdir;
-	JobSaveProjectData(project,dataSubdir);
-
-	JobAddConfigurationInputs(output, 0, srcFile, srcInputDriver, inputFlags, pListAppended);
-	JobCreateScript(output, false, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
-	JobAddReloadMarker(output);
-
-	VDStringA name = VDEncodeScriptString(VDStringW(dstFile));
+	VDStringA name = VDEncodeScriptString(req.fileOutput);
 
 	// Add actual run option
 	output.addf("VirtualDub.SaveRawVideo(\"%s\", %u, %u, %u, %u);"
 		, name.c_str()
-		, format.mOutputFormat
-		, format.mScanlineAlignment
-		, format.mbSwapChromaPlanes
-		, format.mbBottomUp
+		, req.format.mOutputFormat
+		, req.format.mScanlineAlignment
+		, req.format.mbSwapChromaPlanes
+		, req.format.mbBottomUp
 		);
 
 	JobAddClose(output);
-	JobCreateEntry(output, project, dataSubdir, srcFile, dstFile);
+	JobCreateEntry(output, req);
 }
 
-void JobAddConfigurationExportViaEncoder(const VDProject* project, const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended, const wchar_t *dstFile, bool includeEditList, const wchar_t *encSetName) {
+void JobAddConfigurationExportViaEncoder(JobRequestExtVideo& req) {
 	JobScriptOutput output;
-
-	VDStringW dataSubdir;
-	JobSaveProjectData(project,dataSubdir);
-
-	JobAddConfigurationInputs(output, 0, srcFile, srcInputDriver, inputFlags, pListAppended);
-	JobCreateScript(output, false, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
-	JobAddReloadMarker(output);
+	JobWriteContent(output, req);
 
 	// Add actual run option
 	output.addf("VirtualDub.ExportViaEncoderSet(\"%s\", \"%s\");"
-		, VDEncodeScriptString(VDTextWToU8(VDStringW(dstFile))).c_str()
-		, VDEncodeScriptString(VDTextWToU8(VDStringW(encSetName))).c_str()
+		, VDEncodeScriptString(req.fileOutput).c_str()
+		, VDEncodeScriptString(req.encSetName).c_str()
 		);
 
 	JobAddClose(output);
-	JobCreateEntry(output, project, dataSubdir, srcFile, dstFile);
+	JobCreateEntry(output, req);
 }
 
-void JobAddConfigurationRunVideoAnalysisPass(const VDProject* project, const DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended, bool includeEditList) {
+void JobAddConfigurationRunVideoAnalysisPass(JobRequest& req) {
 	JobScriptOutput output;
-
-	VDStringW dataSubdir;
-	JobSaveProjectData(project,dataSubdir);
-
-	JobAddConfigurationInputs(output, 0, srcFile, srcInputDriver, inputFlags, pListAppended);
-	JobCreateScript(output, false, opt, includeEditList ? kVDJobEditListMode_Include : kVDJobEditListMode_Reset);
-	JobAddReloadMarker(output);
+	JobWriteContent(output, req);
 
 	// Add actual run option
 	output.adds("VirtualDub.RunNullVideoPass();");
 
 	JobAddClose(output);
-	JobCreateEntry(output, project, dataSubdir, srcFile, NULL);
+	JobCreateEntry(output, req);
 }
 
 void JobWriteProjectScript(VDFile& f, const VDProject* project, bool project_relative, const VDStringW& dataSubdir, DubOptions *opt, const wchar_t *srcFile, const wchar_t *srcInputDriver, int inputFlags, List2<InputFilenameNode> *pListAppended) {
@@ -961,7 +932,12 @@ void JobSetQueueFile(const wchar_t *filename, bool distributed, bool autorun) {
 }
 
 void JobAddBatchFile(const wchar_t *lpszSrc, const wchar_t *lpszDst) {
-	JobAddConfiguration(0, &g_dubOpts, lpszSrc, 0, 0, lpszDst, false, NULL, 0, 0, false, true);
+	JobRequestVideo req;
+	req.opt = &g_dubOpts;
+	req.bIncludeEditList = false;
+	req.fileInput = lpszSrc;
+	req.fileOutput = lpszDst;
+	JobAddConfiguration(req);
 }
 
 void JobAddBatchDirectory(const wchar_t *lpszSrc, const wchar_t *lpszDst) {
@@ -1007,6 +983,10 @@ void JobAddBatchDirectory(const wchar_t *lpszSrc, const wchar_t *lpszDst) {
 	h = FindFirstFile(VDTextWToA(szSourceDir).c_str(),&wfd);
 
 	if (INVALID_HANDLE_VALUE != h) {
+		JobRequestVideo req;
+		req.opt = &g_dubOpts;
+		req.bIncludeEditList = false;
+
 		do {
 			if (!(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 				wchar_t *t2, *dot = NULL;
@@ -1025,10 +1005,21 @@ void JobAddBatchDirectory(const wchar_t *lpszSrc, const wchar_t *lpszDst) {
 					wcscpy(t2, L".avi");
 
 				// Add job!
+				req.fileInput = szSourceDir;
+				req.fileOutput = szDestDir;
 
-				JobAddConfiguration(0, &g_dubOpts, szSourceDir, 0, 0, szDestDir, false, NULL, 0, 0, false, true);
+				JobAddConfiguration(req);
 			}
 		} while(FindNextFile(h,&wfd));
 		FindClose(h);
 	}
+}
+
+void SetProject(JobRequest& req, const VDProject* project) {
+	req.project = project;
+	req.opt = &g_dubOpts;
+	req.fileInput = g_szInputAVIFile;
+	req.pszInputDriver = g_project->mInputDriverName.c_str();
+	req.inputFlags = inputAVI->GetFileFlags();
+	req.pListAppended = &inputAVI->listFiles;
 }

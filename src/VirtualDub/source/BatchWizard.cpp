@@ -615,7 +615,13 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 						if (id == ID_ADDTOQUEUE_EXTRACTAUDIOASWAV)
 							outputFileName = VDFileSplitExtLeft(outputFileName) + L".wav";
 
-						JobAddConfigurationSaveAudio(0, &g_dubOpts, item->GetFileName(), NULL, 0, NULL, outputFileName.c_str(), raw, false, true);
+						JobRequestAudio req;
+						req.opt = &g_dubOpts;
+						req.bIncludeEditList = false;
+						req.fileInput = item->GetFileName();
+						req.fileOutput = outputFileName;
+						req.raw = raw;
+						JobAddConfigurationSaveAudio(req);
 					}
 				}
 
@@ -633,7 +639,11 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 				for(int i=0; i<n; ++i) {
 					VDUIBatchWizardItem *item = static_cast<VDUIBatchWizardItem *>(mList.GetVirtualItem(i));
 					if (item) {
-						JobAddConfigurationRunVideoAnalysisPass(0, &g_dubOpts, item->GetFileName(), NULL, 0, NULL, false);
+						JobRequest req;
+						req.opt = &g_dubOpts;
+						req.bIncludeEditList = false;
+						req.fileInput = item->GetFileName();
+						JobAddConfigurationRunVideoAnalysisPass(req);
 					}
 				}
 
@@ -666,7 +676,13 @@ bool VDUIBatchWizard::OnCommand(uint32 id, uint32 extcode) {
 						if (!eset->mFileExt.empty())
 							outputFileName = VDFileSplitExtLeft(outputFileName) +L"."+ eset->mFileExt;
 
-						JobAddConfigurationExportViaEncoder(0, &g_dubOpts, item->GetFileName(), NULL, 0, NULL, outputFileName.c_str(), false, eset->mName.c_str());
+						JobRequestExtVideo req;
+						req.opt = &g_dubOpts;
+						req.bIncludeEditList = false;
+						req.fileInput = item->GetFileName();
+						req.fileOutput = outputFileName;
+						req.encSetName = eset->mName;
+						JobAddConfigurationExportViaEncoder(req);
 					}
 				}
 			}
