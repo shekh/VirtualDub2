@@ -176,6 +176,7 @@ public:
 	void SaveData(const VDStringW& path, VDStringW& dataSubdir, bool make_unique=false) const;
 	void SaveProjectPath(const VDStringW& path, const VDStringW& dataSubdir, bool readOnly=false);
 	static void DeleteData(const VDStringW& path, const VDStringW& dataSubdir);
+	static void DeleteProject(const VDStringW& path);
 
 	void Quit();
 	void CmdOpen(const wchar_t *token);

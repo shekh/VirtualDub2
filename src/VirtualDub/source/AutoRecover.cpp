@@ -179,7 +179,7 @@ bool VDUIDialogAutoRecover::OnCommand(uint32 id, uint32 extcode) {
 			if (FileItem *fi = static_cast<FileItem *>(mList.GetSelectedItem())) {
 				if (Confirm(L"Are you sure you want to delete this recovery file?", g_szWarningW)) {
 					try {
-						VDRemoveFile(fi->mFullPath.c_str());
+						VDProject::DeleteProject(fi->mFullPath);
 					} catch(const MyError& e) {
 						e.post(mhdlg, g_szError);
 					}
@@ -197,7 +197,7 @@ bool VDUIDialogAutoRecover::OnCommand(uint32 id, uint32 extcode) {
 					FileItem *fi = mFileItems.back();
 
 					try {
-						VDRemoveFile(fi->mFullPath.c_str());
+						VDProject::DeleteProject(fi->mFullPath);
 					} catch(const MyError&) {
 					}
 

@@ -1282,6 +1282,17 @@ void VDProject::DeleteData(const VDStringW& path, const VDStringW& dataSubdir) {
 	}
 }
 
+void VDProject::DeleteProject(const VDStringW& path) {
+	VDJobQueue jproject;
+	jproject.LoadProject(path.c_str());
+	if (jproject.ListSize()==1) {
+		VDJob* job = jproject.ListGet(0);
+		VDStringA subDir(job->GetProjectSubdir());
+		DeleteData(path, VDTextU8ToW(subDir));
+	}
+	VDRemoveFile(path.c_str());
+}
+
 void VDProject::SaveData(const VDStringW& path, VDStringW& dataSubdir, bool make_unique) const {
 	JobFlushFilterConfig();
 
