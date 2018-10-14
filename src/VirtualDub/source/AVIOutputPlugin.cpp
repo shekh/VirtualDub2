@@ -85,11 +85,9 @@ private:
 		bool	mbIsVideo;
 
 		StreamInfo();
-		~StreamInfo();
 	};
 
-	typedef std::list<StreamInfo> tStreams;
-	tStreams mStreams;
+	std::vector<StreamInfo> mStreams;
 
 	IVDMediaOutputStream	*mpFirstVideoStream;
 	IVDMediaOutputStream	*mpFirstAudioStream;
@@ -121,9 +119,12 @@ public:
 	void partialWriteChunkEnd(int nStream){}
 
 	void finalize();
+	void updateStreamInfo(StreamInfo& st);
 
 	vdrefptr<IVDXOutputFile> outFile;
 	VDOutputDriverContextImpl* mpContext;
+
+  friend class AVIOutputPluginStream;
 };
 
 class AVIOutputPluginStream : public AVIOutputStream {
@@ -136,6 +137,10 @@ public:
 	void partialWrite(const void *pBuffer, uint32 cbBuffer);
 	void partialWriteEnd();
 	bool isAVIFile(){ return false; }
+	virtual void updateStreamInfo(const VDXStreamInfo& hdr) {
+		streamInfo = hdr;
+		mpParent->updateStreamInfo(mpParent->mStreams[mStream]);
+	}
 
 	uint32 plugin_id;
 
@@ -198,14 +203,14 @@ AVIOutputPlugin::AVIOutputPlugin(IVDOutputDriver* driver, const char* format)
 }
 
 AVIOutputPlugin::~AVIOutputPlugin() {
+	for(int i=0; i<mStreams.size(); i++) {
+		StreamInfo& stream = mStreams[i];
+		delete stream.mpStream;
+	}
 }
 
 AVIOutputPlugin::StreamInfo::StreamInfo() {
 	mpStream = 0;
-}
-
-AVIOutputPlugin::StreamInfo::~StreamInfo() {
-	delete mpStream;
 }
 
 void *AVIOutputPlugin::AsInterface(uint32 id) {
@@ -255,10 +260,8 @@ bool AVIOutputPlugin::init(const wchar_t *szFile) {
 		outFile->Init(szFile,format.c_str());
 	}
 
-	tStreams::iterator it(mStreams.begin()), itEnd(mStreams.end());
-
-	for(; it != itEnd; ++it) {
-		StreamInfo& stream = *it;
+	for(int i=0; i<mStreams.size(); i++) {
+		StreamInfo& stream = mStreams[i];
 		AVIOutputPluginStream* s = stream.mpStream;
 
 		if(stream.mbIsVideo){
@@ -278,9 +281,24 @@ bool AVIOutputPlugin::init(const wchar_t *szFile) {
 	return true;
 }
 
+void AVIOutputPlugin::updateStreamInfo(StreamInfo& st) {
+	AVIOutputPluginStream* s = st.mpStream;
+	vdwithoutputplugin(mpContext) {
+		if(st.mbIsVideo){
+			outFile->SetVideo(s->plugin_id,s->getStreamInfo(),s->getFormat(),s->getFormatLen());
+		} else {
+			outFile->SetAudio(s->plugin_id,s->getStreamInfo(),s->getFormat(),s->getFormatLen());
+		}
+	}
+}
+
 void AVIOutputPlugin::finalize() {
 	VDDEBUG("AVIOutputPlugin: Beginning finalize.\n");
 	vdwithoutputplugin(mpContext) {
+		for(int i=0; i<mStreams.size(); i++) {
+			updateStreamInfo(mStreams[i]);
+		}
+
 		outFile->Finalize();
 	}
 	VDDEBUG("AVIOutputPlugin: Finalize successful.\n");

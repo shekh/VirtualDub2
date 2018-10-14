@@ -1780,7 +1780,11 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 		if (bytes < pwfex->mBlockSize)
 			bytes = pwfex->mBlockSize;
 
-		mAudioPipe.Init(bytes - bytes % pwfex->mBlockSize, pwfex->mBlockSize, audioStream->IsVBR());
+		// round to integer
+		if (pwfex->mBlockSize)
+			bytes = bytes - bytes % pwfex->mBlockSize;
+
+		mAudioPipe.Init(bytes, pwfex->mBlockSize, audioStream->IsVBR());
 	}
 }
 

@@ -1513,6 +1513,14 @@ const VDFraction AudioCompressor::GetSampleRate() const {
 	}
 }
 
+void AudioCompressor::UpdateFormat() {
+	if (mpCodec) {
+		long dst_format_len = mpCodec->GetOutputFormatSize();
+		VDWaveFormat *oFormat = AllocFormat(dst_format_len);
+		memcpy(oFormat, mpCodec->GetOutputFormat(), dst_format_len);
+	}
+}
+
 AudioCompressor::~AudioCompressor() {
 }
 

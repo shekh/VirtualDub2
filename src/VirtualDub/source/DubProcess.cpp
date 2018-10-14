@@ -430,6 +430,7 @@ abort_requested:
 			// update audio rate...
 
 			if (mpAudioCorrector || mpAudioStats) {
+				UpdateAudioFormat();
 				UpdateAudioStreamRate();
 			}
 
@@ -488,6 +489,9 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 				mLoopThrottle.EndWait();
 				VDPROFILEEND();
 			}
+
+			// workaround for vorbis delayed initial_padding
+			if (!mAudioSamplesWritten) UpdateAudioDelay();
 
 			// VBRPacketHeader size
 			int sampleSize;
@@ -556,7 +560,7 @@ ended:
 		if (!totalSamples)
 			return true;
 
-		mpInterleaver->AdjustSamplesWritten(1, totalDuration-count);
+		mpInterleaver->AdjustSamplesWritten(1, int(totalDuration-count));
 
 	} else {
 		const int nBlockAlign = mpAudioPipe->GetSampleSize();
@@ -642,6 +646,31 @@ ended:
 	}
 
 	return true;
+}
+
+void VDDubProcessThread::UpdateAudioDelay() {
+	if (!mpAudioStats) return;
+	VDXStreamControl sc;
+	mpOutputSystem->GetStreamControl(sc);
+	if (sc.use_offsets) {
+		VDXStreamInfo si(mpAudioOut->getStreamInfo());
+		VDXStreamInfo si2;
+		mpAudioStats->GetStreamInfo(si2);
+		if (si2.initial_padding != si.initial_padding) {
+			si.initial_padding = si2.initial_padding;
+			si.start_num = -si.initial_padding;
+			si.start_den = mpAudioStats->GetFormat()->mSamplingRate;
+			mpAudioOut->updateStreamInfo(si);
+		}
+	}
+}
+
+void VDDubProcessThread::UpdateAudioFormat() {
+	if (mpAudioStats) {
+		mpAudioStats->UpdateFormat();
+		vdstructex<WAVEFORMATEX> wfex((const WAVEFORMATEX *)mpAudioStats->GetFormat(), mpAudioStats->GetFormatLen());
+		mpAudioOut->setFormat(&*wfex, wfex.size());
+	}
 }
 
 void VDDubProcessThread::UpdateAudioStreamRate() {

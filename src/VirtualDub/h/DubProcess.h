@@ -110,6 +110,8 @@ protected:
 	bool WriteAudio(sint32 count);
 
 	void ThreadRun();
+	void UpdateAudioDelay();
+	void UpdateAudioFormat();
 	void UpdateAudioStreamRate();
 
 	void OnVideoStreamEnded();

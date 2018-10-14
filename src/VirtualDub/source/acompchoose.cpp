@@ -277,7 +277,7 @@ static void AudioChooseDisplaySpecs(HWND hdlg, WAVEFORMATEX *pwfex) {
 	SetDlgItemText(hdlg, IDC_STATIC_DATARATE, buf);
 
 	if (pwfex) {
-		if (pwfex->nAvgBytesPerSec) {
+		if (pwfex->nAvgBytesPerSec && pwfex->nBlockAlign) {
 			blps = MulDiv(pwfex->nAvgBytesPerSec, 10, pwfex->nBlockAlign);
 			wsprintf(buf, "%ld.%c blocks/sec", blps/10, (blps%10)+'0');
 		} else {

@@ -55,6 +55,7 @@ protected:
 public:
 	virtual ~AudioStream();
 
+	virtual void UpdateFormat() {}
 	virtual VDWaveFormat *GetFormat() const;
 	virtual long GetFormatLen() const;
 	virtual sint64 GetSampleCount() const;
@@ -169,6 +170,7 @@ private:
 public:
 	AudioCompressor(AudioStream *src, const VDWaveFormat *dst_format, long dst_format_len, const char *shortNameHint, vdblock<char>& config);
 	~AudioCompressor();
+	void UpdateFormat();
 	void SkipSource(long samples);
 	bool IsVBR() const;
 	void GetStreamInfo(VDXStreamInfo& si) const;
@@ -220,6 +222,9 @@ public:
 	const VDFraction GetSampleRate() const { return source->GetSampleRate(); }
 	bool IsVBR() const { return source->IsVBR(); }
 	void GetStreamInfo(VDXStreamInfo& si) const { source->GetStreamInfo(si); }
+	void UpdateFormat() { source->UpdateFormat(); }
+	VDWaveFormat *GetFormat() const { return source->GetFormat(); }
+	long GetFormatLen() const { return source->GetFormatLen(); }
 
 	long _ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration);
 	bool isEnd(){ return source->isEnd(); }
