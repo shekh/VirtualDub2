@@ -38,6 +38,23 @@ IVDAudioCodec *VDCreateAudioDecompressor(const VDWaveFormat *srcFormat, const VD
 	return NULL;
 }
 
+long fill_silence_pcm(void* buffer, int samples, const VDWaveFormat *wfex) {
+	const int mBlockSize = wfex->mBlockSize;
+
+	if (is_audio_pcm(wfex)) {
+		if (wfex->mSampleBits >= 16)
+			memset(buffer, 0, mBlockSize*samples);
+		else
+			memset(buffer, 0x80, mBlockSize*samples);
+		return mBlockSize*samples;
+	} else if (is_audio_float(wfex)) {
+		memset(buffer, 0, mBlockSize*samples);
+		return mBlockSize*samples;
+	}
+
+	return 0;
+}
+
 bool is_audio_pcm(const VDWaveFormat *wfex) {
 	WAVEFORMATEXTENSIBLE *wfext = (WAVEFORMATEXTENSIBLE*)wfex;
 	if (wfex->mTag == WAVE_FORMAT_PCM) return true;

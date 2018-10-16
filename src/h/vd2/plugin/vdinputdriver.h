@@ -415,11 +415,15 @@ struct VDXStreamControl {
 
 	// streams preserve relative timing
 	bool use_offsets;
+	sint64 timebase_num;
+	sint64 timebase_den;
 
 	VDXStreamControl() {
 		version = 2;
 		global_header = false;
 		use_offsets = false;
+		timebase_num = 0;
+		timebase_den = 0;
 	}
 };
 

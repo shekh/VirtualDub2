@@ -93,6 +93,7 @@ IVDAudioCodec *VDCreateAudioDecompressorMPEG(const VDWaveFormat *srcFormat, cons
 IVDAudioCodec *VDCreateAudioCompressorW32(const VDWaveFormat *srcFormat, const VDWaveFormat *dstFormat, const char *pShortNameDriverHint, bool throwIfNotFound);
 IVDAudioCodec *VDCreateAudioDecompressorW32(const VDWaveFormat *srcFormat, const VDWaveFormat *dstFormat, const char *pShortNameDriverHint, bool throwIfNotFound);
 
+long fill_silence_pcm(void* buf, int samples, const VDWaveFormat *wfex);
 bool is_audio_pcm(const VDWaveFormat *wfex);
 bool is_audio_pcm8(const VDWaveFormat *wfex);
 bool is_audio_pcm16(const VDWaveFormat *wfex);

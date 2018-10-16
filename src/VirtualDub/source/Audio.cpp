@@ -501,15 +501,8 @@ long AudioStreamSource::_Read(void *buffer, long max_samples, long *lplBytes) {
 		if (tc > mPrefill)
 			tc = (long)mPrefill;
 
-		if (is_audio_pcm(wfex)) {
-			if (wfex->mSampleBits >= 16)
-				memset(buffer, 0, mBlockSize*tc);
-			else
-				memset(buffer, 0x80, mBlockSize*tc);
-
-			buffer = (char *)buffer + mBlockSize*tc;
-		} else if (is_audio_float(wfex)) {
-			memset(buffer, 0, mBlockSize*tc);
+		if (is_audio_pcm(wfex) || is_audio_float(wfex)) {
+			fill_silence_pcm(buffer,tc,wfex);
 			buffer = (char *)buffer + mBlockSize*tc;
 		} else {
 			uint32 actualBytes, actualSamples;
@@ -1486,6 +1479,7 @@ AudioCompressor::AudioCompressor(AudioStream *src, const VDWaveFormat *dst_forma
 
 	bytesPerInputSample = iFormat->mBlockSize;
 	bytesPerOutputSample = dst_format->mBlockSize;
+	mPrefill = 0;
 
 	fStreamEnded = FALSE;
 }
@@ -1525,6 +1519,11 @@ AudioCompressor::~AudioCompressor() {
 }
 
 void AudioCompressor::SkipSource(long samples) {
+	if (samples<0) {
+		mPrefill = -samples;
+		return;
+	}
+
 	if (samples && !source->Skip(samples)) {
 		int maxRead = bytesPerInputSample > 16384 ? 1 : 16384 / bytesPerInputSample;
 
@@ -1615,9 +1614,16 @@ bool AudioCompressor::Process() {
 			do {
 				const long samples = left / bytesPerInputSample;
 				long actualBytes;
+				long actualSamples;
 
-				long actualSamples = source->Read(dst, samples, &actualBytes);
-
+				if (mPrefill>0) {
+					long n = samples<mPrefill ? samples:mPrefill;
+					actualSamples = n;
+					mPrefill -= n;
+					actualBytes = fill_silence_pcm(dst, n, source->GetFormat());
+				} else {
+					actualSamples = source->Read(dst, samples, &actualBytes);
+				}
 				VDASSERT(actualSamples * bytesPerInputSample == actualBytes);
 
 				left -= actualBytes;

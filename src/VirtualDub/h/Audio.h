@@ -162,6 +162,7 @@ private:
 	bool fVBR;
 	long bytesPerInputSample;
 	long bytesPerOutputSample;
+	sint64 mPrefill;
 
 	char mDriverName[64];
 

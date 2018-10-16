@@ -1023,9 +1023,20 @@ void Dubber::InitAudioConversionChain() {
 			// initial_padding supposed to work in mkv etc
 			if (!sc.use_offsets) pCompressor->SkipSource(si.initial_padding);
 		}
-		if (sc.use_offsets) {
+		if (sc.use_offsets && si.initial_padding) {
+			long rate = pCompressor->GetFormat()->mSamplingRate;
 			aInfo.offset_num = -si.initial_padding;
-			aInfo.offset_den = pCompressor->GetFormat()->mSamplingRate;
+			aInfo.offset_den = rate;
+			if (sc.timebase_den) {
+				// mkv has limited time accuracy, fix by adding extra samples
+				double r = double(si.initial_padding)*sc.timebase_den/(rate*sc.timebase_num);
+				double offset = ceil(r)*rate*sc.timebase_num/sc.timebase_den;
+				sint64 padding2 = sint64(ceil(offset));
+				if (padding2>aInfo.offset_num) {
+					aInfo.offset_num = -padding2;
+					pCompressor->SkipSource(long(si.initial_padding-padding2));
+				}
+			}
 		}
 
 		if (!g_prefs.fNoCorrectLayer3 && pCompressor->GetFormat()->mTag == WAVE_FORMAT_MPEGLAYER3) {
