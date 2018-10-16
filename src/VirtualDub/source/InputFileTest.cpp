@@ -33,6 +33,35 @@
 
 extern const char g_szError[];
 
+enum {
+	kTest_cube = 0,
+	kTest_cube_tff = 1,
+	kTest_cube_bff = 2,
+	kTest_sub_offset = 3,
+	kTest_levels_rgba = 4,
+	kTest_checker = 5,
+	kTest_zone = 6,
+	kTest_32_tff = 7,
+	kTest_32_bff = 8,
+	kTest_levels_lr = 9,
+	kTest_levels_fr = 10,
+	kTest_gradients = 11,
+};
+
+const char *const kModeNames[]={
+	"RGB color cube",
+	"RGB color cube (TFF)",
+	"RGB color cube (BFF)",
+	"Chroma subsampling offset",
+	"Channel levels (RGBA)",
+	"Checkerboard",
+	"Zone plates",
+	"3:2 pulldown (TFF)",
+	"3:2 pulldown (BFF)",
+	"Channel levels (YCbCr LR)",
+	"Channel levels (YCbCr FR)",
+	"Gradients",
+};
 
 class VDVideoSourceTest : public VideoSource {
 public:
@@ -194,7 +223,7 @@ VDVideoSourceTest::VDVideoSourceTest(int mode, int scale)
 	streamInfo.rcFrameRight				= (uint16)getImageFormat()->biWidth;
 	streamInfo.rcFrameBottom			= (uint16)getImageFormat()->biHeight;
 
-	if (mMode == 7 || mMode == 8) {
+	if (mMode == kTest_32_tff || mMode == kTest_32_bff) {
 		VDTestVidPhysSimulator sim;
 
 		for(int i=0; i<800; ++i) {
@@ -277,27 +306,37 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 
 	if (format==nsVDPixmap::kPixFormat_XRGB64) {
 		switch (mMode) {
-		case 5:
-		case 6:
+		case kTest_checker:
+		case kTest_zone:
+			return false;
+		}
+	}
+
+	if (format==nsVDPixmap::kPixFormat_Y8 || format==nsVDPixmap::kPixFormat_Y8_FR || format==nsVDPixmap::kPixFormat_Y16) {
+		switch (mMode) {
+		case kTest_checker:
+		case kTest_zone:
+		case kTest_32_tff:
+		case kTest_32_bff:
 			return false;
 		}
 	}
 
 	if (format==nsVDPixmap::kPixFormat_YUV444_Planar16 || format==nsVDPixmap::kPixFormat_YUV444_Alpha_Planar16) {
 		switch (mMode) {
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-		case 8:
-		case 9:
-		case 10:
+		case kTest_levels_rgba:
+		case kTest_checker:
+		case kTest_zone:
+		case kTest_32_tff:
+		case kTest_32_bff:
+		case kTest_levels_lr:
+		case kTest_levels_fr:
 			return false;
 		}
 	}
 
 	// Channel level tests always use the temp buffer.
-	if (mMode == 4) {
+	if (mMode == kTest_levels_rgba) {
 		switch(format) {
 		case nsVDPixmap::kPixFormat_XRGB8888:
 		case nsVDPixmap::kPixFormat_XRGB64:
@@ -308,14 +347,14 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 		}
 
 		mbUseTempBuffer = true;
-	} else if (mMode == 9) {
+	} else if (mMode == kTest_levels_lr) {
 		if (finfo->mbIsYUV && Is709)
 			mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar_709);
 		else
 			mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar);
 
 		mbUseTempBuffer = true;
-	} else if (mMode == 10) {
+	} else if (mMode == kTest_levels_fr) {
 		if (finfo->mbIsYUV && Is709)
 			mTempBuffer.init(w, h, nsVDPixmap::kPixFormat_YUV444_Planar_709_FR);
 		else
@@ -367,10 +406,10 @@ bool VDVideoSourceTest::setTargetFormat(VDPixmapFormatEx format) {
 		case nsVDPixmap::kPixFormat_YUV420_Planar_709_FR:
 		case nsVDPixmap::kPixFormat_YUV410_Planar_709_FR:
 			switch(mMode) {
-				case 1:
-				case 2:
-				case 7:
-				case 8:
+				case kTest_cube_tff:
+				case kTest_cube_bff:
+				case kTest_32_tff:
+				case kTest_32_bff:
 					return false;
 			}
 			break;
@@ -559,19 +598,19 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 	ortho.m[2].set(0.0f, 0.0f, 0.0f, 0.0f);
 	ortho.m[3].set(0.0f, 0.0f, 0.0f, 1.0f);
 
-	if (mMode == 0) {
+	if (mMode == kTest_cube) {
 		DrawRotatingCubeFrame(*dst, false, false, (int)frame_num, isyuv);
-	} else if (mMode == 11) {
-		DrawRotatingCubeFrame(*dst, false, false, (int)frame_num, isyuv, 11);
-	} else if (mMode == 1) {
+	} else if (mMode == kTest_gradients) {
+		DrawRotatingCubeFrame(*dst, false, false, (int)frame_num, isyuv, kTest_gradients);
+	} else if (mMode == kTest_cube_tff) {
 		int frameBase = (int)frame_num << 1;
 		DrawRotatingCubeFrame(*dst, true, false, frameBase + 0, isyuv);
 		DrawRotatingCubeFrame(*dst, true, true,  frameBase + 1, isyuv);
-	} else if (mMode == 2) {
+	} else if (mMode == kTest_cube_bff) {
 		int frameBase = (int)frame_num << 1;
 		DrawRotatingCubeFrame(*dst, true, false, frameBase + 1, isyuv);
 		DrawRotatingCubeFrame(*dst, true, true,  frameBase + 0, isyuv);
-	} else if (mMode == 3) {
+	} else if (mMode == kTest_sub_offset) {
 		static const int kIndices[6]={0,2,1,3,4,5};
 		VDTriColorVertex triv[6];
 
@@ -620,7 +659,7 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 		triv[5].x = 260.0f;
 
 		VDPixmapTriFill(*dst, triv, 6, kIndices, 6, &ortho[0][0]);
-	} else if (mMode == 4 || mMode == 9 || mMode == 10) {
+	} else if (mMode == kTest_levels_rgba || mMode == kTest_levels_lr || mMode == kTest_levels_fr) {
 		static const int kIndices[6]={0,1,2,2,1,3};
 		VDTriColorVertex triv[4];
 
@@ -631,14 +670,15 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 
 		int n = 3;
 		float ch = 120.0f;
-		if (mMode==4) { n = 4; ch = 100.0f; }
+		int names = 1;
+		if (mMode==kTest_levels_rgba) { n = 4; ch = 100.0f; names = 0; }
 
 		for(int channel = 0; channel < n; ++channel) {
 			for(int v=0; v<4; ++v) {
 				triv[v].z = 0;
 				triv[v].a = 1.0f;
 
-				if (mMode == 9 || mMode == 10) {
+				if (mMode == kTest_levels_lr || mMode == kTest_levels_fr) {
 					triv[v].x = 90.0f + ((v&1) ? 512.0f : 0.0f);
 					triv[v].y = 40.0f + ch * channel + ((v&2) ? 80.0f : 0.0f);
 					triv[v].r = 128.0f / 255.0f;
@@ -689,7 +729,7 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 			VDPixmapTriFill(*dst, triv, 4, kIndices, 6, &ortho[0][0]);
 
 			VDPixmapPathRasterizer rast;
-			VDPixmapConvertTextToPath(rast, NULL, 24.0f * 64.0f * mScale, 10.0f * 64.0f * mScale, (60.0f + ch * channel) * 64.0f * mScale, kNames[mMode == 9 || mMode == 10][channel]);
+			VDPixmapConvertTextToPath(rast, NULL, 24.0f * 64.0f * mScale, 10.0f * 64.0f * mScale, (60.0f + ch * channel) * 64.0f * mScale, kNames[names][channel]);
 
 			VDPixmapRegion region;
 			VDPixmapRegion border;
@@ -702,7 +742,7 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 			VDPixmapFillPixmapAntialiased8x(*dst, border, 0, 0, black);
 			VDPixmapFillPixmapAntialiased8x(*dst, region, 0, 0, textcolor);
 
-			if ((mMode == 9 || mMode == 10) && channel == 1) {
+			if ((mMode == kTest_levels_lr || mMode == kTest_levels_fr) && channel == 1) {
 				// Draw double limited range ramp
 				triv[0].y = triv[1].y = 160.0f;
 				triv[2].y = triv[3].y = 180.0f;
@@ -778,7 +818,7 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 				}
 			}
 		}
-	} else if (mMode == 5) {
+	} else if (mMode == kTest_checker) {
 		uint8 *dstrow = (uint8 *)dst->data;
 		for(int y=0; y<dst->h; ++y) {
 			uint8 *dstp = dstrow;
@@ -801,7 +841,7 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 
 			vdptrstep(dstrow, dst->pitch);
 		}
-	} else if (mMode == 6) {
+	} else if (mMode == kTest_zone) {
 		switch(dst->format) {
 		case nsVDPixmap::kPixFormat_XRGB8888:
 			DrawZonePlateXRGB8888(*dst, 112*mScale,  16*mScale, 192*mScale, 192*mScale, 0x01010000);
@@ -822,7 +862,7 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 			DrawZonePlateA8(*dst, 2, 336*mScale, 224*mScale, 192*mScale, 192*mScale, 0, 255);
 			break;
 		}
-	} else if (mMode == 7) {
+	} else if (mMode == kTest_32_tff) {
 		// A1 A1 B1 C1 D1
 		// A2 B2 C2 C2 D2
 		int frame32 = (int)frame_num;
@@ -855,7 +895,7 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 		}
 
 		VDPixmapBlt(*dst, mRGB32Buffer);
-	} else if (mMode == 8) {
+	} else if (mMode == kTest_32_bff) {
 		// A1 B1 C1 C1 D1
 		// A2 A2 B2 C2 D2
 		int frame32 = (int)frame_num;
@@ -891,21 +931,6 @@ const void *VDVideoSourceTest::streamGetFrame(const void *inputBuffer, uint32 da
 	}
 
 	// draw text
-	static const char *const kModeNames[]={
-		"RGB color cube",
-		"RGB color cube (TFF)",
-		"RGB color cube (BFF)",
-		"Chroma subsampling offset",
-		"Channel levels (RGBA)",
-		"Checkerboard",
-		"Zone plates",
-		"3:2 pulldown (TFF)",
-		"3:2 pulldown (BFF)",
-		"Channel levels (YCbCr LR)",
-		"Channel levels (YCbCr FR)",
-		"Gradients",
-	};
-
 	const char* mode_name = mMode<sizeof(kModeNames)/sizeof(char*) ? kModeNames[mMode] : "Unknown mode";
 
 	VDStringA buf;
@@ -967,7 +992,7 @@ void VDVideoSourceTest::DrawRotatingCubeFrame(VDPixmap& dst, bool interlaced, bo
 		float r = (i&1) ? 1.0f : 0.0f;
 		float g = (i&2) ? 1.0f : 0.0f;
 		float b = (i&4) ? 1.0f : 0.0f;
-		if (variant==11) {
+		if (variant==kTest_gradients) {
 			r = (i&1) ? 0.6f : 0.4f;
 			g = (i&2) ? 0.6f : 0.4f;
 			b = (i&4) ? 0.6f : 0.4f;
@@ -1009,7 +1034,7 @@ void VDVideoSourceTest::DrawRotatingCubeFrame(VDPixmap& dst, bool interlaced, bo
 
 	float size = 10.0f;
 	float pos = -50.0f;
-	if (variant==11) {
+	if (variant==kTest_gradients) {
 		size = -10.0f;
 		pos = 0.0f;
 		vertices[1].a = 0.0f;
