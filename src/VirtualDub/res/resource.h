@@ -1550,6 +1550,7 @@
 #define ID_WAVEFORMSCALE_X4             40608
 #define ID_WAVEFORMSCALE_X8             40609
 #define ID_WAVEFORMSCALE_X16            40610
+#define ID_CAPTURE_DSHOWGRAPH           40611
 #define ID_AUDIOMODE_11KHZ_8MONO        41000
 #define ID_AUDIOMODE_11KHZ_8STEREO      41001
 #define ID_AUDIOMODE_11KHZ_16MONO       41002
@@ -1606,7 +1607,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        316
-#define _APS_NEXT_COMMAND_VALUE         40611
+#define _APS_NEXT_COMMAND_VALUE         40612
 #define _APS_NEXT_CONTROL_VALUE         1572
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

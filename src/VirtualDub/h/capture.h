@@ -379,6 +379,7 @@ public:
 	virtual bool	IsDriverConnected() = 0;
 	virtual int		GetConnectedDriverIndex() = 0;
 	virtual const wchar_t *GetConnectedDriverName() = 0;
+	virtual void  DumpDriverStatus() = 0;
 
 	virtual void	Capture(bool bTest) = 0;
 	virtual void	CaptureStop() = 0;

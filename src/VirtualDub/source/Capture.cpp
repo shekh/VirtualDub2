@@ -752,6 +752,7 @@ public:
 	bool	IsDriverConnected();
 	int		GetConnectedDriverIndex();
 	const wchar_t *GetConnectedDriverName() { return GetDriverName(GetConnectedDriverIndex()); }
+	virtual void  DumpDriverStatus() { if(mpDriver) mpDriver->DisplayDump(); }
 
 	void	Capture(bool bTest);
 	void	CaptureStop();

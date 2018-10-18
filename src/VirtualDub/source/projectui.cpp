@@ -1067,7 +1067,11 @@ void VDProjectUI::Detach() {
 	}
 
 	extern void VDCloseProfileWindow();
+	extern void ShutdownLogWindow();
+	extern void ShutdownStatusWindow();
 	VDCloseProfileWindow();
+	ShutdownLogWindow();
+	ShutdownStatusWindow();
 
 	VDProject::Detach();
 }

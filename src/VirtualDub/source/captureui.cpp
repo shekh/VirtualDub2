@@ -785,6 +785,12 @@ void VDCaptureProjectUI::Detach() {
 	ShutdownTimingGraph();
 	ShutdownVideoHistogram();
 	ShutdownVumeter();
+	extern void VDCloseProfileWindow();
+	extern void ShutdownLogWindow();
+	extern void ShutdownStatusWindow();
+	VDCloseProfileWindow();
+	ShutdownLogWindow();
+	ShutdownStatusWindow();
 
 	ShutdownHotKeys();
 
@@ -3213,6 +3219,8 @@ bool VDCaptureProjectUI::OnCaptureSafeCommand(UINT id) {
 		VDShowHelp((HWND)mhwnd);
 		break;
 	case ID_CAPTURE_SHOWPROFILER:
+	case ID_CAPTURE_SHOWLOG:
+	case ID_CAPTURE_DSHOWGRAPH:
 		return OnCommand(id);
 	}
 	return 0;
@@ -3660,6 +3668,10 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 		case ID_CAPTURE_SHOWLOG:
 			extern void VDOpenLogWindow();
 			VDOpenLogWindow();
+			break;
+
+		case ID_CAPTURE_DSHOWGRAPH:
+			mpProject->DumpDriverStatus();
 			break;
 
 		case ID_CAPTURE_DISKIO:

@@ -1091,6 +1091,10 @@ namespace {
 	}
 }
 
+void VDShowDebugText(HWND parent, const char* s) {
+	DialogBoxParamA(g_hInst, MAKEINTRESOURCE(IDD_DUMPSTATUS), parent, DumpStatusDlgProc, (LPARAM)s);
+}
+
 void DubStatus::DumpStatus() {
 	if (!pDubber) return;
 
@@ -1102,7 +1106,7 @@ void DubStatus::DumpStatus() {
 
 	vs.Finalize();
 
-	DialogBoxParamA(g_hInst, MAKEINTRESOURCE(IDD_DUMPSTATUS), hwndStatus, DumpStatusDlgProc, (LPARAM)vs.GetText());
+	VDShowDebugText(hwndStatus, vs.GetText());
 }
 
 bool DubStatus::ToggleStatus() {

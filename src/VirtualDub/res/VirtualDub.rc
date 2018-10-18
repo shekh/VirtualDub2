@@ -10,8 +10,7 @@
 #include "winresrc.h"
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
-#endif
-
+#endif
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -436,6 +435,7 @@ BEGIN
         MENUITEM "Show status bar",             ID_CAPTURE_STATUSBAR
         MENUITEM "Timing graph",                ID_CAPTURE_TIMINGGRAPH
         MENUITEM "&Log\tF8",                    ID_CAPTURE_SHOWLOG
+        MENUITEM "DShow Graph",                 ID_CAPTURE_DSHOWGRAPH
         MENUITEM "Enable multisegment capture", ID_CAPTURE_ENABLESPILL
         MENUITEM "Start capture on left-click in pane", ID_CAPTURE_STARTONLEFT
         MENUITEM "&Autoincrement filename after capture", ID_CAPTURE_AUTOINCREMENT
@@ -2447,11 +2447,11 @@ BEGIN
 END
 
 IDD_DUMPSTATUS DIALOGEX 0, 0, 358, 228
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 CAPTION "Status Dump"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    EDITTEXT        IDC_EDIT,0,0,357,227,ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | WS_VSCROLL | WS_HSCROLL
+    EDITTEXT        IDC_EDIT,0,0,358,228,ES_MULTILINE | ES_AUTOHSCROLL | ES_READONLY | WS_VSCROLL | WS_HSCROLL
 END
 
 IDD_OUTPUT_RAWVIDEO DIALOGEX 0, 0, 375, 119
@@ -4138,8 +4138,7 @@ END
 //
 #include "version.rc"
 IDR_RESOURCES      STUFF   DISCARDABLE     "virtualdub.vdres"
-
-
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

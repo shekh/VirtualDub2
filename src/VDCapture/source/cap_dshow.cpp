@@ -47,6 +47,7 @@ using namespace nsVDCapture;
 #pragma comment(lib, "amstrmid.lib")
 
 extern HINSTANCE g_hInst;
+extern void VDShowDebugText(HWND parent, const char* s);
 
 #ifdef _MSC_VER
 	#pragma warning(disable: 4355)		// warning C4355: 'this' : used in base member initializer list
@@ -62,7 +63,7 @@ void VDLogDS(const char* msg, HRESULT hr){
 }
 
 #ifdef _DEBUG
-	#define DS_VERIFY(exp, msg) if (FAILED(hr = (exp))) { VDLogDS(msg,hr); VDDEBUG("Failed: " msg " [%08lx : %s]\n", hr, GetDXErrorName(hr)); VDDumpFilterGraphDShow(mpGraph); TearDownGraph(); return false; } else
+	#define DS_VERIFY(exp, msg) if (FAILED(hr = (exp))) { VDLogDS(msg,hr); VDDEBUG("Failed: " msg " [%08lx : %s]\n", hr, GetDXErrorName(hr)); VDDEBUG(VDDumpFilterGraphDShow(mpGraph).c_str()); TearDownGraph(); return false; } else
 #else
 	#define DS_VERIFY(exp, msg) if (FAILED(hr = (exp))) { VDLogDS(msg,hr); TearDownGraph(); return false; } else
 #endif
@@ -945,7 +946,7 @@ namespace cap_dshow {
 		return inGraph;
 	}
 
-	void VDDumpFilterGraphDShow(IFilterGraph *pGraph) {
+	VDStringA VDDumpFilterGraphDShow(IFilterGraph *pGraph) {
 		std::list<IBaseFilterPtr> filters;
 
 		IEnumFiltersPtr pEnumFilters;
@@ -968,7 +969,9 @@ namespace cap_dshow {
 			pEnumFilters = NULL;
 		}
 
-		VDDEBUG("Filter graph %p:\n", &*pGraph);
+		VDStringA buf;
+
+		buf.append_sprintf("Filter graph %p:\r\n", &*pGraph);
 
 		IMediaFilterPtr pGraphMF;
 		if (SUCCEEDED(pGraph->QueryInterface(IID_IMediaFilter, (void **)~pGraphMF))) {
@@ -977,9 +980,9 @@ namespace cap_dshow {
 			if (SUCCEEDED(pGraphMF->GetSyncSource(~pRefClock))) {
 				IBaseFilterPtr pRefFilter;
 				if (!pRefClock)
-					VDDEBUG("  Reference clock: none\n");
+					buf.append_sprintf("  Reference clock: none\r\n");
 				else if (SUCCEEDED(pRefClock->QueryInterface(IID_IFilterGraph, (void **)~IFilterGraphPtr())))
-					VDDEBUG("  Reference clock: filter graph\n");
+					buf.append_sprintf("  Reference clock: filter graph\r\n");
 				else if (SUCCEEDED(pRefClock->QueryInterface(IID_IBaseFilter, (void **)~pRefFilter))) {
 					FILTER_INFO fi;
 
@@ -987,10 +990,10 @@ namespace cap_dshow {
 						if (fi.pGraph)
 							fi.pGraph->Release();
 
-						VDDEBUG("  Reference clock: filter \"%ls\"\n", fi.achName);
+						buf.append_sprintf("  Reference clock: filter \"%s\"\r\n", VDTextWToA(fi.achName).c_str());
 					}
 				} else if (pRefClock)
-					VDDEBUG("  Reference clock: unknown\n");
+					buf.append_sprintf("  Reference clock: unknown\r\n");
 			}
 		}
 
@@ -1005,7 +1008,7 @@ namespace cap_dshow {
 			if (SUCCEEDED(pFilter->QueryFilterInfo(&fi))) {
 				fi.pGraph->Release();
 			}
-			VDDEBUG("  Filter %p [%ls]:\n", &*pFilter, fi.achName);
+			buf.append_sprintf("  Filter %p [%s]:\r\n", &*pFilter, VDTextWToA(fi.achName).c_str());
 
 			IEnumPinsPtr pEnumPins;
 			if (SUCCEEDED(pFilter->EnumPins(~pEnumPins))) {
@@ -1018,7 +1021,7 @@ namespace cap_dshow {
 					PIN_INFO pi;
 					VDVERIFY(SUCCEEDED(pPin->QueryPinInfo(&pi)));
 					pi.pFilter->Release();
-					VDDEBUG("    Pin \"%ls\" (%s): ", pi.achName, pi.dir == PINDIR_INPUT ? "input " : "output");
+					buf.append_sprintf("    Pin \"%s\" (%s): ", VDTextWToA(pi.achName).c_str(), pi.dir == PINDIR_INPUT ? "input" : "output");
 
 					IPinPtr pPinConn;
 					if (SUCCEEDED(pPin->ConnectedTo(~pPinConn))) {
@@ -1026,15 +1029,16 @@ namespace cap_dshow {
 						FILTER_INFO fi2;
 						VDVERIFY(SUCCEEDED(pPinConn->QueryPinInfo(&pi2)));
 						VDVERIFY(SUCCEEDED(pi2.pFilter->QueryFilterInfo(&fi2)));
-						VDDEBUG(" connected to pin \"%ls\" of filter \"%ls\"\n", pi2.achName, fi2.achName);
+						buf.append_sprintf(" connected to pin \"%s\" of filter \"%s\"\r\n", VDTextWToA(pi2.achName).c_str(), VDTextWToA(fi2.achName).c_str());
 						fi2.pGraph->Release();
 						pi2.pFilter->Release();
 					} else
-						VDDEBUG(" unconnected\n");
+						buf.append_sprintf(" unconnected\r\n");
 				}
 			}
 		}
-		VDDEBUG("\n");
+		buf.append_sprintf("\r\n");
+		return buf;
 	}
 
 	bool VDSaveFilterGraphDShow(const wchar_t *filename, IFilterGraph *pGraph) {
@@ -1645,6 +1649,7 @@ public:
 
 	bool	IsDriverDialogSupported(nsVDCapture::DriverDialog dlg);
 	void	DisplayDriverDialog(nsVDCapture::DriverDialog dlg);
+	void	DisplayDump();
 
 	bool	IsPropertySupported(uint32 id);
 	sint32	GetPropertyInt(uint32 id, bool *pAutomatic);
@@ -1788,6 +1793,7 @@ protected:
 	HWND mhwndParent;					// Parent window
 	HWND mhwndEventSink;				// Our dummy window used as DS event sink
 	vdrect32 mDisplayRect;
+	VDStringA graph_dump;
 
 	uint32	mUpdateLocks;
 	bool	mbUpdatePending;
@@ -4313,7 +4319,7 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 	}
 
 	// Dump the graph to stdout.
-	VDDumpFilterGraphDShow(mpGraphBuilder);
+	graph_dump = VDDumpFilterGraphDShow(mpGraphBuilder);
 
 	// Check for a window and return.
 	CheckForWindow();
@@ -4322,6 +4328,11 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 	CheckForChanges();
 
 	return true;
+}
+
+void VDCaptureDriverDS::DisplayDump() {
+	extern void VDShowStatus(VDStringA& s);
+	VDShowStatus(graph_dump);
 }
 
 //
@@ -4420,46 +4431,49 @@ void VDCaptureDriverDS::CheckForWindow() {
 	VDDEBUG("Riza/CapDShow: %u windows found.\n", mVideoWindows.size());
 
 	// Only overlay and preview modes use DirectShow displays
-	if (mDisplayMode == kDisplayNone || mDisplayMode == kDisplayAnalyze)
+	if (mDisplayMode == kDisplayNone || mDisplayMode == kDisplayAnalyze) {
+		if (!mpCapFiltVideoPortPin) VDLog(kVDLogInfo, VDStringW(L"CapDShow: %u windows found in graph.\n", mVideoWindows.size()));
 		return;
+	}
 
 	// Look for the one video window we do want to show. The order is capture, then
 	// preview, then video port. We'll always have at least one if display is enabled,
 	// and possibly two if we hide the video port (we always have to have it).
 
-	IBaseFilterPtr pFilter;
-	bool success = false;
-
 	// try capture pin first
-	if (mpRealCapturePin) {
-		success = VDGetFilterConnectedToPinDShow(mpRealCapturePin, ~pFilter);
-		if (success) {
-			HRESULT hr = mpCapGraphBuilder2->FindInterface(&LOOK_DOWNSTREAM_ONLY, NULL, pFilter, IID_IVideoWindow, (void **)~mpVideoWindow);
-			success = SUCCEEDED(hr);
-		}
-	}
-
 	// next, try preview pin
-	if (!success && mpRealPreviewPin) {
-		success = VDGetFilterConnectedToPinDShow(mpRealPreviewPin, ~pFilter);
-		if (success) {
-			HRESULT hr = mpCapGraphBuilder2->FindInterface(&LOOK_DOWNSTREAM_ONLY, NULL, pFilter, IID_IVideoWindow, (void **)~mpVideoWindow);
-			success = SUCCEEDED(hr);
-		}
-	}
-
 	// try video port
-	if (!success && mpCapFiltVideoPortPin) {
-		success = VDGetFilterConnectedToPinDShow(mpCapFiltVideoPortPin, ~pFilter);
-		if (success) {
-			HRESULT hr = mpCapGraphBuilder2->FindInterface(&LOOK_DOWNSTREAM_ONLY, NULL, pFilter, IID_IVideoWindow, (void **)~mpVideoWindow);
-			success = SUCCEEDED(hr);
+	IPinPtr display_pin[3] = {mpRealCapturePin, mpRealPreviewPin, mpCapFiltVideoPortPin};
+	IPinPtr success_pin = 0;
+
+	{for(int i=0; i<3; i++){
+		IPinPtr pin = display_pin[i];
+		if(!pin) continue;
+		IBaseFilterPtr pFilter;
+		if (!VDGetFilterConnectedToPinDShow(pin, ~pFilter)) continue;
+		HRESULT hr = pFilter->QueryInterface(IID_IVideoWindow,(void **)~mpVideoWindow);
+		if (SUCCEEDED(hr)) {
+			success_pin = pin;
+			break;
 		}
+		hr = mpCapGraphBuilder2->FindInterface(&LOOK_DOWNSTREAM_ONLY, NULL, pFilter, IID_IVideoWindow, (void **)~mpVideoWindow);
+		if (SUCCEEDED(hr)) {
+			success_pin = pin;
+			break;
+		}
+	}}
+
+	if (mDisplayMode==kDisplayHardware) {
+		if (!mpRealPreviewPin) VDLog(kVDLogInfo, VDStringW(L"CapDShow: Preview pin not found on capture device.\n"));
+		if (success_pin==mpRealCapturePin) VDLog(kVDLogInfo, VDStringW(L"CapDShow: Switching to software display.\n"));
 	}
 
 	// okay... use any others
-	if (!success && !mVideoWindows.empty())
+	//! is this normal?
+	if (!success_pin && !mVideoWindows.empty()) {
 		mpVideoWindow = mVideoWindows.front();
+		VDLog(kVDLogWarning, VDStringW(L"CapDShow: Switching to any available display.\n"));
+	}
 
 	// if we have a video window, configure it
 	if (mpVideoWindow) {
@@ -4481,6 +4495,8 @@ void VDCaptureDriverDS::CheckForWindow() {
 
 		SetDisplayRect(mDisplayRect);
 		mpVideoWindow->put_Owner((OAHWND)mhwndParent);
+	} else {
+		VDLog(kVDLogWarning, VDStringW(L"CapDShow: No video window found in graph.\n"));
 	}
 }
 

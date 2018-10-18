@@ -44,6 +44,7 @@ extern "C" char version_date[];
 extern HINSTANCE g_hInst;
 
 static volatile HWND g_hwndLogWindow = NULL;
+static volatile HWND g_hwndStatusWindow = NULL;
 static volatile HWND g_hwndProfileWindow = NULL;
 extern vdrefptr<VDProjectUI> g_projectui;
 
@@ -97,6 +98,97 @@ extern void VDOpenLogWindow() {
 	}
 }
 
+extern void ShutdownLogWindow() {
+	if (!g_hwndLogWindow) return;
+	DWORD thid = GetWindowThreadProcessId(g_hwndLogWindow,0);
+	HANDLE h = OpenThread(SYNCHRONIZE,false,thid);
+	PostMessage(g_hwndLogWindow,WM_CLOSE,0,0);
+	WaitForSingleObject(h,1000);
+}
+
+class VDStatusWindowThread : public VDThread {
+public:
+	VDSignal mReady;
+	VDStringA s;
+
+	VDStatusWindowThread() : VDThread("Status Window") {}
+
+	void ThreadRun() {
+		VDStringA s = this->s;
+		mReady.signal();
+		// There is a race condition here that can allow two log windows to appear,
+		// but that is not a big deal.
+		if (!g_hwndStatusWindow) {
+			DialogBoxParam(g_hInst, MAKEINTRESOURCE(IDD_DUMPSTATUS), NULL, StatusDlgProc, (LPARAM)s.c_str());
+			g_hwndStatusWindow = 0;
+		} else {
+			SetText(g_hwndStatusWindow,s.c_str());
+			SetWindowPos(g_hwndStatusWindow, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE);
+		}
+	}
+
+	static void SetText(HWND hdlg, const char* s) {
+		HWND hwndEdit = GetDlgItem(hdlg, IDC_EDIT);
+
+		if (hwndEdit) {
+			::SetFocus(hwndEdit);
+			::SetWindowTextA(hwndEdit, s);
+			::SendMessage(hwndEdit, EM_SETSEL, 0, 0);
+		}
+	}
+
+	static INT_PTR CALLBACK StatusDlgProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+		switch(msg) {
+		case WM_INITDIALOG:
+			g_hwndStatusWindow = hdlg;
+			VDSetDialogDefaultIcons(hdlg);
+			SetText(hdlg,(const char *)lParam);
+			return FALSE;
+
+		case WM_SIZE:
+			{
+				int w = (int)LOWORD(lParam);
+				int h = (int)HIWORD(lParam);
+
+				HWND hwndEdit = GetDlgItem(hdlg, IDC_EDIT);
+
+				if (hwndEdit)
+					::SetWindowPos(hwndEdit, NULL, 0, 0, w, h, SWP_NOZORDER|SWP_NOACTIVATE);
+			}
+			return 0;
+
+		case WM_COMMAND:
+			switch(wParam) {
+				case IDCANCEL:
+				case IDOK:
+					EndDialog(hdlg, 0);
+					return TRUE;
+			}
+			break;
+		}
+
+		return FALSE;
+	}
+};
+
+extern void VDShowStatus(VDStringA& s) {
+	VDStatusWindowThread logwin;
+	logwin.s = s;
+
+	logwin.ThreadStart();
+	if (logwin.isThreadAttached()) {
+		logwin.mReady.wait();
+		logwin.ThreadDetach();
+	}
+}
+
+extern void ShutdownStatusWindow() {
+	if (!g_hwndStatusWindow) return;
+	DWORD thid = GetWindowThreadProcessId(g_hwndStatusWindow,0);
+	HANDLE h = OpenThread(SYNCHRONIZE,false,thid);
+	PostMessage(g_hwndStatusWindow,WM_CLOSE,0,0);
+	WaitForSingleObject(h,1000);
+}
 
 class VDProfileSampleThread : public VDThread {
 public:

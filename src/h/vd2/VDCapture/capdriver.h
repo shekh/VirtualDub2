@@ -229,6 +229,7 @@ public:
 
 	virtual bool	IsDriverDialogSupported(nsVDCapture::DriverDialog dlg) = 0;
 	virtual void	DisplayDriverDialog(nsVDCapture::DriverDialog dlg) = 0;
+	virtual void	DisplayDump() {}
 
 	virtual bool	IsPropertySupported(uint32 id) = 0;
 	virtual sint32	GetPropertyInt(uint32 id, bool *pAutomatic) = 0;
