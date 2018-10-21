@@ -235,7 +235,11 @@ public:
 	virtual void SetOutputDisplay(IVDVideoDisplay *pDisplay) = 0;
 	virtual void SetAudioFilterGraph(const VDAudioFilterGraph& graph)=0;
 	virtual void Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, AudioSource *const *pAudioSources, uint32 nAudioSources, IVDDubberOutputSystem *out, void *videoCompVars, const FrameSubset *pfs, const VDFraction& frameRateTimeline) = 0;
-	virtual AudioStream* InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources) = 0;
+	virtual void InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources) = 0;
+	virtual AudioCompressor* GetAudioCompressor() = 0;
+	virtual AudioStream* GetAudioBeforeCompressor() = 0;
+	virtual void CheckAudioCodec(const char* format) = 0;
+
 	virtual void Go(int iPriority = 0) = 0;
 	virtual void Stop() = 0;
 

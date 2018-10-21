@@ -122,6 +122,7 @@ public:
 
 	virtual bool init(const wchar_t *szFile)=0;
 	virtual void finalize()=0;
+	virtual const char* GetFormatName(){ return 0; }
 
 	virtual IVDMediaOutputStream *createAudioStream() = 0;
 	virtual IVDMediaOutputStream *createVideoStream() = 0;

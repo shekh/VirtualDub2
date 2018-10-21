@@ -17,6 +17,7 @@ struct VDWaveFormat;
 
 class VDINTERFACE IVDOutputDriver : public IVDRefCount {
 public:
+	virtual VDPluginDescription* GetDesc() = 0;
 	virtual const wchar_t *	GetSignatureName() = 0;
 	virtual IVDXOutputFileDriver * GetDriver() = 0;
 	virtual VDOutputDriverContextImpl* GetContext() = 0;

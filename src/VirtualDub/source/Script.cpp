@@ -2121,7 +2121,11 @@ static void func_VirtualDub_SaveAVI(IVDScriptInterpreter *, VDScriptValue *argli
 	InitBatchOptions(opts);
 
 	if (g_FileOutDriver.empty()) {
-		SaveAVI(filename.c_str(), true, &opts, false);
+		RequestVideo req;
+		req.fileOutput = filename;
+		req.propagateErrors = true;
+		req.opt = &opts;
+		SaveAVI(req);
 		return;
 	}
 
@@ -2140,7 +2144,13 @@ static void func_VirtualDub_SaveAVI(IVDScriptInterpreter *, VDScriptValue *argli
 		}
 
 		if (g_FileOutFormat == name) {
-			SavePlugin(filename.c_str(), driver, name, true, &opts);
+			RequestVideo req;
+			req.fileOutput = filename;
+			req.driver = driver;
+			req.format = name;
+			req.propagateErrors = true;
+			req.opt = &opts;
+			SavePlugin(req);
 			return;
 		}
 	}
@@ -2151,7 +2161,12 @@ static void func_VirtualDub_SaveCompatibleAVI(IVDScriptInterpreter *, VDScriptVa
 	DubOptions opts(g_dubOpts);
 	InitBatchOptions(opts);
 
-	SaveAVI(filename.c_str(), true, &opts, true);
+	RequestVideo req;
+	req.fileOutput = filename;
+	req.propagateErrors = true;
+	req.opt = &opts;
+	req.compat = true;
+	SaveAVI(req);
 }
 
 static void func_VirtualDub_SaveSegmentedAVI(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
@@ -2189,7 +2204,12 @@ static void func_VirtualDub_SaveWAV(IVDScriptInterpreter *, VDScriptValue *argli
 	bool auto_w64 = false;
 	if (arg_count>0) auto_w64 = arglist[1].asInt()!=0;
 
-	SaveWAV(filename.c_str(), auto_w64, true, &opts);
+	RequestWAV req;
+	req.fileOutput = filename;
+	req.auto_w64 = auto_w64;
+	req.propagateErrors = true;
+	req.opt = &opts;
+	SaveWAV(req);
 }
 
 static void func_VirtualDub_SaveAudio(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
@@ -2198,10 +2218,12 @@ static void func_VirtualDub_SaveAudio(IVDScriptInterpreter *, VDScriptValue *arg
 	InitBatchOptions(opts);
 
 	if (g_AudioOutDriver.empty()) {
-		if (g_AudioOutFormat=="old_wav")
-			SaveWAV(filename.c_str(), false, true, &opts);
-		else
-			SaveWAV(filename.c_str(), true, true, &opts);
+		RequestWAV req;
+		req.fileOutput = filename;
+		if (g_AudioOutFormat=="old_wav") req.auto_w64 = false;
+		req.propagateErrors = true;
+		req.opt = &opts;
+		SaveWAV(req);
 		return;
 	}
 
@@ -2220,7 +2242,14 @@ static void func_VirtualDub_SaveAudio(IVDScriptInterpreter *, VDScriptValue *arg
 		}
 
 		if (g_AudioOutFormat == name) {
-			SavePlugin(filename.c_str(), driver, name, true, &opts, false, true);
+			RequestVideo req;
+			req.fileOutput = filename;
+			req.driver = driver;
+			req.format = name;
+			req.propagateErrors = true;
+			req.opt = &opts;
+			req.removeVideo = true;
+			SavePlugin(req);
 			return;
 		}
 	}

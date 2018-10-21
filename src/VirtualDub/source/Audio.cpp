@@ -1462,15 +1462,18 @@ AudioCompressor::AudioCompressor(AudioStream *src, const VDWaveFormat *dst_forma
 	VDWaveFormat *iFormat = src->GetFormat();
 
 	SetSource(src);
+	name = pShortNameHint;
 
 	mpCodec = VDCreateAudioCompressorPlugin((const VDWaveFormat *)iFormat, pShortNameHint, config, false);
 	if (mpCodec) {
+		fPlugin = true;
 		dst_format_len = mpCodec->GetOutputFormatSize();
 		VDWaveFormat *oFormat = AllocFormat(dst_format_len);
 		memcpy(oFormat, mpCodec->GetOutputFormat(), dst_format_len);
 		dst_format = oFormat;
 		fVBR = true;
 	} else {
+		fPlugin = false;
 		VDWaveFormat *oFormat = AllocFormat(dst_format_len);
 		memcpy(oFormat, dst_format, dst_format_len);
 		mpCodec = VDCreateAudioCompressorW32((const VDWaveFormat *)iFormat, dst_format, pShortNameHint, true);
@@ -1482,6 +1485,15 @@ AudioCompressor::AudioCompressor(AudioStream *src, const VDWaveFormat *dst_forma
 	mPrefill = 0;
 
 	fStreamEnded = FALSE;
+}
+
+vd2::FormatConfidence AudioCompressor::SuggestFileFormat(const char* name) {
+	if (fPlugin) {
+		return mpCodec->SuggestFileFormat(name);
+	} else {
+		if(strcmp(name,"wav")==0 || strcmp(name,"avi")==0) return vd2::kFormat_Good;
+		return vd2::kFormat_Unknown;
+	}
 }
 
 bool AudioCompressor::IsVBR() const {
@@ -1617,7 +1629,7 @@ bool AudioCompressor::Process() {
 				long actualSamples;
 
 				if (mPrefill>0) {
-					long n = samples<mPrefill ? samples:mPrefill;
+					long n = samples<mPrefill ? samples:long(mPrefill);
 					actualSamples = n;
 					mPrefill -= n;
 					actualBytes = fill_silence_pcm(dst, n, source->GetFormat());

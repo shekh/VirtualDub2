@@ -1981,44 +1981,44 @@ void VDProject::Close() {
 	}
 }
 
-void VDProject::SaveAVI(const wchar_t *filename, bool compat, bool addAsJob, bool removeAudio) {
+void VDProject::SaveAVI(RequestVideo& creq) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
 
-	if (addAsJob) {
+	if (creq.job) {
 		DubOptions opts = g_dubOpts;
-		opts.removeAudio = removeAudio;
+		opts.removeAudio = creq.removeAudio;
 		JobRequestVideo req;
 		SetProject(req, this);
 		req.opt = &opts;
-		req.fileOutput = filename;
-		req.fCompatibility = compat;
+		req.fileOutput = creq.fileOutput;
+		req.fCompatibility = creq.compat;
 
 		JobAddConfiguration(req);
 	} else {
-		::SaveAVI(filename, false, NULL, compat, removeAudio);
+		::SaveAVI(creq);
 	}
 }
 
-void VDProject::SavePlugin(const wchar_t *filename, IVDOutputDriver* driver, const char* format, bool addAsJob, bool removeAudio, bool removeVideo) {
+void VDProject::SavePlugin(RequestVideo& creq) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
 
-	if (addAsJob) {
+	if (creq.job) {
 		DubOptions opts = g_dubOpts;
-		opts.removeAudio = removeAudio;
+		opts.removeAudio = creq.removeAudio;
 		JobRequestVideo req;
 		SetProject(req, this);
 		req.opt = &opts;
-		req.fileOutput = filename;
+		req.fileOutput = creq.fileOutput;
 
-		if (removeVideo)
+		if (creq.removeVideo)
 			JobAddConfigurationSaveAudioPlugin(req);
 		else
 			JobAddConfiguration(req);
 
 	} else {
-		::SavePlugin(filename, driver, format, false, NULL, removeAudio, removeVideo);
+		::SavePlugin(creq);
 	}
 }
 

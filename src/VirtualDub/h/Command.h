@@ -62,12 +62,49 @@ extern bool				g_showStatusWindow;
 
 ///////////////////////////
 
+struct CommandRequest {
+	VDStringW fileOutput;
+	bool job;
+	bool propagateErrors;
+	DubOptions* opt;
+
+	CommandRequest() {
+		job = false;
+		propagateErrors = false;
+		opt = 0;
+	}
+};
+
+struct RequestVideo: public CommandRequest {
+	bool compat;
+	bool removeAudio;
+	bool removeVideo;
+	IVDOutputDriver* driver;
+	const char* format;
+	
+	RequestVideo() {
+		compat = false;
+		removeAudio = false;
+		removeVideo = false;
+		driver = 0;
+		format = 0;
+	}
+};
+
+struct RequestWAV: public CommandRequest {
+	bool auto_w64;
+
+	RequestWAV() {
+		auto_w64 = true;
+	}
+};
+
 void AppendAVI(const wchar_t *pszFile);
 int AppendAVIAutoscanEnum(const wchar_t *pszFile);
 void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first=false);
-void SaveWAV(const wchar_t *szFilename, bool auto_w64=true, bool fProp = false, DubOptions *quick_opts=NULL);
-void SaveAVI(const wchar_t *szFilename, bool fProp = false, DubOptions *quick_opts=NULL, bool fCompatibility=false, bool removeAudio=false);
-void SavePlugin(const wchar_t *szFilename, IVDOutputDriver* driver, const char* format, bool fProp = false, DubOptions *quick_opts=NULL, bool removeAudio=false, bool removeVideo=false);
+void SaveWAV(RequestWAV& req);
+void SaveAVI(RequestVideo& req);
+void SavePlugin(RequestVideo& req);
 void SaveStripedAVI(const wchar_t *szFile);
 void SaveStripeMaster(const wchar_t *szFile);
 void SaveSegmentedAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, long lSpillThreshold, long lSpillFrameThreshold, int digits);

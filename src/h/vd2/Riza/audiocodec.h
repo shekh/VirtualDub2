@@ -26,6 +26,7 @@
 #ifndef f_VD2_SYSTEM_VDTYPES_H
 	#include <vd2/system/vdtypes.h>
 #endif
+#include <vd2/plugin/vdinputdriver.h>
 
 #ifdef _MSC_VER
 	#pragma pack(push, 2)
@@ -81,6 +82,7 @@ public:
 		duration = -1;
 		return CopyOutput(dst,bytes);
 	}
+	virtual vd2::FormatConfidence SuggestFileFormat(const char* name) { return vd2::kFormat_Unknown; }
 };
 
 IVDAudioCodec *VDLocateAudioDecompressor(const VDWaveFormat *srcFormat, const VDWaveFormat *dstFormat, bool preferInternalCodecs, const char *pShortNameDriverHint = NULL);

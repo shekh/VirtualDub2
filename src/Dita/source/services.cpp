@@ -707,6 +707,45 @@ void VDSetLastLoadSaveFileName(long nKey, const wchar_t *fileName) {
 
 ///////////////////////////////////////////////////////////////////////////
 
+// stupid common dialog returns unparsed string
+// this solves some common cases
+
+VDStringW OpenSave_GetFileName(HWND dlg) {
+	wchar_t buf[MAX_PATH];
+	CommDlg_OpenSave_GetSpec(GetParent(dlg),buf,MAX_PATH);
+	VDStringW s(buf);
+	if (s.length()>=2 && s[0]=='"') {
+		int x0 = 1;
+		{for (int i=s.length()-1; i>x0; i--){
+			int c = s[i];
+			if (c==' ') continue;
+			if (c=='"'){
+				s = s.subspan(x0,i-x0); 
+				break;
+			}
+		}}
+	}
+
+	return s;
+}
+
+VDStringW OpenSave_GetFilePath(HWND dlg) {
+	wchar_t buf[MAX_PATH];
+	CommDlg_OpenSave_GetFolderPath(GetParent(dlg),buf,MAX_PATH);
+	VDStringW s(buf);
+	if (s.empty()) return VDStringW();
+	VDStringW name = OpenSave_GetFileName(dlg);
+	if (name.empty()) return VDStringW();
+	VDParsedPath pname(name.c_str());
+	if (pname.IsRelative()) 
+		s = VDFileGetCanonicalPath((s + name).c_str());
+	else
+		s = pname.ToString();
+	return s;
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 typedef std::map<long, DirspecEntry> tDirspecMap;
 tDirspecMap *g_pDirspecMap;
 

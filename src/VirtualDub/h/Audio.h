@@ -158,19 +158,19 @@ public:
 class AudioCompressor : public AudioStream {
 private:
 	vdautoptr<IVDAudioCodec>	mpCodec;
+	bool fPlugin;
 	bool fStreamEnded;
 	bool fVBR;
 	long bytesPerInputSample;
 	long bytesPerOutputSample;
 	sint64 mPrefill;
 
-	char mDriverName[64];
-
 	enum { INPUT_BUFFER_SIZE = 16384 };
 
 public:
 	AudioCompressor(AudioStream *src, const VDWaveFormat *dst_format, long dst_format_len, const char *shortNameHint, vdblock<char>& config);
 	~AudioCompressor();
+	vd2::FormatConfidence SuggestFileFormat(const char* name);
 	void UpdateFormat();
 	void SkipSource(long samples);
 	bool IsVBR() const;
@@ -179,6 +179,8 @@ public:
 	long _Read(void *buffer, long samples, long *lplBytes);
 	long _ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration);
 	bool	isEnd();
+
+	VDStringA name;
 
 protected:
 	bool Process();

@@ -562,6 +562,13 @@ public:
 	virtual void VDXAPIENTRY SetAudio(uint32 index, const VDXStreamInfo& si, const void *pFormat, int cbFormat) = 0;
 	virtual void VDXAPIENTRY Write(uint32 index, const void *pBuffer, uint32 cbBuffer, PacketInfo& info) = 0;
 	virtual void Finalize() = 0;
+
+	// V2
+	// format name is from same namespace as EnumFormats, SuggestFileFormat, GetElementaryFormat
+	// finally it is just short format name from ffmpeg
+	// format name is also passed to init but init can change it
+	virtual const char* GetFormatName() = 0;
+	virtual bool Begin(){ return true; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -599,6 +606,16 @@ enum {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace vd2{
+	enum FormatConfidence {
+		kFormat_Unknown = -1,
+		kFormat_Reject = 0,
+		kFormat_Unwise = 1,
+		kFormat_Good = 2,
+		kFormat_Elementary = 255,
+	};
+};
+
 class IVDXAudioEnc : public IVDXUnknown {
 public:
 	enum { kIID = VDXMAKEFOURCC('X', 'a', 'e', 'n') };
@@ -630,6 +647,10 @@ public:
 	virtual const void	*LockOutputBuffer(unsigned& bytes) = 0;
 	virtual void		UnlockOutputBuffer(unsigned bytes) = 0;
 	virtual unsigned	CopyOutput(void *dst, unsigned bytes, sint64& duration) = 0;
+
+	// V2
+	virtual int	SuggestFileFormat(const char* name) { return vd2::kFormat_Unknown; }
+	virtual const char* GetElementaryFormat() { return 0; }
 };
 
 typedef bool (VDXAPIENTRY *VDXAudioEncCreateProc)(const VDXInputDriverContext *pContext, IVDXAudioEnc **);
@@ -645,8 +666,9 @@ struct VDXAudioEncDefinition {
 };
 
 enum {
-	// V1 (FilterMod): Initial version
-	kVDXPlugin_AudioEncAPIVersion = 1
+	// V1: Initial version
+	// V2: Added SuggestFileFormat
+	kVDXPlugin_AudioEncAPIVersion = 2
 };
 
 ///////////////////////////////////////////////////////////////////////////////

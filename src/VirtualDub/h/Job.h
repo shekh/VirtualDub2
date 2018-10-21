@@ -18,6 +18,8 @@
 #ifndef f_VIRTUALDUB_JOB_H
 #define f_VIRTUALDUB_JOB_H
 
+#include "DubOutput.h"
+
 class DubOptions;
 class InputFilenameNode;
 template<class T> class List2;

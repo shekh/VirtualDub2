@@ -439,6 +439,7 @@ private:
 	std::vector<AudioStream *>	mAudioStreams;
 	AudioStream			*audioStream;
 	AudioStream			*audioStatusStream;
+	AudioCompressor *audioCompressor;
 	AudioStreamL3Corrector	*audioCorrector;
 	AudioStats	*audioStats;
 	vdautoptr<VDAudioFilterGraph> mpAudioFilterGraph;
@@ -488,7 +489,10 @@ public:
 	bool NegotiateFastFormat(int format);
 	void InitSelectInputFormat();
 	void Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, AudioSource *const *pAudioSources, uint32 nAudioSources, IVDDubberOutputSystem *outsys, void *videoCompVars, const FrameSubset *, const VDFraction& frameRateTimeline);
-	AudioStream* InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources);
+	void InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources);
+	AudioCompressor* GetAudioCompressor(){ return audioCompressor; }
+	AudioStream* GetAudioBeforeCompressor(){ return audioStatusStream; }
+	void CheckAudioCodec(const char* format);
 	void Go(int iPriority = 0);
 	void Stop();
 
@@ -547,6 +551,7 @@ Dubber::Dubber(DubOptions *xopt)
 	mbUserAbort			= false;
 
 	pStatusHandler		= NULL;
+	mpOutputSystem = 0;
 
 	fADecompressionOk	= false;
 	fVDecompressionOk	= false;
@@ -559,6 +564,7 @@ Dubber::Dubber(DubOptions *xopt)
 
 	audioStream			= NULL;
 	audioStatusStream	= NULL;
+	audioCompressor		= NULL;
 	audioCorrector		= NULL;
 	audioStats		= NULL;
 
@@ -987,11 +993,12 @@ void Dubber::InitAudioConversionChain() {
 		if (!(pCompressor = new_nothrow AudioCompressor(audioStream, (const VDWaveFormat *)&*mAudioCompressionFormat, mAudioCompressionFormat.size(), mAudioCompressionFormatHint.c_str(), mAudioCompressionConfig)))
 			throw MyMemoryError();
 
+		audioCompressor = pCompressor;
 		audioStream = pCompressor;
 		mAudioStreams.push_back(audioStream);
 	}
 
-	if (pCompressor) {
+	if (pCompressor && mpOutputSystem) {
 		// Check the output format, and if we're compressing to
 		// MPEG Layer III, compensate for the lag and create a bitrate corrector
 
@@ -1053,14 +1060,31 @@ void Dubber::InitAudioConversionChain() {
 			mAudioStreams.push_back(audioStream);
 		}
 	}
+}
 
+void Dubber::CheckAudioCodec(const char* format) {
+	if (!audioCompressor) return;
+	vd2::FormatConfidence fc = audioCompressor->SuggestFileFormat(format);
+	
+	if (fc==vd2::kFormat_Reject || fc==vd2::kFormat_Unwise) {
+		VDStringA aname = audioCompressor->name;
+		VDStringA text;
+		text.sprintf("Codec \"%s\" not supported in container \"%s\".\nSelect different compression or different file type.", aname.c_str(), format);
+		throw MyError(text.c_str());
+	}
 }
 
 void Dubber::InitOutputFile() {
 
 	VDXStreamControl sc;
-	if (mpOutputSystem)
+	if (mpOutputSystem) {
 		mpOutputSystem->GetStreamControl(sc);
+
+		const char* format = mpOutputSystem->GetFormatName();
+		if (format && mbDoAudio) {
+			CheckAudioCodec(format);
+		}
+	}
 
 	// Do audio.
 
@@ -1516,7 +1540,7 @@ void Dubber::InitSelectInputFormat() {
 	VDLogAppMessage(kVDLogInfo, kVDST_Dub, (mOptions.video.mode > DubVideoOptions::M_FASTREPACK) ? kVDM_FullUsingInputFormat : kVDM_SlowRecompressUsingFormat, 1, &s);
 }
 
-AudioStream* Dubber::InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources) {
+void Dubber::InitAudio(AudioSource *const *pAudioSources, uint32 nAudioSources) {
 	mOptions.audio.fStartAudio = false;
 	mOptions.audio.fEndAudio = true;
 	mAudioSources.assign(pAudioSources, pAudioSources + nAudioSources);
@@ -1524,7 +1548,6 @@ AudioStream* Dubber::InitAudio(AudioSource *const *pAudioSources, uint32 nAudioS
 	InitVideoStreamValuesStatic(vInfo, 0, audioSrc, &mOptions, 0, 0, 0);
 	InitAudioStreamValuesStatic(aInfo, audioSrc, &mOptions);
 	InitAudioConversionChain();
-	return audioStream;
 }
 
 void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, AudioSource *const *pAudioSources, uint32 nAudioSources, IVDDubberOutputSystem *pOutputSystem, void *videoCompVars, const FrameSubset *pfs, const VDFraction& frameRateTimeline) {

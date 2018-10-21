@@ -113,6 +113,7 @@ public:
 	IVDMediaOutputStream *getVideoOutput() { return mpFirstVideoStream; }
 
 	bool init(const wchar_t *szFile);
+	const char* GetFormatName();
 
 	void partialWriteChunkBegin(int nStream, uint32 flags, uint32 cbBuffer){}
 	void partialWriteChunk(int nStream, const void *pBuffer, uint32 cbBuffer){}
@@ -281,6 +282,13 @@ bool AVIOutputPlugin::init(const wchar_t *szFile) {
 	return true;
 }
 
+const char* AVIOutputPlugin::GetFormatName() {
+	if (driver->GetDesc()->mpInfo->mTypeAPIVersionUsed<2) return 0;
+	vdwithoutputplugin(mpContext) {
+		return outFile->GetFormatName();
+	}
+}
+
 void AVIOutputPlugin::updateStreamInfo(StreamInfo& st) {
 	AVIOutputPluginStream* s = st.mpStream;
 	vdwithoutputplugin(mpContext) {
@@ -308,6 +316,10 @@ class VDOutputDriverPlugin : public vdrefcounted<IVDOutputDriver> {
 public:
 	VDOutputDriverPlugin(VDPluginDescription *pDesc);
 	~VDOutputDriverPlugin();
+
+	virtual VDPluginDescription* GetDesc() {
+		return mpDesc;
+	}
 
 	const wchar_t *	GetSignatureName() {
 		return mpDef->mpDriverTagName;
@@ -445,6 +457,10 @@ public:
 	}
 	virtual unsigned	CopyOutput(void *dst, unsigned bytes, sint64& duration){
 		return plugin->CopyOutput(dst,bytes,duration);
+	}
+	virtual vd2::FormatConfidence SuggestFileFormat(const char* name){
+		if (mpDesc->mpInfo->mTypeAPIVersionUsed<2) return vd2::kFormat_Unknown;
+			return (vd2::FormatConfidence)plugin->SuggestFileFormat(name);
 	}
 };
 

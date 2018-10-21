@@ -59,6 +59,9 @@ void VDSetLastLoadSavePath(long nKey, const wchar_t *path);
 const VDStringW VDGetLastLoadSavePath(long nKey);
 void VDSetLastLoadSaveFileName(long nKey, const wchar_t *fileName);
 
+VDStringW OpenSave_GetFileName(HWND dlg);
+VDStringW OpenSave_GetFilePath(HWND dlg);
+
 struct DirspecEntry {
 	wchar_t szFile[MAX_PATH];
 };

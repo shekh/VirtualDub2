@@ -218,43 +218,43 @@ void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first) {
 	}
 }
 
-void SaveWAV(const wchar_t *szFilename, bool auto_w64, bool fProp, DubOptions *quick_opts) {
+void SaveWAV(RequestWAV& req) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
 
 	if (!inputAudio)
 		throw MyError("No audio stream to process.");
 
-	VDAVIOutputWAVSystem wavout(szFilename, auto_w64);
-	g_project->RunOperation(&wavout, TRUE, quick_opts, 0, fProp);
+	VDAVIOutputWAVSystem wavout(req.fileOutput.c_str(), req.auto_w64);
+	g_project->RunOperation(&wavout, TRUE, req.opt, 0, req.propagateErrors);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SavePlugin(const wchar_t *szFilename, IVDOutputDriver* driver, const char* format, bool fProp, DubOptions *quick_opts, bool removeAudio, bool removeVideo) {
-	VDAVIOutputPluginSystem fileout(szFilename);
+void SavePlugin(RequestVideo& req) {
+	VDAVIOutputPluginSystem fileout(req.fileOutput.c_str());
 
-	fileout.SetDriver(driver,format);
+	fileout.SetDriver(req.driver,req.format);
 	fileout.SetTextInfo(g_project->GetTextInfo());
 
 	int type = 0;
-	if (removeVideo){ type = 1; fileout.fAudioOnly = true; }
-	if (removeAudio) type = 3;
+	if (req.removeVideo){ type = 1; fileout.fAudioOnly = true; }
+	if (req.removeAudio) type = 3;
 
-	g_project->RunOperation(&fileout, type, quick_opts, g_prefs.main.iDubPriority, fProp, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	g_project->RunOperation(&fileout, type, req.opt, g_prefs.main.iDubPriority, req.propagateErrors, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
-void SaveAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, bool fCompatibility, bool removeAudio) {
+void SaveAVI(RequestVideo& req) {
 	VDAVIOutputFileSystem fileout;
 
 	fileout.Set1GBLimit(g_prefs.fAVIRestrict1Gb != 0);
 	fileout.SetCaching(false);
-	fileout.SetIndexing(!fCompatibility);
-	fileout.SetFilename(szFilename);
+	fileout.SetIndexing(!req.compat);
+	fileout.SetFilename(req.fileOutput.c_str());
 	fileout.SetBuffer(VDPreferencesGetRenderOutputBufferSize());
 	fileout.SetTextInfo(g_project->GetTextInfo());
 
-	g_project->RunOperation(&fileout, removeAudio ? 3:FALSE, quick_opts, g_prefs.main.iDubPriority, fProp, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	g_project->RunOperation(&fileout, req.removeAudio ? 3:FALSE, req.opt, g_prefs.main.iDubPriority, req.propagateErrors, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 void SaveStripedAVI(const wchar_t *szFile) {

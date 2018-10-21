@@ -484,21 +484,8 @@ void VDOpenVideoDialogW32::ChangeOptions() {
 }
 
 bool VDOpenVideoDialogW32::UpdateFilename() {
-	wchar_t buf[MAX_PATH];
-	CommDlg_OpenSave_GetSpec(GetParent(mhdlg),buf,MAX_PATH);
-	VDStringW s(buf);
+	VDStringW s = OpenSave_GetFileName(mhdlg);
 	if (s.length()==0) return false;
-	if (s.length()>=2 && s[0]=='"') {
-		int x0 = 1;
-		{for (int i=s.length()-1; i>x0; i--){
-			int c = s[i];
-			if (c==' ') continue;
-			if (c=='"'){
-				s = s.subspan(x0,i-x0); 
-				break;
-			}
-		}}
-	}
 	if (s!=filename) {
 		filename = s;
 		ChangeFilename();
@@ -765,17 +752,22 @@ void OpenInput(bool append, bool audio) {
 class VDSaveVideoDialogW32 {
 public:
 	VDSaveVideoDialogW32(){ removeAudio=false; saveVideo=true; }
+	~VDSaveVideoDialogW32(){ delete dubber; }
 
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 	void InitCodec();
 	void InitDubber();
+	bool CheckAudioCodec(const char* format);
+	virtual bool Commit(const VDStringW& fname){ return true; }
 
 	HWND mhdlg;
 	VDDialogResizerW32 mResizer;
 	AudioSource* inputAudio;
+	IDubber* dubber;
 	bool removeAudio;
 	bool addJob;
-  bool saveVideo;
+	bool saveVideo;
+	int nFilterIndex;
 };
 
 void VDSaveVideoDialogW32::InitCodec() {
@@ -861,12 +853,15 @@ void VDSaveVideoDialogW32::InitCodec() {
 void VDSaveVideoDialogW32::InitDubber() {
 	if (!inputAudio) return;
 
-	IDubber* dubber = CreateDubber(&g_dubOpts);
+	dubber = CreateDubber(&g_dubOpts);
 	try {
 		if (g_dubOpts.audio.bUseAudioFilterGraph)
 			dubber->SetAudioFilterGraph(g_audioFilterGraph);
+		//if (g_ACompressionFormat)
+		//	dubber->SetAudioCompression((const VDWaveFormat *)g_ACompressionFormat, g_ACompressionFormatSize, g_ACompressionFormatHint.c_str(), g_ACompressionConfig);
 		AudioSource* asrc = inputAudio;
-		AudioStream* as = dubber->InitAudio(&asrc,1);
+		dubber->InitAudio(&asrc,1);
+		AudioStream* as = dubber->GetAudioBeforeCompressor();
 		VDWaveFormat* fmt = as->GetFormat();
 		VDString s;
 		if (is_audio_float(fmt))
@@ -880,7 +875,12 @@ void VDSaveVideoDialogW32::InitDubber() {
 		removeAudio = true;
 		inputAudio = 0;
 	}
-	delete dubber;
+}
+
+bool VDSaveVideoDialogW32::CheckAudioCodec(const char* format) {
+	if (removeAudio) return true;
+	//dubber->CheckAudioCodec(format);
+	return true;
 }
 
 INT_PTR VDSaveVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
@@ -939,6 +939,7 @@ UINT_PTR CALLBACK SaveVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 			VDSaveVideoDialogW32* dlg = (VDSaveVideoDialogW32*)fn->lCustData;
 			SetWindowLongPtr(hdlg, DWLP_USER, (LONG_PTR)dlg);
 			dlg->mhdlg = hdlg;
+			dlg->nFilterIndex = fn->nFilterIndex;
 			dlg->DlgProc(msg,wParam,lParam);
 			return TRUE;
 		}
@@ -950,9 +951,41 @@ UINT_PTR CALLBACK SaveVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 			dlg->DlgProc(msg,wParam,lParam);
 			return TRUE;
 		}
+
+	case WM_NOTIFY:
+		VDSaveVideoDialogW32* dlg = (VDSaveVideoDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
+		OFNOTIFY* data = (OFNOTIFY*)lParam;
+
+		if(data->hdr.code==CDN_TYPECHANGE){
+			dlg->nFilterIndex = data->lpOFN->nFilterIndex;
+		}
+		if(data->hdr.code==CDN_FILEOK){
+			VDStringW fname = OpenSave_GetFilePath(hdlg);
+			if (!fname.empty()) return 0;
+			// cant use this now because runoperation is modal
+			/*try {
+				if (!fname.empty() && dlg->Commit(fname)) return 0;
+			} catch(MyError& err) {
+				err.post(hdlg,g_szError);
+			}*/
+
+			SetWindowLong(hdlg,DWLP_MSGRESULT,1);
+			return 1;
+		}
+		break;
+
 	}
 	return FALSE;
 }
+
+struct VDSaveDialogAVI: public VDSaveVideoDialogW32{
+public:
+	vdfastvector<IVDOutputDriver*> opt_driver;
+	vdfastvector<int> opt_format;
+	bool fUseCompatibility;
+
+	virtual bool Commit(const VDStringW& fname);
+};
 
 void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	if (!inputVideo) {
@@ -960,7 +993,7 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 		return;
 	}
 
-	VDSaveVideoDialogW32 dlg;
+	VDSaveDialogAVI dlg;
 	dlg.inputAudio = inputAudio;
 	dlg.addJob = queueAsJob;
 
@@ -977,10 +1010,8 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	filters += L"*.avi";
 	filters += wchar_t(0);
 
-	vdfastvector<IVDOutputDriver*> opt_driver;
-	vdfastvector<int> opt_format;
-	opt_driver.push_back(0);
-	opt_format.push_back(0);
+	dlg.opt_driver.push_back(0);
+	dlg.opt_format.push_back(0);
 
 	int select_filter = 0;
 	VDStringW selectExt = VDStringW(L"avi");
@@ -1003,11 +1034,11 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 				filters += wchar_t(0);
 				filters += ext;
 				filters += wchar_t(0);
-				opt_driver.push_back(driver);
-				opt_format.push_back(i);
+				dlg.opt_driver.push_back(driver);
+				dlg.opt_format.push_back(i);
 
 				if (match_driver && g_FileOutFormat == name) {
-					select_filter = opt_format.size()-1;
+					select_filter = dlg.opt_format.size()-1;
 					if (wcscmp(ext,L"*.*")!=0)
 						selectExt = VDFileSplitExt(ext)+1;
 				}
@@ -1019,8 +1050,8 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	filters += wchar_t(0);
 	filters += L"*.*";
 	filters += wchar_t(0);
-	opt_driver.push_back(0);
-	opt_format.push_back(0);
+	dlg.opt_driver.push_back(0);
+	dlg.opt_format.push_back(0);
 
 	const wchar_t* title = fUseCompatibility ? L"Save AVI 1.0 File" : L"Save File";
 
@@ -1032,9 +1063,19 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	int optvals[]={ select_filter+1 };
 
 	VDStringW fname = VDGetSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (VDGUIHandle)hWnd, title, filters.c_str(), selectExt.c_str(), opts, optvals, &fn);
-	int type = optvals[0]-1;
+	dlg.Commit(fname);
+}
+
+bool VDSaveDialogAVI::Commit(const VDStringW& fname) {
+	int type = nFilterIndex-1;
 	IVDOutputDriver *driver = opt_driver[type];
 	int format = opt_format[type];
+	RequestVideo req;
+	req.fileOutput = fname;
+	req.job = addJob;
+	//req.propagateErrors = true;
+	req.removeAudio = removeAudio;
+
 	if (driver) {
 		wchar_t filter[128];
 		wchar_t ext[128];
@@ -1042,42 +1083,36 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 		driver->GetDriver()->EnumFormats(format,filter,ext,name);
 		g_FileOutDriver = driver->GetSignatureName();
 		g_FileOutFormat = name;
-		if (!fname.empty())
-			g_project->SavePlugin(fname.c_str(), driver, name, dlg.addJob, dlg.removeAudio, false);
+		if (!fname.empty()) {
+			if (!CheckAudioCodec(name)) return false;
+			req.driver = driver;
+			req.format = name;
+			g_project->SavePlugin(req);
+		}
 
 	} else {
 		g_FileOutDriver.clear();
 		g_FileOutFormat.clear();
-		if (!fname.empty())
-			g_project->SaveAVI(fname.c_str(), fUseCompatibility, dlg.addJob, dlg.removeAudio);
+		if (!fname.empty()) {
+			if (!CheckAudioCodec("avi")) return false;
+			req.compat = fUseCompatibility;
+			g_project->SaveAVI(req);
+		}
 	}
+
+	return true;
 }
 
 ////////////////////////////////////
 
-UINT_PTR CALLBACK SaveAudioProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch(msg){
-	case WM_INITDIALOG:
-		{
-			OPENFILENAMEW* fn = (OPENFILENAMEW*)lParam;
-			VDSaveVideoDialogW32* dlg = (VDSaveVideoDialogW32*)fn->lCustData;
-			SetWindowLongPtr(hdlg, DWLP_USER, (LONG_PTR)dlg);
-			dlg->mhdlg = hdlg;
-			dlg->DlgProc(msg,wParam,lParam);
-			return TRUE;
-		}
+struct VDSaveDialogAudio: public VDSaveVideoDialogW32{
+public:
+	vdfastvector<IVDOutputDriver*> opt_driver;
+	vdfastvector<int> opt_format;
+	bool fUseCompatibility;
 
-	case WM_SIZE:
-	case WM_COMMAND:
-		{
-			VDSaveVideoDialogW32* dlg = (VDSaveVideoDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
-			dlg->DlgProc(msg,wParam,lParam);
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
+	virtual bool Commit(const VDStringW& fname);
+};
 
 void SaveAudio(HWND hWnd, bool queueAsJob) {
 	if (!inputAudio) {
@@ -1085,8 +1120,8 @@ void SaveAudio(HWND hWnd, bool queueAsJob) {
 		return;
 	}
 
-	VDSaveVideoDialogW32 dlg;
-  dlg.saveVideo = false;
+	VDSaveDialogAudio dlg;
+	dlg.saveVideo = false;
 	dlg.inputAudio = inputAudio;
 	dlg.addJob = queueAsJob;
 
@@ -1094,7 +1129,7 @@ void SaveAudio(HWND hWnd, bool queueAsJob) {
 	fn.Flags = OFN_ENABLETEMPLATE | OFN_ENABLEHOOK;
 	fn.hInstance = GetModuleHandle(0);
 	fn.lpTemplateName = MAKEINTRESOURCEW(IDD_SAVEAUDIO_FORMAT);
-	fn.lpfnHook = SaveAudioProc;
+	fn.lpfnHook = SaveVideoProc;
 	fn.lCustData = (LONG_PTR)&dlg;
 
 	VDStringW filters;
@@ -1108,12 +1143,10 @@ void SaveAudio(HWND hWnd, bool queueAsJob) {
 	filters += L"*.wav";
 	filters += wchar_t(0);
 
-	vdfastvector<IVDOutputDriver*> opt_driver;
-	vdfastvector<int> opt_format;
-	opt_driver.push_back(0);
-	opt_format.push_back(0);
-	opt_driver.push_back(0);
-	opt_format.push_back(0);
+	dlg.opt_driver.push_back(0);
+	dlg.opt_format.push_back(0);
+	dlg.opt_driver.push_back(0);
+	dlg.opt_format.push_back(0);
 
 	int select_filter = 0;
 	VDStringW selectExt = VDStringW(L"wav");
@@ -1136,11 +1169,11 @@ void SaveAudio(HWND hWnd, bool queueAsJob) {
 			filters += wchar_t(0);
 			filters += ext;
 			filters += wchar_t(0);
-			opt_driver.push_back(driver);
-			opt_format.push_back(i);
+			dlg.opt_driver.push_back(driver);
+			dlg.opt_format.push_back(i);
 
 			if (match_driver && g_AudioOutFormat == name) {
-				select_filter = opt_format.size()-1;
+				select_filter = dlg.opt_format.size()-1;
 				if (wcscmp(ext,L"*.*")!=0)
 					selectExt = VDFileSplitExt(ext)+1;
 			}
@@ -1151,8 +1184,8 @@ void SaveAudio(HWND hWnd, bool queueAsJob) {
 	filters += wchar_t(0);
 	filters += L"*.*";
 	filters += wchar_t(0);
-	opt_driver.push_back(0);
-	opt_format.push_back(0);
+	dlg.opt_driver.push_back(0);
+	dlg.opt_format.push_back(0);
 
 	const wchar_t* title = L"Save File";
 
@@ -1164,7 +1197,11 @@ void SaveAudio(HWND hWnd, bool queueAsJob) {
 	int optvals[]={ select_filter+1 };
 
 	VDStringW fname = VDGetSaveFileName(kFileDialog_WAVAudioOut, (VDGUIHandle)hWnd, title, filters.c_str(), selectExt.c_str(), opts, optvals, &fn);
-	int type = optvals[0]-1;
+	dlg.Commit(fname);
+}
+
+bool VDSaveDialogAudio::Commit(const VDStringW& fname) {
+	int type = nFilterIndex-1;
 	IVDOutputDriver *driver = opt_driver[type];
 	int format = opt_format[type];
 	if (driver) {
@@ -1174,8 +1211,17 @@ void SaveAudio(HWND hWnd, bool queueAsJob) {
 		driver->GetDriver()->EnumFormats(format,filter,ext,name);
 		g_AudioOutDriver = driver->GetSignatureName();
 		g_AudioOutFormat = name;
-		if (!fname.empty())
-			g_project->SavePlugin(fname.c_str(), driver, name, dlg.addJob, false, true);
+		if (!fname.empty()) {
+			if (!CheckAudioCodec(name)) return false;
+			RequestVideo req;
+			req.fileOutput = fname;
+			req.job = addJob;
+			//req.propagateErrors = true;
+			req.removeVideo = true;
+			req.driver = driver;
+			req.format = name;
+			g_project->SavePlugin(req);
+		}
 
 	} else {
 		bool enable_w64 = type==0;
@@ -1183,17 +1229,24 @@ void SaveAudio(HWND hWnd, bool queueAsJob) {
 		g_AudioOutFormat.clear();
 		if (!enable_w64) g_AudioOutFormat = "old_wav";
 		if (!fname.empty()) {
-			if (dlg.addJob) {
+			if (!CheckAudioCodec("wav")) return false;
+			if (addJob) {
 				JobRequestAudio req;
 				SetProject(req, g_project);
 				req.auto_w64 = enable_w64;
 				req.fileOutput = fname;
 				JobAddConfigurationSaveAudio(req);
 			} else {
-				SaveWAV(fname.c_str(), enable_w64);
+				RequestWAV req;
+				req.fileOutput = fname;
+				req.auto_w64 = enable_w64;
+				//req.propagateErrors = true;
+				SaveWAV(req);
 			}
 		}
 	}
+
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////

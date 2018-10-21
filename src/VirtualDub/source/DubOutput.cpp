@@ -368,8 +368,15 @@ bool VDAVIOutputPluginSystem::GetStreamControl(VDXStreamControl& sc) {
 	return driver->GetDriver()->GetStreamControl(mFilename.c_str(),format.c_str(),sc);
 }
 
+const char* VDAVIOutputPluginSystem::GetFormatName() {
+	return format.c_str();
+}
+
 IVDMediaOutput *VDAVIOutputPluginSystem::CreateSegment() {
 	vdautoptr<IVDMediaOutputPlugin> pOutput(VDCreateMediaOutputPlugin(driver,format.c_str()));
+
+	const char* actual_format = pOutput->GetFormatName();
+	if (actual_format) format = actual_format;
 
 	if (!mVideoFormat.empty()) {
 		IVDMediaOutputStream *pVideoOut = pOutput->createVideoStream();

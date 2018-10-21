@@ -51,6 +51,7 @@ public:
 	virtual bool GetInterleavingOverride(DubAudioOptions& opt) = 0;
 	virtual bool IsNull() = 0;
 	virtual bool GetStreamControl(VDXStreamControl& sc){ return true; }
+	virtual const char* GetFormatName() = 0;
 };
 
 class VDDubberOutputSystem : public IVDDubberOutputSystem {
@@ -105,6 +106,7 @@ public:
 	bool AcceptsAudio();
 	bool AreNullFramesAllowed() { return true; }
 	bool IsVideoCompressionEnabled() { return true; }
+	const char* GetFormatName(){ return "avi"; }
 
 private:
 	VDStringW	mSegmentBaseName;
@@ -134,6 +136,7 @@ public:
 	bool AcceptsAudio();
 	bool AreNullFramesAllowed() { return true; }
 	bool IsVideoCompressionEnabled() { return true; }
+	const char* GetFormatName(){ return "avi"; }
 
 private:
 	bool		mbUse1GBLimit;
@@ -150,6 +153,7 @@ public:
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
 	bool AcceptsAudio();
+	const char* GetFormatName(){ return "wav"; }
 
 private:
 	VDStringW	mFilename;
@@ -177,6 +181,7 @@ public:
 		this->format = format;
 	}
 	bool GetStreamControl(VDXStreamControl& sc);
+	const char* GetFormatName();
 
 private:
 	VDStringW	mFilename;
@@ -196,6 +201,7 @@ public:
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
 	bool AcceptsAudio();
 	bool AreNullFramesAllowed() { return true; }
+	const char* GetFormatName(){ return 0; }
 
 private:
 	VDStringW	mFilename;
@@ -223,6 +229,7 @@ public:
 	bool IsVideoImageOutputEnabled() { return true; }
 	bool IsVideoImageOutputRequired() { return true; }
 	int GetVideoOutputFormatOverride(int last_format);
+	const char* GetFormatName(){ return 0; }
 
 private:
 	VDStringW	mFilename;
@@ -246,6 +253,7 @@ public:
 	bool IsVideoImageOutputRequired() { return true; }
 	int GetVideoOutputFormatOverride(int last_format);
 	bool IsCompressedAudioAllowed();
+	const char* GetFormatName(){ return 0; }
 
 private:
 	VDStringW	mFilename;
@@ -273,6 +281,7 @@ public:
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
 	bool AcceptsVideo();
+	const char* GetFormatName(){ return 0; }
 
 private:
 	VDStringW	mSegmentPrefix;
@@ -290,6 +299,7 @@ public:
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
 	bool AcceptsVideo();
+	const char* GetFormatName(){ return 0; }
 
 private:
 	VDStringW	mFilename;
@@ -305,6 +315,7 @@ public:
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
 	bool AcceptsVideo();
+	const char* GetFormatName(){ return "gif"; }
 
 	void SetLoopCount(int loopCount) { mLoopCount = loopCount; }
 
@@ -323,6 +334,7 @@ public:
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
 	bool AcceptsVideo();
+	const char* GetFormatName(){ return "apng"; }
 
 	void SetLoopCount(int loopCount) { mLoopCount = loopCount; }
 	void SetAlpha(int alpha) { mAlpha = alpha; }
@@ -349,6 +361,7 @@ public:
 	bool IsVideoImageOutputRequired() { return true; }
 	bool AreNullFramesAllowed() { return true; }
 	bool IsVideoCompressionEnabled() { return false; }
+	const char* GetFormatName(){ return 0; }
 };
 
 class VDAVIOutputNullVideoSystem : public VDDubberOutputSystem {
@@ -362,6 +375,7 @@ public:
 	bool AreNullFramesAllowed() { return true; }
 	bool IsVideoCompressionEnabled() { return true; }
 	bool IsNull() { return true; }
+	const char* GetFormatName(){ return 0; }
 };
 
 class VDAVIOutputSegmentedSystem : public VDDubberOutputSystem {
@@ -377,6 +391,7 @@ public:
 	bool AcceptsAudio();
 	bool AreNullFramesAllowed();
 	bool IsVideoCompressionEnabled();
+	const char* GetFormatName(){ return mpChildSystem->GetFormatName(); }
 
 private:
 	IVDDubberOutputSystem *mpChildSystem;
