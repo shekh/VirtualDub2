@@ -329,8 +329,10 @@ void VDPixmapGenResampleRow::Compute8(void *dst0, sint32 y) {
 		dst += count;
 	} else if (uint32 count = mAxis.dx_dualclip) {
 		VDMemset8(p, src[0], mRowFiltW);
-		memcpy(p + mRowFiltW, src+1, (mSrcWidth-2));
-		VDMemset8(p + mRowFiltW + (mSrcWidth-2), src[mSrcWidth-1], mRowFiltW);
+		if (mSrcWidth>1) {
+			memcpy(p + mRowFiltW, src+1, (mSrcWidth-2));
+			VDMemset8(p + mRowFiltW + (mSrcWidth-2), src[mSrcWidth-1], mRowFiltW);
+		}
 
 		mpRowStage->Process(dst, p, count, u + ((mRowFiltW-1)<<16), dudx);
 		u += dudx*count;
@@ -388,8 +390,10 @@ void VDPixmapGenResampleRow::Compute16(void *dst0, sint32 y) {
 	// process dual-clip region
 	if (uint32 count = mAxis.dx_dualclip) {
 		VDMemset32(p, src[0], mRowFiltW);
-		memcpy(p + mRowFiltW, src+1, (mSrcWidth-2)*sizeof(uint32));
-		VDMemset16(p + mRowFiltW + (mSrcWidth-2), src[mSrcWidth-1], mRowFiltW);
+		if (mSrcWidth>1) {
+			memcpy(p + mRowFiltW, src+1, (mSrcWidth-2)*sizeof(uint32));
+			VDMemset16(p + mRowFiltW + (mSrcWidth-2), src[mSrcWidth-1], mRowFiltW);
+		}
 
 		mpRowStage->Process(dst, p, count, u + ((mRowFiltW-1)<<16), dudx);
 		u += dudx*count;
@@ -449,8 +453,10 @@ void VDPixmapGenResampleRow::Compute32(void *dst0, sint32 y) {
 	// process dual-clip region
 	if (uint32 count = mAxis.dx_dualclip) {
 		VDMemset32(p, src[0], mRowFiltW);
-		memcpy(p + mRowFiltW, src+1, (mSrcWidth-2)*sizeof(uint32));
-		VDMemset32(p + mRowFiltW + (mSrcWidth-2), src[mSrcWidth-1], mRowFiltW);
+		if (mSrcWidth>1) {
+			memcpy(p + mRowFiltW, src+1, (mSrcWidth-2)*sizeof(uint32));
+			VDMemset32(p + mRowFiltW + (mSrcWidth-2), src[mSrcWidth-1], mRowFiltW);
+		}
 
 		mpRowStage->Process(dst, p, count, u + ((mRowFiltW-1)<<16), dudx);
 		u += dudx*count;
@@ -510,8 +516,10 @@ void VDPixmapGenResampleRow::Compute64(void *dst0, sint32 y) {
 	// process dual-clip region
 	if (uint32 count = mAxis.dx_dualclip) {
 		VDMemset64(p, src[0], mRowFiltW);
-		memcpy(p + mRowFiltW, src+1, (mSrcWidth-2)*sizeof(uint64));
-		VDMemset64(p + mRowFiltW + (mSrcWidth-2), src[mSrcWidth-1], mRowFiltW);
+		if (mSrcWidth>1) {
+			memcpy(p + mRowFiltW, src+1, (mSrcWidth-2)*sizeof(uint64));
+			VDMemset64(p + mRowFiltW + (mSrcWidth-2), src[mSrcWidth-1], mRowFiltW);
+		}
 
 		mpRowStage->Process(dst, p, count, u + ((mRowFiltW-1)<<16), dudx);
 		u += dudx*count;
@@ -571,8 +579,10 @@ void VDPixmapGenResampleRow::Compute128(void *dst0, sint32 y) {
 	// process dual-clip region
 	if (uint32 count = mAxis.dx_dualclip) {
 		VDMemset128(p, src, mRowFiltW);
-		memcpy(p + 4*mRowFiltW, src+1, (mSrcWidth-2)*sizeof(uint32)*4);
-		VDMemset128(p + 4*(mRowFiltW + (mSrcWidth-2)), src + 4*(mSrcWidth-1), mRowFiltW);
+		if (mSrcWidth>1) {
+			memcpy(p + 4*mRowFiltW, src+1, (mSrcWidth-2)*sizeof(uint32)*4);
+			VDMemset128(p + 4*(mRowFiltW + (mSrcWidth-2)), src + 4*(mSrcWidth-1), mRowFiltW);
+		}
 
 		mpRowStage->Process(dst, p, count, u + ((mRowFiltW-1)<<16), dudx);
 		u += dudx*count;
