@@ -28,6 +28,7 @@ protected:
 	VDStringW mPrefix;
 	VDStringW mSuffix;
 	int mDigits;
+	int mStart;
 	int mFormat;
 	int mQuality;
 
@@ -44,7 +45,7 @@ public:
 		kFormatCount
 	};
 
-	AVIOutputImages(const wchar_t *pszPrefix, const wchar_t *pszSuffix, int iDigits, int format, int q);
+	AVIOutputImages(const wchar_t *pszPrefix, const wchar_t *pszSuffix, int iDigits, int start, int format, int q);
 	~AVIOutputImages();
 
 	IVDMediaOutputStream *createVideoStream();

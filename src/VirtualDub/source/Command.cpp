@@ -298,13 +298,13 @@ void SaveSegmentedAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_o
 	g_project->RunOperation(&outfile, FALSE, quick_opts, g_prefs.main.iDubPriority, fProp, lSpillThreshold, lSpillFrameThreshold, VDPreferencesGetRenderBackgroundPriority());
 }
 
-void SaveImageSequence(const wchar_t *szPrefix, const wchar_t *szSuffix, int minDigits, bool fProp, DubOptions *quick_opts, int targetFormat, int quality) {
+void SaveImageSequence(RequestImages& req) {
 	VDAVIOutputImagesSystem outimages;
 
-	outimages.SetFilenamePattern(szPrefix, szSuffix, minDigits);
-	outimages.SetFormat(targetFormat, quality);
-		
-	g_project->RunOperation(&outimages, FALSE, quick_opts, g_prefs.main.iDubPriority, fProp, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	outimages.SetFilenamePattern(req.filePrefix.c_str(), req.fileSuffix.c_str(), req.minDigits, req.startDigit);
+	outimages.SetFormat(req.imageFormat, req.quality);
+	
+	g_project->RunOperation(&outimages, FALSE, req.opt, g_prefs.main.iDubPriority, req.propagateErrors, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 ///////////////////////////////////////////////////////////////////////////

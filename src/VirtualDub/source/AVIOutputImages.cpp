@@ -76,7 +76,7 @@ private:
 	vdfastvector<char>				mOutputBuffer;
 
 public:
-	AVIVideoImageOutputStream(const wchar_t *pszPrefix, const wchar_t *pszSuffix, int iDigits, int format, int quality);
+	AVIVideoImageOutputStream(const wchar_t *pszPrefix, const wchar_t *pszSuffix, int iDigits, int start, int format, int quality);
 	~AVIVideoImageOutputStream();
 
 	void write(uint32 flags, const void *pBuffer, uint32 cbBuffer, uint32 lSamples) {
@@ -102,7 +102,7 @@ public:
 	}
 };
 
-AVIVideoImageOutputStream::AVIVideoImageOutputStream(const wchar_t *pszPrefix, const wchar_t *pszSuffix, int iDigits, int format, int quality)
+AVIVideoImageOutputStream::AVIVideoImageOutputStream(const wchar_t *pszPrefix, const wchar_t *pszSuffix, int iDigits, int start, int format, int quality)
 	: mpPackBuffer(NULL)
 	, mpszPrefix(pszPrefix)
 	, mpszSuffix(pszSuffix)
@@ -110,7 +110,7 @@ AVIVideoImageOutputStream::AVIVideoImageOutputStream(const wchar_t *pszPrefix, c
 	, mFormat(format)
 	, mQuality(quality)
 {
-	dwFrame = 0;
+	dwFrame = start;
 
 	if (mFormat == AVIOutputImages::kFormatJPEG)
 		mpJPEGEncoder = VDCreateJPEGEncoder();
@@ -452,10 +452,11 @@ void AVIVideoImageOutputStream::partialWriteBegin(uint32 flags, uint32 bytes, ui
 
 ////////////////////////////////////
 
-AVIOutputImages::AVIOutputImages(const wchar_t *szFilePrefix, const wchar_t *szFileSuffix, int digits, int format, int quality)
+AVIOutputImages::AVIOutputImages(const wchar_t *szFilePrefix, const wchar_t *szFileSuffix, int digits, int start, int format, int quality)
 	: mPrefix(szFilePrefix)
 	, mSuffix(szFileSuffix)
 	, mDigits(digits)
+	, mStart(start)
 	, mFormat(format)
 	, mQuality(quality)
 {
@@ -466,7 +467,7 @@ AVIOutputImages::~AVIOutputImages() {
 }
 
 void AVIOutputImages::WriteSingleImage(const wchar_t *name, int format, int q, VDPixmap* px) {
-	AVIVideoImageOutputStream stream(name,L"",0,format,q);
+	AVIVideoImageOutputStream stream(name,L"",0,0,format,q);
 
 	VDAVIOutputImagesSystem system;
 	system.SetFormat(format,q);
@@ -514,7 +515,7 @@ void AVIOutputImages::WriteSingleImage(const wchar_t *name, int format, int q, V
 
 IVDMediaOutputStream *AVIOutputImages::createVideoStream() {
 	VDASSERT(!videoOut);
-	if (!(videoOut = new_nothrow AVIVideoImageOutputStream(mPrefix.c_str(), mSuffix.c_str(), mDigits, mFormat, mQuality)))
+	if (!(videoOut = new_nothrow AVIVideoImageOutputStream(mPrefix.c_str(), mSuffix.c_str(), mDigits, mStart, mFormat, mQuality)))
 		throw MyMemoryError();
 	return videoOut;
 }

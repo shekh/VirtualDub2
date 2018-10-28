@@ -272,7 +272,7 @@ public:
 	VDAVIOutputImagesSystem();
 	~VDAVIOutputImagesSystem();
 
-	void SetFilenamePattern(const wchar_t *pszSegmentPrefix, const wchar_t *pszSegmentSuffix, int nMinimumDigits);
+	void SetFilenamePattern(const wchar_t *pszSegmentPrefix, const wchar_t *pszSegmentSuffix, int nMinimumDigits, int startDigit);
 	void SetFormat(int format, int quality);
 	bool IsVideoImageOutputEnabled();
 	bool IsVideoImageOutputRequired();
@@ -287,6 +287,7 @@ private:
 	VDStringW	mSegmentPrefix;
 	VDStringW	mSegmentSuffix;
 	int			mSegmentDigits;
+	int			mStartDigit;
 	int			mFormat;			// from AVIOutputImages
 	int			mQuality;
 };

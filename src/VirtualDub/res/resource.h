@@ -547,6 +547,7 @@
 #define IDC_SELECT_DIR                  1170
 #define IDC_STATIC_LASTFRAMENAME        1171
 #define IDC_STATIC_REQCOUNT             1172
+#define IDC_FILENAME_START              1172
 #define IDC_STATIC_FRAMECNT             1173
 #define IDC_STATIC_FSNAME               1174
 #define IDC_STATIC_AUDIOSEGS            1175
@@ -608,6 +609,8 @@
 #define IDC_CHROMAAGCENODD              1187
 #define IDC_TIFF_ZIP                    1187
 #define IDC_LUMACOMBEVEN                1188
+#define IDC_TIFF_LZW2                   1188
+#define IDC_START_SELECTION             1188
 #define IDC_CURRENT_VALUE               1189
 #define IDC_LUMACOMBODD                 1189
 #define IDC_FILTER_MODE                 1194

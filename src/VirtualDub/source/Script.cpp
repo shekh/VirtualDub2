@@ -2185,15 +2185,42 @@ static void func_VirtualDub_SaveImageSequence(IVDScriptInterpreter *, VDScriptVa
 	const VDStringW prefix(VDTextU8ToW(VDStringA(*arglist[0].asString())));
 	const VDStringW suffix(VDTextU8ToW(VDStringA(*arglist[1].asString())));
 
-	int q = 95;
+	DubOptions opts(g_dubOpts);
+	InitBatchOptions(opts);
 
+	RequestImages req;
+	req.opt = &opts;
+	req.propagateErrors = true;
+	req.filePrefix = prefix;
+	req.fileSuffix = suffix;
+	req.minDigits = arglist[2].asInt();
+	req.startDigit = 0;
+	req.imageFormat = arglist[3].asInt();
+	req.quality = 95;
 	if (arg_count >= 5)
-		q = arglist[4].asInt();
+		req.quality = arglist[4].asInt();
+	SaveImageSequence(req);
+}
+
+static void func_VirtualDub_SaveImageSequence2(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	const VDStringW prefix(VDTextU8ToW(VDStringA(*arglist[0].asString())));
+	const VDStringW suffix(VDTextU8ToW(VDStringA(*arglist[1].asString())));
 
 	DubOptions opts(g_dubOpts);
 	InitBatchOptions(opts);
 
-	SaveImageSequence(prefix.c_str(), suffix.c_str(), arglist[2].asInt(), true, &opts, arglist[3].asInt(), q);
+	RequestImages req;
+	req.opt = &opts;
+	req.propagateErrors = true;
+	req.filePrefix = prefix;
+	req.fileSuffix = suffix;
+	req.minDigits = arglist[2].asInt();
+	req.startDigit = arglist[3].asInt();
+	req.imageFormat = arglist[4].asInt();
+	req.quality = 95;
+	if (arg_count >= 6)
+		req.quality = arglist[5].asInt();
+	SaveImageSequence(req);
 }
 
 static void func_VirtualDub_SaveWAV(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
@@ -2390,6 +2417,8 @@ static const VDScriptFunctionDef obj_VirtualDub_functbl[]={
 	{ func_VirtualDub_SaveSegmentedAVI,	NULL,					"0siii" },
 	{ func_VirtualDub_SaveImageSequence,	"SaveImageSequence",	"0ssii" },
 	{ func_VirtualDub_SaveImageSequence,	NULL,					"0ssiii" },
+	{ func_VirtualDub_SaveImageSequence2,	"SaveImageSequence2",	"0ssiii" },
+	{ func_VirtualDub_SaveImageSequence2,	NULL,					"0ssiiii" },
 	{ func_VirtualDub_SaveWAV,			"SaveWAV",				"0s" },
 	{ func_VirtualDub_SaveWAV,			NULL,					"0si" },
 	{ func_VirtualDub_SaveAudio,		"SaveAudio",			"0s" },

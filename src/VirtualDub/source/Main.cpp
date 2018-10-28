@@ -1411,6 +1411,7 @@ public:
 	void UpdateChecks();
 	void UpdateSlider();
 	void ChangeExtension(const wchar_t *newExtension);
+	void ChangeTimeline();
 
 	VDStringW	mPrefix;
 	VDStringW	mPostfix;
@@ -1418,10 +1419,25 @@ public:
 	VDStringW	mFormatString;
 
 	int digits;
+	int startDigit;
 	sint64 mFirstFrame, mLastFrame;
 	int mFormat;
 	int mQuality;
 	bool mbQuickCompress;
+	bool useTimeline;
+	bool addJob;
+
+	int actualDigits(){
+		int r = digits;
+		VDStringA s;
+		if(useTimeline){
+			s.append_sprintf("%d",mLastFrame);
+		} else {
+			s.append_sprintf("%d",mLastFrame-mFirstFrame+startDigit);
+		}
+		if(s.length()>r) r = s.length();
+		return r;
+	}
 };
 
 VDSaveImageSeqDialogW32::VDSaveImageSeqDialogW32()
@@ -1431,16 +1447,27 @@ VDSaveImageSeqDialogW32::VDSaveImageSeqDialogW32()
 	, mLastFrame(0)
 	, mFormat(AVIOutputImages::kFormatBMP)
 {
+	addJob = false;
+	useTimeline = false;
+	startDigit = 0;
 }
 VDSaveImageSeqDialogW32::~VDSaveImageSeqDialogW32() {}
 
 void VDSaveImageSeqDialogW32::UpdateFilenames() {
 	mFormatString = VDMakePath(mDirectory.c_str(), mPrefix.c_str());
 	
-	VDStringW format(mFormatString + L"%0*lld" + mPostfix);
+	VDStringW format(mPrefix + L"%0*lld" + mPostfix);
+	int digits = actualDigits();
 
-	VDSetWindowTextW32(GetDlgItem(mhdlg, IDC_STATIC_FIRSTFRAMENAME), VDswprintf(format.c_str(), 2, &digits, &mFirstFrame).c_str());
-	VDSetWindowTextW32(GetDlgItem(mhdlg, IDC_STATIC_LASTFRAMENAME), VDswprintf(format.c_str(), 2, &digits, &mLastFrame).c_str());
+	sint64 t0 = startDigit;
+	sint64 t1 = mLastFrame - mFirstFrame + startDigit;
+	if (useTimeline) {
+		t0 = mFirstFrame;
+		t1 = mLastFrame;
+	}
+
+	VDSetWindowTextW32(GetDlgItem(mhdlg, IDC_STATIC_FIRSTFRAMENAME), VDswprintf(format.c_str(), 2, &digits, &t0).c_str());
+	VDSetWindowTextW32(GetDlgItem(mhdlg, IDC_STATIC_LASTFRAMENAME), VDswprintf(format.c_str(), 2, &digits, &t1).c_str());
 }
 
 void VDSaveImageSeqDialogW32::UpdateEnables() {
@@ -1481,12 +1508,26 @@ void VDSaveImageSeqDialogW32::ChangeExtension(const wchar_t *newExtension) {
 	}
 }
 
+void VDSaveImageSeqDialogW32::ChangeTimeline() {
+	if (useTimeline) {
+		SetDlgItemInt(mhdlg, IDC_FILENAME_START, UINT(mFirstFrame), FALSE);
+		EnableWindow(GetDlgItem(mhdlg, IDC_FILENAME_START), FALSE);
+	} else {
+		SetDlgItemInt(mhdlg, IDC_FILENAME_START, startDigit, FALSE);
+		EnableWindow(GetDlgItem(mhdlg, IDC_FILENAME_START), TRUE);
+	}
+}
+
 INT_PTR VDSaveImageSeqDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 	UINT uiTemp;
 	BOOL fSuccess;
 
 	switch(message) {
 	case WM_INITDIALOG:
+		CheckDlgButton(mhdlg,IDC_SAVE_DONOW, addJob ? BST_UNCHECKED:BST_CHECKED);
+		CheckDlgButton(mhdlg,IDC_SAVE_MAKEJOB, addJob ? BST_CHECKED:BST_UNCHECKED);
+		CheckDlgButton(mhdlg, IDC_START_SELECTION, useTimeline ? BST_CHECKED : BST_UNCHECKED);
+		ChangeTimeline();
 		SendDlgItemMessage(mhdlg, IDC_QUALITY, TBM_SETRANGE, TRUE, MAKELONG(0,100));
 		SendDlgItemMessage(mhdlg, IDC_QUALITY, TBM_SETPOS, TRUE, mQuality);
 		VDSetWindowTextW32(GetDlgItem(mhdlg, IDC_FILENAME_PREFIX), mPrefix.c_str());
@@ -1504,8 +1545,9 @@ INT_PTR VDSaveImageSeqDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 		UpdateEnables();
 		UpdateChecks();
 		UpdateSlider();
-
-		return TRUE;
+		SetFocus(GetDlgItem(mhdlg,IDC_FILENAME_PREFIX));
+		SendMessage(GetDlgItem(mhdlg,IDC_FILENAME_PREFIX),EM_SETSEL,0,mPrefix.length());
+		return FALSE;
 
 	case WM_HSCROLL:
 		UpdateSlider();
@@ -1534,6 +1576,19 @@ INT_PTR VDSaveImageSeqDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 
 				if (digits > 15)
 					digits = 15;
+
+				UpdateFilenames();
+			}
+			return TRUE;
+
+		case IDC_FILENAME_START:
+			if (HIWORD(wParam) != EN_CHANGE) break;
+			uiTemp = GetDlgItemInt(mhdlg, IDC_FILENAME_START, &fSuccess, FALSE);
+			if (fSuccess) {
+				startDigit = uiTemp;
+
+				if (startDigit < 0)
+					startDigit = 0;
 
 				UpdateFilenames();
 			}
@@ -1635,6 +1690,17 @@ INT_PTR VDSaveImageSeqDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lPa
 			}
 			return TRUE;
 
+		case IDC_SAVE_DONOW:
+		case IDC_SAVE_MAKEJOB:
+			addJob = IsDlgButtonChecked(mhdlg,IDC_SAVE_MAKEJOB)!=0;
+			break;
+
+		case IDC_START_SELECTION:
+			useTimeline = !!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0);
+			ChangeTimeline();
+			UpdateFilenames();
+			return TRUE;
+
 		case IDOK:
 			End(TRUE);
 			return TRUE;
@@ -1656,9 +1722,11 @@ static const char g_szRegKeyImageSequencePrefix[]="Image sequence: prefix";
 static const char g_szRegKeyImageSequenceSuffix[]="Image sequence: suffix";
 static const char g_szRegKeyImageSequenceMinDigits[]="Image sequence: min digits";
 static const char g_szRegKeyImageSequenceQuickCompress[]="Image sequence: quick compress";
+static const char g_szRegKeyImageSequenceUseTimeline[]="Image sequence: use timeline";
 
 void SaveImageSeq(HWND hwnd, bool queueAsJob) {
 	VDSaveImageSeqDialogW32 dlg;
+	dlg.addJob = queueAsJob;
 
 	if (!inputVideo) {
 		MessageBox(hwnd, "No input video stream to process.", g_szError, MB_OK);
@@ -1672,9 +1740,15 @@ void SaveImageSeq(HWND hwnd, bool queueAsJob) {
 		dlg.mFormat = AVIOutputImages::kFormatTGA;
 	dlg.mFirstFrame	= 0;
 	dlg.mLastFrame	= g_project->GetFrameCount() - 1;
+	if (g_project->IsSelectionPresent()) {
+		dlg.mFirstFrame	= g_project->GetSelectionStartFrame();
+		dlg.mLastFrame	= g_project->GetSelectionEndFrame() - 1;
+	}
+
 	dlg.mQuality	= key.getInt(g_szRegKeyImageSequenceQuality, 95);
 	dlg.mbQuickCompress	= key.getBool(g_szRegKeyImageSequenceQuickCompress, true);
 	dlg.digits		= key.getInt(g_szRegKeyImageSequenceMinDigits, 4);
+	dlg.useTimeline	= key.getBool(g_szRegKeyImageSequenceUseTimeline, false);
 
 	dlg.mPostfix = L".tga";
 
@@ -1695,23 +1769,35 @@ void SaveImageSeq(HWND hwnd, bool queueAsJob) {
 		key.setString(g_szRegKeyImageSequencePrefix, dlg.mPrefix.c_str());
 		key.setString(g_szRegKeyImageSequenceSuffix, dlg.mPostfix.c_str());
 		key.setBool(g_szRegKeyImageSequenceQuickCompress, dlg.mbQuickCompress);
+		key.setBool(g_szRegKeyImageSequenceUseTimeline, dlg.useTimeline);
+
+		dlg.digits = dlg.actualDigits();
+		if (dlg.useTimeline) dlg.startDigit = int(dlg.mFirstFrame);
 
 		int q = dlg.mQuality;
 
 		if (dlg.mFormat == AVIOutputImages::kFormatPNG)
 			q = dlg.mbQuickCompress ? 0 : 100;
 
-		if (queueAsJob) {
+		if (dlg.addJob) {
 			JobRequestImages req;
 			SetProject(req, g_project);
 			req.filePrefix = dlg.mFormatString;
 			req.fileSuffix = dlg.mPostfix;
 			req.minDigits = dlg.digits;
+			req.startDigit = dlg.startDigit;
 			req.imageFormat = dlg.mFormat;
 			req.quality = q;
 			JobAddConfigurationImages(req);
 		} else {
-			SaveImageSequence(dlg.mFormatString.c_str(), dlg.mPostfix.c_str(), dlg.digits, false, NULL, dlg.mFormat, q);
+			RequestImages req;
+			req.filePrefix = dlg.mFormatString;
+			req.fileSuffix = dlg.mPostfix;
+			req.minDigits = dlg.digits;
+			req.startDigit = dlg.startDigit;
+			req.imageFormat = dlg.mFormat;
+			req.quality = q;
+			SaveImageSequence(req);
 		}
 	}
 }

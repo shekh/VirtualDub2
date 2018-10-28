@@ -88,6 +88,7 @@ struct JobRequestImages: public JobRequest{
 	VDStringW filePrefix;
 	VDStringW fileSuffix;
 	int minDigits;
+	int startDigit;
 	int imageFormat;
 	int quality;
 };

@@ -768,7 +768,10 @@ void JobAddConfigurationImages(JobRequestImages& req) {
 	VDStringA sprefix = VDEncodeScriptString(req.filePrefix);
 	VDStringA ssuffix = VDEncodeScriptString(req.fileSuffix);
 
-	output.addf("VirtualDub.SaveImageSequence(\"%s\", \"%s\", %d, %d, %d);", sprefix.c_str(), ssuffix.c_str(), req.minDigits, req.imageFormat, req.quality);
+	if (req.startDigit>0)
+		output.addf("VirtualDub.SaveImageSequence2(\"%s\", \"%s\", %d, %d, %d, %d);", sprefix.c_str(), ssuffix.c_str(), req.minDigits, req.startDigit, req.imageFormat, req.quality);
+	else
+		output.addf("VirtualDub.SaveImageSequence(\"%s\", \"%s\", %d, %d, %d);", sprefix.c_str(), ssuffix.c_str(), req.minDigits, req.imageFormat, req.quality);
 
 	JobAddClose(output);
 

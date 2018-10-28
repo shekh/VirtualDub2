@@ -632,7 +632,7 @@ VDAVIOutputImagesSystem::~VDAVIOutputImagesSystem() {
 }
 
 IVDMediaOutput *VDAVIOutputImagesSystem::CreateSegment() {
-	vdautoptr<AVIOutputImages> pOutput(new AVIOutputImages(mSegmentPrefix.c_str(), mSegmentSuffix.c_str(), mSegmentDigits, mFormat, mQuality));
+	vdautoptr<AVIOutputImages> pOutput(new AVIOutputImages(mSegmentPrefix.c_str(), mSegmentSuffix.c_str(), mSegmentDigits, mStartDigit, mFormat, mQuality));
 
 	if (!mVideoFormat.empty())
 		pOutput->createVideoStream()->setFormat(&mVideoFormat[0], mVideoFormat.size());
@@ -649,10 +649,11 @@ void VDAVIOutputImagesSystem::CloseSegment(IVDMediaOutput *pSegment, bool bLast,
 	pFile->finalize();
 }
 
-void VDAVIOutputImagesSystem::SetFilenamePattern(const wchar_t *pszPrefix, const wchar_t *pszSuffix, int nMinimumDigits) {
+void VDAVIOutputImagesSystem::SetFilenamePattern(const wchar_t *pszPrefix, const wchar_t *pszSuffix, int nMinimumDigits, int startDigit) {
 	mSegmentPrefix		= pszPrefix;
 	mSegmentSuffix		= pszSuffix;
 	mSegmentDigits		= nMinimumDigits;
+	mStartDigit		= startDigit;
 }
 
 void VDAVIOutputImagesSystem::SetFormat(int format, int quality) {

@@ -99,6 +99,15 @@ struct RequestWAV: public CommandRequest {
 	}
 };
 
+struct RequestImages: public CommandRequest {
+	VDStringW filePrefix;
+	VDStringW fileSuffix;
+	int minDigits;
+	int startDigit;
+	int imageFormat;
+	int quality;
+};
+
 void AppendAVI(const wchar_t *pszFile);
 int AppendAVIAutoscanEnum(const wchar_t *pszFile);
 void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first=false);
@@ -108,7 +117,7 @@ void SavePlugin(RequestVideo& req);
 void SaveStripedAVI(const wchar_t *szFile);
 void SaveStripeMaster(const wchar_t *szFile);
 void SaveSegmentedAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, long lSpillThreshold, long lSpillFrameThreshold, int digits);
-void SaveImageSequence(const wchar_t *szPrefix, const wchar_t *szSuffix, int minDigits, bool fProp, DubOptions *quick_opts, int targetFormat, int quality);
+void SaveImageSequence(RequestImages& req);
 void EnsureSubset();
 void ScanForUnreadableFrames(FrameSubset *pSubset, IVDVideoSource *pVideoSource);
 
