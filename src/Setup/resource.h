@@ -8,6 +8,8 @@
 #define IDC_UNINSTALL                   6
 #define IDC_ABOUT                       7
 #define IDC_EXECUTE                     8
+#define IDC_4GB_ON                      9
+#define IDC_4GB_OFF                     10
 #define IDD_MAINWINDOW                  101
 #define IDD_ATTEMPT                     102
 #define IDD_ABOUT                       105

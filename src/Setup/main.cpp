@@ -8,17 +8,32 @@
 
 #include <windows.h>
 #include <commctrl.h>
+#include <shlwapi.h>
+#include <shlobj.h>
 
 #include "resource.h"
 #include "registry.h"
+
+#pragma comment(lib,"shlwapi.lib")
 
 HWND g_hwnd;
 HINSTANCE g_hInst; // current instance
 char szAppName[] = "VirtualDub Setup Class"; // The name of this application
 char szTitle[]   = ""; // The title bar text
 char g_szWinPath[MAX_PATH];
+char g_szSys32Path[MAX_PATH];
+char g_szSys64Path[MAX_PATH];
 char g_szProgPath[MAX_PATH];
 char g_szTempPath[MAX_PATH];
+BOOL is64;
+
+typedef BOOL WINAPI fntype_Wow64DisableWow64FsRedirection(PVOID *OldValue);
+typedef BOOL WINAPI fntype_Wow64RevertWow64FsRedirection(PVOID OldValue);
+fntype_Wow64DisableWow64FsRedirection* pfnWow64DisableWow64FsRedirection = (fntype_Wow64DisableWow64FsRedirection*)GetProcAddress(GetModuleHandleA("kernel32.dll"), "Wow64DisableWow64FsRedirection");
+fntype_Wow64RevertWow64FsRedirection* pfnWow64RevertWow64FsRedirection = (fntype_Wow64RevertWow64FsRedirection*)GetProcAddress(GetModuleHandleA("kernel32.dll"), "Wow64RevertWow64FsRedirection");
+
+typedef WINADVAPI LSTATUS APIENTRY fntype_RegDeleteKeyExA(HKEY hKey, LPCSTR lpSubKey, REGSAM samDesired, DWORD Reserved);
+fntype_RegDeleteKeyExA* pfnRegDeleteKeyExA = (fntype_RegDeleteKeyExA*)GetProcAddress(GetModuleHandleA("advapi32.dll"), "RegDeleteKeyExA");
 
 ///////////////////
 
@@ -28,6 +43,8 @@ LRESULT APIENTRY WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 BOOL APIENTRY InstallAVIFileDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 BOOL APIENTRY UninstallAVIFileDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 BOOL APIENTRY RemoveSettingsDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+BOOL APIENTRY EnableLAADlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+BOOL APIENTRY DisableLAADlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 BOOL APIENTRY AboutDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 ///////////
@@ -40,7 +57,14 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	///////////
 
+	IsWow64Process(GetCurrentProcess(),&is64);
 	if (!GetWindowsDirectory(g_szWinPath, sizeof g_szWinPath)) return FALSE;
+	if (is64) {
+		if (SHGetFolderPath(0,CSIDL_SYSTEMX86,0,0,g_szSys32Path)!=S_OK) return FALSE;
+		if (SHGetFolderPath(0,CSIDL_SYSTEM,0,0,g_szSys64Path)!=S_OK) return FALSE;
+	} else {
+		if (SHGetFolderPath(0,CSIDL_SYSTEM,0,0,g_szSys32Path)!=S_OK) return FALSE;
+	}
 	if (!GetModuleFileName(NULL, g_szTempPath, sizeof g_szTempPath))
 		return FALSE;
 	if (!GetFullPathName(g_szTempPath, sizeof g_szProgPath, g_szProgPath, &lpszFilePart))
@@ -66,13 +90,13 @@ BOOL Init(HINSTANCE hInstance, int nCmdShow)
 {
     WNDCLASS  wc;
 
-    // Register the window class for my window.                                                           */
+    // Register the window class for my window.
     wc.style = 0;                       // Class style.
     wc.lpfnWndProc = (WNDPROC)WndProc; // Window procedure for this class.
     wc.cbClsExtra = 0;                  // No per-class extra data.
     wc.cbWndExtra = DLGWINDOWEXTRA;                  // No per-window extra data.
     wc.hInstance = hInstance;           // Application that owns the class.
-    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_VIRTUALDUB));
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)(COLOR_3DFACE+1); 
     wc.lpszMenuName =  NULL;   // Name of menu resource in .RC file. 
@@ -126,6 +150,12 @@ LRESULT APIENTRY WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				break;
 			case IDC_REMOVE:
 				DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ATTEMPT), hWnd, (DLGPROC)RemoveSettingsDlgProc);
+				break;
+			case IDC_4GB_ON:
+				DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ATTEMPT), hWnd, (DLGPROC)EnableLAADlgProc);
+				break;
+			case IDC_4GB_OFF:
+				DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ATTEMPT), hWnd, (DLGPROC)DisableLAADlgProc);
 				break;
 			case IDC_ABOUT:
 				DialogBox(g_hInst, MAKEINTRESOURCE(IDD_ABOUT), hWnd, (DLGPROC)AboutDlgProc);
@@ -269,8 +299,32 @@ BOOL InstallRegStr(HKEY hkBase, char *szKeyName, char *szName, char *szValue) {
 	return TRUE;
 }
 
+BOOL InstallRegStr64(HKEY hkBase, char *szKeyName, char *szName, char *szValue) {
+	char buf[256];
+
+	if (!SetRegString64(hkBase, szKeyName, szName, szValue)) {
+		sprintf(buf,"Couldn't set x64 registry key %s\\%s",szKeyName,szName?szName:"(default)");
+		MessageBox(NULL, buf, "Install error", MB_OK);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+BOOL InstallDeleteKey(HKEY key, char *name) {
+	LSTATUS r = RegDeleteKey(key,name);
+	if (r==ERROR_FILE_NOT_FOUND) return TRUE;
+	return r==ERROR_SUCCESS;
+}
+
+BOOL InstallDeleteKey64(HKEY key, char *name) {
+	LSTATUS r = pfnRegDeleteKeyExA(key,name,KEY_WOW64_64KEY,0);
+	if (r==ERROR_FILE_NOT_FOUND) return TRUE;
+	return r==ERROR_SUCCESS;
+}
+
 BOOL InstallDeleteFile(char *szFileFormat, ...) {
-	char szFile[256];
+	char szFile[MAX_PATH+50];
 	va_list val;
 
 	va_start(val, szFileFormat);
@@ -284,10 +338,11 @@ BOOL InstallDeleteFile(char *szFileFormat, ...) {
 	return TRUE;
 }
 
-
 ///////////////////////////////////////
 
 BOOL APIENTRY InstallAVIFileDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+	BOOL fSuccess;
+
 	switch(msg) {
 		case WM_INITDIALOG:
 			{
@@ -295,8 +350,16 @@ BOOL APIENTRY InstallAVIFileDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 
 				SetWindowText(hDlg, "Install AVIFile frameclient");
 
-				ListboxAddf(hwndListbox, "Copy VDREMOTE.DLL to %s\\SYSTEM\\VDREMOTE.DLL", g_szWinPath);
-				ListboxAddf(hwndListbox, "Copy VDSRVLNK.DLL to %s\\SYSTEM\\VDSRVLNK.DLL", g_szWinPath);
+				if (is64) {
+					ListboxAddf(hwndListbox, "Copy VDREMOTE.DLL to %s\\VDREMOTE.DLL", g_szSys32Path);
+					ListboxAddf(hwndListbox, "Copy VDSRVLNK.DLL to %s\\VDSRVLNK.DLL", g_szSys32Path);
+					ListboxAddf(hwndListbox, "Copy VDREMOTE64.DLL to %s\\VDREMOTE64.DLL", g_szSys64Path);
+					ListboxAddf(hwndListbox, "Copy VDSRVLNK64.DLL to %s\\VDSRVLNK64.DLL", g_szSys64Path);
+				} else {
+					ListboxAddf(hwndListbox, "Copy VDREMOTE.DLL to %s\\VDREMOTE.DLL", g_szSys32Path);
+					ListboxAddf(hwndListbox, "Copy VDSRVLNK.DLL to %s\\VDSRVLNK.DLL", g_szSys32Path);
+				}
+
 				ListboxAddf(hwndListbox, "Add VDRemote class and AVIFile entries to Registry");
 			}
 			return TRUE;
@@ -304,16 +367,39 @@ BOOL APIENTRY InstallAVIFileDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 		case WM_COMMAND:
 			switch(LOWORD(wParam)) {
 			case IDOK:
-				if (	InstallFile("vdremote.dll","%s\\system\\vdremote.dll",g_szWinPath)
-					&&	InstallFile("vdsvrlnk.dll","%s\\system\\vdsvrlnk.dll",g_szWinPath)
-					&&	InstallRegStr(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}",NULL,"VirtualDub link handler")
-					&&	InstallRegStr(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32",NULL,"vdremote.dll")
-					&&	InstallRegStr(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32","ThreadingModel","Apartment")
-					&&	InstallRegStr(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32\\AVIFile",NULL,"1")
-					&&	InstallRegStr(HKEY_CLASSES_ROOT,"AVIFile\\Extensions\\VDR",NULL,"{894288e0-0948-11d2-8109-004845000eb5}")
-					&&	InstallRegStr(HKEY_CLASSES_ROOT,"AVIFile\\RIFFHandlers\\VDRM",NULL,"{894288e0-0948-11d2-8109-004845000eb5}")
-					)
 
+				fSuccess = true;
+
+				if (is64) {
+					PVOID redir;
+					pfnWow64DisableWow64FsRedirection(&redir);
+					fSuccess &= InstallFile("vdremote.dll","%s\\vdremote.dll",g_szSys32Path);
+					fSuccess &= InstallFile("vdsvrlnk.dll","%s\\vdsvrlnk.dll",g_szSys32Path);
+					fSuccess &= InstallFile("vdremote64.dll","%s\\vdremote64.dll",g_szSys64Path);
+					fSuccess &= InstallFile("vdsvrlnk64.dll","%s\\vdsvrlnk64.dll",g_szSys64Path);
+					pfnWow64RevertWow64FsRedirection(&redir);
+				} else {
+					fSuccess &= InstallFile("vdremote.dll","%s\\vdremote.dll",g_szSys32Path);
+					fSuccess &= InstallFile("vdremote.dll","%s\\vdsvrlnk.dll",g_szSys32Path);
+				}
+
+				if (is64) {
+					fSuccess &= InstallRegStr64(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}",NULL,"VirtualDub link handler");
+					fSuccess &= InstallRegStr64(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32",NULL,"vdremote64.dll");
+					fSuccess &= InstallRegStr64(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32","ThreadingModel","Apartment");
+					fSuccess &= InstallRegStr64(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32\\AVIFile",NULL,"1");
+					fSuccess &= InstallRegStr64(HKEY_CLASSES_ROOT,"AVIFile\\Extensions\\VDR",NULL,"{894288e0-0948-11d2-8109-004845000eb5}");
+					fSuccess &= InstallRegStr64(HKEY_CLASSES_ROOT,"AVIFile\\RIFFHandlers\\VDRM",NULL,"{894288e0-0948-11d2-8109-004845000eb5}");
+				}
+
+				fSuccess &= InstallRegStr(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}",NULL,"VirtualDub link handler");
+				fSuccess &= InstallRegStr(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32",NULL,"vdremote.dll");
+				fSuccess &= InstallRegStr(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32","ThreadingModel","Apartment");
+				fSuccess &= InstallRegStr(HKEY_CLASSES_ROOT,"CLSID\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32\\AVIFile",NULL,"1");
+				fSuccess &= InstallRegStr(HKEY_CLASSES_ROOT,"AVIFile\\Extensions\\VDR",NULL,"{894288e0-0948-11d2-8109-004845000eb5}");
+				fSuccess &= InstallRegStr(HKEY_CLASSES_ROOT,"AVIFile\\RIFFHandlers\\VDRM",NULL,"{894288e0-0948-11d2-8109-004845000eb5}");
+
+				if (fSuccess)
 					MessageBox(hDlg, "AVIFile frameclient install successful.", "VirtualDub Setup", MB_OK);
 				else
 					MessageBox(hDlg, "AVIFile frameclient install failed.", "VirtualDub Setup", MB_OK);
@@ -330,6 +416,7 @@ BOOL APIENTRY InstallAVIFileDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 
 BOOL APIENTRY UninstallAVIFileDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
 	BOOL fSuccess;
+	BOOL fRegSuccess;
 
 	switch(msg) {
 		case WM_INITDIALOG:
@@ -338,6 +425,12 @@ BOOL APIENTRY UninstallAVIFileDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 
 				SetWindowText(hDlg, "Uninstall AVIFile frameclient");
 
+				if (is64) {
+					ListboxAddf(hwndListbox, "Delete %s\\VDREMOTE.DLL", g_szSys32Path);
+					ListboxAddf(hwndListbox, "Delete %s\\VDSRVLNK.DLL", g_szSys32Path);
+					ListboxAddf(hwndListbox, "Delete %s\\VDREMOTE64.DLL", g_szSys64Path);
+					ListboxAddf(hwndListbox, "Delete %s\\VDSRVLNK64.DLL", g_szSys64Path);
+				}
 				ListboxAddf(hwndListbox, "Delete %s\\SYSTEM\\VDREMOTE.DLL", g_szWinPath);
 				ListboxAddf(hwndListbox, "Delete %s\\SYSTEM\\VDSRVLNK.DLL", g_szWinPath);
 				ListboxAddf(hwndListbox, "Remove VDRemote class and AVIFile entries from Registry");
@@ -347,15 +440,37 @@ BOOL APIENTRY UninstallAVIFileDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM
 		case WM_COMMAND:
 			switch(LOWORD(wParam)) {
 			case IDOK:
-				fSuccess =  InstallDeleteFile("%s\\system\\vdremote.dll",g_szWinPath);
+				fSuccess = true;
+				if (is64) {
+					PVOID redir;
+					pfnWow64DisableWow64FsRedirection(&redir);
+					fSuccess &= InstallDeleteFile("%s\\vdremote.dll",g_szSys32Path);
+					fSuccess &= InstallDeleteFile("%s\\vdsvrlnk.dll",g_szSys32Path);
+					fSuccess &= InstallDeleteFile("%s\\vdremote64.dll",g_szSys64Path);
+					fSuccess &= InstallDeleteFile("%s\\vdsvrlnk64.dll",g_szSys64Path);
+					pfnWow64RevertWow64FsRedirection(&redir);
+				}
+
+				fSuccess &= InstallDeleteFile("%s\\system\\vdremote.dll",g_szWinPath);
 				fSuccess &= InstallDeleteFile("%s\\system\\vdsvrlnk.dll",g_szWinPath);
 
-				if (	ERROR_SUCCESS != RegDeleteKey(HKEY_CLASSES_ROOT,"Clsid\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32\\AVIFile")
-					||	ERROR_SUCCESS != RegDeleteKey(HKEY_CLASSES_ROOT,"Clsid\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32")
-					||	ERROR_SUCCESS != RegDeleteKey(HKEY_CLASSES_ROOT,"Clsid\\{894288e0-0948-11d2-8109-004845000eb5}")
-					||	ERROR_SUCCESS != RegDeleteKey(HKEY_CLASSES_ROOT,"AVIFile\\Extensions\\VDR")
-					||	ERROR_SUCCESS != RegDeleteKey(HKEY_CLASSES_ROOT,"AVIFile\\RIFFHandlers\\VDRM"))
+				fRegSuccess = true;
 
+				if (is64) {
+					fRegSuccess &= InstallDeleteKey64(HKEY_CLASSES_ROOT,"Clsid\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32\\AVIFile");
+					fRegSuccess &= InstallDeleteKey64(HKEY_CLASSES_ROOT,"Clsid\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32");
+					fRegSuccess &= InstallDeleteKey64(HKEY_CLASSES_ROOT,"Clsid\\{894288e0-0948-11d2-8109-004845000eb5}");
+					fRegSuccess &= InstallDeleteKey64(HKEY_CLASSES_ROOT,"AVIFile\\Extensions\\VDR");
+					fRegSuccess &= InstallDeleteKey64(HKEY_CLASSES_ROOT,"AVIFile\\RIFFHandlers\\VDRM");
+				}
+
+				fRegSuccess &= InstallDeleteKey(HKEY_CLASSES_ROOT,"Clsid\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32\\AVIFile");
+				fRegSuccess &= InstallDeleteKey(HKEY_CLASSES_ROOT,"Clsid\\{894288e0-0948-11d2-8109-004845000eb5}\\InprocServer32");
+				fRegSuccess &= InstallDeleteKey(HKEY_CLASSES_ROOT,"Clsid\\{894288e0-0948-11d2-8109-004845000eb5}");
+				fRegSuccess &= InstallDeleteKey(HKEY_CLASSES_ROOT,"AVIFile\\Extensions\\VDR");
+				fRegSuccess &= InstallDeleteKey(HKEY_CLASSES_ROOT,"AVIFile\\RIFFHandlers\\VDRM");
+
+				if (!fRegSuccess)
 					MessageBox(hDlg, "Registry entries were in use.  Deinstall not successful.\n"
 									"\n"
 									"A partial installation now exists on your system.  Reinstall the AVIFile "
@@ -413,27 +528,9 @@ void RemoveVirtualDubKeys(HWND hwndListbox) {
 				continue;
 			}
 
-			strcpy(bp, "\\Software\\Freeware\\VirtualDub\\Capture");
+			strcpy(bp, "\\Software\\VirtualDub.org");
 
-			err = RegDeleteKey(HKEY_USERS,szKeyName);
-			if (err != ERROR_SUCCESS && err != ERROR_FILE_NOT_FOUND)
-				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, err, 0, szErrorText, sizeof szErrorText, NULL);
-			else
-				strcpy(szErrorText, "Deleted");
-			ListboxAddf(hwndListbox, "HKEY_USERS\\%s: %s", szKeyName, szErrorText);
-
-			strcpy(bp, "\\Software\\Freeware\\VirtualDub\\MRUList");
-
-			err = RegDeleteKey(HKEY_USERS,szKeyName);
-			if (err != ERROR_SUCCESS && err != ERROR_FILE_NOT_FOUND)
-				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, err, 0, szErrorText, sizeof szErrorText, NULL);
-			else
-				strcpy(szErrorText, "Deleted");
-			ListboxAddf(hwndListbox, "HKEY_USERS\\%s: %s", szKeyName, szErrorText);
-
-			bp[29]=0;
-
-			err = RegDeleteKey(HKEY_USERS,szKeyName);
+			err = SHDeleteKey(HKEY_USERS,szKeyName);
 			if (err != ERROR_SUCCESS && err != ERROR_FILE_NOT_FOUND)
 				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, err, 0, szErrorText, sizeof szErrorText, NULL);
 			else
@@ -453,7 +550,7 @@ BOOL APIENTRY RemoveSettingsDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 
 				SetWindowText(hDlg, "Remove VirtualDub preference data");
 
-				ListboxAddf(hwndListbox, "Remove HKEY_USERS\\*\\Software\\Freeware\\VirtualDub\\*");
+				ListboxAddf(hwndListbox, "Remove HKEY_USERS\\*\\Software\\VirtualDub.org\\*");
 			}
 			return TRUE;
 
@@ -475,6 +572,178 @@ BOOL APIENTRY RemoveSettingsDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM l
 	return FALSE;
 }
 
+bool FindVirtualDub(wchar_t* buf)
+{
+	if (!GetModuleFileNameW(g_hInst,buf,MAX_PATH)) return false;
+	if (!PathRemoveFileSpecW(buf)) return false;
+	wcscat(buf,L"\\VirtualDub.exe");
+	if (GetFileAttributesW(buf)!=INVALID_FILE_ATTRIBUTES) {
+		return true;
+	}
+	if (!PathRemoveFileSpecW(buf)) return false;
+	if (!PathRemoveFileSpecW(buf)) return false;
+	wcscat(buf,L"\\VirtualDub.exe");
+	if (GetFileAttributesW(buf)!=INVALID_FILE_ATTRIBUTES) {
+		return true;
+	}
+	return false;
+}
+
+int GetLAAFlag(wchar_t* path)
+{
+	const int size = 4096;
+	char buf[size];
+	HANDLE h = CreateFileW(path,GENERIC_READ,FILE_SHARE_READ|FILE_SHARE_WRITE,0,OPEN_EXISTING,0,0);
+	if(h==INVALID_HANDLE_VALUE) return -1;
+	DWORD rsize;
+	ReadFile(h,buf,size,&rsize,0);
+	CloseHandle(h);
+	if(rsize!=size) return -1;
+	IMAGE_DOS_HEADER* h0 = (IMAGE_DOS_HEADER*)buf;
+	IMAGE_NT_HEADERS* h1 = (IMAGE_NT_HEADERS*)(buf+h0->e_lfanew);
+	if (h1->FileHeader.Characteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE) return 1;
+	return 0;
+}
+
+int SetLAAFlag(wchar_t* path, bool v)
+{
+	const int size = 4096;
+	char buf[size];
+	HANDLE h = CreateFileW(path,GENERIC_READ|GENERIC_WRITE,0,0,OPEN_EXISTING,0,0);
+	if(h==INVALID_HANDLE_VALUE) return -1;
+	DWORD rsize;
+	ReadFile(h,buf,size,&rsize,0);
+	if(rsize!=size){
+		CloseHandle(h);
+		return -1;
+	}
+	IMAGE_DOS_HEADER* h0 = (IMAGE_DOS_HEADER*)buf;
+	IMAGE_NT_HEADERS* h1 = (IMAGE_NT_HEADERS*)(buf+h0->e_lfanew);
+	if (v) h1->FileHeader.Characteristics |= IMAGE_FILE_LARGE_ADDRESS_AWARE;
+	else h1->FileHeader.Characteristics &= ~IMAGE_FILE_LARGE_ADDRESS_AWARE;
+
+	SetFilePointer(h,0,0,FILE_BEGIN);
+	WriteFile(h,buf,size,&rsize,0);
+	CloseHandle(h);
+	if(rsize!=size) return -1;
+	return 1;
+}
+
+BOOL APIENTRY EnableLAADlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+	switch(msg) {
+		case WM_INITDIALOG:
+			{
+				HWND hwndListbox = GetDlgItem(hDlg, IDC_ACTIONLIST);
+
+				SetWindowText(hDlg, "Enable LARGEADDRESSAWARE for 32-bit VirtualDub");
+				wchar_t buf[MAX_PATH];
+				if (!FindVirtualDub(buf)) {
+					ListboxAddf(hwndListbox, "Error: VirtualDub.exe not found");
+					SetWindowText(GetDlgItem(hDlg, IDOK), "Retry");
+					SetWindowText(GetDlgItem(hDlg, IDCANCEL), "Done");
+					return TRUE;
+				}
+				int state = GetLAAFlag(buf);
+				if (state==-1) {
+					ListboxAddf(hwndListbox, "Error: can't get info");
+					SetWindowText(GetDlgItem(hDlg, IDOK), "Retry");
+					SetWindowText(GetDlgItem(hDlg, IDCANCEL), "Done");
+					return TRUE;
+				}
+				if (state==1) {
+					ListboxAddf(hwndListbox, "Already enabled");
+					SetWindowText(GetDlgItem(hDlg, IDOK), "Retry");
+					SetWindowText(GetDlgItem(hDlg, IDCANCEL), "Done");
+					return TRUE;
+				}
+
+				ListboxAddf(hwndListbox, "Patch VirtualDub.exe");
+			}
+			return TRUE;
+
+		case WM_COMMAND:
+			switch(LOWORD(wParam)) {
+			case IDOK:
+				{
+					SetWindowText(GetDlgItem(hDlg, IDC_ACTION), "Results:");
+					HWND hwndListbox = GetDlgItem(hDlg, IDC_ACTIONLIST);
+					SendMessage(hwndListbox, LB_RESETCONTENT, 0, 0);
+					wchar_t buf[MAX_PATH];
+					if (FindVirtualDub(buf) && SetLAAFlag(buf,true)!=-1) {
+						ListboxAddf(hwndListbox, "Done");
+					} else {
+						ListboxAddf(hwndListbox, "Failed");
+					}
+
+					SetWindowText(GetDlgItem(hDlg, IDOK), "Retry");
+					SetWindowText(GetDlgItem(hDlg, IDCANCEL), "Done");
+				}
+				return TRUE;
+			case IDCANCEL:
+				EndDialog(hDlg, FALSE);
+				return TRUE;
+			}
+	}
+	return FALSE;
+}
+
+BOOL APIENTRY DisableLAADlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+	switch(msg) {
+		case WM_INITDIALOG:
+			{
+				HWND hwndListbox = GetDlgItem(hDlg, IDC_ACTIONLIST);
+
+				SetWindowText(hDlg, "Disable LARGEADDRESSAWARE for 32-bit VirtualDub");
+				wchar_t buf[MAX_PATH];
+				if (!FindVirtualDub(buf)) {
+					ListboxAddf(hwndListbox, "Error: VirtualDub.exe not found");
+					SetWindowText(GetDlgItem(hDlg, IDOK), "Retry");
+					SetWindowText(GetDlgItem(hDlg, IDCANCEL), "Done");
+					return TRUE;
+				}
+				int state = GetLAAFlag(buf);
+				if (state==-1) {
+					ListboxAddf(hwndListbox, "Error: can't get info");
+					SetWindowText(GetDlgItem(hDlg, IDOK), "Retry");
+					SetWindowText(GetDlgItem(hDlg, IDCANCEL), "Done");
+					return TRUE;
+				}
+				if (state==0) {
+					ListboxAddf(hwndListbox, "Already disabled");
+					SetWindowText(GetDlgItem(hDlg, IDOK), "Retry");
+					SetWindowText(GetDlgItem(hDlg, IDCANCEL), "Done");
+					return TRUE;
+				}
+
+				ListboxAddf(hwndListbox, "Patch VirtualDub.exe");
+			}
+			return TRUE;
+
+		case WM_COMMAND:
+			switch(LOWORD(wParam)) {
+			case IDOK:
+				{
+					SetWindowText(GetDlgItem(hDlg, IDC_ACTION), "Results:");
+					HWND hwndListbox = GetDlgItem(hDlg, IDC_ACTIONLIST);
+					SendMessage(hwndListbox, LB_RESETCONTENT, 0, 0);
+					wchar_t buf[MAX_PATH];
+					if (FindVirtualDub(buf) && SetLAAFlag(buf,false)!=-1) {
+						ListboxAddf(hwndListbox, "Done");
+					} else {
+						ListboxAddf(hwndListbox, "Failed");
+					}
+
+					SetWindowText(GetDlgItem(hDlg, IDOK), "Retry");
+					SetWindowText(GetDlgItem(hDlg, IDCANCEL), "Done");
+				}
+				return TRUE;
+			case IDCANCEL:
+				EndDialog(hDlg, FALSE);
+				return TRUE;
+			}
+	}
+	return FALSE;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 //

@@ -18,6 +18,15 @@ HKEY CreateRegKey(HKEY hkBase, char *szKeyName) {
 			: NULL;
 }
 
+HKEY CreateRegKey64(HKEY hkBase, char *szKeyName) {
+	HKEY hkey;
+	DWORD dwDisposition;
+
+	return RegCreateKeyEx(hkBase, szKeyName, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS|KEY_WOW64_64KEY, NULL, &hkey, &dwDisposition)==ERROR_SUCCESS
+			? hkey
+			: NULL;
+}
+
 BOOL DeleteRegValue(HKEY hkBase, char *szKeyName, char *szValueName) {
 	HKEY hkey;
 	BOOL success;
@@ -52,6 +61,20 @@ BOOL SetRegString(HKEY hkBase, char *szKeyName, char *szValueName, char *lpBuffe
 	BOOL success;
 
 	if (!(hkey = CreateRegKey(hkBase, szKeyName)))
+		return FALSE;
+
+	success = (ERROR_SUCCESS == RegSetValueEx(hkey, szValueName, 0, REG_SZ, (LPBYTE)lpBuffer, strlen(lpBuffer)+1));
+
+	RegCloseKey(hkey);
+
+	return success;
+}
+
+BOOL SetRegString64(HKEY hkBase, char *szKeyName, char *szValueName, char *lpBuffer) {
+	HKEY hkey;
+	BOOL success;
+
+	if (!(hkey = CreateRegKey64(hkBase, szKeyName)))
 		return FALSE;
 
 	success = (ERROR_SUCCESS == RegSetValueEx(hkey, szValueName, 0, REG_SZ, (LPBYTE)lpBuffer, strlen(lpBuffer)+1));
