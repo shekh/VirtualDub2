@@ -1753,18 +1753,23 @@ void Dubber::Init(IVDVideoSource *const *pVideoSources, uint32 nVideoSources, Au
 
 		sint32 preload;
 		double samplesPerFrame;
-		if (audioStream->IsVBR()) {
+		int maxPush = 262144; // don't write TOO many samples at once
+		bool useTimestamp = false;
+
+		if (audioStream->IsVBR() && audioCompressor) {
 			// do all math in pcm samples
 			const VDWaveFormat *pwfex = audioStream->GetFormat();
 			preload = (sint32)(Fraction(pwfex->mSamplingRate,1) * Fraction(mOptions.audio.preload, 1000)).roundup32ul();
 			samplesPerFrame = double(pwfex->mSamplingRate) / vInfo.mFrameRate.asDouble();
+			useTimestamp = true;
 		} else {
+			// not VBR or legacy direct copy
 			const VDFraction& samplesPerSec = audioStream->GetSampleRate();
 			preload = (sint32)(samplesPerSec * Fraction(mOptions.audio.preload, 1000)).roundup32ul();
 			samplesPerFrame = samplesPerSec.asDouble() / vInfo.mFrameRate.asDouble();
 		}
 
-		mInterleaver.InitStream(1, preload, samplesPerFrame, audioBlocksPerVideoFrame, 262144);		// don't write TOO many samples at once
+		mInterleaver.InitStream(1, preload, samplesPerFrame, audioBlocksPerVideoFrame, maxPush, useTimestamp);
 	}
 
 	// initialize frame iterator

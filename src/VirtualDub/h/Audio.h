@@ -262,6 +262,7 @@ public:
 	bool IsVBR() const;
 	long _Read(void *, long, long *);
 	bool _isEnd();
+	long _ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration);
 };
 
 class AudioStreamAmplifier : public AudioStream {

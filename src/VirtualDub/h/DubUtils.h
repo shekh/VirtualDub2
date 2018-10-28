@@ -56,12 +56,13 @@ public:
 
 	void Init(int streams);
 	void EnableInterleaving(bool bEnableInterleave) { mbInterleavingEnabled = bEnableInterleave; }
-	void InitStream(int stream, sint32 nPreload, double nSamplesPerFrame, double nInterval, sint32 nMaxPush);
+	void InitStream(int stream, sint32 nPreload, double nSamplesPerFrame, double nInterval, sint32 nMaxPush, bool useTimestamp=false);
 	void EndStream(int stream);
 	void AdjustStreamRate(int stream, double samplesPerFrame);
 	void AdjustSamplesWritten(int stream, sint32 samples);
 
 	Action GetNextAction(int& streamID, sint32& samples);
+	bool GetUseTimestamp(int streamID) { return mStreams[streamID].mbUseTimestamp; }
 
 protected:
 	struct Stream {
@@ -73,6 +74,7 @@ protected:
 		sint32		mPreloadMicroFrames;
 		sint32		mMaxPush;
 		bool		mbActive;
+		bool		mbUseTimestamp;
 	};
 
 

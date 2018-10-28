@@ -107,7 +107,7 @@ public:
 protected:
 	void NextSegment();
 
-	bool WriteAudio(sint32 count);
+	bool WriteAudio(int stream, sint32 count);
 
 	void ThreadRun();
 	void UpdateAudioDelay();

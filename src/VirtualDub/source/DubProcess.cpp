@@ -382,7 +382,7 @@ void VDDubProcessThread::ThreadRun() {
 							goto abort_requested;
 					}
 				} else if (stream == 1) {
-					if (!WriteAudio(count))
+					if (!WriteAudio(stream, count))
 						goto abort_requested;
 				} else {
 					VDNEVERHERE;
@@ -461,7 +461,7 @@ abort_requested:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool VDDubProcessThread::WriteAudio(sint32 count) {
+bool VDDubProcessThread::WriteAudio(int stream, sint32 count) {
 	if (count <= 0)
 		return true;
 
@@ -470,20 +470,24 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 
 	if (mpAudioPipe->IsVBRModeEnabled()) {
 		sint64 totalDuration = 0;
+		bool useTime = mpInterleaver->GetUseTimestamp(stream);
 		VDPROFILEBEGIN("Audio-write");
-		while(totalDuration < count) {
+		while(1) {
+			if (useTime && totalDuration >= count) break;
+			if (!useTime && totalSamples >= count) break;
+
 			while(mpAudioPipe->getLevel() < mpAudioPipe->VBRPacketHeaderSize()) {
 				if (mpAudioPipe->isInputClosed()) {
 					mpAudioPipe->CloseOutput();
 					if (mpInterleaver)
-						mpInterleaver->EndStream(1);
+						mpInterleaver->EndStream(stream);
 					mpAudioOut->finish();
 					mbAudioEnded = true;
 					goto ended;
 				}
 
 				VDDubAutoThreadLocation loc(mpCurrentAction, "waiting for audio data from I/O thread");
- 				VDPROFILEBEGINEX2("Audio-wait",0,vdprofiler_flag_wait);
+				VDPROFILEBEGINEX2("Audio-wait",0,vdprofiler_flag_wait);
 				mLoopThrottle.BeginWait();
 				mpAudioPipe->ReadWait();
 				mLoopThrottle.EndWait();
@@ -551,7 +555,8 @@ bool VDDubProcessThread::WriteAudio(sint32 count) {
 			VDPROFILEEND();
 
 			totalBytes += sampleSize;
-			totalDuration += duration;
+			if (duration!=-1)
+				totalDuration += duration;
 			++totalSamples;
 		}
 ended:
@@ -560,7 +565,8 @@ ended:
 		if (!totalSamples)
 			return true;
 
-		mpInterleaver->AdjustSamplesWritten(1, int(totalDuration-count));
+		if (useTime)
+			mpInterleaver->AdjustSamplesWritten(1, int(totalDuration-count));
 
 	} else {
 		const int nBlockAlign = mpAudioPipe->GetSampleSize();
@@ -586,7 +592,7 @@ ended:
 					totalBytes -= totalBytes % nBlockAlign;
 					count = totalBytes / nBlockAlign;
 					if (mpInterleaver)
-						mpInterleaver->EndStream(1);
+						mpInterleaver->EndStream(stream);
 					mpAudioOut->finish();
 					mbAudioEnded = true;
 					break;

@@ -328,7 +328,7 @@ long AudioStream::Read(void *buffer, long max_samples, long *lplBytes) {
 		return 0;
 	}
 
-    if (samples_read + max_samples > stream_limit) {
+	if (samples_read + max_samples > stream_limit) {
 		sint64 limit = stream_limit - samples_read;
 
 		if (limit > 0x0fffffff)		// clamp so we don't issue a ridiculous request
@@ -340,7 +340,7 @@ long AudioStream::Read(void *buffer, long max_samples, long *lplBytes) {
 
 	VDASSERT(actual >= 0 && actual <= max_samples);
 
-	samples_read += actual;
+	if (buffer) samples_read += actual;
 
 	return actual;
 }
@@ -351,7 +351,7 @@ long AudioStream::ReadVBR(void *buffer, long size, long *lplBytes, sint64 *durat
 
 	VDASSERT(actual >= 0 && actual <= 1);
 
-	samples_read += actual;
+	if (buffer) samples_read += actual;
 
 	return actual;
 }
@@ -665,7 +665,7 @@ long AudioStreamSource::_Read(void *buffer, long max_samples, long *lplBytes) {
 
 		*lplBytes += lAddedBytes;
 
-		cur_samp += lSamples;
+		if (buffer) cur_samp += lSamples;
 
 		return lSamples + lAddedSamples;
 	}
@@ -2000,8 +2000,10 @@ long AudioSubset::_Read(void *buffer, long samples, long *lplBytes) {
 	if (samples) {
 		samples = mpCurrentSource->Read(buffer, samples, lplBytes);
 
-		mOffset += samples;
-		mSrcPos += samples;
+		if (buffer) {
+			mOffset += samples;
+			mSrcPos += samples;
+		}
 	}
 
 	while (pfsnCur != subset.end() && mOffset >= pfsnCur->len) {
@@ -2013,6 +2015,11 @@ long AudioSubset::_Read(void *buffer, long samples, long *lplBytes) {
 		mbEnded = true;
 
 	return samples;
+}
+
+long AudioSubset::_ReadVBR(void *buffer, long space, long *lplBytes, sint64 *duration) {
+	*duration = -1;
+	return _Read(buffer,1,lplBytes);
 }
 
 bool AudioSubset::_isEnd() {

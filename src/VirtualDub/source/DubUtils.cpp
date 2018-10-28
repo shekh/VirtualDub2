@@ -47,7 +47,7 @@ void VDStreamInterleaver::Init(int streams) {
 	mActiveStreams		= 0;
 }
 
-void VDStreamInterleaver::InitStream(int stream, sint32 nPreload, double nSamplesPerFrame, double nInterval, sint32 nMaxPush) {
+void VDStreamInterleaver::InitStream(int stream, sint32 nPreload, double nSamplesPerFrame, double nInterval, sint32 nMaxPush, bool useTimestamp) {
 	VDASSERT(stream>=0 && stream<mStreams.size());
 	VDASSERT(nSamplesPerFrame>0);
 
@@ -58,6 +58,7 @@ void VDStreamInterleaver::InitStream(int stream, sint32 nPreload, double nSample
 	streaminfo.mSamplesPerFrame		= nSamplesPerFrame;
 	streaminfo.mSamplesPerFramePending	= -1;
 	streaminfo.mIntervalMicroFrames	= (sint32)(65536.0 / nInterval);
+	streaminfo.mbUseTimestamp	= useTimestamp;
 	streaminfo.mbActive				= true;
 	streaminfo.mMaxPush				= nMaxPush;
 
