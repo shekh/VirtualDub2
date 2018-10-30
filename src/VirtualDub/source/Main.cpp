@@ -751,7 +751,7 @@ void OpenInput(bool append, bool audio) {
 
 class VDSaveVideoDialogW32 {
 public:
-	VDSaveVideoDialogW32(){ removeAudio=false; saveVideo=true; }
+	VDSaveVideoDialogW32(){ removeAudio=false; saveVideo=true; dubber=0; }
 	~VDSaveVideoDialogW32(){ delete dubber; }
 
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
