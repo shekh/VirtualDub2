@@ -54,6 +54,22 @@ static const UINT uIconIDs[13]={
 	IDI_POS_MARKOUT,
 };
 
+static const UINT uIconID2[13]={
+	IDI_POS_STOP,
+	IDI_POS_PLAY,
+	IDI_POS_PLAYPREVIEW,
+	IDI_POS_START,
+	IDI_POS_BACKWARD,
+	IDI_POS_FORWARD,
+	IDI_POS_END,
+	IDI_POS_PREV_KEY,
+	IDI_POS_NEXT_KEY,
+	IDI_POS_SCENEREV,
+	IDI_POS_SCENEFWD,
+	IDI_POS_MARKIN2,
+	IDI_POS_MARKOUT2,
+};
+
 #undef IDC_START
 enum {
 	IDC_TRACKBAR	= 500,
@@ -226,19 +242,27 @@ protected:
 	VDEvent<IVDPositionControl, VDPositionControlEventData>	mPositionUpdatedEvent;
 
 	static HICON shIcons[13];
+	static HICON shIcon2[13];
 };
 
 HICON VDPositionControlW32::shIcons[13];
+HICON VDPositionControlW32::shIcon2[13];
 
 ATOM VDPositionControlW32::Register() {
 	WNDCLASS wc;
 
-	for(int i=0; i<(sizeof shIcons/sizeof shIcons[0]); i++)
+	for(int i=0; i<(sizeof shIcons/sizeof shIcons[0]); i++) {
 		if (!(shIcons[i] = (HICON)LoadImage(g_hInst, MAKEINTRESOURCE(uIconIDs[i]),IMAGE_ICON ,0,0,0))) {
 
 			_RPT1(0,"PositionControl: load failure on icon #%d\n",i+1);
 			return NULL;
 		}
+		if (!(shIcon2[i] = (HICON)LoadImage(g_hInst, MAKEINTRESOURCE(uIconID2[i]),IMAGE_ICON ,0,0,0))) {
+
+			_RPT1(0,"PositionControl: load failure on icon #%d\n",i+1);
+			return NULL;
+		}
+	}
 
 	wc.style		= 0;
 	wc.lpfnWndProc	= StaticWndProc;
@@ -541,6 +565,12 @@ VDEvent<IVDPositionControl, VDPositionControlEventData>& VDPositionControlW32::P
 BOOL CALLBACK VDPositionControlW32::InitChildrenProc(HWND hWnd, LPARAM lParam) {
 	VDPositionControlW32 *pThis = (VDPositionControlW32 *)lParam;
 	UINT id;
+	int fill = GetSysColor(COLOR_BTNFACE);
+	int fill_r = fill & 0xFF;
+	int fill_g = (fill & 0xFF00) >> 8;
+	int fill_b = (fill & 0xFF0000) >> 16;
+	int fill_y = ((fill_b * 19 + fill_g * 183 + fill_r * 54) >> 8);
+	HICON* icons = fill_y > 128 ? shIcons : shIcon2;
 
 	switch(id = GetWindowLong(hWnd, GWL_ID)) {
 	case IDC_STOP:
@@ -556,7 +586,7 @@ BOOL CALLBACK VDPositionControlW32::InitChildrenProc(HWND hWnd, LPARAM lParam) {
 	case IDC_SCENEFWD:
 	case IDC_MARKIN:
 	case IDC_MARKOUT:
-		SendMessage(hWnd, BM_SETIMAGE, IMAGE_ICON, (LPARAM)shIcons[id - IDC_STOP]);
+		SendMessage(hWnd, BM_SETIMAGE, IMAGE_ICON, (LPARAM)icons[id - IDC_STOP]);
 		break;
 
 	case IDC_FRAME:
@@ -597,6 +627,11 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 		// fall through
 	case WM_SIZE:
 		OnSize();
+		break;
+
+	case WM_SYSCOLORCHANGE:
+		if (mFrameFont)
+			EnumChildWindows(mhwnd, (WNDENUMPROC)InitChildrenProc, (LPARAM)this);
 		break;
 
 	case WM_PAINT:

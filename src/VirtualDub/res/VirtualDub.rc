@@ -3945,6 +3945,8 @@ IDI_POS_NEXT_KEY        ICON                    "pos_next.ico"
 IDI_POS_PLAYPREVIEW     ICON                    "ico00001.ico"
 IDI_POS_SCENEFWD        ICON                    "scenefwd.ico"
 IDI_POS_SCENEREV        ICON                    "scenerev.ico"
+IDI_POS_MARKIN2         ICON                    "pos_mark2.ico"
+IDI_POS_MARKOUT2        ICON                    "pos_markout2.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

@@ -246,6 +246,11 @@ bool VDUIFrame::TranslateAcceleratorMessage(MSG& msg) {
 	return false;
 }
 
+BOOL CALLBACK BroadcastMsgProc(HWND hWnd, LPARAM lParam) {
+	SendMessage(hWnd, lParam, 0, 0);
+	return TRUE;
+}
+
 LRESULT CALLBACK VDUIFrame::StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	VDUIFrame *p;
 
@@ -291,6 +296,10 @@ LRESULT CALLBACK VDUIFrame::StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			if (HIWORD(lParam)) {
 				VDCheckMenuItemByCommandW32((HMENU)wParam, ID_SYSTEM_ALWAYSONTOP, (GetWindowLong(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0);
 			}
+			break;
+
+		case WM_SYSCOLORCHANGE:
+			EnumChildWindows(hwnd, (WNDENUMPROC)BroadcastMsgProc, msg);
 			break;
 
 		case WM_DPICHANGED:

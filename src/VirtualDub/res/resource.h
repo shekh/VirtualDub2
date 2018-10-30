@@ -248,6 +248,8 @@
 #define IDC_CAP_POINT                   315
 #define IDD_JUMPTOFRAME2                315
 #define IDD_SAVEAUDIO_FORMAT            316
+#define IDI_POS_MARKIN2                 317
+#define IDI_POS_MARKOUT2                318
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -1609,7 +1611,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        316
+#define _APS_NEXT_RESOURCE_VALUE        319
 #define _APS_NEXT_COMMAND_VALUE         40612
 #define _APS_NEXT_CONTROL_VALUE         1572
 #define _APS_NEXT_SYMED_VALUE           111
