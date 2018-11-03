@@ -125,6 +125,7 @@ protected:
 
 	bool OnLoaded();
 	void OnDestroy();
+	void codec_unref();
 	void SaveCompVars(COMPVARS2* vars);
 	void OnDataExchange(bool write);
 	bool OnCommand(uint32 id, uint32 extcode);
@@ -258,16 +259,20 @@ bool VDUIDialogChooseVideoCompressorW32::OnLoaded() {
 	return true;
 }
 
+void VDUIDialogChooseVideoCompressorW32::codec_unref() {
+	if (mhCodec) {
+		if (mpCompVars->driver!=mhCodec) delete mhCodec;
+		mhCodec = NULL;
+	}
+}
+
 void VDUIDialogChooseVideoCompressorW32::OnDestroy() {
 	if (save_filter_mode) {
 		VDRegistryAppKey key(mCapture ? "Capture\\Persistence" : "Persistence");
 		key.setBool("Video codecs: allow all", filter_mode==1);
 	}
 
-	if (mhCodec) {
-		delete mhCodec;
-		mhCodec = NULL;
-	}
+	codec_unref();
 
 	while(!mCodecs.empty()) {
 		CodecInfo *ici = mCodecs.back();
@@ -308,14 +313,15 @@ void VDUIDialogChooseVideoCompressorW32::SaveCompVars(COMPVARS2* vars) {
 	if (mhCodec)
 		mhCodec->sendMessage(ICM_SETQUALITY, (DWORD_PTR)&vars->lQ, 0);
 
-	delete vars->driver;
-	vars->driver = mhCodec;
+	if (vars->driver!=mhCodec) {
+		delete vars->driver;
+		vars->driver = mhCodec;
+	}
 }
 
 void VDUIDialogChooseVideoCompressorW32::OnDataExchange(bool write) {
 	if (write) {
 		SaveCompVars(mpCompVars);
-		mhCodec = 0;
 	}
 }
 
@@ -802,10 +808,7 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 	LBClear(IDC_SIZE_RESTRICTIONS);
 
 	if (!pii || (!pii->fccHandler && pii->path.empty())) {
-		if (mhCodec) {
-			delete mhCodec;
-			mhCodec = NULL;
-		}
+		codec_unref();
 
 		SetControlText(IDC_STATIC_DELTA, g_szNo);
 		SetControlText(IDC_STATIC_FOURCC, L"");
@@ -829,10 +832,7 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 
 	// Attempt to open the compressor.
 
-	if (mhCodec) {
-		delete mhCodec;
-		mhCodec = NULL;
-	}
+	codec_unref();
 
 	{
 		wchar_t buf[64];
