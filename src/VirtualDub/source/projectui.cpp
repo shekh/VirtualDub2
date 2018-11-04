@@ -622,6 +622,7 @@ VDProjectUI::VDProjectUI()
 	mbAutoSizeOutput = false;
 	mInputZoom = 1;
 	mOutputZoom = 1;
+	mbShowAudio = false;
 }
 
 VDProjectUI::~VDProjectUI() {
@@ -829,6 +830,8 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	DragAcceptFiles((HWND)mhwnd, TRUE);
 
 	VDToolsAttach((HWND)mhwnd);
+
+	if (mbShowAudio) OpenAudioDisplay();
 
 	return true;
 }
@@ -1824,8 +1827,10 @@ void VDProjectUI::SetVideoFiltersAsk() {
 void VDProjectUI::SetVideoFramerateOptionsAsk() {
 	extern bool VDDisplayVideoFrameRateDialog(VDGUIHandle hParent, DubOptions& opts, IVDVideoSource *pVS, AudioSource *pAS);
 
-	if (VDDisplayVideoFrameRateDialog(mhwnd, g_dubOpts, inputVideo, inputAudio))
+	if (VDDisplayVideoFrameRateDialog(mhwnd, g_dubOpts, inputVideo, inputAudio)) {
 		UpdateDubParameters();
+		UICurrentPositionUpdated();
+	}
 }
 
 void VDProjectUI::SetVideoDepthOptionsAsk() {
@@ -2403,10 +2408,13 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 
 		case ID_VIEW_AUDIODISPLAY:
-			if (mpAudioDisplay)
+			if (mpAudioDisplay) {
+				mbShowAudio = false;
 				CloseAudioDisplay();
-			else
+			} else {
+				mbShowAudio = true;
 				OpenAudioDisplay();
+			}
 			break;
 
 		case ID_VIEW_FULLSCREEN:
@@ -4075,6 +4083,8 @@ void VDProjectUI::OpenAudioDisplay() {
 	int mode = key.getInt("Audio display: mode", -1);
 	if ((unsigned)mode < (unsigned)IVDUIAudioDisplayControl::kModeCount)
 		mpAudioDisplay->SetMode((IVDUIAudioDisplayControl::Mode)mode);
+	bool mono = key.getBool("Audio display: mono", false);
+	mpAudioDisplay->SetMonoMode(mono);
 }
 
 void VDProjectUI::CloseAudioDisplay() {
@@ -4091,6 +4101,7 @@ void VDProjectUI::CloseAudioDisplay() {
 		VDRegistryAppKey key(g_szRegKeyPersistence);
 		key.setInt("Audio display: zoom", mpAudioDisplay->GetZoom());
 		key.setInt("Audio display: mode", mpAudioDisplay->GetMode());
+		key.setBool("Audio display: mono", mpAudioDisplay->GetMonoMode());
 		mpAudioDisplay = NULL;
 	}
 
@@ -4240,12 +4251,18 @@ void VDProjectUI::UpdateAudioDisplayPosition() {
 	if (inputAudio && mpAudioDisplay) {
 		IVDStreamSource *pVSS = inputVideo->asStream();
 		VDPosition pos = GetCurrentFrame();
-		VDPosition cenpos = inputAudio->TimeToPositionVBR(pVSS->PositionToTimeVBR(pos));
+		VDTime srct = pVSS->PositionToTimeVBR(pos);
 
-		double audioPerVideoSamples = inputAudio->getRate().asDouble() / pVSS->getRate().asDouble();
+		VDFraction srcRate = pVSS->getRate();
+		if (g_dubOpts.video.mFrameRateAdjustLo > 0) {
+			srcRate.Assign(g_dubOpts.video.mFrameRateAdjustHi, g_dubOpts.video.mFrameRateAdjustLo);
+			srct = VDFloorToInt64(pos / srcRate.asDouble() * 1000000.0);
+		}
+
+		VDPosition cenpos = inputAudio->TimeToPositionVBR(srct);
+		double audioPerVideoSamples = inputAudio->getRate().asDouble() / srcRate.asDouble();
 
 		mpAudioDisplay->SetFrameMarkers(0, VDCeilToInt64(inputAudio->getLength() / audioPerVideoSamples), 0.0, audioPerVideoSamples);
-		//mpAudioDisplay->SetHighlightedFrameMarker(pos);
 		mpAudioDisplay->SetPosition(cenpos,pos);
 		mAudioDisplayPosNext = mpAudioDisplay->GetReadPosition();
 	}
@@ -4629,12 +4646,13 @@ void VDProjectUI::UICurrentPositionUpdated(bool fast_update) {
 			UpdateCurveEditorPosition();
 			RedrawWindow(mhwndCurveEditor,0,0,RDW_UPDATENOW);
 		}
+	}
 
-		if (mpAudioDisplay && !mbDubActive) {
-			UpdateAudioDisplayPosition();
-			for(int i=0; i<10; i++) if(!TickAudioDisplay()) break;
-			RedrawWindow(mhwndAudioDisplay,0,0,RDW_UPDATENOW);
-		}
+	if (g_dubber && !g_dubber->IsPreviewing()) return;
+	if (mpAudioDisplay && !mProjectLoading) {
+		UpdateAudioDisplayPosition();
+		for(int i=0; i<10; i++) if(!TickAudioDisplay()) break;
+		RedrawWindow(mhwndAudioDisplay,0,0,RDW_UPDATENOW);
 	}
 }
 
@@ -4658,6 +4676,12 @@ void VDProjectUI::UITimelineUpdated() {
 		UpdateAudioDisplay();
 		mpAudioDisplay->Rescan();
 	}
+}
+
+void VDProjectUI::UIMarkerUpdated() {
+	if (!inputAVI) return;
+
+	mpPosition->SetTimeline(mTimeline);
 }
 
 void VDProjectUI::UISelectionUpdated(bool notifyUser) {
@@ -5137,6 +5161,7 @@ void VDProjectUI::LoadSettings() {
 	mInputZoom							= float(key.getInt("Input pane size", 100)*0.01);
 	mOutputZoom							= float(key.getInt("Output pane size", 100)*0.01);
 	mbMaximize							= key.getBool("Maximize main layout", mbMaximize);
+	mbShowAudio = key.getBool("Show audio", mbShowAudio);
 
 	// these are only saved from the Video Depth dialog.
 	VDRegistryAppKey keyPrefs("Preferences");
@@ -5179,6 +5204,7 @@ void VDProjectUI::SaveSettings() {
 	key.setInt("Input pane size", int(mInputZoom*100));
 	key.setInt("Output pane size", int(mOutputZoom*100));
 	key.setBool("Maximize main layout", mbMaximize);
+	key.setBool("Show audio", mbShowAudio);
 }
 
 bool VDProjectUI::HandleUIEvent(IVDUIBase *pBase, IVDUIWindow *pWin, uint32 id, eEventType type, int item) {

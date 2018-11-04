@@ -53,12 +53,14 @@ public:
 	virtual int GetZoom() = 0;
 	virtual void SetZoom(int samplesPerPixel) = 0;
 
+	virtual bool GetMonoMode() = 0;
+	virtual void SetMonoMode(bool v) = 0;
+
 	virtual void ClearFailureMessage() = 0;
 	virtual void SetFailureMessage(const wchar_t *s) = 0;
 
 	virtual void SetFormat(double samplingRate, int channelCount) = 0;
 	virtual void SetFrameMarkers(sint64 mn, sint64 mx, double start, double rate) = 0;
-	//virtual void SetHighlightedFrameMarker(VDPosition pos) = 0;
 	virtual void SetSelectedFrameRange(VDPosition start, VDPosition end) = 0;
 	virtual void ClearSelectedFrameRange() = 0;
 	virtual void SetPosition(VDPosition pos, VDPosition hpos) = 0;

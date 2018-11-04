@@ -45,6 +45,7 @@ public:
 	virtual void UIAbortDubMessageLoop() = 0;		// Note: multithreaded
 	virtual void UICurrentPositionUpdated(bool fast_update=false) = 0;
 	virtual void UISelectionUpdated(bool notifyUser) = 0;
+	virtual void UIMarkerUpdated() = 0;
 	virtual void UITimelineUpdated() = 0;
 	virtual void UIShuttleModeUpdated() = 0;
 	virtual void UISourceFileUpdated() = 0;

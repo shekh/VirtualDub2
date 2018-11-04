@@ -159,6 +159,7 @@ protected:
 	void UISelectionUpdated(bool notifyUser);
 	void UINotifySelection();
 	void UITimelineUpdated();
+	void UIMarkerUpdated();
 	void UIShuttleModeUpdated();
 	void UISourceFileUpdated();
 	void UIAudioSourceUpdated();
@@ -244,6 +245,8 @@ protected:
 	bool		mbPanesNeedUpdate;
 	float		mInputZoom;
 	float		mOutputZoom;
+
+	bool		mbShowAudio;
 
 	VDThreadID	mThreadId;
 

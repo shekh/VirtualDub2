@@ -2311,7 +2311,7 @@ void VDProject::SetMarker(VDPosition pos) {
 		mTimeline.ToggleMarker(pos);
 
 		if (mpCB)
-			mpCB->UITimelineUpdated();
+			mpCB->UIMarkerUpdated();
 	}
 }
 

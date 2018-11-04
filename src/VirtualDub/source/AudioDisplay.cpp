@@ -601,6 +601,9 @@ public:
 	int GetZoom();
 	void SetZoom(int samplesPerPixel);
 
+	bool GetMonoMode();
+	void SetMonoMode(bool v);
+
 	void ClearFailureMessage();
 	void SetFailureMessage(const wchar_t *s);
 
@@ -621,8 +624,8 @@ public:
 	void CalcFocus(sint32& xh1, sint32& xh2, int64 windowPosition);
 
 	void SetFormat(double samplingRate, int channels);
+	void ResetFormat();
 	void SetFrameMarkers(sint64 mn, sint64 mx, double start, double rate);
-	void SetHighlightedFrameMarker(VDPosition pos);
 	void SetSelectedFrameRange(VDPosition start, VDPosition end);
 	void ClearSelectedFrameRange();
 	void SetPosition(VDPosition pos, VDPosition hpos);
@@ -657,6 +660,7 @@ protected:
 	int			mHeight;
 	int			mChanHeight;
 	int			mChanWidth;
+	int			mInputChanCount;
 	int			mChanCount;
 	int			mTextWidth;
 	VDPosition	mHighlightedMarker;
@@ -687,6 +691,7 @@ protected:
 	sint64		mWindowPosition;
 	sint64		mReadPosition;
 	bool		mbSpectrumMode;
+	bool		mbMonoMode;
 	bool		mbPointsDirty;
 	bool		mbSolidWaveform;
 	int			mSpectralBoost;
@@ -757,6 +762,7 @@ VDAudioDisplayControl::VDAudioDisplayControl(HWND hwnd)
 	, mHeight(0)
 	, mChanWidth(0)
 	, mChanHeight(0)
+	, mInputChanCount(0)
 	, mChanCount(0)
 	, mTextWidth(0)
 	, mImage_x0(0)
@@ -783,6 +789,7 @@ VDAudioDisplayControl::VDAudioDisplayControl(HWND hwnd)
 	, mWindowPosition(0)
 	, mReadPosition(-1)
 	, mbSpectrumMode(false)
+	, mbMonoMode(false)
 	, mbPointsDirty(false)
 	, mbSolidWaveform(false)
 	, mSpectralBoost(0)
@@ -915,6 +922,19 @@ void VDAudioDisplayControl::SetSpectralBoost(int boost) {
 	}
 }
 
+bool VDAudioDisplayControl::GetMonoMode() {
+	return mbMonoMode;
+}
+
+void VDAudioDisplayControl::SetMonoMode(bool v) {
+	if (mbMonoMode != v) {
+		mbMonoMode = v;
+		mChanCount = mbMonoMode ? 1 : mInputChanCount;
+		ResetFormat();
+		Rescan();
+	}
+}
+
 IVDUIAudioDisplayControl::Mode VDAudioDisplayControl::GetMode() {
 	return mbSpectrumMode ? kModeSpectrogram : kModeWaveform;
 }
@@ -967,41 +987,50 @@ void VDAudioDisplayControl::SetFailureMessage(const wchar_t *s) {
 void VDAudioDisplayControl::SetFormat(double samplingRate, int channels) {
 	if (mSamplingRate != samplingRate || mChanCount != channels) {
 		mSamplingRate = samplingRate;
-		mChanCount = channels;
-
-		mTransforms.clear();
-		mTransforms.resize(channels);
-
-		for(Transforms::iterator it(mTransforms.begin()), itEnd(mTransforms.end()); it!=itEnd; ++it) {
-			it->Init(13);
-		}
-
-		--mHeight;
-		OnSize();
-		Rescan();
+		mInputChanCount = channels;
+		mChanCount = mbMonoMode ? 1 : channels;
+		ResetFormat();
 	}
 }
 
+void VDAudioDisplayControl::ResetFormat() {
+	mTransforms.clear();
+	mTransforms.resize(mChanCount);
+
+	for(Transforms::iterator it(mTransforms.begin()), itEnd(mTransforms.end()); it!=itEnd; ++it) {
+		it->Init(13);
+	}
+
+	--mHeight;
+	OnSize();
+	Rescan();
+}
+
 void VDAudioDisplayControl::SetFrameMarkers(sint64 mn, sint64 mx, double start, double rate) {
+	bool changed = false;
+	if (mMarkerRangeMin != mn) changed = true;
+	if (mMarkerRangeMax != mx) changed = true;
+	if (mMarkerStart != start) changed = true;
+	if (mMarkerRate != rate) changed = true;
+
 	mMarkerRangeMin = mn;
 	mMarkerRangeMax = mx;
 	mMarkerStart = start;
 	mMarkerRate = rate;
 	mMarkerInvRate = 1.0 / rate;
 
-	RecomputeMarkerSteps();
-
-	//RECT r = {0, mChanHeight * mChanCount, mChanWidth, mHeight};
-	//InvalidateRect(mhwnd, &r, false);
-}
-
-/*void VDAudioDisplayControl::SetHighlightedFrameMarker(VDPosition pos) {
-	if (mHighlightedMarker != pos) {
-		mHighlightedMarker = pos;
-
-		InvalidateRect(mhwnd, NULL, TRUE);
+	if (changed) {
+		RecomputeMarkerSteps();
+		RECT r = {0, mChanHeight * mChanCount, mChanWidth, mHeight};
+		InvalidateRect(mhwnd, &r, false);
+		ProcessEnd();
+		mPosition = -1;
+		mImage_x0 = 0;
+		mImage_x1 = 0;
+		mImage_x2 = 0;
+		mImage_x3 = 0;
 	}
-}*/
+}
 
 void VDAudioDisplayControl::SetSelectedFrameRange(VDPosition start, VDPosition end) {
 	if (mSelectedMarkerRangeStart != start || mSelectedMarkerRangeEnd != end) {
@@ -1063,6 +1092,9 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 	// redo new focus
 	RECT r3 = {xb1-8, 0, xb2+8, mChanHeight * mChanCount};
 	InvalidateRect(mhwnd,&r3,false);
+
+	if (pos == mPosition)
+		return;
 
 	// check for forward move within window
 	if (pos > mPosition && mPosition >= 0) {
@@ -1434,6 +1466,10 @@ void VDAudioDisplayControl::OnCommand(int command) {
 		case ID_AUDIODISPLAY_BOOST_0DB:
 			SetSpectralBoost(0);
 			break;
+
+		case ID_AUDIODISPLAY_MONO:
+			SetMonoMode(!mbMonoMode);
+			break;
 	}
 }
 
@@ -1451,6 +1487,7 @@ void VDAudioDisplayControl::OnInitMenu(HMENU hmenu) {
 	VDCheckRadioMenuItemByCommandW32(hmenu, ID_AUDIODISPLAY_SPECTROGRAM, mbSpectrumMode);
 	VDEnableMenuItemByCommandW32(hmenu, ID_AUDIODISPLAY_ZOOMIN, mSamplesPerPixel > 1);
 	VDEnableMenuItemByCommandW32(hmenu, ID_AUDIODISPLAY_ZOOMOUT, mSamplesPerPixel < 1024);
+	VDCheckMenuItemByCommandW32(hmenu, ID_AUDIODISPLAY_MONO, mbMonoMode);
 }
 
 void VDAudioDisplayControl::OnSize() {
