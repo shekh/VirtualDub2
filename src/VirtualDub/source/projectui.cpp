@@ -4146,6 +4146,7 @@ bool VDProjectUI::TickAudioDisplay() {
 			sint64 vend;
 			if (g_dubOpts.audio.fEndAudio || subset.empty() || (vend = subset.back().end()) != pVSS->getEnd()) {
 				mbAudioDisplayReadActive = false;
+				mpAudioDisplay->ProcessAudio(0, 0, wfex);
 				return false;
 			}
 
@@ -4191,18 +4192,13 @@ bool VDProjectUI::TickAudioDisplay() {
 	} else {
 		if (inputAudio->read(apos, maxlen, buf, sizeof buf, &actualBytes, &actualSamples) || !actualSamples) {
 			mbAudioDisplayReadActive = false;
+			mpAudioDisplay->ProcessAudio(0, 0, wfex);
 			return false;
 		}
 	}
 	mAudioDisplayPosNext += actualSamples;
 
-	bool needMore = false;
-	if (wfex->mSampleBits == 8)
-		needMore = mpAudioDisplay->ProcessAudio8U((const uint8 *)buf, actualSamples, 1, wfex->mBlockSize);
-	if (wfex->mSampleBits == 16)
-		needMore = mpAudioDisplay->ProcessAudio16S((const sint16 *)buf, actualSamples, 2, wfex->mBlockSize);
-	if (wfex->mSampleBits == 32)
-		needMore = mpAudioDisplay->ProcessAudioF((const float *)buf, actualSamples, 4, wfex->mBlockSize);
+	bool needMore = mpAudioDisplay->ProcessAudio((const uint8 *)buf, actualSamples, wfex);
 
 	if (needMore)
 		return true;

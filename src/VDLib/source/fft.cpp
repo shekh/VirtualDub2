@@ -610,6 +610,24 @@ void VDRollingRealFFT::CopyInF(const float *src, uint32 count, ptrdiff_t stride)
 	} while(--count);
 }
 
+void VDRollingRealFFT::CopyInZ(uint32 count) {
+	if (count <= 0)
+		return;
+
+	if (count > mPoints) {
+		count = mPoints;
+	}
+
+	if (count > mPoints - mBufferLevel)
+		Advance(count - (mPoints - mBufferLevel));
+
+	float *dst = mpSampleBuffer + mBufferLevel;
+	mBufferLevel += count;
+	do {
+		*dst++ = 0;
+	} while(--count);
+}
+
 void VDRollingRealFFT::Transform() {
 	for(uint32 i=0; i<mPoints; ++i)
 		mpTempArea[i] = mpSampleBuffer[i] * mpWindow[i];

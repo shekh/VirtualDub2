@@ -30,6 +30,13 @@ struct VDUIAudioDisplaySelectionRange {
 	VDPosition mEnd;
 };
 
+enum {
+	afmt_none,
+	afmt_u8,
+	afmt_s16,
+	afmt_float,
+};
+
 class IVDUIAudioDisplayControl : public IVDRefUnknown {
 public:
 	enum { kTypeID = 'uiad' };
@@ -58,9 +65,7 @@ public:
 	virtual void Rescan(bool redraw=true) = 0;
 
 	virtual VDPosition GetReadPosition() = 0;
-	virtual bool ProcessAudio8U(const uint8 *src, int count, int chanStride, int sampleStride) = 0;
-	virtual bool ProcessAudio16S(const sint16 *src, int count, int chanStride, int sampleStride) = 0;
-	virtual bool ProcessAudioF(const float *src, int count, int chanStride, int sampleStride) = 0;
+	virtual bool ProcessAudio(const void *src, int count, const VDWaveFormat *wfex) = 0;
 
 	virtual VDEvent<IVDUIAudioDisplayControl, VDPosition>& AudioRequiredEvent() = 0;
 	virtual VDEvent<IVDUIAudioDisplayControl, VDUIAudioDisplaySelectionRange>& SetSelectStartEvent() = 0;

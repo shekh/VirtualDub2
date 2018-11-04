@@ -612,7 +612,9 @@ public:
 	void OnLButtonDown(int x, int y, uint32 modifiers);
 	void OnLButtonUp(int x, int y, uint32 modifiers);
 	void OnRButtonDown(int x, int y, uint32 modifiers);
-	void OnPaint(HDC hdc, const PAINTSTRUCT& ps);
+	void OnPaint(HDC hdc, const PAINTSTRUCT& ps, HRGN rgn);
+	void OnPaint2(HDC hdc, const PAINTSTRUCT& ps);
+	void PaintWaveform(HDC hdc, const PAINTSTRUCT& ps, int rx0, int rx1);
 	void OnSize();
 	void OnTimer();
 	void PaintChannel(HDC hdc, int ch);
@@ -625,10 +627,11 @@ public:
 	void ClearSelectedFrameRange();
 	void SetPosition(VDPosition pos, VDPosition hpos);
 	void Rescan(bool redraw=true);
+	void SetReadPosition(sint64 p);
 	VDPosition GetReadPosition();
-	bool ProcessAudio8U(const uint8 *src, int count, int chanStride, int sampleStride);
-	bool ProcessAudio16S(const sint16 *src, int count, int chanStride, int sampleStride);
-	bool ProcessAudioF(const float *src, int count, int chanStride, int sampleStride);
+	bool MoveImage(int delta);
+	bool ProcessAudio(const void *src, int count, const VDWaveFormat *wfex);
+	void ProcessEnd();
 	VDEvent<IVDUIAudioDisplayControl, VDPosition>& AudioRequiredEvent();
 	VDEvent<IVDUIAudioDisplayControl, VDUIAudioDisplaySelectionRange>& SetSelectStartEvent();
 	VDEvent<IVDUIAudioDisplayControl, VDUIAudioDisplaySelectionRange>& SetSelectTrackEvent();
@@ -637,7 +640,8 @@ public:
 	VDEvent<IVDUIAudioDisplayControl, sint32>& SetAudioOffsetEvent();
 
 protected:
-	bool ProcessAudio(const void *src, int count, int chanStride, int sampleStride, bool bit16, bool fmt_float);
+	bool ProcessAudioSpectrum(const void *src, int count, int chanStride, int sampleStride, int format);
+	bool ProcessAudioWaveform(const void *src, int count, int chanStride, int sampleStride, int format);
 	void RecomputeMarkerSteps();
 	void InvalidateRange(int x1, int x2);
 
@@ -660,7 +664,12 @@ protected:
 	VDPosition	mSelectedMarkerRangeEnd;
 	VDPosition	mAudioOffsetDragAnchor;
 	VDPosition	mAudioOffsetDragEndPoint;
-	uint32		mAccumulatedSamples;
+	int		mImage_x0;
+	int		mImage_x1;
+	int		mImage_x2;
+	int		mImage_x3;
+	bool	dirty_x0;
+	bool	dirty_x1;
 	uint32		mBufferedWindowSamples;
 	double		mSamplingRate;
 	sint64		mMarkerRangeMin;
@@ -750,7 +759,10 @@ VDAudioDisplayControl::VDAudioDisplayControl(HWND hwnd)
 	, mChanHeight(0)
 	, mChanCount(0)
 	, mTextWidth(0)
-	, mAccumulatedSamples(0)
+	, mImage_x0(0)
+	, mImage_x1(0)
+	, mImage_x2(0)
+	, mImage_x3(0)
 	, mBufferedWindowSamples(0)
 	, mSamplingRate(44100.0)
 	, mHighlightedMarker(-1)
@@ -1016,7 +1028,7 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 	pos -= pos % mSamplesPerPixel;
 
 	// check for null move
-	if (mPosition == pos)
+	if (mPosition == pos && mHighlightedMarker == hpos)
 		return;
 
 	sint64 newWindowPos = pos - ((mChanWidth * mSamplesPerPixel) >> 1);
@@ -1057,42 +1069,74 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 		uint64 delta64 = (uint64)(pos - mPosition) / mSamplesPerPixel;
 
 		if (delta64 < mChanWidth) {
-			uint32 delta = (uint32)delta64;
+			int delta = (int)delta64;
 
 			if (mbSpectrumMode) {
-				if (mAccumulatedSamples >= delta) {
-					mAccumulatedSamples -= delta;
-					uint32 pitch = (mChanWidth + 3) & ~3;
-					for(int y=0; y<256*mChanCount; ++y){
-						memmove(&mImage[pitch*y], &mImage[pitch*y + delta], mAccumulatedSamples);
-						memset(&mImage[pitch*y + mAccumulatedSamples], 0, mChanWidth-mAccumulatedSamples);
-					}
-
+				if (MoveImage(-delta)) {
 					mPosition = pos;
 					mWindowPosition = newWindowPos;
 					if (mReadPosition < 0) {
-						mReadPosition = newWindowPos - (8192 >> 1) + mSamplesPerPixel * mAccumulatedSamples;
+						dirty_x1 = false;
 						mBufferedWindowSamples = 0;
-						mAudioRequiredEvent.Raise(this, mReadPosition);
+						SetReadPosition(mWindowPosition + mImage_x1 * mSamplesPerPixel);
+					} else {
+						dirty_x1 = true;
 					}
-
-					//InvalidateRect(mhwnd, NULL, TRUE);
 					return;
 				}
 			} else {
-				if (mAccumulatedSamples >= delta * mSamplesPerPixel) {
-					mAccumulatedSamples -= delta * mSamplesPerPixel;
-					mImage.erase(mImage.begin(), mImage.begin() + delta * mSamplesPerPixel * mChanCount);
+				if (MoveImage(-delta * mSamplesPerPixel)) {
 					mbPointsDirty = true;
-					VDASSERT(mImage.size() == mAccumulatedSamples * mChanCount);
-
 					mPosition = pos;
 					mWindowPosition = newWindowPos;
 					if (mReadPosition < 0) {
-						mReadPosition = newWindowPos + mAccumulatedSamples;
-						mAudioRequiredEvent.Raise(this, mReadPosition);
+						dirty_x1 = false;
+						SetReadPosition(mWindowPosition + mImage_x1);
+					} else {
+						dirty_x1 = true;
 					}
-					//InvalidateRect(mhwnd, NULL, TRUE);
+					return;
+				}
+			}
+		}
+	}
+
+	// check for backward move within window
+	if (pos < mPosition && mPosition >= 0) {
+		uint64 delta64 = (uint64)(mPosition - pos) / mSamplesPerPixel;
+
+		if (delta64 < mChanWidth) {
+			int delta = (int)delta64;
+
+			if (mbSpectrumMode) {
+				if (MoveImage(delta)) {
+					mPosition = pos;
+					mWindowPosition = newWindowPos;
+					if (mReadPosition < 0) {
+						dirty_x0 = false;
+						mImage_x0 = 0;
+						mImage_x1 = 0;
+						mBufferedWindowSamples = 0;
+						SetReadPosition(newWindowPos);
+					} else {
+						dirty_x0 = true;
+					}
+
+					return;
+				}
+			} else {
+				if (MoveImage(delta * mSamplesPerPixel)) {
+					mbPointsDirty = true;
+					mPosition = pos;
+					mWindowPosition = newWindowPos;
+					if (mReadPosition < 0) {
+						dirty_x0 = false;
+						mImage_x0 = 0;
+						mImage_x1 = 0;
+						SetReadPosition(newWindowPos);
+					} else {
+						dirty_x0 = true;
+					}
 					return;
 				}
 			}
@@ -1105,12 +1149,88 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 	Rescan(false);
 }
 
+bool VDAudioDisplayControl::MoveImage(int delta) {
+	int pitch;
+	if (mbSpectrumMode) {
+		pitch = (mChanWidth + 3) & ~3;
+	} else {
+		pitch = mImage.size() / mChanCount;
+	}
+
+	if (mImage_x2 && mImage_x3<mImage_x1) {
+		mImage_x2 = 0;
+		mImage_x3 = 0;
+	}
+	if (!mImage_x2) {
+		mImage_x2 = mImage_x0;
+		mImage_x3 = mImage_x1;
+	}
+
+	int x1 = mImage_x1;
+
+	mImage_x0 += delta;
+	mImage_x1 += delta;
+	mImage_x2 += delta;
+	mImage_x3 += delta;
+	if (mImage_x0<0) mImage_x0 = 0;
+	if (mImage_x1<0) mImage_x1 = 0;
+	if (mImage_x2<0) mImage_x2 = 0;
+	if (mImage_x3<0) mImage_x3 = 0;
+	if (mImage_x0>pitch) mImage_x0 = pitch;
+	if (mImage_x1>pitch) mImage_x1 = pitch;
+	if (mImage_x2>pitch) mImage_x2 = pitch;
+	if (mImage_x3>pitch) mImage_x3 = pitch;
+	if (mImage_x0==mImage_x1) {
+		mImage_x0 = 0;
+		mImage_x1 = 0;
+	}
+	if (mImage_x2==mImage_x3) {
+		mImage_x2 = 0;
+		mImage_x3 = 0;
+	}
+
+	if (x1!=mImage_x1 && mReadPosition>=0) {
+		ProcessEnd();
+	}
+
+	if (mImage_x0==mImage_x1 && mImage_x2==mImage_x3) return false;
+
+	if (mbSpectrumMode) {
+		for(int y=0; y<256*mChanCount; ++y){
+			if (delta<0) {
+				int dx = -delta;
+				memmove(&mImage[pitch*y], &mImage[pitch*y + dx], pitch-dx);
+				memset(&mImage[pitch*y + pitch-dx], 0, dx);
+			} else {
+				int dx = delta;
+				memmove(&mImage[pitch*y + dx], &mImage[pitch*y], pitch-dx);
+				memset(&mImage[pitch*y], 0, dx);
+			}
+		}
+	} else {
+		if (delta<0) {
+			int dx = -delta;
+			memmove(&mImage[0], &mImage[dx*mChanCount], (pitch-dx)*mChanCount);
+		} else {
+			int dx = delta;
+			memmove(&mImage[dx*mChanCount], &mImage[0], (pitch-dx)*mChanCount);
+		}
+	}
+
+	return true;
+}
+
 void VDAudioDisplayControl::Rescan(bool redraw) {
 	mImage.clear();
-	mAccumulatedSamples = 0;
+	mImage_x0 = 0;
+	mImage_x1 = 0;
+	mImage_x2 = 0;
+	mImage_x3 = 0;
+	dirty_x0 = false;
+	dirty_x1 = false;
 	mBufferedWindowSamples = 0;
 	mbPointsDirty = true;
-	mReadPosition = mWindowPosition;
+	if (!mChanCount) return;
 
 	if (mbSpectrumMode) {
 		unsigned pitch = (mChanWidth + 3) & ~3;
@@ -1122,11 +1242,19 @@ void VDAudioDisplayControl::Rescan(bool redraw) {
 		mbihSpectrumHighlight.hdr = mbihSpectrum.hdr;
 		mbihSpectrumMinorMarker.hdr = mbihSpectrum.hdr;
 		mbihSpectrumMajorMarker.hdr = mbihSpectrum.hdr;
+	} else {
+		int pitch = mChanWidth * mSamplesPerPixel;
+		mImage.resize(pitch*mChanCount, 0);
+	}
 
-		for(Transforms::iterator it(mTransforms.begin()), itEnd(mTransforms.end()); it!=itEnd; ++it) {
-			it->Clear();
-		}
+	SetReadPosition(mWindowPosition);
+	if(redraw) InvalidateRect(mhwnd, NULL, TRUE);
+}
 
+void VDAudioDisplayControl::SetReadPosition(sint64 p) {
+	mReadPosition = p;
+
+	if (mbSpectrumMode) {
 		mReadPosition -= 8192 >> 1;
 
 		if (mReadPosition < 0 && mReadPosition >= -(mChanWidth*mSamplesPerPixel + (8192-mSamplesPerPixel))) {
@@ -1135,46 +1263,35 @@ void VDAudioDisplayControl::Rescan(bool redraw) {
 
 			int preload = (sint32)(mBufferedWindowSamples - (8192 - mSamplesPerPixel)) / (sint32)mSamplesPerPixel;
 			if (preload > 0) {
-				mAccumulatedSamples = preload;
+				mImage_x1 = preload;
 				mBufferedWindowSamples -= preload * mSamplesPerPixel;
 			}
 
 			VDASSERT(mBufferedWindowSamples <= 8192);
 		}
+
+		for(Transforms::iterator it(mTransforms.begin()), itEnd(mTransforms.end()); it!=itEnd; ++it) {
+			it->Clear();
+		}
 	} else {
 		if (mReadPosition < 0) {
-			sint32 limit = (sint32)mChanWidth * (sint32)mSamplesPerPixel;
 			sint32 preload = -(sint32)mReadPosition;
 
-			if (mReadPosition <= -limit)
-				preload = limit;
-
-			mImage.resize(preload * mChanCount, 0);
 			mReadPosition = 0;
-			mAccumulatedSamples = preload;
+			mImage_x0 = preload;
+			mImage_x1 = preload;
+			int max = mImage.size() / mChanCount;
+			if (mImage_x0>max) mImage_x0 = max;
+			if (mImage_x1>max) mImage_x1 = max;
 		}
 	}
 
 	if (mReadPosition >= 0)
 		mAudioRequiredEvent.Raise(this, mReadPosition);
-
-	if(redraw) InvalidateRect(mhwnd, NULL, TRUE);
 }
 
 VDPosition VDAudioDisplayControl::GetReadPosition() {
 	return mReadPosition;
-}
-
-bool VDAudioDisplayControl::ProcessAudio8U(const uint8 *src, int count, int chanStride, int sampleStride) {
-	return ProcessAudio(src, count, chanStride, sampleStride, false, false);
-}
-
-bool VDAudioDisplayControl::ProcessAudio16S(const sint16 *src, int count, int chanStride, int sampleStride) {
-	return ProcessAudio(src, count, chanStride, sampleStride, true, false);
-}
-
-bool VDAudioDisplayControl::ProcessAudioF(const float *src, int count, int chanStride, int sampleStride) {
-	return ProcessAudio(src, count, chanStride, sampleStride, false, true);
 }
 
 VDEvent<IVDUIAudioDisplayControl, VDPosition>& VDAudioDisplayControl::AudioRequiredEvent() {
@@ -1220,8 +1337,11 @@ LRESULT VDAudioDisplayControl::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			PAINTSTRUCT ps;
 			HDC hdc;
 
+			HRGN rgn = CreateRectRgn(0,0,0,0);
+			GetUpdateRgn(mhwnd,rgn,false);
 			hdc = BeginPaint(mhwnd, &ps);
-			OnPaint(hdc, ps);
+			OnPaint(hdc, ps, rgn);
+			DeleteObject(rgn);
 			mDC.Init(hdc);
 			Render(mDC);
 			mDC.Shutdown();
@@ -1349,6 +1469,9 @@ void VDAudioDisplayControl::OnSize() {
 		mWidth			= r.right;
 		mChanWidth		= r.right;
 
+		sint64 newWindowPos = mPosition - ((mChanWidth * mSamplesPerPixel) >> 1);
+		mWindowPosition = newWindowPos;
+
 		RecomputeMarkerSteps();
 		Rescan();
 	}
@@ -1360,6 +1483,25 @@ void VDAudioDisplayControl::OnTimer() {
 		mUpdateX1 = INT_MAX;
 		mUpdateX2 = INT_MIN;
 		InvalidateRect(mhwnd, &r, TRUE);
+	}
+
+	if (mReadPosition<0) {
+		if (dirty_x0) {
+			dirty_x0 = false;
+			mImage_x2 = mImage_x0;
+			mImage_x3 = mImage_x1;
+			mImage_x0 = 0;
+			mImage_x1 = 0;
+			mBufferedWindowSamples = 0;
+			SetReadPosition(mWindowPosition);
+		} else if (dirty_x1) {
+			dirty_x1 = false;
+			mBufferedWindowSamples = 0;
+			if (mbSpectrumMode)
+				SetReadPosition(mWindowPosition + mImage_x1*mSamplesPerPixel);
+			else
+				SetReadPosition(mWindowPosition + mImage_x1);
+		}
 	}
 
 	if (mUpdateTimer) {
@@ -1458,7 +1600,7 @@ void VDAudioDisplayControl::CalcFocus(sint32& xh1, sint32& xh2, int64 windowPosi
 		++xh2;
 }
 
-void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps) {
+void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps, HRGN rgn) {
 	if (!mFailureMessage.empty() || !mChanCount) {
 		RECT r;
 		if (GetClientRect(mhwnd, &r)) {
@@ -1471,6 +1613,38 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps) {
 		return;
 	}
 
+	RECT r;
+	GetClientRect(mhwnd, &r);
+	HRGN rg0 = CreateRectRgn(r.right/3,0,r.right*2/3,r.bottom);
+	HRGN rg1 = CreateRectRgn(0,0,r.right/3,r.bottom);
+	HRGN rg2 = CreateRectRgn(r.right*2/3,0,r.right,r.bottom);
+	CombineRgn(rg0,rg0,rgn,RGN_AND);
+	CombineRgn(rg1,rg1,rgn,RGN_AND);
+	CombineRgn(rg2,rg2,rgn,RGN_AND);
+	RECT r0;
+	PAINTSTRUCT ps1 = ps;
+	GetRgnBox(rgn,&r0);
+	if (GetRgnBox(rg0,&r0)!=NULLREGION) {
+		ps1.rcPaint = r0;
+		SelectClipRgn(hdc,rg0);
+		OnPaint2(hdc,ps1);
+	}
+	if (GetRgnBox(rg1,&r0)!=NULLREGION) {
+		ps1.rcPaint = r0;
+		SelectClipRgn(hdc,rg1);
+		OnPaint2(hdc,ps1);
+	}
+	if (GetRgnBox(rg2,&r0)!=NULLREGION) {
+		ps1.rcPaint = r0;
+		SelectClipRgn(hdc,rg2);
+		OnPaint2(hdc,ps1);
+	}
+	DeleteObject(rg0);
+	DeleteObject(rg1);
+	DeleteObject(rg2);
+}
+
+void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 	SetStretchBltMode(hdc, COLORONCOLOR);
 	
 	if (mbSpectrumMode) {
@@ -1623,100 +1797,8 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps) {
 	} else {
 		if (HPEN hpen = CreatePen(PS_SOLID, 0, RGB(255, 0, 0))) {
 			if (HGDIOBJ hOldPen = SelectObject(hdc, hpen)) {
-				float yscale = (float)(mChanHeight - 1) / 256.0f;
-
-				if (mbSolidWaveform) {
-					if (mbPointsDirty) {
-						mbPointsDirty = false;
-
-						size_t count = mImage.size() / mChanCount;
-
-						count &= ~(mSamplesPerPixel - 1);
-
-						mPoints.resize((count / mSamplesPerPixel) * 2 * mChanCount);
-
-						if (count) {
-							uint32 j = 0;
-							for(uint32 ch=0; ch<mChanCount; ++ch) {
-								uint32 x = 0;
-								const uint8 *src = &mImage[ch];
-								int yoffset = mChanHeight * ch;
-
-								uint32 basePtIdx = j;
-								for(uint32 i=0; i<count; i += mSamplesPerPixel) {
-									uint8 minval = 0xff;
-									uint8 maxval = 0x00;
-									for(uint32 k=0; k<mSamplesPerPixel; ++k) {
-										uint8 v = *src;
-										src += mChanCount;
-
-										if (minval > v)
-											minval = v;
-										if (maxval < v)
-											maxval = v;
-									}
-
-									mPoints[j+0].x = x;
-									mPoints[j+0].y = VDRoundToIntFast((float)minval * yscale) + yoffset;
-									mPoints[j+1].x = x++;
-									mPoints[j+1].y = VDRoundToIntFast((float)maxval * yscale) + yoffset + 1;
-									j += 2;
-								}
-
-								// Do another run through the points, and extend ranges to touch whenever needed.
-								for(uint32 k = basePtIdx; k + 2 < j; k += 2) {
-									POINT& pt0 = mPoints[k+0];
-									POINT& pt1 = mPoints[k+1];
-									POINT& pt2 = mPoints[k+2];
-									POINT& pt3 = mPoints[k+3];
-
-									// Check for the two disjoint cases and connect the spans at the midpoint
-									// if so.
-									if (pt1.y < pt2.y)
-										pt1.y = pt2.y = (pt1.y + pt2.y) >> 1;
-									else if (pt0.y > pt3.y)
-										pt0.y = pt3.y = (pt0.y + pt3.y) >> 1;
-								}
-							}
-						}
-					}
-
-					int w = (int)(mPoints.size() >> 1) / mChanCount;
-					if (x2 > w)
-						x2 = w;
-
-					DWORD twos[128];
-					for(int i=0; i<128; ++i)
-						twos[i] = 2;
-
-					for(int ch=0; ch<mChanCount; ++ch) {
-						for(int x=x1; x<x2; x += 128)
-							PolyPolyline(hdc, &mPoints[x*2 + ch*w*2], twos, std::min<int>(x2-x, 128));
-					}
-				} else {
-					if (mbPointsDirty || 1) {
-						mbPointsDirty = false;
-
-						size_t count = mImage.size() / mChanCount;
-
-						mPoints.resize(count);
-
-						if (count > 1) {
-							for(uint32 ch=0; ch<mChanCount; ++ch) {
-								const uint8 *src = &mImage[ch];
-								int yoffset = mChanHeight * ch;
-
-								for(uint32 i=0; i<count; ++i) {
-									mPoints[i].x = VDRoundToIntFast((float)(i * mPixelsPerSample));
-									mPoints[i].y = VDRoundToIntFast((float)src[i * mChanCount] * yscale + yoffset);
-								}
-
-								Polyline(hdc, mPoints.data(), count - 1);
-							}
-						}
-					}
-				}
-
+				if (mImage_x1) PaintWaveform(hdc, ps, mImage_x0, mImage_x1);
+				if (mImage_x3) PaintWaveform(hdc, ps, mImage_x2, mImage_x3);
 				SelectObject(hdc, hOldPen);
 			}
 			DeleteObject(hpen);
@@ -1724,157 +1806,300 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps) {
 	}
 }
 
-bool VDAudioDisplayControl::ProcessAudio(const void *src, int count, int chanStride, int sampleStride, bool bit16, bool fmt_float) {
+void VDAudioDisplayControl::PaintWaveform(HDC hdc, const PAINTSTRUCT& ps, int rx0, int rx1) {
+	float yscale = (float)(mChanHeight - 1) / 256.0f;
+	int x1 = ps.rcPaint.left;
+	int x2 = ps.rcPaint.right;
+
+	if (mbSolidWaveform) {
+		if (mbPointsDirty) {
+			mbPointsDirty = false;
+
+			size_t count = mImage_x1;
+
+			count &= ~(mSamplesPerPixel - 1);
+
+			mPoints.resize((count / mSamplesPerPixel) * 2 * mChanCount);
+
+			if (count) {
+				uint32 j = 0;
+				for(uint32 ch=0; ch<mChanCount; ++ch) {
+					uint32 x = 0;
+					const uint8 *src = &mImage[ch];
+					int yoffset = mChanHeight * ch;
+
+					uint32 basePtIdx = j;
+					for(uint32 i=0; i<count; i += mSamplesPerPixel) {
+						uint8 minval = 0xff;
+						uint8 maxval = 0x00;
+						for(uint32 k=0; k<mSamplesPerPixel; ++k) {
+							uint8 v = *src;
+							src += mChanCount;
+
+							if (minval > v)
+								minval = v;
+							if (maxval < v)
+								maxval = v;
+						}
+
+						mPoints[j+0].x = x;
+						mPoints[j+0].y = VDRoundToIntFast((float)minval * yscale) + yoffset;
+						mPoints[j+1].x = x++;
+						mPoints[j+1].y = VDRoundToIntFast((float)maxval * yscale) + yoffset + 1;
+						j += 2;
+					}
+
+					// Do another run through the points, and extend ranges to touch whenever needed.
+					for(uint32 k = basePtIdx; k + 2 < j; k += 2) {
+						POINT& pt0 = mPoints[k+0];
+						POINT& pt1 = mPoints[k+1];
+						POINT& pt2 = mPoints[k+2];
+						POINT& pt3 = mPoints[k+3];
+
+						// Check for the two disjoint cases and connect the spans at the midpoint
+						// if so.
+						if (pt1.y < pt2.y)
+							pt1.y = pt2.y = (pt1.y + pt2.y) >> 1;
+						else if (pt0.y > pt3.y)
+							pt0.y = pt3.y = (pt0.y + pt3.y) >> 1;
+					}
+				}
+			}
+		}
+
+		int w = (int)(mPoints.size() >> 1) / mChanCount;
+		if (x2 > w)
+			x2 = w;
+
+		DWORD twos[128];
+		for(int i=0; i<128; ++i)
+			twos[i] = 2;
+
+		for(int ch=0; ch<mChanCount; ++ch) {
+			for(int x=x1; x<x2; x += 128)
+				PolyPolyline(hdc, &mPoints[x*2 + ch*w*2], twos, std::min<int>(x2-x, 128));
+		}
+	} else {
+		if (mbPointsDirty || 1) {
+			mbPointsDirty = false;
+
+			int px0 = int(ps.rcPaint.left / mPixelsPerSample);
+			int px1 = int(ps.rcPaint.right / mPixelsPerSample) + 1;
+			if (px0>rx0) rx0 = px0;
+			if (px1<rx1) rx1 = px1;
+			if (rx1<=rx0) return;
+
+			size_t count = rx1-rx0;
+
+			mPoints.resize(count);
+
+			if (count > 1) {
+				for(uint32 ch=0; ch<mChanCount; ++ch) {
+					const uint8 *src = &mImage[ch];
+					int yoffset = mChanHeight * ch;
+
+					for(uint32 i=0; i<count; ++i) {
+						int x = i+rx0;
+						mPoints[i].x = VDRoundToIntFast((float)(x * mPixelsPerSample));
+						mPoints[i].y = VDRoundToIntFast((float)src[x * mChanCount] * yscale + yoffset);
+					}
+
+					Polyline(hdc, mPoints.data(), count - 1);
+				}
+			}
+		}
+	}
+}
+
+void VDAudioDisplayControl::ProcessEnd() {
+	mReadPosition = -1;
+	if (!mUpdateTimer)
+		mUpdateTimer = SetTimer(mhwnd, 1, 1, NULL);
+}
+
+bool VDAudioDisplayControl::ProcessAudio(const void *src, int count, const VDWaveFormat *wfex) {
+	int format = 0;
+	int chanStride = 0;
+
+	if (wfex->mSampleBits == 8) { format = afmt_u8; chanStride = 1; }
+	if (wfex->mSampleBits == 16) { format = afmt_s16; chanStride = 2; }
+	if (wfex->mSampleBits == 32) { format = afmt_float; chanStride = 4; }
+	if (!format) return false;
+
 	if (mReadPosition < 0 || mChanCount < 1)
 		return false;
 
-	if (count <= 0)
-		return mReadPosition >= 0;
+	if (!src) {
+		if (mbSpectrumMode)
+			ProcessAudioSpectrum(0,8192 >> 1,chanStride,wfex->mBlockSize,format);
+		ProcessEnd();
+		return false;
+	}
+
+	//if (count <= 0)
+	//	return mReadPosition >= 0;
 
 	mReadPosition += count;
 
-	if (mbSpectrumMode) {
-		if (mAccumulatedSamples >= mChanWidth) {
-			mReadPosition = -1;
-			return false;
-		}
+	bool r;
+	if (mbSpectrumMode)
+		r = ProcessAudioSpectrum(src,count,chanStride,wfex->mBlockSize,format);
+	else
+		r = ProcessAudioWaveform(src,count,chanStride,wfex->mBlockSize,format);
 
-		unsigned pitch = (mChanWidth + 3) & ~3;
-		int x1 = mAccumulatedSamples;
-
-		while(count > 0) {
-			int tc = 8192 - (int)mBufferedWindowSamples;
-			VDASSERT(tc >= 0);
-
-			if (!tc) {
-				mBufferedWindowSamples -= mSamplesPerPixel;
-
-				static const float kSpecScale = 24.525815695112377925118719577032f;		// 255 / ln(32768)
-				static const float kSpecOffset = 289.0f + 17.0f;
-				static const float kLn2 = 0.69314718055994530941723212145818f;
-
-				float offset = kSpecOffset + (float)mSpectralBoost * (kSpecScale * kLn2);
-
-				unsigned char *dst = &mImage[mAccumulatedSamples];
-
-				for(int ch=0; ch<mChanCount; ++ch) {
-					mTransforms[ch].Transform();
-					mTransforms[ch].Advance(mSamplesPerPixel);
-					for(unsigned i=0; i<256; ++i) {
-						double x = mTransforms[ch].GetPower(i);
-
-						int y = 0;
-						if (x > 1e-10) {
-							double yf = log(x);
-							y = VDRoundToIntFast((float)(yf*kSpecScale + offset));
-						}
-
-						y += abs(y);
-
-						if ((unsigned)y >= 256)
-							y = 255;
-
-						*dst = (uint8)y;
-						dst += pitch;
-					}
-				}
-
-				if (++mAccumulatedSamples >= mChanWidth)
-					break;
-
-				continue;
-			}
-
-			if (tc > count)
-				tc = count;
-			count -= tc;
-
-			VDASSERT(tc > 0);
-
-			if (fmt_float) {
-				for(int ch=0; ch<mChanCount; ++ch)
-					mTransforms[ch].CopyInF((const float *)((const char *)src + chanStride*ch), tc, sampleStride);
-			} else if (bit16) {
-				for(int ch=0; ch<mChanCount; ++ch)
-					mTransforms[ch].CopyIn16S((const signed short *)((const char *)src + chanStride*ch), tc, sampleStride);
-			} else {
-				for(int ch=0; ch<mChanCount; ++ch)
-					mTransforms[ch].CopyIn8U((const unsigned char *)src + chanStride*ch, tc, sampleStride);
-			}
-
-			src = (const unsigned char *)src + sampleStride*tc;
-			mBufferedWindowSamples += tc;
-		}
-
-		if (mAccumulatedSamples > x1)
-			InvalidateRange(x1, mAccumulatedSamples);
-	} else {
-		if (mImage.size() >= mChanWidth*mSamplesPerPixel*mChanCount) {
-			mReadPosition = -1;
-			return false;
-		}
-
-		uint32 rawcount = (uint32)mImage.size();
-		int x1 = (int)(rawcount / (mSamplesPerPixel * mChanCount));
-		
-		VDASSERT(rawcount == mAccumulatedSamples * mChanCount);
-		mAccumulatedSamples += count;
-
-		mImage.resize(rawcount + count * mChanCount, 0);
-
-		uint8 *dst = &mImage[rawcount];
-
-		if (fmt_float) {
-			for(int ch = 0; ch < mChanCount; ++ch) {
-				const float *srcf = (const float *)((const char *)src + chanStride*ch);
-				uint8 *dst8 = dst + ch;
-
-				for(int i=0; i<count; ++i) {
-					int s = int(*srcf*128*mScale) + 0x80;
-					if(s<0) s=0; 
-					if(s>255) s=255;
-					*dst8 = (uint8)(s);
-					dst8 += mChanCount;
-					srcf = (const float *)((const char *)srcf + sampleStride);
-				}
-			}
-		} else if (bit16) {
-			for(int ch = 0; ch < mChanCount; ++ch) {
-				const sint16 *src16 = (const sint16 *)((const char *)src + chanStride*ch);
-				uint8 *dst8 = dst + ch;
-
-				for(int i=0; i<count; ++i) {
-					int s = ((*src16*mScale)>>8) + 0x80;
-					if(s<0) s=0; 
-					if(s>255) s=255;
-					*dst8 = (uint8)s;
-					dst8 += mChanCount;
-					src16 = (const sint16 *)((const char *)src16 + sampleStride);
-				}
-			}
-		} else {
-			for(int ch = 0; ch < mChanCount; ++ch) {
-				const uint8 *src8 = (const uint8 *)src + chanStride*ch;
-				uint8 *dst8 = dst + ch;
-
-				for(int i=0; i<count; ++i) {
-					int s = (*src8-0x80)*mScale + 0x80;
-					if(s<0) s=0; 
-					if(s>255) s=255;
-					*dst8 = (uint8)s;
-					dst8 += mChanCount;
-					src8 += sampleStride;
-				}
-			}
-		}
-
-		VDASSERT(mImage.size() == mAccumulatedSamples * mChanCount);
-
-		int x2 = (int)(mImage.size() / (mSamplesPerPixel * mChanCount));
-
-		InvalidateRange(x1, x2);
-		mbPointsDirty = true;
+	if (mImage_x2 && mImage_x1>mImage_x2) {
+		if (mImage_x3>=mImage_x1)	mImage_x1 = mImage_x3;
+		mImage_x2 = 0;
+		mImage_x3 = 0;
+		if (mbSpectrumMode && mImage_x1<mChanWidth) dirty_x1 = true;
+		if (!mbSpectrumMode && mImage_x1<mChanWidth*mSamplesPerPixel) dirty_x1 = true;
+		ProcessEnd();
+		return false;
 	}
+
+	if (!r) ProcessEnd();
+	return r;
+}
+
+bool VDAudioDisplayControl::ProcessAudioSpectrum(const void *src, int count, int chanStride, int sampleStride, int format) {
+	if (mImage_x1 >= mChanWidth) return false;
+
+	unsigned pitch = (mChanWidth + 3) & ~3;
+	int x1 = mImage_x1;
+
+	while(count > 0) {
+		int tc = 8192 - (int)mBufferedWindowSamples;
+		VDASSERT(tc >= 0);
+
+		if (!tc) {
+			mBufferedWindowSamples -= mSamplesPerPixel;
+
+			static const float kSpecScale = 24.525815695112377925118719577032f;		// 255 / ln(32768)
+			static const float kSpecOffset = 289.0f + 17.0f;
+			static const float kLn2 = 0.69314718055994530941723212145818f;
+
+			float offset = kSpecOffset + (float)mSpectralBoost * (kSpecScale * kLn2);
+
+			unsigned char *dst = &mImage[mImage_x1];
+
+			for(int ch=0; ch<mChanCount; ++ch) {
+				mTransforms[ch].Transform();
+				mTransforms[ch].Advance(mSamplesPerPixel);
+				for(unsigned i=0; i<256; ++i) {
+					double x = mTransforms[ch].GetPower(i);
+
+					int y = 0;
+					if (x > 1e-10) {
+						double yf = log(x);
+						y = VDRoundToIntFast((float)(yf*kSpecScale + offset));
+					}
+
+					y += abs(y);
+
+					if ((unsigned)y >= 256)
+						y = 255;
+
+					*dst = (uint8)y;
+					dst += pitch;
+				}
+			}
+
+			mImage_x1++;
+			if (mImage_x1 >= mChanWidth)
+				break;
+
+			continue;
+		}
+
+		if (tc > count)
+			tc = count;
+		count -= tc;
+
+		VDASSERT(tc > 0);
+
+		if (!src) {
+			for(int ch=0; ch<mChanCount; ++ch)
+				mTransforms[ch].CopyInZ(tc);
+		} else if (format==afmt_float) {
+			for(int ch=0; ch<mChanCount; ++ch)
+				mTransforms[ch].CopyInF((const float *)((const char *)src + chanStride*ch), tc, sampleStride);
+		} else if (format==afmt_s16) {
+			for(int ch=0; ch<mChanCount; ++ch)
+				mTransforms[ch].CopyIn16S((const signed short *)((const char *)src + chanStride*ch), tc, sampleStride);
+		} else if (format==afmt_u8) {
+			for(int ch=0; ch<mChanCount; ++ch)
+				mTransforms[ch].CopyIn8U((const unsigned char *)src + chanStride*ch, tc, sampleStride);
+		}
+
+		if (src) src = (const unsigned char *)src + sampleStride*tc;
+		mBufferedWindowSamples += tc;
+	}
+
+	if (mImage_x1 > x1)
+		InvalidateRange(x1, mImage_x1);
+
+	return true;
+}
+
+bool VDAudioDisplayControl::ProcessAudioWaveform(const void *src, int count, int chanStride, int sampleStride, int format) {
+	if (mImage_x1 >= mChanWidth*mSamplesPerPixel)	return false;
+
+	if (mImage_x1 + count > mImage.size() / mChanCount)
+		count = mImage.size() / mChanCount - mImage_x1;
+
+	uint32 rawcount = mImage_x1 * mChanCount;
+	int x1 = (int)(mImage_x1 / mSamplesPerPixel);
+	mImage_x1 += count;
+	int x2 = (int)(mImage_x1 / mSamplesPerPixel);
+
+	uint8 *dst = &mImage[rawcount];
+
+	if (format==afmt_float) {
+		for(int ch = 0; ch < mChanCount; ++ch) {
+			const float *srcf = (const float *)((const char *)src + chanStride*ch);
+			uint8 *dst8 = dst + ch;
+
+			for(int i=0; i<count; ++i) {
+				int s = int(*srcf*128*mScale) + 0x80;
+				if(s<0) s=0; 
+				if(s>255) s=255;
+				*dst8 = (uint8)(s);
+				dst8 += mChanCount;
+				srcf = (const float *)((const char *)srcf + sampleStride);
+			}
+		}
+	} else if (format==afmt_s16) {
+		for(int ch = 0; ch < mChanCount; ++ch) {
+			const sint16 *src16 = (const sint16 *)((const char *)src + chanStride*ch);
+			uint8 *dst8 = dst + ch;
+
+			for(int i=0; i<count; ++i) {
+				int s = ((*src16*mScale)>>8) + 0x80;
+				if(s<0) s=0; 
+				if(s>255) s=255;
+				*dst8 = (uint8)s;
+				dst8 += mChanCount;
+				src16 = (const sint16 *)((const char *)src16 + sampleStride);
+			}
+		}
+	} else if (format==afmt_u8) {
+		for(int ch = 0; ch < mChanCount; ++ch) {
+			const uint8 *src8 = (const uint8 *)src + chanStride*ch;
+			uint8 *dst8 = dst + ch;
+
+			for(int i=0; i<count; ++i) {
+				int s = (*src8-0x80)*mScale + 0x80;
+				if(s<0) s=0; 
+				if(s>255) s=255;
+				*dst8 = (uint8)s;
+				dst8 += mChanCount;
+				src8 += sampleStride;
+			}
+		}
+	}
+
+	InvalidateRange(x1, x2);
+	mbPointsDirty = true;
 
 	return true;
 }
