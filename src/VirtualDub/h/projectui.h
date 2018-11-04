@@ -185,6 +185,7 @@ protected:
 	void OnCurveStatusUpdated(IVDUIParameterCurveControl *source, const IVDUIParameterCurveControl::Status& status);
 	void OnAudioDisplayUpdateRequired(IVDUIAudioDisplayControl *source, const VDPosition& pos);
 	void OnAudioDisplaySetSelect(IVDUIAudioDisplayControl *source, const VDUIAudioDisplaySelectionRange& pos);
+	void OnAudioDisplaySetPosition(IVDUIAudioDisplayControl *source, const VDPosition& pos);
 	void OnAudioDisplayTrackAudioOffset(IVDUIAudioDisplayControl *source, const sint32& offset);
 	void OnAudioDisplaySetAudioOffset(IVDUIAudioDisplayControl *source, const sint32& offset);
 
@@ -278,6 +279,7 @@ protected:
 	VDDelegate mAudioDisplaySetSelectStartDelegate;
 	VDDelegate mAudioDisplaySetSelectTrackDelegate;
 	VDDelegate mAudioDisplaySetSelectEndDelegate;
+	VDDelegate mAudioDisplaySetPositionDelegate;
 	VDDelegate mAudioDisplayTrackAudioOffsetDelegate;
 	VDDelegate mAudioDisplaySetAudioOffsetDelegate;
 };

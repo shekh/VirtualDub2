@@ -4065,6 +4065,7 @@ void VDProjectUI::OpenAudioDisplay() {
 	mpAudioDisplay->SetSelectStartEvent() += mAudioDisplaySetSelectStartDelegate(this, &VDProjectUI::OnAudioDisplaySetSelect);
 	mpAudioDisplay->SetSelectTrackEvent() += mAudioDisplaySetSelectTrackDelegate(this, &VDProjectUI::OnAudioDisplaySetSelect);
 	mpAudioDisplay->SetSelectEndEvent() += mAudioDisplaySetSelectEndDelegate(this, &VDProjectUI::OnAudioDisplaySetSelect);
+	mpAudioDisplay->SetPositionEvent() += mAudioDisplaySetPositionDelegate(this, &VDProjectUI::OnAudioDisplaySetPosition);
 	mpAudioDisplay->TrackAudioOffsetEvent() += mAudioDisplayTrackAudioOffsetDelegate(this, &VDProjectUI::OnAudioDisplayTrackAudioOffset);
 	mpAudioDisplay->SetAudioOffsetEvent() += mAudioDisplaySetAudioOffsetDelegate(this, &VDProjectUI::OnAudioDisplaySetAudioOffset);
 
@@ -5274,8 +5275,17 @@ void VDProjectUI::OnAudioDisplayUpdateRequired(IVDUIAudioDisplayControl *source,
 
 void VDProjectUI::OnAudioDisplaySetSelect(IVDUIAudioDisplayControl *source, const VDUIAudioDisplaySelectionRange& range) {
 	IVDStreamSource *pVSS = inputVideo->asStream();
-	VDPosition pos1 = pVSS->TimeToPositionVBR(inputAudio->PositionToTimeVBR(range.mStart));
-	VDPosition pos2 = pVSS->TimeToPositionVBR(inputAudio->PositionToTimeVBR(range.mEnd));
+	VDTime at1 = inputAudio->PositionToTimeVBR(range.mStart);
+	VDTime at2 = inputAudio->PositionToTimeVBR(range.mEnd);
+	VDPosition pos1 = pVSS->TimeToPositionVBR(at1);
+	VDPosition pos2 = pVSS->TimeToPositionVBR(at2);
+
+	VDFraction srcRate = pVSS->getRate();
+	if (g_dubOpts.video.mFrameRateAdjustLo > 0) {
+		srcRate.Assign(g_dubOpts.video.mFrameRateAdjustHi, g_dubOpts.video.mFrameRateAdjustLo);
+		pos1 = VDRoundToInt64(at1 * srcRate.asDouble() / 1000000.0);
+		pos2 = VDRoundToInt64(at2 * srcRate.asDouble() / 1000000.0);
+	}
 
 	if (pos1 > pos2)
 		std::swap(pos1, pos2);
@@ -5283,6 +5293,20 @@ void VDProjectUI::OnAudioDisplaySetSelect(IVDUIAudioDisplayControl *source, cons
 	ClearSelection();
 	SetSelectionEnd(pos2);
 	SetSelectionStart(pos1);
+}
+
+void VDProjectUI::OnAudioDisplaySetPosition(IVDUIAudioDisplayControl *source, const VDPosition& pos) {
+	IVDStreamSource *pVSS = inputVideo->asStream();
+	VDTime at = inputAudio->PositionToTimeVBR(pos);
+	VDPosition pos1 = pVSS->TimeToPositionVBR(at);
+
+	VDFraction srcRate = pVSS->getRate();
+	if (g_dubOpts.video.mFrameRateAdjustLo > 0) {
+		srcRate.Assign(g_dubOpts.video.mFrameRateAdjustHi, g_dubOpts.video.mFrameRateAdjustLo);
+		pos1 = VDRoundToInt64(at * srcRate.asDouble() / 1000000.0);
+	}
+
+	MoveToFrame(pos1);
 }
 
 void VDProjectUI::OnAudioDisplayTrackAudioOffset(IVDUIAudioDisplayControl *source, const sint32& offset) {

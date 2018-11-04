@@ -73,6 +73,7 @@ public:
 	virtual VDEvent<IVDUIAudioDisplayControl, VDUIAudioDisplaySelectionRange>& SetSelectStartEvent() = 0;
 	virtual VDEvent<IVDUIAudioDisplayControl, VDUIAudioDisplaySelectionRange>& SetSelectTrackEvent() = 0;
 	virtual VDEvent<IVDUIAudioDisplayControl, VDUIAudioDisplaySelectionRange>& SetSelectEndEvent() = 0;
+	virtual VDEvent<IVDUIAudioDisplayControl, VDPosition>& SetPositionEvent() = 0;
 	virtual VDEvent<IVDUIAudioDisplayControl, sint32>& TrackAudioOffsetEvent() = 0;
 	virtual VDEvent<IVDUIAudioDisplayControl, sint32>& SetAudioOffsetEvent() = 0;
 };
