@@ -396,6 +396,7 @@ protected:
 	typedef std::vector<vdrefptr<AudioSource> > AudioSources;
 	AudioSources 			mInputAudioSources;
 	vdrefptr<AudioSource>	mpInputAudioExt;
+	bool mAudioSplit;
 
 	VDDelegate		mStoppedDelegate;
 };

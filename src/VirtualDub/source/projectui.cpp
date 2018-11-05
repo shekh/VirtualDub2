@@ -26,6 +26,7 @@
 #include <vd2/system/registry.h>
 #include <vd2/system/strutil.h>
 #include <vd2/system/w32assist.h>
+#include <vd2/system/time.h>
 #include <vd2/Kasumi/pixmaputils.h>
 #include <vd2/Dita/basetypes.h>
 #include <vd2/Dita/services.h>
@@ -114,6 +115,7 @@ extern vdrefptr<VDProjectUI> g_projectui;
 extern HWND g_hWnd;
 
 extern vdrefptr<AudioSource>	inputAudio;
+extern vdrefptr<AudioSource>	inputAudio2;
 extern COMPVARS2 g_Vcompression;
 
 static bool				g_vertical				= FALSE;
@@ -4086,6 +4088,8 @@ void VDProjectUI::OpenAudioDisplay() {
 		mpAudioDisplay->SetMode((IVDUIAudioDisplayControl::Mode)mode);
 	bool mono = key.getBool("Audio display: mono", false);
 	mpAudioDisplay->SetMonoMode(mono);
+	mAudioSplit = true;
+	SetAudioSource();
 }
 
 void VDProjectUI::CloseAudioDisplay() {
@@ -4116,6 +4120,9 @@ void VDProjectUI::CloseAudioDisplay() {
 		InvalidateRect(vdpoly_cast<IVDUIWindowW32 *>(mpUIBase)->GetHandleW32(), NULL, TRUE);
 
 	OnSize();
+
+	mAudioSplit = false;
+	inputAudio2 = 0;
 }
 
 bool VDProjectUI::TickAudioDisplay() {
@@ -4131,7 +4138,14 @@ bool VDProjectUI::TickAudioDisplay() {
 		return false;
 	}
 
-	const VDWaveFormat *wfex = inputAudio->getWaveFormat();
+	AudioSource* audio = inputAudio2;
+	if (!audio) {
+		// read from two thread is impossible
+		if (g_dubber) return false;
+		audio = inputAudio;
+	}
+
+	const VDWaveFormat *wfex = audio->getWaveFormat();
 	if (!is_audio_pcm8(wfex) && !is_audio_pcm16(wfex) && !is_audio_float(wfex)) {
 		UpdateAudioDisplay();
 		return false;
@@ -4143,7 +4157,7 @@ bool VDProjectUI::TickAudioDisplay() {
 	const FrameSubset& subset = GetTimeline().GetSubset();
 
 	IVDStreamSource *pVSS = inputVideo->asStream();
-	double audioToVideoFactor = pVSS->getRate().asDouble() / inputAudio->getRate().asDouble();
+	double audioToVideoFactor = pVSS->getRate().asDouble() / audio->getRate().asDouble();
 	double vframef = mAudioDisplayPosNext * audioToVideoFactor;
 	sint64 vframe = VDFloorToInt64(vframef);
 	double vframeoff = vframef - vframe;
@@ -4179,7 +4193,7 @@ bool VDProjectUI::TickAudioDisplay() {
 
 	}
 
-	apos -= inputAudio->msToSamples(g_dubOpts.audio.offset);
+	apos -= audio->msToSamples(g_dubOpts.audio.offset);
 
 	// avoid Avisynth buffer overflow bug
 	uint32 nBlockAlign = wfex->mBlockSize;
@@ -4202,7 +4216,7 @@ bool VDProjectUI::TickAudioDisplay() {
 		actualSamples = count;
 		actualBytes = wfex->mBlockSize * count;
 	} else {
-		if (inputAudio->read(apos, maxlen, buf, sizeof buf, &actualBytes, &actualSamples) || !actualSamples) {
+		if (audio->read(apos, maxlen, buf, sizeof buf, &actualBytes, &actualSamples) || !actualSamples) {
 			mbAudioDisplayReadActive = false;
 			mpAudioDisplay->ProcessAudio(0, 0, wfex);
 			return false;
@@ -4652,8 +4666,12 @@ void VDProjectUI::UICurrentPositionUpdated(bool fast_update) {
 	if (g_dubber && !g_dubber->IsPreviewing()) return;
 	if (mpAudioDisplay && !mProjectLoading) {
 		UpdateAudioDisplayPosition();
-		for(int i=0; i<10; i++) if(!TickAudioDisplay()) break;
-		if (g_dubber) while(TickAudioDisplay());
+		uint32 startTime = VDGetCurrentTick();
+		while (1) {
+			if(!TickAudioDisplay()) break;
+			uint32 nCurrentTime = VDGetCurrentTick();
+			if (nCurrentTime - startTime > 20) break;
+		}
 		RedrawWindow(mhwndAudioDisplay,0,0,RDW_UPDATENOW);
 	}
 }

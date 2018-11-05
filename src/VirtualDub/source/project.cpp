@@ -97,6 +97,7 @@ DubSource::ErrorMode	g_videoErrorMode			= DubSource::kErrorModeReportAll;
 DubSource::ErrorMode	g_audioErrorMode			= DubSource::kErrorModeReportAll;
 
 vdrefptr<AudioSource>	inputAudio;
+vdrefptr<AudioSource>	inputAudio2;
 
 extern bool				g_fDropFrames;
 extern bool				g_fDropSeeking;
@@ -425,6 +426,7 @@ VDProject::VDProject()
 {
 	filterModTimeline.project = this;
 	mProjectLoading = false;
+	mAudioSplit = false;
 }
 
 VDProject::~VDProject() {
@@ -1663,6 +1665,7 @@ void VDProject::Reopen() {
 	g_pInputOpts = newOptions;
 
 	inputAudio = NULL;
+	inputAudio2 = NULL;
 	inputAVI = newInput;
 	inputVideo = pVS;
 
@@ -1783,6 +1786,7 @@ void VDProject::CloseWAV() {
 	if (mpInputAudioExt) {
 		if (inputAudio == mpInputAudioExt) {
 			inputAudio = NULL;
+			inputAudio2 = NULL;
 			mAudioSourceMode = kVDAudioSourceMode_None;
 		}
 		mpInputAudioExt = NULL;
@@ -1957,8 +1961,10 @@ void VDProject::CloseAVI() {
 	}
 
 	while(!mInputAudioSources.empty()) {
-		if (inputAudio == mInputAudioSources.back())
+		if (inputAudio == mInputAudioSources.back()) {
 			inputAudio = NULL;
+			inputAudio2 = NULL;
+		}
 
 		mInputAudioSources.pop_back();
 	}
@@ -3233,6 +3239,68 @@ void VDProject::SetAudioSource() {
 			inputAudio->SetTargetFormat(&target);
 		} else {
 			inputAudio->SetTargetFormat(0);
+		}
+	}
+
+	inputAudio2 = NULL;
+	if (inputAudio && mAudioSplit) {
+		if (mAudioSourceMode==kVDAudioSourceMode_External) {
+			IVDInputDriver *pDriver = NULL;
+			if (mAudioInputDriverName.empty())
+				pDriver = VDAutoselectInputDriverForFile(g_szInputWAVFile, IVDInputDriver::kF_Audio);
+			else
+				pDriver = VDGetInputDriverByName(mAudioInputDriverName.c_str());
+
+			vdrefptr<InputFile> ifile(pDriver->CreateInputFile(IVDInputDriver::kOF_Quiet));
+			if (!ifile) return;
+
+			if (mpAudioInputOptions)
+				ifile->setOptions(mpAudioInputOptions);
+
+			ifile->Init(g_szInputWAVFile);
+
+			vdrefptr<AudioSource> pNewAudio;
+			if (!ifile->GetAudioSource(0, ~pNewAudio)) return;
+
+			pNewAudio->setDecodeErrorMode(g_audioErrorMode);
+			inputAudio2 = pNewAudio;
+		}
+
+		if (mAudioSourceMode >= kVDAudioSourceMode_Source && inputAVI) {
+			int api_version = inputAVI->GetInputDriverApiVersion();
+			if (api_version<8) return;
+			int index = mAudioSourceMode - kVDAudioSourceMode_Source;
+
+			if ((unsigned)index < mInputAudioSources.size()) {
+				inputAVI->GetAudioSource(index, ~inputAudio2);
+				inputAudio2->setDecodeErrorMode(g_audioErrorMode);
+			}
+		}
+	}
+
+	if (inputAudio2) {
+		inputAudio2->streamAppendReinit();
+		const VDWaveFormat *fmt = inputAudio2->getWaveFormat();
+		bool convert = false;
+		if (g_dubOpts.audio.newChannels!=DubAudioOptions::C_NOCHANGE) convert = true;
+		if (g_dubOpts.audio.mode==DubAudioOptions::M_NONE) convert = false;
+		if ((is_audio_pcm(fmt) || is_audio_float(fmt)) && convert) {
+			VDWaveFormat target = *fmt;
+			target.mTag = VDWaveFormat::kTagPCM;
+			switch (g_dubOpts.audio.newChannels) {
+			case DubAudioOptions::C_MONO:
+				target.mChannels = 1;
+				break;
+			case DubAudioOptions::C_NOCHANGE:
+				target.mChannels = 0;
+				break;
+			default:
+				target.mChannels = 2;
+			}
+
+			inputAudio2->SetTargetFormat(&target);
+		} else {
+			inputAudio2->SetTargetFormat(0);
 		}
 	}
 }
