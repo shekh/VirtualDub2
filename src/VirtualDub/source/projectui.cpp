@@ -4653,6 +4653,7 @@ void VDProjectUI::UICurrentPositionUpdated(bool fast_update) {
 	if (mpAudioDisplay && !mProjectLoading) {
 		UpdateAudioDisplayPosition();
 		for(int i=0; i<10; i++) if(!TickAudioDisplay()) break;
+		if (g_dubber) while(TickAudioDisplay());
 		RedrawWindow(mhwndAudioDisplay,0,0,RDW_UPDATENOW);
 	}
 }

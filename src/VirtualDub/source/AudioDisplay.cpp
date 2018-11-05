@@ -24,6 +24,7 @@
 #include <vd2/system/vdstl.h>
 #include <vd2/system/w32assist.h>
 #include <vd2/Dita/interface.h>
+#include <vd2/Riza/audiocodec.h>
 #include <vd2/VDLib/fft.h>
 
 #include "oshelper.h"
@@ -32,6 +33,8 @@
 #include "AudioDisplay.h"
 
 #include "AVIOutputWAV.h"
+#include "command.h"
+#include "dub.h"
 
 extern HINSTANCE g_hInst;
 
@@ -1064,7 +1067,7 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 	pos -= pos % mSamplesPerPixel;
 
 	// check for null move
-	if (mPosition == pos && mHighlightedMarker == hpos)
+	if (mPosition == pos && mHighlightedMarker == hpos && !mbRescan)
 		return;
 
 	sint64 newWindowPos = pos - ((mChanWidth * mSamplesPerPixel) >> 1);
@@ -1093,6 +1096,11 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 		InvalidateRect(mhwnd,&r,false);
 		mUpdateX1 = INT_MAX;
 		mUpdateX2 = INT_MIN;
+	}
+
+	if (mDragMode==kDragModeAudioOffset) {
+		RECT r = {0, mChanHeight * mChanCount, mChanWidth, mHeight};
+		InvalidateRect(mhwnd,&r,false);
 	}
 
 	ScrollWindow(mhwnd,x0-x1,0,0,0);
@@ -1610,8 +1618,9 @@ void VDAudioDisplayControl::OnMouseMove(int x, int y, uint32 modifiers) {
 				{
 					char buf[64];
 
-					sprintf(buf, "Shift audio by %+.0fms", (pos - mAudioOffsetDragAnchor) / mSamplingRate * 1000.0f);
+					sprintf(buf, "Shift audio by %+.0fms", (x-mDragAnchorX)*mSamplesPerPixel / mSamplingRate * 1000.0f);
 					mpDimensionSprite->SetLine(mDragAnchorX, mDragAnchorY, x, 24, buf);
+					SetPosition(mAudioOffsetDragAnchor - (x-mDragAnchorX)*mSamplesPerPixel, mHighlightedMarker);
 				}
 
 				break;
@@ -1623,32 +1632,49 @@ void VDAudioDisplayControl::OnLButtonDown(int x, int y, uint32 modifiers) {
 	if (!mFailureMessage.empty())
 		return;
 
+	bool stop_play = false;
+	if (g_dubber) {
+		if (g_dubber->IsPreviewing()) {
+			g_dubber->Abort();
+			stop_play = true;
+		} else return;
+	}
+
 	VDPosition pos = mWindowPosition + x * mSamplesPerPixel;
 
 	mDragAnchorX = x;
 	mDragAnchorY = y;
 
-	SetCapture(mhwnd);
-
 	if (modifiers & MK_CONTROL) {
+		if (stop_play) return;
+		SetCapture(mhwnd);
 		mTrackAudioOffsetEvent.Raise(this, 0);
-		mAudioOffsetDragAnchor = pos;
+		mAudioOffsetDragAnchor = mPosition;
 		mAudioOffsetDragEndPoint = pos;
 		mDragMode = kDragModeAudioOffset;
 
 		mpDimensionSprite = new VDUIDimensionSprite;
 		AddSprite(mpDimensionSprite);
 		mpDimensionSprite->SetLine(x, mDragAnchorY, x, 24, "+0 ms");
+		VDPosition hpos = mHighlightedMarker;
+		mHighlightedMarker = -1;
+		SetPosition(mPosition,hpos);
+
 	} else if (modifiers & MK_SHIFT) {
+		if (stop_play) return;
+		SetCapture(mhwnd);
 		mAudioOffsetDragAnchor = pos;
 		VDUIAudioDisplaySelectionRange range = {pos, pos};
 		mSetSelectEndEvent.Raise(this, range);
 		mDragMode = kDragModeSelect;
 	} else {
 		if (y>seek_y) {
+			SetCapture(mhwnd);
 			mAudioOffsetDragAnchor = mPosition;
 			mDragMode = kDragModeView;
 		} else {
+			if (stop_play) return;
+			SetCapture(mhwnd);
 			mAudioOffsetDragAnchor = pos;
 			VDUIAudioDisplaySelectionRange range = {pos, pos};
 			mSetSelectEndEvent.Raise(this, range);
@@ -1667,7 +1693,9 @@ void VDAudioDisplayControl::OnLButtonUp(int x, int y, uint32 modifiers) {
 			}
 			break;
 		case kDragModeAudioOffset:
-			mSetAudioOffsetEvent.Raise(this, VDClampToSint32(pos - mAudioOffsetDragAnchor));
+			mDragMode = kDragModeNone;
+			SetPosition(mAudioOffsetDragAnchor, mHighlightedMarker);
+			mSetAudioOffsetEvent.Raise(this, (x-mDragAnchorX)*mSamplesPerPixel);
 			RemoveSprite(mpDimensionSprite);
 			mpDimensionSprite = NULL;
 			break;
@@ -1735,6 +1763,7 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps, HRGN rgn) {
 		SelectClipRgn(hdc,rg2);
 		OnPaint2(hdc,ps1);
 	}
+	SelectClipRgn(hdc,0);
 	DeleteObject(rg0);
 	DeleteObject(rg1);
 	DeleteObject(rg2);
@@ -1755,12 +1784,73 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 		FastFill(hdc, 0, 0, mChanWidth, mChanHeight * mChanCount, RGB(0,0,0));
 	}
 
+	if (!mbSpectrumMode) {
+		for(int i=0; i<mChanCount; ++i) {
+			int y = (int)((mChanHeight * (2*i+1))>>1);
+			FastFill(hdc, 0, y, mChanWidth, y+1, RGB(0,128,96));
+		}
+	}
+
+	int x1 = ps.rcPaint.left;
+	int x2 = ps.rcPaint.right;
+
+	sint64 marker_pos = mWindowPosition;
+	sint64 marker1 = VDCeilToInt64((x1 * mSamplesPerPixel + marker_pos - mMarkerStart) * mMarkerMinorInvRate);
+	sint64 marker2 = VDCeilToInt64((x2 * mSamplesPerPixel + marker_pos - mMarkerStart) * mMarkerMinorInvRate);
+
+	if (marker1 < mMarkerRangeMin)
+		marker1 = mMarkerRangeMin;
+
+	if (marker2 > mMarkerRangeMax)
+		marker2 = mMarkerRangeMax;
+
+	{for(sint64 marker = marker1; marker < marker2; ++marker) {
+		sint32 x = VDFloorToInt((marker*mMarkerMinorRate + mMarkerStart - marker_pos) * mPixelsPerSample);
+		bool isMajor = (marker % mMarkerMajorStep) == 0;
+
+		if (isMajor) {
+			if (mbSpectrumMode) {
+				StretchDIBits(hdc, x, 0, 1, mChanHeight * mChanCount, x, 0, 1, mbihSpectrum.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumMajorMarker, DIB_RGB_COLORS, SRCCOPY);
+			} else {
+				FastFill(hdc, x, ps.rcPaint.top, x+1, mChanHeight*mChanCount, RGB(64, 64, 64));
+			}
+		} else if (ps.rcPaint.top < mChanHeight * mChanCount) {
+			if (mbSpectrumMode) {
+				StretchDIBits(hdc, x, 0, 1, mChanHeight * mChanCount, x, 0, 1, mbihSpectrum.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumMinorMarker, DIB_RGB_COLORS, SRCCOPY);
+			} else {
+				FastFill(hdc, x, ps.rcPaint.top, x+1, mChanHeight*mChanCount, RGB(32, 32, 32));
+			}
+		}
+	}}
+
+	// timeline
+
+	marker_pos = mWindowPosition;
+	if (mDragMode==kDragModeAudioOffset) marker_pos += mAudioOffsetDragAnchor - mPosition;
+	marker1 = VDCeilToInt64((x1 * mSamplesPerPixel + marker_pos - mMarkerStart) * mMarkerMinorInvRate);
+	marker2 = VDCeilToInt64((x2 * mSamplesPerPixel + marker_pos - mMarkerStart) * mMarkerMinorInvRate);
+
+	// expand so text is displayed.
+	marker1 -= mMarkerMajorStep;
+	marker2 += mMarkerMajorStep;
+
+	if (marker1 < mMarkerRangeMin)
+		marker1 = mMarkerRangeMin;
+
+	if (marker2 > mMarkerRangeMax)
+		marker2 = mMarkerRangeMax;
+
+	SetBkMode(hdc, TRANSPARENT);
+	SetTextColor(hdc, RGB(255, 255, 255));
+	SetTextAlign(hdc, TA_BOTTOM | TA_CENTER);
+	SelectObject(hdc, mhfont);
+
 	int xselstart32 = ps.rcPaint.left;
 	int xselend32 = ps.rcPaint.left;
 
 	if (mSelectedMarkerRangeStart >= 0) {
-		VDPosition xselstart = VDFloorToInt((mSelectedMarkerRangeStart*mMarkerRate + mMarkerStart - mWindowPosition) * mPixelsPerSample);
-		VDPosition xselend = VDFloorToInt((mSelectedMarkerRangeEnd*mMarkerRate + mMarkerStart - mWindowPosition) * mPixelsPerSample);
+		VDPosition xselstart = VDFloorToInt((mSelectedMarkerRangeStart*mMarkerRate + mMarkerStart - marker_pos) * mPixelsPerSample);
+		VDPosition xselend = VDFloorToInt((mSelectedMarkerRangeEnd*mMarkerRate + mMarkerStart - marker_pos) * mPixelsPerSample);
 
 		if (xselstart < ps.rcPaint.left)
 			xselstart = ps.rcPaint.left;
@@ -1783,59 +1873,19 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 	if (ps.rcPaint.right > xselend32)
 		FastFill(hdc, xselend32, mChanHeight * mChanCount, ps.rcPaint.right, mHeight, RGB(0,0,0));
 
-	if (!mbSpectrumMode) {
-		for(int i=0; i<mChanCount; ++i) {
-			int y = (int)((mChanHeight * (2*i+1))>>1);
-			FastFill(hdc, 0, y, mChanWidth, y+1, RGB(0,128,96));
-		}
-	}
-
-	int x1 = ps.rcPaint.left;
-	int x2 = ps.rcPaint.right;
-
-	sint64 marker1 = VDCeilToInt64((x1 * mSamplesPerPixel + mWindowPosition - mMarkerStart) * mMarkerMinorInvRate);
-	sint64 marker2 = VDCeilToInt64((x2 * mSamplesPerPixel + mWindowPosition - mMarkerStart) * mMarkerMinorInvRate);
-
-	// draw the previous marker so text is displayed.
-	--marker1;
-
-	if (marker1 < mMarkerRangeMin)
-		marker1 = mMarkerRangeMin;
-
-	if (marker2 > mMarkerRangeMax)
-		marker2 = mMarkerRangeMax;
-
-	SetBkMode(hdc, TRANSPARENT);
-	SetTextColor(hdc, RGB(255, 255, 255));
-	SetTextAlign(hdc, TA_BOTTOM | TA_LEFT);
-	SelectObject(hdc, mhfont);
-
-	for(sint64 marker = marker1; marker < marker2; ++marker) {
-		sint32 x = VDFloorToInt((marker*mMarkerMinorRate + mMarkerStart - mWindowPosition) * mPixelsPerSample);
+	{for(sint64 marker = marker1; marker < marker2; ++marker) {
+		sint32 x = VDFloorToInt((marker*mMarkerMinorRate + mMarkerStart - marker_pos) * mPixelsPerSample);
 		bool isMajor = (marker % mMarkerMajorStep) == 0;
-
 		if (isMajor) {
-			if (mbSpectrumMode) {
-				StretchDIBits(hdc, x, 0, 1, mChanHeight * mChanCount, x, 0, 1, mbihSpectrum.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumMajorMarker, DIB_RGB_COLORS, SRCCOPY);
-			} else {
-				FastFill(hdc, x, ps.rcPaint.top, x+1, ps.rcPaint.bottom, RGB(64, 64, 64));
-			}
-		} else if (ps.rcPaint.top < mChanHeight * mChanCount) {
-			if (mbSpectrumMode) {
-				StretchDIBits(hdc, x, 0, 1, mChanHeight * mChanCount, x, 0, 1, mbihSpectrum.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumMinorMarker, DIB_RGB_COLORS, SRCCOPY);
-			} else {
-				FastFill(hdc, x, ps.rcPaint.top, x+1, mChanHeight*mChanCount, RGB(32, 32, 32));
-			}
-		}
-
-		if (isMajor) {
+			FastFill(hdc, x, mChanHeight*mChanCount, x+1, ps.rcPaint.bottom, RGB(64, 64, 64));
 			char buf[64];
 			sprintf(buf, "%I64d", marker*mMarkerMinorStep);
-			TextOut(hdc, x, mHeight - 4, buf, strlen(buf));
+			TextOut(hdc, x+VDFloorToInt(mMarkerMinorRate/2*mPixelsPerSample), mHeight - 4, buf, strlen(buf));
 		}
-	}
+	}}
 
-	if (ps.rcPaint.top < mChanHeight * mChanCount && mHighlightedMarker >= marker1*mMarkerMinorStep && mHighlightedMarker < marker2*mMarkerMinorStep) {
+	// focus
+	if (ps.rcPaint.top < mChanHeight * mChanCount && mHighlightedMarker >= marker1*mMarkerMinorStep && mHighlightedMarker < marker2*mMarkerMinorStep && mDragMode!=kDragModeAudioOffset) {
 		sint32 xh1,xh2;
 		CalcFocus(xh1,xh2,mWindowPosition);
 
@@ -1845,6 +1895,7 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 			FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, RGB(0, 32, 64));
 	}
 
+	// samples
 	if (mbSpectrumMode) {
 		double range = mSamplingRate / 8192.0 * 256.0;
 		double division = range / (double)mChanHeight * (double)mFontHeight * 1.5f;
@@ -1891,7 +1942,7 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 			FastFill(hdc, 0, ybase-1, mChanWidth, ybase, RGB(0,128,96));
 		}
 	} else {
-		if (HPEN hpen = CreatePen(PS_SOLID, 0, RGB(255, 0, 0))) {
+		if (HPEN hpen = CreatePen(PS_SOLID, 0, RGB(168, 100, 168))) {
 			if (HGDIOBJ hOldPen = SelectObject(hdc, hpen)) {
 				if (mImage_x1) PaintWaveform(hdc, ps, mImage_x0, mImage_x1);
 				if (mImage_x3) PaintWaveform(hdc, ps, mImage_x2, mImage_x3);

@@ -25,6 +25,8 @@
 
 extern const char g_szAudioDisplayControlName[];
 
+struct VDWaveFormat;
+
 struct VDUIAudioDisplaySelectionRange {
 	VDPosition mStart;
 	VDPosition mEnd;
