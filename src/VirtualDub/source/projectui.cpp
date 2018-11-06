@@ -3469,7 +3469,7 @@ LRESULT VDProjectUI::DubWndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 
 	case WM_PAINT:
 		RepaintMainWindow((HWND)mhwnd);
-		return TRUE;
+		return 0;
 
 	case WM_NOTIFY:
 		{

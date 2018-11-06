@@ -167,7 +167,7 @@ LRESULT VDUICaptureVumeterW32::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
 	case WM_PAINT:
 		OnPaint();
-		break;
+		return 0;
 	case WM_ERASEBKGND:
 		{
 			HDC hdc = (HDC)wParam;

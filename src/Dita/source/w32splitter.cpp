@@ -112,7 +112,7 @@ LRESULT VDUISplitterW32::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
 	case WM_PAINT:
 		OnPaint();
-		break;
+		return 0;
 
 	case WM_LBUTTONDOWN:
 		OnLButtonDown(wParam, (SHORT)LOWORD(lParam), (SHORT)HIWORD(lParam));
@@ -407,7 +407,7 @@ LRESULT VDUISplitBarW32::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
 	case WM_PAINT:
 		OnPaint();
-		break;
+		return 0;
 
 	case WM_LBUTTONDOWN:
 		OnLButtonDown(wParam, (SHORT)LOWORD(lParam), (SHORT)HIWORD(lParam));

@@ -339,7 +339,7 @@ LRESULT VDUICaptureVideoHistogramW32::WndProc(UINT msg, WPARAM wParam, LPARAM lP
 	switch(msg) {
 	case WM_PAINT:
 		OnPaint();
-		break;
+		return 0;
 	case WM_SIZE:
 		RecomputeHeights();
 		InvalidateRect(mhwnd, NULL, TRUE);

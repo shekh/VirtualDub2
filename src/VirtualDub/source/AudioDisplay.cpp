@@ -618,7 +618,7 @@ public:
 	void OnLButtonDown(int x, int y, uint32 modifiers);
 	void OnLButtonUp(int x, int y, uint32 modifiers);
 	void OnRButtonDown(int x, int y, uint32 modifiers);
-	void OnPaint(HDC hdc, const PAINTSTRUCT& ps, HRGN rgn);
+	void OnPaint(HDC hdc, HRGN rgn);
 	void OnPaint2(HDC hdc, const PAINTSTRUCT& ps);
 	void PaintWaveform(HDC hdc, const PAINTSTRUCT& ps, int rx0, int rx1);
 	void OnSize();
@@ -1399,18 +1399,13 @@ LRESULT VDAudioDisplayControl::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	case WM_PAINT:
 		{
-			PAINTSTRUCT ps;
-			HDC hdc;
-
 			HRGN rgn = CreateRectRgn(0,0,0,0);
 			GetUpdateRgn(mhwnd,rgn,false);
-			hdc = BeginPaint(mhwnd, &ps);
-			OnPaint(hdc, ps, rgn);
+			ValidateRgn(mhwnd,rgn);
+			HDC hdc = GetDC(mhwnd);
+			OnPaint(hdc, rgn);
+			ReleaseDC(mhwnd,hdc);
 			DeleteObject(rgn);
-			mDC.Init(hdc);
-			Render(mDC);
-			mDC.Shutdown();
-			EndPaint(mhwnd, &ps);
 		}
 		return 0;
 
@@ -1724,7 +1719,7 @@ void VDAudioDisplayControl::CalcFocus(sint32& xh1, sint32& xh2, int64 windowPosi
 		++xh2;
 }
 
-void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps, HRGN rgn) {
+void VDAudioDisplayControl::OnPaint(HDC hdc, HRGN rgn) {
 	if (!mFailureMessage.empty() || !mChanCount) {
 		RECT r;
 		if (GetClientRect(mhwnd, &r)) {
@@ -1746,8 +1741,7 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps, HRGN rgn) {
 	CombineRgn(rg1,rg1,rgn,RGN_AND);
 	CombineRgn(rg2,rg2,rgn,RGN_AND);
 	RECT r0;
-	PAINTSTRUCT ps1 = ps;
-	GetRgnBox(rgn,&r0);
+	PAINTSTRUCT ps1 = {0};
 	if (GetRgnBox(rg0,&r0)!=NULLREGION) {
 		ps1.rcPaint = r0;
 		SelectClipRgn(hdc,rg0);
@@ -1763,10 +1757,15 @@ void VDAudioDisplayControl::OnPaint(HDC hdc, const PAINTSTRUCT& ps, HRGN rgn) {
 		SelectClipRgn(hdc,rg2);
 		OnPaint2(hdc,ps1);
 	}
-	SelectClipRgn(hdc,0);
 	DeleteObject(rg0);
 	DeleteObject(rg1);
 	DeleteObject(rg2);
+
+	SelectClipRgn(hdc,rgn);
+	mDC.Init(hdc);
+	Render(mDC);
+	mDC.Shutdown();
+	SelectClipRgn(hdc,0);
 }
 
 void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
