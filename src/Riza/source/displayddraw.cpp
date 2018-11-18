@@ -1868,7 +1868,7 @@ void VDVideoDisplayMinidriverDirectDraw::InternalRefresh(const RECT& rClient, Up
 		}
 	}
 
-	if (!usingCompositorSurface)
+	if (!usingCompositorSurface && !(mode & kModeVSync))
 		MapWindowPoints(mhwnd, NULL, (LPPOINT)&rDst, 2);
 
 	bool success = true;
