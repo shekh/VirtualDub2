@@ -51,6 +51,7 @@ public:
 	long getAvailable();
 	bool isFrozen();
 	bool isSilent();
+	bool isOverflow();
 	void stop();
 
 protected:

@@ -190,6 +190,10 @@ bool AVIAudioPreviewOutputStream::isFrozen() {
 	return mpAudioOut ? mpAudioOut->IsFrozen() : true;
 }
 
+bool AVIAudioPreviewOutputStream::isOverflow() {
+	return mpAudioOut ? mpAudioOut->IsOverflow() : false;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 
 class AVIVideoPreviewOutputStream : public AVIOutputStream, public IVDVideoImageOutputStream {

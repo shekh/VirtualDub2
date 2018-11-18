@@ -26,6 +26,7 @@
 #include <vd2/system/thread.h>
 #include <vd2/system/VDString.h>
 #include <vd2/system/VDRingBuffer.h>
+#include <vd2/system/profile.h>
 #include <vd2/Riza/audioout.h>
 
 extern HINSTANCE g_hInst;
@@ -41,6 +42,7 @@ public:
 
 	bool	IsSilent();
 	bool	IsFrozen();
+	bool	IsOverflow();
 	uint32	GetAvailSpace();
 	uint32	GetBufferLevel();
 	uint32	EstimateHWBufferLevel();
@@ -63,6 +65,7 @@ private:
 	uint32	mBlockTail;
 	uint32	mBlockWriteOffset;
 	uint32	mBlocksPending;
+	uint32	mBlocksResume;
 	uint32	mBlockSize;
 	uint32	mBlockCount;
 	uint32	mBytesQueued;
@@ -92,6 +95,7 @@ VDAudioOutputWaveOutW32::VDAudioOutputWaveOutW32()
 	, mBlockTail(0)
 	, mBlockWriteOffset(0)
 	, mBlocksPending(0)
+	, mBlocksResume(0)
 	, mBlockSize(0)
 	, mBlockCount(0)
 	, mBytesQueued(0)
@@ -312,6 +316,15 @@ uint32 VDAudioOutputWaveOutW32::EstimateHWBufferLevel() {
 	return GetBufferLevel();
 }
 
+bool VDAudioOutputWaveOutW32::IsOverflow() {
+	if (mBlocksResume) {
+		CheckBuffers();
+		if (mBlocksPending>mBlocksResume) return true;
+		mBlocksResume = 0;
+	}
+	return false;
+}
+
 bool VDAudioOutputWaveOutW32::Write(const void *data, uint32 len) {
 	if (mCurState == kStateSilent)
 		return true;
@@ -326,9 +339,12 @@ bool VDAudioOutputWaveOutW32::Write(const void *data, uint32 len) {
 			}
 
 			if (!WaitBuffers(0)) {
+				mBlocksResume = mBlockCount / 2;
+				VDPROFILEBEGINEX2("A-Lock",0,vdprofiler_flag_wait);
 				if (!WaitBuffers(INFINITE)) {
 					return false;
 				}
+				VDPROFILEEND();
 				continue;
 			}
 			break;
@@ -517,6 +533,7 @@ public:
 	bool	Start();
 	bool	Stop();
 	bool	Flush();
+	bool	IsOverflow(){ return false; }
 
 	bool	Write(const void *data, uint32 len);
 	bool	Finalize(uint32 timeout);

@@ -382,8 +382,13 @@ void VDDubProcessThread::ThreadRun() {
 							goto abort_requested;
 					}
 				} else if (stream == 1) {
-					if (!WriteAudio(stream, count))
+					if (mpAudioOut->isOverflow()) {
+						// don't write
+						// now the audio will desync but at least it will not get stuck in locking output buffers
+						// proper way to handle this is enable "sync to audio" option
+					} else if (!WriteAudio(stream, count)) {
 						goto abort_requested;
+					}
 				} else {
 					VDNEVERHERE;
 				}

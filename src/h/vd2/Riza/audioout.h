@@ -34,6 +34,7 @@ public:
 
 	virtual bool	IsSilent() = 0;
 	virtual bool	IsFrozen() = 0;
+	virtual bool	IsOverflow() = 0;
 	virtual uint32	GetAvailSpace() = 0;
 	virtual uint32	GetBufferLevel() = 0;
 	virtual uint32	EstimateHWBufferLevel() = 0;
