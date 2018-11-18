@@ -249,6 +249,7 @@ restart_service_loop:
 }
 
 const VDRenderVideoPipeFrameInfo* VDDubIOThread::SyncReadVideo() {
+	++mThreadCounter;
 	const VDRenderVideoPipeFrameInfo* r = mpVideoPipe->TryReadBuffer();
 	if (r) return r; // last time frame was not consumed because of batch limit
 	if (!MainAddVideoFrame()) return 0;
@@ -446,6 +447,7 @@ bool VDDubIOThread::MainAddAudioFrame(int& min_space) {
 			aInfo.total_size += actualBytes;
 
 			totalSamples += actualSamples;
+			break;
 		}
 
 		mAudioSamplesWritten += totalSamples;
