@@ -983,6 +983,7 @@
 #define IDC_CLIP_X0_SPIN                1540
 #define IDC_CLIP_X1_SPIN                1541
 #define IDC_DRIVER                      1541
+#define IDC_SAVE_TEST                   1541
 #define IDC_CLIP_Y0_SPIN                1542
 #define IDC_MASK_ALL                    1542
 #define IDC_CLIP_Y1_SPIN                1543

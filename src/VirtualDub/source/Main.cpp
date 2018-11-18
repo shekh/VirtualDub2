@@ -622,6 +622,7 @@ UINT_PTR CALLBACK OpenVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 			dlg->filename = fn->lpstrFile;
 			dlg->DlgProc(msg,wParam,lParam);
 			dlg->ChangeFilename();
+			if (!VDIsAtLeastVistaW32()) SetTimer(hdlg,2,0,0);
 			SetTimer(hdlg,1,200,0);
 			return TRUE;
 		}
@@ -635,7 +636,19 @@ UINT_PTR CALLBACK OpenVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 		}
 
 	case WM_TIMER:
-		{
+		if (wParam==2) {
+			// workaround fow winxp crappy dialog size
+			KillTimer(hdlg,1);
+			RECT r0;
+			RECT r1;
+			GetWindowRect(GetParent(hdlg),&r0);
+			GetWindowRect(hdlg,&r1);
+			if((r0.right-r0.left)<(r1.right-r1.left)){
+				SetWindowPos(GetParent(hdlg),0,0,0,r1.right-r1.left+16,r0.bottom-r0.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+			}
+			return TRUE;
+		}
+		if (wParam==1) {
 			VDOpenVideoDialogW32* dlg = (VDOpenVideoDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
 			dlg->UpdateFilename();
 			return TRUE;
@@ -755,13 +768,15 @@ public:
 	~VDSaveVideoDialogW32(){ delete dubber; }
 
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
+	void OnSize();
 	void InitCodec();
 	void InitDubber();
 	bool CheckAudioCodec(const char* format);
 	virtual bool Commit(const VDStringW& fname){ return true; }
 
 	HWND mhdlg;
-	VDDialogResizerW32 mResizer;
+	int align_now;
+	int align_job;
 	AudioSource* inputAudio;
 	IDubber* dubber;
 	bool removeAudio;
@@ -883,12 +898,27 @@ bool VDSaveVideoDialogW32::CheckAudioCodec(const char* format) {
 	return true;
 }
 
+void VDSaveVideoDialogW32::OnSize() {
+	RECT r0,r1;
+	GetClientRect(mhdlg,&r0);
+	GetWindowRect(GetDlgItem(mhdlg,IDC_SAVE_TEST),&r1);
+	MapWindowPoints(0,mhdlg,(POINT*)&r1,2);
+	SetWindowPos(GetDlgItem(mhdlg,IDC_SAVE_DONOW),   NULL, r0.right+align_now, r1.top, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOCOPYBITS);
+	SetWindowPos(GetDlgItem(mhdlg,IDC_SAVE_MAKEJOB), NULL, r0.right+align_job, r1.top, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOCOPYBITS);
+}
+
 INT_PTR VDSaveVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 	switch(message) {
 	case WM_INITDIALOG:
-		mResizer.Init(mhdlg);
-		mResizer.Add(IDC_SAVE_DONOW, VDDialogResizerW32::kBR);
-		mResizer.Add(IDC_SAVE_MAKEJOB, VDDialogResizerW32::kBR);
+		{
+			RECT r0,r1,r2;
+			GetWindowRect(mhdlg,&r0);
+			GetWindowRect(GetDlgItem(mhdlg,IDC_SAVE_DONOW),&r1);
+			GetWindowRect(GetDlgItem(mhdlg,IDC_SAVE_MAKEJOB),&r2);
+			align_now = r1.left-r0.right;
+			align_job = r2.left-r0.right;
+		}
+		ShowWindow(GetDlgItem(mhdlg,IDC_SAVE_TEST),SW_HIDE);
 		CheckDlgButton(mhdlg,IDC_SAVE_DONOW, addJob ? BST_UNCHECKED:BST_CHECKED);
 		CheckDlgButton(mhdlg,IDC_SAVE_MAKEJOB, addJob ? BST_CHECKED:BST_UNCHECKED);
 		SetDlgItemText(mhdlg,IDC_AUDIO_INFO,"");
@@ -898,7 +928,7 @@ INT_PTR VDSaveVideoDialogW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam
 		return TRUE;
 
 	case WM_SIZE:
-		mResizer.Relayout();
+		OnSize();
 		return TRUE;
 
 	case WM_COMMAND:
@@ -941,6 +971,21 @@ UINT_PTR CALLBACK SaveVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 			dlg->mhdlg = hdlg;
 			dlg->nFilterIndex = fn->nFilterIndex;
 			dlg->DlgProc(msg,wParam,lParam);
+			if (!VDIsAtLeastVistaW32()) SetTimer(hdlg,2,0,0);
+			return TRUE;
+		}
+
+	case WM_TIMER:
+		if (wParam==2) {
+			// workaround fow winxp crappy dialog size
+			KillTimer(hdlg,1);
+			RECT r0;
+			RECT r1;
+			GetWindowRect(GetParent(hdlg),&r0);
+			GetWindowRect(hdlg,&r1);
+			if((r0.right-r0.left)<(r1.right-r1.left)){
+				SetWindowPos(GetParent(hdlg),0,0,0,r1.right-r1.left+16,r0.bottom-r0.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+			}
 			return TRUE;
 		}
 
@@ -2030,6 +2075,21 @@ UINT_PTR CALLBACK SaveImageProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 			SetWindowLongPtr(hdlg, DWLP_USER, (LONG_PTR)dlg);
 			dlg->mhdlg = hdlg;
 			dlg->DlgProc(msg,wParam,lParam);
+			if (!VDIsAtLeastVistaW32()) SetTimer(hdlg,2,0,0);
+			return TRUE;
+		}
+
+	case WM_TIMER:
+		if (wParam==2) {
+			// workaround fow winxp crappy dialog size
+			KillTimer(hdlg,1);
+			RECT r0;
+			RECT r1;
+			GetWindowRect(GetParent(hdlg),&r0);
+			GetWindowRect(hdlg,&r1);
+			if((r0.right-r0.left)<(r1.right-r1.left)){
+				SetWindowPos(GetParent(hdlg),0,0,0,r1.right-r1.left+16,r0.bottom-r0.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+			}
 			return TRUE;
 		}
 
