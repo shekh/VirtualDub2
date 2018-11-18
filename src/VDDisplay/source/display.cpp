@@ -27,6 +27,7 @@
 #include <vd2/system/vdtypes.h>
 #include <vd2/system/VDString.h>
 #include <vd2/system/w32assist.h>
+#include <vd2/system/time.h>
 #include <vd2/system/profile.h>
 #include <vd2/Kasumi/pixmap.h>
 #include <vd2/Kasumi/pixmaputils.h>
@@ -132,6 +133,8 @@ protected:
 	}
 
 	bool IsFramePending() {
+		if (!mPendingFrames.empty())
+			return true;
 		if (mpMiniDriver)
 			return mpMiniDriver->IsFramePending();
 		return false;
@@ -157,6 +160,7 @@ protected:
 	bool SyncSetSource(bool bAutoUpdate, const VDVideoDisplaySourceInfo& params);
 	void SyncMonitorChange();
 	void SyncReset();
+	void SyncProcessNext();
 	bool SyncInit(bool bAutoRefresh, bool bAllowNonpersistentSource);
 	void SyncUpdate(int);
 	void SyncCache();
@@ -177,7 +181,8 @@ protected:
 
 protected:
 	enum {
-		kReinitDisplayTimerId = 500
+		kReinitDisplayTimerId = 500,
+		kProcessNextFrameId = 501
 	};
 
 	HWND		mhwnd;
@@ -208,6 +213,7 @@ protected:
 	int		mInhibitPaint;
 
 	VDAtomicFloat	mSyncDelta;
+	uint32	mProcessTick;
 
 	FilterMode	mFilterMode;
 	DisplayMode	mDisplayMode;
@@ -379,6 +385,7 @@ VDVideoDisplayWindow::VDVideoDisplayWindow(HWND hwnd, const CREATESTRUCT& create
 	, mInhibitRefresh(0)
 	, mInhibitPaint(0)
 	, mSyncDelta(0.0f)
+	, mProcessTick(0)
 	, mFilterMode(kFilterAnySuitable)
 	, mDisplayMode(kDisplayDefault)
 	, mAccelMode(VDVideoDisplayWindow::sbEnableBackgroundFallback ? kAccelOnlyInForeground : kAccelAlways)
@@ -714,6 +721,20 @@ void VDVideoDisplayWindow::RequestNextFrame() {
 	PostMessage(mhwnd, MYWM_PROCESSNEXTFRAME, 0, 0);
 }
 
+void VDVideoDisplayWindow::SyncProcessNext() {
+	if (!mpMiniDriver || !mpMiniDriver->IsFramePending()) {
+		bool newframe;
+		vdsynchronized(mMutex) {
+			newframe = !mpActiveFrame;
+		}
+
+		if (newframe)
+			DispatchNextFrame();
+	}
+
+	mProcessTick = VDGetCurrentTick();
+}
+
 void VDVideoDisplayWindow::DispatchNextFrame() {
 	vdsynchronized(mMutex) {
 		VDASSERT(!mpActiveFrame);
@@ -963,16 +984,14 @@ LRESULT VDVideoDisplayWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 		SyncSetSourceMessage((const wchar_t *)lParam);
 		return 0;
 	case MYWM_PROCESSNEXTFRAME:
-		if (!mpMiniDriver || !mpMiniDriver->IsFramePending()) {
-			bool newframe;
-			vdsynchronized(mMutex) {
-				newframe = !mpActiveFrame;
-			}
-
-			if (newframe)
-				DispatchNextFrame();
+		{
+			MSG msg;
+			BOOL have_input = PeekMessage(&msg,0,0,0,PM_NOREMOVE|PM_QS_INPUT);
+			if(have_input)
+				SetTimer(mhwnd,kProcessNextFrameId,0,0);
+			else
+				SyncProcessNext();
 		}
-
 		return 0;
 	case MYWM_SETFILTERMODE:
 		SyncSetFilterMode((FilterMode)lParam);
@@ -990,6 +1009,11 @@ LRESULT VDVideoDisplayWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	case WM_TIMER:
 		if (wParam == mReinitDisplayTimer) {
 			SyncInit(true, false);
+			return 0;
+		}
+		if (wParam == kProcessNextFrameId) {
+			KillTimer(mhwnd,kProcessNextFrameId);
+			SyncProcessNext();
 			return 0;
 		}
 		break;

@@ -4544,45 +4544,6 @@ bool VDProjectUI::UIRunDubMessageLoop() {
 
 	VDSamplingAutoProfileScope autoProfileScope;
 
-	/*
-	while(g_dubber->isRunning()) {
-		// TODO: PerfHUD 5 doesn't hook GetMessage() and doesn't work unless you use PeekMessage().
-		//       Confirm if this is OK to switch.
-#if 0
-		BOOL result = GetMessage(&msg, (HWND) NULL, 0, 0);
-
-		if (result == (BOOL)-1)
-			break;
-
-		if (!result) {
-			PostQuitMessage(msg.wParam);
-			return false;
-		}
-#else
-		if (!PeekMessage(&msg, (HWND) NULL, 0, 0, QS_ALLINPUT)) {
-			if (!PeekMessage(&msg, (HWND) NULL, 0, 0, PM_REMOVE)) {
-				WaitMessage();
-				continue;
-			}
-
-			if (msg.message == WM_QUIT) {
-				PostQuitMessage(msg.wParam);
-				break;
-			}
-		}
-#endif
-
-		if (guiCheckDialogs(&msg))
-			continue;
-
-		if (VDUIFrame::TranslateAcceleratorMessage(msg))
-			continue;
-
-		TranslateMessage(&msg); 
-		DispatchMessage(&msg); 
-	}
-	*/
-
 	bool dubRunning = true;
 
 	while(1) {
@@ -4601,10 +4562,6 @@ bool VDProjectUI::UIRunDubMessageLoop() {
 			WaitMessage();
 		}
 
-		bool process_pane0 = false;
-		bool process_pane1 = false;
-		unsigned int MYWM_PROCESSNEXTFRAME = WM_USER+0x105;
-
 		while(PeekMessage(&msg,0,0,0,PM_NOREMOVE)){
 			BOOL result = GetMessage(&msg, (HWND) NULL, 0, 0);
 
@@ -4622,23 +4579,9 @@ bool VDProjectUI::UIRunDubMessageLoop() {
 			if (VDUIFrame::TranslateAcceleratorMessage(msg))
 				continue;
 
-			//! workaround:
-			// for some reason these messages are generated in huge bursts and hog message queue
-			if(msg.hwnd==mhwndInputDisplay && msg.message==MYWM_PROCESSNEXTFRAME){
-				process_pane0 = true;
-				continue;
-			}
-			if(msg.hwnd==mhwndOutputDisplay && msg.message==MYWM_PROCESSNEXTFRAME){
-				process_pane1 = true;
-				continue;
-			}
-
 			::TranslateMessage(&msg);
 			::DispatchMessage(&msg);
 		}
-
-		if(process_pane0) SendMessage(mhwndInputDisplay, MYWM_PROCESSNEXTFRAME, 0, 0);
-		if(process_pane1) SendMessage(mhwndOutputDisplay, MYWM_PROCESSNEXTFRAME, 0, 0);
 	}
 
 	mpInputDisplay->FlushBuffers();
