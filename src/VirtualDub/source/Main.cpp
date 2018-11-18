@@ -1041,6 +1041,7 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	VDSaveDialogAVI dlg;
 	dlg.inputAudio = inputAudio;
 	dlg.addJob = queueAsJob;
+	dlg.fUseCompatibility = fUseCompatibility;
 
 	OPENFILENAMEW fn = {sizeof(fn),0};
 	fn.Flags = OFN_ENABLETEMPLATE | OFN_ENABLEHOOK;
