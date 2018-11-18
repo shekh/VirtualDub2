@@ -4665,6 +4665,7 @@ void VDProjectUI::UICurrentPositionUpdated(bool fast_update) {
 
 	if (g_dubber && !g_dubber->IsPreviewing()) return;
 	if (mpAudioDisplay && !mProjectLoading) {
+		VDPROFILEBEGIN("Audio display");
 		UpdateAudioDisplayPosition();
 		uint32 startTime = VDGetCurrentTick();
 		while (1) {
@@ -4673,6 +4674,7 @@ void VDProjectUI::UICurrentPositionUpdated(bool fast_update) {
 			if (nCurrentTime - startTime > 20) break;
 		}
 		RedrawWindow(mhwndAudioDisplay,0,0,RDW_UPDATENOW);
+		VDPROFILEEND();
 	}
 }
 
@@ -5293,6 +5295,9 @@ void VDProjectUI::OnAudioDisplayUpdateRequired(IVDUIAudioDisplayControl *source,
 }
 
 void VDProjectUI::OnAudioDisplaySetSelect(IVDUIAudioDisplayControl *source, const VDUIAudioDisplaySelectionRange& range) {
+	ClearSelection();
+	if (range.mStart==range.mEnd) return;
+
 	IVDStreamSource *pVSS = inputVideo->asStream();
 	VDTime at1 = inputAudio->PositionToTimeVBR(range.mStart);
 	VDTime at2 = inputAudio->PositionToTimeVBR(range.mEnd);
@@ -5309,7 +5314,6 @@ void VDProjectUI::OnAudioDisplaySetSelect(IVDUIAudioDisplayControl *source, cons
 	if (pos1 > pos2)
 		std::swap(pos1, pos2);
 
-	ClearSelection();
 	SetSelectionEnd(pos2);
 	SetSelectionStart(pos1);
 }

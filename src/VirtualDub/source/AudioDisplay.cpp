@@ -624,7 +624,7 @@ public:
 	void OnSize();
 	void OnTimer();
 	void PaintChannel(HDC hdc, int ch);
-	void CalcFocus(sint32& xh1, sint32& xh2, int64 windowPosition);
+	void CalcFocus(sint32& xh1, sint32& xh2, int64 p, int64 windowPosition);
 
 	void SetFormat(double samplingRate, int channels);
 	void ResetFormat();
@@ -670,8 +670,10 @@ protected:
 	int			mTextWidth;
 	int			seek_y;
 	VDPosition	mHighlightedMarker;
+	VDPosition	mRefMarker;
 	VDPosition	mSelectedMarkerRangeStart;
 	VDPosition	mSelectedMarkerRangeEnd;
+	VDUIAudioDisplaySelectionRange mSelectedAnchor;
 	VDPosition	mAudioOffsetDragAnchor;
 	VDPosition	mAudioOffsetDragEndPoint;
 	int		mImage_x0;
@@ -747,7 +749,7 @@ protected:
 ATOM RegisterAudioDisplayControl() {
 	WNDCLASS wc;
 
-	wc.style		= CS_VREDRAW | CS_HREDRAW;
+	wc.style		= CS_VREDRAW | CS_HREDRAW | CS_DBLCLKS;
 	wc.lpfnWndProc	= VDUISpriteBasedControlW32::StaticWndProc<VDAudioDisplayControl>;
 	wc.cbClsExtra	= 0;
 	wc.cbWndExtra	= sizeof(IVDUnknown *);
@@ -781,6 +783,7 @@ VDAudioDisplayControl::VDAudioDisplayControl(HWND hwnd)
 	, mBufferedWindowSamples(0)
 	, mSamplingRate(44100.0)
 	, mHighlightedMarker(-1)
+	, mRefMarker(-1)
 	, mSelectedMarkerRangeStart(-1)
 	, mSelectedMarkerRangeEnd(-1)
 	, mMarkerRangeMin(0)
@@ -1073,17 +1076,32 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 	sint64 newWindowPos = pos - ((mChanWidth * mSamplesPerPixel) >> 1);
 
 	int xa1,xa2,xb1,xb2;
-	CalcFocus(xa1,xa2,mWindowPosition);
-	CalcFocus(xb1,xb2,newWindowPos);
+	CalcFocus(xa1,xa2,mHighlightedMarker,mWindowPosition);
+	CalcFocus(xb1,xb2,mHighlightedMarker,newWindowPos);
 	bool hpos_changed = mHighlightedMarker != hpos;
 	mHighlightedMarker = hpos;
 	int x0 = xb1;
 	int x1 = xa1;
-	CalcFocus(xb1,xb2,newWindowPos);
+	CalcFocus(xb1,xb2,hpos,newWindowPos);
+
+	VDPosition href = -1;
+	if (mDragMode==kDragModeView) {
+		POINT p;
+		GetCursorPos(&p);
+		MapWindowPoints(0,mhwnd,&p,1);
+		double s = double(mAudioOffsetDragAnchor - (p.x-mDragAnchorX)*mSamplesPerPixel);
+		href = VDRoundToInt64(s/mMarkerMinorRate-mMarkerStart);
+	}
 
 	// redo old focus
 	if (hpos_changed) {
 		RECT r2 = {xa1-8, 0, xa2+8, mChanHeight * mChanCount};
+		InvalidateRect(mhwnd,&r2,false);
+	}
+	if (mRefMarker!=href && mRefMarker!=-1) {
+		int ya1,ya2;
+		CalcFocus(ya1,ya2,mRefMarker,mWindowPosition);
+		RECT r2 = {ya1-8, 0, ya2+8, mChanHeight * mChanCount};
 		InvalidateRect(mhwnd,&r2,false);
 	}
 
@@ -1112,6 +1130,13 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 		RECT r3 = {xb1-8, 0, xb2+8, mChanHeight * mChanCount};
 		InvalidateRect(mhwnd,&r3,false);
 	}
+	if (mRefMarker!=href && href!=-1) {
+		int yb1,yb2;
+		CalcFocus(yb1,yb2,href,newWindowPos);
+		RECT r3 = {yb1-8, 0, yb2+8, mChanHeight * mChanCount};
+		InvalidateRect(mhwnd,&r3,false);
+	}
+	mRefMarker = href;
 
 	if (mbRescan) {
 		mPosition = pos;
@@ -1413,6 +1438,10 @@ LRESULT VDAudioDisplayControl::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 		OnMouseMove((short)LOWORD(lParam), (short)HIWORD(lParam), wParam);
 		break;
 
+	case WM_LBUTTONDBLCLK:
+		mSetPositionEvent.Raise(this, VDFloorToInt64(mWindowPosition + (short)LOWORD(lParam)*mSamplesPerPixel - mMarkerRate/2));
+		break;
+
 	case WM_LBUTTONDOWN:
 		OnLButtonDown((short)LOWORD(lParam), (short)HIWORD(lParam), wParam);
 		break;
@@ -1438,7 +1467,11 @@ LRESULT VDAudioDisplayControl::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 		return 0;
 
 	case WM_SETCURSOR:
-		{
+		if (mDragMode==kDragModeView) {
+			SetCursor(LoadCursor(NULL, IDC_SIZEALL));
+			return true;
+		}
+		if (mDragMode==0) {
 			POINT p;
 			GetCursorPos(&p);
 			MapWindowPoints(0,mhwnd,&p,1);
@@ -1446,9 +1479,8 @@ LRESULT VDAudioDisplayControl::WndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 				SetCursor(cr_hand);
 				return true;
 			}
-			break;
 		}
-		return 0;
+		break;
 	}
 
 	return DefWindowProc(mhwnd, msg, wParam, lParam);
@@ -1537,7 +1569,7 @@ void VDAudioDisplayControl::OnSize() {
 
 	if (r.bottom != mHeight) {
 		mHeight			= r.bottom;
-		mChanHeight		= (mHeight - mFontHeight - 4);
+		mChanHeight		= (mHeight - mFontHeight*3/2 - 4);
 		if (mChanCount > 0)
 			mChanHeight		= mChanHeight / mChanCount;
 		mbPointsDirty	= true;
@@ -1658,6 +1690,8 @@ void VDAudioDisplayControl::OnLButtonDown(int x, int y, uint32 modifiers) {
 	} else if (modifiers & MK_SHIFT) {
 		if (stop_play) return;
 		SetCapture(mhwnd);
+		mSelectedAnchor.mStart = mSelectedMarkerRangeStart;
+		mSelectedAnchor.mEnd = mSelectedMarkerRangeEnd;
 		mAudioOffsetDragAnchor = pos;
 		VDUIAudioDisplaySelectionRange range = {pos, pos};
 		mSetSelectEndEvent.Raise(this, range);
@@ -1670,34 +1704,38 @@ void VDAudioDisplayControl::OnLButtonDown(int x, int y, uint32 modifiers) {
 		} else {
 			if (stop_play) return;
 			SetCapture(mhwnd);
+			mSelectedAnchor.mStart = mSelectedMarkerRangeStart;
+			mSelectedAnchor.mEnd = mSelectedMarkerRangeEnd;
 			mAudioOffsetDragAnchor = pos;
 			VDUIAudioDisplaySelectionRange range = {pos, pos};
 			mSetSelectEndEvent.Raise(this, range);
 			mDragMode = kDragModeSelect;
 		}
 	}
+
+  SendMessage(mhwnd,WM_SETCURSOR,0,HTCLIENT);
 }
 
 void VDAudioDisplayControl::OnLButtonUp(int x, int y, uint32 modifiers) {
 	VDPosition pos = mWindowPosition + x * mSamplesPerPixel;
 	switch(mDragMode) {
-		case kDragModeSelect:
-			{
-				VDUIAudioDisplaySelectionRange range = {mAudioOffsetDragAnchor, pos};
-				mSetSelectEndEvent.Raise(this, range);
-			}
-			break;
-		case kDragModeAudioOffset:
-			mDragMode = kDragModeNone;
-			SetPosition(mAudioOffsetDragAnchor, mHighlightedMarker);
-			mSetAudioOffsetEvent.Raise(this, (x-mDragAnchorX)*mSamplesPerPixel);
-			RemoveSprite(mpDimensionSprite);
-			mpDimensionSprite = NULL;
-			break;
-		case kDragModeView:
-			mDragMode = kDragModeNone;
-			mSetPositionEvent.Raise(this, mAudioOffsetDragAnchor - (x-mDragAnchorX)*mSamplesPerPixel);
-			break;
+	case kDragModeSelect:
+		{
+			VDUIAudioDisplaySelectionRange range = {mAudioOffsetDragAnchor, pos};
+			mSetSelectEndEvent.Raise(this, range);
+		}
+		break;
+	case kDragModeAudioOffset:
+		mDragMode = kDragModeNone;
+		SetPosition(mAudioOffsetDragAnchor, mHighlightedMarker);
+		mSetAudioOffsetEvent.Raise(this, (x-mDragAnchorX)*mSamplesPerPixel);
+		RemoveSprite(mpDimensionSprite);
+		mpDimensionSprite = NULL;
+		break;
+	case kDragModeView:
+		mDragMode = kDragModeNone;
+		mSetPositionEvent.Raise(this, mAudioOffsetDragAnchor - (x-mDragAnchorX)*mSamplesPerPixel);
+		break;
 	}
 	mDragMode = kDragModeNone;
 
@@ -1705,15 +1743,37 @@ void VDAudioDisplayControl::OnLButtonUp(int x, int y, uint32 modifiers) {
 }
 
 void VDAudioDisplayControl::OnRButtonDown(int x, int y, uint32 modifiers) {
+	switch(mDragMode) {
+	case kDragModeSelect:
+		{
+			mDragMode = kDragModeNone;
+			VDUIAudioDisplaySelectionRange range = {-1,-1};
+			mSetSelectEndEvent.Raise(this, range);
+		}
+		return;
+	case kDragModeAudioOffset:
+		mDragMode = kDragModeNone;
+		InvalidateRect(mhwnd,0,false);
+		SetPosition(mAudioOffsetDragAnchor, mHighlightedMarker);
+		RemoveSprite(mpDimensionSprite);
+		mpDimensionSprite = NULL;
+		return;
+	case kDragModeView:
+		mDragMode = kDragModeNone;
+		SetPosition(mAudioOffsetDragAnchor, mHighlightedMarker);
+		return;
+	}
+
+	ReleaseCapture();
 	POINT pt = {x,y};
 	ClientToScreen(mhwnd, &pt);
 	TrackPopupMenu(mhmenuPopup, TPM_RIGHTALIGN | TPM_BOTTOMALIGN, pt.x, pt.y, 0, mhwnd, NULL);
 	PostMessage(mhwnd, WM_NULL, 0, 0);
 }
 
-void VDAudioDisplayControl::CalcFocus(sint32& xh1, sint32& xh2, int64 windowPosition) {
-	xh1 = VDFloorToInt((mHighlightedMarker*mMarkerRate + mMarkerStart - windowPosition) * mPixelsPerSample);
-	xh2 = VDFloorToInt(((mHighlightedMarker+1)*mMarkerRate + mMarkerStart - windowPosition) * mPixelsPerSample);
+void VDAudioDisplayControl::CalcFocus(sint32& xh1, sint32& xh2, int64 p, int64 windowPosition) {
+	xh1 = VDFloorToInt((p*mMarkerRate + mMarkerStart - windowPosition) * mPixelsPerSample);
+	xh2 = VDFloorToInt(((p+1)*mMarkerRate + mMarkerStart - windowPosition) * mPixelsPerSample);
 
 	if (xh1 == xh2)
 		++xh2;
@@ -1886,7 +1946,16 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 	// focus
 	if (ps.rcPaint.top < mChanHeight * mChanCount && mHighlightedMarker >= marker1*mMarkerMinorStep && mHighlightedMarker < marker2*mMarkerMinorStep && mDragMode!=kDragModeAudioOffset) {
 		sint32 xh1,xh2;
-		CalcFocus(xh1,xh2,mWindowPosition);
+		CalcFocus(xh1,xh2,mHighlightedMarker,mWindowPosition);
+
+		if (mbSpectrumMode)
+			StretchDIBits(hdc, xh1, 0, xh2 - xh1, mChanHeight * mChanCount, xh1, 0, xh2 - xh1, mbihSpectrumHighlight.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumHighlight, DIB_RGB_COLORS, SRCCOPY);
+		else
+			FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, RGB(0, 32, 64));
+	}
+	if (mRefMarker!=-1 && mRefMarker!=mHighlightedMarker && ps.rcPaint.top < mChanHeight * mChanCount && mRefMarker >= marker1*mMarkerMinorStep && mRefMarker < marker2*mMarkerMinorStep) {
+		sint32 xh1,xh2;
+		CalcFocus(xh1,xh2,mRefMarker,mWindowPosition);
 
 		if (mbSpectrumMode)
 			StretchDIBits(hdc, xh1, 0, xh2 - xh1, mChanHeight * mChanCount, xh1, 0, xh2 - xh1, mbihSpectrumHighlight.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumHighlight, DIB_RGB_COLORS, SRCCOPY);
@@ -2038,19 +2107,33 @@ void VDAudioDisplayControl::PaintWaveform(HDC hdc, const PAINTSTRUCT& ps, int rx
 			size_t count = rx1-rx0;
 
 			mPoints.resize(count);
+			POINT* buf = mPoints.data();
 
 			if (count > 1) {
 				for(uint32 ch=0; ch<mChanCount; ++ch) {
 					const uint8 *src = &mImage[ch];
 					int yoffset = mChanHeight * ch;
 
+					__m128 xscale_ss = _mm_set_ss(float(mPixelsPerSample));
+					__m128 yscale_ss = _mm_set_ss(yscale);
+
 					for(uint32 i=0; i<count; ++i) {
+						POINT& p = buf[i];
 						int x = i+rx0;
-						mPoints[i].x = VDRoundToIntFast((float)(x * mPixelsPerSample));
-						mPoints[i].y = VDRoundToIntFast((float)src[x * mChanCount] * yscale + yoffset);
+						int y = src[x * mChanCount];
+						__m128 mx;
+						mx = _mm_cvtsi32_ss(mx,x);
+						mx = _mm_mul_ss(mx,xscale_ss);
+						__m128 my;
+						my = _mm_cvtsi32_ss(my,y);
+						my = _mm_mul_ss(my,yscale_ss);
+						p.x = _mm_cvtss_si32(mx);
+						p.y = _mm_cvtss_si32(my) + yoffset;
+						//p.x = VDRoundToIntFast((float)(x * mPixelsPerSample));
+						//p.y = VDRoundToIntFast((float)y * yscale + yoffset);
 					}
 
-					Polyline(hdc, mPoints.data(), count - 1);
+					Polyline(hdc, buf, count - 1);
 				}
 			}
 		}
