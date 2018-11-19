@@ -1069,6 +1069,12 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 	// round off position
 	pos -= pos % mSamplesPerPixel;
 
+	if (!mFailureMessage.empty() || !mChanCount) {
+		mPosition = pos;
+		mWindowPosition = 0;
+		return;
+	}
+
 	// check for null move
 	if (mPosition == pos && mHighlightedMarker == hpos && !mbRescan)
 		return;

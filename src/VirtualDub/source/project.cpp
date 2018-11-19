@@ -1749,7 +1749,11 @@ void VDProject::OpenWAV(const wchar_t *szFile, IVDInputDriver *pSelectedDriver, 
 	if (!(pSelectedDriver->GetFlags() & IVDInputDriver::kF_SupportsOpts))
 		extOpts = false;
 
-	if (!automated && extOpts) {
+	if (optdata) {
+		mpAudioInputOptions = ifile->createOptions(optdata, optlen);
+		if (mpAudioInputOptions)
+			ifile->setOptions(mpAudioInputOptions);
+	} else if (!automated && extOpts) {
 		mpAudioInputOptions = ifile->promptForOptions((VDGUIHandle)mhwnd);
 		if (!mpAudioInputOptions)
 			throw MyUserAbortError();
@@ -1759,10 +1763,6 @@ void VDProject::OpenWAV(const wchar_t *szFile, IVDInputDriver *pSelectedDriver, 
 		// force input driver name if we have options, since they have to match
 		if (mAudioInputDriverName.empty())
 			mAudioInputDriverName = pSelectedDriver->GetSignatureName();
-	} else if (optdata) {
-		mpAudioInputOptions = ifile->createOptions(optdata, optlen);
-		if (mpAudioInputOptions)
-			ifile->setOptions(mpAudioInputOptions);
 	}
 
 	ifile->Init(szFile);
