@@ -4151,7 +4151,7 @@ bool VDProjectUI::TickAudioDisplay() {
 		return false;
 	}
 
-	uint32 maxlen = sizeof buf;
+	uint32 maxlen;
 	sint64 apos = mAudioDisplayPosNext;
 
 	const FrameSubset& subset = GetTimeline().GetSubset();
@@ -4177,10 +4177,11 @@ bool VDProjectUI::TickAudioDisplay() {
 			}
 
 			apos = VDRoundToInt64((double)(vend + vframef - subset.getTotalFrames()) / audioToVideoFactor);
+			maxlen = sizeof buf;
+
 		} else {
 			apos = VDRoundToInt64((double)(vframesrc + vframeoff) / audioToVideoFactor);
 			sint64 alimit = VDRoundToInt64((double)(vframesrc + len) / audioToVideoFactor);
-
 			maxlen = VDClampToUint32(alimit - apos);
 		}
 

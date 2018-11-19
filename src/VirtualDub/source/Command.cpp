@@ -103,6 +103,7 @@ void AppendAVI(const wchar_t *pszFile) {
 			FrameSubset& s = g_project->GetTimeline().GetSubset();
 
 			s.insert(s.end(), FrameSubsetNode(lTail, pVSS->getEnd() - lTail, false, 0));
+			g_project->SetAudioSource();
 			g_project->EndTimelineUpdate();
 		}
 	}
@@ -214,6 +215,7 @@ void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first) {
 		FrameSubset& s = g_project->GetTimeline().GetSubset();
 		g_project->BeginTimelineUpdate();
 		s.insert(s.end(), FrameSubsetNode(originalCount, pVSS->getEnd() - originalCount, false, 0));
+		g_project->SetAudioSource();
 		g_project->EndTimelineUpdate();
 	}
 }

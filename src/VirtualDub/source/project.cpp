@@ -480,8 +480,10 @@ void VDProject::BeginTimelineUpdate(const wchar_t *undostr) {
 
 void VDProject::EndTimelineUpdate() {
 	UpdateDubParameters();
-	if (mpCB)
+	if (mpCB) {
 		mpCB->UITimelineUpdated();
+		mpCB->UICurrentPositionUpdated();
+	}
 }
 
 void VDProject::BeginLoading() {
