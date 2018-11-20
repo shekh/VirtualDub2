@@ -36,7 +36,10 @@ public:
 
 	bool GetVideoSource(int index, IVDVideoSource **ppSrc);
 	bool GetAudioSource(int index, AudioSource **ppSrc);
-	int GetFileFlags(){ return IVDInputDriver::kFF_Sequence; }
+	int GetFileFlags() {
+		if (single_file_mode) return 0;
+		return IVDInputDriver::kFF_Sequence; 
+	}
 
 public:
 	VDPosition	GetFrameCount() const { return mFrames; }

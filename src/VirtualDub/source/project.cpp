@@ -1151,7 +1151,7 @@ void VDProject::CmdOpen(const wchar_t *token) {
 	}
 
 	mProjectFilename.clear();
-	Open(token);
+	Open(token,0,false,false,1);
 }
 
 void VDProject::OpenProject(const wchar_t *pFilename, bool readOnly) {
@@ -1604,7 +1604,11 @@ void VDProject::Reopen() {
 
 	// open file
 
-	vdrefptr<InputFile> newInput(pSelectedDriver->CreateInputFile(0));
+	int flags = IVDInputDriver::kOF_SingleFile;
+	int inputFlags = inputAVI->GetFileFlags();
+	if (inputFlags!=-1 && (inputFlags & IVDInputDriver::kFF_Sequence)) flags &= ~IVDInputDriver::kOF_SingleFile;
+
+	vdrefptr<InputFile> newInput(pSelectedDriver->CreateInputFile(flags));
 	if (!newInput)
 		throw MyMemoryError();
 
