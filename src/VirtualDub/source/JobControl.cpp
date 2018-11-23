@@ -20,6 +20,7 @@
 extern const char g_szError[];
 extern HWND g_hWnd;
 extern VDProject *g_project;
+extern bool g_exitOnDone;
 
 HWND g_hwndJobs;
 
@@ -437,6 +438,10 @@ void VDJobQueue::Reload(VDJob *job) {
 
 	if (err.gets())
 		err.post(g_hwndJobs, g_szError);
+}
+
+void VDJobQueue::ReloadAutosave() {
+	autoSave.Load(g_project);
 }
 
 void VDJobQueue::Transform(int fromState, int toState) {
@@ -1109,6 +1114,10 @@ void VDJobQueue::RunAllStart() {
 	if (mbRunning || mbRunAll)
 		return;
 
+	if (inputAVI && g_project) {
+		autoSave.Save(g_project);
+	}
+
 	mbRunning		= true;
 	mbRunAll		= true;
 	mbRunAllStop	= false;
@@ -1157,8 +1166,11 @@ bool VDJobQueue::RunAllNext() {
 			}
 
 			PostQuitMessage(0);
+			return false;
 		}
 	}
+
+	if (!g_exitOnDone) ReloadAutosave();
 
 	return false;
 }
@@ -1252,6 +1264,7 @@ bool VDJobQueue::PollAutoRun() {
 		mbRunning = false;
 		mbRunAllStop = false;
 		NotifyStatus();
+		ReloadAutosave();
 		return false;
 	}
 

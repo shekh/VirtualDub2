@@ -58,6 +58,7 @@ public:
 	void Delete(VDJob *job, bool force_no_update);
 	void Run(VDJob *job);
 	void Reload(VDJob *job);
+	void ReloadAutosave();
 	void Transform(int fromState, int toState);
 
 	void ListLoad(const wchar_t *lpszName, bool skipIfSignatureSame);
@@ -122,6 +123,7 @@ protected:
 	void TimerCallback();
 
 	JobQueue mJobQueue;
+	VDProjectAutoSave autoSave;
 
 	uint32	mJobCount;
 	uint32	mJobNumber;

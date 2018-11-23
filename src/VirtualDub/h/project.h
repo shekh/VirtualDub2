@@ -5,6 +5,7 @@
 #include <vd2/system/VDScheduler.h>
 #include <vd2/system/fraction.h>
 #include <vd2/system/event.h>
+#include <vd2/system/file.h>
 #include "FrameSubset.h"
 #include "FilterFrameVideoSource.h"
 #include "filter.h"
@@ -399,6 +400,22 @@ protected:
 	bool mAudioSplit;
 
 	VDDelegate		mStoppedDelegate;
+};
+
+class VDProjectAutoSave {
+public:
+	VDProjectAutoSave();
+	~VDProjectAutoSave();
+
+	void Save(VDProject *proj);
+	void Load(VDProject *proj);
+	void Delete();
+	bool Empty() { return mAutoSavePath.empty(); }
+
+protected:
+	VDStringW	mAutoSavePath;
+	VDStringW	mDataSubdir;
+	VDFile		mAutoSaveFile;
 };
 
 #endif

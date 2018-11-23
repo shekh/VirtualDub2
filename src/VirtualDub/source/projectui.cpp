@@ -4623,7 +4623,12 @@ void VDProjectUI::UICurrentPositionUpdated(bool fast_update) {
 }
 
 void VDProjectUI::UITimelineUpdated() {
-	if (!inputAVI) return;
+	if (!inputAVI) {
+		mpPosition->SetRangeZoom(false);
+		mpPosition->SetRange(0, 0);
+		SetStatus(L"");
+		return;
+	}
 
 	if (mbZoomEnabled) {
 		mpPosition->SetRangeZoom(true);

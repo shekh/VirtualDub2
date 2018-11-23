@@ -165,23 +165,7 @@ namespace {
 
 ///////////////////////////////////////////////////////////////////////////
 
-class VDProjectAutoSave {
-public:
-	VDProjectAutoSave(VDProject *proj);
-	~VDProjectAutoSave();
-
-	void Save();
-	void Delete();
-
-protected:
-	VDProject	*const mpProject;
-	VDStringW	mAutoSavePath;
-	VDStringW	mDataSubdir;
-	VDFile		mAutoSaveFile;
-};
-
-VDProjectAutoSave::VDProjectAutoSave(VDProject *proj)
-	: mpProject(proj)
+VDProjectAutoSave::VDProjectAutoSave()
 {
 }
 
@@ -189,7 +173,7 @@ VDProjectAutoSave::~VDProjectAutoSave() {
 	Delete();
 }
 
-void VDProjectAutoSave::Save() {
+void VDProjectAutoSave::Save(VDProject *proj) {
 	VDStringW fileName;
 	VDStringW path;
 
@@ -212,8 +196,8 @@ void VDProjectAutoSave::Save() {
 		// Note that we intentionally KEEP THIS FILE OPEN. This prevents other instances of VirtualDub
 		// from trying to recover while we're active!
 		mAutoSaveFile.open(path.c_str(), nsVDFile::kWrite | nsVDFile::kDenyAll | nsVDFile::kCreateAlways);
-		mpProject->SaveData(path,mDataSubdir);
-		mpProject->SaveScript(mAutoSaveFile,mDataSubdir,false);
+		proj->SaveData(path,mDataSubdir);
+		proj->SaveScript(mAutoSaveFile,mDataSubdir,false);
 
 		mAutoSaveFile.flushNT();
 	} catch(...) {
@@ -231,11 +215,24 @@ void VDProjectAutoSave::Delete() {
 			mAutoSaveFile.close();
 
 			VDRemoveFile(mAutoSavePath.c_str());
-			mpProject->DeleteData(mAutoSavePath,mDataSubdir);
+			VDProject::DeleteData(mAutoSavePath,mDataSubdir);
+			mAutoSavePath.clear();
+			mDataSubdir.clear();
 		}
 	} catch(...) {
 		// whatever it is, eat it -- we do NOT want to terminate due to
 		// throwing from the dtor.
+	}
+}
+
+void VDProjectAutoSave::Load(VDProject *proj) {
+	if (!mAutoSavePath.empty()) {
+		mAutoSaveFile.close();
+		proj->OpenProject(mAutoSavePath.c_str(), true);
+		VDRemoveFile(mAutoSavePath.c_str());
+		VDProject::DeleteData(mAutoSavePath,mDataSubdir);
+		mAutoSavePath.clear();
+		mDataSubdir.clear();
 	}
 }
 
@@ -1990,6 +1987,8 @@ void VDProject::Close() {
 		mpCB->UIVideoSourceUpdated();
 		mpCB->UIAudioSourceUpdated();
 		mpCB->UISourceFileUpdated();
+		mpCB->UITimelineUpdated();
+		mpCB->UICurrentPositionUpdated();
 	}
 }
 
@@ -2653,10 +2652,10 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 	if (!inputAVI)
 		throw MyError("No source has been loaded to process.");
 
-	VDProjectAutoSave autoSave(this);
+	VDProjectAutoSave autoSave;
 
 	if (!g_fJobMode && VDPreferencesGetAutoRecoverEnabled() && !pOutputSystem->IsRealTime()) {
-		autoSave.Save();
+		autoSave.Save(this);
 	}
 
 	bool fError = false;

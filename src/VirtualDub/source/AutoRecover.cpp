@@ -257,7 +257,7 @@ void VDUICheckForAutoRecoverFiles(VDGUIHandle h) {
 		g_project->OpenProject(path, true);
 
 		try {
-			VDRemoveFile(path);
+			VDProject::DeleteProject(VDStringW(path));
 		} catch(const MyError&) {
 			// eat the error
 		}
