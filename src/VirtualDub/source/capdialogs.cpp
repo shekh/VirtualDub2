@@ -1304,13 +1304,16 @@ bool VDShowCaptureDeviceOptionsDialog(VDGUIHandle h, uint32& opts) {
 
 class VDDialogCaptureVideoProcAmp : public IVDUICallback {
 public:
-	VDDialogCaptureVideoProcAmp(IVDCaptureProject *pProject) : mpProject(pProject) {}
+	VDDialogCaptureVideoProcAmp(IVDCaptureProject *pProject, int* ref) : mpProject(pProject), mpRef(ref) {}
 
 	bool HandleUIEvent(IVDUIBase *pBase, IVDUIWindow *pWin, uint32 id, eEventType type, int item) {
 		if (type == kEventAttach) {
 			mpBase = pBase;
 
+		} else if (type == kEventDestroy) {
+			(*mpRef)--;
 		} else if (type == kEventCreate) {
+			(*mpRef)++;
 			vdrefptr<IVDUIWindow> child;
 			VDUIParameters parms;
 
@@ -1421,12 +1424,15 @@ public:
 
 	IVDUIBase *mpBase;
 	IVDCaptureProject *const mpProject;
+	int* mpRef;
 };
 
-void VDCreateDialogCaptureVideoProcAmp(IVDUIWindow *pParent, IVDCaptureProject *pProject) {
+void VDCreateDialogCaptureVideoProcAmp(IVDUIWindow *pParent, IVDCaptureProject *pProject, int& ref) {
+	if (ref) return;
+
 	IVDUIWindow *pWin = VDCreateUIBaseWindow();
 	pWin->SetCaption(L"Video levels");
-	VDDialogCaptureVideoProcAmp *procAmpDlg = new VDDialogCaptureVideoProcAmp(pProject);
+	VDDialogCaptureVideoProcAmp *procAmpDlg = new VDDialogCaptureVideoProcAmp(pProject,&ref);
 
 	IVDUIBase *pBase = vdpoly_cast<IVDUIBase *>(pWin);
 	

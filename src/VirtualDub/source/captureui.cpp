@@ -574,6 +574,7 @@ protected:
 	vdautoptr<IVDUIWindow>	mpVumeter;
 	vdautoptr<IVDUIWindow>	mpGraph;
 	IVDUICaptureVumeter*    mpVumeter2;
+	int ref_procAmp;
 
 	VDUIPeerW32		mUIPeer;
 
@@ -635,6 +636,7 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 	enable_power_scheme = VDIsAtLeastVistaW32();
 	mpPrevPower = 0;
 	mpNewPower = 0;
+	ref_procAmp = 0;
 }
 
 VDCaptureProjectUI::~VDCaptureProjectUI() {
@@ -3222,6 +3224,13 @@ bool VDCaptureProjectUI::OnCaptureSafeCommand(UINT id) {
 	case ID_CAPTURE_SHOWLOG:
 	case ID_CAPTURE_DSHOWGRAPH:
 		return OnCommand(id);
+	case ID_VIDEO_DISCONNECT:
+	case ID_FILE_EXITCAPTUREMODE:
+		if (mbCaptureActive) {
+			mpProject->CaptureStop();
+			PostMessage((HWND)mhwnd,WM_COMMAND,id,0);
+		}
+		return 0;
 	}
 	return 0;
 }
@@ -3522,9 +3531,9 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 			break;
 		case ID_VIDEO_LEVELS:
 			{
-				void VDCreateDialogCaptureVideoProcAmp(IVDUIWindow *pParent, IVDCaptureProject *pProject);
+				void VDCreateDialogCaptureVideoProcAmp(IVDUIWindow *pParent, IVDCaptureProject *pProject, int& ref);
 
-				VDCreateDialogCaptureVideoProcAmp(&mUIPeer, mpProject);
+				VDCreateDialogCaptureVideoProcAmp(&mUIPeer, mpProject, ref_procAmp);
 			}
 			break;
 		case ID_VIDEO_COMPRESSION:
