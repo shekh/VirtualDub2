@@ -488,6 +488,11 @@ const VDFraction AudioStreamSource::GetSampleRate() const {
 }
 
 long AudioStreamSource::_Read(void *buffer, long max_samples, long *lplBytes) {
+	if (!buffer) {
+		if (lplBytes) *lplBytes = GetFormat()->mBlockSize;
+		return 0;
+	}
+
 	LONG lAddedBytes=0;
 	LONG lAddedSamples=0;
 

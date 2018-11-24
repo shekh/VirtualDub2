@@ -1838,6 +1838,9 @@ void VDProject::PreviewInput(VDPosition* restart) {
 	if (start < mTimeline.GetLength()) {
 		mPreviewRestartMode = kPreviewRestart_Input;
 		Preview(&dubOpt);
+	} else {
+		if (mpCB)
+			mpCB->UISetDubbingMode(false, false);
 	}
 }
 
@@ -1873,6 +1876,9 @@ void VDProject::PreviewOutput(VDPosition* restart) {
 	if (start < mTimeline.GetLength()) {
 		mPreviewRestartMode = kPreviewRestart_Output;
 		Preview(&dubOpt);
+	} else {
+		if (mpCB)
+			mpCB->UISetDubbingMode(false, false);
 	}
 }
 

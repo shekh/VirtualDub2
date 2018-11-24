@@ -10,6 +10,7 @@
 #include <vd2/system/log.h>
 #include <vd2/system/time.h>
 #include <vd2/VDLib/Job.h>
+#include "project.h"
 
 class VDJob;
 class IVDStream;

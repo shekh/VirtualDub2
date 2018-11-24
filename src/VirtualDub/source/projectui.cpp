@@ -1860,9 +1860,12 @@ void VDProjectUI::SetVideoRangeOptionsAsk() {
 			startSel = GetSelectionStartFrame();
 			endSel = GetSelectionEndFrame();
 		}
+		VDPosition start1 = startSel;
+		VDPosition end1 = endSel;
 
-		if (VDDisplayVideoRangeDialog(mhwnd, g_dubOpts, mVideoTimelineFrameRate, len, startSel, endSel)) {
-			SetSelection(startSel, endSel);
+		if (VDDisplayVideoRangeDialog(mhwnd, g_dubOpts, mVideoTimelineFrameRate, len, start1, end1)) {
+			if (start1!=startSel || end1!=endSel)
+				SetSelection(start1, end1);
 		}
 	}
 }
@@ -4264,7 +4267,7 @@ void VDProjectUI::UpdateAudioDisplay() {
 }
 
 void VDProjectUI::UpdateAudioDisplayPosition() {
-	if (inputAudio && mpAudioDisplay) {
+	if (inputAudio && mpAudioDisplay && inputVideo) {
 		IVDStreamSource *pVSS = inputVideo->asStream();
 		VDPosition pos = GetCurrentFrame();
 		VDTime srct = pVSS->PositionToTimeVBR(pos);
