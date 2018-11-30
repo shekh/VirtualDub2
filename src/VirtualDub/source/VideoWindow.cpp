@@ -367,7 +367,13 @@ double VDVideoWindow::GetMaxZoomForArea(int w, int h, int border) {
 			frameAspect *= mSourceAspectRatio;
 	}
 
-	return std::min<double>((double)w / ((double)mSourceHeight * frameAspect), (double)h / (double)mSourceHeight);
+	if (mSourceWidth > 0 && mSourceHeight > 0) {
+		double zw = (double)w / ((double)mSourceHeight * frameAspect);
+		double zh = (double)h / (double)mSourceHeight;
+		return std::min<double>(zw,zh);
+	}
+	
+	return 1;
 }
 
 double VDVideoWindow::GetMaxZoomForArea(int w, int h) {

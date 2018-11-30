@@ -46,6 +46,9 @@ extern HINSTANCE g_hInst;
 namespace {
 	struct VDPreferences2 {
 		Preferences		mOldPrefs;
+
+		bool			mbUIRememberZoom;
+
 		VDStringW		mTimelineFormat;
 		uint32			mTimelinePageSize;
 		bool			mbTimelinePageMode;
@@ -143,7 +146,7 @@ namespace {
 void VDSavePreferences(VDPreferences2& prefs);
 
 Preferences g_prefs={
-	{ 0, PreferencesMain::DEPTH_24BIT, 0, TRUE, 0 },
+	{ 0, 0/*PreferencesMain::DEPTH_24BIT*/, 0, TRUE, 0 },
 	{ 50*16, 4*16 },
 };
 
@@ -164,38 +167,19 @@ public:
 		switch(type) {
 		case kEventAttach:
 			mpBase = pBase;
-			SetValue(100, mPrefs.mOldPrefs.main.iPreviewDepth);
-			SetValue(101, mPrefs.mOldPrefs.main.iPreviewPriority);
-			SetValue(102, mPrefs.mOldPrefs.main.iDubPriority);
-			SetValue(103, mPrefs.mOldPrefs.main.fAttachExtension);
-
-			pWin = mpBase->GetControl(104);
-			{
-				IVDUITrackbar *pTrackbar = vdpoly_cast<IVDUITrackbar *>(pWin);
-
-				if (pTrackbar) {
-					pTrackbar->SetRange(1, 10);
-					pWin->SetValue((mPrefs.mRenderThrottlePercent + 5) / 10);
-				}
-			}
-
-			if (!VDIsAtLeastVistaW32()) {
-				IVDUIWindow *w = mpBase->GetControl(105);
-				if (w)
-					w->Destroy();
-			} else
-				SetValue(105, mPrefs.mbRenderBackgroundPriority);
+			//SetValue(100, mPrefs.mOldPrefs.main.iPreviewDepth);
+			SetValue(101, mPrefs.mbUIRememberZoom);
+			SetValue(102, mPrefs.mOldPrefs.main.fAttachExtension);
+			SetValue(103, mPrefs.mbConfirmExit);
 
 			pBase->ExecuteAllLinks();
 			return true;
 		case kEventSync:
 		case kEventDetach:
-			mPrefs.mOldPrefs.main.iPreviewDepth		= (char)GetValue(100);
-			mPrefs.mOldPrefs.main.iPreviewPriority	= (char)GetValue(101);
-			mPrefs.mOldPrefs.main.iDubPriority		= (char)GetValue(102);
-			mPrefs.mOldPrefs.main.fAttachExtension	= (char)GetValue(103);
-			mPrefs.mRenderThrottlePercent			= GetValue(104) * 10;
-			mPrefs.mbRenderBackgroundPriority = GetValue(105) != 0;
+			//mPrefs.mOldPrefs.main.iPreviewDepth		= (char)GetValue(100);
+			mPrefs.mbUIRememberZoom	= GetValue(101) != 0;
+			mPrefs.mOldPrefs.main.fAttachExtension	= (char)GetValue(102);
+			mPrefs.mbConfirmExit = GetValue(103) != 0;
 			return true;
 		}
 		return false;
@@ -625,12 +609,36 @@ public:
 
 			SetValue(102, mPrefs.mFilterProcessAhead);
 
+			SetValue(103, mPrefs.mOldPrefs.main.iPreviewPriority);
+			SetValue(104, mPrefs.mOldPrefs.main.iDubPriority);
+
+			pWin = mpBase->GetControl(106);
+			{
+				IVDUITrackbar *pTrackbar = vdpoly_cast<IVDUITrackbar *>(pWin);
+
+				if (pTrackbar) {
+					pTrackbar->SetRange(1, 10);
+					pWin->SetValue((mPrefs.mRenderThrottlePercent + 5) / 10);
+				}
+			}
+
+			if (!VDIsAtLeastVistaW32()) {
+				IVDUIWindow *w = mpBase->GetControl(105);
+				if (w)
+					w->Destroy();
+			} else
+				SetValue(105, mPrefs.mbRenderBackgroundPriority);
+
 			return true;
 		case kEventDetach:
 		case kEventSync:
 			mPrefs.mVideoCompressionThreads = std::min<uint32>(wcstoul(GetCaption(100).c_str(), 0, 10), 32);
 			mPrefs.mFilterThreads = GetValue(101) - 1;
 			mPrefs.mFilterProcessAhead = VDClampToUint32(GetValue(102));
+			mPrefs.mOldPrefs.main.iPreviewPriority	= (char)GetValue(103);
+			mPrefs.mOldPrefs.main.iDubPriority		= (char)GetValue(104);
+			mPrefs.mbRenderBackgroundPriority = GetValue(105) != 0;
+			mPrefs.mRenderThrottlePercent			= GetValue(106) * 10;
 			return true;
 		}
 		return false;
@@ -834,27 +842,6 @@ public:
 	}
 };
 
-class VDDialogPreferencesExit : public VDDialogBase {
-public:
-	VDPreferences2& mPrefs;
-	VDDialogPreferencesExit(VDPreferences2& p) : mPrefs(p) {}
-
-	bool HandleUIEvent(IVDUIBase *pBase, IVDUIWindow *pWin, uint32 id, eEventType type, int item) {
-		switch(type) {
-		case kEventAttach:
-			mpBase = pBase;
-			pBase->ExecuteAllLinks();
-			SetValue(100, mPrefs.mbConfirmExit);
-			return true;
-		case kEventDetach:
-		case kEventSync:
-			mPrefs.mbConfirmExit = GetValue(100) != 0;
-			return true;
-		}
-		return false;
-	}
-};
-
 class VDDialogPreferences : public VDDialogBase {
 public:
 	VDPreferences2& mPrefs;
@@ -891,7 +878,6 @@ public:
 				case 12:	pSubDialog->SetCallback(new VDDialogPreferencesAutoRecover(mPrefs), true); break;
 				case 13:	pSubDialog->SetCallback(new VDDialogPreferencesStartup(mPrefs), true); break;
 				case 14:	pSubDialog->SetCallback(new VDDialogPreferencesHistory(mPrefs), true); break;
-				case 15:	pSubDialog->SetCallback(new VDDialogPreferencesExit(mPrefs), true); break;
 				}
 			}
 		} else if (type == kEventSelect) {
@@ -964,6 +950,14 @@ void LoadPreferences() {
 	}
 
 	VDRegistryAppKey key(reg, "Preferences");
+
+	bool init_zoom = false;
+	{
+		VDRegistryAppKey key("Persistence");
+		if (key.getInt("Input pane size", 0)) init_zoom = true;
+		if (key.getInt("Output pane size", 0)) init_zoom = true;
+	}
+	g_prefs2.mbUIRememberZoom = key.getBool("UI: Remember autosize and zoom", init_zoom);
 
 	if (!key.getString("Timeline format", g_prefs2.mTimelineFormat))
 		g_prefs2.mTimelineFormat = L"Frame %f (%h:%02m:%02s.%03t) [%c]";
@@ -1050,15 +1044,18 @@ void VDSavePreferences(VDPreferences2& prefs) {
 	baseKey.setBinary(g_szMainPrefs, (char *)&prefs.mOldPrefs, sizeof prefs.mOldPrefs);
 
 	VDRegistryAppKey key(reg, "Preferences");
+
+	key.setBool("UI: Remember autosize and zoom", prefs.mbUIRememberZoom);
+
 	key.setString("Timeline format", prefs.mTimelineFormat.c_str());
-	key.setInt("Timeline: Page size", g_prefs2.mTimelinePageSize);
-	key.setBool("Timeline: Page mode", g_prefs2.mbTimelinePageMode);
-	key.setBool("Timeline: Warn on truncation when reloading", g_prefs2.mbTimelineWarnReloadTruncation);
+	key.setInt("Timeline: Page size", prefs.mTimelinePageSize);
+	key.setBool("Timeline: Page mode", prefs.mbTimelinePageMode);
+	key.setBool("Timeline: Warn on truncation when reloading", prefs.mbTimelineWarnReloadTruncation);
 
 	key.setBool("Allow direct YCbCr decoding", prefs.mbAllowDirectYCbCrDecoding);
 
 	key.setBool("Confirm render abort", prefs.mbConfirmRenderAbort);
-	key.setBool("Confirm exit", g_prefs2.mbConfirmExit);
+	key.setBool("Confirm exit", prefs.mbConfirmExit);
 
 	key.setBool("Render: Warn if no audio", prefs.mbRenderWarnNoAudio);
 	key.setBool("AVI: Alignment threshold enable", prefs.mbEnableAVIAlignmentThreshold);
@@ -1068,8 +1065,8 @@ void VDSavePreferences(VDPreferences2& prefs) {
 	key.setBool("AVI: Prefer internal decoders", prefs.mbPreferInternalVideoDecoders);
 	key.setBool("AVI: Prefer internal audio decoders", prefs.mbPreferInternalAudioDecoders);
 	key.setBool("AVI: Use video stream fccHandler in codec search", prefs.mbUseVideoFccHandler);
-	key.setBool("AVI: Rekey", g_prefs2.mbAVIRekey);
-	key.setBool("AVI: Ignore index", g_prefs2.mbAVIIgnoreIndex);
+	key.setBool("AVI: Rekey", prefs.mbAVIRekey);
+	key.setBool("AVI: Ignore index", prefs.mbAVIIgnoreIndex);
 
 	key.setString("Direct3D FX file", prefs.mD3DFXFile.c_str());
 	key.setInt("Render: Output buffer size", prefs.mRenderOutputBufferSize);
@@ -1145,6 +1142,10 @@ void VDSetPreferencesString(const char *name, const char *s) {
 	VDRegistryAppKey key(g_pShadowRegistry, "Preferences");
 	key.setString(name,s);
 	LoadPreferences();
+}
+
+bool VDPreferencesGetRememberZoom() {
+	return g_prefs2.mbUIRememberZoom;
 }
 
 const VDStringW& VDPreferencesGetTimelineFormat() {

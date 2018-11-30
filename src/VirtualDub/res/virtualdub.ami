@@ -257,7 +257,6 @@ dialog 1000, "Preferences" : minw=350, maxw=350, aspect=140, valign=top+expand {
 				listitem "Auto-recover";
 				listitem "Startup";
 				listitem "History";
-				listitem "Exit";
 			}
 
 			pageset 101 : value={@100} {
@@ -276,7 +275,6 @@ dialog 1000, "Preferences" : minw=350, maxw=350, aspect=140, valign=top+expand {
 				page 1023;
 				page 1024;
 				page 1025;
-				page 1026;
 			}
 		}
 
@@ -294,70 +292,16 @@ dialog 1000, "Preferences" : minw=350, maxw=350, aspect=140, valign=top+expand {
 dialog 1010, "" : fill, child {
 	now align=fill;
 	set 0 : vertical, spacing=1 {
-		group 0, "Quick preview defaults" {
-			grid 0 : spacing=2 {
-				now valign=fill;
-				column 0: minw=100;
-				column 1: affinity=1;
-
-				label 0, "Output color depth";
-				combobox 100 {
-					listitem "Fastest (16-bit)";
-					listitem "Use output setting";
-					listitem "Match display depth";
-					listitem "16-bit (HiColor)";
-					listitem "24-bit (TrueColor)";
-				}
-
-				nextrow;
-
-				label 0, "Process priority";
-				
-				combobox 101 {
-					listitem "Default";
-					listitem "Idle";
-					listitem "Lowest";
-					listitem "Even lower";
-					listitem "Lower";
-					listitem "Normal";
-					listitem "Higher";
-					listitem "Even higher";
-					listitem "Highest";
-				}
-			}
+		group 0, "Interface options" {
+			checkbox 101, "Remember autosize and zoom";
 		}
-
-		group 0, "Dub defaults" {
-			grid 0 : spacing=2 {
-				now valign=fill;
-				column 0: minw=100;
-				column 1: affinity=1;
-
-				label 0, "Process priority";
-				combobox 102 {
-					listitem "Default";
-					listitem "Idle";
-					listitem "Lowest";
-					listitem "Even lower";
-					listitem "Lower";
-					listitem "Normal";
-					listitem "Higher";
-					listitem "Even higher";
-					listitem "Highest";
-				}
-				
-				nextrow;
-				checkbox 105, "Background I/O priority" : column = 1;
-				
-				nextrow;
-				
-				label 0, "Speed limit";
-				trackbar 104 : minh=16;
-			}
-		}
-
+		
 		group 0, "File options" {
-			checkbox 103, "Automatically add extension to filenames when saving";
+			checkbox 102, "Automatically add extension to filenames when saving";
+		}
+		
+		group 0, "Exit options" {
+			checkbox 103, "&Ask for confirmation on close";
 		}
 	}
 }
@@ -618,6 +562,57 @@ dialog 1019, "" : fill, child {
 				listitem "8 frames";
 			}
 		}
+
+		group 0, "Quick preview defaults" {
+			grid 0 : spacing=2 {
+				now valign=fill;
+				column 0: minw=100;
+				column 1: affinity=1;
+
+				label 0, "Processing priority";
+				
+				combobox 103 {
+					listitem "Default";
+					listitem "Idle";
+					listitem "Lowest";
+					listitem "Even lower";
+					listitem "Lower";
+					listitem "Normal";
+					listitem "Higher";
+					listitem "Even higher";
+					listitem "Highest";
+				}
+			}
+		}
+
+		group 0, "Dub defaults" {
+			grid 0 : spacing=2 {
+				now valign=fill;
+				column 0: minw=100;
+				column 1: affinity=1;
+
+				label 0, "Processing priority";
+				combobox 104 {
+					listitem "Default";
+					listitem "Idle";
+					listitem "Lowest";
+					listitem "Even lower";
+					listitem "Lower";
+					listitem "Normal";
+					listitem "Higher";
+					listitem "Even higher";
+					listitem "Highest";
+				}
+				
+				nextrow;
+				checkbox 105, "Background I/O priority" : column = 1;
+				
+				nextrow;
+				
+				label 0, "Speed limit";
+				trackbar 106 : minh=16;
+			}
+		}
 	}
 }
 
@@ -688,15 +683,6 @@ dialog 1025, "" : fill, child {
 					
 				button 101, "Clear history" : minw=50, align=left;
 			}
-		}
-	}
-}
-
-dialog 1026, "" : fill, child {
-	now align=fill;
-	set 0: vertical {
-		group 0, "Exit options" {
-			checkbox 100, "&Ask for confirmation on close";
 		}
 	}
 }

@@ -23,12 +23,14 @@
 class PreferencesMain {
 public:
 	enum {
+		/*
 		DEPTH_FASTEST	= 0,
 		DEPTH_OUTPUT	= 1,
 		DEPTH_DISPLAY	= 2,
 		DEPTH_16BIT		= 3,
 		DEPTH_24BIT		= 4,
 		DEPTH_32BIT		= 5,
+		*/
 
 		// The order of these must match the flags in cpuaccel.h!!
 
@@ -47,7 +49,7 @@ public:
 	};
 
 	char	iPreviewPriority;
-	char	iPreviewDepth;
+	char	deprecated_iPreviewDepth;
 	char	iDubPriority;
 	char	fAttachExtension;
 	char	fOptimizations;		// deprecated

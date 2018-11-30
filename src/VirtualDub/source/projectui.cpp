@@ -168,6 +168,7 @@ extern const VDStringW& VDPreferencesGetTimelineFormat();
 int VDPreferencesGetMRUSize();
 int VDPreferencesGetHistoryClearCounter();
 bool VDPreferencesGetConfirmExit();
+bool VDPreferencesGetRememberZoom();
 
 int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx format);
 
@@ -5130,10 +5131,12 @@ void VDProjectUI::LoadSettings() {
 	g_dubOpts.video.fSyncToAudio		= key.getBool("Preview audio sync", g_dubOpts.video.fSyncToAudio);
 	g_dubOpts.perf.useDirectDraw		= key.getBool("Accelerate preview", g_dubOpts.perf.useDirectDraw);
 	mPaneLayoutMode						= (PaneLayoutMode)key.getEnumInt("Pane layout mode", kPaneLayoutModeCount, mPaneLayoutMode);
-	mbAutoSizeInput						= key.getBool("Auto-size input pane", key.getBool("Auto-size panes", mbAutoSizeInput));
-	mbAutoSizeOutput					= key.getBool("Auto-size output pane", key.getBool("Auto-size panes", mbAutoSizeOutput));
-	mInputZoom							= float(key.getInt("Input pane size", 100)*0.01);
-	mOutputZoom							= float(key.getInt("Output pane size", 100)*0.01);
+	if (VDPreferencesGetRememberZoom()) {
+		mbAutoSizeInput						= key.getBool("Auto-size input pane", key.getBool("Auto-size panes", mbAutoSizeInput));
+		mbAutoSizeOutput					= key.getBool("Auto-size output pane", key.getBool("Auto-size panes", mbAutoSizeOutput));
+		mInputZoom							= float(key.getInt("Input pane size", 100)*0.01);
+		mOutputZoom							= float(key.getInt("Output pane size", 100)*0.01);
+	}
 	mbMaximize							= key.getBool("Maximize main layout", mbMaximize);
 	mbShowAudio = key.getBool("Show audio", mbShowAudio);
 
