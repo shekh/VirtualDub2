@@ -3935,21 +3935,42 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_VIRTUALDUB          ICON                    "mod2.ico"
-IDI_POS_BACKWARD        ICON                    "icon1.ico"
-IDI_POS_FORWARD         ICON                    "pos_back.ico"
-IDI_POS_START           ICON                    "pos_star.ico"
+IDI_POS_BACKWARD        ICON                    "pos_backward.ico"
+IDI_POS_FORWARD         ICON                    "pos_forward.ico"
+IDI_POS_START           ICON                    "pos_start.ico"
 IDI_POS_END             ICON                    "pos_end.ico"
 IDI_POS_MARKIN          ICON                    "pos_mark.ico"
 IDI_POS_MARKOUT         ICON                    "pos_markout.ico"
 IDI_POS_STOP            ICON                    "pos_stop.ico"
 IDI_POS_PLAY            ICON                    "pos_play.ico"
-IDI_POS_PREV_KEY        ICON                    "pos_prev.ico"
-IDI_POS_NEXT_KEY        ICON                    "pos_next.ico"
-IDI_POS_PLAYPREVIEW     ICON                    "ico00001.ico"
-IDI_POS_SCENEFWD        ICON                    "scenefwd.ico"
-IDI_POS_SCENEREV        ICON                    "scenerev.ico"
+IDI_POS_PREV_KEY        ICON                    "pos_prev_key.ico"
+IDI_POS_NEXT_KEY        ICON                    "pos_next_key.ico"
+IDI_POS_PLAYPREVIEW     ICON                    "pos_play2.ico"
+IDI_POS_SCENEFWD        ICON                    "pos_scenefwd.ico"
+IDI_POS_SCENEREV        ICON                    "pos_scenerev.ico"
 IDI_POS_MARKIN2         ICON                    "pos_mark2.ico"
 IDI_POS_MARKOUT2        ICON                    "pos_markout2.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDI_POS_STOP_x128       BITMAP                  "pos_stop_x128.bmp"
+IDI_POS_MARKIN_x128     BITMAP                  "pos_mark_x128.bmp"
+IDI_POS_MARKIN2_x128    BITMAP                  "pos_mark2_x128.bmp"
+IDI_POS_MARKOUT_x128    BITMAP                  "pos_markout_x128.bmp"
+IDI_POS_MARKOUT2_x128   BITMAP                  "pos_markout2_x128.bmp"
+IDI_POS_PLAY_x128       BITMAP                  "pos_play_x128.bmp"
+IDI_POS_PLAYPREVIEW_x128 BITMAP                  "pos_play2_x128.bmp"
+IDI_POS_FORWARD_x128    BITMAP                  "pos_forward_x128.bmp"
+IDI_POS_BACKWARD_x128   BITMAP                  "pos_backward_x128.bmp"
+IDI_POS_END_x128        BITMAP                  "pos_end_x128.bmp"
+IDI_POS_START_x128      BITMAP                  "pos_start_x128.bmp"
+IDI_POS_NEXT_KEY_x128   BITMAP                  "pos_next_key_x128.bmp"
+IDI_POS_PREV_KEY_x128   BITMAP                  "pos_prev_key_x128.bmp"
+IDI_POS_SCENEFWD_x128   BITMAP                  "pos_scenefwd_x128.bmp"
+IDI_POS_SCENEREV_x128   BITMAP                  "pos_scenerev_x128.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //

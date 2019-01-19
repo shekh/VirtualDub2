@@ -250,6 +250,21 @@
 #define IDD_SAVEAUDIO_FORMAT            316
 #define IDI_POS_MARKIN2                 317
 #define IDI_POS_MARKOUT2                318
+#define IDI_POS_STOP_x128               319
+#define IDI_POS_MARKIN_x128             321
+#define IDI_POS_MARKIN2_x128            322
+#define IDI_POS_MARKOUT_x128            323
+#define IDI_POS_MARKOUT2_x128           324
+#define IDI_POS_PLAY_x128               325
+#define IDI_POS_PLAYPREVIEW_x128        326
+#define IDI_POS_FORWARD_x128            327
+#define IDI_POS_BACKWARD_x128           328
+#define IDI_POS_END_x128                329
+#define IDI_POS_START_x128              330
+#define IDI_POS_NEXT_KEY_x128           331
+#define IDI_POS_PREV_KEY_x128           332
+#define IDI_POS_SCENEFWD_x128           333
+#define IDI_POS_SCENEREV_x128           334
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -1613,7 +1628,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        319
+#define _APS_NEXT_RESOURCE_VALUE        337
 #define _APS_NEXT_COMMAND_VALUE         40613
 #define _APS_NEXT_CONTROL_VALUE         1572
 #define _APS_NEXT_SYMED_VALUE           111

@@ -885,16 +885,17 @@ void FilterPreview::OnInit() {
 	cls.lpfnWndProc=preview_pos_host_proc;
 	RegisterClassW(&cls);
 	mhwndPosHost = CreateWindowExW(host_style_ex,cls.lpszClassName,0,host_style,0,0,0,0,mhwndParent,0,cls.hInstance,this);
-	RECT r1;
-	GetClientRect(g_projectui->GetHwnd(),&r1);
-	POINT p1 = {0,r1.bottom-64};
-	MapWindowPoints(g_projectui->GetHwnd(),0,&p1,1);
-	SetWindowPos(mhwndPosHost,0,p1.x,p1.y,r1.right,64,SWP_NOACTIVATE);
-	EnableWindow(mhwndPosHost,true);
 
 	mhwndPosition = CreateWindow(POSITIONCONTROLCLASS, NULL, WS_CHILD|WS_VISIBLE, 0, 0, 0, 64, mhwndPosHost, (HMENU)IDC_FILTDLG_POSITION, g_hInst, NULL);
 	mpPosition = VDGetIPositionControl((VDGUIHandle)mhwndPosition);
-	SetWindowPos(mhwndPosition, NULL, 0, 0, r1.right, 64, SWP_NOZORDER|SWP_NOACTIVATE);
+	int pos_h = mpPosition->GetNiceHeight();
+	RECT r1;
+	GetClientRect(g_projectui->GetHwnd(),&r1);
+	SetWindowPos(mhwndPosition, NULL, 0, 0, r1.right, pos_h, SWP_NOZORDER|SWP_NOACTIVATE);
+	POINT p1 = {0,r1.bottom-pos_h};
+	MapWindowPoints(g_projectui->GetHwnd(),0,&p1,1);
+	SetWindowPos(mhwndPosHost,0,p1.x,p1.y,r1.right,pos_h,SWP_NOACTIVATE);
+	EnableWindow(mhwndPosHost,true);
 
 	if (mbDisplaySource) {
 		const VDFilterStreamDesc srcDesc(mpThisFilter->GetSourceDesc());

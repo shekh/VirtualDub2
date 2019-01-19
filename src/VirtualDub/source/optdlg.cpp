@@ -2311,6 +2311,16 @@ void VDDialogJumpToPositionW32::ReinitDialog() {
 		VDPosition end(g_project->GetSelectionEndFrame());
 		mpPosition->SetSelection(start, end);
 		mpPosition->SetTimeline(g_project->GetTimeline());
+		RECT r0;
+		GetClientRect(mhdlg,&r0);
+		RECT r1;
+		GetWindowRect(GetDlgItem(mhdlg,IDC_POSITION),&r1);
+		MapWindowPoints(0,mhdlg,(POINT*)&r1,2);
+		int pos_h = mpPosition->GetNiceHeight();
+		SetWindowPos(GetDlgItem(mhdlg,IDC_POSITION),0,0,0,r1.right-r1.left,pos_h,SWP_NOMOVE|SWP_NOZORDER);
+		RECT r2;
+		GetWindowRect(mhdlg,&r2);
+		SetWindowPos(mhdlg,0,0,0,r2.right-r2.left,r2.bottom-r2.top+pos_h+r1.top-r0.bottom,SWP_NOMOVE|SWP_NOZORDER);
 	} else {
 		mpPosition = 0;
 	}

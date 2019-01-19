@@ -38,36 +38,38 @@ extern HINSTANCE g_hInst;
 
 extern const char szPositionControlName[]="birdyPositionControl";
 
-static const UINT uIconIDs[13]={
-	IDI_POS_STOP,
-	IDI_POS_PLAY,
-	IDI_POS_PLAYPREVIEW,
-	IDI_POS_START,
-	IDI_POS_BACKWARD,
-	IDI_POS_FORWARD,
-	IDI_POS_END,
-	IDI_POS_PREV_KEY,
-	IDI_POS_NEXT_KEY,
-	IDI_POS_SCENEREV,
-	IDI_POS_SCENEFWD,
-	IDI_POS_MARKIN,
-	IDI_POS_MARKOUT,
+enum { uIcon_count=13 };
+
+static const UINT uIconIDs[uIcon_count][2]={
+	{ IDI_POS_STOP },
+	{ IDI_POS_PLAY },
+	{ IDI_POS_PLAYPREVIEW },
+	{ IDI_POS_START },
+	{ IDI_POS_BACKWARD },
+	{ IDI_POS_FORWARD },
+	{ IDI_POS_END },
+	{ IDI_POS_PREV_KEY },
+	{ IDI_POS_NEXT_KEY },
+	{ IDI_POS_SCENEREV },
+	{ IDI_POS_SCENEFWD },
+	{ IDI_POS_MARKIN, IDI_POS_MARKIN2 },
+	{ IDI_POS_MARKOUT, IDI_POS_MARKOUT2 },
 };
 
-static const UINT uIconID2[13]={
-	IDI_POS_STOP,
-	IDI_POS_PLAY,
-	IDI_POS_PLAYPREVIEW,
-	IDI_POS_START,
-	IDI_POS_BACKWARD,
-	IDI_POS_FORWARD,
-	IDI_POS_END,
-	IDI_POS_PREV_KEY,
-	IDI_POS_NEXT_KEY,
-	IDI_POS_SCENEREV,
-	IDI_POS_SCENEFWD,
-	IDI_POS_MARKIN2,
-	IDI_POS_MARKOUT2,
+static const UINT uIconIDs_x128[uIcon_count][2]={
+	{ IDI_POS_STOP_x128 },
+	{ IDI_POS_PLAY_x128 },
+	{ IDI_POS_PLAYPREVIEW_x128 },
+	{ IDI_POS_START_x128 },
+	{ IDI_POS_BACKWARD_x128 },
+	{ IDI_POS_FORWARD_x128 },
+	{ IDI_POS_END_x128 },
+	{ IDI_POS_PREV_KEY_x128 },
+	{ IDI_POS_NEXT_KEY_x128 },
+	{ IDI_POS_SCENEREV_x128 },
+	{ IDI_POS_SCENEFWD_x128 },
+	{ IDI_POS_MARKIN_x128, IDI_POS_MARKIN2_x128 },
+	{ IDI_POS_MARKOUT_x128, IDI_POS_MARKOUT2_x128 },
 };
 
 #undef IDC_START
@@ -116,6 +118,36 @@ static const struct {
 	{ IDC_MARKOUT, "[Mark out] Specify the end for processing or of a selection to delete." },
 };
 
+HBITMAP LoadImageStretch(LPSTR id, int w, int h)
+{
+	HBITMAP bm0 = (HBITMAP)LoadImage(g_hInst, id,IMAGE_BITMAP,0,0,LR_LOADTRANSPARENT|LR_LOADMAP3DCOLORS);
+	if (!bm0) return 0;
+	HDC hdc = GetDC(0);
+	BITMAPINFO bmi = {0};
+	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi.bmiHeader.biWidth = w;
+	bmi.bmiHeader.biHeight = h;
+	bmi.bmiHeader.biCompression = BI_RGB;
+	bmi.bmiHeader.biBitCount = 24;
+	bmi.bmiHeader.biPlanes = 1;
+	HBITMAP bm1 = CreateDIBSection(0,&bmi,0,0,0,0);
+
+	HDC dc0 = CreateCompatibleDC(hdc);
+	HDC dc1 = CreateCompatibleDC(hdc);
+	SelectObject(dc0,bm0);
+	SelectObject(dc1,bm1);
+
+	BITMAP bm0_info;
+	GetObject(bm0,sizeof(BITMAP),&bm0_info);
+
+	SetStretchBltMode(dc1,HALFTONE);
+	StretchBlt(dc1,0,0,w,h,dc0,0,0,bm0_info.bmWidth,bm0_info.bmHeight,SRCCOPY);
+	ReleaseDC(0, hdc);
+	DeleteDC(dc1);
+	DeleteDC(dc0);
+	DeleteObject(bm0);
+	return bm1;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -178,6 +210,7 @@ protected:
 	HWND				mhwnd;
 	HFONT				mFrameFont;
 	int					nFrameCtlHeight;
+	int					nFrameCtlWidth;
 	VDFraction			mFrameRate;
 	IVDPositionControlCallback *mpCB;
 	void				*pvFTCData;
@@ -214,6 +247,7 @@ protected:
 	RECT				mTrack;					// just the track
 	RECT				mThumbRect;
 	int					mThumbWidth;
+	int					mTickWidth;
 	int					mButtonSize;
 	int					mGapSize;
 	double				mPixelsPerFrame;
@@ -235,34 +269,19 @@ protected:
 	bool mbHasPlaybackControls;
 	bool mbHasMarkControls;
 	bool mbHasSceneControls;
+	bool mbButtonIcon;
 	bool mbAutoFrame;
 	bool mbAutoStep;
 	bool mbZoom;
 
 	VDEvent<IVDPositionControl, VDPositionControlEventData>	mPositionUpdatedEvent;
 
-	static HICON shIcons[13];
-	static HICON shIcon2[13];
+	HICON shIcon1[uIcon_count];
+	HICON shIcon2[uIcon_count];
 };
-
-HICON VDPositionControlW32::shIcons[13];
-HICON VDPositionControlW32::shIcon2[13];
 
 ATOM VDPositionControlW32::Register() {
 	WNDCLASS wc;
-
-	for(int i=0; i<(sizeof shIcons/sizeof shIcons[0]); i++) {
-		if (!(shIcons[i] = (HICON)LoadImage(g_hInst, MAKEINTRESOURCE(uIconIDs[i]),IMAGE_ICON ,0,0,0))) {
-
-			_RPT1(0,"PositionControl: load failure on icon #%d\n",i+1);
-			return NULL;
-		}
-		if (!(shIcon2[i] = (HICON)LoadImage(g_hInst, MAKEINTRESOURCE(uIconID2[i]),IMAGE_ICON ,0,0,0))) {
-
-			_RPT1(0,"PositionControl: load failure on icon #%d\n",i+1);
-			return NULL;
-		}
-	}
 
 	wc.style		= 0;
 	wc.lpfnWndProc	= StaticWndProc;
@@ -292,6 +311,7 @@ VDPositionControlW32::VDPositionControlW32(HWND hwnd)
 	: mhwnd(hwnd)
 	, mFrameFont(NULL)
 	, nFrameCtlHeight(0)
+	, nFrameCtlWidth(0)
 	, mFrameRate(0,0)
 	, mpCB(NULL)
 	, pvFTCData(NULL)
@@ -338,17 +358,25 @@ VDPositionControlW32::~VDPositionControlW32() {
 	if (mFrameNumberFont)
 		DeleteObject(mFrameNumberFont);
 
-	for(int i=0; i<kBrushes; ++i) {
+	{for(int i=0; i<kBrushes; ++i) {
 		if (mBrushes[i])
 			DeleteObject(mBrushes[i]);
-	}
+	}}
+
+	{for(int i=0; i<uIcon_count; i++) {
+		if(shIcon1[i]) DeleteObject(shIcon1[i]);
+		if(shIcon2[i]) DeleteObject(shIcon2[i]);
+	}}
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 int VDPositionControlW32::GetNiceHeight() {
-	int s = mButtonSize;
-	if (mbHasPosText) s += mFrameNumberHeight*11/4;		// Don't ask about the 11/4 constant.  It's tuned to achieve a nice ratio on my system.
+	int s = 0;
+	if (mbHasPosText) s += mButtonSize;
+	s += mFrameNumberHeight;
+	s += mFrameNumberHeight*7/4;
+	//if (mbHasPosText) s += mFrameNumberHeight*7/4; else s += mFrameNumberHeight*14/12;
 	return s;
 }
 
@@ -570,7 +598,6 @@ BOOL CALLBACK VDPositionControlW32::InitChildrenProc(HWND hWnd, LPARAM lParam) {
 	int fill_g = (fill & 0xFF00) >> 8;
 	int fill_b = (fill & 0xFF0000) >> 16;
 	int fill_y = ((fill_b * 19 + fill_g * 183 + fill_r * 54) >> 8);
-	HICON* icons = fill_y > 128 ? shIcons : shIcon2;
 
 	switch(id = GetWindowLong(hWnd, GWL_ID)) {
 	case IDC_STOP:
@@ -586,7 +613,13 @@ BOOL CALLBACK VDPositionControlW32::InitChildrenProc(HWND hWnd, LPARAM lParam) {
 	case IDC_SCENEFWD:
 	case IDC_MARKIN:
 	case IDC_MARKOUT:
-		SendMessage(hWnd, BM_SETIMAGE, IMAGE_ICON, (LPARAM)icons[id - IDC_STOP]);
+		{
+			int i = id - IDC_STOP;
+			void* icon = pThis->shIcon1[i];
+			void* icon_dark = pThis->shIcon2[i];
+			if (fill_y < 128 && icon_dark) icon = icon_dark;
+			SendMessage(hWnd, BM_SETIMAGE, pThis->mbButtonIcon ? IMAGE_ICON:IMAGE_BITMAP, (LPARAM)icon);
+		}
 		break;
 
 	case IDC_FRAME:
@@ -902,6 +935,10 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 }
 
 void VDPositionControlW32::OnCreate() {
+	int mTrackScale = 100;
+	int mTextScale = 100;
+	int mButtonScale = 100;
+
 	DWORD dwStyles;
 	TOOLINFO ti;
 	HWND hwndTT;
@@ -914,11 +951,12 @@ void VDPositionControlW32::OnCreate() {
 	mbHasPosText		= !(dwStyles & PCS_XNAV);
 
 	// We use 24px at 96 dpi.
-	int ht = 24;
-	int gap = 8;
+	int ht = MulDiv(24, mButtonScale, 100);
+	int gap = MulDiv(8, mButtonScale, 100);
 
 	mFrameFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-	nFrameCtlHeight = 18;
+	nFrameCtlHeight = MulDiv(18, mTextScale, 100);
+	nFrameCtlWidth = MulDiv(320, mTextScale, 100);
 	
 	if (mFrameFont) {
 		if (HDC hdc = GetDC(mhwnd)) {
@@ -928,6 +966,17 @@ void VDPositionControlW32::OnCreate() {
 			TEXTMETRIC tm;
 			int pad = 2*GetSystemMetrics(SM_CYEDGE);
 			int availHeight = ht;
+
+			if (mTextScale!=100) {
+				LOGFONT lf;
+				if (GetObject(mFrameFont, sizeof lf, &lf)) {
+					lf.lfHeight = MulDiv(lf.lfHeight,mTextScale,100);
+					HFONT hFont = CreateFontIndirect(&lf);
+					if (hFont)
+						mFrameFont = hFont;		// the old font was a stock object, so it doesn't need to be deleted
+				}
+			}
+
 			HGDIOBJ hgoFont = SelectObject(hdc, mFrameFont);
 
 			if (GetTextMetrics(hdc, &tm)) {
@@ -940,8 +989,10 @@ void VDPositionControlW32::OnCreate() {
 					nFrameCtlHeight = availHeight;
 
 					HFONT hFont = CreateFontIndirect(&lf);
-					if (hFont)
-						mFrameFont = hFont;		// the old font was a stock object, so it doesn't need to be deleted
+					if (hFont) {
+						DeleteObject(mFrameFont);
+						mFrameFont = hFont;
+					}
 				}
 			}
 
@@ -961,6 +1012,17 @@ void VDPositionControlW32::OnCreate() {
 
 	if (mFrameNumberFont) {
 		if (HDC hdc = GetDC(mhwnd)) {
+
+			if (mTrackScale!=100) {
+				LOGFONT lf;
+				if (GetObject(mFrameNumberFont, sizeof lf, &lf)) {
+					lf.lfHeight = MulDiv(lf.lfHeight,mTrackScale,100);
+					HFONT hFont = CreateFontIndirect(&lf);
+					if (hFont)
+						mFrameNumberFont = hFont;		// the old font was a stock object, so it doesn't need to be deleted
+				}
+			}
+
 			TEXTMETRIC tm;
 			HGDIOBJ hgoFont = SelectObject(hdc, mFrameNumberFont);
 
@@ -977,31 +1039,68 @@ void VDPositionControlW32::OnCreate() {
 	}
 
 	mThumbWidth = mFrameNumberHeight * 5 / 12;
+	mTickWidth = mFrameNumberHeight / 14;
+	if (mTickWidth<1) mTickWidth = 1;
 
 	if (mbHasPosText) {
 		CreateWindowEx(WS_EX_STATICEDGE,"EDIT",NULL,WS_CHILD|WS_VISIBLE|ES_READONLY,0,0,0,ht,mhwnd,(HMENU)IDC_FRAME,g_hInst,NULL);
 	}
 
+	mbButtonIcon = true;
+	int iconSize = 16;
+	int buttonStyle = BS_ICON;
+	if (mButtonSize>32) {
+		mbButtonIcon = false;
+		iconSize = mButtonSize*20/24;
+		buttonStyle = BS_BITMAP;
+	}
+
+	if (mbHasPlaybackControls || mbHasNavControls || mbHasSceneControls || mbHasMarkControls) {
+		for(int i=0; i<uIcon_count; i++) {
+			shIcon1[i] = 0;
+			shIcon2[i] = 0;
+			if (mbButtonIcon) {
+				int id_light = uIconIDs[i][0];
+				int id_dark = uIconIDs[i][1];
+				if (!(shIcon1[i] = (HICON)LoadImage(g_hInst, MAKEINTRESOURCE(id_light),IMAGE_ICON,0,0,0))) {
+					_RPT1(0,"PositionControl: load failure on icon #%d\n",i+1);
+				}
+				if (id_dark && !(shIcon2[i] = (HICON)LoadImage(g_hInst, MAKEINTRESOURCE(id_dark),IMAGE_ICON,0,0,0))) {
+					_RPT1(0,"PositionControl: load failure on icon #%d\n",i+1);
+				}
+			} else {
+				int id_light = uIconIDs_x128[i][0];
+				int id_dark = uIconIDs_x128[i][1];
+				if (!(shIcon1[i] = (HICON)LoadImageStretch(MAKEINTRESOURCE(id_light),iconSize,iconSize))) {
+					_RPT1(0,"PositionControl: load failure on icon #%d\n",i+1);
+				}
+				if (id_dark && !(shIcon2[i] = (HICON)LoadImageStretch(MAKEINTRESOURCE(id_dark),iconSize,iconSize))) {
+					_RPT1(0,"PositionControl: load failure on icon #%d\n",i+1);
+				}
+			}
+		}
+	}
+
 	if (mbHasPlaybackControls) {
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_STOP		, g_hInst, NULL);
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_PLAY		, g_hInst, NULL);
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_PLAYPREVIEW	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_STOP		, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_PLAY		, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_PLAYPREVIEW	, g_hInst, NULL);
 	}
 	if (mbHasNavControls) {
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_START		, g_hInst, NULL);
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_BACKWARD	, g_hInst, NULL);
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_FORWARD	, g_hInst, NULL);
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_END		, g_hInst, NULL);
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_KEYPREV	, g_hInst, NULL);
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_KEYNEXT	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_START		, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_BACKWARD	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_FORWARD	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_END		, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_KEYPREV	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_KEYNEXT	, g_hInst, NULL);
 	}
 	if (mbHasSceneControls) {
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_PUSHLIKE | BS_ICON	,0,0,ht,ht,mhwnd, (HMENU)IDC_SCENEREV, g_hInst, NULL);
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_PUSHLIKE | BS_ICON	,0,0,ht,ht,mhwnd, (HMENU)IDC_SCENEFWD, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_PUSHLIKE | buttonStyle	,0,0,ht,ht,mhwnd, (HMENU)IDC_SCENEREV, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | BS_PUSHLIKE | buttonStyle	,0,0,ht,ht,mhwnd, (HMENU)IDC_SCENEFWD, g_hInst, NULL);
 	}
 	if (mbHasMarkControls) {
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_MARKIN	, g_hInst, NULL);
-		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_ICON			,0,0,ht,ht,mhwnd, (HMENU)IDC_MARKOUT	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_MARKIN	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_MARKOUT	, g_hInst, NULL);
 	}
 
 	if (mFrameFont)
@@ -1116,7 +1215,8 @@ void VDPositionControlW32::OnSize() {
 	}
 
 	if (mbHasPosText) {
-		SetWindowPos(GetDlgItem(mhwnd, IDC_FRAME), NULL, x, y+((mButtonSize - nFrameCtlHeight)>>1), std::min<int>(wndr.right - x, 320), nFrameCtlHeight, SWP_NOACTIVATE|SWP_NOZORDER);
+		int width = std::min<int>(wndr.right - x, nFrameCtlWidth);
+		SetWindowPos(GetDlgItem(mhwnd, IDC_FRAME), NULL, x, y+((mButtonSize - nFrameCtlHeight)>>1), width, nFrameCtlHeight, SWP_NOACTIVATE|SWP_NOZORDER);
 	}
 }
 
@@ -1171,7 +1271,7 @@ void VDPositionControlW32::OnPaint() {
 	while(frame < mRangeEnd) {
 		int x = FrameToPixel(frame);
 
-		const RECT rTick = { x, mTickArea.top, x+1, mTickArea.bottom };
+		const RECT rTick = { x-mTickWidth/2, mTickArea.top, x-mTickWidth/2+mTickWidth, mTickArea.bottom };
 		FillRect(hdc, &rTick, mBrushes[kBrushTick]);
 
 		if (x > trackRight - labelWidth)
@@ -1185,7 +1285,7 @@ void VDPositionControlW32::OnPaint() {
 		frame += framesPerLabel;
 	}
 
-	const RECT rLastTick = { mTrack.right, mTrack.bottom, mTrack.right+1, mTrackArea.bottom };
+	const RECT rLastTick = { mTrack.right-mTickWidth/2, mTrack.bottom, mTrack.right-mTickWidth/2+mTickWidth, mTrackArea.bottom };
 	FillRect(hdc, &rLastTick, mBrushes[kBrushTick]);
 
 	if (bDrawLabels) {
@@ -1286,13 +1386,13 @@ void VDPositionControlW32::OnPaint() {
 
 		{for(int i=0; i<edit.size(); i++){
 			sint64 p = edit[i];
-			int x1 = FrameToPixel(p);
+			int x1 = FrameToPixel(p)-mTickWidth/2;
 
 			const POINT pts[4]={
 				{ x1, mTrack.top },
 				{ x1, mTrack.bottom },
-				{ x1+1, mTrack.bottom },
-				{ x1+1, mTrack.top },
+				{ x1+mTickWidth, mTrack.bottom },
+				{ x1+mTickWidth, mTrack.top },
 			};
 
 			Polygon(hdc, pts, 4);
