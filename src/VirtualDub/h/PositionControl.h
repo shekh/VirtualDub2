@@ -116,6 +116,7 @@ IVDPositionControl *VDGetIPositionControl(VDGUIHandle h);
 #define	PCN_SCENEREV			(11)
 #define	PCN_SCENEFWD			(12)
 #define	PCN_SCENESTOP			(13)
+#define	PCN_JUMPTO				(14)
 
 ATOM RegisterPositionControl();
 

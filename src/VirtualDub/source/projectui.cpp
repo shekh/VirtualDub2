@@ -165,6 +165,7 @@ extern void SaveProject(HWND, bool reset_path);
 extern void CreateExtractSparseAVI(HWND hwndParent, bool bExtract);
 
 extern const VDStringW& VDPreferencesGetTimelineFormat();
+extern int VDPreferencesGetTimeFormat();
 int VDPreferencesGetMRUSize();
 int VDPreferencesGetHistoryClearCounter();
 bool VDPreferencesGetConfirmExit();
@@ -3261,6 +3262,9 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 						case PCN_SCENESTOP:
 							SceneShuttleStop();
 							break;
+						case PCN_JUMPTO:
+							MenuHit(ID_EDIT_JUMPTO);
+							break;
 						}
 					} catch(const MyError& e) {
 						e.post((HWND)mhwnd, g_szError);
@@ -4908,6 +4912,56 @@ void VDProjectUI::RefreshOutputPane() {
 
 //////////////////////////////////////////////////////////////////////
 
+VDStringW GetTimeString(VDPosition time, VDPosition total, bool zero_fill, unsigned width) {
+	wchar_t buf[1024];
+	int buflen = 1024;
+
+	int format = VDPreferencesGetTimeFormat();
+
+	wcscpy(buf,L"?");
+
+	if (format==pref_time_r100) {
+		_snwprintf(buf, buflen, L"%3.2f%%", double(time)/total*100);
+	}
+	if (format==pref_time_ms) {
+		_snwprintf(buf, buflen, zero_fill ? L"%0*I64u ms" : L"%*I64u ms", width, time);
+	}
+	if (format==pref_time_ms_r) {
+		_snwprintf(buf, buflen, zero_fill ? L"%0*I64u / %0*I64u ms" : L"%*I64u / %*I64u ms", width, time, width, total);
+	}
+	if (format==pref_time_s) {
+		_snwprintf(buf, buflen, zero_fill ? L"%0*.2f s" : L"%*.2f s", width+3, double(time)/1000);
+	}
+	if (format==pref_time_s_r) {
+		_snwprintf(buf, buflen, zero_fill ? L"%0*.2f / %0*.2f s" : L"%*.2f / %*.2f s", width+3, double(time)/1000, width+3, double(total)/1000);
+	}
+	if (format==pref_time_m) {
+		_snwprintf(buf, buflen, zero_fill ? L"%0*.2f min" : L"%*.2f min", width+3, double(time)/60000);
+	}
+	if (format==pref_time_m_r) {
+		_snwprintf(buf, buflen, zero_fill ? L"%0*.2f / %0*.2f min" : L"%*.2f / %*.2f min", width+3, double(time)/60000, width+3, double(total)/60000);
+	}
+	if (format==pref_time_hmst) {
+		unsigned h = (unsigned)(time / 3600000);
+		unsigned m = (unsigned)((time / 60000) % 60);
+		unsigned s = (unsigned)((time / 1000) % 60);
+		unsigned t = time % 1000;
+		_snwprintf(buf, buflen, zero_fill ? L"%0*u:%02u:%02u.%03u" : L"%*u:%02u:%02u.%03u", width, h, m, s, t);
+	}
+	if (format==pref_time_hmst_r) {
+		unsigned h = (unsigned)(time / 3600000);
+		unsigned m = (unsigned)((time / 60000) % 60);
+		unsigned s = (unsigned)((time / 1000) % 60);
+		unsigned t = time % 1000;
+		unsigned hh = (unsigned)(total / 3600000);
+		unsigned mm = (unsigned)((total / 60000) % 60);
+		unsigned ss = (unsigned)((total / 1000) % 60);
+		_snwprintf(buf, buflen, zero_fill ? L"%0*u:%02u:%02u.%03u / %0*u:%02u:%02u" : L"%*u:%02u:%02u.%03u / %*u:%02u:%02u", width, h, m, s, t, width, hh, mm, ss);
+	}
+
+	return VDStringW(buf);
+}
+
 bool VDProjectUI::GetFrameString(wchar_t *buf, size_t buflen, VDPosition dstFrame) {
 	if (!inputVideo || !mVideoInputFrameRate.getLo())
 		return false;
@@ -4956,14 +5010,6 @@ bool VDProjectUI::GetFrameString(wchar_t *buf, size_t buflen, VDPosition dstFram
 
 			++s;
 
-			// check for end
-			bool use_end = false;
-			if (s != end && *s == '>') {
-				++s;
-
-				use_end = true;
-			}
-
 			// check for zero-fill
 			bool zero_fill = false;
 
@@ -4985,20 +5031,18 @@ bool VDProjectUI::GetFrameString(wchar_t *buf, size_t buflen, VDPosition dstFram
 			wchar_t c = *s++;
 			VDPosition formatFrame = dstFrame;
 			VDPosition formatTime = dstTime;
+			VDPosition formatFrameTotal;
+			VDPosition formatTimeTotal;
 			
 			if (iswupper(c)) {
 				formatFrame = srcFrame;
 				formatTime = srcTime;
 
-				if (use_end) {
-					formatFrame = pVSS->getLength();
-					formatTime = srcRate.scale64ir(formatFrame * 1000);
-				}
+				formatFrameTotal = pVSS->getLength();
+				formatTimeTotal = srcRate.scale64ir(formatFrameTotal * 1000);
 			} else {
-				if (use_end) {
-					formatFrame = mTimeline.GetSubset().getTotalFrames();
-					formatTime = mVideoTimelineFrameRate.scale64ir(formatFrame * 1000);
-				}
+				formatFrameTotal = mTimeline.GetSubset().getTotalFrames();
+				formatTimeTotal = mVideoTimelineFrameRate.scale64ir(formatFrameTotal * 1000);
 			}
 
 			unsigned actual = 0;
@@ -5007,22 +5051,15 @@ bool VDProjectUI::GetFrameString(wchar_t *buf, size_t buflen, VDPosition dstFram
 			case 'F':
 				actual = _snwprintf(buf, buflen, zero_fill ? L"%0*I64u" : L"%*I64u", width, formatFrame);
 				break;
-			case 'h':
-			case 'H':
-				actual = _snwprintf(buf, buflen, zero_fill ? L"%0*u" : L"%*u", width, (unsigned)(formatTime / 3600000));
-				break;
-			case 'm':
-			case 'M':
-				actual = _snwprintf(buf, buflen, zero_fill ? L"%0*u" : L"%*u", width, (unsigned)((formatTime / 60000) % 60));
-				break;
-			case 's':
-			case 'S':
-				actual = _snwprintf(buf, buflen, zero_fill ? L"%0*u" : L"%*u", width, (unsigned)((formatTime / 1000) % 60));
-				break;
 			case 't':
 			case 'T':
-				actual = _snwprintf(buf, buflen, zero_fill ? L"%0*u" : L"%*u", width, formatTime % 1000);
-				break;
+				{
+					VDStringW t = GetTimeString(formatTime,formatTimeTotal,zero_fill,width);
+					actual = t.length();
+					memcpy(buf,t.c_str(),actual*2);
+					break;
+				}
+
 			case 'p':
 				actual = _snwprintf(buf, buflen, zero_fill ? L"%0*u" : L"%*u", width,
 					(unsigned)formatFrame - (unsigned)VDCeilToInt64(mVideoTimelineFrameRate.asDouble() * (double)(formatTime - formatTime % 1000) / 1000.0));

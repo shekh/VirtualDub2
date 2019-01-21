@@ -2162,6 +2162,7 @@ protected:
 	VDFraction	mRealRate;
 	IVDPositionControl* mpPosition;
 	bool mbUsePos;
+	int timeFormat;
 };
 
 INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -2220,31 +2221,65 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 
 				End(true);
 			} else {
-				unsigned int hr, min;
-				double sec = 0;
-				int n;
-
 				GetDlgItemText(mhdlg, IDC_FRAMETIME, buf, sizeof buf);
+				if (timeFormat==pref_time_hmst) {
+					unsigned int hr, min;
+					double sec = 0;
+					int n;
 
-				n = sscanf(buf, "%u:%u:%lf", &hr, &min, &sec);
+					n = sscanf(buf, "%u:%u:%lf", &hr, &min, &sec);
 
-				if (n < 3) {
-					hr = 0;
-					n = sscanf(buf, "%u:%lf", &min, &sec);
+					if (n < 3) {
+						hr = 0;
+						n = sscanf(buf, "%u:%lf", &min, &sec);
+					}
+
+					if (n < 2) {
+						min = 0;
+						n = sscanf(buf, "%lf", &sec);
+					}
+
+					if (n < 1 || sec < 0) {
+						SetFocus(GetDlgItem(mhdlg, IDC_FRAMETIME));
+						MessageBeep(MB_ICONEXCLAMATION);
+						return TRUE;
+					}
+
+					mFrame = VDRoundToInt64(mRealRate.asDouble() * (sec + min*60 + hr*3600));
 				}
+				if (timeFormat==pref_time_ms) {
+					double ms;
+					int n = sscanf(buf, "%lf", &ms);
+					if (n < 1) {
+						SetFocus(GetDlgItem(mhdlg, IDC_FRAMETIME));
+						MessageBeep(MB_ICONEXCLAMATION);
+						return TRUE;
+					}
 
-				if (n < 2) {
-					min = 0;
-					n = sscanf(buf, "%lf", &sec);
+					mFrame = VDRoundToInt64(mRealRate.asDouble() * ms / 1000);
 				}
+				if (timeFormat==pref_time_s) {
+					double sec;
+					int n = sscanf(buf, "%lf", &sec);
+					if (n < 1) {
+						SetFocus(GetDlgItem(mhdlg, IDC_FRAMETIME));
+						MessageBeep(MB_ICONEXCLAMATION);
+						return TRUE;
+					}
 
-				if (n < 1 || sec < 0) {
-					SetFocus(GetDlgItem(mhdlg, IDC_FRAMETIME));
-					MessageBeep(MB_ICONEXCLAMATION);
-					return TRUE;
+					mFrame = VDRoundToInt64(mRealRate.asDouble() * sec);
 				}
+				if (timeFormat==pref_time_m) {
+					double min;
+					int n = sscanf(buf, "%lf", &min);
+					if (n < 1) {
+						SetFocus(GetDlgItem(mhdlg, IDC_FRAMETIME));
+						MessageBeep(MB_ICONEXCLAMATION);
+						return TRUE;
+					}
 
-				mFrame = VDRoundToInt64(mRealRate.asDouble() * (sec + min*60 + hr*3600));
+					mFrame = VDRoundToInt64(mRealRate.asDouble() * min * 60);
+				}
 
 				End(true);
 			}
@@ -2278,18 +2313,41 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 void VDDialogJumpToPositionW32::ReinitEdit() {
 	SetDlgItemInt(mhdlg, IDC_FRAMENUMBER, (UINT)mFrame, FALSE);
 
-	long ticks = VDRoundToLong(mFrame * 1000.0 / mRealRate.asDouble());
-	long ms, sec, min;
+	extern int VDPreferencesGetTimeFormat();
+	timeFormat = VDPreferencesGetTimeFormat();
 	char buf[64];
 
-	ms  = ticks %1000; ticks /= 1000;
-	sec	= ticks %  60; ticks /=  60;
-	min	= ticks %  60; ticks /=  60;
+	if (timeFormat==pref_time_hmst || timeFormat==pref_time_hmst_r || timeFormat==pref_time_r100) {
+		timeFormat = pref_time_hmst;
+		long ticks = VDRoundToLong(mFrame * 1000.0 / mRealRate.asDouble());
+		long ms, sec, min;
 
-	if (ticks)
-		wsprintf(buf, "%d:%02d:%02d.%03d", ticks, min, sec, ms);
-	else
-		wsprintf(buf, "%d:%02d.%03d", min, sec, ms);
+		ms  = ticks %1000; ticks /= 1000;
+		sec	= ticks %  60; ticks /=  60;
+		min	= ticks %  60; ticks /=  60;
+
+		if (ticks)
+			wsprintf(buf, "%d:%02d:%02d.%03d", ticks, min, sec, ms);
+		else
+			wsprintf(buf, "%d:%02d.%03d", min, sec, ms);
+	}
+	if (timeFormat==pref_time_m || timeFormat==pref_time_m_r) {
+		timeFormat = pref_time_m;
+		double ticks = mFrame * 1000.0 / mRealRate.asDouble();
+		double min	= ticks /  (60*1000);
+		sprintf(buf, "%3.2f", min);
+	}
+	if (timeFormat==pref_time_s || timeFormat==pref_time_s_r) {
+		timeFormat = pref_time_s;
+		double ticks = mFrame * 1000.0 / mRealRate.asDouble();
+		double sec	= ticks /  (1000);
+		sprintf(buf, "%3.2f", sec);
+	}
+	if (timeFormat==pref_time_ms || timeFormat==pref_time_ms_r) {
+		timeFormat = pref_time_ms;
+		double ticks = mFrame * 1000.0 / mRealRate.asDouble();
+		sprintf(buf, "%3.2f", ticks);
+	}
 
 	SetDlgItemText(mhdlg, IDC_FRAMETIME, buf);
 }

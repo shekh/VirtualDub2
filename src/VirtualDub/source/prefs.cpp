@@ -50,6 +50,7 @@ namespace {
 		bool			mbUIRememberZoom;
 
 		VDStringW		mTimelineFormat;
+		int				mTimeFormat;
 		uint32			mTimelinePageSize;
 		bool			mbTimelinePageMode;
 		bool			mbTimelineWarnReloadTruncation;
@@ -434,6 +435,7 @@ public:
 			mpBase = pBase;
 			pBase->ExecuteAllLinks();
 			SetCaption(200, mPrefs.mTimelineFormat.c_str());
+			SetValue(201, mPrefs.mTimeFormat);
 			SetValue(100, mPrefs.mbTimelineWarnReloadTruncation);
 			{
 				unsigned v = mPrefs.mTimelinePageSize;
@@ -444,6 +446,7 @@ public:
 		case kEventDetach:
 		case kEventSync:
 			mPrefs.mTimelineFormat = GetCaption(200);
+			mPrefs.mTimeFormat = GetValue(201);
 			mPrefs.mbTimelineWarnReloadTruncation = 0 != GetValue(100);
 			mPrefs.mTimelinePageSize = (uint32)wcstoul(GetCaption(101).c_str(), 0, 10);
 			mPrefs.mbTimelinePageMode = GetValue(102) != 0;
@@ -959,8 +962,9 @@ void LoadPreferences() {
 	}
 	g_prefs2.mbUIRememberZoom = key.getBool("UI: Remember autosize and zoom", init_zoom);
 
-	if (!key.getString("Timeline format", g_prefs2.mTimelineFormat))
-		g_prefs2.mTimelineFormat = L"Frame %f (%h:%02m:%02s.%03t) [%c]";
+	if (!key.getString("Timeline: Format2", g_prefs2.mTimelineFormat))
+		g_prefs2.mTimelineFormat = L"Frame %f (%t) [%c]";
+	g_prefs2.mTimeFormat = key.getInt("Timeline: time format", pref_time_hmst);
 
 	g_prefs2.mTimelinePageSize = key.getInt("Timeline: Page size", 50);
 	g_prefs2.mbTimelinePageMode = key.getBool("Timeline: Page mode", false);
@@ -1047,7 +1051,8 @@ void VDSavePreferences(VDPreferences2& prefs) {
 
 	key.setBool("UI: Remember autosize and zoom", prefs.mbUIRememberZoom);
 
-	key.setString("Timeline format", prefs.mTimelineFormat.c_str());
+	key.setString("Timeline: Format2", prefs.mTimelineFormat.c_str());
+	key.setInt("Timeline: Time format", prefs.mTimeFormat);
 	key.setInt("Timeline: Page size", prefs.mTimelinePageSize);
 	key.setBool("Timeline: Page mode", prefs.mbTimelinePageMode);
 	key.setBool("Timeline: Warn on truncation when reloading", prefs.mbTimelineWarnReloadTruncation);
@@ -1150,6 +1155,14 @@ bool VDPreferencesGetRememberZoom() {
 
 const VDStringW& VDPreferencesGetTimelineFormat() {
 	return g_prefs2.mTimelineFormat;
+}
+
+int VDPreferencesGetTimeFormat() {
+	return g_prefs2.mTimeFormat;
+}
+
+void VDPreferencesSetTimeFormat(int format) {
+	g_prefs2.mTimeFormat = format;
 }
 
 bool VDPreferencesIsDirectYCbCrInputEnabled() {

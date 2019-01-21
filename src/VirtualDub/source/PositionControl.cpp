@@ -34,6 +34,8 @@
 
 extern HINSTANCE g_hInst;
 
+extern void VDPreferencesSetTimeFormat(int format);
+
 ////////////////////////////
 
 extern const char szPositionControlName[]="birdyPositionControl";
@@ -202,12 +204,14 @@ protected:
 	void RecomputeMetrics();
 	void RecalcThumbRect(VDPosition pos, bool update = true);
 	bool Notify(UINT code, VDPositionControlEventData::EventType eventType);
+	void SetTimeFormat(int format);
 
 	inline int FrameToPixel(VDPosition pos) {
 		return VDFloorToInt(mPixelToFrameBias + mPixelsPerFrame * pos);
 	}
 
 	HWND				mhwnd;
+	HMENU				mhmenuPopup;
 	HFONT				mFrameFont;
 	int					nFrameCtlHeight;
 	int					nFrameCtlWidth;
@@ -350,6 +354,7 @@ VDPositionControlW32::VDPositionControlW32(HWND hwnd)
 	SetRect(&mTrack, 0, 0, 0, 0);
 	SetRect(&mTrackArea, 0, 0, 0, 0);
 	SetRect(&mPositionArea, 0, 0, 0, 0);
+	mhmenuPopup = 0;
 }
 
 VDPositionControlW32::~VDPositionControlW32() {
@@ -357,6 +362,8 @@ VDPositionControlW32::~VDPositionControlW32() {
 		DeleteObject(mFrameFont);
 	if (mFrameNumberFont)
 		DeleteObject(mFrameNumberFont);
+	if (mhmenuPopup)
+		DestroyMenu(mhmenuPopup);
 
 	{for(int i=0; i<kBrushes; ++i) {
 		if (mBrushes[i])
@@ -751,6 +758,40 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 				} else
 					cmd = PCN_SCENESTOP;
 				break;
+			case ID_POS_COPY:
+				{
+					HWND hwndFrame = GetDlgItem(mhwnd, IDC_FRAME);
+					VDStringW s(VDGetWindowTextW32(hwndFrame));
+					VDCopyTextToClipboard(s.c_str());
+				}
+				return 0;
+			case ID_TIMEFORMAT_H:
+				SetTimeFormat(pref_time_hmst);
+				return 0;
+			case ID_TIMEFORMAT_HR:
+				SetTimeFormat(pref_time_hmst_r);
+				return 0;
+			case ID_TIMEFORMAT_M:
+				SetTimeFormat(pref_time_m);
+				return 0;
+			case ID_TIMEFORMAT_MR:
+				SetTimeFormat(pref_time_m_r);
+				return 0;
+			case ID_TIMEFORMAT_S:
+				SetTimeFormat(pref_time_s);
+				return 0;
+			case ID_TIMEFORMAT_SR:
+				SetTimeFormat(pref_time_s_r);
+				return 0;
+			case ID_TIMEFORMAT_MS:
+				SetTimeFormat(pref_time_ms);
+				return 0;
+			case ID_TIMEFORMAT_MSR:
+				SetTimeFormat(pref_time_ms_r);
+				return 0;
+			case ID_TIMEFORMAT_PERCENT:
+				SetTimeFormat(pref_time_r100);
+				return 0;
 			default:
 				return 0;
 			}
@@ -806,6 +847,14 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 				} else {
 					mPosition = prev;
 				}
+			} else if (mbHasPosText) {
+				HWND hwndFrame = GetDlgItem(mhwnd, IDC_FRAME);
+				RECT r;
+				GetWindowRect(hwndFrame,&r);
+				MapWindowPoints(0,mhwnd,(POINT*)&r,2);
+				if (PtInRect(&r, pt)) {
+					SendMessage(GetParent(mhwnd), WM_COMMAND, MAKELONG(GetWindowLong(mhwnd, GWL_ID), PCN_JUMPTO), (LPARAM)mhwnd);
+				}
 			}
 		}
 		break;
@@ -835,6 +884,16 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 				} else {
 					mDragMode = kDragNone;
 					ReleaseCapture();
+				}
+			} else if (mbHasPosText && mhmenuPopup) {
+				HWND hwndFrame = GetDlgItem(mhwnd, IDC_FRAME);
+				RECT r;
+				GetWindowRect(hwndFrame,&r);
+				MapWindowPoints(0,mhwnd,(POINT*)&r,2);
+				if (PtInRect(&r, pt)) {
+					HMENU	popup = GetSubMenu(mhmenuPopup, 0);
+					ClientToScreen(mhwnd, &pt);
+					TrackPopupMenu(popup, TPM_RIGHTALIGN | TPM_BOTTOMALIGN, pt.x, pt.y, 0, mhwnd, NULL);
 				}
 			}
 		}
@@ -1043,7 +1102,8 @@ void VDPositionControlW32::OnCreate() {
 	if (mTickWidth<1) mTickWidth = 1;
 
 	if (mbHasPosText) {
-		CreateWindowEx(WS_EX_STATICEDGE,"EDIT",NULL,WS_CHILD|WS_VISIBLE|ES_READONLY,0,0,0,ht,mhwnd,(HMENU)IDC_FRAME,g_hInst,NULL);
+		CreateWindowEx(WS_EX_STATICEDGE,"STATIC",NULL,WS_CHILD|WS_VISIBLE,0,0,0,ht,mhwnd,(HMENU)IDC_FRAME,g_hInst,NULL);
+		mhmenuPopup = LoadMenu(g_hInst, MAKEINTRESOURCE(IDR_POSITION_MENU));
 	}
 
 	mbButtonIcon = true;
@@ -1163,6 +1223,11 @@ void VDPositionControlW32::UpdateString(VDPosition pos) {
 
 		VDSetWindowTextW32(hwndFrame, buf);
 	}
+}
+
+void VDPositionControlW32::SetTimeFormat(int format) {
+	VDPreferencesSetTimeFormat(format);
+	UpdateString();
 }
 
 void VDPositionControlW32::SetMessage(const wchar_t* s) {

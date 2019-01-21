@@ -82,6 +82,18 @@ public:
 };
 
 enum {
+	pref_time_hmst,
+	pref_time_hmst_r,
+	pref_time_m,
+	pref_time_m_r,
+	pref_time_s,
+	pref_time_s_r,
+	pref_time_ms,
+	pref_time_ms_r,
+	pref_time_r100,
+};
+
+enum {
 	PREFERENCES_DISPLAY = 1,
 	PREFERENCES_OPTF = 2,
 };

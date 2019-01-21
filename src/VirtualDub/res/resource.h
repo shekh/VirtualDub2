@@ -265,6 +265,7 @@
 #define IDI_POS_PREV_KEY_x128           332
 #define IDI_POS_SCENEFWD_x128           333
 #define IDI_POS_SCENEREV_x128           334
+#define IDR_POSITION_MENU               337
 #define IDC_CURRENT_VFRAME              1000
 #define IDC_CURRENT_ASAMPLE             1001
 #define IDC_TIME_REMAINING              1002
@@ -1573,6 +1574,17 @@
 #define ID_WAVEFORMSCALE_X16            40610
 #define ID_CAPTURE_DSHOWGRAPH           40611
 #define ID_AUDIODISPLAY_MONO            40612
+#define ID_POS_COPY                     40613
+#define ID_POS_TIMEFORMAT               40614
+#define ID_TIMEFORMAT_H                 40615
+#define ID_TIMEFORMAT_HR                40616
+#define ID_TIMEFORMAT_M                 40617
+#define ID_TIMEFORMAT_MR                40618
+#define ID_TIMEFORMAT_S                 40619
+#define ID_TIMEFORMAT_SR                40620
+#define ID_TIMEFORMAT_MS                40621
+#define ID_TIMEFORMAT_MSR               40622
+#define ID_TIMEFORMAT_PERCENT           40623
 #define ID_AUDIOMODE_11KHZ_8MONO        41000
 #define ID_AUDIOMODE_11KHZ_8STEREO      41001
 #define ID_AUDIOMODE_11KHZ_16MONO       41002
@@ -1628,8 +1640,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        337
-#define _APS_NEXT_COMMAND_VALUE         40613
+#define _APS_NEXT_RESOURCE_VALUE        338
+#define _APS_NEXT_COMMAND_VALUE         40624
 #define _APS_NEXT_CONTROL_VALUE         1572
 #define _APS_NEXT_SYMED_VALUE           111
 #endif

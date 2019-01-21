@@ -448,15 +448,31 @@ dialog 1015, "" : fill, child {
 		group 0, "Timeline format" {
 			set 0: vertical, spacing=3 {
 				textedit 200, "" : sunken;
-				textarea 0,	"%f: frame\n"
-							"%h, %m, %s, %p, %t: hour, minute, second, picture, tick\n"
+				textarea 0,	"%f, %t, %p: frame, time, picture\n"
 							"%c: frame type\n"
-							"Use capital versions for source values.\n"
 							"\n"
+							"%F, %T, %P: source frame, time, picture\n"
+							"%C: source frame type\n"
 							"%B, %L: byte position and length of source frame\n"
-							"%D: distance from last key frame\n"
-							"%[>]...: use end instead of current position\n"
-							: minh=70, readonly;
+							"%D: distance from last key frame"
+							: minh=60, readonly;
+
+				set 0 : align=fill, spacing=3 {
+					now valign=center, align=left, marginl=0;
+
+					label 0, "Time format:";
+					combobox 201 : align=fill {
+						listitem "h:m:s.t (0:01:35.150)";
+						listitem "h:m:s.t / total (0:01:35.150 / 0:02:50)";
+						listitem "minutes (1.58 min)";
+						listitem "minutes / total (1.58 / 2.83 min)";
+						listitem "seconds (95.15 s)";
+						listitem "seconds / total (95.15 / 170 s)";
+						listitem "ms (95150 ms)";
+						listitem "ms / total (95150 / 170000 ms)";
+						listitem "percent (55.97%)";
+					}
+				}
 			}
 		}
 		

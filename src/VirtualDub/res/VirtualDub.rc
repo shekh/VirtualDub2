@@ -738,6 +738,26 @@ BEGIN
     END
 END
 
+IDR_POSITION_MENU MENU 
+BEGIN
+    POPUP "frame Menu"
+    BEGIN
+        MENUITEM "Copy to clipboard",           ID_POS_COPY
+        POPUP "Time Format"
+        BEGIN
+            MENUITEM "h:m:s.t",                     ID_TIMEFORMAT_H
+            MENUITEM "h:m:s.t / total",             ID_TIMEFORMAT_HR
+            MENUITEM "minutes",                     ID_TIMEFORMAT_M
+            MENUITEM "minutes / total",             ID_TIMEFORMAT_MR
+            MENUITEM "seconds",                     ID_TIMEFORMAT_S
+            MENUITEM "seconds / total",             ID_TIMEFORMAT_SR
+            MENUITEM "ms",                          ID_TIMEFORMAT_MS
+            MENUITEM "ms / total",                  ID_TIMEFORMAT_MSR
+            MENUITEM "percent",                     ID_TIMEFORMAT_PERCENT
+        END
+    END
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

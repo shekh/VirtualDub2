@@ -512,6 +512,9 @@ void VDTranslatePositionCommand(HWND hwnd, WPARAM wParam, LPARAM lParam) {
 		case PCN_KEYNEXT:
 			SendMessage(hwnd, WM_COMMAND, MAKELONG(ID_VIDEO_SEEK_KEYNEXT, 0), NULL);
 			break;
+		case PCN_JUMPTO:
+			SendMessage(hwnd, WM_COMMAND, MAKELONG(ID_EDIT_JUMPTO, 0), NULL);
+			break;
 	}
 }
 
