@@ -1879,6 +1879,59 @@ void VDCaptureDriverDS::SetCallback(IVDCaptureDriverCallback *pCB) {
 	mpCB = pCB;
 }
 
+HRESULT CreateFilter(const WCHAR *Name, IBaseFilter **Filter, REFCLSID FilterCategory) {
+	ICreateDevEnum *pCreateDevEnum;
+	IEnumMoniker *pEm = NULL;
+
+	if (SUCCEEDED(CoCreateInstance(CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC_SERVER, IID_ICreateDevEnum, (void **)&pCreateDevEnum))) {
+		pCreateDevEnum->CreateClassEnumerator(FilterCategory, &pEm, 0);
+		pCreateDevEnum->Release();
+	}
+
+	bool done = false;
+	HRESULT hr = E_FAIL;
+
+	if (pEm) {
+		IMoniker *pM;
+		ULONG cFetched;
+		vdvector<VDStringW> namesToCheck;
+
+		while(S_OK == pEm->Next(1, &pM, &cFetched) && cFetched==1) {
+			IPropertyBag *pPropBag;
+
+			if (SUCCEEDED(pM->BindToStorage(0, 0, IID_IPropertyBag, (void **)&pPropBag))) {
+				VARIANT varName;
+
+				varName.vt = VT_BSTR;
+				varName.bstrVal = NULL;
+
+				if (SUCCEEDED(pPropBag->Read(L"FriendlyName", &varName, 0))) {
+					VDStringW name(varName.bstrVal);
+
+					if (name == Name) 
+					{ 
+						 hr = pM->BindToObject(0, 0, IID_IBaseFilter, (void **)Filter);
+						 //LPOLESTR mname;
+						 //pM->GetDisplayName(0,0,&mname);
+						 done = true;
+					}
+
+					SysFreeString(varName.bstrVal);
+				}
+
+				pPropBag->Release();
+			}
+
+			pM->Release();
+			if (done) break;
+		}
+
+		pEm->Release();
+	}
+
+	return hr;
+}
+
 bool VDCaptureDriverDS::Init(VDGUIHandle hParent) {
 	mhwndParent = (HWND)hParent;
 
@@ -1956,11 +2009,13 @@ bool VDCaptureDriverDS::Init(VDGUIHandle hParent) {
 	// If we have the transform filter, insert it inline now and make its output pin
 	// the "capture" pin.
 	VDRegistryAppKey key("Hidden features");
-	VDStringW name;
+	VDStringW name; // moniker name: find out from graphstudionext enumeration dialog
 
 	if (key.getString("CapDShow: Transform filter name", name)) {
-		IClassFactoryPtr pCF;
 		hr = CoGetObject(name.c_str(), NULL, IID_IBaseFilter, (void **)~mpCapTransformFilt);
+		//hr = CreateFilter(name.c_str(), (void **)~mpCapTransformFilt, CLSID_LegacyAmFilterCategory);
+		//hr = CoCreateInstance(cls, 0, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void **)~mpCapTransformFilt);
+
 		if (SUCCEEDED(hr)) {
 			IPinPtr pPinTIn, pPinTOut;
 			DS_VERIFY(mpGraphBuilder->AddFilter(mpCapTransformFilt, L"Video transform"), "add transform filter");
@@ -1969,6 +2024,10 @@ bool VDCaptureDriverDS::Init(VDGUIHandle hParent) {
 			DS_VERIFY(mpGraphBuilder->Connect(mpRealCapturePin, pPinTIn), "connect capture -> transform");
 			mpShadowedRealCapturePin = mpRealCapturePin;
 			mpRealCapturePin = pPinTOut;
+		} else {
+			VDStringW msg;
+			msg.append_sprintf(L"CapDShow: Unable to create filter: %s\n", name.c_str());
+			VDLog(kVDLogWarning, msg);
 		}
 	}
 
