@@ -139,7 +139,7 @@ void VDLoadRegistry(const wchar_t *path) {
 
 								--s;
 
-								strvalue.push_back((wchar_t)c);
+								strvalue.push_back((wchar_t)v);
 							}
 							continue;
 
