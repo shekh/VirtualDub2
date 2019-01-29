@@ -1287,8 +1287,11 @@ int ProcessCommandLine::scan(const VDCommandLine& cmdLine, bool execute) {
 				VDLog(kVDLogError, VDTextAToW(err));
 
 			rc = 5;
-		} else
+		} else {
 			e.post(g_hWnd, g_szError);
+			// don't set error code if the GUI is going to become interactive
+			if (g_exitOnDone) rc = 5;
+		}
 	}
 	JobUnlockDubber();
 
