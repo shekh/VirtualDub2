@@ -53,6 +53,9 @@ public:
 	const char *	GetProjectSubdir() const			{ return mProjectSubdir.c_str(); }
 	void			SetProjectSubdir(const char *name)	{ mProjectSubdir = name; }
 
+	const char *	GetProjectDir() const			{ return mProjectDir.c_str(); }
+	void			SetProjectDir(const char *name)	{ mProjectDir = name; }
+
 	const char *	GetInputFile() const			{ return mInputFile.c_str(); }
 	void			SetInputFile(const char *file)	{ mInputFile = file; }
 	void			SetInputFile(const wchar_t *file);
@@ -100,6 +103,7 @@ protected:
 	VDStringA	mError;
 	VDStringA	mScript;
 	VDStringA	mProjectSubdir;
+	VDStringA	mProjectDir;
 	int			mState;
 	bool		mbContainsReloadMarker;
 	bool		mbModified;

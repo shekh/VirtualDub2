@@ -630,6 +630,12 @@ bool VDJobQueue::Load(IVDStream *stream, bool merge) {
 					strgetarg(subdir, t);
 					job->SetProjectSubdir(subdir.c_str());
 
+				} else if (!_stricmp(s, "location")) {
+
+					VDStringA dir;
+					strgetarg(dir, t);
+					job->SetProjectDir(dir.c_str());
+
 				} else if (!_stricmp(s, "input")) {
 
 					VDStringA inputFile;

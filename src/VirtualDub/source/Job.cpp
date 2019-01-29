@@ -861,7 +861,11 @@ void JobWriteProjectScript(VDFile& f, const VDProject* project, bool project_rel
 	output.adds("// This is a program generated file -- edit at your own risk.");
 	output.adds("");
 	output.addf("// $job \"%s\"", project->mProjectName.c_str());
- 	output.addf("// $data \"%s\"", VDTextWToU8(dataSubdir).c_str());
+	output.addf("// $data \"%s\"", VDTextWToU8(dataSubdir).c_str());
+	if (project_relative) {
+		VDStringW base = VDFileSplitPathLeft(project->mProjectFilename);
+		output.addf("// $location \"%s\"", VDTextWToU8(base).c_str());
+	}
 	output.adds("// $script");
 	output.adds("");
 

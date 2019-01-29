@@ -1159,7 +1159,11 @@ void VDProject::OpenProject(const wchar_t *pFilename, bool readOnly) {
 		VDStringA subDir(job->GetProjectSubdir());
 		SaveProjectPath(VDStringW(pFilename), VDTextU8ToW(subDir), readOnly);
 		mProjectName = job->GetName();
+		VDStringW base = VDFileSplitPathLeft(mProjectFilename);
+		VDStringW back = VDTextU8ToW(VDStringA(job->GetProjectDir()));
+		if (back!=base) mProjectBack = back;
 		RunScriptMemory(job->GetScript(), true);
+		mProjectBack = L"";
 	}
 }
 
@@ -1173,6 +1177,7 @@ void VDProject::SaveProjectPath(const VDStringW& path, const VDStringW& dataSubd
 	mProjectReadonly = readOnly;
 	mProjectFilename = path;
 	mProjectSubdir = dataSubdir;
+	mProjectBack = L"";
 }
 
 VDStringA CreateDataPrefix() {
@@ -1430,16 +1435,27 @@ VDStringW VDProject::BuildProjectPath(const wchar_t* path) const {
 	return VDStringW(path);
 }
 
+VDStringW VDFileResolvePath2(const VDStringW& base, const VDStringW& back, const wchar_t *path) {
+	VDStringW r1 = VDFileResolvePath(base.c_str(),path);
+	if (!VDDoesPathExist(r1.c_str()) && !back.empty()) {
+		VDStringW r2 = VDFileResolvePath(back.c_str(),path);
+		if (VDDoesPathExist(r2.c_str()))
+			return r2;
+	}
+	return r1;
+}
+
 VDStringW VDProject::ExpandProjectPath(const wchar_t* path) const {
 	if (!mProjectFilename.empty()) {
 		VDStringW base = VDFileSplitPathLeft(mProjectFilename);
 
 		if (wcsncmp(path,L"$(PROJECT)",10)==0)
-			return VDFileResolvePath(base.c_str(),path+10);
+			return VDFileResolvePath2(base,mProjectBack,path+10);
 
 		if (wcsncmp(path,L"$(DATA)",7)==0) {
 			VDStringW data = base + mProjectSubdir;
-			return VDFileResolvePath(data.c_str(),path+7);
+			VDStringW back = mProjectBack; if (!back.empty()) back += mProjectSubdir;
+			return VDFileResolvePath2(data,back,path+7);
 		}
 	}
 

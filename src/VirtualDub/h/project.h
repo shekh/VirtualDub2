@@ -278,6 +278,7 @@ public:
 	FilterModPixmap filterModPixmap;
 	VDStringW mProjectFilename;
 	VDStringW mProjectSubdir;
+	VDStringW mProjectBack;
 	VDStringA mProjectName;
 	VDStringW mInputDriverName;
 	VDStringW mAudioInputDriverName;
