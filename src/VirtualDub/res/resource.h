@@ -16,6 +16,7 @@
 #define IDOK2                           3
 #define IDC_ADDTOQUEUE                  3
 #define IDC_DELETE_ALL                  3
+#define IDC_JUMP                        3
 #define IDC_REMOVE                      4
 #define IDS_TITLE_DUBBING               4
 #define IDC_MOVE_DOWN                   4
@@ -249,6 +250,7 @@
 #define IDD_JUMPTOFRAME2                315
 #define IDD_SAVEAUDIO_FORMAT            316
 #define IDI_POS_MARKIN2                 317
+#define IDD_JUMPTOFRAME1                317
 #define IDI_POS_MARKOUT2                318
 #define IDI_POS_STOP_x128               319
 #define IDI_POS_MARKIN_x128             321
@@ -1045,8 +1047,10 @@
 #define IDC_DEC_CHECK                   1571
 #define IDC_CH_4                        1572
 #define IDC_FLT_CHECK                   1572
+#define IDC_START_FRAMES_PICK           1572
 #define IDC_CH_SPIN4                    1573
 #define IDC_OUT_MSG                     1573
+#define IDC_END_FRAMES_PICK             1573
 #define IDC_CH_5                        1576
 #define IDC_CH_SPIN5                    1577
 #define IDC_CH_6                        1578
@@ -1642,7 +1646,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        338
 #define _APS_NEXT_COMMAND_VALUE         40624
-#define _APS_NEXT_CONTROL_VALUE         1572
+#define _APS_NEXT_CONTROL_VALUE         1573
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

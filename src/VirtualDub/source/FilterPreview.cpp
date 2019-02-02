@@ -886,7 +886,7 @@ void FilterPreview::OnInit() {
 	RegisterClassW(&cls);
 	mhwndPosHost = CreateWindowExW(host_style_ex,cls.lpszClassName,0,host_style,0,0,0,0,mhwndParent,0,cls.hInstance,this);
 
-	mhwndPosition = CreateWindow(POSITIONCONTROLCLASS, NULL, WS_CHILD|WS_VISIBLE, 0, 0, 0, 64, mhwndPosHost, (HMENU)IDC_FILTDLG_POSITION, g_hInst, NULL);
+	mhwndPosition = CreateWindow(POSITIONCONTROLCLASS, NULL, WS_CHILD|WS_VISIBLE|PCS_FILTER, 0, 0, 0, 64, mhwndPosHost, (HMENU)IDC_FILTDLG_POSITION, g_hInst, NULL);
 	mpPosition = VDGetIPositionControl((VDGUIHandle)mhwndPosition);
 	int pos_h = mpPosition->GetNiceHeight();
 	RECT r1;

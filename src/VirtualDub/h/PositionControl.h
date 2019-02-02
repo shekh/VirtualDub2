@@ -92,6 +92,7 @@ IVDPositionControl *VDGetIPositionControl(VDGUIHandle h);
 #define PCS_MARK				(0x00000002L)
 #define	PCS_SCENE				(0x00000004L)
 #define	PCS_XNAV				(0x00000008L)
+#define	PCS_FILTER			(0x00000010L)
 
 #define PCN_THUMBTRACK			(NM_FIRST+0)
 #define PCN_THUMBPOSITION		(NM_FIRST+1)

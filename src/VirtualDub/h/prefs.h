@@ -96,6 +96,7 @@ enum {
 enum {
 	PREFERENCES_DISPLAY = 1,
 	PREFERENCES_OPTF = 2,
+	PREFERENCES_TIMELINE = 4,
 };
 
 ///////////////////////////////////////////////////////////////////////////

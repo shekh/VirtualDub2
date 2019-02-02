@@ -515,6 +515,12 @@ void VDTranslatePositionCommand(HWND hwnd, WPARAM wParam, LPARAM lParam) {
 		case PCN_JUMPTO:
 			SendMessage(hwnd, WM_COMMAND, MAKELONG(ID_EDIT_JUMPTO, 0), NULL);
 			break;
+		case PCN_MARKIN:
+			SendMessage(hwnd, WM_COMMAND, MAKELONG(ID_EDIT_SETSELSTART, 0), NULL);
+			break;
+		case PCN_MARKOUT:
+			SendMessage(hwnd, WM_COMMAND, MAKELONG(ID_EDIT_SETSELEND, 0), NULL);
+			break;
 	}
 }
 

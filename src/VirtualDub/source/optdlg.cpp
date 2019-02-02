@@ -43,6 +43,7 @@
 #include "Dub.h"
 #include "project.h"
 #include "command.h"
+#include "prefs.h"
 
 extern HINSTANCE g_hInst;
 extern vdrefptr<IVDVideoSource> inputVideo;
@@ -2140,16 +2141,21 @@ bool VDDisplayAudioVolumeDialog(VDGUIHandle hParent, DubOptions& opts) {
 
 class VDDialogJumpToPositionW32 : public VDDialogBaseW32 {
 public:
-	inline VDDialogJumpToPositionW32(VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate, bool usePos=false) 
-		: VDDialogBaseW32(usePos ? IDD_JUMPTOFRAME2 : IDD_JUMPTOFRAME)
+	inline VDDialogJumpToPositionW32(VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate, bool usePos=false, bool useSelect=false) 
+		: VDDialogBaseW32(useSelect ? IDD_JUMPTOFRAME1 : (usePos ? IDD_JUMPTOFRAME2 : IDD_JUMPTOFRAME))
 		, mFrame(currentFrame)
 		, mpVideo(pVS)
 		, mRealRate(realRate) 
 	{
 		mbUsePos = usePos;
+		title = 0;
+		cmd_jump = false;
 	}
 
 	VDPosition Activate(VDGUIHandle hParent) { return ActivateDialog(hParent) ? mFrame : -1; }
+
+	const wchar_t* title;
+	bool cmd_jump;
 
 protected:
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
@@ -2166,7 +2172,7 @@ protected:
 };
 
 INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lParam) {
-	char buf[64];
+	char buf1[64];
 
 	switch(msg) {
 	case WM_INITDIALOG:
@@ -2190,26 +2196,31 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 		case IDCANCEL:
 			End(false);
 			break;
+		case IDC_JUMP:
+			cmd_jump = true;
 		case IDOK:
 			if (IsDlgButtonChecked(mhdlg, IDC_JUMPTOFRAME)) {
 
-				GetDlgItemText(mhdlg, IDC_FRAMENUMBER, buf, sizeof buf);
-				int n;
+				GetDlgItemText(mhdlg, IDC_FRAMENUMBER, buf1, sizeof buf1);
+				char* buf = buf1;
 				VDPosition uiFrame;
-
+				int delta = 0;
 				if (buf[0]=='+') {
-					UINT d;
-					n = sscanf(buf+1, "%u", &d);
-					uiFrame = mFrame+d;
-				} else if (buf[0]=='-') {
-					UINT d;
-					n = sscanf(buf+1, "%u", &d);
-					if (d<mFrame) uiFrame = mFrame-d; else uiFrame = 0;
-				} else {
-					UINT d;
-					n = sscanf(buf, "%u", &d);
-					uiFrame = d;
+					delta = 1;
+					buf++;
 				}
+				if (buf[0]=='-') {
+					delta = -1;
+					buf++;
+				}
+
+				UINT d;
+				int n = sscanf(buf, "%u", &d);
+				if (delta==0) uiFrame = d;
+				if (delta>0) uiFrame = mFrame+d;
+				if (delta<0) uiFrame = mFrame-d;
+				if (uiFrame<0) uiFrame = 0;
+				uiFrame = d;
 
 				if (n!=1) {
 					SetFocus(GetDlgItem(mhdlg, IDC_FRAMENUMBER));
@@ -2221,8 +2232,32 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 
 				End(true);
 			} else {
-				GetDlgItemText(mhdlg, IDC_FRAMETIME, buf, sizeof buf);
-				if (timeFormat==pref_time_hmst) {
+				GetDlgItemText(mhdlg, IDC_FRAMETIME, buf1, sizeof buf1);
+				char* buf = buf1;
+				VDPosition d = mFrame;
+				int delta = 0;
+				if (buf[0]=='+') {
+					delta = 1;
+					buf++;
+				}
+				if (buf[0]=='-') {
+					delta = -1;
+					buf++;
+				}
+
+				int format = timeFormat;
+				while (1) {
+					double v;
+					char x[16];
+					int n;
+					n = sscanf(buf, "%lf %16s", &v, x);
+					if (n==2 && strcmp(x,"m")==0) { format = pref_time_m; break; }
+					if (n==2 && strcmp(x,"s")==0) { format = pref_time_s; break; }
+					if (n==2 && strcmp(x,"ms")==0) { format = pref_time_ms; break; }
+					break;
+				}
+
+				if (format==pref_time_hmst) {
 					unsigned int hr, min;
 					double sec = 0;
 					int n;
@@ -2245,9 +2280,9 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 						return TRUE;
 					}
 
-					mFrame = VDRoundToInt64(mRealRate.asDouble() * (sec + min*60 + hr*3600));
+					d = VDRoundToInt64(mRealRate.asDouble() * (sec + min*60 + hr*3600));
 				}
-				if (timeFormat==pref_time_ms) {
+				if (format==pref_time_ms) {
 					double ms;
 					int n = sscanf(buf, "%lf", &ms);
 					if (n < 1) {
@@ -2256,9 +2291,9 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 						return TRUE;
 					}
 
-					mFrame = VDRoundToInt64(mRealRate.asDouble() * ms / 1000);
+					d = VDRoundToInt64(mRealRate.asDouble() * ms / 1000);
 				}
-				if (timeFormat==pref_time_s) {
+				if (format==pref_time_s) {
 					double sec;
 					int n = sscanf(buf, "%lf", &sec);
 					if (n < 1) {
@@ -2267,9 +2302,9 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 						return TRUE;
 					}
 
-					mFrame = VDRoundToInt64(mRealRate.asDouble() * sec);
+					d = VDRoundToInt64(mRealRate.asDouble() * sec);
 				}
-				if (timeFormat==pref_time_m) {
+				if (format==pref_time_m) {
 					double min;
 					int n = sscanf(buf, "%lf", &min);
 					if (n < 1) {
@@ -2278,8 +2313,13 @@ INT_PTR VDDialogJumpToPositionW32::DlgProc(UINT msg, WPARAM wParam, LPARAM lPara
 						return TRUE;
 					}
 
-					mFrame = VDRoundToInt64(mRealRate.asDouble() * min * 60);
+					d = VDRoundToInt64(mRealRate.asDouble() * min * 60);
 				}
+
+				if (delta==0) mFrame = d;
+				if (delta>0) mFrame = mFrame+d;
+				if (delta<0) mFrame = mFrame-d;
+				if (mFrame<0) mFrame = 0;
 
 				End(true);
 			}
@@ -2335,24 +2375,25 @@ void VDDialogJumpToPositionW32::ReinitEdit() {
 		timeFormat = pref_time_m;
 		double ticks = mFrame * 1000.0 / mRealRate.asDouble();
 		double min	= ticks /  (60*1000);
-		sprintf(buf, "%3.2f", min);
+		sprintf(buf, "%3.2f m", min);
 	}
 	if (timeFormat==pref_time_s || timeFormat==pref_time_s_r) {
 		timeFormat = pref_time_s;
 		double ticks = mFrame * 1000.0 / mRealRate.asDouble();
 		double sec	= ticks /  (1000);
-		sprintf(buf, "%3.2f", sec);
+		sprintf(buf, "%3.2f s", sec);
 	}
 	if (timeFormat==pref_time_ms || timeFormat==pref_time_ms_r) {
 		timeFormat = pref_time_ms;
 		double ticks = mFrame * 1000.0 / mRealRate.asDouble();
-		sprintf(buf, "%3.2f", ticks);
+		sprintf(buf, "%3.2f ms", ticks);
 	}
 
 	SetDlgItemText(mhdlg, IDC_FRAMETIME, buf);
 }
 
 void VDDialogJumpToPositionW32::ReinitDialog() {
+	if (title) SetWindowTextW(mhdlg, title);
 	SendDlgItemMessage(mhdlg, IDC_FRAMETIME, EM_LIMITTEXT, 30, 0);
 	ReinitEdit();
 	SetFocus(GetDlgItem(mhdlg, IDC_FRAMENUMBER));
@@ -2402,6 +2443,14 @@ VDPosition VDDisplayJumpToPositionDialog(VDGUIHandle hParent, VDPosition current
 	VDDialogJumpToPositionW32 dlg(currentFrame, pVS, realRate);
 
 	return dlg.Activate(hParent);
+}
+
+VDPosition VDDisplayJumpToPositionDialog1(VDGUIHandle hParent, VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate, const wchar_t* title, VDPosition* pos) {
+	VDDialogJumpToPositionW32 dlg(currentFrame, pVS, realRate, false, true);
+	dlg.title = title;
+	VDPosition r = dlg.Activate(hParent);
+	if (pos) *pos = r;
+	if (dlg.cmd_jump) return r; else return -1;
 }
 
 VDPosition VDDisplayJumpToPositionDialog2(VDGUIHandle hParent, VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate) {

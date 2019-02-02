@@ -137,6 +137,8 @@ protected:
 	void UpdateVideoFrameLayout();
 	void UpdateAccelPreview();
 	void UpdateAccelDub();
+	void CreatePositionControl();
+	void DestroyPositionControl();
 
 	void OpenAudioDisplay();
 	void CloseAudioDisplay();

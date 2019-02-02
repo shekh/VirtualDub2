@@ -39,6 +39,7 @@
 #include "FilterInstance.h"
 #include "FilterFrameVideoSource.h"
 #include "dub.h"
+#include "command.h"
 
 extern const char g_szError[];
 extern vdrefptr<VDProjectUI> g_projectui;
@@ -698,6 +699,8 @@ void VDFilterBlendingDialog::init_range() {
 	}
 }
 
+VDPosition VDDisplayJumpToPositionDialog1(VDGUIHandle hParent, VDPosition currentFrame, IVDVideoSource *pVS, const VDFraction& realRate, const wchar_t* title, VDPosition* pos);
+
 INT_PTR VDFilterBlendingDialog::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message) {
 	case WM_COMMAND:
@@ -718,6 +721,44 @@ INT_PTR VDFilterBlendingDialog::DlgProc(UINT message, WPARAM wParam, LPARAM lPar
 
 		case IDC_BLEND_TIMELINE:
 			apply_range_enabled(IsButtonChecked(IDC_BLEND_TIMELINE));
+			return TRUE;
+
+		case IDC_START_FRAMES_PICK:
+			{
+				VDPosition p0,p1;
+				fa->GetRangeFrames(p0,p1);
+				VDPosition pos;
+				VDPosition jump = VDDisplayJumpToPositionDialog1((VDGUIHandle)mhdlg,p0,inputVideo,g_project->GetInputFrameRate(),L"Select start frame",&pos);
+				if (jump!=-1) {
+					fmpreview->FMSetPosition(jump);
+				} else if (pos!=-1) {
+					p0 = pos;
+					if (p0<0) p0 = 0;
+					if (p0>p1) p1 = p0;
+					fa->SetRangeFrames(p0,p1);
+					init_range();
+					if (fp2) fp2->RedoFrame();
+				}
+			}
+			return TRUE;
+
+		case IDC_END_FRAMES_PICK:
+			{
+				VDPosition p0,p1;
+				fa->GetRangeFrames(p0,p1);
+				VDPosition pos;
+				VDPosition jump = VDDisplayJumpToPositionDialog1((VDGUIHandle)mhdlg,p1,inputVideo,g_project->GetInputFrameRate(),L"Select end frame",&pos);
+				if (jump!=-1) {
+					fmpreview->FMSetPosition(jump);
+				} else if (pos!=-1) {
+					p1 = pos;
+					if (p1<0) p1 = 0;
+					if (p1<p0) p0 = p1;
+					fa->SetRangeFrames(p0,p1);
+					init_range();
+					if (fp2) fp2->RedoFrame();
+				}
+			}
 			return TRUE;
 		}
 		break;

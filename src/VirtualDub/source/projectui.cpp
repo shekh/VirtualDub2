@@ -718,17 +718,11 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	mbStatusBarVisible = true;
 
 	// Create position window.
-	mhwndPosition = CreateWindowEx(0, POSITIONCONTROLCLASS, "", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | PCS_PLAYBACK | PCS_MARK | PCS_SCENE, 0, 0, 200, 64, (HWND)mhwnd, (HMENU)IDC_POSITION, g_hInst, NULL);
+	CreatePositionControl();
 	if (!mhwndPosition) {
 		Detach();
 		return false;
 	}
-
-	mpPosition = VDGetIPositionControl((VDGUIHandle)mhwndPosition);
-
-	SetWindowPos(mhwndPosition, NULL, 0, 0, 200, mpPosition->GetNiceHeight(), SWP_NOMOVE|SWP_NOACTIVATE|SWP_NOZORDER);
-
-	mpPosition->SetFrameTypeCallback(this);
 
 	// Create video windows.
 	mhwndInputFrame = CreateWindow(VIDEOWINDOWCLASS, "", WS_CHILD|WS_CLIPSIBLINGS|WS_CLIPCHILDREN, 0, 0, 64, 64, (HWND)mhwnd, (HMENU)1, g_hInst, NULL);
@@ -838,6 +832,24 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	if (mbShowAudio) OpenAudioDisplay();
 
 	return true;
+}
+
+void VDProjectUI::CreatePositionControl() {
+	mhwndPosition = CreateWindowEx(0, POSITIONCONTROLCLASS, "", WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | PCS_PLAYBACK | PCS_MARK | PCS_SCENE, 0, 0, 200, 64, (HWND)mhwnd, (HMENU)IDC_POSITION, g_hInst, NULL);
+	if (!mhwndPosition) return;
+	mpPosition = VDGetIPositionControl((VDGUIHandle)mhwndPosition);
+
+	SetWindowPos(mhwndPosition, mhwndStatus, 0, 0, 200, mpPosition->GetNiceHeight(), SWP_NOMOVE|SWP_NOACTIVATE);
+
+	mpPosition->SetFrameTypeCallback(this);
+}
+
+void VDProjectUI::DestroyPositionControl() {
+	if (mhwndPosition) {
+		DestroyWindow(mhwndPosition);
+		mhwndPosition = NULL;
+	}
+	mpPosition = NULL;
 }
 
 void VDProjectUI::UpdateAccelMain() {
@@ -1029,10 +1041,7 @@ void VDProjectUI::Detach() {
 		mhwndMaxDisplay = NULL;
 	}
 
-	if (mhwndPosition) {
-		DestroyWindow(mhwndPosition);
-		mhwndPosition = NULL;
-	}
+	DestroyPositionControl();
 
 	mpUIPeer = NULL;
 
@@ -2636,6 +2645,15 @@ bool VDProjectUI::MenuHit(UINT id) {
 
 				if (result & PREFERENCES_DISPLAY)
 					UiDisplayPreferencesUpdated();
+
+				if (result & PREFERENCES_TIMELINE) {
+					DestroyPositionControl();
+					CreatePositionControl();
+					UITimelineUpdated();
+					ShowWindow(mhwndPosition, mbPositionControlVisible ? SW_SHOWNA : SW_HIDE);
+					OnSize();
+					mpPosition->SetPosition(GetCurrentFrame());
+				}
 			}
 			break;
 

@@ -29,6 +29,7 @@
 #include "resource.h"
 #include "oshelper.h"
 #include "timeline.h"
+#include "prefs.h"
 
 #include "PositionControl.h"
 
@@ -40,7 +41,7 @@ extern void VDPreferencesSetTimeFormat(int format);
 
 extern const char szPositionControlName[]="birdyPositionControl";
 
-enum { uIcon_count=13 };
+enum { uIcon_count=15 };
 
 static const UINT uIconIDs[uIcon_count][2]={
 	{ IDI_POS_STOP },
@@ -54,6 +55,8 @@ static const UINT uIconIDs[uIcon_count][2]={
 	{ IDI_POS_NEXT_KEY },
 	{ IDI_POS_SCENEREV },
 	{ IDI_POS_SCENEFWD },
+	{ IDI_POS_MARKIN, IDI_POS_MARKIN2 },
+	{ IDI_POS_MARKOUT, IDI_POS_MARKOUT2 },
 	{ IDI_POS_MARKIN, IDI_POS_MARKIN2 },
 	{ IDI_POS_MARKOUT, IDI_POS_MARKOUT2 },
 };
@@ -70,6 +73,8 @@ static const UINT uIconIDs_x128[uIcon_count][2]={
 	{ IDI_POS_NEXT_KEY_x128 },
 	{ IDI_POS_SCENEREV_x128 },
 	{ IDI_POS_SCENEFWD_x128 },
+	{ IDI_POS_MARKIN_x128, IDI_POS_MARKIN2_x128 },
+	{ IDI_POS_MARKOUT_x128, IDI_POS_MARKOUT2_x128 },
 	{ IDI_POS_MARKIN_x128, IDI_POS_MARKIN2_x128 },
 	{ IDI_POS_MARKOUT_x128, IDI_POS_MARKOUT2_x128 },
 };
@@ -91,6 +96,8 @@ enum {
 	IDC_SCENEFWD	= 512,
 	IDC_MARKIN		= 513,
 	IDC_MARKOUT		= 514,
+	IDC_FILTER_MARKIN		= 515,
+	IDC_FILTER_MARKOUT		= 516,
 };
 
 static const struct {
@@ -118,6 +125,8 @@ static const struct {
 	{ IDC_SCENEFWD, "[Scene forward] Scan forward for the next scene change." },
 	{ IDC_MARKIN, "[Mark in] Specify the start for processing or of a selection to delete." },
 	{ IDC_MARKOUT, "[Mark out] Specify the end for processing or of a selection to delete." },
+	{ IDC_FILTER_MARKIN, "[Mark in] Specify the start for filter range." },
+	{ IDC_FILTER_MARKOUT, "[Mark out] Specify the end for filter range." },
 };
 
 HBITMAP LoadImageStretch(LPSTR id, int w, int h)
@@ -273,6 +282,7 @@ protected:
 	bool mbHasPlaybackControls;
 	bool mbHasMarkControls;
 	bool mbHasSceneControls;
+	bool mbHasFilterControls;
 	bool mbButtonIcon;
 	bool mbAutoFrame;
 	bool mbAutoStep;
@@ -340,6 +350,7 @@ VDPositionControlW32::VDPositionControlW32(HWND hwnd)
 	, mbHasPlaybackControls(false)
 	, mbHasMarkControls(false)
 	, mbHasSceneControls(false)
+	, mbHasFilterControls(false)
 	, mbAutoFrame(true)
 	, mbAutoStep(false)
 	, mbZoom(false)
@@ -620,6 +631,8 @@ BOOL CALLBACK VDPositionControlW32::InitChildrenProc(HWND hWnd, LPARAM lParam) {
 	case IDC_SCENEFWD:
 	case IDC_MARKIN:
 	case IDC_MARKOUT:
+	case IDC_FILTER_MARKIN:
+	case IDC_FILTER_MARKOUT:
 		{
 			int i = id - IDC_STOP;
 			void* icon = pThis->shIcon1[i];
@@ -707,6 +720,8 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 			case IDC_PLAYPREVIEW:	cmd = PCN_PLAYPREVIEW;	break;
 			case IDC_MARKIN:		cmd = PCN_MARKIN;		break;
 			case IDC_MARKOUT:		cmd = PCN_MARKOUT;		break;
+			case IDC_FILTER_MARKIN:		cmd = PCN_MARKIN;		break;
+			case IDC_FILTER_MARKOUT:		cmd = PCN_MARKOUT;		break;
 
 			case IDC_START:
 				cmd = PCN_START;
@@ -993,10 +1008,14 @@ LRESULT CALLBACK VDPositionControlW32::WndProc(UINT msg, WPARAM wParam, LPARAM l
 	return DefWindowProc(mhwnd, msg, wParam, lParam);
 }
 
+extern int VDPreferencesGetTimelineScaleTrack();
+extern int VDPreferencesGetTimelineScaleInfo();
+extern int VDPreferencesGetTimelineScaleButtons();
+
 void VDPositionControlW32::OnCreate() {
-	int mTrackScale = 100;
-	int mTextScale = 100;
-	int mButtonScale = 100;
+	int mTrackScale = VDPreferencesGetTimelineScaleTrack();
+	int mTextScale = VDPreferencesGetTimelineScaleInfo();
+	int mButtonScale = VDPreferencesGetTimelineScaleButtons();
 
 	DWORD dwStyles;
 	TOOLINFO ti;
@@ -1008,6 +1027,7 @@ void VDPositionControlW32::OnCreate() {
 	mbHasSceneControls		= !!(dwStyles & PCS_SCENE);
 	mbHasNavControls		= !(dwStyles & PCS_XNAV);
 	mbHasPosText		= !(dwStyles & PCS_XNAV);
+	mbHasFilterControls		= !!(dwStyles & PCS_FILTER);
 
 	// We use 24px at 96 dpi.
 	int ht = MulDiv(24, mButtonScale, 100);
@@ -1115,7 +1135,7 @@ void VDPositionControlW32::OnCreate() {
 		buttonStyle = BS_BITMAP;
 	}
 
-	if (mbHasPlaybackControls || mbHasNavControls || mbHasSceneControls || mbHasMarkControls) {
+	if (mbHasPlaybackControls || mbHasNavControls || mbHasSceneControls || mbHasMarkControls || mbHasFilterControls) {
 		for(int i=0; i<uIcon_count; i++) {
 			shIcon1[i] = 0;
 			shIcon2[i] = 0;
@@ -1161,6 +1181,10 @@ void VDPositionControlW32::OnCreate() {
 	if (mbHasMarkControls) {
 		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_MARKIN	, g_hInst, NULL);
 		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_MARKOUT	, g_hInst, NULL);
+	}
+	if (mbHasFilterControls) {
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_FILTER_MARKIN	, g_hInst, NULL);
+		CreateWindowEx(0				,"BUTTON"		,NULL,WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | buttonStyle			,0,0,ht,ht,mhwnd, (HMENU)IDC_FILTER_MARKOUT	, g_hInst, NULL);
 	}
 
 	if (mFrameFont)
@@ -1272,6 +1296,15 @@ void VDPositionControlW32::OnSize() {
 
 	if (mbHasMarkControls) {
 		for(id = IDC_MARKIN; id <= IDC_MARKOUT; id++) {
+			SetWindowPos(GetDlgItem(mhwnd, id), NULL, x, y, 0, 0, SWP_NOACTIVATE|SWP_NOSIZE|SWP_NOZORDER);
+			x += mButtonSize;
+		}
+
+		x+=mGapSize;
+	}
+
+	if (mbHasFilterControls) {
+		for(id = IDC_FILTER_MARKIN; id <= IDC_FILTER_MARKOUT; id++) {
 			SetWindowPos(GetDlgItem(mhwnd, id), NULL, x, y, 0, 0, SWP_NOACTIVATE|SWP_NOSIZE|SWP_NOZORDER);
 			x += mButtonSize;
 		}

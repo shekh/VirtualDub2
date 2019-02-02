@@ -54,6 +54,9 @@ namespace {
 		uint32			mTimelinePageSize;
 		bool			mbTimelinePageMode;
 		bool			mbTimelineWarnReloadTruncation;
+		int				mTimelineScaleTrack;
+		int				mTimelineScaleInfo;
+		int				mTimelineScaleButtons;
 
 		bool			mbAllowDirectYCbCrDecoding;
 		bool			mbDisplayEnableDebugInfo;
@@ -137,6 +140,20 @@ namespace {
 			if (old.mDisplaySecondaryMode!=mDisplaySecondaryMode)
 				return true;
 			if (old.mD3DFXFile!=mD3DFXFile)
+				return true;
+			return false;
+		}
+
+		bool timelineChanged(VDPreferences2& old) {
+			if (old.mTimelineFormat!=mTimelineFormat)
+				return true;
+			if (old.mTimeFormat!=mTimeFormat)
+				return true;
+			if (old.mTimelineScaleTrack!=mTimelineScaleTrack)
+				return true;
+			if (old.mTimelineScaleInfo!=mTimelineScaleInfo)
+				return true;
+			if (old.mTimelineScaleButtons!=mTimelineScaleButtons)
 				return true;
 			return false;
 		}
@@ -442,6 +459,9 @@ public:
 				SetCaption(101, VDswprintf(L"%u", 1, &v).c_str());
 			}
 			SetValue(102, mPrefs.mbTimelinePageMode);
+			SetCaption(104, VDStringW().sprintf(L"%u", mPrefs.mTimelineScaleTrack).c_str());
+			SetCaption(105, VDStringW().sprintf(L"%u", mPrefs.mTimelineScaleInfo).c_str());
+			SetCaption(106, VDStringW().sprintf(L"%u", mPrefs.mTimelineScaleButtons).c_str());
 			return true;
 		case kEventDetach:
 		case kEventSync:
@@ -450,6 +470,9 @@ public:
 			mPrefs.mbTimelineWarnReloadTruncation = 0 != GetValue(100);
 			mPrefs.mTimelinePageSize = (uint32)wcstoul(GetCaption(101).c_str(), 0, 10);
 			mPrefs.mbTimelinePageMode = GetValue(102) != 0;
+			mPrefs.mTimelineScaleTrack = (uint32)wcstoul(GetCaption(104).c_str(), 0, 10);
+			mPrefs.mTimelineScaleInfo = (uint32)wcstoul(GetCaption(105).c_str(), 0, 10);
+			mPrefs.mTimelineScaleButtons = (uint32)wcstoul(GetCaption(106).c_str(), 0, 10);
 			return true;
 		}
 		return false;
@@ -927,6 +950,9 @@ int VDShowPreferencesDialog(VDGUIHandle h) {
 		if (g_prefs2.mEnabledCPUFeatures!=temp.mEnabledCPUFeatures)
 			part_mask |= PREFERENCES_OPTF;
 
+		if (g_prefs2.timelineChanged(temp))
+			part_mask |= PREFERENCES_TIMELINE;
+
 		g_prefs2 = temp;
 		g_prefs = g_prefs2.mOldPrefs;
 		VDPreferencesUpdated();
@@ -969,6 +995,9 @@ void LoadPreferences() {
 	g_prefs2.mTimelinePageSize = key.getInt("Timeline: Page size", 50);
 	g_prefs2.mbTimelinePageMode = key.getBool("Timeline: Page mode", false);
 	g_prefs2.mbTimelineWarnReloadTruncation = key.getBool("Timeline: Warn on truncation when reloading", true);
+	g_prefs2.mTimelineScaleTrack = key.getInt("Timeline: Scale track", 100);
+	g_prefs2.mTimelineScaleInfo = key.getInt("Timeline: Scale info", 100);
+	g_prefs2.mTimelineScaleButtons = key.getInt("Timeline: Scale buttons", 100);
 
 	if (!key.getString("Direct3D FX file", g_prefs2.mD3DFXFile))
 		g_prefs2.mD3DFXFile = L"display.fx";
@@ -1056,6 +1085,9 @@ void VDSavePreferences(VDPreferences2& prefs) {
 	key.setInt("Timeline: Page size", prefs.mTimelinePageSize);
 	key.setBool("Timeline: Page mode", prefs.mbTimelinePageMode);
 	key.setBool("Timeline: Warn on truncation when reloading", prefs.mbTimelineWarnReloadTruncation);
+	key.setInt("Timeline: Scale track", prefs.mTimelineScaleTrack);
+	key.setInt("Timeline: Scale info", prefs.mTimelineScaleInfo);
+	key.setInt("Timeline: Scale buttons", prefs.mTimelineScaleButtons);
 
 	key.setBool("Allow direct YCbCr decoding", prefs.mbAllowDirectYCbCrDecoding);
 
@@ -1324,6 +1356,18 @@ int VDPreferencesGetTimelinePageSize() {
 
 bool VDPreferencesGetTimelinePageMode() {
 	return g_prefs2.mbTimelinePageMode;
+}
+
+int VDPreferencesGetTimelineScaleTrack() {
+	return g_prefs2.mTimelineScaleTrack;
+}
+
+int VDPreferencesGetTimelineScaleInfo() {
+	return g_prefs2.mTimelineScaleInfo;
+}
+
+int VDPreferencesGetTimelineScaleButtons() {
+	return g_prefs2.mTimelineScaleButtons;
 }
 
 void VDPreferencesUpdated() {

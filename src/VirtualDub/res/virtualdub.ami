@@ -445,7 +445,7 @@ dialog 1014, "" : fill, child {
 dialog 1015, "" : fill, child {
 	now align=fill;
 	set 0: vertical {
-		group 0, "Timeline format" {
+		group 0, "Info text" {
 			set 0: vertical, spacing=3 {
 				textedit 200, "" : sunken;
 				textarea 0,	"%f, %t, %p: frame, time, picture\n"
@@ -489,6 +489,22 @@ dialog 1015, "" : fill, child {
 					option 103, "Page forward/backward";
 				}
 				checkbox 100, "Warn if reload would change edits";
+				grid 0 : spacing=2, align=left, valign=top {
+					now valign=center;
+					
+					label 0, "Trackbar scale, %" : align=left;
+					textedit 104, "" : sunken, align=fill, minw=50;
+					
+					nextrow;
+					
+					label 0, "Info text scale, %" : align=left;
+					textedit 105, "" : sunken, align=fill, minw=50;
+					
+					nextrow;
+					
+					label 0, "Buttons scale, %" : align=left;
+					textedit 106, "" : sunken, align=fill, minw=50;
+				}
 			}
 		}
 	}
