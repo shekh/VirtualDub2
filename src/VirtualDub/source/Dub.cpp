@@ -1169,6 +1169,7 @@ void Dubber::InitOutputFile() {
 		MakeOutputFormat make;
 		make.init(mOptions, vSrc);
 		make.initComp(mpOutputSystem, mpVideoCompressor);
+		make.vc_fccHandler = fourcc_toupper(hdr.fccHandler);
 		make.combine();
 		make.combineComp();
 
@@ -2257,6 +2258,7 @@ void MakeOutputFormat::initComp(IVDDubberOutputSystem* os, IVDVideoCompressor* v
 	this->os = os;
 	this->vc = vc;
 	if (os) {
+		os_format = os->GetFormatName();
 		int cf = os->GetVideoOutputFormatOverride(flt.format);
 		if (cf) {
 			reference = 0;
@@ -2281,6 +2283,7 @@ void MakeOutputFormat::initComp(COMPVARS2* compVars) {
 		IVDVideoCompressor* vc = VDCreateVideoCompressorVCM(compVars->driver, compVars->lDataRate*1024, compVars->lQ, compVars->lKey, false);
 		initComp(0,vc);
 		own_vc = true;
+		vc_fccHandler = fourcc_toupper(compVars->fccHandler);
 	}
 }
 
@@ -2337,11 +2340,26 @@ void MakeOutputFormat::combineComp_repack() {
 	}
 	if (f==kPixFormat_RGB888) {
 		test_list.push_back(kPixFormat_XRGB8888);
+		test_list.push_back(kPixFormat_RGB_Planar);
+	}
+	if (f==kPixFormat_RGB_Planar) {
+		test_list.push_back(kPixFormat_RGB888);
+		test_list.push_back(kPixFormat_XRGB8888);
 	}
 	if (f==kPixFormat_XRGB64) {
 		test_list.push_back(kPixFormat_B64A);
+		test_list.push_back(kPixFormat_RGBA_Planar16);
+		test_list.push_back(kPixFormat_RGB_Planar16);
 		test_list.push_back(kPixFormat_R10K);
 		test_list.push_back(kPixFormat_R210);
+	}
+	if (f==kPixFormat_RGB_Planar16) {
+		test_list.push_back(kPixFormat_XRGB64);
+		test_list.push_back(kPixFormat_B64A);
+	}
+	if (f==kPixFormat_RGBA_Planar16) {
+		test_list.push_back(kPixFormat_XRGB64);
+		test_list.push_back(kPixFormat_B64A);
 	}
 	if (f==kPixFormat_YUV420_Planar) {
 		test_list.push_back(kPixFormat_YUV420_NV12);
@@ -2379,8 +2397,15 @@ void MakeOutputFormat::combineComp_repack() {
 		VDPixmapFormatEx format = test_list[test];
 		const int variants = VDGetPixmapToBitmapVariants(format);
 		bool use_proxy = test>0;
+		int sformat = 0;
+		int svariant = 0;
+		if (vc_fccHandler) fourcc_codec_input(vc_fccHandler,sformat,svariant);
 
-		for(int variant=1; variant <= variants; ++variant) {
+		for(int variant=0; variant <= variants; ++variant) {
+			if (variant==0 && format==sformat) variant = svariant;
+			if (variant==0) continue;
+			if (!accept_format(format,variant)) continue;
+
 			bool dibCompatible;
 			if (srcDib.empty()) {
 				dibCompatible = VDMakeBitmapFormatFromPixmapFormat(compDib, format, variant, w, h);
@@ -2423,4 +2448,32 @@ void MakeOutputFormat::combineComp_repack() {
 	} else {
 		error = "Unable to initialize video compression: The selected output format is not compatible with the Windows video codec API. Choose a different format.";
 	}
+}
+
+bool MakeOutputFormat::accept_format(int format, int variant)
+{
+	using namespace nsVDPixmap;
+
+	if (vc) return true;
+
+	if (!os_format.empty() && os_format!="avi") switch(format) {
+	// disable avi-only formats
+	case kPixFormat_Y8_FR:
+		if (variant==kBitmapVariant_Y8_Pal) return false;
+		break;
+	}
+
+	if (os_format!="nut") switch(format) {
+	// disable nut-only formats
+	case kPixFormat_XRGB64:
+	case kPixFormat_Y16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGBA_Planar16:
+		return false;
+	}
+
+	return true;
 }

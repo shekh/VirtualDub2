@@ -1179,6 +1179,7 @@ void VDDialogVideoDepthW32::InitFinalFormat() {
 		make.option = mInputFormat;
 		if (mLockFormat!=-1) make.option.format = mLockFormat;
 		make.initComp(compVars);
+		make.os_format = g_FileOutFormat;
 		make.combine();
 		if (make.w==0){ make.w = 320; make.h = 240; }
 		make.combineComp();

@@ -504,6 +504,25 @@ void ExtraGen_YUV_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDP
 	}
 }
 
+void ExtraGen_RGB_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst) {
+	if (dst.pitch4) {
+		VDPixmapGen_A16_Normalize* normalize3 = new VDPixmapGen_A16_Normalize;
+		normalize3->max_value = max_a_value;
+		gen.swap(normalize3,3);
+	}
+	if (dst.pitch3) {
+		VDPixmapGen_Y16_Normalize* normalize2 = new VDPixmapGen_Y16_Normalize;
+		VDPixmapGen_Y16_Normalize* normalize1 = new VDPixmapGen_Y16_Normalize;
+		VDPixmapGen_Y16_Normalize* normalize0 = new VDPixmapGen_Y16_Normalize;
+		normalize2->max_value = max_value;
+		normalize1->max_value = max_value;
+		normalize0->max_value = max_value;
+		gen.swap(normalize2,2);
+		gen.swap(normalize1,1);
+		gen.swap(normalize0,0);
+	}
+}
+
 void ExtraGen_A8_Normalize::Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst) {
 	if (dst.pitch4) {
 		VDPixmapGen_A8_Normalize* normalize = new VDPixmapGen_A8_Normalize;

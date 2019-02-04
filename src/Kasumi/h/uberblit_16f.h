@@ -305,6 +305,15 @@ public:
 	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst);
 };
 
+class ExtraGen_RGB_Normalize : public IVDPixmapExtraGen {
+public:
+	uint32 max_value;
+	uint32 max_a_value;
+
+	ExtraGen_RGB_Normalize(){ max_value=0xFFFF; max_a_value=0xFFFF; }
+	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst);
+};
+
 class ExtraGen_A8_Normalize : public IVDPixmapExtraGen {
 public:
 	virtual void Create(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& dst);

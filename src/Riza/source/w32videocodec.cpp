@@ -161,8 +161,13 @@ bool VDVideoDecompressorVCM::SetTargetFormat(int format) {
 			mBestFormat = VDBitmapFormatToPixmapFormat(*bm.data(),variant);
 		}
 	}
+	int sformat;
+	int svariant;
+	fourcc_codec_output(pSrcFormat->bmiHeader.biCompression,sformat,svariant);
 
 	if (!format) {
+		if (sformat && SetTargetFormat(sformat)) return true;
+
 		switch (mBestFormat) {
 		case kPixFormat_YUV422_V210:
 		case kPixFormat_YUV422_P210:
@@ -181,10 +186,9 @@ bool VDVideoDecompressorVCM::SetTargetFormat(int format) {
 			if (SetTargetFormat(kPixFormat_YUV420_P010)) return true;
 			break;
 		case kPixFormat_XRGB64:
+		case kPixFormat_B64A:
 			if (SetTargetFormat(kPixFormat_XRGB64)) return true;
 			if (SetTargetFormat(kPixFormat_B64A)) return true;
-			if (SetTargetFormat(kPixFormat_R10K)) return true;
-			if (SetTargetFormat(kPixFormat_R210)) return true;
 			break;
 		}
 
@@ -199,8 +203,10 @@ bool VDVideoDecompressorVCM::SetTargetFormat(int format) {
 		if (SetTargetFormat(kPixFormat_YUV444_Y410)) return true;
 		if (SetTargetFormat(kPixFormat_YUV422_V210)) return true;
 		if (SetTargetFormat(kPixFormat_YUVA444_Y416)) return true;
+		if (SetTargetFormat(kPixFormat_RGBA_Planar16)) return true;
 		if (SetTargetFormat(kPixFormat_XRGB64)) return true;
 		if (SetTargetFormat(kPixFormat_B64A)) return true;
+		if (SetTargetFormat(kPixFormat_RGB_Planar16)) return true;
 		if (SetTargetFormat(kPixFormat_R10K)) return true;
 		if (SetTargetFormat(kPixFormat_R210)) return true;
 
@@ -221,7 +227,10 @@ bool VDVideoDecompressorVCM::SetTargetFormat(int format) {
 	vdstructex<VDAVIBitmapInfoHeader> bmformat;
 	const int variants = VDGetPixmapToBitmapVariants(format);
 
-	for(int variant=1; variant<=variants; ++variant) {
+	for(int variant=0; variant<=variants; ++variant) {
+		if (variant==0 && format==sformat) variant = svariant;
+		if (variant==0) continue;
+
 		if (VDMakeBitmapFormatFromPixmapFormat(bmformat, mSrcFormat, format, variant) && SetTargetFormat(bmformat.data())) {
 			mFormat = format;
 			mFormatVariant = variant;

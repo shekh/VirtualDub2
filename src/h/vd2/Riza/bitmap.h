@@ -38,6 +38,47 @@ struct FilterModPixmapInfo;
 class VDStringA;
 class VDStringW;
 
+enum {
+	kBitmapVariant_YV12 = 1,
+	kBitmapVariant_I420 = 2,
+	kBitmapVariant_IYUV = 3,
+};
+enum {
+	kBitmapVariant_Y8 = 1,
+	kBitmapVariant_Y800 = 2,
+};
+enum {
+	kBitmapVariant_Y8_Pal = 1,
+	kBitmapVariant_Y8_FR = 2,
+};
+enum {
+	kBitmapVariant_Y1_0_16 = 1,
+};
+enum {
+	kBitmapVariant_G3_0_16 = 1,
+	kBitmapVariant_G3_0_14 = 2,
+	kBitmapVariant_G3_0_12 = 3,
+	kBitmapVariant_G3_0_10 = 4,
+};
+enum {
+	kBitmapVariant_G4_0_16 = 1,
+	kBitmapVariant_G4_0_14 = 2,
+	kBitmapVariant_G4_0_12 = 3,
+	kBitmapVariant_G4_0_10 = 4,
+};
+enum {
+	kBitmapVariant_Y3_11_16 = 1,
+	kBitmapVariant_Y3_11_10 = 2,
+};
+enum {
+	kBitmapVariant_Y3_10_16 = 1,
+	kBitmapVariant_Y3_10_10 = 2,
+};
+enum {
+	kBitmapVariant_Y3_0_16 = 1,
+	kBitmapVariant_Y3_0_10 = 2,
+};
+
 int VDGetPixmapToBitmapVariants(int format);
 int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr);
 int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant);
@@ -50,9 +91,13 @@ VDPixmap VDGetPixmapForBitmap(const VDAVIBitmapInfoHeader& hdr, const void *data
 void VDSetPixmapInfoForBitmap(FilterModPixmapInfo& info, int format, int variant=0);
 void VDAdjustPixmapInfoForRange(FilterModPixmapInfo& info, int format);
 
+uint32 fourcc_toupper(uint32 a);
+
 VDStringA print_fourcc(uint32 a);
 VDStringW printW_fourcc(uint32 a);
 
 void fourcc_codec_info(uint32 a, bool& useAlpha);
+void fourcc_codec_input(uint32 a, int& format, int& variant);
+void fourcc_codec_output(uint32 a, int& format, int& variant);
 
 #endif

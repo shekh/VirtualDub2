@@ -283,6 +283,8 @@ struct MakeOutputFormat {
 	VDPixmapFormatEx comp;
 	IVDDubberOutputSystem* os;
 	IVDVideoCompressor* vc;
+	DWORD vc_fccHandler;
+	VDStringA os_format;
 	vdstructex<VDAVIBitmapInfoHeader> srcDib;
 	vdstructex<VDAVIBitmapInfoHeader> compDib;
 	int compVariant;
@@ -298,6 +300,7 @@ struct MakeOutputFormat {
 	MakeOutputFormat() {
 		os = 0;
 		vc = 0;
+		vc_fccHandler = 0;
 		own_vc = false;
 		mode = DubVideoOptions::M_FULL;
 		reference = 1;
@@ -318,6 +321,7 @@ struct MakeOutputFormat {
 	void combine();
 	void combineComp();
 	void combineComp_repack();
+	bool accept_format(int format, int variant);
 };
 
 #ifndef f_DUB_CPP

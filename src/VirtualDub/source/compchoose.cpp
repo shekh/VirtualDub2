@@ -43,6 +43,7 @@
 #include "videoSource.h"
 #include "filters.h"
 #include "optdlg.h"
+#include "command.h"
 
 extern HINSTANCE g_hInst;
 extern std::list<class VDExternalModule *>		g_pluginModules;
@@ -1051,6 +1052,7 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 		COMPVARS2 vars;
 		SaveCompVars(&vars);
 		make.initComp(&vars);
+		make.os_format = g_FileOutFormat;
 		vars.driver = 0;
 		make.option = format;
 		make.combine();

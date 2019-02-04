@@ -33,6 +33,34 @@ void fourcc_codec_info(uint32 a, bool& useAlpha) {
 	if (a==VDMAKEFOURCC('M', '8', 'Y', 'A')) useAlpha = true;
 	if (a==VDMAKEFOURCC('M', '0', 'R', 'A')) useAlpha = true;
 	if (a==VDMAKEFOURCC('M', '2', 'R', 'A')) useAlpha = true;
+	if (a==VDMAKEFOURCC('M', '4', 'R', 'A')) useAlpha = true;
+}
+
+void fourcc_codec_input(uint32 a, int& format, int& variant) {
+	using namespace nsVDPixmap;
+	format = 0;
+	variant = 0;
+	if (a==VDMAKEFOURCC('M', '0', 'R', 'G')) { format = kPixFormat_RGB_Planar16; variant = kBitmapVariant_G3_0_10; }
+	if (a==VDMAKEFOURCC('M', '2', 'R', 'G')) { format = kPixFormat_RGB_Planar16; variant = kBitmapVariant_G3_0_12; }
+	if (a==VDMAKEFOURCC('M', '4', 'R', 'G')) { format = kPixFormat_RGB_Planar16; variant = kBitmapVariant_G3_0_14; }
+	if (a==VDMAKEFOURCC('M', '0', 'R', 'A')) { format = kPixFormat_RGBA_Planar16; variant = kBitmapVariant_G4_0_10; }
+	if (a==VDMAKEFOURCC('M', '2', 'R', 'A')) { format = kPixFormat_RGBA_Planar16; variant = kBitmapVariant_G4_0_12; }
+	if (a==VDMAKEFOURCC('M', '4', 'R', 'A')) { format = kPixFormat_RGBA_Planar16; variant = kBitmapVariant_G4_0_14; }
+}
+
+void fourcc_codec_output(uint32 a, int& format, int& variant) {
+	format = 0;
+	variant = 0;
+	fourcc_codec_input(a,format,variant);
+}
+
+uint32 fourcc_toupper(uint32 a) {
+	char* s = (char*)&a;
+	for(int i=0; i<4; i++){
+		if(s[i]>='a' && s[i]<='z')
+			s[i] = s[i]-'a'+'A';
+	}
+	return a;
 }
 
 VDString print_fourcc(uint32 a) {
@@ -142,11 +170,11 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 		return kPixFormat_YUV420_Planar;
 
 	case VDMAKEFOURCC('I', '4', '2', '0'):
-		variant = 2;
+		variant = kBitmapVariant_I420;
 		return kPixFormat_YUV420_Planar;
 
 	case VDMAKEFOURCC('I', 'Y', 'U', 'V'):
-		variant = 3;
+		variant = kBitmapVariant_IYUV;
 		return kPixFormat_YUV420_Planar;
 
 	case VDMAKEFOURCC('Y', 'V', 'U', '9'):
@@ -156,13 +184,16 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 	case VDMAKEFOURCC('Y', '8', '0', '0'):
 		return kPixFormat_Y8;
 
+	case VDMAKEFOURCC('Y', '1', 0, 16):
+		return kPixFormat_Y16;
+
 	// 420_Planar16
 
 	case VDMAKEFOURCC('Y', '3', 11, 16):
 		return kPixFormat_YUV420_Planar16;
 
 	case VDMAKEFOURCC('Y', '3', 11, 10):
-		variant = 2;
+		variant = kBitmapVariant_Y3_11_10;
 		return kPixFormat_YUV420_Planar16;
 
 	// P016,P010
@@ -184,7 +215,7 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 		return kPixFormat_YUV422_Planar16;
 
 	case VDMAKEFOURCC('Y', '3', 10, 10):
-		variant = 2;
+		variant = kBitmapVariant_Y3_10_10;
 		return kPixFormat_YUV422_Planar16;
 
 	// P216,P210
@@ -194,6 +225,15 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 
 	case VDMAKEFOURCC('P', '2', '1', '0'):
 		return kPixFormat_YUV422_P210;
+
+	// 444_Planar16
+
+	case VDMAKEFOURCC('Y', '3', 0, 16):
+		return kPixFormat_YUV444_Planar16;
+
+	case VDMAKEFOURCC('Y', '3', 0, 10):
+		variant = kBitmapVariant_Y3_0_10;
+		return kPixFormat_YUV444_Planar16;
 
 	// v410
 
@@ -234,7 +274,46 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 
 	case VDMAKEFOURCC('B', 'R', 'A', 64):
 		return kPixFormat_XRGB64;
+
+	// ----
+
+	case VDMAKEFOURCC('G', '3', 0, 8):
+		return kPixFormat_RGB_Planar;
+
+	case VDMAKEFOURCC('G', '4', 0, 8):
+		return kPixFormat_RGBA_Planar;
+
+	case VDMAKEFOURCC('G', '3', 0, 16):
+		return kPixFormat_RGB_Planar16;
+
+	case VDMAKEFOURCC('G', '3', 0, 14):
+		variant = kBitmapVariant_G3_0_14;
+		return kPixFormat_RGB_Planar16;
+
+	case VDMAKEFOURCC('G', '3', 0, 12):
+		variant = kBitmapVariant_G3_0_12;
+		return kPixFormat_RGB_Planar16;
+
+	case VDMAKEFOURCC('G', '3', 0, 10):
+		variant = kBitmapVariant_G3_0_10;
+		return kPixFormat_RGB_Planar16;
+
+	case VDMAKEFOURCC('G', '4', 0, 16):
+		return kPixFormat_RGBA_Planar16;
+
+	case VDMAKEFOURCC('G', '4', 0, 14):
+		variant = kBitmapVariant_G4_0_14;
+		return kPixFormat_RGBA_Planar16;
+
+	case VDMAKEFOURCC('G', '4', 0, 12):
+		variant = kBitmapVariant_G4_0_12;
+		return kPixFormat_RGBA_Planar16;
+
+	case VDMAKEFOURCC('G', '4', 0, 10):
+		variant = kBitmapVariant_G4_0_10;
+		return kPixFormat_RGBA_Planar16;
 	}
+
 	return 0;
 }
 
@@ -245,11 +324,23 @@ int VDGetPixmapToBitmapVariants(int format) {
 	if (format == nsVDPixmap::kPixFormat_Y8)
 		return 2;
 
+	if (format == nsVDPixmap::kPixFormat_Y8_FR)
+		return 2;
+
 	if (format == nsVDPixmap::kPixFormat_YUV420_Planar16)
 		return 2;
 
 	if (format == nsVDPixmap::kPixFormat_YUV422_Planar16)
 		return 2;
+
+	if (format == nsVDPixmap::kPixFormat_YUV444_Planar16)
+		return 2;
+
+	if (format == nsVDPixmap::kPixFormat_RGB_Planar16)
+		return 4;
+
+	if (format == nsVDPixmap::kPixFormat_RGBA_Planar16)
+		return 4;
 
 	return 1;
 }
@@ -426,10 +517,10 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		break;
 	case kPixFormat_YUV420_Planar16:
 		switch(variant) {
-		case 2:
+		case kBitmapVariant_Y3_11_10:
 			dst->biCompression	= VDMAKEFOURCC('Y', '3', 11, 10);
 			break;
-		case 1:
+		case kBitmapVariant_Y3_11_16:
 		default:
 			dst->biCompression	= VDMAKEFOURCC('Y', '3', 11, 16);
 			break;
@@ -449,10 +540,10 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		break;
 	case kPixFormat_YUV422_Planar16:
 		switch(variant) {
-		case 2:
+		case kBitmapVariant_Y3_10_10:
 			dst->biCompression	= VDMAKEFOURCC('Y', '3', 10, 10);
 			break;
-		case 1:
+		case kBitmapVariant_Y3_10_16:
 		default:
 			dst->biCompression	= VDMAKEFOURCC('Y', '3', 10, 16);
 			break;
@@ -492,13 +583,13 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		break;
 	case kPixFormat_YUV420_Planar:
 		switch(variant) {
-		case 3:
+		case kBitmapVariant_IYUV:
 			dst->biCompression	= VDMAKEFOURCC('I', 'Y', 'U', 'V');
 			break;
-		case 2:
+		case kBitmapVariant_I420:
 			dst->biCompression	= VDMAKEFOURCC('I', '4', '2', '0');
 			break;
-		case 1:
+		case kBitmapVariant_YV12:
 		default:
 			dst->biCompression	= VDMAKEFOURCC('Y', 'V', '1', '2');
 			break;
@@ -513,10 +604,10 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		break;
 	case kPixFormat_Y8:
 		switch(variant) {
-		case 2:
+		case kBitmapVariant_Y800:
 			dst->biCompression	= VDMAKEFOURCC('Y', '8', '0', '0');
 			break;
-		case 1:
+		case kBitmapVariant_Y8:
 		default:
 			dst->biCompression	= VDMAKEFOURCC('Y', '8', ' ', ' ');
 			break;
@@ -528,6 +619,19 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biCompression	= VDMAKEFOURCC('v', '2', '1', '0');
 		dst->biBitCount		= 20;
 		dst->biSizeImage	= ((w + 47) / 48) * 128 * h;
+		break;
+	case kPixFormat_YUV444_Planar16:
+		switch(variant) {
+		case kBitmapVariant_Y3_0_10:
+			dst->biCompression	= VDMAKEFOURCC('Y', '3', 0, 10);
+			break;
+		case kBitmapVariant_Y3_0_16:
+		default:
+			dst->biCompression	= VDMAKEFOURCC('Y', '3', 0, 16);
+			break;
+		}
+		dst->biBitCount		= 48;
+		dst->biSizeImage	= w * h * 6;
 		break;
 	case kPixFormat_YUV444_V410:
 		dst->biCompression	= VDMAKEFOURCC('v', '4', '1', '0');
@@ -550,23 +654,90 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biSizeImage	= w*h + ((w+1)>>1)*((h+1)>>1)*2;
 		break;
 	case kPixFormat_Y8_FR:
-		dst->biCompression	= VDAVIBitmapInfoHeader::kCompressionRGB;
-		dst->biBitCount		= 8;
-		dst->biClrUsed		= 256;
-		dst->biClrImportant	= 256;
-		dst->biSizeImage	= ((w+3) & ~3)*h;
-		dst.resize(sizeof(VDAVIBitmapInfoHeader) + 256*sizeof(VDAVIRGBQuad));
+		switch(variant) {
+		case kBitmapVariant_Y8_FR:
+			dst->biCompression	= VDMAKEFOURCC('Y', '8', ' ', ' ');
+			dst->biBitCount		= 8;
+			dst->biSizeImage	= ((w+3) & ~3) * h;
+			break;
+		case kBitmapVariant_Y8_Pal:
+		default:
+			dst->biCompression	= VDAVIBitmapInfoHeader::kCompressionRGB;
+			dst->biBitCount		= 8;
+			dst->biClrUsed		= 256;
+			dst->biClrImportant	= 256;
+			dst->biSizeImage	= ((w+3) & ~3)*h;
+			dst.resize(sizeof(VDAVIBitmapInfoHeader) + 256*sizeof(VDAVIRGBQuad));
 
-		{
-			VDAVIRGBQuad *pal = (VDAVIRGBQuad *)(dst.data() + 1);
+			{
+				VDAVIRGBQuad *pal = (VDAVIRGBQuad *)(dst.data() + 1);
 
-			for(int i=0; i<256; ++i) {
-				pal[i].rgbRed = i;
-				pal[i].rgbGreen = i;
-				pal[i].rgbBlue = i;
-				pal[i].rgbReserved = 0;
+				for(int i=0; i<256; ++i) {
+					pal[i].rgbRed = i;
+					pal[i].rgbGreen = i;
+					pal[i].rgbBlue = i;
+					pal[i].rgbReserved = 0;
+				}
 			}
+			break;
 		}
+		break;
+	case kPixFormat_Y16:
+		dst->biCompression	= VDMAKEFOURCC('Y', '1', 0, 16);
+		dst->biBitCount		= 16;
+		dst->biSizeImage	= w * h * 2;
+		break;
+
+	case kPixFormat_RGB_Planar:
+		dst->biCompression	= VDMAKEFOURCC('G', '3', 0, 8);
+		dst->biBitCount		= 24;
+		dst->biSizeImage	= w * h * 3;
+		break;
+
+	case kPixFormat_RGBA_Planar:
+		dst->biCompression	= VDMAKEFOURCC('G', '4', 0, 8);
+		dst->biBitCount		= 32;
+		dst->biSizeImage	= w * h * 4;
+		break;
+
+	case kPixFormat_RGB_Planar16:
+		switch(variant) {
+		case kBitmapVariant_G3_0_10:
+			dst->biCompression	= VDMAKEFOURCC('G', '3', 0, 10);
+			break;
+		case kBitmapVariant_G3_0_12:
+			dst->biCompression	= VDMAKEFOURCC('G', '3', 0, 12);
+			break;
+		case kBitmapVariant_G3_0_14:
+			dst->biCompression	= VDMAKEFOURCC('G', '3', 0, 14);
+			break;
+		case kBitmapVariant_G3_0_16:
+		default:
+			dst->biCompression	= VDMAKEFOURCC('G', '3', 0, 16);
+			break;
+		}
+		dst->biBitCount		= 48;
+		dst->biSizeImage	= w * h * 6;
+		break;
+
+	case kPixFormat_RGBA_Planar16:
+		switch(variant) {
+		case kBitmapVariant_G4_0_10:
+			dst->biCompression	= VDMAKEFOURCC('G', '4', 0, 10);
+			break;
+		case kBitmapVariant_G4_0_12:
+			dst->biCompression	= VDMAKEFOURCC('G', '4', 0, 12);
+			break;
+		case kBitmapVariant_G4_0_14:
+			dst->biCompression	= VDMAKEFOURCC('G', '4', 0, 14);
+			break;
+		case kBitmapVariant_G4_0_16:
+		default:
+			dst->biCompression	= VDMAKEFOURCC('G', '4', 0, 16);
+			break;
+		}
+		dst->biBitCount		= 64;
+		dst->biSizeImage	= w * h * 8;
 		break;
 
 	default:
@@ -595,6 +766,7 @@ uint32 VDMakeBitmapCompatiblePixmapLayout(VDPixmapLayout& layout, sint32 w, sint
 		alignment = 1;
 
 	uint32 linspace = VDPixmapCreateLinearLayout(layout, format, w, abs(h), alignment);
+	if (variant==0) variant = 1;
 
 	switch(format) {
 	case kPixFormat_Pal8:
@@ -604,11 +776,18 @@ uint32 VDMakeBitmapCompatiblePixmapLayout(VDPixmapLayout& layout, sint32 w, sint
 	case kPixFormat_RGB888:
 	case kPixFormat_RGB565:
 	case kPixFormat_XRGB8888:
-	case kPixFormat_Y8_FR:
 		// RGB can be flipped (but YUV can't)
 		if (h > 0) {
 			layout.data += layout.pitch * (h-1);
 			layout.pitch = -layout.pitch;
+		}
+		break;
+	case kPixFormat_Y8_FR:
+		if (variant==kBitmapVariant_Y8_Pal) {
+			if (h > 0) {
+				layout.data += layout.pitch * (h-1);
+				layout.pitch = -layout.pitch;
+			}
 		}
 		break;
 	case kPixFormat_YUV444_Planar:		// swap YV24 to match YV12
@@ -626,7 +805,7 @@ uint32 VDMakeBitmapCompatiblePixmapLayout(VDPixmapLayout& layout, sint32 w, sint
 	case kPixFormat_YUV420_Planar_FR:
 	case kPixFormat_YUV420_Planar_709:
 	case kPixFormat_YUV420_Planar_709_FR:
-		if (variant < 2) {				// need to swap UV planes for YV12 (1)
+		if (variant==kBitmapVariant_YV12) {
 			std::swap(layout.data2, layout.data3);
 			std::swap(layout.pitch2, layout.pitch3);
 		}
@@ -637,6 +816,16 @@ uint32 VDMakeBitmapCompatiblePixmapLayout(VDPixmapLayout& layout, sint32 w, sint
 	case kPixFormat_YUV410_Planar_709_FR:
 		std::swap(layout.data2, layout.data3);
 		std::swap(layout.pitch2, layout.pitch3);
+		break;
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGBA_Planar:
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGBA_Planar16:
+		// G3, G4: GBR
+		std::swap(layout.data, layout.data2);
+		std::swap(layout.pitch, layout.pitch2);
+		std::swap(layout.data, layout.data3);
+		std::swap(layout.pitch, layout.pitch3);
 		break;
 	}
 
@@ -676,14 +865,36 @@ void VDSetPixmapInfoForBitmap(FilterModPixmapInfo& info, int format, int variant
 		info.ref_a = 0xFFFF;
 		break;
 
+	case kPixFormat_RGB_Planar16:
+	case kPixFormat_RGBA_Planar16:
+		info.ref_r = 0xFFFF;
+		info.ref_a = 0xFFFF;
+		if (variant==kBitmapVariant_G4_0_14) {
+			// 14 bit
+			info.ref_r = 0x3FFF;
+			info.ref_a = 0x3FFF;
+		}
+		if (variant==kBitmapVariant_G4_0_12) {
+			// 12 bit
+			info.ref_r = 0xFFF;
+			info.ref_a = 0xFFF;
+		}
+		if (variant==kBitmapVariant_G4_0_10) {
+			// 10 bit
+			info.ref_r = 0x3FF;
+			info.ref_a = 0x3FF;
+		}
+		break;
+
 	case kPixFormat_YUV420_Planar16:
 	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV444_Planar16:
 		if (info.colorRangeMode==vd2::kColorRangeMode_Full)
 			info.ref_r = 0xFFFF;
 		else
 			info.ref_r = 0xFF00;
 
-		if (variant==2) {
+		if (variant==kBitmapVariant_Y3_10_10) {
 			// ffmpeg, 10 bit
 			if (info.colorRangeMode==vd2::kColorRangeMode_Full)
 				info.ref_r = 0x3FF;
@@ -692,7 +903,7 @@ void VDSetPixmapInfoForBitmap(FilterModPixmapInfo& info, int format, int variant
 		}
 		break;
 
-	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_Y16:
 	case kPixFormat_YUV420_Alpha_Planar16:
 	case kPixFormat_YUV422_Alpha_Planar16:
 	case kPixFormat_YUV444_Alpha_Planar16:

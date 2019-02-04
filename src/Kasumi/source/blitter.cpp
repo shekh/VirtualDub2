@@ -96,8 +96,17 @@ IVDPixmapExtraGen* VDPixmapCreateNormalizer(int format, FilterModPixmapInfo& out
 	case nsVDPixmap::kPixFormat_YUV422_P216:
 	case nsVDPixmap::kPixFormat_YUV420_P016:
 	case nsVDPixmap::kPixFormat_YUV422_YU64:
+	case nsVDPixmap::kPixFormat_Y16:
 		{
 			ExtraGen_YUV_Normalize* normalize = new ExtraGen_YUV_Normalize;
+			normalize->max_value = out_info.ref_r;
+			normalize->max_a_value = out_info.ref_a;
+			return normalize;
+		}
+	case nsVDPixmap::kPixFormat_RGB_Planar16:
+	case nsVDPixmap::kPixFormat_RGBA_Planar16:
+		{
+			ExtraGen_RGB_Normalize* normalize = new ExtraGen_RGB_Normalize;
 			normalize->max_value = out_info.ref_r;
 			normalize->max_a_value = out_info.ref_a;
 			return normalize;
@@ -113,6 +122,7 @@ IVDPixmapExtraGen* VDPixmapCreateNormalizer(int format, FilterModPixmapInfo& out
 	case nsVDPixmap::kPixFormat_YUV420_Alpha_Planar:
 	case nsVDPixmap::kPixFormat_YUV422_Alpha_Planar:
 	case nsVDPixmap::kPixFormat_YUV444_Alpha_Planar:
+	case nsVDPixmap::kPixFormat_RGBA_Planar:
 		{
 			ExtraGen_A8_Normalize* normalize = new ExtraGen_A8_Normalize;
 			return normalize;

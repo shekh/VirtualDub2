@@ -658,14 +658,7 @@ public:
 	const void *GetRawCodecHandlePtr();
 	const wchar_t *GetName();
 	bool GetAlpha() {
-		switch (mSrcLayout.format) {
-		case nsVDPixmap::kPixFormat_XRGB8888:
-		case nsVDPixmap::kPixFormat_XRGB64:
-		case nsVDPixmap::kPixFormat_B64A:
-		case nsVDPixmap::kPixFormat_YUVA444_Y416:
-			return true;
-		}
-		return false;
+		return VDPixmapFormatHasAlpha(mSrcLayout.format);
 	}
 
 protected:

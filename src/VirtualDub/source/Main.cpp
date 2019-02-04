@@ -773,6 +773,7 @@ public:
 	void InitDubber();
 	bool CheckAudioCodec(const char* format);
 	virtual bool Commit(const VDStringW& fname){ return true; }
+	virtual void ChangeFilterIndex(){}
 
 	HWND mhdlg;
 	int align_now;
@@ -783,6 +784,8 @@ public:
 	bool addJob;
 	bool saveVideo;
 	int nFilterIndex;
+	VDStringW os_driver;
+	VDStringA os_format;
 };
 
 void VDSaveVideoDialogW32::InitCodec() {
@@ -810,6 +813,7 @@ void VDSaveVideoDialogW32::InitCodec() {
 		MakeOutputFormat make;
 		make.initGlobal();
 		make.initComp(&g_Vcompression);
+		make.os_format = os_format;
 		make.option = format;
 		make.combine();
 		make.combineComp();
@@ -1003,6 +1007,7 @@ UINT_PTR CALLBACK SaveVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 		if(data->hdr.code==CDN_TYPECHANGE){
 			dlg->nFilterIndex = data->lpOFN->nFilterIndex;
+			dlg->ChangeFilterIndex();
 		}
 		if(data->hdr.code==CDN_FILEOK){
 			VDStringW fname = OpenSave_GetFilePath(hdlg);
@@ -1030,6 +1035,7 @@ public:
 	bool fUseCompatibility;
 
 	virtual bool Commit(const VDStringW& fname);
+	virtual void ChangeFilterIndex();
 };
 
 void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
@@ -1042,6 +1048,8 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	dlg.inputAudio = inputAudio;
 	dlg.addJob = queueAsJob;
 	dlg.fUseCompatibility = fUseCompatibility;
+	dlg.os_driver = g_FileOutDriver;
+	dlg.os_format = g_FileOutFormat;
 
 	OPENFILENAMEW fn = {sizeof(fn),0};
 	fn.Flags = OFN_ENABLETEMPLATE | OFN_ENABLEHOOK;
@@ -1112,6 +1120,25 @@ void SaveAVI(HWND hWnd, bool fUseCompatibility, bool queueAsJob) {
 	dlg.Commit(fname);
 }
 
+void VDSaveDialogAVI::ChangeFilterIndex() {
+	int type = nFilterIndex-1;
+	IVDOutputDriver *driver = opt_driver[type];
+	int format = opt_format[type];
+
+	if (driver) {
+		wchar_t filter[128];
+		wchar_t ext[128];
+		char name[128];
+		driver->GetDriver()->EnumFormats(format,filter,ext,name);
+		os_driver = driver->GetSignatureName();
+		os_format = name;
+	} else {
+		os_driver.clear();
+		os_format.clear();
+	}
+	InitCodec();
+}
+
 bool VDSaveDialogAVI::Commit(const VDStringW& fname) {
 	int type = nFilterIndex-1;
 	IVDOutputDriver *driver = opt_driver[type];
@@ -1170,6 +1197,8 @@ void SaveAudio(HWND hWnd, bool queueAsJob) {
 	dlg.saveVideo = false;
 	dlg.inputAudio = inputAudio;
 	dlg.addJob = queueAsJob;
+	dlg.os_driver = g_AudioOutDriver;
+	dlg.os_format = g_AudioOutFormat;
 
 	OPENFILENAMEW fn = {sizeof(fn),0};
 	fn.Flags = OFN_ENABLETEMPLATE | OFN_ENABLEHOOK;
