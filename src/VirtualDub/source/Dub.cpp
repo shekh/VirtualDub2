@@ -2258,7 +2258,8 @@ void MakeOutputFormat::initComp(IVDDubberOutputSystem* os, IVDVideoCompressor* v
 	this->os = os;
 	this->vc = vc;
 	if (os) {
-		os_format = os->GetFormatName();
+		const char* format = os->GetFormatName();
+		os_format = format ? format : "";
 		int cf = os->GetVideoOutputFormatOverride(flt.format);
 		if (cf) {
 			reference = 0;
@@ -2315,18 +2316,14 @@ void MakeOutputFormat::combineComp() {
 	if (!vc) {
 		// ignore output of analyzis pass
 		if (os && os->IsNull()) return;
-
-		// select reasonable uncompressed format
-		if (out==nsVDPixmap::kPixFormat_XRGB64) {
-			out = nsVDPixmap::kPixFormat_B64A;
-			comp = out;
-		}
 	}
 
 	if (mode > DubVideoOptions::M_FASTREPACK) combineComp_repack();
 }
 
 void MakeOutputFormat::combineComp_repack() {
+	if (os && os->IsVideoImageOutputRequired()) return; // not going to use DIB
+
 	using namespace nsVDPixmap;
 	// For full recompression mode, we allow any format variant that the codec can accept.
 	// Try to find a variant that works.
@@ -2458,21 +2455,74 @@ bool MakeOutputFormat::accept_format(int format, int variant)
 
 	if (!os_format.empty() && os_format!="avi") switch(format) {
 	// disable avi-only formats
+	case kPixFormat_RGB888:
+		if (variant==kBitmapVariant_0_rgb) return false;
+		break;
+	case kPixFormat_XRGB8888:
+		if (variant==kBitmapVariant_0_rgba) return false;
+		break;
 	case kPixFormat_Y8_FR:
 		if (variant==kBitmapVariant_Y8_Pal) return false;
 		break;
 	}
 
-	if (os_format!="nut") switch(format) {
+	if (os_format=="nut") switch(format) {
+	// disable fancy formats
+	case kPixFormat_B64A:
+	case kPixFormat_YUVA444_Y416:
+	case kPixFormat_YUV444_Y410:
+	case kPixFormat_YUV420_P010:
+	case kPixFormat_YUV420_P016:
+	case kPixFormat_YUV422_P210:
+	case kPixFormat_YUV422_P216:
+		return false;
+	} else switch(format) {
 	// disable nut-only formats
 	case kPixFormat_XRGB64:
 	case kPixFormat_Y16:
 	case kPixFormat_YUV420_Planar16:
 	case kPixFormat_YUV422_Planar16:
 	case kPixFormat_YUV444_Planar16:
+	case kPixFormat_RGB_Planar:
+	case kPixFormat_RGBA_Planar:
 	case kPixFormat_RGB_Planar16:
 	case kPixFormat_RGBA_Planar16:
 		return false;
+	}
+
+	if (os_format=="mov" || os_format=="mov+faststart" || os_format=="mp4" || os_format=="mp4+faststart") switch(format) {
+	case kPixFormat_Y16:
+	case kPixFormat_Y8:
+	case kPixFormat_Y8_FR:
+		return false;
+	case kPixFormat_RGB888:
+		if (variant!=kBitmapVariant_24BG) return false;
+		break;
+	}
+
+	if (os_format=="matroska") switch(format) {
+	case kPixFormat_RGB888:
+		if (variant!=kBitmapVariant_RV24) return false;
+		break;
+	// disable some
+	case kPixFormat_B64A:
+	case kPixFormat_XRGB64:
+	case kPixFormat_XRGB8888:
+	case kPixFormat_Y16:
+	case kPixFormat_YUV420_Planar16:
+	case kPixFormat_YUV422_Planar16:
+	case kPixFormat_YUV444_Planar16:
+		return false;
+		// note matroska tags
+		// ('R', 'G', 'B', 'A')
+		// ('I', '0', 'A', 'L') --- YUV420P10LE
+		// ('I', '2', 'A', 'L') --- YUV422P10LE
+		// ('I', '4', 'A', 'L') --- YUV444P10LE
+		// ('I', '0', 'C', 'L') --- YUV420P12LE
+		// ('I', '2', 'C', 'L') --- YUV422P12LE
+		// ('I', '4', 'C', 'L') --- YUV444P12LE
+		// ('I', '0', 'F', 'L') --- YUV420P16LE
+		// ('I', '4', 'F', 'L') --- YUV444P16LE
 	}
 
 	return true;

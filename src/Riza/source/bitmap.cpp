@@ -153,6 +153,22 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 		}
 		break;
 
+	case VDMAKEFOURCC('B', 'G', 'R', 24):
+		variant = kBitmapVariant_BGR_24;
+		return kPixFormat_RGB888;
+
+	case VDMAKEFOURCC('2', '4', 'B', 'G'):
+		variant = kBitmapVariant_24BG;
+		return kPixFormat_RGB888;
+
+	case VDMAKEFOURCC('R', 'V', '2', '4'):
+		variant = kBitmapVariant_RV24;
+		return kPixFormat_RGB888;
+
+	case VDMAKEFOURCC('B', 'G', 'R', 'A'):
+		variant = kBitmapVariant_BGRA;
+		return kPixFormat_XRGB8888;
+
 	case VDMAKEFOURCC('U', 'Y', 'V', 'Y'):
 		return kPixFormat_YUV422_UYVY;
 
@@ -318,6 +334,12 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 }
 
 int VDGetPixmapToBitmapVariants(int format) {
+	if (format == nsVDPixmap::kPixFormat_RGB888)
+		return 4;
+
+	if (format == nsVDPixmap::kPixFormat_XRGB8888)
+		return 2;
+
 	if (format == nsVDPixmap::kPixFormat_YUV420_Planar)
 		return 3;
 
@@ -476,12 +498,32 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		}
 		break;
 	case kPixFormat_RGB888:
-		dst->biCompression	= VDAVIBitmapInfoHeader::kCompressionRGB;
+		switch(variant) {
+		case kBitmapVariant_0_rgb:
+			dst->biCompression	= VDAVIBitmapInfoHeader::kCompressionRGB;
+			break;
+		case kBitmapVariant_BGR_24:
+			dst->biCompression	= VDMAKEFOURCC('B', 'G', 'R', 24);
+			break;
+		case kBitmapVariant_24BG:
+			dst->biCompression	= VDMAKEFOURCC('2', '4', 'B', 'G');
+			break;
+		case kBitmapVariant_RV24:
+			dst->biCompression	= VDMAKEFOURCC('R', 'V', '2', '4');
+			break;
+		}
 		dst->biBitCount		= 24;
 		dst->biSizeImage	= ((w*3+3)&~3) * h;
 		break;
 	case kPixFormat_XRGB8888:
-		dst->biCompression	= VDAVIBitmapInfoHeader::kCompressionRGB;
+		switch(variant) {
+		case kBitmapVariant_0_rgba:
+			dst->biCompression	= VDAVIBitmapInfoHeader::kCompressionRGB;
+			break;
+		case kBitmapVariant_BGRA:
+			dst->biCompression	= VDMAKEFOURCC('B', 'G', 'R', 'A');
+			break;
+		}
 		dst->biBitCount		= 32;
 		dst->biSizeImage	= w*4 * h;
 		break;
@@ -773,13 +815,20 @@ uint32 VDMakeBitmapCompatiblePixmapLayout(VDPixmapLayout& layout, sint32 w, sint
 		layout.palette = palette;
 		// fall through
 	case kPixFormat_XRGB1555:
-	case kPixFormat_RGB888:
 	case kPixFormat_RGB565:
-	case kPixFormat_XRGB8888:
 		// RGB can be flipped (but YUV can't)
 		if (h > 0) {
 			layout.data += layout.pitch * (h-1);
 			layout.pitch = -layout.pitch;
+		}
+		break;
+	case kPixFormat_RGB888:
+	case kPixFormat_XRGB8888:
+		if (variant==kBitmapVariant_0_rgb) {
+			if (h > 0) {
+				layout.data += layout.pitch * (h-1);
+				layout.pitch = -layout.pitch;
+			}
 		}
 		break;
 	case kPixFormat_Y8_FR:

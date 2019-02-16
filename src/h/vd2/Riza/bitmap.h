@@ -39,6 +39,18 @@ class VDStringA;
 class VDStringW;
 
 enum {
+	kBitmapVariant_0_rgb = 1,
+	kBitmapVariant_BGR_24 = 2,
+	kBitmapVariant_24BG = 3,
+	kBitmapVariant_RV24 = 4,
+};
+
+enum {
+	kBitmapVariant_0_rgba = 1,
+	kBitmapVariant_BGRA = 2,
+};
+
+enum {
 	kBitmapVariant_YV12 = 1,
 	kBitmapVariant_I420 = 2,
 	kBitmapVariant_IYUV = 3,
