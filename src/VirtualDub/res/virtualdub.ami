@@ -466,8 +466,8 @@ dialog 1015, "" : fill, child {
 						listitem "h:m:s.t / total (0:01:35.150 / 0:02:50)";
 						listitem "minutes (1.58 min)";
 						listitem "minutes / total (1.58 / 2.83 min)";
-						listitem "seconds (95.15 s)";
-						listitem "seconds / total (95.15 / 170 s)";
+						listitem "seconds (95.150 s)";
+						listitem "seconds / total (95.150 / 170 s)";
 						listitem "ms (95150 ms)";
 						listitem "ms / total (95150 / 170000 ms)";
 						listitem "percent (55.97%)";

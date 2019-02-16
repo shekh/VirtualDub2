@@ -2377,6 +2377,10 @@ void VDProject::ToggleZoomRange() {
 		mposZoomStart = mposSelectionStart;
 		mposZoomEnd = mposSelectionEnd;
 	}
+	if (mposZoomEnd<=mposZoomStart) {
+		mposZoomStart = 0;
+		mposZoomEnd = mTimeline.GetLength()-1;
+	}
 	if (mposZoomEnd>mposZoomStart) {
 		mbZoomEnabled = true;
 		if (mpCB)

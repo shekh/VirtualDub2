@@ -290,6 +290,7 @@ namespace cap_dshow {
 			switch(hr) {
 				X(ERROR_BAD_COMMAND);
 				X(ERROR_ALREADY_INITIALIZED);
+				X(ERROR_NO_SYSTEM_RESOURCES);
 			}
 #undef X
 #define X(err) case err: return #err

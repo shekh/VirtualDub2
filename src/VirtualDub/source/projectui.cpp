@@ -3107,10 +3107,10 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_SEEK_STOP			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_JUMPTO				, bSourceFileExists);
 
-	bool zoom = mbZoomEnabled;
-	if (mposZoomEnd>mposZoomStart) zoom = true;
-	if (mposSelectionEnd>mposSelectionStart) zoom = true;
-	VDEnableMenuItemW32(hMenu, ID_EDIT_ZOOMRANGE, zoom);
+	//bool zoom = mbZoomEnabled;
+	//if (mposZoomEnd>mposZoomStart) zoom = true;
+	//if (mposSelectionEnd>mposSelectionStart) zoom = true;
+	VDEnableMenuItemW32(hMenu, ID_EDIT_ZOOMRANGE, true);
 	VDCheckMenuItemW32(hMenu, ID_EDIT_ZOOMRANGE, mbZoomEnabled);
 
 	VDEnableMenuItemW32(hMenu, ID_VIDEO_CLIPPING			, inputVideo != 0);
@@ -4948,10 +4948,10 @@ VDStringW GetTimeString(VDPosition time, VDPosition total, bool zero_fill, unsig
 		_snwprintf(buf, buflen, zero_fill ? L"%0*I64u / %0*I64u ms" : L"%*I64u / %*I64u ms", width, time, width, total);
 	}
 	if (format==pref_time_s) {
-		_snwprintf(buf, buflen, zero_fill ? L"%0*.2f s" : L"%*.2f s", width+3, double(time)/1000);
+		_snwprintf(buf, buflen, zero_fill ? L"%0*.3f s" : L"%*.3f s", width+3, double(time)/1000);
 	}
 	if (format==pref_time_s_r) {
-		_snwprintf(buf, buflen, zero_fill ? L"%0*.2f / %0*.2f s" : L"%*.2f / %*.2f s", width+3, double(time)/1000, width+3, double(total)/1000);
+		_snwprintf(buf, buflen, zero_fill ? L"%0*.3f / %0*.2f s" : L"%*.3f / %*.2f s", width+3, double(time)/1000, width+3, double(total)/1000);
 	}
 	if (format==pref_time_m) {
 		_snwprintf(buf, buflen, zero_fill ? L"%0*.2f min" : L"%*.2f min", width+3, double(time)/60000);
