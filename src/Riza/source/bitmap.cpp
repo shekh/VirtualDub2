@@ -499,9 +499,6 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		break;
 	case kPixFormat_RGB888:
 		switch(variant) {
-		case kBitmapVariant_0_rgb:
-			dst->biCompression	= VDAVIBitmapInfoHeader::kCompressionRGB;
-			break;
 		case kBitmapVariant_BGR_24:
 			dst->biCompression	= VDMAKEFOURCC('B', 'G', 'R', 24);
 			break;
@@ -511,17 +508,22 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		case kBitmapVariant_RV24:
 			dst->biCompression	= VDMAKEFOURCC('R', 'V', '2', '4');
 			break;
+		case kBitmapVariant_0_rgb:
+		default:
+			dst->biCompression	= VDAVIBitmapInfoHeader::kCompressionRGB;
+			break;
 		}
 		dst->biBitCount		= 24;
 		dst->biSizeImage	= ((w*3+3)&~3) * h;
 		break;
 	case kPixFormat_XRGB8888:
 		switch(variant) {
-		case kBitmapVariant_0_rgba:
-			dst->biCompression	= VDAVIBitmapInfoHeader::kCompressionRGB;
-			break;
 		case kBitmapVariant_BGRA:
 			dst->biCompression	= VDMAKEFOURCC('B', 'G', 'R', 'A');
+			break;
+		case kBitmapVariant_0_rgba:
+		default:
+			dst->biCompression	= VDAVIBitmapInfoHeader::kCompressionRGB;
 			break;
 		}
 		dst->biBitCount		= 32;
