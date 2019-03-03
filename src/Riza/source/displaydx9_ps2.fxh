@@ -32,9 +32,9 @@ void VertexShaderPointBilinear_2_0(VertexInput IN, out float4 oPos : POSITION, o
 }
 
 float4 PixelShaderPointBilinear_2_0(float2 t0 : TEXCOORD0, float2 ditherUV : TEXCOORD1) : COLOR0 {
-	float3 c = tex2D(samp0, t0).rgb;
+	float4 c = tex2D(samp0, t0);
 			 	
-	return float4(c, 0) * (254.0f / 255.0f) + tex2D(samp1, ditherUV) / 256.0f;
+	return c * (254.0f / 255.0f) + tex2D(samp1, ditherUV) / 256.0f;
 };
 
 technique point_2_0 {
@@ -176,13 +176,13 @@ float4 PixelShaderBicubic_2_0_Filter(VertexOutputBicubic_2_0 IN) {
 }
 
 float4 PixelShaderBicubic_2_0_A(VertexOutputBicubic_2_0 IN) : COLOR0 {		
-	return float4(PixelShaderBicubic_2_0_Filter(IN).rgb, 0);
+	return PixelShaderBicubic_2_0_Filter(IN);
 }
 
 float4 PixelShaderBicubic_2_0_B(VertexOutputBicubic_2_0 IN, float2 ditherUV : TEXCOORD4) : COLOR0 {
-	float3 c = PixelShaderBicubic_2_0_Filter(IN).rgb;
-			 			 
-	return float4(c * (254.0f / 255.0f), 0) + tex2D(samp3, ditherUV) / 256.0f;
+	float4 c = PixelShaderBicubic_2_0_Filter(IN);
+	
+	return c * (254.0f / 255.0f) + tex2D(samp3, ditherUV) / 256.0f;
 }
 
 technique bicubic_2_0 {
