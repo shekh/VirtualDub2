@@ -907,8 +907,20 @@ void VDAudioDisplayControl::SetSpectralPaletteDefault() {
 
 		mbihSpectrumHighlight.pal[i].rgbRed = (BYTE)r;
 		mbihSpectrumHighlight.pal[i].rgbGreen = (BYTE)((g * (255-32) + 128) / 255 + 32);
-		mbihSpectrumHighlight.pal[i].rgbBlue = (BYTE)((b * (255-24) + 128) / 255 + 24);
+		mbihSpectrumHighlight.pal[i].rgbBlue = (BYTE)((b * (255-64) + 128) / 255 + 64);
 		mbihSpectrumHighlight.pal[i].rgbReserved = 0;
+
+		if (mMarkerRate*mPixelsPerSample<10) {
+			mbihSpectrumHighlight.pal[i].rgbRed = BYTE((128+r)/2);
+			mbihSpectrumHighlight.pal[i].rgbGreen = BYTE((128+g)/2);
+			mbihSpectrumHighlight.pal[i].rgbBlue = BYTE((255+b)/2);
+		}
+
+		if (mMarkerRate*mPixelsPerSample<5) {
+			mbihSpectrumHighlight.pal[i].rgbRed = 128;
+			mbihSpectrumHighlight.pal[i].rgbGreen = 128;
+			mbihSpectrumHighlight.pal[i].rgbBlue = 255;
+		}
 
 		mbihSpectrumMinorMarker.pal[i].rgbRed = (BYTE)((r * (255-32) + 128) / 255 + 32);
 		mbihSpectrumMinorMarker.pal[i].rgbGreen = (BYTE)((g * (255-32) + 128) / 255 + 32);
@@ -1096,7 +1108,7 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 		GetCursorPos(&p);
 		MapWindowPoints(0,mhwnd,&p,1);
 		double s = double(mAudioOffsetDragAnchor - (p.x-mDragAnchorX)*mSamplesPerPixel);
-		href = VDRoundToInt64(s/mMarkerMinorRate-mMarkerStart);
+		href = VDRoundToInt64(s/mMarkerRate-mMarkerStart);
 	}
 
 	// redo old focus
@@ -1870,7 +1882,7 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 		marker2 = mMarkerRangeMax;
 
 	{for(sint64 marker = marker1; marker < marker2; ++marker) {
-		sint32 x = VDFloorToInt((marker*mMarkerMinorRate + mMarkerStart - marker_pos) * mPixelsPerSample);
+		sint32 x = VDFloorToInt((marker*mMarkerMinorRate + mMarkerStart*mMarkerMinorStep - marker_pos) * mPixelsPerSample);
 		bool isMajor = (marker % mMarkerMajorStep) == 0;
 
 		if (isMajor) {
@@ -1939,7 +1951,7 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 		FastFill(hdc, xselend32, mChanHeight * mChanCount, ps.rcPaint.right, mHeight, RGB(0,0,0));
 
 	{for(sint64 marker = marker1; marker < marker2; ++marker) {
-		sint32 x = VDFloorToInt((marker*mMarkerMinorRate + mMarkerStart - marker_pos) * mPixelsPerSample);
+		sint32 x = VDFloorToInt((marker*mMarkerMinorRate + mMarkerStart*mMarkerMinorStep - marker_pos) * mPixelsPerSample);
 		bool isMajor = (marker % mMarkerMajorStep) == 0;
 		if (isMajor) {
 			FastFill(hdc, x, mChanHeight*mChanCount, x+1, ps.rcPaint.bottom, RGB(64, 64, 64));
@@ -1950,6 +1962,9 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 	}}
 
 	// focus
+	COLORREF focus_color = RGB(0, 32, 64);
+	if (mMarkerRate*mPixelsPerSample<10) focus_color = RGB(64, 80, 160);
+	if (mMarkerRate*mPixelsPerSample<5) focus_color = RGB(128, 128, 255);
 	if (ps.rcPaint.top < mChanHeight * mChanCount && mHighlightedMarker >= marker1*mMarkerMinorStep && mHighlightedMarker < marker2*mMarkerMinorStep && mDragMode!=kDragModeAudioOffset) {
 		sint32 xh1,xh2;
 		CalcFocus(xh1,xh2,mHighlightedMarker,mWindowPosition);
@@ -1957,7 +1972,7 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 		if (mbSpectrumMode)
 			StretchDIBits(hdc, xh1, 0, xh2 - xh1, mChanHeight * mChanCount, xh1, 0, xh2 - xh1, mbihSpectrumHighlight.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumHighlight, DIB_RGB_COLORS, SRCCOPY);
 		else
-			FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, RGB(0, 32, 64));
+			FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, focus_color);
 	}
 	if (mRefMarker!=-1 && mRefMarker!=mHighlightedMarker && ps.rcPaint.top < mChanHeight * mChanCount && mRefMarker >= marker1*mMarkerMinorStep && mRefMarker < marker2*mMarkerMinorStep) {
 		sint32 xh1,xh2;
@@ -1966,7 +1981,7 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 		if (mbSpectrumMode)
 			StretchDIBits(hdc, xh1, 0, xh2 - xh1, mChanHeight * mChanCount, xh1, 0, xh2 - xh1, mbihSpectrumHighlight.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumHighlight, DIB_RGB_COLORS, SRCCOPY);
 		else
-			FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, RGB(0, 32, 64));
+			FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, focus_color);
 	}
 
 	// samples
@@ -2371,6 +2386,7 @@ void VDAudioDisplayControl::RecomputeMarkerSteps() {
 
 	mMarkerMinorRate = mMarkerRate * mMarkerMinorStep;
 	mMarkerMinorInvRate = 1.0 / mMarkerMinorRate;
+	SetSpectralPaletteDefault();
 }
 
 void VDAudioDisplayControl::InvalidateRange(int x1, int x2) {
