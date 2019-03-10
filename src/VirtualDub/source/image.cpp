@@ -189,7 +189,7 @@ struct TGAHeader {
 	unsigned char	AttBits;
 };
 
-bool DecodeTGAHeader(const void *pBuffer, long cbBuffer, int& w, int& h, bool& bHasAlpha) {
+bool DecodeTGAHeader(const void *pBuffer, long cbBuffer, int& w, int& h, int& format, bool& bHasAlpha) {
 	const TGAHeader& hdr = *(const TGAHeader *)pBuffer;
 
 	if (cbBuffer < sizeof(TGAHeader))
@@ -200,15 +200,15 @@ bool DecodeTGAHeader(const void *pBuffer, long cbBuffer, int& w, int& h, bool& b
 	// checks.  Otherwise, assume old TARGA and apply loose checks.
 	bool bVerified = (!memcmp((const char *)pBuffer + cbBuffer - 18, "TRUEVISION-XFILE.", 18));
 
-	if (hdr.ImgType != 2 && hdr.ImgType != 10) {
+	if (hdr.ImgType != 2 && hdr.ImgType != 10 && hdr.ImgType != 3 && hdr.ImgType != 11) {
 		if (bVerified)
-			throw MyError("TARGA file must be true-color or RLE true-color.");
-		return false;		// not true-color
+			throw MyError("Unsupported TARGA format.");
+		return false;		// 2,10=true-color; 3,11=mono
 	}
 
-	if (hdr.PixelSize != 16 && hdr.PixelSize != 24 && hdr.PixelSize != 32) {
+	if (hdr.PixelSize != 8 && hdr.PixelSize != 16 && hdr.PixelSize != 24 && hdr.PixelSize != 32) {
 		if (bVerified)
-			throw MyError("TARGA file must be 16-bit, 24-bit, or 32-bit.");
+			throw MyError("TARGA file must be 8-bit, 16-bit, 24-bit, or 32-bit.");
 		return false;		// not 24-bit pixels
 	}
 
@@ -218,22 +218,50 @@ bool DecodeTGAHeader(const void *pBuffer, long cbBuffer, int& w, int& h, bool& b
 		return false;		// right-to-left not supported
 	}
 
+	bHasAlpha = false;
+
 	switch(hdr.AttBits & 0xf) {
 	case 0:		// Zero alpha bits is always valid.
 		break;
 	case 1:		// One alpha bit is permitted for 16-bit.
-		if (hdr.PixelSize != 16)
-			throw MyError("TARGA decoder: 1-bit alpha supported only with 16-bit RGB.");
+		if (hdr.PixelSize == 16) {
+			bHasAlpha = true;
+			break;
+		}
+		throw MyError("TARGA decoder: 1-bit alpha supported only with 16-bit RGB.");
+	case 8:
+		if (hdr.PixelSize == 32) {
+			// 8-bit alpha is permitted for 32-bit.
+			bHasAlpha = true;
+			break;
+		}
+		if (hdr.PixelSize == 8) {
+			// alpha-only = gray
+			break;
+		}
+		throw MyError("TARGA decoder: 8-bit alpha supported only with 32-bit RGB.");
+	}
+
+	format = 0;
+	int bpp = (hdr.PixelSize+7) >> 3;
+	switch (bpp){
+	case 1:
+		format = nsVDPixmap::kPixFormat_Y8_FR;
 		break;
-	case 8:		// 8-bit alpha is permitted for 32-bit.
-		if (hdr.PixelSize != 32)
-			throw MyError("TARGA decoder: 8-bit alpha supported only with 32-bit RGB.");
+	case 2:
+		// TARGA doesn't have a 565 mode, only 555 and 1555
+		format = nsVDPixmap::kPixFormat_XRGB1555;
+		break;
+	case 3:
+		format = nsVDPixmap::kPixFormat_RGB888;
+		break;
+	case 4:
+		format = nsVDPixmap::kPixFormat_XRGB8888;
 		break;
 	}
 
 	w = hdr.WidthLo + (hdr.WidthHi << 8);
 	h = hdr.HeightLo + (hdr.HeightHi << 8);
-	bHasAlpha = (hdr.AttBits & 0xf) > 0;
 
 	return true;
 }
@@ -262,24 +290,20 @@ void DecodeTGA(const void *pBuffer, long cbBuffer, const VDPixmap& vb) {
 	const TGAHeader& hdr = *(const TGAHeader *)pBuffer;
 	const unsigned char *src = (const unsigned char *)pBuffer + sizeof(hdr) + hdr.IDLength;
 	const unsigned char *srcLimit = (const unsigned char *)pBuffer + cbBuffer;
-	const int w = hdr.WidthLo + (hdr.WidthHi << 8);
-	const int h = hdr.HeightLo + (hdr.HeightHi << 8);
 
 	VDPixmap vbSrc;
-	int bpp = (hdr.PixelSize+7) >> 3;		// TARGA doesn't have a 565 mode, only 555 and 1555
-	bool bSrcHasAlpha = (hdr.AttBits&0xf) != 0;
+	vbSrc.clear();
+	int bpp = (hdr.PixelSize+7) >> 3;
+	int w,h;
+	bool bSrcHasAlpha;
+	int format;
+	DecodeTGAHeader(pBuffer,cbBuffer,w,h,format,bSrcHasAlpha);
 
-	const int kFormats[3]={
-		nsVDPixmap::kPixFormat_XRGB1555,
-		nsVDPixmap::kPixFormat_RGB888,
-		nsVDPixmap::kPixFormat_XRGB8888,
-	};
-
-	if (hdr.ImgType == 2) {
+	if (hdr.ImgType == 2 || hdr.ImgType == 3) {
 		vbSrc.data = (uint32 *)src;
 		vbSrc.w = w;
 		vbSrc.h = h;
-		vbSrc.format = kFormats[bpp - 2];
+		vbSrc.format = format;
 		vbSrc.pitch = bpp * vbSrc.w;
 
 		if (!(hdr.AttBits & 0x20)) {
@@ -289,14 +313,14 @@ void DecodeTGA(const void *pBuffer, long cbBuffer, const VDPixmap& vb) {
 
 		BitBltAlpha(vb, 0, 0, vbSrc, 0, 0, w, h, bSrcHasAlpha);
 
-	} else if (hdr.ImgType == 10) {
+	} else if (hdr.ImgType == 10 || hdr.ImgType == 11) {
 		vdblock<uint8> rowbuffer(bpp * w + 1);
 		unsigned char *rowbuf = rowbuffer.data();
 
 		vbSrc.data = rowbuf;
 		vbSrc.w = w;
 		vbSrc.h = 1;
-		vbSrc.format = kFormats[bpp - 2];
+		vbSrc.format = format;
 		vbSrc.pitch = 0;
 
 		// This version allows RLE packets to span rows (illegal).
@@ -311,10 +335,9 @@ void DecodeTGA(const void *pBuffer, long cbBuffer, const VDPixmap& vb) {
 
 			// we always copy one pixel
 			dst[0] = src[0];
-			dst[1] = src[1];
-			src += 2;
-			dst += 2;
-			for(int k=0; k<bpp-2; ++k)
+			src++;
+			dst++;
+			for(int k=0; k<bpp-1; ++k)
 				*dst++ = *src++;
 
 			if (c & 0x80)				// run
@@ -404,6 +427,7 @@ bool VDIsMayaIFFHeader(const void *pv, uint32 len) {
 
 void DecodeImage(const void *pBuffer, long cbBuffer, VDPixmapBuffer& vb, int desired_format, bool& bHasAlpha) {
 	int w, h;
+	int init_format = 0;
 
 	bool bIsPNG = false;
 	bool bIsJPG = false;
@@ -416,7 +440,7 @@ void DecodeImage(const void *pBuffer, long cbBuffer, VDPixmapBuffer& vb, int des
 		if (!bIsJPG) {
 			bIsBMP = DecodeBMPHeader(pBuffer, cbBuffer, w, h, bHasAlpha);
 			if (!bIsBMP) {
-				bIsTGA = DecodeTGAHeader(pBuffer, cbBuffer, w, h, bHasAlpha);
+				bIsTGA = DecodeTGAHeader(pBuffer, cbBuffer, w, h, init_format, bHasAlpha);
 			}
 		}
 	}

@@ -72,7 +72,8 @@ private:
 	VDFile	mCachedFile;
 
 	nsVDPixmap::VDPixmapFormat mInitFormat;
-  bool mInitAlpha;
+	bool mInitAlpha;
+	bool mTGADecoder;
 
 	vdautoptr<IVDJPEGDecoder> mpJPEGDecoder;
 	vdautoptr<IVDImageDecoderIFF> mpIFFDecoder;
@@ -150,6 +151,7 @@ VideoSourceImages::VideoSourceImages(VDInputFileImages *parent)
 	, mCachedHandleFrame(-1)
 {
 	mSampleFirst = 0;
+	mTGADecoder = false;
 
 	mpTargetFormatHeader.resize(sizeof(BITMAPINFOHEADER));
 	allocFormat(sizeof(BITMAPINFOHEADER));
@@ -324,7 +326,7 @@ bool VideoSourceImages::setTargetFormat(VDPixmapFormatEx format) {
 	case nsVDPixmap::kPixFormat_Y8:
 	case nsVDPixmap::kPixFormat_Y8_FR:
 		{
-			if (!mpTIFFDecoder) break; // legacy code path does not use this format
+			if (!mpTIFFDecoder && !mTGADecoder) break; // legacy code path does not use this format
 			if (!AllocFrameBuffer(w * h))
 				throw MyMemoryError();
 
@@ -375,9 +377,9 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 			if (!bIsBMP) {
 				bIsIFF = VDIsMayaIFFHeader(inputBuffer, data_len);
 				if (!bIsIFF)
-				  bIsTIFF = VDIsTiffHeader(inputBuffer, data_len);
-				  if (!bIsTIFF)
-					  bIsTGA = DecodeTGAHeader(inputBuffer, data_len, w, h, bHasAlpha);
+					bIsTIFF = VDIsTiffHeader(inputBuffer, data_len);
+					if (!bIsTIFF)
+						bIsTGA = DecodeTGAHeader(inputBuffer, data_len, w, h, format, bHasAlpha);
 			}
 		}
 	}
@@ -418,6 +420,8 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 		mpTIFFDecoder->GetPixmapInfo(info);
 		if(info.alpha_type) bHasAlpha = true;
 	}
+
+	mTGADecoder = bIsTGA;
 
 	// Check image header.
 
@@ -490,7 +494,7 @@ const void *VideoSourceImages::streamGetFrame(const void *inputBuffer, uint32 da
 	if (bIsBMP)
 		DecodeBMP(inputBuffer, data_len, VDAsPixmap(mvbFrameBuffer));
 	if (bIsTGA)
-		DecodeTGA(inputBuffer, data_len, VDAsPixmap(mvbFrameBuffer));
+		DecodeTGA(inputBuffer, data_len, mTargetFormat);
 	if (bIsPNG) {
 		if (!mpPNGDecoder)
 			mpPNGDecoder = VDCreateImageDecoderPNG();

@@ -26,7 +26,7 @@ class VDPixmapBuffer;
 bool DecodeBMPHeader(const void *pBuffer, long cbBuffer, int& w, int& h, bool& bHasAlpha);
 void DecodeBMP(const void *pBuffer, long cbBuffer, const VDPixmap& vb);
 
-bool DecodeTGAHeader(const void *pBuffer, long cbBuffer, int& w, int& h, bool& bHasAlpha);
+bool DecodeTGAHeader(const void *pBuffer, long cbBuffer, int& w, int& h, int& format, bool& bHasAlpha);
 void DecodeTGA(const void *pBuffer, long cbBuffer, const VDPixmap& vb);
 
 bool VDIsJPEGHeader(const void *pv, uint32 len);

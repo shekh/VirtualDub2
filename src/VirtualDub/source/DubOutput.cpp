@@ -666,7 +666,15 @@ bool VDAVIOutputImagesSystem::AcceptsVideo() {
 }
 
 bool VDAVIOutputImagesSystem::IsVideoImageOutputEnabled() {
-	return mFormat==AVIOutputImages::kFormatTIFF_LZW || mFormat == AVIOutputImages::kFormatTIFF_RAW || mFormat == AVIOutputImages::kFormatTIFF_ZIP;
+	switch (mFormat) {
+	case AVIOutputImages::kFormatTIFF_LZW:
+	case AVIOutputImages::kFormatTIFF_RAW:
+	case AVIOutputImages::kFormatTIFF_ZIP:
+	case AVIOutputImages::kFormatTGA:
+	case AVIOutputImages::kFormatTGAUncompressed:
+		return true;
+	}
+	return false;
 }
 
 bool VDAVIOutputImagesSystem::IsVideoImageOutputRequired() { 
@@ -700,6 +708,15 @@ int VDAVIOutputImagesSystem::GetVideoOutputFormatOverride(int last_format) {
 		return kPixFormat_RGB888;
 	case AVIOutputImages::kFormatTGA:
 	case AVIOutputImages::kFormatTGAUncompressed:
+		switch (last_format) {
+		case kPixFormat_Y8:
+		case kPixFormat_Y8_FR:
+		case kPixFormat_RGB888:
+		case kPixFormat_XRGB8888:
+		case kPixFormat_XRGB1555:
+			return last_format;
+		}
+		return kPixFormat_RGB888;
 	case AVIOutputImages::kFormatPNG:
 		switch (last_format) {
 		case kPixFormat_RGB888:
