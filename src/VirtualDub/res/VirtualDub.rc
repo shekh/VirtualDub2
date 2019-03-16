@@ -705,6 +705,7 @@ BEGIN
     BEGIN
         MENUITEM "Image sequence...",           ID_FILE_SAVEIMAGESEQ
         MENUITEM "Single image...",             ID_FILE_SAVEIMAGE
+        MENUITEM "Single image (skip dialog)",  ID_FILE_SAVEIMAGE2
         MENUITEM "Adobe Filmstrip (*.flm)...",  ID_FILE_SAVEFILMSTRIP
         MENUITEM "Raw audio...",                ID_FILE_SAVERAWAUDIO
         MENUITEM "Raw video...",                ID_FILE_SAVERAWVIDEO

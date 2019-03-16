@@ -183,6 +183,9 @@ extern bool (*VDRemoveFile)(const wchar_t *path);
 void VDMoveFile(const wchar_t *srcPath, const wchar_t *dstPath);
 
 bool VDDoesPathExist(const wchar_t *fileName);
+VDStringW VDIncrementPath(const VDStringW& fileName);
+VDStringW VDAutoIncrementPath(const VDStringW& fileName);
+bool VDIsValidFileName(const wchar_t *fileName);
 
 uint64 VDFileGetLastWriteTime(const wchar_t *path);
 VDStringW VDFileGetRootPath(const wchar_t *partialPath);

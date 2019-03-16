@@ -46,7 +46,7 @@ extern VDProject *g_project;
 extern vdrefptr<VDProjectUI> g_projectui;
 extern PanCenteringMode g_panCentering;
 extern IVDPositionControlCallback *VDGetPositionControlCallbackTEMP();
-extern void SaveImage(HWND, VDPosition frame, VDPixmap* px);
+extern void SaveImage(HWND, VDPosition frame, VDPixmap* px, bool skip_dialog);
 
 int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx format);
 
@@ -324,7 +324,7 @@ public:
 	void Close();
 	const VDPixmapLayout& GetFrameBufferLayout();
 	void CopyOutputFrameToClipboard();
-	void SaveImageAsk();
+	void SaveImageAsk(bool skip_dialog);
 	bool SampleCurrentFrame();
 	long SampleFrames();
 	long SampleFrames(IFilterModPreviewSample*);
@@ -1462,7 +1462,12 @@ bool FilterPreview::OnCommand(UINT cmd) {
 
 	case ID_FILE_SAVEIMAGE:
 		SceneShuttleStop();
-		SaveImageAsk();
+		SaveImageAsk(false);
+		return true;
+
+	case ID_FILE_SAVEIMAGE2:
+		SceneShuttleStop();
+		SaveImageAsk(true);
 		return true;
 
 	case ID_FILE_SAVEPROJECT:
@@ -1751,7 +1756,7 @@ void FilterPreview::CopyOutputFrameToClipboard() {
 	mpVideoFrameBuffer->Unlock();
 }
 
-void FilterPreview::SaveImageAsk() {
+void FilterPreview::SaveImageAsk(bool skip_dialog) {
 	if (!mpFiltSys->isRunning() || !mpVideoFrameBuffer)
 		return;
 
@@ -1759,7 +1764,7 @@ void FilterPreview::SaveImageAsk() {
 	VDPixmap px = VDPixmapFromLayout(GetFrameBufferLayout(), (void *)mpVideoFrameBuffer->LockRead());
 	px.info = mpVideoFrameBuffer->info;
 	mpVideoFrameBuffer->Unlock();
-	SaveImage(mhdlg, pos, &px);
+	SaveImage(mhdlg, pos, &px, skip_dialog);
 }
 
 bool FilterPreview::SampleCurrentFrame() {
@@ -2079,7 +2084,7 @@ private:
 	void OnVideoRedraw();
 	bool OnCommand(UINT);
 	void CopyOutputFrameToClipboard();
-	void SaveImageAsk();
+	void SaveImageAsk(bool skip_dialog);
 
 	HWND		mhdlg;
 	HWND		mhwndParent;
@@ -2294,7 +2299,11 @@ bool PixmapView::OnCommand(UINT cmd) {
 		return true;
 
 	case ID_FILE_SAVEIMAGE:
-		SaveImageAsk();
+		SaveImageAsk(false);
+		return true;
+
+	case ID_FILE_SAVEIMAGE2:
+		SaveImageAsk(true);
 		return true;
 
 	case ID_OPTIONS_SHOWPROFILER:
@@ -2323,7 +2332,7 @@ void PixmapView::CopyOutputFrameToClipboard() {
 	g_project->CopyFrameToClipboard(image);
 }
 
-void PixmapView::SaveImageAsk() {
+void PixmapView::SaveImageAsk(bool skip_dialog) {
 	if (!image.format) return;
-	SaveImage(mhdlg, -1, &image);
+	SaveImage(mhdlg, -1, &image, skip_dialog);
 }

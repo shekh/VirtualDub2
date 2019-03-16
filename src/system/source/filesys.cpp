@@ -554,6 +554,49 @@ bool VDDoesPathExist(const wchar_t *fileName) {
 	return bExists;
 }
 
+bool VDIsValidFileName(const wchar_t *fileName) {
+	if (!fileName) return false;
+	DWORD a = GetFileAttributesW(fileName);
+	if ((a!=0xFFFFFFFF) && (a & FILE_ATTRIBUTE_DIRECTORY)) return false;
+	if (a!=0xFFFFFFFF) return true;
+	HANDLE h = CreateFileW(fileName,GENERIC_WRITE,0,0,CREATE_NEW,FILE_FLAG_DELETE_ON_CLOSE|FILE_ATTRIBUTE_HIDDEN,0);
+	if (h==INVALID_HANDLE_VALUE) return false;
+	CloseHandle(h);
+	return true;
+}
+
+VDStringW VDIncrementPath(const VDStringW& fileName) {
+	VDStringW name(fileName);
+	const wchar_t *s = name.c_str();
+
+	int pos = VDFileSplitExt(s) - s;
+	
+	while(--pos >= 0) {
+		if (iswdigit(name[pos])) {
+			if (name[pos] == '9')
+				name[pos] = '0';
+			else {
+				++name[pos];
+				return name;
+			}
+		} else
+			break;
+	}
+
+	name.insert(name.begin() + (pos + 1), L'1');
+	return name;
+}
+
+VDStringW VDAutoIncrementPath(const VDStringW& fileName) {
+	VDStringW name(fileName);
+	for(;;) {
+		if (!VDDoesPathExist(name.c_str()))
+			return name;
+
+		name = VDIncrementPath(name);
+	}
+}
+
 void VDCreateDirectory(const wchar_t *path) {
 	// can't create dir with trailing slash
 	VDStringW::size_type l(wcslen(path));

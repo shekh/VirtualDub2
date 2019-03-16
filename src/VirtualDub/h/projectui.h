@@ -63,7 +63,7 @@ public:
 	void SaveAVIAsk(bool batchMode);
 	void SaveCompatibleAVIAsk(bool batchMode);
 	void SaveImageSequenceAsk(bool batchMode);
-	void SaveImageAsk();
+	void SaveImageAsk(bool skip_dialog=false);
 	void SaveSegmentedAVIAsk(bool batchMode);
 	void SaveWAVAsk(bool batchMode);
 	void SaveFilmstripAsk();

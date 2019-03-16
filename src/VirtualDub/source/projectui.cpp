@@ -128,6 +128,7 @@ extern bool				g_fDropFrames;
 extern bool				g_fDropSeeking;
 extern bool				g_fSwapPanes;
 extern bool				g_bExit;
+extern bool				g_bResetImageName;
 
 extern bool g_fJobMode;
 
@@ -159,7 +160,7 @@ extern void SaveSegmentedAVI(HWND, bool queueAsBatch);
 extern void SaveAudio(HWND, bool queueAsBatch);
 extern void OpenImageSeq(HWND hwnd);
 extern void SaveImageSeq(HWND, bool queueAsBatch);
-extern void SaveImage(HWND, VDPosition frame, VDPixmap* px);
+extern void SaveImage(HWND, VDPosition frame, VDPixmap* px, bool skip_dialog);
 extern void SaveConfiguration(HWND);
 extern void SaveProject(HWND, bool reset_path);
 extern void CreateExtractSparseAVI(HWND hwndParent, bool bExtract);
@@ -263,6 +264,7 @@ namespace {
 		{ ID_FILE_SAVECOMPATIBLEAVI,	"File.SaveCompatibleAVI" },
 		{ ID_FILE_SAVEIMAGESEQ,			"File.SaveImageSequence" },
 		{ ID_FILE_SAVEIMAGE,			"File.SaveImage" },
+		{ ID_FILE_SAVEIMAGE2,			"File.SaveNextImage" },
 		{ ID_FILE_SAVESEGMENTEDAVI,		"File.SaveSegmentedAVI" },
 		{ ID_FILE_SAVEFILMSTRIP,		"File.SaveFilmstrip" },
 		{ ID_FILE_SAVEANIMATEDGIF,		"File.SaveAnimatedGIF" },
@@ -888,6 +890,7 @@ void VDProjectUI::UpdateAccelPreview() {
 
 	int merge_list[] = {
 		ID_FILE_SAVEIMAGE,
+		ID_FILE_SAVEIMAGE2,
 		ID_VIDEO_COPYOUTPUTFRAME,
 		ID_FILE_SAVEPROJECT,
 		ID_VIDEO_FILTERS,
@@ -1205,7 +1208,7 @@ void VDProjectUI::SaveImageSequenceAsk(bool batchMode) {
 	SaveImageSeq((HWND)mhwnd, batchMode);
 }
 
-void VDProjectUI::SaveImageAsk() {
+void VDProjectUI::SaveImageAsk(bool skip_dialog) {
 	VDPosition frame = GetCurrentFrame();
 
 	mLastDisplayedInputFrame = -1;
@@ -1219,7 +1222,7 @@ void VDProjectUI::SaveImageAsk() {
 			px.info = buf->info;
 			buf->Unlock();
 
-			SaveImage((HWND)mhwnd, frame, &px);
+			SaveImage((HWND)mhwnd, frame, &px, skip_dialog);
 		}
 	} else if (mpInputDisplay) {
 		if (inputVideo && mpCurrentInputFrame) {
@@ -1228,7 +1231,7 @@ void VDProjectUI::SaveImageAsk() {
 			px.info = buf->info;
 			buf->Unlock();
 
-			SaveImage((HWND)mhwnd, frame, &px);
+			SaveImage((HWND)mhwnd, frame, &px, skip_dialog);
 		}
 	}
 }
@@ -2229,6 +2232,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_VIDEO_COPYSOURCEFRAME:
 		case ID_VIDEO_COPYOUTPUTFRAME:
 		case ID_FILE_SAVEIMAGE:
+		case ID_FILE_SAVEIMAGE2:
 		case ID_FILE_SAVEPROJECT:
 		case ID_VIDEO_COPYSOURCEFRAMENUMBER:
 		case ID_VIDEO_COPYOUTPUTFRAMENUMBER:
@@ -2276,8 +2280,9 @@ bool VDProjectUI::MenuHit(UINT id) {
 		case ID_FILE_RUNVIDEOANALYSISPASS:		RunNullVideoPass();			break;
 		case ID_FILE_SAVEAVI:					SaveAVIAsk(false);			break;
 		case ID_FILE_SAVECOMPATIBLEAVI:			SaveCompatibleAVIAsk(false);	break;
-		case ID_FILE_SAVEIMAGESEQ:				SaveImageSequenceAsk(false);		break;
-		case ID_FILE_SAVEIMAGE:					SaveImageAsk();					break;
+		case ID_FILE_SAVEIMAGESEQ:				SaveImageSequenceAsk(false);	break;
+		case ID_FILE_SAVEIMAGE:					SaveImageAsk(false);			break;
+		case ID_FILE_SAVEIMAGE2:				SaveImageAsk(true);				break;
 		case ID_FILE_SAVESEGMENTEDAVI:			SaveSegmentedAVIAsk(false);		break;
 		case ID_FILE_SAVEFILMSTRIP:				SaveFilmstripAsk();				break;
 		case ID_FILE_SAVEANIMATEDGIF:			SaveAnimatedGIFAsk();			break;
@@ -2935,6 +2940,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVECOMPATIBLEAVI	, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEIMAGESEQ			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEIMAGE			, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEIMAGE2			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVESEGMENTEDAVI		, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEWAV				, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_FILE_SAVEFILMSTRIP		, bSourceFileExists);
@@ -4723,7 +4729,7 @@ void VDProjectUI::UISourceFileUpdated() {
 		VDSetLastLoadSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (fileName + L".avi").c_str());
 		VDSetLastLoadSaveFileName(kFileDialog_WAVAudioOut, (fileName + L".wav").c_str());
 		VDSetLastLoadSaveFileName(kFileDialog_Project, (fileName + L".vdproject").c_str());
-		VDSetLastLoadSaveFileName(VDFSPECKEY_SAVEIMAGEFILE, (fileName + L".png").c_str());
+		g_bResetImageName = true;
 
 		bool isMP3 = inputAudio && inputAudio->getWaveFormat()->mTag == 0x55;
 		VDSetLastLoadSaveFileName(kFileDialog_RawAudioOut, (fileName + (isMP3 ? L".mp3" : L".bin")).c_str());

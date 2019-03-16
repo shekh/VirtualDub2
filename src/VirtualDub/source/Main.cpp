@@ -101,6 +101,7 @@ extern const wchar_t g_szWarningW[]=L"VirtualDub Warning";
 
 static const char g_szRegKeyPersistence[]="Persistence";
 static const char g_szRegKeyAutoAppendByName[]="Auto-append by name";
+bool g_bResetImageName;
 
 extern COMPVARS2 g_Vcompression;
 extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars);
@@ -2150,7 +2151,7 @@ UINT_PTR CALLBACK SaveImageProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 	return FALSE;
 }
 
-void SaveImage(HWND hwnd, VDPosition frame, VDPixmap* px) {
+void SaveImage(HWND hwnd, VDPosition frame, VDPixmap* px, bool skip_dialog) {
 	VDSaveImageDialogW32 dlg;
 
 	VDRegistryAppKey key(g_szRegKeyPersistence);
@@ -2165,6 +2166,33 @@ void SaveImage(HWND hwnd, VDPosition frame, VDPixmap* px) {
 		dlg.mQuality = 0;
 	else if (dlg.mQuality > 100)
 		dlg.mQuality = 100;
+
+	VDStringW init_path = VDGetLastLoadSavePath(VDFSPECKEY_SAVEIMAGEFILE);
+	VDStringW name = init_path;
+	if (skip_dialog && !VDIsValidFileName(name.c_str()))
+		skip_dialog = false;
+
+	if (skip_dialog && !g_bResetImageName) {
+		name = VDAutoIncrementPath(name);
+		VDSetLastLoadSavePath(VDFSPECKEY_SAVEIMAGEFILE, name.c_str());
+		AVIOutputImages::WriteSingleImage(name.c_str(),dlg.mFormat,dlg.mQuality,px);
+		VDStringW msg;
+		msg += L"Saved: "; msg += name;
+		SendMessage(GetDlgItem(g_hWnd, IDC_STATUS_WINDOW), SB_SETTEXTW, 255, (LPARAM)msg.c_str());
+		return;
+	}
+
+	if ((g_bResetImageName || init_path.empty()) && !skip_dialog) {
+		VDStringW name1;
+		if (g_szInputAVIFile[0])
+			name1 = VDFileSplitExtLeft(VDStringW(VDFileSplitPath(g_szInputAVIFile)));
+		else
+			name1 = L"image";
+		name = name1 +L".00"+ ExtFromFormat(dlg.mFormat);
+		name = VDMakePath(VDFileSplitPathLeft(init_path).c_str(), name.c_str());
+	}
+	name = VDAutoIncrementPath(name);
+	VDSetLastLoadSavePath(VDFSPECKEY_SAVEIMAGEFILE, name.c_str());
 
 	OPENFILENAMEW fn = {sizeof(fn),0};
 	fn.hwndOwner = hwnd;
@@ -2190,9 +2218,10 @@ void SaveImage(HWND hwnd, VDPosition frame, VDPixmap* px) {
 
 	int optvals[]={ 1 };
 
-	VDStringW name = VDGetSaveFileName(VDFSPECKEY_SAVEIMAGEFILE, (VDGUIHandle)hwnd, title.c_str(), filter, ExtFromFormat(dlg.mFormat)+1, opts, optvals, &fn);
+	name = VDGetSaveFileName(VDFSPECKEY_SAVEIMAGEFILE, (VDGUIHandle)hwnd, title.c_str(), filter, ExtFromFormat(dlg.mFormat)+1, opts, optvals, &fn);
 
 	if (!name.empty()) {
+		g_bResetImageName = false;
 		int format = FormatFromName(name.c_str());
 		if (format==-1)
 			name = VDFileSplitExtLeft(name) + ExtFromFormat(dlg.mFormat);
