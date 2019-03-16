@@ -18,6 +18,7 @@ public:
 
 	virtual void GetAccelerator(VDUIAccelerator& accel) = 0;
 	virtual void SetAccelerator(const VDUIAccelerator& accel) = 0;
+	virtual void Clear() = 0;
 
 	virtual VDEvent<IVDUIHotKeyExControl, VDUIAccelerator>& OnChange() = 0;
 };

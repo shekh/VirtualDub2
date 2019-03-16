@@ -16,6 +16,7 @@ public:
 
 	void GetAccelerator(VDUIAccelerator& accel);
 	void SetAccelerator(const VDUIAccelerator& accel);
+	void Clear();
 
 	VDEvent<IVDUIHotKeyExControl, VDUIAccelerator>& OnChange() {
 		return mEventOnChange;
@@ -92,6 +93,15 @@ void VDUIHotKeyExControlW32::SetAccelerator(const VDUIAccelerator& accel) {
 	mAccel = accel;
 
 	UpdateText();
+	UpdateCaretPosition();
+}
+
+void VDUIHotKeyExControlW32::Clear() {
+	VDUIAccelerator accel = {0};
+	mAccel = accel;
+
+	mBuffer = L"";
+	InvalidateRect(mhwnd, NULL, TRUE);
 	UpdateCaretPosition();
 }
 

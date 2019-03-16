@@ -200,7 +200,41 @@ bool VDDialogEditAccelerators::OnLoaded() {
 }
 
 bool VDDialogEditAccelerators::OnCommand(uint32 id, uint32 extcode) {
-	if (id == IDC_FILTER) {
+	if (id == IDC_AVAILCOMMANDS) {
+		if (extcode==LBN_SELCHANGE) {
+			if (mpHotKeyControl)
+				mpHotKeyControl->Clear();
+			mbBlockCommandUpdate = true;
+			mListViewBoundCommands.SetSelectedIndex(-1);
+			mbBlockCommandUpdate = false;
+			EnableControl(IDC_REMOVE, false);
+				EnableControl(IDC_ADD, false);
+
+			int selIdx = LBGetSelectedIndex(IDC_AVAILCOMMANDS);
+			if ((size_t)selIdx < mFilteredCommands.size()) {
+				const VDAccelToCommandEntry *ace = mFilteredCommands[selIdx];
+				EnableControl(IDC_ADD, true);
+
+				BoundCommands::const_iterator it(mBoundCommands.begin()), itEnd(mBoundCommands.end());
+				int index = 0;
+
+				for(; it != itEnd; ++it, ++index) {
+					BoundCommand *bc = *it;
+
+					if (bc->mCommandId==ace->mId) {
+						if (mpHotKeyControl)
+							mpHotKeyControl->SetAccelerator(bc->mAccel);
+						mbBlockCommandUpdate = true;
+						mListViewBoundCommands.SetSelectedIndex(index);
+						mbBlockCommandUpdate = false;
+						mListViewBoundCommands.EnsureItemVisible(index);
+						EnableControl(IDC_REMOVE, true);
+						break;
+					}
+				}
+			}
+		}
+	} else if (id == IDC_FILTER) {
 		if (extcode == EN_CHANGE) {
 			VDStringA s("*");
 			s += VDTextWToA(GetControlValueString(id)).c_str();
@@ -245,9 +279,15 @@ bool VDDialogEditAccelerators::OnCommand(uint32 id, uint32 extcode) {
 					bc->mpCommand = ace->mpName;
 					bc->mCommandId = ace->mId;
 					bc->mAccel = accel;
-
-					mBoundCommands.push_back(bc.release());
+					mBoundCommands.push_back(bc);
+					int index = mBoundCommands.size()-1;
+					mListViewBoundCommands.InsertVirtualItem(index, bc);
+					mbBlockCommandUpdate = true;
+					mListViewBoundCommands.SetSelectedIndex(index);
+					mbBlockCommandUpdate = false;
+					bc.release();
 					RefreshBoundList();
+					EnableControl(IDC_REMOVE, true);
 				}
 			}
 		}
@@ -264,6 +304,10 @@ bool VDDialogEditAccelerators::OnCommand(uint32 id, uint32 extcode) {
 			bc->Release();
 
 			RefreshBoundList();
+			mbBlockCommandUpdate = true;
+			mListViewBoundCommands.SetSelectedIndex(-1);
+			mbBlockCommandUpdate = false;
+			EnableControl(IDC_REMOVE, false);
 		}
 
 		return true;
@@ -302,7 +346,11 @@ void VDDialogEditAccelerators::RefilterCommands(const char *pattern) {
 		}
 	}
 
-	LBSetSelectedIndex(IDC_AVAILCOMMANDS, 0);
+	if (mFilteredCommands.size()>0)
+		LBSetSelectedIndex(IDC_AVAILCOMMANDS, 0);
+	else
+		LBSetSelectedIndex(IDC_AVAILCOMMANDS, -1);
+	OnCommand(IDC_AVAILCOMMANDS, LBN_SELCHANGE);
 }
 
 void VDDialogEditAccelerators::LoadTable(const VDAccelTableDefinition& table) {
@@ -328,6 +376,9 @@ void VDDialogEditAccelerators::LoadTable(const VDAccelTableDefinition& table) {
 
 void VDDialogEditAccelerators::RefreshBoundList() {
 	int visIdx = mListViewBoundCommands.GetVisibleTopIndex();
+	int selIdx = mListViewBoundCommands.GetSelectedIndex();
+	BoundCommand *sel_bc = 0;
+	if (selIdx!=-1) sel_bc = mBoundCommands[selIdx];
 
 	std::sort(mBoundCommands.begin(), mBoundCommands.end(), mBoundCommandSort);
 
@@ -338,12 +389,18 @@ void VDDialogEditAccelerators::RefreshBoundList() {
 
 	for(; it != itEnd; ++it) {
 		BoundCommand *bc = *it;
-
+		if (bc==sel_bc) selIdx = index;
 		mListViewBoundCommands.InsertVirtualItem(index++, bc);
 	}
 
 	mListViewBoundCommands.AutoSizeColumns();
-	mListViewBoundCommands.SetVisibleTopIndex(visIdx);
+	mbBlockCommandUpdate = true;
+	mListViewBoundCommands.SetSelectedIndex(selIdx);
+	mbBlockCommandUpdate = false;
+	if (selIdx==-1)
+		mListViewBoundCommands.SetVisibleTopIndex(visIdx);
+	else
+		mListViewBoundCommands.SetVisibleTopIndex(selIdx);
 }
 
 void VDDialogEditAccelerators::DestroyBoundCommands() {
@@ -390,22 +447,55 @@ void VDDialogEditAccelerators::OnItemSelectionChanged(VDUIProxyListView *source,
 	}
 
 	LBSetSelectedIndex(IDC_AVAILCOMMANDS, cmdSelIndex);
+	EnableControl(IDC_ADD, cmdSelIndex!=-1);
+	EnableControl(IDC_REMOVE, true);
 }
 
 void VDDialogEditAccelerators::OnHotKeyChanged(IVDUIHotKeyExControl *source, const VDUIAccelerator& accel) {
 	BoundCommands::const_iterator it(mBoundCommands.begin()), itEnd(mBoundCommands.end());
 	int index = 0;
+	const BoundCommand* bcmd = 0;
 
 	for(; it != itEnd; ++it, ++index) {
 		BoundCommand *bc = *it;
 
 		if (bc->mAccel == accel) {
-			mbBlockCommandUpdate = true;
-			mListViewBoundCommands.SetSelectedIndex(index);
-			mbBlockCommandUpdate = false;
-			mListViewBoundCommands.EnsureItemVisible(index);
+			bcmd = bc;
 			break;
 		}
+	}
+
+	if (bcmd) {
+		mbBlockCommandUpdate = true;
+		mListViewBoundCommands.SetSelectedIndex(index);
+		mbBlockCommandUpdate = false;
+		mListViewBoundCommands.EnsureItemVisible(index);
+		EnableControl(IDC_REMOVE, true);
+		/*
+		uint32 n = mFilteredCommands.size();
+		int cmdSelIndex = -1;
+
+		for(uint32 i=0; i<n; ++i) {
+			const VDAccelToCommandEntry& cent = *mFilteredCommands[i];
+
+			if (!_stricmp(cent.mpName, bcmd->mpCommand)) {
+				cmdSelIndex = i;
+				break;
+			}
+		}
+
+		LBSetSelectedIndex(IDC_AVAILCOMMANDS, cmdSelIndex);
+		EnableControl(IDC_ADD, cmdSelIndex!=-1);
+		*/
+	} else {
+		mbBlockCommandUpdate = true;
+		mListViewBoundCommands.SetSelectedIndex(-1);
+		mbBlockCommandUpdate = false;
+		EnableControl(IDC_REMOVE, false);
+		/*
+		LBSetSelectedIndex(IDC_AVAILCOMMANDS, -1);
+		EnableControl(IDC_ADD, false);
+		*/
 	}
 }
 
