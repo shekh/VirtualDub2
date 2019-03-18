@@ -1965,7 +1965,13 @@ long FilterPreview::SampleFrames() {
 long FilterPreview::SampleFrames(IFilterModPreviewSample* handler) {
 	long lCount = 0;
 
-	if (!mpFilterChainDesc || !mhdlg || !handler)
+	if (!mpFilterChainDesc || !handler)
+		return -1;
+
+	HWND parent = mhdlg;
+	if (!parent && mhwndButton)
+		parent = GetParent(mhwndButton);
+	if (!parent)
 		return -1;
 
 	if (!mpFiltSys->isRunning()) {
@@ -1979,7 +1985,7 @@ long FilterPreview::SampleFrames(IFilterModPreviewSample* handler) {
 
 	// Time to do the actual sampling.
 	try {
-		ProgressDialog pd(mhdlg, "Sampling input video", "Sampling all frames", 1, true);
+		ProgressDialog pd(parent, "Sampling input video", "Sampling all frames", 1, true);
 
 		pd.setValueFormat("Sampling frame %ld of %ld");
 
@@ -2047,7 +2053,7 @@ long FilterPreview::SampleFrames(IFilterModPreviewSample* handler) {
 		handler->Cancel();
 
 	} catch(const MyError& e) {
-		e.post(mhdlg, "Video sampling error");
+		e.post(parent, "Video sampling error");
 	}
 
 	if (image_changed)
