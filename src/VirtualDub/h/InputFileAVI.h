@@ -65,7 +65,7 @@ public:
 	~InputFileAVI();
 
 	void Init(const wchar_t *szFile);
-	bool Append(const wchar_t *szFile);
+	bool Append(const wchar_t *szFile, uint32 flags);
 	void getAppendFilters(wchar_t *filters, int filters_max);
 
 	void GetTextInfo(tFileTextInfo& info);

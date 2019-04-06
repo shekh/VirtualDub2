@@ -676,7 +676,10 @@ void JobAddConfigurationInputs(JobScriptOutput& output, const VDProject* project
 				VDStringW s(ifn->name);
 				if (project) s = project->BuildProjectPath(ifn->name);
 				VDStringA sa = VDEncodeScriptString(s);
-				output.addf("VirtualDub.Append(\"%s\");", sa.c_str());
+				if (ifn->flags & IVDInputDriver::kOF_Sequence)
+					output.addf("VirtualDub.AppendSequence(\"%s\");", sa.c_str());
+				else
+					output.addf("VirtualDub.Append(\"%s\");", sa.c_str());
 				ifn = ifn_next;
 			}
 	}

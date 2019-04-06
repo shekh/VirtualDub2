@@ -2064,7 +2064,13 @@ static void func_VirtualDub_intOpenTest(IVDScriptInterpreter *, VDScriptValue *a
 static void func_VirtualDub_Append(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 	VDStringW filename(VDTextU8ToW(VDStringA(*arglist[0].asString())));
 
-	AppendAVI(filename.c_str());
+	AppendAVI(filename.c_str(),IVDInputDriver::kOF_SingleFile);
+}
+
+static void func_VirtualDub_AppendSequence(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
+	VDStringW filename(VDTextU8ToW(VDStringA(*arglist[0].asString())));
+
+	AppendAVI(filename.c_str(),IVDInputDriver::kOF_Sequence);
 }
 
 static void func_VirtualDub_Close(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
@@ -2404,6 +2410,7 @@ static const VDScriptFunctionDef obj_VirtualDub_functbl[]={
 	{ func_VirtualDub_OpenSequence,		NULL,					"0ssis" },
 	{ func_VirtualDub_intOpenTest,		"__OpenTest",			"0i" },
 	{ func_VirtualDub_Append,			"Append",				"0s" },
+	{ func_VirtualDub_AppendSequence,			"AppendSequence",				"0s" },
 	{ func_VirtualDub_Close,				"Close",				"0" },
 	{ func_VirtualDub_SaveFormat,			"SaveFormatAVI",		"0" },
 	{ func_VirtualDub_SaveFormat,			"SaveFormat",			"0ss" },

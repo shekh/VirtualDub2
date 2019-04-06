@@ -749,10 +749,15 @@ void OpenInput(bool append, bool audio) {
 		if (dlg.is_auto && !opt) g_project->mAudioInputDriverName.clear();
 	} else if (append) {
 		key.setBool(g_szRegKeyAutoAppendByName, dlg.select_mode==2);
-		if (dlg.select_mode==2)
+		int inputFlags = inputAVI->GetFileFlags();
+		if (dlg.select_mode==2 && !(inputFlags & IVDInputDriver::kFF_AppendSequence)) {
 			AppendAVIAutoscan(fname.c_str());
-		else
-			AppendAVI(fname.c_str());
+		} else {
+			int flags = 0;
+			if (dlg.select_mode==0) flags |= IVDInputDriver::kOF_SingleFile;
+			if (dlg.select_mode==2) flags |= IVDInputDriver::kOF_Sequence;
+			AppendAVI(fname.c_str(), flags);
+		}
 	} else {
 		g_project->Open(fname.c_str(), dlg.driver, false, false, dlg.select_mode, opt, opt_len);
 		if (dlg.is_auto && !opt) g_project->mInputDriverName.clear();

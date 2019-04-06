@@ -43,7 +43,8 @@ enum {
 	// V7 (FilterMod): Extended IVDXAudioSource interface
 	// V8 (FilterMod): Extended IVDXInputFile interface
 	// V9 (FilterMod): Extended IVDXInputFile interface
-	kVDXPlugin_InputDriverAPIVersion = 9
+	// V10 (FilterMod): Extended IVDXInputFile interface
+	kVDXPlugin_InputDriverAPIVersion = 10
 };
 
 /// Unsigned 32-bit fraction.
@@ -295,6 +296,10 @@ public:
 
 	// V8
 	virtual int VDXAPIENTRY GetFileFlags(){ return -1; }
+
+	// V10
+	// flags meaning : as in CreateInputFile
+	virtual bool	VDXAPIENTRY Append2(const wchar_t *path, int flags, IVDXInputOptions *options){ return Append(path); }
 };
 
 struct VDXMediaInfo {

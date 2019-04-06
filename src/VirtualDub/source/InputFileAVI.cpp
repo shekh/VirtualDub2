@@ -596,11 +596,11 @@ void InputFileAVI::Init(const wchar_t *szFile) {
 						if (fname.empty())
 							throw MyUserAbortError();
 
-						if (!Append(fname.c_str()))
+						if (!Append(fname.c_str(),0))
 							break;
 
 						sPathPattern = VDMakePath(VDFileSplitPathLeft(fname).c_str(), sPathTail.c_str());
-					} else if (!Append(sPath.c_str()))
+					} else if (!Append(sPath.c_str(),0))
 						break;
 				}
 			} catch(const MyError& e) {
@@ -625,7 +625,7 @@ void InputFileAVI::Init(const wchar_t *szFile) {
 	}
 }
 
-bool InputFileAVI::Append(const wchar_t *szFile) {
+bool InputFileAVI::Append(const wchar_t *szFile, uint32 flags) {
 	if (fCompatibilityMode)
 		return false;
 

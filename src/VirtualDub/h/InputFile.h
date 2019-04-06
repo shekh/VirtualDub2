@@ -48,8 +48,9 @@ public:
 class InputFilenameNode : public ListNode2<InputFilenameNode> {
 public:
 	const wchar_t *name;
+	int flags;
 
-	InputFilenameNode(const wchar_t *_n);
+	InputFilenameNode(const wchar_t *_n, int flags);
 	~InputFilenameNode();
 };
 
@@ -61,7 +62,7 @@ public:
 	List2<InputFilenameNode> listFiles;
 
 	virtual void Init(const wchar_t *szFile) = 0;
-	virtual bool Append(const wchar_t *szFile);
+	virtual bool Append(const wchar_t *szFile, uint32 flags);
 	virtual void getAppendFilters(wchar_t *filters, int filters_max);
 
 	virtual void setOptions(InputFileOptions *);
@@ -83,7 +84,7 @@ public:
 	virtual int GetFileFlags(){ return -1; }
 
 protected:
-	void AddFilename(const wchar_t *lpszFile);
+	void AddFilename(const wchar_t *lpszFile, int flags=0);
 };
 
 class VDINTERFACE IVDInputDriver : public IVDRefCount {
@@ -104,11 +105,13 @@ public:
 		kOF_Quiet			= 1,
 		kOF_AutoSegmentScan	= 2,
 		kOF_SingleFile	= 4,
+		kOF_Sequence	= 8,
 		kOF_Max				= 0xFFFFFFFFUL
 	};
 
 	enum FileFlags {
 		kFF_Sequence = 1,
+		kFF_AppendSequence = 2,
 	};
 
 	enum DetectionConfidence {

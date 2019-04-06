@@ -108,7 +108,7 @@ struct RequestImages: public CommandRequest {
 	int quality;
 };
 
-void AppendAVI(const wchar_t *pszFile);
+void AppendAVI(const wchar_t *pszFile, uint32 flags);
 int AppendAVIAutoscanEnum(const wchar_t *pszFile);
 void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first=false);
 void SaveWAV(RequestWAV& req);

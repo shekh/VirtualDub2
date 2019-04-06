@@ -2927,7 +2927,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDCheckMenuItemW32(hMenu, ID_OPTIONS_SWAPPANES,					g_fSwapPanes);
 	CheckMenuRadioItem(hMenu, ID_PAN_CENTER, ID_PAN_TOPLEFT, ID_PAN_CENTER+g_panCentering, MF_BYCOMMAND);
 
-	const bool bAVISourceExists = (inputAVI && inputAVI->Append(NULL));
+	const bool bAVISourceExists = (inputAVI && inputAVI->Append(NULL,0));
 	VDEnableMenuItemW32(hMenu,ID_FILE_APPENDSEGMENT			, bAVISourceExists);
 
 	const bool bSourceFileExists = (inputAVI != 0);
@@ -3621,7 +3621,7 @@ void VDProjectUI::HandleDragDrop(HDROP hdrop) {
 				for(Filenames::const_iterator it(filenames.begin()), itEnd(filenames.end()); it != itEnd; ++it) {
 					const VDStringW& filename = *it;
 
-					AppendAVI(filename.c_str());
+					AppendAVI(filename.c_str(),IVDInputDriver::kOF_SingleFile);
 				}
 			} else {
 				CmdOpen(filenames.front().c_str());

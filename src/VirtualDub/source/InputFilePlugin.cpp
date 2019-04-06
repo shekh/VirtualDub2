@@ -1274,7 +1274,7 @@ public:
 	~VDInputFilePlugin();
 
 	void Init(const wchar_t *szFile);
-	bool Append(const wchar_t *szFile);
+	bool Append(const wchar_t *szFile, uint32 flags);
 
 	void setOptions(InputFileOptions *);
 	InputFileOptions *promptForOptions(VDGUIHandle);
@@ -1341,14 +1341,17 @@ void VDInputFilePlugin::Init(const wchar_t *szFile) {
 	AddFilename(szFile);
 }
 
-bool VDInputFilePlugin::Append(const wchar_t *szFile) {
+bool VDInputFilePlugin::Append(const wchar_t *szFile, uint32 flags) {
 	bool appended;
 	
 	vdwithinputplugin(mpContext) {
-		appended = mpXObject->Append(szFile);
+		if (mpContext->max_api_version>=10)
+			appended = mpXObject->Append2(szFile, flags, 0);
+		else
+			appended = mpXObject->Append(szFile);
 	}
 
-	if (appended && szFile) AddFilename(szFile);
+	if (appended && szFile) AddFilename(szFile, flags);
 
 	return appended;
 }

@@ -90,13 +90,13 @@ extern bool VDPreferencesGetRenderBackgroundPriority();
 
 ///////////////////////////////////////////////////////////////////////////
 
-void AppendAVI(const wchar_t *pszFile) {
+void AppendAVI(const wchar_t *pszFile, uint32 flags) {
 	if (inputAVI) {
 		IVDStreamSource *pVSS = inputVideo->asStream();
 		VDPosition lTail = pVSS->getEnd();
 		VDStringW filename(g_project->ExpandProjectPath(pszFile));
 
-		if (inputAVI->Append(filename.c_str())) {
+		if (inputAVI->Append(filename.c_str(),flags)) {
 			inputVideo->streamAppendReinit();
 			if (inputAudio) inputAudio->streamAppendReinit();
 			g_project->BeginTimelineUpdate();
@@ -173,7 +173,7 @@ void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first) {
 				break;
 			
 			if (!skip_first) {
-				if (!inputAVI->Append(buf))
+				if (!inputAVI->Append(buf,0))
 					break;
 
 			last = buf;

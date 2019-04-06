@@ -37,7 +37,7 @@ InputFileOptions::~InputFileOptions() {
 
 /////////////////////////////////////////////////////////////////////
 
-InputFilenameNode::InputFilenameNode(const wchar_t *_n) : name(_wcsdup(_n)) {
+InputFilenameNode::InputFilenameNode(const wchar_t *_n, int flags) : name(_wcsdup(_n)), flags(flags) {
 	if (!name)
 		throw MyMemoryError();
 }
@@ -55,14 +55,14 @@ InputFile::~InputFile() {
 		delete ifn;
 }
 
-void InputFile::AddFilename(const wchar_t *lpszFile) {
-	InputFilenameNode *ifn = new InputFilenameNode(lpszFile);
+void InputFile::AddFilename(const wchar_t *lpszFile, int flags) {
+	InputFilenameNode *ifn = new InputFilenameNode(lpszFile, flags);
 
 	if (ifn)
 		listFiles.AddTail(ifn);
 }
 
-bool InputFile::Append(const wchar_t *szFile) {
+bool InputFile::Append(const wchar_t *szFile, uint32 flags) {
 	return false;
 }
 
