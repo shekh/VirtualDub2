@@ -220,6 +220,15 @@ void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first) {
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////
+
+void VideoOperation::setPrefs() {
+	iDubPriority = g_prefs.main.iDubPriority;
+	backgroundPriority = VDPreferencesGetRenderBackgroundPriority();
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 void SaveWAV(RequestWAV& req) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
@@ -228,7 +237,11 @@ void SaveWAV(RequestWAV& req) {
 		throw MyError("No audio stream to process.");
 
 	VDAVIOutputWAVSystem wavout(req.fileOutput.c_str(), req.auto_w64);
-	g_project->RunOperation(&wavout, TRUE, req.opt, 0, req.propagateErrors);
+
+	VideoOperation op(&req);
+	op.removeVideo = true;
+	g_project->RunOperation(&wavout, op);
+	//g_project->RunOperation(&wavout, TRUE, req.opt, 0, req.propagateErrors);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -238,12 +251,20 @@ void SavePlugin(RequestVideo& req) {
 
 	fileout.SetDriver(req.driver,req.format);
 	fileout.SetTextInfo(g_project->GetTextInfo());
+	if (req.removeVideo) fileout.fAudioOnly = true;
 
+	VideoOperation op(&req);
+	op.removeAudio = req.removeAudio;
+	op.removeVideo = req.removeVideo;
+	op.setPrefs();
+	g_project->RunOperation(&fileout, op);
+	/*
 	int type = 0;
 	if (req.removeVideo){ type = 1; fileout.fAudioOnly = true; }
 	if (req.removeAudio) type = 3;
 
 	g_project->RunOperation(&fileout, type, req.opt, g_prefs.main.iDubPriority, req.propagateErrors, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	*/
 }
 
 void SaveAVI(RequestVideo& req) {
@@ -256,7 +277,12 @@ void SaveAVI(RequestVideo& req) {
 	fileout.SetBuffer(VDPreferencesGetRenderOutputBufferSize());
 	fileout.SetTextInfo(g_project->GetTextInfo());
 
-	g_project->RunOperation(&fileout, req.removeAudio ? 3:FALSE, req.opt, g_prefs.main.iDubPriority, req.propagateErrors, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	VideoOperation op(&req);
+	op.removeAudio = req.removeAudio;
+	op.setPrefs();
+	g_project->RunOperation(&fileout, op);
+
+	//g_project->RunOperation(&fileout, req.removeAudio ? 3:FALSE, req.opt, g_prefs.main.iDubPriority, req.propagateErrors, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 void SaveStripedAVI(const wchar_t *szFile) {
@@ -267,7 +293,11 @@ void SaveStripedAVI(const wchar_t *szFile) {
 
 	outstriped.Set1GBLimit(g_prefs.fAVIRestrict1Gb != 0);
 
-	g_project->RunOperation(&outstriped, FALSE, NULL, g_prefs.main.iDubPriority, false, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	VideoOperation op;
+	op.setPrefs();
+	g_project->RunOperation(&outstriped, op);
+
+	//g_project->RunOperation(&outstriped, FALSE, NULL, g_prefs.main.iDubPriority, false, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 void SaveStripeMaster(const wchar_t *szFile) {
@@ -278,7 +308,12 @@ void SaveStripeMaster(const wchar_t *szFile) {
 
 	outstriped.Set1GBLimit(g_prefs.fAVIRestrict1Gb != 0);
 
-	g_project->RunOperation(&outstriped, 2, NULL, g_prefs.main.iDubPriority, false, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	VideoOperation op;
+	op.setPrefs();
+	g_project->RunOperation(&outstriped, op);
+	// it used setPhantomVideoMode in the past
+
+	//g_project->RunOperation(&outstriped, 2, NULL, g_prefs.main.iDubPriority, false, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 void SaveSegmentedAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, long lSpillThreshold, long lSpillFrameThreshold, int digits) {
@@ -297,7 +332,15 @@ void SaveSegmentedAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_o
 	const VDStringW filename(szFilename);
 	outfile.SetFilenamePattern(VDFileSplitExtLeft(filename).c_str(), VDFileSplitExtRight(filename).c_str(), digits);
 
-	g_project->RunOperation(&outfile, FALSE, quick_opts, g_prefs.main.iDubPriority, fProp, lSpillThreshold, lSpillFrameThreshold, VDPreferencesGetRenderBackgroundPriority());
+	VideoOperation op;
+	op.setPrefs();
+	op.opt = quick_opts;
+	op.propagateErrors = fProp;
+	op.lSpillThreshold = lSpillThreshold;
+	op.lSpillFrameThreshold = lSpillFrameThreshold;
+	g_project->RunOperation(&outfile, op);
+
+	//g_project->RunOperation(&outfile, FALSE, quick_opts, g_prefs.main.iDubPriority, fProp, lSpillThreshold, lSpillFrameThreshold, VDPreferencesGetRenderBackgroundPriority());
 }
 
 void SaveImageSequence(RequestImages& req) {
@@ -305,8 +348,12 @@ void SaveImageSequence(RequestImages& req) {
 
 	outimages.SetFilenamePattern(req.filePrefix.c_str(), req.fileSuffix.c_str(), req.minDigits, req.startDigit);
 	outimages.SetFormat(req.imageFormat, req.quality);
-	
-	g_project->RunOperation(&outimages, FALSE, req.opt, g_prefs.main.iDubPriority, req.propagateErrors, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+
+	VideoOperation op(&req);
+	op.setPrefs();
+	g_project->RunOperation(&outimages, op);
+
+	//g_project->RunOperation(&outimages, FALSE, req.opt, g_prefs.main.iDubPriority, req.propagateErrors, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 ///////////////////////////////////////////////////////////////////////////

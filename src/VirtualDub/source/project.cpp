@@ -1923,7 +1923,13 @@ void VDProject::Preview(DubOptions *options) {
 	opts.audio.enabled = true;
 
 	VDAVIOutputPreviewSystem outpreview;
-	RunOperation(&outpreview, false, &opts, g_prefs.main.iPreviewPriority, true, 0, 0);
+	VideoOperation op;
+	op.opt = &opts;
+	op.propagateErrors = true;
+	op.iDubPriority = g_prefs.main.iPreviewPriority;
+	RunOperation(&outpreview, op);
+
+	//RunOperation(&outpreview, false, &opts, g_prefs.main.iPreviewPriority, true, 0, 0);
 }
 
 void VDProject::PreviewRestart() {
@@ -1956,7 +1962,13 @@ void VDProject::RunNullVideoPass(bool benchmark) {
 		dubOpt.video.mSelectionEnd.mOffset = mposZoomEnd;
 	dubOpt.perf.fBenchmark = benchmark;
 	VDAVIOutputNullVideoSystem nullout;
-	RunOperation(&nullout, FALSE, &dubOpt, g_prefs.main.iDubPriority, true, 0, 0, VDPreferencesGetRenderBackgroundPriority());
+	VideoOperation op;
+	op.opt = &dubOpt;
+	op.propagateErrors = true;
+	op.setPrefs();
+	RunOperation(&nullout, op);
+
+	//RunOperation(&nullout, FALSE, &dubOpt, g_prefs.main.iDubPriority, true, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
 void VDProject::QueueNullVideoPass() {
@@ -2060,7 +2072,10 @@ void VDProject::SaveFilmstrip(const wchar_t *pFilename, bool propagateErrors) {
 		throw MyError("No input file to process.");
 
 	VDAVIOutputFilmstripSystem out(pFilename);
-	RunOperation(&out, TRUE, NULL, 0, propagateErrors);
+	VideoOperation op;
+	op.propagateErrors = propagateErrors;
+	RunOperation(&out, op);
+	//RunOperation(&out, TRUE, NULL, 0, propagateErrors);
 }
 
 void VDProject::SaveAnimatedGIF(const wchar_t *pFilename, int loopCount, bool propagateErrors, DubOptions *optsOverride) {
@@ -2069,7 +2084,11 @@ void VDProject::SaveAnimatedGIF(const wchar_t *pFilename, int loopCount, bool pr
 
 	VDAVIOutputGIFSystem out(pFilename);
 	out.SetLoopCount(loopCount);
-	RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
+	VideoOperation op;
+	op.opt = optsOverride;
+	op.propagateErrors = propagateErrors;
+	RunOperation(&out, op);
+	//RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
 }
 
 void VDProject::SaveAnimatedPNG(const wchar_t *pFilename, int loopCount, int alpha, int grayscale, bool propagateErrors, DubOptions *optsOverride) {
@@ -2085,7 +2104,11 @@ void VDProject::SaveAnimatedPNG(const wchar_t *pFilename, int loopCount, int alp
 	out.SetLoopCount(loopCount);
 	out.SetAlpha(alpha);
 	out.SetGrayscale(grayscale);
-	RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
+	VideoOperation op;
+	op.opt = optsOverride;
+	op.propagateErrors = propagateErrors;
+	RunOperation(&out, op);
+	//RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
 
 	if (alpha)
 		g_dubOpts.video.mOutputFormat = mSaveVideoOutputFormat;
@@ -2099,7 +2122,11 @@ void VDProject::SaveRawAudio(const wchar_t *pFilename, bool propagateErrors, Dub
 		throw MyError("No audio stream to process.");
 
 	VDAVIOutputRawSystem out(pFilename);
-	RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
+	VideoOperation op;
+	op.opt = optsOverride;
+	op.propagateErrors = propagateErrors;
+	RunOperation(&out, op);
+	//RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
 }
 
 void VDProject::SaveRawVideo(const wchar_t *pFilename, const VDAVIOutputRawVideoFormat& format, bool propagateErrors, DubOptions *optsOverride) {
@@ -2107,7 +2134,11 @@ void VDProject::SaveRawVideo(const wchar_t *pFilename, const VDAVIOutputRawVideo
 		throw MyError("No input file to process.");
 
 	VDAVIOutputRawVideoSystem out(pFilename, format);
-	RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
+	VideoOperation op;
+	op.opt = optsOverride;
+	op.propagateErrors = propagateErrors;
+	RunOperation(&out, op);
+	//RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
 }
 
 void VDProject::ExportViaEncoder(const wchar_t *filename, const wchar_t *setName, bool propagateErrors, DubOptions *optsOverride) {
@@ -2115,7 +2146,11 @@ void VDProject::ExportViaEncoder(const wchar_t *filename, const wchar_t *setName
 		throw MyError("No input file to process.");
 
 	VDAVIOutputCLISystem out(filename, setName);
-	RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
+	VideoOperation op;
+	op.opt = optsOverride;
+	op.propagateErrors = propagateErrors;
+	RunOperation(&out, op);
+	//RunOperation(&out, TRUE, optsOverride, 0, propagateErrors);
 }
 
 void VDProject::StartServer(const char *serverName) {
@@ -2673,7 +2708,8 @@ void VDProject::ScanForErrors() {
 	}
 }
 
-void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOnly, DubOptions *pOptions, int iPriority, bool fPropagateErrors, long lSpillThreshold, long lSpillFrameThreshold, bool backgroundPriority) {
+//void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOnly, DubOptions *pOptions, int iPriority, bool fPropagateErrors, long lSpillThreshold, long lSpillFrameThreshold, bool backgroundPriority) {
+void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, VideoOperation& op) {
 
 	if (!inputAVI)
 		throw MyError("No source has been loaded to process.");
@@ -2696,7 +2732,7 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 		VDLog(kVDLogMarker, VDswprintf(L"Beginning %ls operation.", 1, &pOpType));
 	}
 
-	DubOptions tempOpts(pOptions ? *pOptions : g_dubOpts);
+	DubOptions tempOpts(op.opt ? *op.opt : g_dubOpts);
 
 	if (!g_fJobMode && !pOutputSystem->IsRealTime()) {
 		extern bool VDPreferencesGetRenderShowFrames();
@@ -2717,7 +2753,7 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 		// Create a dubber.
 
 		opts = &tempOpts;
-		if (!pOptions) {
+		if (!op.opt) {
 			opts->video.fShowDecompressedFrame = g_drawDecompressedFrame;
 			opts->fShowStatus = !!g_showStatusWindow;
 		}
@@ -2769,23 +2805,23 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 
 		IVDVideoSource *vsrc = inputVideo;
 		AudioSource *asrc = inputAudio;
-		if (fAudioOnly == 3) asrc = 0;
+		if (op.removeAudio) asrc = 0;
 		COMPVARS2 *comp = &g_Vcompression;
 		if(filters.isTrimmedChain() && pOutputSystem->IsNull()) comp = 0;
 
-		if (lSpillThreshold) {
-			segmentedOutput = new VDAVIOutputSegmentedSystem(pOutputSystem, opts->audio.is_ms, opts->audio.is_ms ? opts->audio.interval * 0.001 : opts->audio.interval, (double)opts->audio.preload / 500.0, (sint64)lSpillThreshold << 20, lSpillFrameThreshold);
+		if (op.lSpillThreshold) {
+			segmentedOutput = new VDAVIOutputSegmentedSystem(pOutputSystem, opts->audio.is_ms, opts->audio.is_ms ? opts->audio.interval * 0.001 : opts->audio.interval, (double)opts->audio.preload / 500.0, (sint64)op.lSpillThreshold << 20, op.lSpillFrameThreshold);
 			g_dubber->Init(&vsrc, 1, &asrc, asrc ? 1 : 0, segmentedOutput, comp, &mTimeline.GetSubset(), mVideoTimelineFrameRate);
 		} else {
 			g_dubber->Init(&vsrc, 1, &asrc, asrc ? 1 : 0, pOutputSystem, comp, &mTimeline.GetSubset(), mVideoTimelineFrameRate);
 		}
 
-		if (!pOptions && mhwnd)
+		if (!op.opt && mhwnd)
 			RedrawWindow((HWND)mhwnd, NULL, NULL, RDW_ERASE | RDW_INVALIDATE);
 
 		g_dubber->Stopped() += mStoppedDelegate(this, &VDProject::OnDubAbort);
-		g_dubber->Go(iPriority);
-		g_dubber->SetBackground(backgroundPriority);
+		g_dubber->Go(op.iDubPriority);
+		g_dubber->SetBackground(op.backgroundPriority);
 
 		if (mpCB)
 			bUserAbort = !mpCB->UIRunDubMessageLoop();
@@ -2816,20 +2852,20 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 			if (!g_dubber->IsAborted())
 				mPreviewRestartMode = kPreviewRestart_None;
 
-			if (!fPropagateErrors)
+			if (!op.propagateErrors)
 				disp.Post(mhwnd);
 		}
 
 	} catch(char *s) {
 		mPreviewRestartMode = kPreviewRestart_None;
-		if (fPropagateErrors) {
+		if (op.propagateErrors) {
 			prop_err.setf(s);
 			fError = true;
 		} else
 			MyError(s).post((HWND)mhwnd, g_szError);
 	} catch(MyError& err) {
 		mPreviewRestartMode = kPreviewRestart_None;
-		if (fPropagateErrors) {
+		if (op.propagateErrors) {
 			prop_err.TransferFrom(err);
 			fError = true;
 		} else
@@ -2862,7 +2898,7 @@ void VDProject::RunOperation(IVDDubberOutputSystem *pOutputSystem, BOOL fAudioOn
 
 	if (g_bExit)
 		PostQuitMessage(0);
-	else if (fPropagateErrors) {
+	else if (op.propagateErrors) {
 		if (fError)
 			throw prop_err;
 		else if (bUserAbort)

@@ -108,6 +108,42 @@ struct RequestImages: public CommandRequest {
 	int quality;
 };
 
+struct VideoOperation {
+	DubOptions* opt;
+	CommandRequest* req;
+	long lSpillThreshold;
+	long lSpillFrameThreshold;
+	char iDubPriority;
+	bool propagateErrors;
+	bool backgroundPriority;
+	bool removeAudio;
+	bool removeVideo;
+
+	VideoOperation() {
+		req = 0;
+		opt = 0;
+		propagateErrors = false;
+		lSpillThreshold = 0;
+		lSpillFrameThreshold = 0;
+		iDubPriority = 0;
+		backgroundPriority = false;
+		removeAudio = false;
+		removeVideo = false;
+	}
+	VideoOperation(CommandRequest* req) {
+		this->req = req;
+		opt = req->opt;
+		propagateErrors = req->propagateErrors;
+		lSpillThreshold = 0;
+		lSpillFrameThreshold = 0;
+		iDubPriority = 0;
+		backgroundPriority = false;
+		removeAudio = false;
+		removeVideo = false;
+	}
+	void setPrefs();
+};
+
 void AppendAVI(const wchar_t *pszFile, uint32 flags);
 int AppendAVIAutoscanEnum(const wchar_t *pszFile);
 void AppendAVIAutoscan(const wchar_t *pszFile, bool skip_first=false);

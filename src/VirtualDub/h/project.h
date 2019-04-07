@@ -30,6 +30,7 @@ class VDProject;
 class VDJob;
 class IVDOutputDriver;
 struct RequestVideo;
+struct VideoOperation;
 
 enum VDAudioSourceMode {
 	kVDAudioSourceMode_None		= 0,
@@ -171,7 +172,8 @@ public:
 	void UnlockDisplayFrame();
 	void DisplayFrame(bool bDispInput = true, bool bDispOutput = true, bool forceInput = false, bool forceOutput = false);
 
-	void RunOperation(IVDDubberOutputSystem *pOutputSystem, int fAudioOnly, DubOptions *pOptions, int iPriority=0, bool fPropagateErrors = false, long lSpillThreshold = 0, long lSpillFrameThreshold = 0, bool backgroundPriority = false);
+	//void RunOperation(IVDDubberOutputSystem *pOutputSystem, int fAudioOnly, DubOptions *pOptions, int iPriority=0, bool fPropagateErrors = false, long lSpillThreshold = 0, long lSpillFrameThreshold = 0, bool backgroundPriority = false);
+	void RunOperation(IVDDubberOutputSystem *pOutputSystem, VideoOperation& op);
 
 	////////////////////
 
