@@ -384,6 +384,16 @@ void VideoSequenceCompressor::Stop() {
 	}
 }
 
+void VideoSequenceCompressor::Truncate() {
+	if (!fCompressionStarted)
+		return;
+
+	{
+		VDExternalCodeBracket bracket(mDriverName.c_str(), __FILE__, __LINE__);
+		if(driver->vdproc) driver->vdproc(driver->obj,0,VDICM_COMPRESS_TRUNCATE,0,0);
+	}
+}
+
 void VideoSequenceCompressor::dropFrame() {
 	if (lKeyRate && lKeyRateCounter>1)
 		--lKeyRateCounter;

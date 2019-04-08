@@ -54,6 +54,7 @@ public:
 	void dropFrame();
 	bool packFrame(void *dst, const void *src, uint32& size, VDPacketInfo& packetInfo);
 	void Stop();
+	void Truncate();
 
 	long getMaxSize() {
 		return lMaxPackedSize;

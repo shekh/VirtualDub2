@@ -374,6 +374,7 @@ public:
 	int			mVideoSegmentIndex;
 	int			mAudioSegmentIndex;
 
+	vdfastvector<int>	mVideoDelay;
 	vdautoptr<VideoSequenceCompressor> mpVideoCompressor;
 	IVDMediaOutput			*volatile mpOutput;
 	IVDMediaOutputAVIFile	*volatile mpOutputFile;
@@ -434,9 +435,10 @@ public:
 		PostThreadMessage(getThreadID(), VDCM_EXIT, 0, 0);
 	}
 
-	void createOutputBlitter();
+	void createOutputBlitter(bool flush=false);
 	bool VideoCallback(const void *data, uint32 size, sint64 timestamp, bool key, sint64 global_clock);
-	void VideoCallbackWriteFrame(void *data, uint32 size, bool key);
+	void VideoCallbackWriteFrame(void *data, uint32 size, bool key, bool flush);
+	void FlushVideo();
 	bool WaveCallback(const void *data, uint32 size, sint64 global_clock);
 	void OnFramesDropped(int framesDropped);
 	void OnFramesInserted(int framesInserted);
@@ -2417,8 +2419,7 @@ VDDEBUG("Capture has stopped.\n");
 			icd.ThreadWait();
 		}
 
-		if (icd.mpVideoCompressor)
-			icd.mpVideoCompressor->Stop();
+		icd.FlushVideo();
 
 		// finalize files
 
@@ -3445,9 +3446,9 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 			mpOutputBlitter->Blit(repack_buffer, px);
 			VDPROFILEEND();
 
-			VideoCallbackWriteFrame(repack_buffer.base(), repack_buffer.size(), key);
+			VideoCallbackWriteFrame(repack_buffer.base(), repack_buffer.size(), key, false);
 		} else {
-			VideoCallbackWriteFrame(pFilteredData, dwBytesUsed, key);
+			VideoCallbackWriteFrame(pFilteredData, dwBytesUsed, key, false);
 		}
 
 		if (!filterSystemActive)
@@ -3530,7 +3531,7 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 	return true;
 }
 
-void VDCaptureData::createOutputBlitter() {
+void VDCaptureData::createOutputBlitter(bool flush) {
 	repack_buffer.clear();
 	mpOutputBlitter = 0;
 	mbDoConversion = false;
@@ -3552,7 +3553,7 @@ void VDCaptureData::createOutputBlitter() {
 		}
 
 		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(fmt, out_info);
-		if (pxsrc.format!=fmt.format || extraDst) {
+		if (pxsrc.format!=fmt.format || extraDst || flush) {
 			repack_buffer.init(driverLayout);
 			repack_buffer.format = fmt.format;
 			repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
@@ -3585,7 +3586,7 @@ void VDCaptureData::createOutputBlitter() {
 		}
 
 		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(fmt, out_info, useAlpha);
-		if (pxsrc.format!=fmt.format || extraDst) {
+		if (pxsrc.format!=fmt.format || extraDst || flush) {
 			repack_buffer.init(vfwLayout);
 			repack_buffer.format = fmt.format;
 			repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
@@ -3597,34 +3598,58 @@ void VDCaptureData::createOutputBlitter() {
 	}
 }
 
-void VDCaptureData::VideoCallbackWriteFrame(void *pFilteredData, uint32 dwBytesUsed, bool key) {
-	// While we are early, write padding frames (grr)
-	//
-	// Don't do this for the first frame, since we don't
-	// have any frames preceding it!
+void VDPixmapRectFillRGB32(const VDPixmap& px, const vdrect32f& rDst, uint32 c);
+
+void VDCaptureData::FlushVideo() {
+	if (mpVideoCompressor) {
+		mpVideoCompressor->Truncate();
+		if (!mVideoDelay.empty()) {
+			if (!repack_buffer.format) createOutputBlitter(true);
+			VDPixmapRectFillRGB32(repack_buffer, vdrect32f(0, 0, float(repack_buffer.w), float(repack_buffer.h)), 0);
+
+			while (!mVideoDelay.empty()) {
+				VideoCallbackWriteFrame(repack_buffer.base(), 0, false, true);
+			}
+		}
+		mpVideoCompressor->Stop();
+	}
+}
+
+void VDCaptureData::VideoCallbackWriteFrame(void *pFilteredData, uint32 dwBytesUsed, bool key, bool flush) {
+	while (!mVideoDelay.empty()) {
+		int id = mVideoDelay[0];
+		if (id!=-1) break;
+		mVideoDelay.erase(mVideoDelay.begin());
+		if (mpOutputFile) {
+			mpVideoOut->write(0, "", 0, 1);
+			CheckVideoAfter();
+		}
+	}
 
 	if (mpVideoCompressor) {
 		uint32 lBytes = 0;
 		VDPacketInfo packetInfo;
 
 		VDPROFILEBEGIN("V-Compress");
-		void* lpCompressedData = pOutputBuffer;
-		if (!mpVideoCompressor->packFrame(lpCompressedData, pFilteredData, lBytes, packetInfo))
-			lpCompressedData = 0;
+		bool have_output = mpVideoCompressor->packFrame(pOutputBuffer, pFilteredData, lBytes, packetInfo);
 		VDPROFILEEND();
 
-		if (mpOutput) {
-			VDPROFILEBEGIN("V-Write");
-			mpVideoOut->write(
-					packetInfo.keyframe ? AVIOutputStream::kFlagKeyFrame : 0,
-					lpCompressedData,
-					lBytes, 1);
-			VDPROFILEEND();
+		if (!flush) mVideoDelay.push_back(1);
 
-			CheckVideoAfter();
+		if (have_output) {
+			mVideoDelay.erase(mVideoDelay.begin());
+			if (mpOutput) {
+				VDPROFILEBEGIN("V-Write");
+				int flags = packetInfo.keyframe ? AVIOutputStream::kFlagKeyFrame : 0;
+				mpVideoOut->write(flags, pOutputBuffer, lBytes, 1);
+				VDPROFILEEND();
+
+				CheckVideoAfter();
+			}
+
+			mLastVideoSize = lBytes + 24;
 		}
 
-		mLastVideoSize = lBytes + 24;
 	} else {
 		if (mpOutput) {
 			VDPROFILEBEGIN("V-Write");
@@ -3716,12 +3741,9 @@ void VDCaptureData::OnFramesInserted(int framesInserted) {
 
 	while(framesInserted-->0) {
 		if (mpOutputFile)
-			mpVideoOut->write(0, "", 0, 1);
+			mVideoDelay.push_back(-1);
 
 		if (mpVideoCompressor)
 			mpVideoCompressor->dropFrame();
-
-		if (mpOutputFile)
-			CheckVideoAfter();
 	}
 }
