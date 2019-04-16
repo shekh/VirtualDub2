@@ -181,7 +181,7 @@ VDVideoSourceTest::VDVideoSourceTest(int mode, int scale)
 	mSampleFirst = 0;
 	mSampleLast = 1000;
 
-	mpTargetFormatHeader.resize(sizeof(BITMAPINFOHEADER));
+	//mpTargetFormatHeader.resize(sizeof(BITMAPINFOHEADER));
 	BITMAPINFOHEADER *pFormat = (BITMAPINFOHEADER *)allocFormat(sizeof(BITMAPINFOHEADER));
 
 	int w = 640*mScale;
@@ -194,6 +194,7 @@ VDVideoSourceTest::VDVideoSourceTest(int mode, int scale)
 	pFormat->biHeight			= h;
 	pFormat->biPlanes			= 1;
 	pFormat->biCompression		= 0xFFFFFFFFUL;
+	pFormat->biSizeImage	= 0;
 	pFormat->biBitCount			= 0;
 	pFormat->biXPelsPerMeter	= 0;
 	pFormat->biYPelsPerMeter	= 0;

@@ -1426,11 +1426,10 @@ bool Dubber::NegotiateFastFormat(int format) {
 			return false;
 	}
 	
-	const BITMAPINFOHEADER *pbih = (const BITMAPINFOHEADER *)mVideoSources.front()->getDecompressedFormat();
+	IVDVideoSource* vs0 = mVideoSources.front();
+	const BITMAPINFOHEADER* pbih = (const BITMAPINFOHEADER*)vs0->getDecompressedFormat();
+	uint32 bih_size = vs0->getDecompressedFormatLen();
 	if (!pbih) return false;
-
-	//int s_variant;
-	//int s_format = VDBitmapFormatToPixmapFormat((const VDAVIBitmapInfoHeader&)*pbih,s_variant);
 
 	if (mpVideoCompressor->Query(pbih)) {
 		VDString buf;
@@ -1443,6 +1442,17 @@ bool Dubber::NegotiateFastFormat(int format) {
 		const char *s = buf.c_str();
 		VDLogAppMessage(kVDLogInfo, kVDST_Dub, kVDM_FastRecompressUsingFormat, 1, &s);
 		return true;
+	}
+
+	// try with native support
+	VDPixmapLayout layout;
+	if (VDGetPixmapLayoutForBitmapFormat((const VDAVIBitmapInfoHeader&)*pbih,bih_size,layout)) {
+		if (mpVideoCompressor->Query(&layout)) {
+			VDString buf = VDPixmapFormatPrintSpec(layout.formatEx);
+			const char *s = buf.c_str();
+			VDLogAppMessage(kVDLogInfo, kVDST_Dub, kVDM_FastRecompressUsingFormat, 1, &s);
+			return true;
+		}
 	}
 
 	return false;
