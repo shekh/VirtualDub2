@@ -366,11 +366,12 @@ private:
 	HWND		mhdlg;
 	HWND		mhwndButton;
 	HWND		mhwndParent;
-	HWND    mhwndPosHost;
+	HWND		mhwndPosHost;
 	HWND		mhwndPosition;
 	HWND		mhwndVideoWindow;
 	HWND		mhwndDisplay;
 	HWND		mhwndFilterList;
+	HWND		mhwndFilter;
 
 	wchar_t		mButtonAccelerator;
 
@@ -446,6 +447,7 @@ FilterPreview::FilterPreview(FilterSystem *pFiltSys, VDFilterChainDesc *pFilterC
 	, mhwndVideoWindow(NULL)
 	, mhwndDisplay(NULL)
 	, mhwndFilterList(NULL)
+	, mhwndFilter(NULL)
 	, mButtonAccelerator(0)
 	, mWidth(0)
 	, mHeight(0)
@@ -940,6 +942,7 @@ void FilterPreview::OnInit() {
 }
 
 void FilterPreview::DisplayEx(VDXHWND parent, PreviewExInfo& info) {
+	mhwndFilter = (HWND)parent;
 	mBorder = 0;
 	if (info.flags & info.thick_border)
 		mBorder = 8;
@@ -1350,7 +1353,13 @@ void FilterPreview::OnVideoRedraw() {
 bool FilterPreview::OnCommand(UINT cmd) {
 	switch(cmd) {
 	case IDCANCEL:
-		if (mbNoExit) return true;
+		if (mbNoExit) {
+			if (mhwndFilter) {
+				SetActiveWindow(mhwndFilter);
+				SendMessage(mhwndFilter,WM_COMMAND,IDCANCEL,0);
+			}
+			return true;
+		}
 		if (mpButtonCallback)
 			mpButtonCallback(false, mpvButtonCBData);
 
