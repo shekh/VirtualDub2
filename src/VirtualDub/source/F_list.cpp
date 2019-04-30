@@ -30,10 +30,10 @@ extern const VDXFilterDefinition
 #endif
 	filterDef_curves,
 	filterDef_resize,
+	filterDef_fill,
 	filterDef_test;
 
 extern FilterDefinition
-	filterDef_fill,
 	filterDef_levels,
 	filterDef_logo,
 	filterDef_convolute,

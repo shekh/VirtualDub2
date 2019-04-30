@@ -259,6 +259,7 @@ namespace {
 			break;
 		}
 	}
+}
 
 	void VDPixmapRectFillRGB32(const VDPixmap& px, const vdrect32f& rDst, uint32 c) {
 		using namespace vd2;
@@ -342,7 +343,7 @@ namespace {
 			break;
 		}
 	}
-}
+
 
 class VDVideoFilterResize : public VDXVideoFilter {
 public:
