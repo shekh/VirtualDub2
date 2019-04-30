@@ -271,15 +271,29 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 	}
 
 	VDPixmapUberBlitterGenerator gen;
+	uint32 rw = sw;
+	uint32 rh = sh;
+	int x0 = 0;
+	int y0 = 0;
+	if (xoffset-floor(xoffset)==0.5 && xfactor==1.0) {
+		x0 = (int)floor(xoffset);
+		xoffset = 0.5;
+		rw = (int)srcrect.width();
+	}
+	if (yoffset-floor(yoffset)==0.5 && yfactor==1.0) {
+		y0 = (int)floor(yoffset);
+		yoffset = 0.5;
+		rh = (int)srcrect.height();
+	}
 
 	switch(srcformat) {
 	case kPixFormat_XRGB8888:
-		gen.ldsrc(0, 0, 0, 0, sw, sh, VDPixmapGetFormatTokenFromFormat(srcformat), sw*4);
+		gen.ldsrc(0, 0, x0*4, y0, rw, rh, VDPixmapGetFormatTokenFromFormat(srcformat), rw*4);
 		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
 		break;
 
 	case kPixFormat_XRGB64:
-		gen.ldsrc(0, 0, 0, 0, sw, sh, VDPixmapGetFormatTokenFromFormat(srcformat), sw*8);
+		gen.ldsrc(0, 0, x0*8, y0, rw, rh, VDPixmapGetFormatTokenFromFormat(srcformat), rw*8);
 		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
 		break;
 
@@ -287,14 +301,14 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 	case kPixFormat_Y8_FR:
 	case kPixFormat_RGB_Planar:
 	case kPixFormat_RGBA_Planar:
-		gen.ldsrc(0, 0, 0, 0, sw, sh, kVDPixType_8, sw);
+		gen.ldsrc(0, 0, x0, y0, rw, rh, kVDPixType_8, rw);
 		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
 		break;
 
 	case kPixFormat_Y16:
 	case kPixFormat_RGB_Planar16:
 	case kPixFormat_RGBA_Planar16:
-		gen.ldsrc(0, 0, 0, 0, sw, sh, kVDPixType_16_LE, sw*2);
+		gen.ldsrc(0, 0, x0*2, y0, rw, rh, kVDPixType_16_LE, rw*2);
 		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
 		break;
 
@@ -342,15 +356,28 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 				break;
 			}
 
-			gen.ldsrc(0, 0, 0, 0, sw, sh, plane_format, sw*bpp);
+			gen.ldsrc(0, 0, x0*bpp, y0, rw, rh, plane_format, rw*bpp);
 			ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
 
-			const VDPixmapFormatInfo& info = VDPixmapGetInfo(dstformat);
-			uint32 subsw = -(-(sint32)sw >> info.auxwbits);
-			uint32 subsh = -(-(sint32)sh >> info.auxhbits);
-
 			VDPixmapUberBlitterGenerator gen2;
-			gen2.ldsrc(0, 0, 0, 0, subsw, subsh, plane_format, subsw*bpp);
+			uint32 subsw = rw;
+			uint32 subsh = rh;
+			int x02 = 0;
+			int y02 = 0;
+			if (xoffset2-floor(xoffset2)==0.5 && xfactor==1.0) {
+				x02 = (int)floor(xoffset2);
+				xoffset2 = 0.5;
+				subsw = (int)srcrect.width();
+			}
+			if (yoffset2-floor(yoffset2)==0.5 && yfactor==1.0) {
+				y0 = (int)floor(yoffset);
+				yoffset = 0.5;
+				subsh = (int)srcrect.height();
+			}
+			const VDPixmapFormatInfo& info = VDPixmapGetInfo(dstformat);
+			subsw = -(-(sint32)subsw >> info.auxwbits);
+			subsh = -(-(sint32)subsh >> info.auxhbits);
+			gen2.ldsrc(0, 0, x02*bpp, y02, subsw, subsh, plane_format, subsw*bpp);
 			ApplyFilters(gen2, mDstRectPlane12.width(), mDstRectPlane12.height(), xoffset2, yoffset2, xfactor, yfactor);
 			mpBlitter2 = gen2.create();
 			if (!mpBlitter2)

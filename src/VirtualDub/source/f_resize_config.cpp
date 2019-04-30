@@ -415,6 +415,109 @@ bool VDResizeFilterData::ExchangeWithRegistry(bool write) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+VDCanvasFilterData::VDCanvasFilterData()
+	: mFrameW(320)
+	, mFrameH(240)
+	, mFrameAspectNumerator(4.0f)
+	, mFrameAspectDenominator(3.0f)
+	, mFrameMode(kFrameModeNone)
+	, mFillColor(0)
+{
+	mAnchorX = 1;
+	mAnchorY = 1;
+	mFrameDW = 0;
+	mFrameDH = 0;
+	mFrameX = 0;
+	mFrameY = 0;
+}
+
+const char *VDCanvasFilterData::Validate() const {
+	switch(mFrameMode) {
+		case kFrameModeNone:
+		case kFrameModeRelative:
+			break;
+
+		case kFrameModeToSize:
+			if (!(mFrameW >= 0 && mFrameW < 1048576) || !(mFrameH >= 0 && mFrameH < 1048576))
+				return "The target frame size is invalid.";
+			break;
+
+		case kFrameModeARCrop:
+		case kFrameModeARLetterbox:
+			if (!(mFrameAspectDenominator >= 0.001 && mFrameAspectDenominator < 1000.0)
+				|| !(mFrameAspectNumerator >= 0.001 && mFrameAspectNumerator < 1000.0))
+				return "The target image aspect ratio is invalid (values must be within 0.1 to 10.0).";
+			break;
+
+		default:
+			return "The target image size mode is invalid.";
+	}
+
+	return NULL;
+}
+
+void VDCanvasFilterData::ComputeSizes(uint32 imgw, uint32 imgh, uint32& framew, uint32& frameh) {
+	double framewf;
+	double framehf;
+
+	switch(mFrameMode) {
+		case kFrameModeNone:
+			framewf = imgw;
+			framehf = imgh;
+			break;
+
+		case kFrameModeToSize:
+			framewf = mFrameW;
+			framehf = mFrameH;
+			break;
+
+		case kFrameModeRelative:
+			framewf = imgw + mFrameDW;
+			framehf = imgh + mFrameDH;
+			if (mAnchorX==1) framewf += mFrameDW;
+			if (mAnchorY==1) framehf += mFrameDH;
+			if (framewf<0) framewf = 0;
+			if (framehf<0) framehf = 0;
+			break;
+
+		case kFrameModeARCrop:
+			framewf = imgw;
+			framehf = imgw * (mFrameAspectDenominator / mFrameAspectNumerator);
+			if (framehf > imgh) {
+				framewf = imgh * (mFrameAspectNumerator / mFrameAspectDenominator);
+				framehf = imgh;
+			}
+			break;
+		case kFrameModeARLetterbox:
+			framewf = imgw;
+			framehf = imgw * (mFrameAspectDenominator / mFrameAspectNumerator);
+			if (framehf < imgh) {
+				framewf = imgh * (mFrameAspectNumerator / mFrameAspectDenominator);
+				framehf = imgh;
+			}
+			break;
+	}
+
+	framew = (uint32)VDRoundToInt(framewf);
+	frameh = (uint32)VDRoundToInt(framehf);
+}
+
+void VDCanvasFilterData::ComputeDestRect(uint32 outw, uint32 outh, double dstw, double dsth) {
+	float dx = (float)outw - (float)dstw;
+	float dy = (float)outh - (float)dsth;
+	if (mAnchorX==0) dx = 0;
+	if (mAnchorX==1) dx = (float)(dx*0.5);
+	if (mAnchorY==0) dy = 0;
+	if (mAnchorY==1) dy = (float)(dy*0.5);
+
+	dx += (float)mFrameX;
+	dy += (float)mFrameY;
+
+	mDstRect.set(dx, dy, dx + (float)dstw, dy + (float)dsth);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 class VDDataExchangeDialogW32 {
 public:
 	VDDataExchangeDialogW32(HWND hdlg, bool write);
@@ -462,11 +565,14 @@ void VDDataExchangeDialogW32::ExchangeEdit(uint32 id, sint32& value) {
 		VDSetWindowTextW32(hwnd, VDswprintf(L"%d", 1, &value).c_str());
 	} else {
 		VDStringW s(VDGetWindowTextW32(hwnd));
-		int value;
+		int newValue;
 		char dummy;
 
-		if (1 == swscanf(s.c_str(), L" %d%C", &value, &dummy)) {
-			value = (sint32)value;
+		if (1 == swscanf(s.c_str(), L" %d%C", &newValue, &dummy)) {
+			if (newValue != value) {
+				value = (sint32)newValue;
+				mbChangeDetected = true;
+			}
 		} else {
 			if (!mErrorPos && !(GetWindowLong(hwnd, GWL_STYLE) & WS_DISABLED))
 				mErrorPos = id;
@@ -664,154 +770,154 @@ VDVF1ResizeDlg::VDVF1ResizeDlg(VDResizeFilterData& config, IVDXFilterPreview2 *i
 }
 
 INT_PTR VDVF1ResizeDlg::DlgProc(UINT msg, WPARAM wParam, LPARAM lParam) {
-    switch (msg) {
-        case WM_INITDIALOG:
-			InitDialog();
-            return FALSE;
+	switch (msg) {
+	case WM_INITDIALOG:
+		InitDialog();
+		return FALSE;
 
-        case WM_COMMAND:                      
-			switch(LOWORD(wParam)) {
-			case IDC_APPLY:
-				ApplyChanges();
-				return TRUE;
+	case WM_COMMAND:
+		switch(LOWORD(wParam)) {
+		case IDC_APPLY:
+			ApplyChanges();
+			return TRUE;
 
-			case IDC_PREVIEW:
-				if (mifp->IsPreviewDisplayed()) {
-					EnableWindow(GetDlgItem(mhdlg, IDC_APPLY), FALSE);
-				} else {
-					if (mbConfigDirty) {
-						if (!ApplyChanges())
-							return TRUE;
-					}
+		case IDC_PREVIEW:
+			if (mifp->IsPreviewDisplayed()) {
+				EnableWindow(GetDlgItem(mhdlg, IDC_APPLY), FALSE);
+			} else {
+				if (mbConfigDirty) {
+					if (!ApplyChanges())
+						return TRUE;
 				}
-				mifp->Toggle((VDXHWND)mhdlg);
-				return TRUE;
-
-			case IDOK:
-				if (uint32 badid = ExchangeWithDialog(false)) {
-					SetFocus(GetDlgItem(mhdlg, badid));
-					MessageBeep(MB_ICONERROR);
-				} else if (const char *err = mNewConfig.Validate()) {
-					MessageBox(mhdlg, err, g_szError, MB_ICONERROR | MB_OK);
-				} else {
-					mifp->Close();
-					mConfig = mNewConfig;
-					End(true);
-				}
-				return TRUE;
-
-			case IDCANCEL:
-				mifp->Close();
-				End(false);
-                return TRUE;
-
-			case IDC_SAVE_AS_DEFAULT:
-				if (uint32 badid = ExchangeWithDialog(false)) {
-					SetFocus(GetDlgItem(mhdlg, badid));
-					MessageBeep(MB_ICONERROR);
-				} else if (const char *err = mNewConfig.Validate())
-					MessageBox(mhdlg, err, g_szError, MB_ICONERROR | MB_OK);
-				else
-					mNewConfig.ExchangeWithRegistry(true);
-				return TRUE;
-
-			case IDC_WIDTH:
-			case IDC_HEIGHT:
-				if (!mRecursionLock && (HIWORD(wParam) == EN_KILLFOCUS || HIWORD(wParam) == EN_CHANGE)) {
-					if (HIWORD(wParam) == EN_CHANGE) {
-						mbWidthPriority = (LOWORD(wParam) == IDC_WIDTH);
-						++mRecursionLock;
-						CheckDlgButton(mhdlg, IDC_SIZE_ABSOLUTE, BST_CHECKED);
-						CheckDlgButton(mhdlg, IDC_SIZE_RELATIVE, BST_UNCHECKED);
-						--mRecursionLock;
-					}
-					ExchangeWithDialog(false);
-				}
-				break;
-
-			case IDC_RELWIDTH:
-			case IDC_RELHEIGHT:
-				if (!mRecursionLock && (HIWORD(wParam) == EN_KILLFOCUS || HIWORD(wParam) == EN_CHANGE)) {
-					if (HIWORD(wParam) == EN_CHANGE) {
-						mbWidthPriority = (LOWORD(wParam) == IDC_RELWIDTH);
-						++mRecursionLock;
-						CheckDlgButton(mhdlg, IDC_SIZE_ABSOLUTE, BST_UNCHECKED);
-						CheckDlgButton(mhdlg, IDC_SIZE_RELATIVE, BST_CHECKED);
-						--mRecursionLock;
-					}
-					ExchangeWithDialog(false);
-				}
-				break;
-
-			case IDC_FRAMEWIDTH:
-			case IDC_FRAMEHEIGHT:
-			case IDC_ASPECT_RATIO1:
-			case IDC_ASPECT_RATIO2:
-			case IDC_FRAME_ASPECT1:
-			case IDC_FRAME_ASPECT2:
-				if (!mRecursionLock && (HIWORD(wParam) == EN_KILLFOCUS || HIWORD(wParam) == EN_CHANGE)) {
-					ExchangeWithDialog(false);
-				}
-				return TRUE;
-
-			case IDC_FILTER_MODE:
-				if (!mRecursionLock && HIWORD(wParam) == CBN_SELCHANGE) {
-					ExchangeWithDialog(false);
-				}
-				return TRUE;
-
-			case IDC_SIZE_ABSOLUTE:
-			case IDC_SIZE_RELATIVE:
-			case IDC_INTERLACED:
-			case IDC_AR_NONE:
-			case IDC_AR_USE_SOURCE:
-			case IDC_AR_USE_RATIO:
-			case IDC_FRAME_NONE:
-			case IDC_FRAME_TO_SIZE:
-			case IDC_FRAME_AR_CROP:
-			case IDC_FRAME_AR_LETTERBOX:
-			case IDC_LETTERBOX:
-			case IDC_ALIGNMENT_1:
-			case IDC_ALIGNMENT_2:
-			case IDC_ALIGNMENT_4:
-			case IDC_ALIGNMENT_8:
-			case IDC_ALIGNMENT_16:
-				if (!mRecursionLock && HIWORD(wParam) == BN_CLICKED) {
-					ExchangeWithDialog(false);
-				}
-				return TRUE;
-
-			case IDC_PICKCOLOR:
-				{
-					COLORREF rgbColor = revcolor(mNewConfig.mFillColor);
-
-					if (guiChooseColor(mhdlg, rgbColor)) {
-						mNewConfig.mFillColor = revcolor(rgbColor);
-
-						DeleteObject(mhbrColor);
-						mhbrColor = CreateSolidBrush(rgbColor);
-						RedrawWindow(GetDlgItem(mhdlg, IDC_COLOR), NULL, NULL, RDW_ERASE|RDW_INVALIDATE|RDW_UPDATENOW);
-						MarkDirty();
-					}
-				}
-				break;
-            }
-            break;
-
-		case WM_CTLCOLORSTATIC:
-			if (GetWindowLong((HWND)lParam, GWL_ID) == IDC_COLOR)
-				return (INT_PTR)mhbrColor;
-			break;
-
-		case WM_DESTROY:
-			if (mhbrColor) {
-				DeleteObject(mhbrColor);
-				mhbrColor = NULL;
 			}
+			mifp->Toggle((VDXHWND)mhdlg);
+			return TRUE;
 
+		case IDOK:
+			if (uint32 badid = ExchangeWithDialog(false)) {
+				SetFocus(GetDlgItem(mhdlg, badid));
+				MessageBeep(MB_ICONERROR);
+			} else if (const char *err = mNewConfig.Validate()) {
+				MessageBox(mhdlg, err, g_szError, MB_ICONERROR | MB_OK);
+			} else {
+				mifp->Close();
+				mConfig = mNewConfig;
+				End(true);
+			}
+			return TRUE;
+
+		case IDCANCEL:
+			mifp->Close();
+			End(false);
+			return TRUE;
+
+		case IDC_SAVE_AS_DEFAULT:
+			if (uint32 badid = ExchangeWithDialog(false)) {
+				SetFocus(GetDlgItem(mhdlg, badid));
+				MessageBeep(MB_ICONERROR);
+			} else if (const char *err = mNewConfig.Validate())
+				MessageBox(mhdlg, err, g_szError, MB_ICONERROR | MB_OK);
+			else
+				mNewConfig.ExchangeWithRegistry(true);
+			return TRUE;
+
+		case IDC_WIDTH:
+		case IDC_HEIGHT:
+			if (!mRecursionLock && (HIWORD(wParam) == EN_KILLFOCUS || HIWORD(wParam) == EN_CHANGE)) {
+				if (HIWORD(wParam) == EN_CHANGE) {
+					mbWidthPriority = (LOWORD(wParam) == IDC_WIDTH);
+					++mRecursionLock;
+					CheckDlgButton(mhdlg, IDC_SIZE_ABSOLUTE, BST_CHECKED);
+					CheckDlgButton(mhdlg, IDC_SIZE_RELATIVE, BST_UNCHECKED);
+					--mRecursionLock;
+				}
+				ExchangeWithDialog(false);
+			}
 			break;
-    }
-    return FALSE;
+
+		case IDC_RELWIDTH:
+		case IDC_RELHEIGHT:
+			if (!mRecursionLock && (HIWORD(wParam) == EN_KILLFOCUS || HIWORD(wParam) == EN_CHANGE)) {
+				if (HIWORD(wParam) == EN_CHANGE) {
+					mbWidthPriority = (LOWORD(wParam) == IDC_RELWIDTH);
+					++mRecursionLock;
+					CheckDlgButton(mhdlg, IDC_SIZE_ABSOLUTE, BST_UNCHECKED);
+					CheckDlgButton(mhdlg, IDC_SIZE_RELATIVE, BST_CHECKED);
+					--mRecursionLock;
+				}
+				ExchangeWithDialog(false);
+			}
+			break;
+
+		case IDC_FRAMEWIDTH:
+		case IDC_FRAMEHEIGHT:
+		case IDC_ASPECT_RATIO1:
+		case IDC_ASPECT_RATIO2:
+		case IDC_FRAME_ASPECT1:
+		case IDC_FRAME_ASPECT2:
+			if (!mRecursionLock && (HIWORD(wParam) == EN_KILLFOCUS || HIWORD(wParam) == EN_CHANGE)) {
+				ExchangeWithDialog(false);
+			}
+			return TRUE;
+
+		case IDC_FILTER_MODE:
+			if (!mRecursionLock && HIWORD(wParam) == CBN_SELCHANGE) {
+				ExchangeWithDialog(false);
+			}
+			return TRUE;
+
+		case IDC_SIZE_ABSOLUTE:
+		case IDC_SIZE_RELATIVE:
+		case IDC_INTERLACED:
+		case IDC_AR_NONE:
+		case IDC_AR_USE_SOURCE:
+		case IDC_AR_USE_RATIO:
+		case IDC_FRAME_NONE:
+		case IDC_FRAME_TO_SIZE:
+		case IDC_FRAME_AR_CROP:
+		case IDC_FRAME_AR_LETTERBOX:
+		case IDC_LETTERBOX:
+		case IDC_ALIGNMENT_1:
+		case IDC_ALIGNMENT_2:
+		case IDC_ALIGNMENT_4:
+		case IDC_ALIGNMENT_8:
+		case IDC_ALIGNMENT_16:
+			if (!mRecursionLock && HIWORD(wParam) == BN_CLICKED) {
+				ExchangeWithDialog(false);
+			}
+			return TRUE;
+
+		case IDC_PICKCOLOR:
+			{
+				COLORREF rgbColor = revcolor(mNewConfig.mFillColor);
+
+				if (guiChooseColor(mhdlg, rgbColor)) {
+					mNewConfig.mFillColor = revcolor(rgbColor);
+
+					DeleteObject(mhbrColor);
+					mhbrColor = CreateSolidBrush(rgbColor);
+					RedrawWindow(GetDlgItem(mhdlg, IDC_COLOR), NULL, NULL, RDW_ERASE|RDW_INVALIDATE|RDW_UPDATENOW);
+					MarkDirty();
+				}
+			}
+			break;
+		}
+		break;
+
+	case WM_CTLCOLORSTATIC:
+		if (GetWindowLong((HWND)lParam, GWL_ID) == IDC_COLOR)
+			return (INT_PTR)mhbrColor;
+		break;
+
+	case WM_DESTROY:
+		if (mhbrColor) {
+			DeleteObject(mhbrColor);
+			mhbrColor = NULL;
+		}
+
+		break;
+	}
+	return FALSE;
 }
 
 void VDVF1ResizeDlg::InitDialog() {
@@ -982,6 +1088,309 @@ void VDVF1ResizeDlg::MarkDirty() {
 
 bool VDFilterResizeActivateConfigDialog(VDResizeFilterData& mfd, IVDXFilterPreview2 *ifp2, uint32 w, uint32 h, VDGUIHandle hParent) {
 	VDVF1ResizeDlg dlg(mfd, ifp2, w, h);
+
+	return dlg.ActivateDialogDual(hParent) != 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class VDVFCanvasDlg : public VDDialogBaseW32 {
+public:
+	VDVFCanvasDlg(VDCanvasFilterData& config, IVDXFilterPreview2 *ifp, uint32 w, uint32 h);
+
+protected:
+	INT_PTR DlgProc(UINT msg, WPARAM wParam, LPARAM lParam);
+	void InitDialog();
+	uint32 ExchangeWithDialog(bool write, bool changeMode);
+	void UpdateDialogAbsoluteSize();
+	void UpdateDialogRelativeSize();
+	void UpdateEnables();
+	void UpdatePreview();
+	void ApplyAnchor(int x, int y);
+	bool ApplyChanges();
+	void MarkDirty();
+
+	VDCanvasFilterData& mConfig;
+	VDCanvasFilterData mNewConfig;
+	bool		mbConfigDirty;
+	HBRUSH		mhbrColor;
+	IVDXFilterPreview2 *mifp;
+	uint32		mWidth;
+	uint32		mHeight;
+	int			mRecursionLock;
+};
+
+VDVFCanvasDlg::VDVFCanvasDlg(VDCanvasFilterData& config, IVDXFilterPreview2 *ifp, uint32 w, uint32 h)
+	: VDDialogBaseW32(IDD_FILTER_CANVAS)
+	, mConfig(config)
+	, mbConfigDirty(false)
+	, mhbrColor(NULL)
+	, mifp(ifp)
+	, mWidth(w)
+	, mHeight(h)
+	, mRecursionLock(0)
+{
+}
+
+INT_PTR VDVFCanvasDlg::DlgProc(UINT msg, WPARAM wParam, LPARAM lParam) {
+	switch (msg) {
+	case WM_INITDIALOG:
+		InitDialog();
+		return FALSE;
+
+	case WM_COMMAND:
+		switch(LOWORD(wParam)) {
+		case IDC_APPLY:
+			ApplyChanges();
+			return TRUE;
+
+		case IDC_PREVIEW:
+			if (mifp->IsPreviewDisplayed()) {
+				EnableWindow(GetDlgItem(mhdlg, IDC_APPLY), FALSE);
+			} else {
+				if (mbConfigDirty) {
+					if (!ApplyChanges())
+						return TRUE;
+				}
+			}
+			mifp->Toggle((VDXHWND)mhdlg);
+			return TRUE;
+
+		case IDOK:
+			if (uint32 badid = ExchangeWithDialog(false, false)) {
+				SetFocus(GetDlgItem(mhdlg, badid));
+				MessageBeep(MB_ICONERROR);
+			} else if (const char *err = mNewConfig.Validate()) {
+				MessageBox(mhdlg, err, g_szError, MB_ICONERROR | MB_OK);
+			} else {
+				mifp->Close();
+				mConfig = mNewConfig;
+				End(true);
+			}
+			return TRUE;
+
+		case IDCANCEL:
+			mifp->Close();
+			End(false);
+			return TRUE;
+
+		case IDC_FRAMEWIDTH:
+		case IDC_FRAMEHEIGHT:
+		case IDC_FRAME_ASPECT1:
+		case IDC_FRAME_ASPECT2:
+		case IDC_XPOS:
+		case IDC_YPOS:
+			if (!mRecursionLock && (HIWORD(wParam) == EN_KILLFOCUS || HIWORD(wParam) == EN_CHANGE)) {
+				ExchangeWithDialog(false, false);
+			}
+			return TRUE;
+
+		case IDC_FRAME_NONE:
+		case IDC_FRAME_TO_SIZE:
+		case IDC_FRAME_AR_CROP:
+		case IDC_FRAME_AR_LETTERBOX:
+		case IDC_FRAME_RELATIVE:
+			if (!mRecursionLock && HIWORD(wParam) == BN_CLICKED) {
+				ExchangeWithDialog(false, true);
+			}
+			return TRUE;
+
+		case IDC_PICKCOLOR:
+			{
+				COLORREF rgbColor = revcolor(mNewConfig.mFillColor);
+
+				if (guiChooseColor(mhdlg, rgbColor)) {
+					mNewConfig.mFillColor = revcolor(rgbColor);
+
+					DeleteObject(mhbrColor);
+					mhbrColor = CreateSolidBrush(rgbColor);
+					RedrawWindow(GetDlgItem(mhdlg, IDC_COLOR), NULL, NULL, RDW_ERASE|RDW_INVALIDATE|RDW_UPDATENOW);
+					MarkDirty();
+				}
+			}
+			break;
+
+		case IDC_DIR_TOPLEFT:				ApplyAnchor(0,0); return true;
+		case IDC_DIR_TOPCENTER:			ApplyAnchor(1,0); return true;
+		case IDC_DIR_TOPRIGHT:			ApplyAnchor(2,0); return true;
+		case IDC_DIR_MIDDLELEFT:		ApplyAnchor(0,1); return true;
+		case IDC_DIR_MIDDLECENTER:	ApplyAnchor(1,1); return true;
+		case IDC_DIR_MIDDLERIGHT:		ApplyAnchor(2,1); return true;
+		case IDC_DIR_BOTTOMLEFT:		ApplyAnchor(0,2); return true;
+		case IDC_DIR_BOTTOMCENTER:	ApplyAnchor(1,2); return true;
+		case IDC_DIR_BOTTOMRIGHT:		ApplyAnchor(2,2); return true;
+		}
+		break;
+
+	case WM_CTLCOLORSTATIC:
+		if (GetWindowLong((HWND)lParam, GWL_ID) == IDC_COLOR)
+			return (INT_PTR)mhbrColor;
+		break;
+
+	case WM_DESTROY:
+		if (mhbrColor) {
+			DeleteObject(mhbrColor);
+			mhbrColor = NULL;
+		}
+
+		break;
+	}
+	return FALSE;
+}
+
+void VDVFCanvasDlg::InitDialog() {
+	mNewConfig = mConfig;
+	ExchangeWithDialog(true, false);
+
+	mbConfigDirty = false;
+
+	if (mConfig.mFrameMode==VDCanvasFilterData::kFrameModeNone) {
+		mNewConfig.mFrameMode = VDCanvasFilterData::kFrameModeToSize;
+		mNewConfig.mFrameW = mWidth;
+		mNewConfig.mFrameH = mHeight;
+		ExchangeWithDialog(true, false);
+	}
+
+	UpdateEnables();
+
+	mhbrColor = CreateSolidBrush(revcolor(mConfig.mFillColor));
+	mifp->InitButton((VDXHWND)GetDlgItem(mhdlg, IDC_PREVIEW));
+
+	UINT id = IDC_FRAMEWIDTH;
+	if (mConfig.mFrameMode==mConfig.kFrameModeARCrop)
+		id = IDC_FRAME_ASPECT1;
+	if (mConfig.mFrameMode==mConfig.kFrameModeARLetterbox)
+		id = IDC_FRAME_ASPECT1;
+
+	HWND hwndItem = GetDlgItem(mhdlg, id);
+	if (hwndItem) {
+		SetFocus(hwndItem);
+		SendMessage(hwndItem, EM_SETSEL, 0, -1);
+	}
+
+	SendDlgItemMessage(mhdlg, IDC_SPIN_XOFFSET, UDM_SETRANGE, 0, MAKELONG((short)-(UD_MINVAL-1/2), (short)+(UD_MINVAL-1/2)));
+	SendDlgItemMessage(mhdlg, IDC_SPIN_YOFFSET, UDM_SETRANGE, 0, MAKELONG((short)+(UD_MINVAL-1/2), (short)-(UD_MINVAL-1/2)));
+
+	static const uint32 idbypos[3][3]={
+		IDC_DIR_TOPLEFT,
+		IDC_DIR_TOPCENTER,
+		IDC_DIR_TOPRIGHT,
+		IDC_DIR_MIDDLELEFT,
+		IDC_DIR_MIDDLECENTER,
+		IDC_DIR_MIDDLERIGHT,
+		IDC_DIR_BOTTOMLEFT,
+		IDC_DIR_BOTTOMCENTER,
+		IDC_DIR_BOTTOMRIGHT
+	};
+
+	CheckDlgButton(mhdlg, idbypos[mConfig.mAnchorY][mConfig.mAnchorX], true);
+}
+
+uint32 VDVFCanvasDlg::ExchangeWithDialog(bool write, bool changeMode) {
+	VDDataExchangeDialogW32 ex(mhdlg, write);
+
+	++mRecursionLock;
+	if (!changeMode) {
+		if (mNewConfig.mFrameMode == VDCanvasFilterData::kFrameModeToSize) {
+			ex.ExchangeEdit(IDC_FRAMEWIDTH, mNewConfig.mFrameW);
+			ex.ExchangeEdit(IDC_FRAMEHEIGHT, mNewConfig.mFrameH);
+		}
+		if (mNewConfig.mFrameMode == VDCanvasFilterData::kFrameModeRelative) {
+			ex.ExchangeEdit(IDC_FRAMEWIDTH, mNewConfig.mFrameDW);
+			ex.ExchangeEdit(IDC_FRAMEHEIGHT, mNewConfig.mFrameDH);
+		}
+	}
+	ex.ExchangeEdit(IDC_XPOS, mNewConfig.mFrameX);
+	ex.ExchangeEdit(IDC_YPOS, mNewConfig.mFrameY);
+	ex.ExchangeEdit(IDC_FRAME_ASPECT1, mNewConfig.mFrameAspectNumerator);
+	ex.ExchangeEdit(IDC_FRAME_ASPECT2, mNewConfig.mFrameAspectDenominator);
+	ex.ExchangeOption(IDC_FRAME_TO_SIZE, mNewConfig.mFrameMode, VDCanvasFilterData::kFrameModeToSize);
+	ex.ExchangeOption(IDC_FRAME_AR_CROP, mNewConfig.mFrameMode, VDCanvasFilterData::kFrameModeARCrop);
+	ex.ExchangeOption(IDC_FRAME_AR_LETTERBOX, mNewConfig.mFrameMode, VDCanvasFilterData::kFrameModeARLetterbox);
+	ex.ExchangeOption(IDC_FRAME_RELATIVE, mNewConfig.mFrameMode, VDCanvasFilterData::kFrameModeRelative);
+	--mRecursionLock;
+
+	uint32 error = ex.GetFirstErrorPos();
+	bool changeDetected = ex.WasChangeDetected();
+
+	if (changeDetected) {
+		UpdateEnables();
+
+		if (changeMode) {
+			VDDataExchangeDialogW32 wex(mhdlg, true);
+			++mRecursionLock;
+			if (mNewConfig.mFrameMode == VDCanvasFilterData::kFrameModeToSize) {
+				wex.ExchangeEdit(IDC_FRAMEWIDTH, mNewConfig.mFrameW);
+				wex.ExchangeEdit(IDC_FRAMEHEIGHT, mNewConfig.mFrameH);
+			}
+			if (mNewConfig.mFrameMode == VDCanvasFilterData::kFrameModeRelative) {
+				wex.ExchangeEdit(IDC_FRAMEWIDTH, mNewConfig.mFrameDW);
+				wex.ExchangeEdit(IDC_FRAMEHEIGHT, mNewConfig.mFrameDH);
+			}
+			--mRecursionLock;
+		}
+	}
+
+	if (changeDetected || error) {
+		MarkDirty();
+	}
+
+	return error;
+}
+
+void VDVFCanvasDlg::UpdateEnables() {
+	bool frameToWH = (mNewConfig.mFrameMode == VDCanvasFilterData::kFrameModeToSize) || (mNewConfig.mFrameMode == VDCanvasFilterData::kFrameModeRelative);
+	EnableWindow(GetDlgItem(mhdlg, IDC_FRAMEWIDTH), frameToWH);
+	EnableWindow(GetDlgItem(mhdlg, IDC_FRAMEHEIGHT), frameToWH);
+
+	bool frameToAspect = (mNewConfig.mFrameMode == VDCanvasFilterData::kFrameModeARCrop) || (mNewConfig.mFrameMode == VDCanvasFilterData::kFrameModeARLetterbox);
+	EnableWindow(GetDlgItem(mhdlg, IDC_FRAME_ASPECT1), frameToAspect);
+	EnableWindow(GetDlgItem(mhdlg, IDC_FRAME_ASPECT2), frameToAspect);
+}
+
+void VDVFCanvasDlg::UpdatePreview() {
+	mifp->RedoSystem();
+}
+
+void VDVFCanvasDlg::ApplyAnchor(int x, int y) {
+	mNewConfig.mAnchorX = x;
+	mNewConfig.mAnchorY = y;
+	mNewConfig.mFrameX = 0;
+	mNewConfig.mFrameY = 0;
+	ExchangeWithDialog(true, false);
+	MarkDirty();
+}
+
+bool VDVFCanvasDlg::ApplyChanges() {
+	if (!mbConfigDirty)
+		return false;
+
+	if (uint32 badid = ExchangeWithDialog(false, false)) {
+		SetFocus(GetDlgItem(mhdlg, badid));
+		MessageBeep(MB_ICONERROR);
+		return false;
+	}
+
+	mbConfigDirty = false;
+	mifp->UndoSystem();
+
+	mConfig = mNewConfig;
+	UpdatePreview();
+	EnableWindow(GetDlgItem(mhdlg, IDC_APPLY), FALSE);
+	return true;
+}
+
+void VDVFCanvasDlg::MarkDirty() {
+	if (!mbConfigDirty) {
+		mbConfigDirty = true;
+
+		if (mifp->IsPreviewDisplayed())
+			EnableWindow(GetDlgItem(mhdlg, IDC_APPLY), TRUE);
+	}
+}
+
+bool VDFilterCanvasActivateConfigDialog(VDCanvasFilterData& mfd, IVDXFilterPreview2 *ifp2, uint32 w, uint32 h, VDGUIHandle hParent) {
+	VDVFCanvasDlg dlg(mfd, ifp2, w, h);
 
 	return dlg.ActivateDialogDual(hParent) != 0;
 }

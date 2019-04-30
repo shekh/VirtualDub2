@@ -144,15 +144,15 @@ namespace {
 			break;
 		case kPixFormat_RGB_Planar:
 		case kPixFormat_RGBA_Planar:
-			VDPixmapRectFillPlane8(px.data, px.pitch, ix, iy, iw, ih, c2);
-			VDPixmapRectFillPlane8(px.data2, px.pitch2, ix, iy, iw, ih, c0);
-			VDPixmapRectFillPlane8(px.data3, px.pitch3, ix, iy, iw, ih, c1);
+			VDPixmapRectFillPlane8(px.data, px.pitch, ix, iy, iw, ih, (uint8)c2);
+			VDPixmapRectFillPlane8(px.data2, px.pitch2, ix, iy, iw, ih, (uint8)c0);
+			VDPixmapRectFillPlane8(px.data3, px.pitch3, ix, iy, iw, ih, (uint8)c1);
 			break;
 		case kPixFormat_RGB_Planar16:
 		case kPixFormat_RGBA_Planar16:
-			VDPixmapRectFillPlane16(px.data, px.pitch, ix, iy, iw, ih, c2*257);
-			VDPixmapRectFillPlane16(px.data2, px.pitch2, ix, iy, iw, ih, c0*257);
-			VDPixmapRectFillPlane16(px.data3, px.pitch3, ix, iy, iw, ih, c1*257);
+			VDPixmapRectFillPlane16(px.data, px.pitch, ix, iy, iw, ih, (uint16)c2*257);
+			VDPixmapRectFillPlane16(px.data2, px.pitch2, ix, iy, iw, ih, (uint16)c0*257);
+			VDPixmapRectFillPlane16(px.data3, px.pitch3, ix, iy, iw, ih, (uint16)c1*257);
 			break;
 		case kPixFormat_YUV444_Planar:
 		case kPixFormat_YUV444_Planar_FR:
@@ -1295,6 +1295,245 @@ extern const VDXFilterDefinition filterDef_resize = VDXVideoFilterDefinition<VDV
 			"\n\n[Assembly/MMX optimized] [YCbCr processing]"
 #endif
 			);
+
+
+//------------------------------------------------------------------------------------------------------------
+
+class VDVideoFilterCanvas : public VDXVideoFilter {
+public:
+	VDVideoFilterCanvas();
+	VDVideoFilterCanvas(const VDVideoFilterCanvas&);
+
+	virtual bool Init();
+	virtual void Run();
+	virtual uint32 GetParams();
+	virtual bool Configure(VDXHWND hwnd);
+	virtual void GetSettingString(char *buf, int maxlen);
+	virtual void GetScriptString(char *buf, int maxlen);
+	virtual void Start();
+	virtual void End();
+
+	void ScriptConfig(IVDXScriptInterpreter *env, const VDXScriptValue *argv, int argc);
+
+	VDXVF_DECLARE_SCRIPT_METHODS();
+
+protected:
+	VDCanvasFilterData mConfig;
+
+	IVDPixmapResampler *mpResampler;
+	IVDPixmapResampler *mpResampler2;
+};
+
+VDVideoFilterCanvas::VDVideoFilterCanvas()
+	: mpResampler(NULL)
+	, mpResampler2(NULL)
+{
+}
+
+VDVideoFilterCanvas::VDVideoFilterCanvas(const VDVideoFilterCanvas& src)
+	: mConfig(src.mConfig)
+	, mpResampler(NULL)
+	, mpResampler2(NULL)
+{
+}
+
+bool VDVideoFilterCanvas::Init() {
+	return true;
+}
+
+void VDVideoFilterCanvas::Run() {
+	VDPixmap pxdst = VDPixmap::copy(*fa->dst.mpPixmap);
+	VDPixmap pxsrc = VDPixmap::copy(*fa->src.mpPixmap);
+
+	if (fa->fma && fa->fma->fmpixmap) {
+		pxdst.info = *fa->fma->fmpixmap->GetPixmapInfo(fa->dst.mpPixmap);
+		pxsrc.info = *fa->fma->fmpixmap->GetPixmapInfo(fa->src.mpPixmap);
+	}
+
+	const float fx1 = 0.0f;
+	const float fy1 = 0.0f;
+	const float fx2 = mConfig.mDstRect.left;
+	const float fy2 = mConfig.mDstRect.top;
+	const float fx3 = mConfig.mDstRect.right;
+	const float fy3 = mConfig.mDstRect.bottom;
+	const float fx4 = (float)pxdst.w;
+	const float fy4 = (float)pxdst.h;
+	
+	uint32 fill = mConfig.mFillColor;
+	VDPixmapRectFillRGB32(pxdst, vdrect32f(fx1, fy1, fx4, fy2), fill);
+	VDPixmapRectFillRGB32(pxdst, vdrect32f(fx1, fy2, fx2, fy3), fill);
+	VDPixmapRectFillRGB32(pxdst, vdrect32f(fx3, fy2, fx4, fy3), fill);
+	VDPixmapRectFillRGB32(pxdst, vdrect32f(fx1, fy3, fx4, fy4), fill);
+
+	mpResampler->Process(pxdst, pxsrc);
+}
+
+uint32 VDVideoFilterCanvas::GetParams() {
+	using namespace vd2;
+	const VDXPixmapLayout& src = *fa->src.mpPixmapLayout;
+	VDPixmapFormatEx format = ExtractBaseFormat(src.format);
+
+	switch(format) {
+		case kPixFormat_XRGB8888:
+		case kPixFormat_XRGB64:
+		case kPixFormat_RGB_Planar:
+		case kPixFormat_RGBA_Planar:
+		case kPixFormat_RGB_Planar16:
+		case kPixFormat_RGBA_Planar16:
+		case kPixFormat_YUV444_Planar:
+		case kPixFormat_YUV422_Planar:
+		case kPixFormat_YUV411_Planar:
+		case kPixFormat_YUV422_Planar16:
+		case kPixFormat_YUV444_Planar16:
+		case kPixFormat_YUV422_Alpha_Planar16:
+		case kPixFormat_YUV444_Alpha_Planar16:
+		case kPixFormat_YUV422_Alpha_Planar:
+		case kPixFormat_YUV444_Alpha_Planar:
+		case kPixFormat_Y8:
+		case kPixFormat_Y16:
+			break;
+
+		case kPixFormat_VDXA_RGB:
+		case kPixFormat_VDXA_YUV:
+		case kPixFormat_YUV420_Planar:
+		case kPixFormat_YUV410_Planar:
+		case kPixFormat_YUV420_Planar16:
+		case kPixFormat_YUV420_Alpha_Planar16:
+		case kPixFormat_YUV420_Alpha_Planar:
+			break;
+
+		default:
+			return FILTERPARAM_NOT_SUPPORTED;
+	}
+	
+	if (mConfig.Validate()) {
+		// uh oh.
+		return 0;
+	}
+
+	uint32 framew, frameh;
+	mConfig.ComputeSizes(fa->src.w, fa->src.h, framew, frameh);
+	mConfig.ComputeDestRect(framew, frameh, fa->src.w, fa->src.h);
+
+	fa->dst.mpPixmapLayout->format = fa->src.mpPixmapLayout->format;
+	fa->dst.mpPixmapLayout->w = framew;
+	fa->dst.mpPixmapLayout->h = frameh;
+	fa->dst.mpPixmapLayout->pitch = 0;
+	fa->dst.depth = 0;
+
+	return FILTERPARAM_SWAP_BUFFERS | FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM | FILTERPARAM_NORMALIZE16;
+}
+
+bool VDVideoFilterCanvas::Configure(VDXHWND hwnd) {
+	VDCanvasFilterData *mfd = &mConfig;
+	VDCanvasFilterData mfd2 = *mfd;
+
+	if (!VDFilterCanvasActivateConfigDialog(*mfd, fa->ifp2, fa->src.w, fa->src.h, (VDGUIHandle)hwnd)) {
+		*mfd = mfd2;
+		return false;
+	}
+
+	return true;
+}
+
+void VDVideoFilterCanvas::GetSettingString(char *buf, int maxlen) {
+	uint32 framew, frameh;
+	mConfig.ComputeSizes(fa->src.w, fa->src.h, framew, frameh);
+	SafePrintf(buf, maxlen, " (%d x %d)", framew, frameh);
+}
+
+void VDVideoFilterCanvas::Start() {
+	const VDXPixmapLayout& pxdst = *fa->dst.mpPixmapLayout;
+	const VDXPixmapLayout& pxsrc = *fa->src.mpPixmapLayout;
+
+	if (const char *error = mConfig.Validate())
+		ff->Except("%s", error);
+
+	uint32 framew, frameh;
+	mConfig.ComputeSizes(pxsrc.w, pxsrc.h, framew, frameh);
+
+	mpResampler = VDCreatePixmapResampler();
+	if (!mpResampler)
+		ff->ExceptOutOfMemory();
+
+	IVDPixmapResampler::FilterMode fmode = IVDPixmapResampler::kFilterCubic;
+	bool bInterpolationOnly = false;
+	float splineFactor = -0.75;
+
+	mpResampler->SetSplineFactor(splineFactor);
+	mpResampler->SetFilters(fmode, fmode, bInterpolationOnly);
+
+	vdrect32f srcrect(0.0f, 0.0f, (float)pxsrc.w, (float)pxsrc.h);
+
+	VDVERIFY(mpResampler->Init(mConfig.mDstRect, pxdst.w, pxdst.h, pxdst.format, srcrect, pxsrc.w, pxsrc.h, pxsrc.format));
+}
+
+void VDVideoFilterCanvas::End() {
+	delete mpResampler;		mpResampler = NULL;
+	delete mpResampler2;	mpResampler2 = NULL;
+}
+
+void VDVideoFilterCanvas::ScriptConfig(IVDXScriptInterpreter *isi, const VDXScriptValue *argv, int argc) {
+	double w = argv[0].asDouble();
+	double h = argv[1].asDouble();
+	mConfig.mFrameMode = argv[2].asInt();
+	switch (mConfig.mFrameMode) {
+	case VDCanvasFilterData::kFrameModeToSize:
+		mConfig.mFrameW = int(w);
+		mConfig.mFrameH = int(h);
+		break;
+	case VDCanvasFilterData::kFrameModeARCrop:
+	case VDCanvasFilterData::kFrameModeARLetterbox:
+		mConfig.mFrameAspectNumerator = w;
+		mConfig.mFrameAspectDenominator = h;
+		break;
+	case VDCanvasFilterData::kFrameModeRelative:
+		mConfig.mFrameDW = int(w);
+		mConfig.mFrameDH = int(h);
+		break;
+	}
+	int anchor = argv[3].asInt();
+	mConfig.mAnchorX = anchor % 3;
+	mConfig.mAnchorY = anchor / 3;
+	mConfig.mFrameX = argv[4].asDouble();
+	mConfig.mFrameY = argv[5].asDouble();
+	mConfig.mFillColor = argv[6].asInt();
+}
+
+VDXVF_BEGIN_SCRIPT_METHODS(VDVideoFilterCanvas)
+	VDXVF_DEFINE_SCRIPT_METHOD(VDVideoFilterCanvas, ScriptConfig, "ddiiddi")
+VDXVF_END_SCRIPT_METHODS()
+
+void VDVideoFilterCanvas::GetScriptString(char *buf, int maxlen) {
+	double w = mConfig.mFrameW;
+	double h = mConfig.mFrameH;
+	switch (mConfig.mFrameMode) {
+	case VDCanvasFilterData::kFrameModeARCrop:
+	case VDCanvasFilterData::kFrameModeARLetterbox:
+		w = mConfig.mFrameAspectNumerator;
+		h = mConfig.mFrameAspectDenominator;
+		break;
+	case VDCanvasFilterData::kFrameModeRelative:
+		w = mConfig.mFrameDW;
+		h = mConfig.mFrameDH;
+		break;
+	}
+	int anchor = mConfig.mAnchorX + mConfig.mAnchorY*3;
+	SafePrintf(buf, maxlen, "Config(%g,%g,%d,%d,%g,%g,0x%06x)"
+		, w
+		, h
+		, mConfig.mFrameMode
+		, anchor
+		, mConfig.mFrameX
+		, mConfig.mFrameY
+		, mConfig.mFillColor);
+}
+
+extern const VDXFilterDefinition filterDef_canvas = VDXVideoFilterDefinition<VDVideoFilterCanvas>(
+	NULL,
+	"canvas size",
+	"Letterbox/crop to a new size."
+);
 
 // warning C4505: 'VDXVideoFilter::[thunk]: __thiscall VDXVideoFilter::`vcall'{48,{flat}}' }'' : unreferenced local function has been removed
 #pragma warning(disable: 4505)

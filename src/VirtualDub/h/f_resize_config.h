@@ -73,6 +73,40 @@ struct VDResizeFilterData {
 	bool ExchangeWithRegistry(bool write);
 };
 
+struct VDCanvasFilterData {
+	enum {
+		kFrameModeNone,
+		kFrameModeToSize,
+		kFrameModeARCrop,
+		kFrameModeARLetterbox,
+		kFrameModeRelative,
+		kFrameModeCount
+	};
+
+	uint32	mFrameW;
+	uint32	mFrameH;
+	int	mFrameDW;
+	int	mFrameDH;
+	double	mFrameAspectNumerator;
+	double	mFrameAspectDenominator;
+	uint32	mFrameMode;
+	double	mFrameX;
+	double	mFrameY;
+	uint32	mAnchorX;
+	uint32	mAnchorY;
+	uint32	mFillColor;
+
+	vdrect32f	mDstRect;
+
+	VDCanvasFilterData();
+
+	const char *Validate() const;
+
+	void ComputeSizes(uint32 srcw, uint32 srch, uint32& framew, uint32& frameh);
+	void ComputeDestRect(uint32 outw, uint32 outh, double dstw, double dsth);
+};
+
 bool VDFilterResizeActivateConfigDialog(VDResizeFilterData& mfd, IVDXFilterPreview2 *ifp2, uint32 w, uint32 h, VDGUIHandle hParent);
+bool VDFilterCanvasActivateConfigDialog(VDCanvasFilterData& mfd, IVDXFilterPreview2 *ifp2, uint32 w, uint32 h, VDGUIHandle hParent);
 
 #endif	// f_VD2_F_RESIZE_CONFIG_H

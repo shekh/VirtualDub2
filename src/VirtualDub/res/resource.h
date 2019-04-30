@@ -253,6 +253,7 @@
 #define IDD_JUMPTOFRAME1                317
 #define IDI_POS_MARKOUT2                318
 #define IDI_POS_STOP_x128               319
+#define IDD_FILTER_CANVAS               319
 #define IDI_POS_MARKIN_x128             321
 #define IDI_POS_MARKIN2_x128            322
 #define IDI_POS_MARKOUT_x128            323
@@ -1058,6 +1059,7 @@
 #define IDC_CH_SPIN6                    1579
 #define IDC_CH_7                        1580
 #define IDC_CH_SPIN7                    1581
+#define IDC_FRAME_RELATIVE              1581
 #define IDS_VIDEO_SEEK_START            1664
 #define IDS_VIDEO_SEEK_END              1665
 #define IDS_VIDEO_SEEK_PREV             1666
@@ -1647,8 +1649,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        338
-#define _APS_NEXT_COMMAND_VALUE         40625
-#define _APS_NEXT_CONTROL_VALUE         1573
+#define _APS_NEXT_COMMAND_VALUE         40626
+#define _APS_NEXT_CONTROL_VALUE         1582
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif
