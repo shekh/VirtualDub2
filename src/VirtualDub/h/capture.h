@@ -123,6 +123,9 @@ struct VDCaptureStatus {
 
 	double		mActualAudioHz;				///< Estimated audio rate relative to global clock.
 	double		mRelativeAudioHz;			///< Estimated audio rate relative to video clock.
+
+	bool fTest;
+	bool fCapture;
 };
 
 enum VDCaptureInfoId {
@@ -160,6 +163,8 @@ enum VDCaptureInfoId {
 
 	kVDCaptureInfo_CPUUsage2,
 	kVDCaptureInfo_CPUPower,
+
+	kVDCaptureInfo_Capture,
 };
 
 struct VDCapturePreferences {

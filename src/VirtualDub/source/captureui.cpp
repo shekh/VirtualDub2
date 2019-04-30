@@ -502,6 +502,7 @@ protected:
 	bool	mbCaptureIsTest;
 	HFONT	mhClockFont;
 	HFONT	mhPanelFont2;
+	HFONT	mhPanelFont3;
 
 	uint32	mDeviceDisplayOptions;
 
@@ -562,6 +563,7 @@ protected:
 	sint32			mAudioUncompressedRate;
 
 	vdfastvector<uint32>	mInfoPanelItems;
+	vdfastvector<HWND>		mInfoPanelLabels;
 	vdfastvector<HWND>		mInfoPanelChildren;
 
 	UINT			mUpdateTimer;
@@ -633,6 +635,7 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 	peak_count = 0;
 	mpVumeter2 = 0;
 	mhPanelFont2 = 0;
+	mhPanelFont3 = 0;
 	enable_power_scheme = VDIsAtLeastVistaW32();
 	mpPrevPower = 0;
 	mpNewPower = 0;
@@ -641,6 +644,7 @@ VDCaptureProjectUI::VDCaptureProjectUI()
 
 VDCaptureProjectUI::~VDCaptureProjectUI() {
 	if (mhPanelFont2) DeleteObject(mhPanelFont2);
+	if (mhPanelFont3) DeleteObject(mhPanelFont3);
 }
 
 int VDCaptureProjectUI::AddRef() {
@@ -763,6 +767,8 @@ bool VDCaptureProjectUI::Attach(VDGUIHandle hwnd, IVDCaptureProject *pProject) {
 
 	OnSize();
 
+	mCPUReader.Init();
+
 	mUpdateTimer = SetTimer((HWND)mhwnd, kTimerIdUpdateStats, 1000, NULL);
 
 	if (!mpProject->IsDriverConnected())
@@ -784,6 +790,7 @@ void VDCaptureProjectUI::Detach() {
 
 	VDToggleCaptureNRDialog(NULL, NULL);
 
+	mCPUReader.Shutdown();
 	ShutdownTimingGraph();
 	ShutdownVideoHistogram();
 	ShutdownVumeter();
@@ -2434,8 +2441,6 @@ void VDCaptureProjectUI::UICaptureStart(bool test) {
 			ShowWindow(mhwndDisplay, SW_HIDE);
 	}
 
-	mCPUReader.Init();
-
 	if (mbMaxPower) {
 		GUID* pActiveScheme = 0;
 
@@ -2489,8 +2494,6 @@ void VDCaptureProjectUI::UICaptureStatusUpdated(VDCaptureStatus& status) {
 void VDCaptureProjectUI::UICaptureEnd(bool success) {
 	if (success)
 		VDLog(kVDLogInfo, VDStringW(L"Capture was completed successfully."));
-
-	mCPUReader.Shutdown();
 
 	if (mpPrevPower) {
 		PowerSetActiveScheme(NULL, mpPrevPower);
@@ -2853,6 +2856,9 @@ void VDCaptureProjectUI::OnTimer() {
 	// check if a channel switch should occur
 	if (mNextChannel >= 0 && (sint32)(VDGetCurrentTick() - mNextChannelSwitchTime) >= 0)
 		DoChannelSwitch();
+
+	VDCaptureStatus status = {0};
+	UICaptureStatusUpdated(status);
 }
 
 void VDCaptureProjectUI::DoChannelSwitch() {
@@ -3352,6 +3358,7 @@ bool VDCaptureProjectUI::OnCommand(UINT id) {
 			break;
 		case ID_AUDIO_ENABLE:
 			mpProject->SetAudioCaptureEnabled(!mpProject->IsAudioCaptureEnabled());
+			RebuildPanel();
 			break;
 		case ID_AUDIO_ENABLEPLAYBACK:
 			mpProject->SetAudioPlaybackEnabled(!mpProject->IsAudioPlaybackEnabled());
@@ -4024,6 +4031,23 @@ void VDCaptureProjectUI::GetPanelItems(VDCapturePreferences::InfoItems& items) {
 	}
 
 	const VDCaptureTimingSetup& timing = mpProject->GetTimingSetup();
+	int syncMode = timing.mSyncMode;
+
+	if (!mpProject->IsAudioCaptureEnabled()) {
+		syncMode = VDCaptureTimingSetup::kSyncNone;
+		int list[] = {
+			kVDCaptureInfo_AudioSize,
+			kVDCaptureInfo_AudioAverageRate,
+			kVDCaptureInfo_AudioRelativeRate,
+			kVDCaptureInfo_AudioDataRate,
+			kVDCaptureInfo_AudioCompressionRatio,
+			kVDCaptureInfo_AudioResamplingFactor,
+		};
+		for(int i=0; i<sizeof(list)/sizeof(int); i++){
+			VDCapturePreferences::InfoItems::iterator x = find(items.begin(),items.end(),list[i]);
+			if (x!=items.end()) items.erase(x);
+		}
+	}
 
 	if (timing.mbAllowEarlyDrops || timing.mbAllowLateInserts) {
 		items.push_back(kVDCaptureInfo_VideoDropFrames);
@@ -4031,6 +4055,20 @@ void VDCaptureProjectUI::GetPanelItems(VDCapturePreferences::InfoItems& items) {
 		VDCapturePreferences::InfoItems::iterator x = find(items.begin(),items.end(),kVDCaptureInfo_VideoFramesDropped);
 		if (x!=items.end()) items.erase(x);
 		VDCapturePreferences::InfoItems::iterator y = find(items.begin(),items.end(),kVDCaptureInfo_VideoFramesInserted);
+		if (y!=items.end()) items.erase(y);
+	}
+	if (!timing.mbCorrectVideoTiming) {
+		VDCapturePreferences::InfoItems::iterator x = find(items.begin(),items.end(),kVDCaptureInfo_VideoResamplingFactor);
+		if (x!=items.end()) items.erase(x);
+	}
+	if (syncMode!=VDCaptureTimingSetup::kSyncVideoToAudio) {
+		VDCapturePreferences::InfoItems::iterator x = find(items.begin(),items.end(),kVDCaptureInfo_SyncVideoTimingAdjust);
+		if (x!=items.end()) items.erase(x);
+	}
+	if (!syncMode) {
+		VDCapturePreferences::InfoItems::iterator x = find(items.begin(),items.end(),kVDCaptureInfo_SyncRelativeLatency);
+		if (x!=items.end()) items.erase(x);
+		VDCapturePreferences::InfoItems::iterator y = find(items.begin(),items.end(),kVDCaptureInfo_SyncCurrentLatency);
 		if (y!=items.end()) items.erase(y);
 	}
 
@@ -4060,6 +4098,8 @@ void VDCaptureProjectUI::GetPanelItems(VDCapturePreferences::InfoItems& items) {
 		VDCapturePreferences::InfoItems::iterator x = find(items.begin(),items.end(),kVDCaptureInfo_AudioResamplingFactor);
 		if (x!=items.end()) items.erase(x);
 	}
+
+	items.insert(items.begin(),kVDCaptureInfo_Capture);
 }
 
 void VDCaptureProjectUI::RebuildPanel() {
@@ -4070,6 +4110,7 @@ void VDCaptureProjectUI::RebuildPanel() {
 
 	// Delete all the children
 	mInfoPanelItems.clear();
+	mInfoPanelLabels.clear();
 	mInfoPanelChildren.clear();
 	while(HWND hwndChild = GetWindow(mhwndPanel, GW_CHILD))
 		DestroyWindow(hwndChild);
@@ -4092,10 +4133,13 @@ void VDCaptureProjectUI::RebuildPanel() {
 
 	HFONT hfont = (HFONT)SendMessage(mhwndPanel, WM_GETFONT, 0, 0);
 	if (mhPanelFont2) DeleteObject(mhPanelFont2);
+	if (mhPanelFont3) DeleteObject(mhPanelFont3);
 	LOGFONT lf;
 	GetObject(hfont, sizeof(lf), &lf);
 	lf.lfWeight = 800;
 	mhPanelFont2 = CreateFontIndirect(&lf);
+	lf.lfHeight = lf.lfHeight*3;
+	mhPanelFont3 = CreateFontIndirect(&lf);
 
 	for(int type=0; type<kVDCaptureInfoType_Count; ++type) {
 		VDCapturePreferences::InfoItems::const_iterator it(infoItems.begin()), itEnd(infoItems.end());
@@ -4124,7 +4168,9 @@ void VDCaptureProjectUI::RebuildPanel() {
 			}
 
 			bool filterLabel = false;
+			bool extraBig = false;
 			switch (infoid){
+			case kVDCaptureInfo_Capture:
 			case kVDCaptureInfo_VideoConvertFormat:
 			case kVDCaptureInfo_VideoCropping:
 			case kVDCaptureInfo_VideoFilters:
@@ -4134,21 +4180,22 @@ void VDCaptureProjectUI::RebuildPanel() {
 				filterLabel = true;
 				break;
 			}
+			switch (infoid){
+			case kVDCaptureInfo_Capture:
+				extraBig = true;
+				break;
+			}
 
 			HWND hwndLabel=0, hwndChild=0;
 			const wchar_t *itemLabel = VDLoadString(0, kVDST_CaptureUI, kVDMBase_CapInfoLabels + infoid);
+			int h = extraBig ? rSpacing.bottom*3 : rSpacing.bottom;
 
-			if (VDIsWindowsNT()) {
-				hwndLabel = CreateWindowW(L"STATIC", itemLabel, WS_CHILD|WS_VISIBLE|SS_CENTERIMAGE|SS_NOPREFIX|SS_LEFT, xpos, y, xwidth, rSpacing.bottom, mhwndPanel, (HMENU)-1, g_hInst, NULL);
-				if (!filterLabel) hwndChild = CreateWindowW(L"STATIC", L"", WS_CHILD|WS_VISIBLE|SS_CENTERIMAGE|SS_NOPREFIX|SS_RIGHT, xpos, y, xwidth, rSpacing.bottom, mhwndPanel, (HMENU)-1, g_hInst, NULL);
-			} else {
-				hwndLabel = CreateWindowA("STATIC", VDTextWToA(itemLabel).c_str(), WS_CHILD|WS_VISIBLE|SS_CENTERIMAGE|SS_NOPREFIX|SS_LEFT, xpos, y, xwidth, rSpacing.bottom, mhwndPanel, (HMENU)-1, g_hInst, NULL);
-				if (!filterLabel) hwndChild = CreateWindowA("STATIC", "", WS_CHILD|WS_VISIBLE|SS_CENTERIMAGE|SS_NOPREFIX|SS_RIGHT, xpos, y, xwidth, rSpacing.bottom, mhwndPanel, (HMENU)-1, g_hInst, NULL);
-			}
+			hwndLabel = CreateWindowW(L"STATIC", itemLabel, WS_CHILD|WS_VISIBLE|SS_CENTERIMAGE|SS_NOPREFIX|SS_LEFT, xpos, y, xwidth, h, mhwndPanel, (HMENU)-1, g_hInst, NULL);
+			if (!filterLabel) hwndChild = CreateWindowW(L"STATIC", L"", WS_CHILD|WS_VISIBLE|SS_CENTERIMAGE|SS_NOPREFIX|SS_RIGHT, xpos, y, xwidth, h, mhwndPanel, (HMENU)-1, g_hInst, NULL);
 
 			if (hwndLabel) {
-				if (filterLabel && 0) {
-					SendMessage(hwndLabel, WM_SETFONT, (WPARAM)mhPanelFont2, TRUE);
+				if (extraBig) {
+					SendMessage(hwndLabel, WM_SETFONT, (WPARAM)mhPanelFont3, TRUE);
 				} else {
 					SendMessage(hwndLabel, WM_SETFONT, (WPARAM)hfont, TRUE);
 				}
@@ -4178,15 +4225,20 @@ void VDCaptureProjectUI::RebuildPanel() {
 						SetWindowPos(hwndChild, NULL, xpos + offset, y, xwidth - offset, rSpacing.bottom, SWP_NOZORDER|SWP_NOACTIVATE);
 					}
 				}
+
+				mInfoPanelLabels.push_back(hwndLabel);
 			}
 
 			if (hwndChild) {
 				SendMessage(hwndChild, WM_SETFONT, (WPARAM)hfont, TRUE);
 				mInfoPanelItems.push_back(infoid);
 				mInfoPanelChildren.push_back(hwndChild);
+			} else {
+				mInfoPanelItems.push_back(infoid);
+				mInfoPanelChildren.push_back(0);
 			}
 
-			y += rSpacing.bottom;
+			y += h;
 		}
 
 		if (groupOpen) {
@@ -4213,6 +4265,13 @@ void VDCaptureProjectUI::RebuildPanel() {
 	InvalidateRect(mhwndPanel,0,true);
 }
 
+void SetTextSmooth(HWND wnd, const wchar_t* s)
+{
+	VDStringW s0 = VDGetWindowTextW32(wnd);
+	if(s0==s) return;
+	VDSetWindowTextW32(wnd, s);
+}
+
 void VDCaptureProjectUI::UpdatePanel(VDCaptureStatus& status) {
 	const int n = std::min<int>((int)mInfoPanelItems.size(), mInfoPanelChildren.size());
 
@@ -4234,16 +4293,30 @@ void VDCaptureProjectUI::UpdatePanel(VDCaptureStatus& status) {
 
 	wchar_t buf[256];
 	for(int i=0; i<n; ++i) {
+		const HWND hwndLabel = mInfoPanelLabels[i];
 		const HWND hwndChild = mInfoPanelChildren[i];
-
-		if (!hwndChild)
-			continue;
 
 		const uint32 infoid = mInfoPanelItems[i];
 
 		buf[0] = 0;
 
+		if (!status.fCapture) switch(infoid) {
+		case kVDCaptureInfo_Capture:
+		case kVDCaptureInfo_CPUUsage:
+		case kVDCaptureInfo_CPUUsage2:
+		case kVDCaptureInfo_CPUPower:
+			break;
+		default:
+			continue;
+		}
+
 		switch(infoid) {
+			case kVDCaptureInfo_Capture:
+				if (!status.fCapture) SetTextSmooth(hwndLabel, L"");
+				else if (status.fTest) SetTextSmooth(hwndLabel, L"Test");
+				else SetTextSmooth(hwndLabel, L"Capture");
+				continue;
+
 			case kVDCaptureInfo_FramesCaptured:
 				swprintf(buf, sizeof buf / sizeof buf[0], L"%ld", status.mFramesCaptured);
 				break;
@@ -4394,7 +4467,8 @@ void VDCaptureProjectUI::UpdatePanel(VDCaptureStatus& status) {
 				continue;
 		}
 
-		VDSetWindowTextW32(hwndChild, buf);
+		if (hwndChild)
+			SetTextSmooth(hwndChild, buf);
 	}
 }
 

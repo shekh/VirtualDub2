@@ -383,7 +383,6 @@ public:
 	int				mAudioSampleSize;
 	vdautoptr<MyError>		mpError;
 	VDAtomicPtr<MyError>	mpSpillError;
-	const wchar_t	*mpszFilename;
 	const wchar_t	*mpszPath;
 	const wchar_t	*mpszNewPath;
 	sint64			mSegmentAudioSize;
@@ -410,6 +409,7 @@ public:
 	bool			mbNTSC;
 	bool			mbDoResample;
 	bool			mbDoConversion;
+	bool			fTest;
 
 	IVDCaptureFilterSystem *mpFilterSys;
 	int mInputFormatVariant;
@@ -421,6 +421,7 @@ public:
 	VDPixmapLayout vfwLayout;
 	void *pOutputBuffer;
 
+	VDStringW		mCaptureFile;
 	VDStringW		mCaptureRoot;
 
 	VDCaptureData();
@@ -477,7 +478,6 @@ VDCaptureData::VDCaptureData()
 	, mAudioSampleSize(0)
 	, mpError(NULL)
 	, mpSpillError(NULL)
-	, mpszFilename(NULL)
 	, mpszPath(NULL)
 	, mpszNewPath(NULL)
 	, mSegmentAudioSize(0)
@@ -1950,6 +1950,7 @@ void VDCaptureProject::Capture(bool fTest) {
 	icd.mpProject = this;
 	icd.mpError	= NULL;
 	icd.mTimingSetup = mTimingSetup;
+	icd.fTest = fTest;
 
 	vdautoptr<AVIStripeSystem> pStripeSystem;
 
@@ -1972,7 +1973,7 @@ void VDCaptureProject::Capture(bool fTest) {
 			throw MyError("Cannot begin capture because the capture device has no associated frame rate (variable frame rate). This is not currently supported.");
 
 		// get the input filename
-		icd.mpszFilename = VDFileSplitPath(mFilename.c_str());
+		icd.mCaptureFile = mFilename;
 
 		// get capture parms
 
@@ -3143,7 +3144,7 @@ void VDCaptureData::CreateNewFile() {
 
 		bmi = (BITMAPINFO *)mpVideoOut->getFormat();
 
-		pcsd->makePath(fname, mpszFilename);
+		pcsd->makePath(fname, VDFileSplitPath(mCaptureFile.c_str()));
 
 		// edit the filename up
 
@@ -3476,6 +3477,8 @@ bool VDCaptureData::VideoCallback(const void *data, uint32 size, sint64 timestam
 
 		VDCaptureStatus status;
 
+		status.fCapture = true;
+		status.fTest = fTest;
 		status.mFramesCaptured	= mTotalFramesCaptured;
 		status.mFramesDropped	= mFramesDropped;
 		status.mFramesInserted	= mFramesInserted;
