@@ -15,6 +15,9 @@ public:
 	virtual bool VDXAPIENTRY HandleFileOpen(const wchar_t* fileName, const wchar_t* driverName, VDXHWND hwndParent) = 0;
 	virtual void VDXAPIENTRY Attach(VDXHWND hwndParent) = 0;
 	virtual void VDXAPIENTRY Detach(VDXHWND hwndParent) = 0;
+
+	// version 2
+	virtual bool VDXAPIENTRY HandleFileOpenError(const wchar_t* fileName, const wchar_t* driverName, VDXHWND hwndParent, const char* s, int source) = 0;
 };
 
 class IVDTimeline {
@@ -32,6 +35,9 @@ public:
 	virtual void SetFileName(const wchar_t* fileName, const wchar_t* driverName, void* userData) = 0;
 	virtual void Reopen(void* userData) = 0;
 	virtual IVDTimeline* GetTimeline() = 0;
+
+	// version 2
+	virtual void Reopen(const wchar_t* fileName, const wchar_t* driverName, void* userData) = 0;
 };
 
 struct VDXToolContext {
@@ -48,7 +54,7 @@ struct VDXToolDefinition {
 };
 
 enum {
-	kVDXPlugin_ToolAPIVersion = 1
+	kVDXPlugin_ToolAPIVersion = 2
 };
 
 #endif

@@ -370,7 +370,7 @@ void VDJobQueue::Run(VDJob *job) {
 			VDStringA subDir(job->GetProjectSubdir());
 			g_project->SaveProjectPath(mJobFilePath, VDTextU8ToW(subDir), true);
 		}
-		RunScriptMemory(job->GetScript(), false);
+		RunScriptMemory(job->GetScript(), job->GetScriptLine(), false);
 
 		job->mLogEntries = logger.GetEntries();
 	} catch(const MyUserAbortError&) {
@@ -571,6 +571,7 @@ bool VDJobQueue::Load(IVDStream *stream, bool merge) {
 		bool script_capture = false;
 		bool script_reloadable = false;
 		vdfastvector<char> script;
+		int script_line = -1;
 
 		uint64 newSignature		= mBaseSignature;
 		uint32 newRevision		= 1;
@@ -578,6 +579,7 @@ bool VDJobQueue::Load(IVDStream *stream, bool merge) {
 		VDTextStream input(stream);
 
 		vdfastvector<char> linebuffer;
+		int input_line = -1;
 
 		for(;;) {
 			// read in the line
@@ -587,6 +589,7 @@ bool VDJobQueue::Load(IVDStream *stream, bool merge) {
 				break;
 
 			linebuffer.assign(line, line+strlen(line)+1);
+			input_line++;
 
 			char *s = linebuffer.data();
 
@@ -708,11 +711,13 @@ bool VDJobQueue::Load(IVDStream *stream, bool merge) {
 					script_capture = true;
 					script_reloadable = false;
 					script.clear();
+					script_line = input_line;
 
 				} else if (!_stricmp(s, "endjob")) {
 					if (script_capture) {
-						job->SetScript(script.begin(), script.size(), script_reloadable);
+						job->SetScript(script.begin(), script.size(), script_line, script_reloadable);
 						script_capture = false;
+						script_line = -1;
 					}
 
 					job->SetModified(false);
@@ -759,24 +764,19 @@ bool VDJobQueue::Load(IVDStream *stream, bool merge) {
 
 					job->mLogEntries.push_back(VDJob::tLogEntries::value_type(severity, VDTextAToW(t + pos, -1).c_str()));
 				}
-			} else if (script_capture) {
-				// kill starting spaces
+			}
 
+			// add commands and blank lines, how else it should report errors
+			if (script_capture) {
 				s = linebuffer.data();
-
-				while(isspace((unsigned char)*s)) ++s;
+				script.insert(script.end(), s, s+strlen(s));
+				script.push_back('\r');
+				script.push_back('\n');
 
 				// check for reload marker
+				while(isspace((unsigned char)*s)) ++s;
 				if (s[0] == '/' && s[1] == '/' && strstr(s, "$reloadstop"))
 					script_reloadable = true;
-
-				// don't add blank lines
-
-				if (*s) {
-					script.insert(script.end(), s, s+strlen(s));
-					script.push_back('\r');
-					script.push_back('\n');
-				}
 			}
 		}
 

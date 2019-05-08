@@ -31,6 +31,7 @@ class VDJob;
 class IVDOutputDriver;
 struct RequestVideo;
 struct VideoOperation;
+struct FileNameCommand;
 
 enum VDAudioSourceMode {
 	kVDAudioSourceMode_None		= 0,
@@ -189,6 +190,8 @@ public:
 	void OpenJob(const wchar_t *pFilename, VDJob* job);
 	void Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver = 0, bool fExtendedOpen = false, bool fQuiet = false, int fAutoscan = 0, const char *pInputOpts = 0, uint32 inputOptsLen = 0);
 	void Reopen();
+	void InnerReopen();
+	void Reopen(FileNameCommand* cmd);
 	void OpenWAV(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver = NULL, bool automated = false, bool extOpts = false, const void *optdata = NULL, int optlen = 0);
 	void CloseWAV();
 	void PreviewInput(VDPosition* restart=0);

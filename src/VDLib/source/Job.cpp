@@ -11,6 +11,7 @@ VDJob::VDJob()
 	, mDateEnd(0)
 	, mbContainsReloadMarker(false)
 {
+	mScriptLine = -1;
 }
 
 VDJob::~VDJob() {
@@ -70,8 +71,9 @@ void VDJob::SetRunner(uint64 id, const char *name) {
 	mRunnerName = name;
 }
 
-void VDJob::SetScript(const void *script, uint32 len, bool reloadable) {
+void VDJob::SetScript(const void *script, uint32 len, int line, bool reloadable) {
 	mScript.assign((const char *)script, (const char *)script + len);
+	mScriptLine = line;
 	mbContainsReloadMarker = reloadable;
 }
 

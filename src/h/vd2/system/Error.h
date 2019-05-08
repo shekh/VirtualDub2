@@ -75,6 +75,12 @@ public:
 	void TransferFrom(MyError& err);
 };
 
+class MyTextError : public MyError {
+public:
+	int line;
+	int col;
+};
+
 class MyICError : public MyError {
 public:
 	MyICError(const char *s, uint32 icErr);

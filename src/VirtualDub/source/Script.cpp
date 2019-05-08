@@ -161,7 +161,7 @@ void RunProject(const wchar_t *name, void *hwnd) {
 }
 
 // partial = single cmd from commandline
-void RunScriptMemory(const char *mem, bool stopAtReloadMarker, bool partial) {
+void RunScriptMemory(const char *mem, int start_line, bool stopAtReloadMarker, bool partial) {
 	g_project->BeginLoading();
 	if (!partial) {
 		g_project->CloseAVI();
@@ -171,6 +171,7 @@ void RunScriptMemory(const char *mem, bool stopAtReloadMarker, bool partial) {
 	vdautoptr<IVDScriptInterpreter> isi(VDCreateScriptInterpreter());
 	const char *errorLineStart = mem;
 	int errorLine = 1;
+	if (start_line!=-1) errorLine += start_line;
 
 	try {
 		vdfastvector<char> linebuffer;
@@ -207,8 +208,41 @@ void RunScriptMemory(const char *mem, bool stopAtReloadMarker, bool partial) {
 
 	} catch(const VDScriptError& cse) {
 		int pos = isi->GetErrorLocation();
-		int prelen = std::min<int>(pos, 50);
+		const char* s = errorLineStart;
+		const char* x0 = s+strlen(s);
+		const char* x1 = strchr(s,'\r');
+		const char* x2 = strchr(s,'\n');
+		if (x1 && x1<x0) x0 = x1;
+		if (x2 && x2<x0) x0 = x2;
+		VDStringA text(s,x0-s);
+		int limit = 100;
+		if (text.length()>limit) {
+			text.replace(limit,text.length()-limit,"...",3);
+		}
 
+		if (start_line==-1) {
+			MyTextError err;
+			err.setf("Error during script execution at offset %d: %s\n\n"
+				"%s"
+				, pos+1
+				, isi->TranslateScriptError(cse)
+				, text.c_str());
+			err.col = pos+1;
+			throw err;
+		} else {
+			MyTextError err;
+			err.setf("Error during script execution at line %d, column %d: %s\n\n"
+				"%s"
+				, errorLine
+				, pos+1
+				, isi->TranslateScriptError(cse)
+				, text.c_str());
+			err.col = pos+1;
+			err.line = errorLine;
+			throw err;
+		}
+
+		/*
 		throw MyError("Error during script execution at line %d, column %d: %s\n\n"
 						"    %.*s<!>%.50s"
 					, errorLine
@@ -217,6 +251,7 @@ void RunScriptMemory(const char *mem, bool stopAtReloadMarker, bool partial) {
 					, prelen
 					, errorLineStart + pos - prelen
 					, errorLineStart + pos);
+		*/
 					
 	} catch(const MyError& e) {
 		g_project->EndLoading();

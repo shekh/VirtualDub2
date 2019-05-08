@@ -1124,10 +1124,10 @@ void VDProject::LockFilterChain(bool enableLock) {
 ///////////////////////////////////////////////////////////////////////////
 
 void VDProject::SaveScript(VDFile& f, const VDStringW& dataSubdir, bool relative) {
-  if (inputAVI)
-	  JobWriteProjectScript(f, this, relative, dataSubdir, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles);
-  else
-	  JobWriteProjectScript(f, this, false, VDStringW(), &g_dubOpts, 0, 0, 0, 0);
+	if (inputAVI)
+		JobWriteProjectScript(f, this, relative, dataSubdir, &g_dubOpts, g_szInputAVIFile, mInputDriverName.c_str(), inputAVI->GetFileFlags(), &inputAVI->listFiles);
+	else
+		JobWriteProjectScript(f, this, false, VDStringW(), &g_dubOpts, 0, 0, 0, 0);
 }
 
 void VDProject::Quit() {
@@ -1135,6 +1135,39 @@ void VDProject::Quit() {
 
 	if (VDINLINEASSERT(pFrame))
 		pFrame->Destroy();
+}
+
+void VDProject::Reopen() {
+	if (!inputAVI) return;
+	VDStringW filename(VDGetFullPath(g_szInputAVIFile));
+	try {
+		InnerReopen();
+	} catch (MyError& e) {
+		if (!VDToolsHandleFileOpenError(filename.c_str(), 0, e)) throw;
+	}
+}
+
+void VDProject::Reopen(FileNameCommand* cmd) {
+	VDStringW filename = cmd->fileName;
+	if (!filename.empty()) {
+		size_t l = filename.length();
+		if (l > 10) {
+			if (!_wcsicmp(filename.c_str() + l - 10, L".vdproject")) {
+				OpenProject(filename.c_str());
+				return;
+			}
+		}
+		if (!inputAVI) {
+			Open(filename.c_str(),0,false,false,1);
+			return;
+		}
+	}
+
+	try {
+		InnerReopen();
+	} catch (MyError& e) {
+		if (!VDToolCatchError(cmd,e)) throw;
+	}
 }
 
 void VDProject::CmdOpen(const wchar_t *token) {
@@ -1152,25 +1185,29 @@ void VDProject::CmdOpen(const wchar_t *token) {
 }
 
 void VDProject::OpenProject(const wchar_t *pFilename, bool readOnly) {
-	VDJobQueue jproject;
-	jproject.LoadProject(pFilename);
-	if (jproject.ListSize()==1) {
-		VDJob* job = jproject.ListGet(0);
-		VDStringA subDir(job->GetProjectSubdir());
-		SaveProjectPath(VDStringW(pFilename), VDTextU8ToW(subDir), readOnly);
-		mProjectName = job->GetName();
-		VDStringW base = VDFileSplitPathLeft(mProjectFilename);
-		VDStringW back = VDTextU8ToW(VDStringA(job->GetProjectDir()));
-		if (back!=base) mProjectBack = back;
-		RunScriptMemory(job->GetScript(), true);
-		mProjectBack = L"";
+	try {
+		VDJobQueue jproject;
+		jproject.LoadProject(pFilename);
+		if (jproject.ListSize()==1) {
+			VDJob* job = jproject.ListGet(0);
+			VDStringA subDir(job->GetProjectSubdir());
+			SaveProjectPath(VDStringW(pFilename), VDTextU8ToW(subDir), readOnly);
+			mProjectName = job->GetName();
+			VDStringW base = VDFileSplitPathLeft(mProjectFilename);
+			VDStringW back = VDTextU8ToW(VDStringA(job->GetProjectDir()));
+			if (back!=base) mProjectBack = back;
+			RunScriptMemory(job->GetScript(), job->GetScriptLine(), true);
+			mProjectBack = L"";
+		}
+	} catch (MyTextError& e) {
+		if (!VDToolsHandleFileOpenError(pFilename, L"vdproject", e, e.line)) throw;
 	}
 }
 
 void VDProject::OpenJob(const wchar_t *pFilename, VDJob* job) {
 	VDStringA subDir(job->GetProjectSubdir());
 	SaveProjectPath(VDStringW(pFilename), VDTextU8ToW(subDir), true);
-	RunScriptMemory(job->GetScript(), true);
+	RunScriptMemory(job->GetScript(), job->GetScriptLine(), true);
 }
 
 void VDProject::SaveProjectPath(const VDStringW& path, const VDStringW& dataSubdir, bool readOnly) {
@@ -1464,12 +1501,10 @@ VDStringW VDProject::ExpandProjectPath(const wchar_t* path) const {
 
 void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, bool fExtendedOpen, bool fQuiet, int fAutoscan, const char *pInputOpts, uint32 inputOptsLen) {
 	Close();
+	VDStringW filename(ExpandProjectPath(pFilename));
 
 	try {
 		// attempt to determine input file type
-
-		VDStringW filename(ExpandProjectPath(pFilename));
-
 		if (!pSelectedDriver) {
 			pSelectedDriver = VDAutoselectInputDriverForFile(filename.c_str(), IVDInputDriver::kF_Video);
 			mInputDriverName.clear();
@@ -1584,18 +1619,19 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 		mpCB->UIAudioSourceUpdated();
 		FiltersEditorDisplayFrame(inputVideo);
 		MoveToFrame(0);
-	} catch(const MyError&) {
+	} catch(const MyError& e) {
 		Close();
+		if (pSelectedDriver) {
+			const wchar_t* driver_name = pSelectedDriver->GetSignatureName();
+			if (VDToolsHandleFileOpenError(filename.c_str(), driver_name, e)) throw MyError();
+		}
 		throw;
 	}
 
 	VDToolsHandleFileOpen(g_szInputAVIFile, pSelectedDriver);
 }
 
-void VDProject::Reopen() {
-	if (!inputAVI)
-		return;
-
+void VDProject::InnerReopen() {
 	// attempt to determine input file type
 
 	VDStringW filename(VDGetFullPath(g_szInputAVIFile));

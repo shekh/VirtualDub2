@@ -1063,7 +1063,7 @@ int ProcessCommandLine::scan(const VDCommandLine& cmdLine, bool execute) {
 						if (token2[i] == '\'')
 							token2[i] = '"';
 					token2 += L';';
-					if (execute) RunScriptMemory((char *)VDTextWToA(token2).c_str(), false, true);
+					if (execute) RunScriptMemory((char *)VDTextWToA(token2).c_str(), -1, false, true);
 				}
 				else if (!wcscmp(token, L"fsck")) {
 					if (execute) crash();

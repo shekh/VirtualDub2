@@ -12,6 +12,7 @@ extern VDProject *g_project;
 extern vdrefptr<VDProjectUI> g_projectui;
 extern wchar_t g_szInputAVIFile[MAX_PATH];
 extern VDJobQueue g_VDJobQueue;
+extern bool g_consoleMode;
 
 extern vdfastvector<VDAccelToCommandEntry> kCommandList;
 
@@ -93,10 +94,16 @@ public:
 	}
 
 	void Reopen(void* userData) {
+		Reopen(0, 0, userData);
+	}
+
+	void Reopen(const wchar_t* fileName, const wchar_t* driverName, void* userData) {
 		FileNameCommand* cmd = new FileNameCommand;
 		cmd->object = object;
 		cmd->userData = userData;
 		cmd->reopen = true;
+		if (fileName) cmd->fileName = fileName;
+		if (driverName) cmd->fileName = driverName;
 		PostMessage(g_projectui->GetHwnd(),MYWM_DEFERRED_FILECOMMAND,0,(LPARAM)cmd);
 	}
 
@@ -107,6 +114,7 @@ public:
 
 struct VDTool {
 	vdrefptr<IVDXTool> object;
+	int version;
 	int command_first;
 	int command_last;
 	vdvector<VDStringA> strings;
@@ -147,6 +155,7 @@ void VDInitTools() {
 		VDTool* tool = new VDTool;
 		def->mpCreate(&tool->context, ~object);
 		tool->object = object;
+		tool->version = info->mTypeAPIVersionUsed;
 		tool->command_first = command;
 		tool->command_last = -1;
 		{for(int id=0; ; id++) {
@@ -227,6 +236,26 @@ void VDToolsHandleFileOpen(const wchar_t* fname, IVDInputDriver *pDriver) {
 		VDTool *p = *it;
 		p->object->HandleFileOpen(fname, driver_name, (VDXHWND)parent);
 	}
+}
+
+bool VDToolsHandleFileOpenError(const wchar_t* fname, const wchar_t* driver_name, const MyError& e, int line) {
+	if (g_VDJobQueue.IsRunInProgress())
+		return false;
+
+	if (g_consoleMode)
+		return false;
+
+	HWND parent = g_projectui->GetHwnd();
+
+	for(std::vector<VDTool*>::const_iterator it(g_VDTools.begin()), itEnd(g_VDTools.end()); it!=itEnd; ++it) {
+		VDTool *p = *it;
+		if (p->version<2) continue;
+
+		if (p->object->HandleFileOpenError(fname, driver_name, (VDXHWND)parent, e.c_str(), line))
+			return true;
+	}
+
+	return false;
 }
 
 void VDToolsAttach(HWND hwnd) {

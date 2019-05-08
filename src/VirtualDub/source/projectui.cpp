@@ -3420,14 +3420,13 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 			try {
 				if (cmd->reopen) {
 					StopFilters();
-					g_project->Reopen();
+					g_project->Reopen(cmd);
 				} else {
 					IVDInputDriver *pDriver = VDGetInputDriverByName(cmd->driverName.c_str());
 					g_project->Open(cmd->fileName.c_str(), pDriver);
 				}
 			} catch(const MyError& e) {
-				if (!VDToolCatchError(cmd,e))
-					e.post((HWND)mhwnd, g_szError);
+				e.post((HWND)mhwnd, g_szError);
 			}
 			delete cmd;
 		}

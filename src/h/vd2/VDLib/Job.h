@@ -83,8 +83,9 @@ public:
 
 	bool	IsReloadMarkerPresent() const { return mbContainsReloadMarker; }
 
-	void	SetScript(const void *script, uint32 len, bool reloadable);
+	void	SetScript(const void *script, uint32 len, int line, bool reloadable);
 	const char *GetScript() const { return mScript.c_str(); }
+	int GetScriptLine() const { return mScriptLine; }
 
 	void Refresh();
 	void Run();
@@ -102,6 +103,7 @@ protected:
 	VDStringA	mOutputFile;
 	VDStringA	mError;
 	VDStringA	mScript;
+	int mScriptLine;
 	VDStringA	mProjectSubdir;
 	VDStringA	mProjectDir;
 	int			mState;

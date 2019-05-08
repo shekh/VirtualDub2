@@ -707,7 +707,7 @@ static void JobCreateEntry(JobScriptOutput& output, JobRequest& req) {
 	}
 
 	const JobScriptOutput::Script& script = output.getscript();
-	vdj->SetScript(script.data(), script.size(), true);
+	vdj->SetScript(script.data(), script.size(), -1, true);
 	g_VDJobQueue.Add(vdj, false);
 	vdj.release();
 }
