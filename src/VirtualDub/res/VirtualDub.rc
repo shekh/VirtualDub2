@@ -10,8 +10,7 @@
 #include "winresrc.h"
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
-#endif
-
+#endif
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -131,6 +130,7 @@ BEGIN
         MENUITEM "Toggle marker",               ID_EDIT_SETMARKER
         MENUITEM "Clear markers",               ID_EDIT_CLEARMARKERS
         MENUITEM "Markers from keys",           ID_EDIT_MARKERSFROMKEYS
+        MENUITEM "Markers from drops",          ID_EDIT_MARKERSFROMDROPS
     END
     POPUP "V&iew"
     BEGIN
@@ -4267,8 +4267,7 @@ END
 //
 #include "version.rc"
 IDR_RESOURCES      STUFF   DISCARDABLE     "virtualdub.vdres"
-
-
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

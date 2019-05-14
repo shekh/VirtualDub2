@@ -339,6 +339,7 @@ namespace {
 		{ ID_EDIT_SETMARKER,			"Edit.ToggleMarker" },
 		{ ID_EDIT_CLEARMARKERS,			"Edit.ClearMarkers" },
 		{ ID_EDIT_MARKERSFROMKEYS,		"Edit.MarkersFromKeys" },
+		{ ID_EDIT_MARKERSFROMDROPS,		"Edit.MarkersFromDrops" },
 		{ ID_VIEW_POSITIONCONTROL,		"View.TogglePositionControl" },
 		{ ID_VIEW_MAXIMIZE,				"View.ToggleMaximize" },
 		{ ID_VIEW_STATUSBAR,			"View.ToggleStatusBar" },
@@ -2585,6 +2586,19 @@ bool VDProjectUI::MenuHit(UINT id) {
 					mpCB->UITimelineUpdated();
 			}
 			break;
+		case ID_EDIT_MARKERSFROMDROPS:
+			if (inputVideo) {
+				VDPosition pos = 0;
+				while (1) {
+					pos = mTimeline.GetNextDrop(pos);
+					if(pos==-1) break;
+					mTimeline.SetMarkerSrc(pos);
+				}
+
+				if (mpCB)
+					mpCB->UITimelineUpdated();
+			}
+			break;
 
 		case ID_AUDIO_ADVANCEDFILTERING:
 			g_dubOpts.audio.bUseAudioFilterGraph = !g_dubOpts.audio.bUseAudioFilterGraph;
@@ -3059,6 +3073,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_EDIT_SETMARKER			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_CLEARMARKERS			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_MARKERSFROMKEYS		, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_EDIT_MARKERSFROMDROPS		, bSourceFileExists);
 
 	const wchar_t *undoAction = GetCurrentUndoAction();
 	const wchar_t *redoAction = GetCurrentRedoAction();
