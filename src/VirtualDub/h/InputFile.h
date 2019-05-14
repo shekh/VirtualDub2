@@ -143,6 +143,7 @@ IVDInputDriver *VDGetInputDriverByName(const wchar_t *name);
 IVDInputDriver *VDGetInputDriverForLegacyIndex(int idx);
 void VDGetInputDriverFilePatterns(uint32 flags, vdvector<VDStringW>& patterns);
 VDStringW VDMakeInputDriverFileFilter(const tVDInputDrivers& l, std::vector<int>& xlat);
+void VDGetInputDriverFileFilters(const tVDInputDrivers& l, vdvector<VDStringW>& list);
 
 IVDInputDriver::DetectionConfidence VDTestInputDriverForFile(VDXMediaInfo& info, const wchar_t *fn, IVDInputDriver *pDriver);
 int VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags, tVDInputDrivers& list);

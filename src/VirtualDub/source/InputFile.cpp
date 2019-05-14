@@ -270,6 +270,28 @@ void VDGetInputDriverFilePatterns(uint32 flags, vdvector<VDStringW>& patterns) {
 	}
 }
 
+void VDGetInputDriverFileFilters(const tVDInputDrivers& l, vdvector<VDStringW>& list) {
+	list.push_back(VDStringW());
+
+	int nDriver = 0;
+	for(tVDInputDrivers::const_iterator it(l.begin()), itEnd(l.end()); it!=itEnd; ++it, ++nDriver) {
+		const wchar_t *filt = (*it)->GetFilenamePattern();
+
+		if (filt) {
+			while(*filt) {
+				list.push_back(VDStringW(filt));
+				const wchar_t *pats = filt;
+				while(*pats++);
+				const wchar_t *end = pats;
+				while(*end++);
+				filt = end;
+			}
+		}
+	}
+
+	list.push_back(VDStringW());
+}
+
 VDStringW VDMakeInputDriverFileFilter(const tVDInputDrivers& l, std::vector<int>& xlat) {
 	VDStringW filter;
 	VDStringW allspecs;

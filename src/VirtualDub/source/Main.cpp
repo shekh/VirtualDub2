@@ -285,6 +285,7 @@ public:
 		append_mode = false;
 		audio_mode = false;
 		is_auto = false;
+		change_driver = false;
 	}
 
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
@@ -317,6 +318,7 @@ public:
 	bool append_mode;
 	bool audio_mode;
 	bool is_auto;
+	bool change_driver;
 };
 
 void VDOpenVideoDialogW32::ChangeFilename() {
@@ -355,6 +357,7 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 				} else {
 					last_override_format = format_id;
 					last_override_driver = force_driver;
+					change_driver = false;
 				}
 
 				if (!force_driver.empty()) {
@@ -463,6 +466,8 @@ void VDOpenVideoDialogW32::ForceUseDriver(int i) {
 
 	driver_options.clear();
 	driver = detectList[i];
+	is_auto = i==0;
+	change_driver = true;
 	ChangeDriver();
 }
 
@@ -680,10 +685,15 @@ UINT_PTR CALLBACK OpenVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 	return FALSE;
 }
 
+VDStringW g_OpenVideoFilter;
+VDStringW g_OpenAudioFilter;
+
 void OpenInput(bool append, bool audio) {
 	VDOpenVideoDialogW32 dlg;
 	VDGetInputDrivers(dlg.inputDrivers, audio ? IVDInputDriver::kF_Audio : IVDInputDriver::kF_Video);
 	VDStringW fileFilters(VDMakeInputDriverFileFilter(dlg.inputDrivers, dlg.xlat));
+	vdvector<VDStringW> filter_list;
+	VDGetInputDriverFileFilters(dlg.inputDrivers, filter_list);
 
 	OPENFILENAMEW fn = {sizeof(fn),0};
 	fn.Flags = OFN_ENABLETEMPLATE | OFN_ENABLEHOOK;
@@ -691,18 +701,31 @@ void OpenInput(bool append, bool audio) {
 	fn.lpTemplateName = MAKEINTRESOURCEW(IDD_OPENVIDEO);
 	fn.lpfnHook = OpenVideoProc;
 	fn.lCustData = (LONG_PTR)&dlg;
+	VDStringW filter_id;
 
 	if (audio) {
 		fn.lpstrFile = g_szInputWAVFile;
 		dlg.init_driver = g_project->mAudioInputDriverName;
 		if (g_project->mpAudioInputOptions)
 			dlg.SetOptions(g_project->mpAudioInputOptions);
+		filter_id = g_OpenAudioFilter;
 
 	} else if (inputAVI && g_szInputAVIFile[0]) {
 		fn.lpstrFile = g_szInputAVIFile;
 		dlg.init_driver = g_project->mInputDriverName;
 		if (g_pInputOpts)
 			dlg.SetOptions(g_pInputOpts);
+		filter_id = g_OpenVideoFilter;
+	}
+
+	if (!filter_id.empty()) {for(int i=0; i<filter_list.size(); i++)
+		if (filter_list[i]==filter_id){
+			int x = dlg.xlat[i];
+			IVDInputDriver* driver = dlg.inputDrivers[x];
+			if (driver && driver->GetSignatureName()==dlg.init_driver)
+				dlg.nFilterIndex = i+1;
+			break;
+		}
 	}
 
 	const wchar_t* title = L"Open video file";
@@ -721,13 +744,27 @@ void OpenInput(bool append, bool audio) {
 		title = L"Append video segment";
 	}
 
-	VDStringW fname(VDGetLoadFileName(fskey, (VDGUIHandle)g_hWnd, title, fileFilters.c_str(), NULL, 0, 0, &fn));
+	const VDFileDialogOption opts[]={
+		{ VDFileDialogOption::kSelectedFilter, 0, NULL, 0, 0},
+		{0}
+	};
+
+	int optvals[]={ dlg.nFilterIndex };
+
+	VDStringW fname(VDGetLoadFileName(fskey, (VDGUIHandle)g_hWnd, title, fileFilters.c_str(), NULL, opts, optvals, &fn));
 
 	if (fname.empty())
 		return;
 
+	filter_id = L"";
+	if (dlg.nFilterIndex) filter_id = filter_list[dlg.nFilterIndex-1];
+	if (audio)
+		g_OpenAudioFilter = filter_id;
+	else
+		g_OpenVideoFilter = filter_id;
+
 	// remember override on confirmed open
-	if (!dlg.format_id.empty()) {
+	if (!dlg.format_id.empty() && dlg.change_driver) {
 		VDRegistryAppKey key(audio ? "File formats (audio)" : "File formats");
 		if (dlg.driver==dlg.detectList[0])
 			key.removeValue(dlg.format_id.c_str());
