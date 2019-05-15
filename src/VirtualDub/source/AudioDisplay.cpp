@@ -1122,6 +1122,12 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 		RECT r2 = {ya1-8, 0, ya2+8, mChanHeight * mChanCount};
 		InvalidateRect(mhwnd,&r2,false);
 	}
+	if (mDragMode==kDragModeAudioOffset) {
+		int ya1,ya2;
+		CalcFocus(ya1,ya2,mHighlightedMarker,mWindowPosition + mAudioOffsetDragAnchor - mPosition);
+		RECT r2 = {ya1-8, 0, ya2+8, mChanHeight * mChanCount};
+		InvalidateRect(mhwnd,&r2,false);
+	}
 
 	if (mbSpectrumMode) {
 		RECT tr = {0, 0, mTextWidth, mChanHeight * mChanCount};
@@ -1151,6 +1157,12 @@ void VDAudioDisplayControl::SetPosition(VDPosition pos, VDPosition hpos) {
 	if (mRefMarker!=href && href!=-1) {
 		int yb1,yb2;
 		CalcFocus(yb1,yb2,href,newWindowPos);
+		RECT r3 = {yb1-8, 0, yb2+8, mChanHeight * mChanCount};
+		InvalidateRect(mhwnd,&r3,false);
+	}
+	if (mDragMode==kDragModeAudioOffset) {
+		int yb1,yb2;
+		CalcFocus(yb1,yb2,mHighlightedMarker,newWindowPos + mAudioOffsetDragAnchor - mPosition);
 		RECT r3 = {yb1-8, 0, yb2+8, mChanHeight * mChanCount};
 		InvalidateRect(mhwnd,&r3,false);
 	}
@@ -1961,27 +1973,45 @@ void VDAudioDisplayControl::OnPaint2(HDC hdc, const PAINTSTRUCT& ps) {
 		}
 	}}
 
-	// focus
-	COLORREF focus_color = RGB(0, 32, 64);
-	if (mMarkerRate*mPixelsPerSample<10) focus_color = RGB(64, 80, 160);
-	if (mMarkerRate*mPixelsPerSample<5) focus_color = RGB(128, 128, 255);
-	if (ps.rcPaint.top < mChanHeight * mChanCount && mHighlightedMarker >= marker1*mMarkerMinorStep && mHighlightedMarker < marker2*mMarkerMinorStep && mDragMode!=kDragModeAudioOffset) {
-		sint32 xh1,xh2;
-		CalcFocus(xh1,xh2,mHighlightedMarker,mWindowPosition);
+	if (ps.rcPaint.top < mChanHeight * mChanCount) {
+		// focus
+		COLORREF focus_color = RGB(0, 32, 64);
+		if (mMarkerRate*mPixelsPerSample<10) focus_color = RGB(64, 80, 160);
+		if (mMarkerRate*mPixelsPerSample<5) focus_color = RGB(128, 128, 255);
+		VDPosition hmarker1 = mHighlightedMarker;
+		VDPosition hmarker2 = mRefMarker;
+		VDPosition hmarker3 = -1;
+		if (mDragMode==kDragModeAudioOffset){ hmarker3 = hmarker1; hmarker1 = -1; }
 
-		if (mbSpectrumMode)
-			StretchDIBits(hdc, xh1, 0, xh2 - xh1, mChanHeight * mChanCount, xh1, 0, xh2 - xh1, mbihSpectrumHighlight.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumHighlight, DIB_RGB_COLORS, SRCCOPY);
-		else
-			FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, focus_color);
-	}
-	if (mRefMarker!=-1 && mRefMarker!=mHighlightedMarker && ps.rcPaint.top < mChanHeight * mChanCount && mRefMarker >= marker1*mMarkerMinorStep && mRefMarker < marker2*mMarkerMinorStep) {
-		sint32 xh1,xh2;
-		CalcFocus(xh1,xh2,mRefMarker,mWindowPosition);
+		if (hmarker1!=-1 && hmarker1 >= marker1*mMarkerMinorStep && hmarker1 < marker2*mMarkerMinorStep) {
+			sint32 xh1,xh2;
+			CalcFocus(xh1,xh2,hmarker1,mWindowPosition);
 
-		if (mbSpectrumMode)
-			StretchDIBits(hdc, xh1, 0, xh2 - xh1, mChanHeight * mChanCount, xh1, 0, xh2 - xh1, mbihSpectrumHighlight.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumHighlight, DIB_RGB_COLORS, SRCCOPY);
-		else
-			FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, focus_color);
+			if (mbSpectrumMode)
+				StretchDIBits(hdc, xh1, 0, xh2 - xh1, mChanHeight * mChanCount, xh1, 0, xh2 - xh1, mbihSpectrumHighlight.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumHighlight, DIB_RGB_COLORS, SRCCOPY);
+			else
+				FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, focus_color);
+
+			if (hmarker1==hmarker2) hmarker2 = -1;
+		}
+		if (hmarker2!=-1 && hmarker2 >= marker1*mMarkerMinorStep && hmarker2 < marker2*mMarkerMinorStep) {
+			sint32 xh1,xh2;
+			CalcFocus(xh1,xh2,hmarker2,mWindowPosition);
+
+			if (mbSpectrumMode)
+				StretchDIBits(hdc, xh1, 0, xh2 - xh1, mChanHeight * mChanCount, xh1, 0, xh2 - xh1, mbihSpectrumHighlight.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumHighlight, DIB_RGB_COLORS, SRCCOPY);
+			else
+				FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, focus_color);
+		}
+		if (hmarker3!=-1 && hmarker3 >= marker1*mMarkerMinorStep && hmarker3 < marker2*mMarkerMinorStep) {
+			sint32 xh1,xh2;
+			CalcFocus(xh1,xh2,hmarker3,mWindowPosition + mAudioOffsetDragAnchor - mPosition);
+
+			if (mbSpectrumMode)
+				StretchDIBits(hdc, xh1, 0, xh2 - xh1, mChanHeight * mChanCount, xh1, 0, xh2 - xh1, mbihSpectrumHighlight.hdr.biHeight, &mImage[0], (const BITMAPINFO *)&mbihSpectrumHighlight, DIB_RGB_COLORS, SRCCOPY);
+			else
+				FastFill(hdc, xh1, ps.rcPaint.top, xh2, mChanHeight * mChanCount, focus_color);
+		}
 	}
 
 	// samples

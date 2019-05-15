@@ -1920,6 +1920,7 @@ void VDProjectUI::SetAudioConversionOptionsAsk() {
 
 void VDProjectUI::SetAudioInterleaveOptionsAsk() {
 	ActivateDubDialog(g_hInst, MAKEINTRESOURCE(IDD_INTERLEAVE), (HWND)mhwnd, AudioInterleaveDlgProc);
+	UIAudioSourceUpdated();
 }
 
 void VDProjectUI::SetAudioCompressionAsk(HWND parent) {
@@ -4324,7 +4325,8 @@ void VDProjectUI::UpdateAudioDisplayPosition() {
 		VDPosition cenpos = inputAudio->TimeToPositionVBR(srct);
 		double audioPerVideoSamples = inputAudio->getRate().asDouble() / srcRate.asDouble();
 
-		mpAudioDisplay->SetFrameMarkers(0, VDCeilToInt64(inputAudio->getLength() / audioPerVideoSamples), 0.0, audioPerVideoSamples);
+		mpAudioDisplay->SetFrameMarkers(0, mTimeline.GetLength(), 0.0, audioPerVideoSamples);
+		//mpAudioDisplay->SetFrameMarkers(0, VDCeilToInt64(inputAudio->getLength() / audioPerVideoSamples), 0.0, audioPerVideoSamples);
 		mpAudioDisplay->SetPosition(cenpos,pos);
 		mAudioDisplayPosNext = mpAudioDisplay->GetReadPosition();
 	}

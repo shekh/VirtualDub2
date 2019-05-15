@@ -462,6 +462,7 @@ AudioStreamSource::AudioStreamSource(AudioSource *src, sint64 max_samples, bool 
 		stream_len = (sint64)VDRoundToInt64(stream_len * sampleRatio);
 	}
 
+	stream_len += mPrefill;
 	mBasePos = first_samp;
 	cur_samp = first_samp;
 	end_samp = first_samp + max_samples;
