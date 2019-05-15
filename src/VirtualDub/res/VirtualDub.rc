@@ -64,24 +64,26 @@ BEGIN
         MENUITEM "&Open video file...\tCtrl+O", ID_FILE_OPENAVI
         MENUITEM "&Reopen video file\tF2",      ID_FILE_REOPEN
         MENUITEM "Append video segment...",     ID_FILE_APPENDSEGMENT
-        MENUITEM "Preview input...\tSpace",     ID_FILE_PREVIEWINPUT
-        MENUITEM "Preview filtered...\tEnter",  ID_FILE_PREVIEWOUTPUT
-        MENUITEM "Pre&view output from start...\tF5", ID_FILE_PREVIEWAVI
-        MENUITEM "Run video analysis pass",     ID_FILE_RUNVIDEOANALYSISPASS
-        MENUITEM "Save &as...\tF7",             ID_FILE_SAVEAVI
-        MENUITEM "Save old format AVI...\tShift+F7", ID_FILE_SAVECOMPATIBLEAVI
-        MENUITEM "Save segmented AVI...",       ID_FILE_SAVESEGMENTEDAVI
         MENUITEM "&Close video file\tCtrl+W",   ID_FILE_CLOSEAVI
+        MENUITEM "File &Information...",        ID_FILE_AVIINFO
+        MENUITEM "Set text information...",     ID_FILE_SETTEXTINFO
         MENUITEM SEPARATOR
+        MENUITEM "Load Project...",             ID_FILE_LOADPROJECT
+        MENUITEM "Save Project",                ID_FILE_SAVEPROJECT
+        MENUITEM "Save Project As...",          ID_FILE_SAVEPROJECTAS
+        MENUITEM SEPARATOR
+        MENUITEM "Save video...\tF7",           ID_FILE_SAVEAVI
+        MENUITEM "&Save audio...",              ID_FILE_SAVEWAV
+        MENUITEM "Run video analysis pass",     ID_FILE_RUNVIDEOANALYSISPASS
         MENUITEM "E&xport",                     ID_FILE_EXPORT
         POPUP "Queue &batch operation"
         BEGIN
+            MENUITEM "Save video...\tCtrl+Shift+F7", ID_QUEUEBATCHOPERATION_SAVEASAVI
+            MENUITEM "Save audio...",               ID_QUEUEBATCHOPERATION_SAVEWAV
             MENUITEM "Run video analysis pass",     ID_QUEUEBATCHOPERATION_RUNVIDEOANALYSISPASS
-            MENUITEM "Save as...\tCtrl+Shift+F7",   ID_QUEUEBATCHOPERATION_SAVEASAVI
             MENUITEM "Save old format AVI...",      ID_QUEUEBATCHOPERATION_SAVECOMPATIBLEAVI
             MENUITEM "Save segmented AVI...",       ID_QUEUEBATCHOPERATION_SAVESEGMENTEDAVI
             MENUITEM "Save image sequence...",      ID_QUEUEBATCHOPERATION_SAVEIMAGESEQUENCE
-            MENUITEM "Save audio...",               ID_QUEUEBATCHOPERATION_SAVEWAV
             MENUITEM SEPARATOR
             MENUITEM "Export raw audio...",         ID_QUEUEBATCHOPERATION_EXPORTRAWAUDIO
             MENUITEM "Export raw video...",         ID_QUEUEBATCHOPERATION_EXPORTRAWVIDEO
@@ -89,20 +91,12 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Batch wizard...",             ID_FILE_BATCHWIZARD
         END
-        MENUITEM "File &Information...",        ID_FILE_AVIINFO
-        MENUITEM "Set text information...",     ID_FILE_SETTEXTINFO
-        MENUITEM "&Save audio...",              ID_FILE_SAVEWAV
+        MENUITEM "Job control...\tF4",          ID_FILE_JOBCONTROL
+        MENUITEM "Start frame server...",       ID_FILE_STARTSERVER
         MENUITEM SEPARATOR
         MENUITEM "Load processing settings...\tCtrl+L", ID_FILE_LOADCONFIGURATION
         MENUITEM "Save processing settings...\tCtrl+S", ID_FILE_SAVECONFIGURATION
-        MENUITEM SEPARATOR
-        MENUITEM "Load Project...",             ID_FILE_LOADPROJECT
-        MENUITEM "Save Project",                ID_FILE_SAVEPROJECT
-        MENUITEM "Save Project As...",          ID_FILE_SAVEPROJECTAS
-        MENUITEM SEPARATOR
-        MENUITEM "Start frame server...",       ID_FILE_STARTSERVER
         MENUITEM "Run script...",               ID_FILE_RUNSCRIPT
-        MENUITEM "Job control...\tF4",          ID_FILE_JOBCONTROL
         MENUITEM SEPARATOR
         MENUITEM SEPARATOR
         MENUITEM "&Quit",                       ID_FILE_QUIT
@@ -168,6 +162,10 @@ BEGIN
     END
     POPUP "&Go"
     BEGIN
+        MENUITEM "Preview input...\tSpace",     ID_FILE_PREVIEWINPUT
+        MENUITEM "Preview filtered...\tEnter",  ID_FILE_PREVIEWOUTPUT
+        MENUITEM "Pre&view output from start...\tF5", ID_FILE_PREVIEWAVI
+        MENUITEM SEPARATOR
         MENUITEM "Beginning\tCtrl+Left",        ID_VIDEO_SEEK_START
         MENUITEM "End\tCtrl+Right",             ID_VIDEO_SEEK_END
         MENUITEM "Prev frame\tLeft",            ID_VIDEO_SEEK_PREV
@@ -716,6 +714,8 @@ BEGIN
         MENUITEM "Raw video...",                ID_FILE_SAVERAWVIDEO
         MENUITEM "Animated GIF...",             ID_FILE_SAVEANIMATEDGIF
         MENUITEM "Animated PNG...",             ID_FILE_SAVEANIMATEDPNG
+        MENUITEM "Save old format AVI...\tShift+F7", ID_FILE_SAVECOMPATIBLEAVI
+        MENUITEM "Save segmented AVI...",       ID_FILE_SAVESEGMENTEDAVI
         MENUITEM "Using external encoder...",   ID_FILE_EXPORTEXTERNALENCODER
         MENUITEM "Driver Tool 0...",            ID_EXPORT_DRIVERTOOL0
     END
