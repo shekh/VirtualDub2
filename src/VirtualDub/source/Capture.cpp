@@ -75,6 +75,7 @@
 #include "capfilter.h"
 #include "capvumeter.h"
 #include "uiframe.h"
+#include "mrulist.h"
 
 using namespace nsVDCapture;
 
@@ -98,6 +99,8 @@ IVDCaptureSystem *VDCreateCaptureSystemEmulation();
 IVDCaptureProfiler *g_pCaptureProfiler;		// a bit of a cheat for now
 
 extern void VDPreferencesGetAVIIndexingLimits(uint32& superindex, uint32& subindex);
+
+int VDPreferencesGetMRUSize();
 
 ///////////////////////////////////////////////////////////////////////////
 //
@@ -2428,6 +2431,11 @@ VDDEBUG("Capture has stopped.\n");
 
 			fMainFinalized = true;
 			icd.mpOutput->finalize();
+			MRUList list(0, "Capture MRU List");
+			list.set_capacity(VDPreferencesGetMRUSize());
+			list.load();
+			list.add(icd.mCaptureFile.c_str());
+			list.flush();
 
 			fPendingFinalized = true;
 			if (icd.mpOutputFilePending && icd.mpOutputFilePending != icd.mpOutputFile) {

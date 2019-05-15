@@ -148,6 +148,8 @@ void MRUList::load() {
 
 		mKey[i] = (char)('a'+i);
 	}
+
+	mbDirty = false;
 }
 
 void MRUList::flush() {

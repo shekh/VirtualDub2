@@ -163,7 +163,7 @@ protected:
 	void UITimelineUpdated();
 	void UIMarkerUpdated();
 	void UIShuttleModeUpdated();
-	void UISourceFileUpdated();
+	void UISourceFileUpdated(int open_flags=0);
 	void UIAudioSourceUpdated();
 	void UIVideoSourceUpdated();
 	void UIVideoFiltersUpdated();
@@ -171,6 +171,7 @@ protected:
 	void UiDisplayPreferencesUpdated();
 
 	void UpdateMRUList();
+	void UpdateCaptureMRUList();
 	void SetStatus(const wchar_t *s);
 
 	void DisplayRequestUpdate(IVDVideoDisplay *pDisp);
@@ -222,6 +223,7 @@ protected:
 	HMENU		mhMenuExport;
 	HMENU		mhMenuTools;
 	int			mMRUListPosition;
+	int			mCaptureMRUListPosition;
 	HACCEL		mhAccelDub;
 	HACCEL		mhAccelMain;
 	HACCEL		mhAccelPreview;
@@ -254,6 +256,7 @@ protected:
 	VDThreadID	mThreadId;
 
 	MRUList		mMRUList;
+	MRUList		mCaptureMRUList;
 
 	typedef vdfastvector<int> PendingCommands;
 	PendingCommands		mPendingCommands;

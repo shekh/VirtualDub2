@@ -101,12 +101,16 @@ BEGIN
         MENUITEM "Save Project As...",          ID_FILE_SAVEPROJECTAS
         MENUITEM SEPARATOR
         MENUITEM "Start frame server...",       ID_FILE_STARTSERVER
-        MENUITEM "Ca&pture AVI...",             ID_FILE_CAPTUREAVI
         MENUITEM "Run script...",               ID_FILE_RUNSCRIPT
         MENUITEM "Job control...\tF4",          ID_FILE_JOBCONTROL
         MENUITEM SEPARATOR
         MENUITEM SEPARATOR
         MENUITEM "&Quit",                       ID_FILE_QUIT
+    END
+    POPUP "Capture"
+    BEGIN
+        MENUITEM "&Capture AVI...",             ID_FILE_CAPTUREAVI
+        MENUITEM SEPARATOR
     END
     POPUP "&Edit"
     BEGIN

@@ -2039,29 +2039,33 @@ static void func_VirtualDub_OpenOld(IVDScriptInterpreter *, VDScriptValue *argli
 	VDStringW filename(VDTextAToW(*arglist[0].asString()));
 	IVDInputDriver *pDriver = VDGetInputDriverForLegacyIndex(arglist[1].asInt());
 
+	int open_flags = f_open_quiet;
+	if (arglist[2].asInt()) open_flags |= f_open_extended;
+
 	if (arg_count > 3) {
 		long l = ((strlen(*arglist[3].asString())+3)/4)*3;
 		vdfastvector<char> buf(l);
 
 		l = memunbase64(buf.data(), *arglist[3].asString(), l);
 
-		g_project->Open(filename.c_str(), pDriver, !!arglist[2].asInt(), true, 0, buf.data(), l);
+		g_project->Open(filename.c_str(), pDriver, open_flags, 0, buf.data(), l);
 	} else
-		g_project->Open(filename.c_str(), pDriver, !!arglist[2].asInt(), true, 0);
+		g_project->Open(filename.c_str(), pDriver, open_flags, 0);
 }
 
 static void VirtualDub_Open2(VDScriptValue *arglist, int arg_count, int fAutoScan) {
 	VDStringW filename(VDTextU8ToW(VDStringA(*arglist[0].asString())));
 	IVDInputDriver *pDriver = NULL;
-	bool extopen = false;
 	VDStringW signature;
+	int open_flags = f_open_quiet;
 	
 	if (arg_count > 1) {
 		signature = VDTextAToW(*arglist[1].asString());
 		pDriver = VDGetInputDriverByName(signature.c_str());
 
-		if (arg_count > 2)
-			extopen = !!arglist[2].asInt();
+		if (arg_count > 2) {
+			if(arglist[2].asInt()) open_flags |= f_open_extended;
+		}
 	}
 
 	if (arg_count > 3) {
@@ -2077,9 +2081,9 @@ static void VirtualDub_Open2(VDScriptValue *arglist, int arg_count, int fAutoSca
 			pDriver = pTest;
 		}
 
-		g_project->Open(filename.c_str(), pDriver, extopen, true, fAutoScan, buf.data(), l);
+		g_project->Open(filename.c_str(), pDriver, open_flags, fAutoScan, buf.data(), l);
 	} else
-		g_project->Open(filename.c_str(), pDriver, extopen, true, fAutoScan);
+		g_project->Open(filename.c_str(), pDriver, open_flags, fAutoScan);
 }
 
 static void func_VirtualDub_Open(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
@@ -2093,7 +2097,7 @@ static void func_VirtualDub_OpenSequence(IVDScriptInterpreter *, VDScriptValue *
 static void func_VirtualDub_intOpenTest(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
 	vdrefptr<IVDInputDriver> pDriver(VDCreateInputDriverTest());
 
-	g_project->Open(L"", pDriver, false);
+	g_project->Open(L"", pDriver);
 }
 
 static void func_VirtualDub_Append(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {

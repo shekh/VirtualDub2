@@ -1158,7 +1158,7 @@ void VDProject::Reopen(FileNameCommand* cmd) {
 			}
 		}
 		if (!inputAVI) {
-			Open(filename.c_str(),0,false,false,1);
+			Open(filename.c_str(),0,0,1);
 			return;
 		}
 	}
@@ -1181,7 +1181,7 @@ void VDProject::CmdOpen(const wchar_t *token) {
 	}
 
 	mProjectFilename.clear();
-	Open(token,0,false,false,1);
+	Open(token,0,0,1);
 }
 
 void VDProject::OpenProject(const wchar_t *pFilename, bool readOnly) {
@@ -1499,7 +1499,7 @@ VDStringW VDProject::ExpandProjectPath(const wchar_t* path) const {
 	return VDGetFullPath(path);
 }
 
-void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, bool fExtendedOpen, bool fQuiet, int fAutoscan, const char *pInputOpts, uint32 inputOptsLen) {
+void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, int open_flags, int fAutoscan, const char *pInputOpts, uint32 inputOptsLen) {
 	Close();
 	VDStringW filename(ExpandProjectPath(pFilename));
 
@@ -1515,7 +1515,7 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 		// open file
 
 		int flags = 0;
-		if (fQuiet) flags |= IVDInputDriver::kOF_Quiet;
+		if (open_flags & f_open_quiet) flags |= IVDInputDriver::kOF_Quiet;
 		if (fAutoscan==1) flags |= IVDInputDriver::kOF_AutoSegmentScan;
 		if (fAutoscan==0) flags |= IVDInputDriver::kOF_SingleFile;
 
@@ -1524,6 +1524,7 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 		g_inputDriver = pSelectedDriver->GetSignatureName();
 
 		// Extended open?
+		bool fExtendedOpen = open_flags & f_open_extended;
 		if (!(pSelectedDriver->GetFlags() & IVDInputDriver::kF_SupportsOpts))
 			fExtendedOpen = false;
 
@@ -1614,7 +1615,7 @@ void VDProject::Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver, 
 			mAudioSourceMode = kVDAudioSourceMode_Source;
 		SetAudioSource();
 		UpdateDubParameters();
-		mpCB->UISourceFileUpdated();
+		mpCB->UISourceFileUpdated(open_flags);
 		mpCB->UIVideoSourceUpdated();
 		mpCB->UIAudioSourceUpdated();
 		FiltersEditorDisplayFrame(inputVideo);
@@ -1753,7 +1754,7 @@ void VDProject::InnerReopen() {
 	mpCB->UITimelineUpdated();
 	SetAudioSource();
 	UpdateDubParameters();
-	mpCB->UISourceFileUpdated();
+	mpCB->UISourceFileUpdated(f_open_skip_mru);
 	mpCB->UIAudioSourceUpdated();
 	mpCB->UIVideoSourceUpdated();
 	FiltersEditorDisplayFrame(inputVideo);

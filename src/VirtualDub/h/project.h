@@ -51,7 +51,7 @@ public:
 	virtual void UIMarkerUpdated() = 0;
 	virtual void UITimelineUpdated() = 0;
 	virtual void UIShuttleModeUpdated() = 0;
-	virtual void UISourceFileUpdated() = 0;
+	virtual void UISourceFileUpdated(int open_flags=0) = 0;
 	virtual void UIAudioSourceUpdated() = 0;
 	virtual void UIVideoSourceUpdated() = 0;
 	virtual void UIVideoFiltersUpdated() = 0;
@@ -99,6 +99,12 @@ class FilterModSystem: public IFilterModSystem {
 public:
 	virtual bool CreateVideoFilter(VDXHWND hParent, FilterReturnInfo& a);
 	virtual bool FindVideoFilter(const char* name, FilterReturnInfo& a);
+};
+
+enum {
+	f_open_extended = 1,
+	f_open_quiet = 2,
+	f_open_skip_mru = 4,
 };
 
 class VDProject {
@@ -188,7 +194,7 @@ public:
 	void CmdOpen(const wchar_t *token);
 	void OpenProject(const wchar_t *pFilename, bool readOnly=false); 
 	void OpenJob(const wchar_t *pFilename, VDJob* job);
-	void Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver = 0, bool fExtendedOpen = false, bool fQuiet = false, int fAutoscan = 0, const char *pInputOpts = 0, uint32 inputOptsLen = 0);
+	void Open(const wchar_t *pFilename, IVDInputDriver *pSelectedDriver = 0, int open_flags = 0, int fAutoscan = 0, const char *pInputOpts = 0, uint32 inputOptsLen = 0);
 	void Reopen();
 	void InnerReopen();
 	void Reopen(FileNameCommand* cmd);

@@ -796,7 +796,7 @@ void OpenInput(bool append, bool audio) {
 			AppendAVI(fname.c_str(), flags);
 		}
 	} else {
-		g_project->Open(fname.c_str(), dlg.driver, false, false, dlg.select_mode, opt, opt_len);
+		g_project->Open(fname.c_str(), dlg.driver, 0, dlg.select_mode, opt, opt_len);
 		if (dlg.is_auto && !opt) g_project->mInputDriverName.clear();
 	}
 

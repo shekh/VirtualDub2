@@ -1638,11 +1638,9 @@
 #define ID_AUDIO_CAPTURE_SOURCE         41250
 #define ID_VIDEO_CAPTURE_SOURCE         41300
 #define ID_MRU_FILE0                    50000
-#define ID_MRU_FILE1                    50001
-#define ID_MRU_FILE2                    50002
-#define ID_MRU_FILE3                    50003
 #define ID_AUDIO_SOURCE_AVI_0           50100
 #define ID_PLUGIN_TOOL                  50200
+#define ID_CAPTURE_MRU_FILE0            50300
 
 // Next default values for new objects
 // 

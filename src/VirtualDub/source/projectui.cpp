@@ -618,9 +618,11 @@ VDProjectUI::VDProjectUI()
 	, mbPaneLayoutBusy(false)
 	, mbPanesNeedUpdate(false)
 	, mMRUList(0, "MRU List")
+	, mCaptureMRUList(0, "Capture MRU List")
 {
 	edit_token = 0;
 	mMRUList.set_capacity(VDPreferencesGetMRUSize());
+	mCaptureMRUList.set_capacity(VDPreferencesGetMRUSize());
 	mMRUList.load();
 	mbFiltersPreview = false;
 	mbMaximize = false;
@@ -698,6 +700,7 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	}
 
 	mMRUListPosition = GetMenuItemCount(GetSubMenu(mhMenuNormal, 0)) - 2;
+	mCaptureMRUListPosition = GetMenuItemCount(GetSubMenu(mhMenuNormal, 1));
 
 	// Load accelerators.
 
@@ -2649,9 +2652,11 @@ bool VDProjectUI::MenuHit(UINT id) {
 				int result = VDShowPreferencesDialog((VDGUIHandle)mhwnd);
 				VDCPUTest();
 				mMRUList.set_capacity(VDPreferencesGetMRUSize());
+				mCaptureMRUList.set_capacity(VDPreferencesGetMRUSize());
 
 				if (clearCount != VDPreferencesGetHistoryClearCounter()) {
 					mMRUList.clear_history();
+					mCaptureMRUList.clear_history();
 				}
 
 				UpdateMRUList();
@@ -2808,7 +2813,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 					data.resize(len);
 					opt->write(&data[0],len);
 					delete opt;
-					Open(L"", pDriver, false, false, false, &data[0], len);
+					Open(L"", pDriver, 0, 0, &data[0], len);
 				}
 			}
 			break;
@@ -2835,9 +2840,24 @@ bool VDProjectUI::MenuHit(UINT id) {
 
 				if (!name.empty()) {
 					const bool bExtendedOpen = (signed short)GetAsyncKeyState(VK_SHIFT) < 0;
+					int open_flags = bExtendedOpen ? f_open_extended:0;
 
 					VDAutoLogDisplay logDisp;
-					g_project->Open(name.c_str(), NULL, bExtendedOpen, false, 1);
+					g_project->Open(name.c_str(), NULL, open_flags, 1);
+					logDisp.Post(mhwnd);
+				}
+				break;
+			} else if (id >= ID_CAPTURE_MRU_FILE0 && id <= ID_CAPTURE_MRU_FILE0+99) {
+				const int index = id - ID_CAPTURE_MRU_FILE0;
+				VDStringW name(mCaptureMRUList[index]);
+
+				if (!name.empty()) {
+					const bool bExtendedOpen = (signed short)GetAsyncKeyState(VK_SHIFT) < 0;
+					int open_flags = bExtendedOpen ? f_open_extended:0;
+					open_flags |= f_open_skip_mru;
+
+					VDAutoLogDisplay logDisp;
+					g_project->Open(name.c_str(), NULL, open_flags, 1);
 					logDisp.Post(mhwnd);
 				}
 				break;
@@ -2874,22 +2894,40 @@ void VDProjectUI::ShowMenuHelp(WPARAM wParam) {
 		return;
 	}
 
-	if (LOWORD(wParam) >= ID_MRU_FILE0 && LOWORD(wParam) <= ID_MRU_FILE3) {
+	if (LOWORD(wParam) >= ID_CAPTURE_MRU_FILE0 && LOWORD(wParam) <= (ID_CAPTURE_MRU_FILE0+99)) {
 		HWND hwndStatus = GetDlgItem((HWND)mhwnd, IDC_STATUS_WINDOW);
-		char name[1024];
+		VDStringW name;
 
 		if ((HIWORD(wParam) & MF_POPUP) || (HIWORD(wParam) & MF_SYSMENU)) {
 			SendMessage(hwndStatus, SB_SETTEXT, 0, (LPARAM)"");
 			return;
 		}
 
-		strcpy(name, "[SHIFT for options] Load file ");
+		name = L"[SHIFT for options] Load file ";
+
+		const VDStringW filename(mCaptureMRUList[LOWORD(wParam) - ID_CAPTURE_MRU_FILE0]);
+
+		if (!filename.empty()) {
+			name += filename;
+			SendMessage(hwndStatus, SB_SETTEXTW, 255, (LPARAM)name.c_str());
+		} else
+			SendMessage(hwndStatus, SB_SETTEXT, 255, (LPARAM)"");
+	} else if (LOWORD(wParam) >= ID_MRU_FILE0 && LOWORD(wParam) <= (ID_MRU_FILE0+99)) {
+		HWND hwndStatus = GetDlgItem((HWND)mhwnd, IDC_STATUS_WINDOW);
+		VDStringW name;
+
+		if ((HIWORD(wParam) & MF_POPUP) || (HIWORD(wParam) & MF_SYSMENU)) {
+			SendMessage(hwndStatus, SB_SETTEXT, 0, (LPARAM)"");
+			return;
+		}
+
+		name = L"[SHIFT for options] Load file ";
 
 		const VDStringW filename(mMRUList[LOWORD(wParam) - ID_MRU_FILE0]);
 
 		if (!filename.empty()) {
-			VDTextWToA(name+30, sizeof name - 30, filename.c_str(), filename.length() + 1);
-			SendMessage(hwndStatus, SB_SETTEXT, 255, (LPARAM)name);
+			name += filename;
+			SendMessage(hwndStatus, SB_SETTEXTW, 255, (LPARAM)name.c_str());
 		} else
 			SendMessage(hwndStatus, SB_SETTEXT, 255, (LPARAM)"");
 	} else
@@ -2897,6 +2935,10 @@ void VDProjectUI::ShowMenuHelp(WPARAM wParam) {
 }
 
 void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
+	// in this context hMenu = mhMenuNormal
+
+	mCaptureMRUList.load();
+	UpdateCaptureMRUList();
 
 	VDCheckMenuItemW32(hMenu, ID_VIEW_POSITIONCONTROL, mbPositionControlVisible);
 	VDCheckMenuItemW32(hMenu, ID_VIEW_STATUSBAR, mbStatusBarVisible);
@@ -4733,9 +4775,9 @@ void VDProjectUI::UIShuttleModeUpdated() {
 		mpPosition->ResetShuttle();
 }
 
-void VDProjectUI::UISourceFileUpdated() {
+void VDProjectUI::UISourceFileUpdated(int open_flags) {
 	if (inputAVI) {
-		if (g_szInputAVIFile[0] && !g_bAutoTest)
+		if (g_szInputAVIFile[0] && !g_bAutoTest && !(open_flags & f_open_skip_mru))
 			mMRUList.add(g_szInputAVIFile);
 
 		UpdateMRUList();
@@ -4790,32 +4832,44 @@ void VDProjectUI::UiDisplayPreferencesUpdated() {
 	DisplayFrame();
 }
 
+void CollapseMRUName(VDStringW& name)
+{
+	if (name.length() > 60) {
+		const wchar_t *t = name.c_str();
+		size_t rootidx = VDFileSplitRoot(t) - t;
+		size_t diridx = VDFileSplitFirstDir(t+rootidx) - t;
+		size_t limitidx = VDFileSplitFirstDir(t+diridx) - t;
+
+		if (diridx > rootidx && limitidx > diridx) {
+			name.replace(rootidx, diridx-rootidx-1, L"...", 3);
+
+			rootidx += 4;
+
+			while(name.length() > 60) {
+				const wchar_t *t = name.c_str();
+				diridx = VDFileSplitFirstDir(t+rootidx) - t;
+				limitidx = VDFileSplitFirstDir(t+diridx) - t;
+				if (diridx <= rootidx || limitidx <= diridx)
+					break;
+
+				name.erase(rootidx, diridx-rootidx);
+			}
+		}
+	}
+}
+
 void VDProjectUI::UpdateMRUList() {
 	HMENU hmenuFile = GetSubMenu(GetMenu((HWND)mhwnd), 0);
-	union {
-		MENUITEMINFOA a;
-		MENUITEMINFOW w;
-	} mii;
-	char name2[MAX_PATH];
+	MENUITEMINFOW mii = {sizeof(MENUITEMINFO)};
 	int index=0;
 
-#define WIN95_MENUITEMINFO_SIZE (offsetof(MENUITEMINFO, cch) + sizeof(UINT))
-
-	memset(&mii, 0, sizeof mii);
-#ifdef _WIN64
-	mii.a.cbSize	= sizeof(MENUITEMINFO);		// AMD64 has hidden padding in the struct that keeps the above from working.... screw it
-#else
-	mii.a.cbSize	= WIN95_MENUITEMINFO_SIZE;
-#endif
 	for(;;) {
-		mii.a.fMask			= MIIM_TYPE;
-		mii.a.dwTypeData		= name2;
-		mii.a.cch				= sizeof name2;
+		mii.fMask			= MIIM_TYPE;
 
-		if (!GetMenuItemInfo(hmenuFile, mMRUListPosition, TRUE, &mii.a))
+		if (!GetMenuItemInfoW(hmenuFile, mMRUListPosition, TRUE, &mii))
 			break;
 
-		if (mii.a.fType & MFT_SEPARATOR)
+		if (mii.fType & MFT_SEPARATOR)
 			break;
 
 		RemoveMenu(hmenuFile, mMRUListPosition, MF_BYPOSITION);
@@ -4827,35 +4881,12 @@ void VDProjectUI::UpdateMRUList() {
 		if (name.empty())
 			break;
 
-		// collapse name while it is too long
+		CollapseMRUName(name);
 
-		if (name.length() > 60) {
-			const wchar_t *t = name.c_str();
-			size_t rootidx = VDFileSplitRoot(t) - t;
-			size_t diridx = VDFileSplitFirstDir(t+rootidx) - t;
-			size_t limitidx = VDFileSplitFirstDir(t+diridx) - t;
-
-			if (diridx > rootidx && limitidx > diridx) {
-				name.replace(rootidx, diridx-rootidx-1, L"...", 3);
-
-				rootidx += 4;
-
-				while(name.length() > 60) {
-					const wchar_t *t = name.c_str();
-					diridx = VDFileSplitFirstDir(t+rootidx) - t;
-					limitidx = VDFileSplitFirstDir(t+diridx) - t;
-					if (diridx <= rootidx || limitidx <= diridx)
-						break;
-
-					name.erase(rootidx, diridx-rootidx);
-				}
-			}
-		}
-
-		mii.a.fMask		= MIIM_TYPE | MIIM_STATE | MIIM_ID;
-		mii.a.fType		= MFT_STRING;
-		mii.a.fState	= MFS_ENABLED;
-		mii.a.wID		= ID_MRU_FILE0 + index;
+		mii.fMask		= MIIM_TYPE | MIIM_STATE | MIIM_ID;
+		mii.fType		= MFT_STRING;
+		mii.fState	= MFS_ENABLED;
+		mii.wID		= ID_MRU_FILE0 + index;
 
 		const wchar_t *s = name.c_str();
 
@@ -4867,34 +4898,87 @@ void VDProjectUI::UpdateMRUList() {
 			name2 = s;
 		}
 
-		if (GetVersion() & 0x80000000) {
-			VDStringA name2A(VDTextWToA(name2.c_str()));
+		mii.dwTypeData	= (wchar_t *)name2.c_str();
+		mii.cch			= 0;
 
-			mii.a.dwTypeData	= (char *)name2A.c_str();
-			mii.a.cch			= name2A.size() + 1;
-
-			if (!InsertMenuItemA(hmenuFile, mMRUListPosition+index, TRUE, &mii.a))
-				break;
-		} else {
-			mii.w.dwTypeData	= (wchar_t *)name2.c_str();
-			mii.w.cch			= name2.size() + 1;
-
-			if (!InsertMenuItemW(hmenuFile, mMRUListPosition+index, TRUE, &mii.w))
-				break;
-		}
+		if (!InsertMenuItemW(hmenuFile, mMRUListPosition+index, TRUE, &mii))
+			break;
 
 		++index;
 	}
 
 	if (!index) {
-		mii.a.fMask			= MIIM_TYPE | MIIM_STATE | MIIM_ID;
-		mii.a.fType			= MFT_STRING;
-		mii.a.fState		= MFS_GRAYED;
-		mii.a.wID			= ID_MRU_FILE0;
-		mii.a.dwTypeData	= "Recent file list";
-		mii.a.cch			= sizeof name2;
+		mii.fMask			= MIIM_TYPE | MIIM_STATE | MIIM_ID;
+		mii.fType			= MFT_STRING;
+		mii.fState		= MFS_GRAYED;
+		mii.wID			= ID_MRU_FILE0;
+		mii.dwTypeData	= L"Recent file list";
+		mii.cch			= 0;
 
-		InsertMenuItem(hmenuFile, mMRUListPosition+index, TRUE, &mii.a);
+		InsertMenuItemW(hmenuFile, mMRUListPosition+index, TRUE, &mii);
+	}
+
+	DrawMenuBar((HWND)mhwnd);
+}
+
+void VDProjectUI::UpdateCaptureMRUList() {
+	HMENU hmenuCap = GetSubMenu(GetMenu((HWND)mhwnd), 1);
+	MENUITEMINFOW mii = {sizeof(MENUITEMINFO)};
+	int index=0;
+
+	for(;;) {
+		mii.fMask			= MIIM_TYPE;
+
+		if (!GetMenuItemInfoW(hmenuCap, mCaptureMRUListPosition, TRUE, &mii))
+			break;
+
+		if (mii.fType & MFT_SEPARATOR)
+			break;
+
+		RemoveMenu(hmenuCap, mCaptureMRUListPosition, MF_BYPOSITION);
+	}
+
+	for(;;) {
+		VDStringW name(mCaptureMRUList[index]);
+
+		if (name.empty())
+			break;
+
+		CollapseMRUName(name);
+
+		mii.fMask		= MIIM_TYPE | MIIM_STATE | MIIM_ID;
+		mii.fType		= MFT_STRING;
+		mii.fState	= MFS_ENABLED;
+		mii.wID		= ID_CAPTURE_MRU_FILE0 + index;
+
+		const wchar_t *s = name.c_str();
+
+		VDStringW name2;
+		if (index < 10) {
+			int shortcut = (index+1) % 10;
+			name2.sprintf(L"&%d %s", shortcut, s);
+		} else {
+			name2 = s;
+		}
+
+		mii.dwTypeData	= (wchar_t *)name2.c_str();
+		mii.cch			= 0;
+
+		if (!InsertMenuItemW(hmenuCap, mCaptureMRUListPosition+index, TRUE, &mii))
+			break;
+
+		++index;
+	}
+
+	if (!index) {
+		mii.fMask			= MIIM_TYPE | MIIM_STATE | MIIM_ID;
+		mii.fType			= MFT_STRING;
+		mii.fState		= MFS_GRAYED;
+		mii.wID			= ID_MRU_FILE0;
+		mii.dwTypeData	= L"Recent captured files";
+		mii.cch			= 0;
+
+		InsertMenuItemW(hmenuCap, mCaptureMRUListPosition+index, TRUE, &mii);
 	}
 
 	DrawMenuBar((HWND)mhwnd);
