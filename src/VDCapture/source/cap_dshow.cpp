@@ -33,6 +33,9 @@
 #include <vd2/system/thread.h>
 #include <objbase.h>
 #include <dshow.h>
+#include <d3d9.h>
+#include <vmr9.h>
+#include <evr.h>
 #include <windows.h>
 #include <guiddef.h>
 #include <dvdmedia.h>		// VIDEOINFOHEADER2
@@ -40,11 +43,13 @@
 #include <ksmedia.h>
 #include <streams.h>
 #include <initguid.h>
+#include <mfidl.h>
 #include <vector>
 
 using namespace nsVDCapture;
 
 #pragma comment(lib, "amstrmid.lib")
+#pragma comment(lib, "mfuuid.lib")
 
 extern HINSTANCE g_hInst;
 extern void VDShowDebugText(HWND parent, const char* s);
@@ -1688,6 +1693,7 @@ protected:
 	int		EnumerateCrossbarSources(InputSources& sources, IAMCrossbar *pCrossbar, int output);
 	int		UpdateCrossbarSource(InputSources& sources, IAMCrossbar *pCrossbar, int output);
 	void	DoEvents();
+	HRESULT CreateRenderer(IBaseFilter **ppR);
 
 	static LRESULT CALLBACK StaticMessageSinkWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	LRESULT MessageSinkWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -3986,6 +3992,75 @@ void LogMediaType(const wchar_t* title, AM_MEDIA_TYPE* pMediaType) {
 	VDLogF(kVDLogInfo, s.c_str());
 }
 
+//! experimental
+HRESULT VDCaptureDriverDS::CreateRenderer(IBaseFilter **ppR)
+{
+	*ppR = NULL;
+	HRESULT hr = 0;
+
+	// Create the EVR and add it to the filter graph.
+	IBaseFilter* pEvr = NULL;
+	hr = CoCreateInstance(CLSID_EnhancedVideoRenderer, NULL, CLSCTX_INPROC, IID_IBaseFilter, (void**)&pEvr);
+	if (SUCCEEDED(hr)) {
+		hr = mpGraphBuilder->AddFilter(pEvr, L"Enhanced Video Renderer");
+		if (SUCCEEDED(hr)) {
+			IMFGetService* gs = NULL;
+			hr = pEvr->QueryInterface(IID_IMFGetService, (void**)&gs);
+			if(SUCCEEDED(hr)) {
+				IMFVideoDisplayControl* dc = NULL;
+				hr = gs->GetService(MR_VIDEO_RENDER_SERVICE, IID_IMFVideoDisplayControl, (void**)&dc);
+				if(SUCCEEDED(hr)) {
+					dc->SetVideoWindow(mhwndParent);
+					dc->SetBorderColor(RGB(0,0,0));
+
+					RECT r;
+					GetClientRect(mhwndParent, &r);
+					hr = dc->SetVideoPosition(NULL, &r);
+
+					dc->Release();
+				}
+
+				gs->Release();
+			}
+		}
+
+		*ppR = pEvr;
+		return hr;
+	}
+
+	// Create the VMR and add it to the filter graph.
+	IBaseFilter* pVmr = NULL;
+	hr = CoCreateInstance(CLSID_VideoMixingRenderer9, NULL, CLSCTX_INPROC, IID_IBaseFilter, (void**)&pVmr);
+	if (SUCCEEDED(hr)) {
+		hr = mpGraphBuilder->AddFilter(pVmr, L"Video Mixing Renderer 9");
+		if (SUCCEEDED(hr)) {
+			// Set the rendering mode and number of streams
+			IVMRFilterConfig9* pConfig = NULL;
+
+			pVmr->QueryInterface(IID_IVMRFilterConfig9, (void**)&pConfig);
+			pConfig->SetRenderingMode(VMR9Mode_Windowless);
+			pConfig->Release();
+
+			IVMRWindowlessControl9 *pWC = NULL;
+			hr = pVmr->QueryInterface(IID_IVMRWindowlessControl9, (void**)&pWC);
+			if(SUCCEEDED(hr)) {
+				pWC->SetVideoClippingWindow(mhwndParent);
+				pWC->SetBorderColor(RGB(0,0,0));
+
+				RECT r;
+				GetClientRect(mhwndParent, &r);
+				hr = pWC->SetVideoPosition(NULL, &r);
+
+				pWC->Release();
+			}
+		}
+
+		*ppR = pVmr;
+	}
+
+	return hr;
+}
+
 bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 	IPinPtr pCapturePin = mpRealCapturePin;
 	IPinPtr pPreviewPin = mpRealPreviewPin;
@@ -4124,6 +4199,9 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 
 	VDASSERT(!pPreviewPin || (pPreviewPin != mpAudioPin));
 	VDASSERT(!pCapturePin || (pCapturePin != mpAudioPin));
+
+	//IBaseFilter* render;
+	//DS_VERIFY(CreateRenderer(&render), "create renderer");
 
 	switch(mDisplayMode) {
 	case kDisplayHardware:
