@@ -255,6 +255,54 @@ no_single:
 	}
 }
 
+#endif
+
+#ifdef _M_IX86
+static void translate_rgba_luma(uint8 * VDRESTRICT dst, ptrdiff_t pitch, uint32 w, uint32 h, const LevelsFilterData *mfd) {
+	if (CPUGetEnabledExtensions() & CPUF_SUPPORTS_MMX)
+		AsmLevelsRunMMX((uint32 *)dst, pitch, w, h, mfd->xtblluma);
+	else
+		AsmLevelsRunScalar((uint32 *)dst, pitch, w, h, mfd->xtblluma);
+}
+#else
+static void translate_rgba_luma(uint8 * VDRESTRICT dst, ptrdiff_t pitch, uint32 w0, uint32 h, const LevelsFilterData *mfd) {
+	uint8 *p = dst;
+	ptrdiff_t modulo = pitch - 4*w0;
+
+	do {
+		uint32 w = w0;
+		do {
+			uint32 r = p[2];
+			uint32 g = p[1];
+			uint32 b = p[0];
+			const uint8 *yp = mfd->xtblluma2[(bright_table_R[r] + bright_table_G[g] + bright_table_B[r] + 0x8000) >> 16];
+
+			p[0] = yp[b];
+			p[1] = yp[g];
+			p[2] = yp[r];
+			p += 4;
+		} while(--w);
+
+		p += modulo;
+	} while(--h);
+}
+#endif
+
+static void translate_rgba(uint8 * VDRESTRICT dst, ptrdiff_t pitch, uint32 w, uint32 h, const uint8 * VDRESTRICT tbl) {
+	uint8 *p = dst;
+	ptrdiff_t modulo = pitch - 4*w;
+	for(uint32 y=0; y<h; ++y) {
+		for(uint32 x=0; x<w; ++x){
+			p[0] = tbl[p[0]];
+			p[1] = tbl[p[1]];
+			p[2] = tbl[p[2]];
+			p += 4;
+		}
+
+		p += modulo;
+	}
+}
+
 static void translate_plane(uint8 * VDRESTRICT dst, ptrdiff_t pitch, uint32 w, uint32 h, const uint8 * VDRESTRICT tbl) {
 	for(uint32 y=0; y<h; ++y) {
 		for(uint32 x=0; x<w; ++x)
@@ -266,82 +314,29 @@ static void translate_plane(uint8 * VDRESTRICT dst, ptrdiff_t pitch, uint32 w, u
 
 static int levels_run(const FilterActivation *fa, const FilterFunctions *ff) {
 	const LevelsFilterData *mfd = (LevelsFilterData *)fa->filter_data;
+	const VDXPixmap& px = *fa->src.mpPixmap;
 
 	if (mfd->bLuma) {
-		const VDXPixmap& px = *fa->src.mpPixmap;
-
 		switch(px.format) {
-			case nsVDXPixmap::kPixFormat_XRGB8888:
-				if (CPUGetEnabledExtensions() & CPUF_SUPPORTS_MMX)
-					AsmLevelsRunMMX((uint32 *)px.data, px.pitch, px.w, px.h, mfd->xtblluma);
-				else
-					AsmLevelsRunScalar((uint32 *)px.data, px.pitch, px.w, px.h, mfd->xtblluma);
-				break;
+		case nsVDXPixmap::kPixFormat_XRGB8888:
+			translate_rgba_luma((uint8 *)px.data, px.pitch, px.w, px.h, mfd);
+			break;
 
-			case nsVDXPixmap::kPixFormat_YUV444_Planar:
-			case nsVDXPixmap::kPixFormat_YUV422_Planar:
-			case nsVDXPixmap::kPixFormat_YUV420_Planar:
-			case nsVDXPixmap::kPixFormat_YUV411_Planar:
-			case nsVDXPixmap::kPixFormat_YUV410_Planar:
-				translate_plane((uint8 *)px.data, px.pitch, px.w, px.h, mfd->xtblmono2);
-				break;
+		case nsVDXPixmap::kPixFormat_Y8:
+		case nsVDXPixmap::kPixFormat_YUV444_Planar:
+		case nsVDXPixmap::kPixFormat_YUV422_Planar:
+		case nsVDXPixmap::kPixFormat_YUV420_Planar:
+		case nsVDXPixmap::kPixFormat_YUV411_Planar:
+		case nsVDXPixmap::kPixFormat_YUV410_Planar:
+			translate_plane((uint8 *)px.data, px.pitch, px.w, px.h, mfd->xtblmono2);
+			break;
 		}
-	} else
-		((VBitmap&)fa->dst).BitBltXlat1(0, 0, (VBitmap *)&fa->src, 0, 0, -1, -1, mfd->xtblmono);
-
-	return 0;
-}
-#else
-static int levels_run(const FilterActivation *fa, const FilterFunctions *ff) {
-	const LevelsFilterData *mfd = (LevelsFilterData *)fa->filter_data;
-
-	if (mfd->bLuma) {
-		uint8 *p = (uint8 *)fa->dst.data;
-		ptrdiff_t modulo = fa->dst.pitch - 4*fa->dst.w;
-
-		uint32 h = fa->dst.h;
-		do {
-			uint32 w = fa->dst.w;
-			do {
-				uint32 r = p[2];
-				uint32 g = p[1];
-				uint32 b = p[0];
-				const uint8 *yp = mfd->xtblluma2[(bright_table_R[r] + bright_table_G[g] + bright_table_B[r] + 0x8000) >> 16];
-
-				p[0] = yp[b];
-				p[1] = yp[g];
-				p[2] = yp[r];
-				p += 4;
-			} while(--w);
-
-			p += modulo;
-		} while(--h);
 	} else {
-		uint8 *p = (uint8 *)fa->dst.data;
-		ptrdiff_t modulo = fa->dst.pitch - 4*fa->dst.w;
-		const unsigned char (&table)[256] = mfd->xtblmono;
-
-		uint32 h = fa->dst.h;
-		do {
-			uint32 w = fa->dst.w;
-			do {
-				uint32 r = p[2];
-				uint32 g = p[1];
-				uint32 b = p[0];
-
-				p[0] = table[b];
-				p[1] = table[g];
-				p[2] = table[r];
-				p += 4;
-			} while(--w);
-
-			p += modulo;
-		} while(--h);
+		translate_rgba((uint8 *)px.data, px.pitch, px.w, px.h, mfd->xtblmono);
 	}
 
 	return 0;
 }
-#endif
 
 /////////////////////////////////////////////////////////////////////
 
