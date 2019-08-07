@@ -128,6 +128,44 @@ void fill_alpha_64(const VDPixmap& pxdst, const vdrect32& rDst, uint32 color) {
 	}
 }
 
+void fill_alpha_32F(const VDPixmap& pxdst, const vdrect32& rDst, uint32 color) {
+	unsigned long w,h;
+	float r = (color & 0xff)/255.0;
+	float g = ((color & 0xff00)>>8)/255.0;
+	float b = ((color & 0xff0000)>>16)/255.0;
+
+	float* dstr = (float*)pxdst.data + rDst.top*pxdst.pitch/4 + rDst.left;
+	float* dstg = (float*)pxdst.data2 + rDst.top*pxdst.pitch2/4 + rDst.left;
+	float* dstb = (float*)pxdst.data3 + rDst.top*pxdst.pitch3/4 + rDst.left;
+	float* dsta = (float*)pxdst.data4 + rDst.top*pxdst.pitch4/4 + rDst.left;
+	h = rDst.bottom-rDst.top;
+	while (h>0) {
+		float* db = dstb;
+		float* dg = dstg;
+		float* dr = dstr;
+		float* da = dsta;
+		w = rDst.right-rDst.left;
+		while (w>0) {
+			float a = *da;
+			float ra = 1-a;
+			*db = *db*ra + b*a;
+			*dg = *dg*ra + g*a;
+			*dr = *dr*ra + r*a;
+			db++;
+			dg++;
+			dr++;
+			da++;
+			w--;
+		}
+
+		dstb += pxdst.pitch/4;
+		dstg += pxdst.pitch/4;
+		dstr += pxdst.pitch/4;
+		dsta += pxdst.pitch/4;
+		h--;
+	}
+}
+
 void VDPixmapRectFill_Blend(const VDPixmap& px, const vdrect32& rDst, uint32 c) {
 	using namespace vd2;
 	switch (px.format) {
@@ -136,6 +174,9 @@ void VDPixmapRectFill_Blend(const VDPixmap& px, const vdrect32& rDst, uint32 c) 
 		return;
 	case kPixFormat_XRGB64:
 		fill_alpha_64(px,rDst,c);
+		return;
+	case kPixFormat_RGBA_Planar32F:
+		fill_alpha_32F(px,rDst,c);
 		return;
 	}
 }
@@ -219,6 +260,8 @@ uint32 VDVideoFilterFill::GetParams() {
 		case kPixFormat_RGBA_Planar:
 		case kPixFormat_RGB_Planar16:
 		case kPixFormat_RGBA_Planar16:
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
 		case kPixFormat_YUV444_Planar:
 		case kPixFormat_YUV422_Planar:
 		case kPixFormat_YUV411_Planar:
@@ -245,6 +288,7 @@ uint32 VDVideoFilterFill::GetParams() {
 		switch(format) {
 		case kPixFormat_XRGB8888:
 		case kPixFormat_XRGB64:
+		case kPixFormat_RGBA_Planar32F:
 			break;
 		case kPixFormat_RGBA_Planar:
 		case kPixFormat_RGBA_Planar16:

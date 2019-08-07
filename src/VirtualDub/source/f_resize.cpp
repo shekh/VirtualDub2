@@ -98,6 +98,9 @@ namespace {
 		}
 
 		if(px.info.alpha_type) switch(px.format) {
+		case kPixFormat_RGBA_Planar32F:
+			VDPixmapRectFillPlane32(px.data, px.pitch, ix, iy, iw, ih, 0);
+			break;
 		case kPixFormat_RGBA_Planar16:
 		case kPixFormat_YUV444_Alpha_Planar16:
 		case kPixFormat_YUV422_Alpha_Planar16:
@@ -153,6 +156,17 @@ namespace {
 			VDPixmapRectFillPlane16(px.data, px.pitch, ix, iy, iw, ih, (uint16)c2*257);
 			VDPixmapRectFillPlane16(px.data2, px.pitch2, ix, iy, iw, ih, (uint16)c0*257);
 			VDPixmapRectFillPlane16(px.data3, px.pitch3, ix, iy, iw, ih, (uint16)c1*257);
+			break;
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
+			{
+				float fc0 = c0/255.0;
+				float fc1 = c1/255.0;
+				float fc2 = c2/255.0;
+				VDPixmapRectFillPlane32(px.data, px.pitch, ix, iy, iw, ih, (uint32&)fc2);
+				VDPixmapRectFillPlane32(px.data2, px.pitch2, ix, iy, iw, ih, (uint32&)fc0);
+				VDPixmapRectFillPlane32(px.data3, px.pitch3, ix, iy, iw, ih, (uint32&)fc1);
+			}
 			break;
 		case kPixFormat_YUV444_Planar:
 		case kPixFormat_YUV444_Planar_FR:
@@ -292,6 +306,8 @@ namespace {
 		case kPixFormat_RGBA_Planar:
 		case kPixFormat_RGB_Planar16:
 		case kPixFormat_RGBA_Planar16:
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
 			VDPixmapRectFillRaw(px, rDst, c);
 			break;
 
@@ -509,6 +525,8 @@ uint32 VDVideoFilterResize::GetParams() {
 		case kPixFormat_RGBA_Planar:
 		case kPixFormat_RGB_Planar16:
 		case kPixFormat_RGBA_Planar16:
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
 		case kPixFormat_YUV444_Planar:
 		case kPixFormat_YUV422_Planar:
 		case kPixFormat_YUV411_Planar:
@@ -1380,6 +1398,8 @@ uint32 VDVideoFilterCanvas::GetParams() {
 		case kPixFormat_RGBA_Planar:
 		case kPixFormat_RGB_Planar16:
 		case kPixFormat_RGBA_Planar16:
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
 		case kPixFormat_YUV444_Planar:
 		case kPixFormat_YUV422_Planar:
 		case kPixFormat_YUV411_Planar:

@@ -43,6 +43,8 @@
 #define IDC_ALIGN_RIGHT                 1011
 #define IDC_INPUT_Y8                    1011
 #define IDC_INPUT_Y16                   1012
+#define IDC_INPUT_RGB                   1013
+#define IDC_INPUT_RGBA                  1014
 #define IDC_INPUT_XRGB8888              1018
 #define IDC_INPUT_YUV422_UYVY           1019
 #define IDC_INPUT_YUV422_YUY2           1020
@@ -184,6 +186,8 @@
 #define IDD_FILTER_MERGELAYERS          2007
 #define IDD_FILTER_NULL                 2008
 #define IDD_FILTER_CONVERTGRAY          2009
+#define IDD_FILTER_CONVERTGRAY1         2010
+#define IDD_FILTER_CONVERTFLOAT         2010
 
 // Next default values for new objects
 // 
@@ -191,7 +195,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        2007
 #define _APS_NEXT_COMMAND_VALUE         55001
-#define _APS_NEXT_CONTROL_VALUE         1013
+#define _APS_NEXT_CONTROL_VALUE         1015
 #define _APS_NEXT_SYMED_VALUE           2001
 #endif
 #endif

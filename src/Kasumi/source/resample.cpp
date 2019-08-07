@@ -103,6 +103,8 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 	case kPixFormat_RGBA_Planar:
 	case kPixFormat_RGB_Planar16:
 	case kPixFormat_RGBA_Planar16:
+	case kPixFormat_RGB_Planar32F:
+	case kPixFormat_RGBA_Planar32F:
 	case kPixFormat_Y8:
 	case kPixFormat_Y8_FR:
 	case kPixFormat_Y16:
@@ -217,6 +219,8 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 		case kPixFormat_RGBA_Planar:
 		case kPixFormat_RGB_Planar16:
 		case kPixFormat_RGBA_Planar16:
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
 		case kPixFormat_YUV444_Planar:
 		case kPixFormat_YUV444_Planar_FR:
 		case kPixFormat_YUV444_Planar_709:
@@ -309,6 +313,12 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 	case kPixFormat_RGB_Planar16:
 	case kPixFormat_RGBA_Planar16:
 		gen.ldsrc(0, 0, x0*2, y0, rw, rh, kVDPixType_16_LE, rw*2);
+		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
+		break;
+
+	case kPixFormat_RGB_Planar32F:
+	case kPixFormat_RGBA_Planar32F:
+		gen.ldsrc(0, 0, x0*4, y0, rw, rh, kVDPixType_32F_LE, rw*4);
 		ApplyFilters(gen, mDstRectPlane0.width(), mDstRectPlane0.height(), xoffset, yoffset, xfactor, yfactor);
 		break;
 
@@ -416,6 +426,12 @@ void VDPixmapResampler::Process(const VDPixmap& dst, const VDPixmap& src) {
 
 	int plane_format = kPixFormat_Y8;
 	switch(dst.format) {
+	case kPixFormat_RGB_Planar32F:
+	case kPixFormat_RGBA_Planar32F:
+		plane_format = kPixFormat_R_32F;
+	}
+
+	switch(dst.format) {
 	case kPixFormat_RGB_Planar16:
 	case kPixFormat_RGBA_Planar16:
 	case kPixFormat_YUV444_Planar16:
@@ -426,6 +442,8 @@ void VDPixmapResampler::Process(const VDPixmap& dst, const VDPixmap& src) {
 	case kPixFormat_YUV420_Alpha_Planar16:
 	plane_format = kPixFormat_Y16;
 
+	case kPixFormat_RGB_Planar32F:
+	case kPixFormat_RGBA_Planar32F:
 	case kPixFormat_RGB_Planar:
 	case kPixFormat_RGBA_Planar:
 	case kPixFormat_YUV444_Planar:
@@ -489,6 +507,7 @@ void VDPixmapResampler::Process(const VDPixmap& dst, const VDPixmap& src) {
 	}
 
 	if (src.info.alpha_type) switch(dst.format) {
+	case kPixFormat_RGBA_Planar32F:
 	case kPixFormat_RGBA_Planar16:
 	case kPixFormat_RGBA_Planar:
 	case kPixFormat_YUV444_Alpha_Planar16:

@@ -98,6 +98,7 @@ namespace nsVDPixmap {
 		kPixFormat_RGBA_Planar,
 		kPixFormat_RGBA_Planar16,
 		kPixFormat_RGBA_Planar32F,
+		kPixFormat_R_32F,
 
 		kPixFormat_Max_Standard
 	};

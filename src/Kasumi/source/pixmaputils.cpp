@@ -113,6 +113,7 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
     /* RGBA_Planar */               { "RGBA-P8",        false, 1, 1,  0,  0,  1, 3, 0, 0, 1,   0,  1 },
     /* RGBA_Planar16 */             { "RGBA-P16",       false, 1, 1,  0,  0,  2, 3, 0, 0, 2,   0,  2 },
     /* RGBA_Planar32F */            { "RGBA-Float",     false, 1, 1,  0,  0,  4, 3, 0, 0, 4,   0,  4 },
+    /* R_32F */                     { "R-Float",        false, 1, 1,  0,  0,  4, 0, 0, 0, 4,   0,  0 },
 };
 
 bool VDPixmapFormatHasAlpha(sint32 format) {

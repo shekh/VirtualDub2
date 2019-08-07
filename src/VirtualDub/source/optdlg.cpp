@@ -600,7 +600,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::Init(int format) {
 	using namespace nsVDPixmap;
 
 	mFormat = format;
-	VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_RGBA_Planar32F + 1);
+	VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_R_32F + 1);
 	InitText(0,space);
 	InitText(1,range);
 	InitText(3,enc);

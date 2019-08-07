@@ -29,6 +29,7 @@ extern const VDXFilterDefinition g_VDVFBrightCont;
 extern const VDXFilterDefinition g_VDVFChromaSmoother;
 extern const VDXFilterDefinition2 g_VDVFConvertFormat;
 extern const VDXFilterDefinition2 g_VDVFConvertGray;
+extern const VDXFilterDefinition2 g_VDVFConvertFloat;
 extern const VDXFilterDefinition g_VDVFDeinterlace;
 extern const VDXFilterDefinition2 g_VDVFDrawText;
 extern const VDXFilterDefinition g_VDVFFieldBob;
@@ -71,6 +72,7 @@ extern const VDXFilterDefinition *const g_VDVFList[]={
 	&g_VDVFChromaSmoother,
 	&g_VDVFConvertFormat,
 	&g_VDVFConvertGray,
+	&g_VDVFConvertFloat,
 	&g_VDVFDeinterlace,
 	&g_VDVFDrawText,
 	&g_VDVFFieldBob,

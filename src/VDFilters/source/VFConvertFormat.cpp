@@ -311,6 +311,100 @@ void VDVFilterConvertGrayConfigDialog::SyncInputColor() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class VDVFilterConvertFloatConfigDialog : public VDDialogFrameW32 {
+public:
+	VDVFilterConvertFloatConfigDialog(VDPixmapFormatEx format);
+
+	bool OnLoaded();
+	bool OnCommand(uint32 id, uint32 extcode);
+	void OnDataExchange(bool write);
+	void InitFocus();
+	void SyncControls();
+	void redo();
+
+	VDPixmapFormatEx mFormat;
+	IVDXFilterPreview2 *fp;
+	VDVFilterConvertFormat* filter;
+
+	struct FormatButtonMapping {
+		int mFormat;
+		uint32 mInputButton;
+	};
+
+	static const FormatButtonMapping kFormatButtonMappings[];
+};
+
+const VDVFilterConvertFloatConfigDialog::FormatButtonMapping VDVFilterConvertFloatConfigDialog::kFormatButtonMappings[] = {
+	{	vd2::kPixFormat_RGB_Planar32F,		IDC_INPUT_RGB},
+	{	vd2::kPixFormat_RGBA_Planar32F,		IDC_INPUT_RGBA},
+};
+
+VDVFilterConvertFloatConfigDialog::VDVFilterConvertFloatConfigDialog(VDPixmapFormatEx format)
+	: VDDialogFrameW32(IDD_FILTER_CONVERTFLOAT)
+	, mFormat(format)
+{
+	fp = 0;
+	filter = 0;
+}
+
+bool VDVFilterConvertFloatConfigDialog::OnLoaded() {
+	OnDataExchange(false);
+	InitFocus();
+	VDDialogFrameW32::OnLoaded();
+	if (fp) {
+		EnableWindow(GetDlgItem(mhdlg, IDC_PREVIEW), TRUE);
+		fp->InitButton((VDXHWND)GetDlgItem(mhdlg, IDC_PREVIEW));
+	}
+	return true;
+}
+
+void VDVFilterConvertFloatConfigDialog::OnDataExchange(bool write) {
+	if (write) {
+	} else {
+		SyncControls();
+	}
+}
+
+bool VDVFilterConvertFloatConfigDialog::OnCommand(uint32 id, uint32 extcode) {
+	if (extcode == BN_CLICKED) {
+		switch(id) {
+			case IDC_PREVIEW:
+				if (fp) fp->Toggle((VDXHWND)mhdlg);
+				return TRUE;
+		}
+
+		for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
+			const FormatButtonMapping& fbm = kFormatButtonMappings[i];
+			if (fbm.mInputButton == id) {
+				mFormat.format = fbm.mFormat;
+				redo();
+			}
+		}
+	}
+
+	return false;
+}
+
+void VDVFilterConvertFloatConfigDialog::InitFocus() {
+	for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
+		const FormatButtonMapping& fbm = kFormatButtonMappings[i];
+
+		if (fbm.mFormat == mFormat)
+			SetFocusToControl(fbm.mInputButton);
+	}
+}
+
+void VDVFilterConvertFloatConfigDialog::SyncControls() {
+	for(int i=0; i<(int)sizeof(kFormatButtonMappings)/sizeof(kFormatButtonMappings[0]); ++i) {
+		const FormatButtonMapping& fbm = kFormatButtonMappings[i];
+
+		if (fbm.mFormat == mFormat)
+			CheckButton(fbm.mInputButton, true);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 class VDVFilterConvertFormat : public VDXVideoFilter {
 public:
 	VDVFilterConvertFormat();
@@ -345,6 +439,20 @@ public:
 	VDXVF_DECLARE_SCRIPT_METHODS();
 };
 
+class VDVFilterConvertFloat : public VDVFilterConvertFormat {
+public:
+	VDVFilterConvertFloat();
+
+	bool Configure(VDXHWND hwnd);
+
+	void GetSettingString(char *buf, int maxlen);
+	void GetScriptString(char *buf, int maxlen);
+
+	void ScriptConfig(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc);
+
+	VDXVF_DECLARE_SCRIPT_METHODS();
+};
+
 VDVFilterConvertFormat::VDVFilterConvertFormat()
 {
 	mFormat = vd2::kPixFormat_XRGB8888;
@@ -353,6 +461,11 @@ VDVFilterConvertFormat::VDVFilterConvertFormat()
 VDVFilterConvertGray::VDVFilterConvertGray()
 {
 	mFormat = vd2::kPixFormat_Y8;
+}
+
+VDVFilterConvertFloat::VDVFilterConvertFloat()
+{
+	mFormat = vd2::kPixFormat_RGBA_Planar32F;
 }
 
 uint32 VDVFilterConvertFormat::GetParams() {
@@ -400,6 +513,11 @@ void VDVFilterConvertGrayConfigDialog::redo() {
 	if (fp) fp->RedoSystem();
 }
 
+void VDVFilterConvertFloatConfigDialog::redo() {
+	filter->mFormat = mFormat;
+	if (fp) fp->RedoSystem();
+}
+
 bool VDVFilterConvertFormat::Configure(VDXHWND hwnd) {
 	VDVFilterConvertFormatConfigDialog dlg(mFormat);
 	dlg.fp = fa->ifp2;
@@ -417,6 +535,21 @@ bool VDVFilterConvertFormat::Configure(VDXHWND hwnd) {
 
 bool VDVFilterConvertGray::Configure(VDXHWND hwnd) {
 	VDVFilterConvertGrayConfigDialog dlg(mFormat);
+	dlg.fp = fa->ifp2;
+	dlg.filter = this;
+	VDPixmapFormatEx oldFormat = mFormat;
+
+	if (!dlg.ShowDialog((VDGUIHandle)hwnd)) {
+		mFormat = oldFormat;
+		return false;
+	}
+
+	mFormat = dlg.mFormat;
+	return true;
+}
+
+bool VDVFilterConvertFloat::Configure(VDXHWND hwnd) {
+	VDVFilterConvertFloatConfigDialog dlg(mFormat);
 	dlg.fp = fa->ifp2;
 	dlg.filter = this;
 	VDPixmapFormatEx oldFormat = mFormat;
@@ -451,6 +584,12 @@ void VDVFilterConvertGray::GetSettingString(char *buf, int maxlen) {
 	SafePrintf(buf, maxlen, " (%s)", s.c_str());
 }
 
+void VDVFilterConvertFloat::GetSettingString(char *buf, int maxlen) {
+	VDStringA s;
+	s += VDPixmapGetInfo(mFormat).name;
+	SafePrintf(buf, maxlen, " (%s)", s.c_str());
+}
+
 void VDVFilterConvertFormat::GetScriptString(char *buf, int maxlen) {
 	int combo = VDPixmapFormatCombine(mFormat);
 	if (mFormat.fullEqual(VDPixmapFormatNormalize(combo)) || VDPixmapFormatMatrixType(mFormat)==0) {
@@ -462,6 +601,10 @@ void VDVFilterConvertFormat::GetScriptString(char *buf, int maxlen) {
 
 void VDVFilterConvertGray::GetScriptString(char *buf, int maxlen) {
 	_snprintf(buf, maxlen, "Config(%d,%d)", mFormat.format, mFormat.colorRangeMode);
+}
+
+void VDVFilterConvertFloat::GetScriptString(char *buf, int maxlen) {
+	_snprintf(buf, maxlen, "Config(%d)", mFormat.format);
 }
 
 void VDVFilterConvertFormat::ScriptConfig(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc) {
@@ -487,6 +630,17 @@ void VDVFilterConvertGray::ScriptConfig(IVDXScriptInterpreter *, const VDXScript
 	mFormat.colorRangeMode = (vd2::ColorRangeMode)argv[1].asInt();
 }
 
+void VDVFilterConvertFloat::ScriptConfig(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc) {
+	mFormat.format = VDPixmapFormatNormalize(argv[0].asInt());
+	switch (mFormat.format) {
+	case vd2::kPixFormat_RGB_Planar32F:
+	case vd2::kPixFormat_RGBA_Planar32F:
+		break;
+	default:
+		mFormat.format = vd2::kPixFormat_RGBA_Planar32F;
+	}
+}
+
 VDXVF_BEGIN_SCRIPT_METHODS(VDVFilterConvertFormat)
 VDXVF_DEFINE_SCRIPT_METHOD(VDVFilterConvertFormat, ScriptConfig, "i")
 VDXVF_DEFINE_SCRIPT_METHOD(VDVFilterConvertFormat, ScriptConfig3, "iii")
@@ -496,5 +650,10 @@ VDXVF_BEGIN_SCRIPT_METHODS(VDVFilterConvertGray)
 VDXVF_DEFINE_SCRIPT_METHOD(VDVFilterConvertGray, ScriptConfig, "ii")
 VDXVF_END_SCRIPT_METHODS()
 
+VDXVF_BEGIN_SCRIPT_METHODS(VDVFilterConvertFloat)
+VDXVF_DEFINE_SCRIPT_METHOD(VDVFilterConvertFloat, ScriptConfig, "i")
+VDXVF_END_SCRIPT_METHODS()
+
 extern const VDXFilterDefinition2 g_VDVFConvertFormat = VDXVideoFilterDefinition<VDVFilterConvertFormat>(NULL, "convert format", "Converts video to a different color space or color encoding.");
 extern const VDXFilterDefinition2 g_VDVFConvertGray = VDXVideoFilterDefinition<VDVFilterConvertGray>(NULL, "convert to gray", "Converts video to single channel (grayscale).");
+extern const VDXFilterDefinition2 g_VDVFConvertFloat = VDXVideoFilterDefinition<VDVFilterConvertFloat>(NULL, "convert to floating point", "Converts video to planar rgb with 32-bit floating point precision.");

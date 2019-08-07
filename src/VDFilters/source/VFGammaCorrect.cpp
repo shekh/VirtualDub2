@@ -91,6 +91,8 @@ uint32 VDVideoFilterGammaCorrect::GetParams() {
 	switch (pxlsrc.format) {
 	case nsVDXPixmap::kPixFormat_XRGB8888:
 	case nsVDXPixmap::kPixFormat_XRGB64:
+	case nsVDXPixmap::kPixFormat_RGB_Planar32F:
+	case nsVDXPixmap::kPixFormat_RGBA_Planar32F:
 		break;
 	default:
 		return FILTERPARAM_NOT_SUPPORTED;
@@ -170,12 +172,59 @@ void VDVideoFilterGammaCorrect::End() {
 	}
 }
 
+void convert_plane_to_linear_32F(float* dst, int pitch, uint32 w, uint32 h)
+{
+	const float a = 0.055f;
+	for(uint32 y=0; y<h; ++y) {
+		float *p = dst;
+
+		for(uint32 x=0; x<w; ++x) {
+			float vx = *p;
+			float vy;
+
+			if (vx <= 0.04045f)
+				vy = vx / 12.92f;
+			else
+				vy = powf((vx + a)/(1.0f + a), 2.4f);
+
+			*p = vy;
+			p++;
+		}
+
+		dst += pitch/4;
+	}
+}
+
+void convert_plane_to_gamma_32F(float* dst, int pitch, uint32 w, uint32 h)
+{
+	const float a = 0.055f;
+	for(uint32 y=0; y<h; ++y) {
+		float *p = dst;
+
+		for(uint32 x=0; x<w; ++x) {
+			float vx = *p;
+			float vy;
+
+			if (vx <= 0.0031808f)
+				vy = vx * 12.92f;
+			else
+				vy = (1.0f + a) * powf(vx, 1.0f / 2.4f) - a;
+
+			*p = vy;
+			p++;
+		}
+
+		dst += pitch/4;
+	}
+}
+
 void VDVideoFilterGammaCorrect::Run() {
+	using namespace vd2;
 	const VDXPixmap& pxdst = *fa->dst.mpPixmap;
 	const uint32 w = pxdst.w;
 	const uint32 h = pxdst.h;
 
-	if (pxdst.format==nsVDXPixmap::kPixFormat_XRGB8888) {
+	if (pxdst.format==kPixFormat_XRGB8888) {
 		const uint8 *VDRESTRICT tab = mLookup;
 
 		uint8 *dst = (uint8 *)pxdst.data;
@@ -194,7 +243,7 @@ void VDVideoFilterGammaCorrect::Run() {
 		}
 	}
 
-	if (pxdst.format==nsVDXPixmap::kPixFormat_XRGB64) {
+	if (pxdst.format==kPixFormat_XRGB64) {
 		const uint16 *VDRESTRICT tab = mLookup16;
 
 		uint8 *dst = (uint8 *)pxdst.data;
@@ -210,6 +259,18 @@ void VDVideoFilterGammaCorrect::Run() {
 			}
 
 			dst += pxdst.pitch;
+		}
+	}
+
+	if (pxdst.format==kPixFormat_RGB_Planar32F || pxdst.format==kPixFormat_RGBA_Planar32F) {
+		if (mConfig.mbConvertToLinear) {
+			convert_plane_to_linear_32F((float*)pxdst.data, pxdst.pitch, pxdst.w, pxdst.h);
+			convert_plane_to_linear_32F((float*)pxdst.data2, pxdst.pitch2, pxdst.w, pxdst.h);
+			convert_plane_to_linear_32F((float*)pxdst.data3, pxdst.pitch3, pxdst.w, pxdst.h);
+		} else {
+			convert_plane_to_gamma_32F((float*)pxdst.data, pxdst.pitch, pxdst.w, pxdst.h);
+			convert_plane_to_gamma_32F((float*)pxdst.data2, pxdst.pitch2, pxdst.w, pxdst.h);
+			convert_plane_to_gamma_32F((float*)pxdst.data3, pxdst.pitch3, pxdst.w, pxdst.h);
 		}
 	}
 }
