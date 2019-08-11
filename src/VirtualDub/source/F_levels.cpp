@@ -275,7 +275,7 @@ static void translate_rgba_luma(uint8 * VDRESTRICT dst, ptrdiff_t pitch, uint32 
 			uint32 r = p[2];
 			uint32 g = p[1];
 			uint32 b = p[0];
-			const uint8 *yp = mfd->xtblluma2[(bright_table_R[r] + bright_table_G[g] + bright_table_B[r] + 0x8000) >> 16];
+			const uint8 *yp = mfd->xtblluma2[(bright_table_R[r] + bright_table_G[g] + bright_table_B[b] + 0x8000) >> 16];
 
 			p[0] = yp[b];
 			p[1] = yp[g];
@@ -312,27 +312,131 @@ static void translate_plane(uint8 * VDRESTRICT dst, ptrdiff_t pitch, uint32 w, u
 	}
 }
 
+static void translate_rgba_luma_32F(const VDXPixmap& px, const LevelsFilterData *mfd) {
+	const long	y_base	= mfd->iOutputLo;
+	const long	y_range	= mfd->iOutputHi - mfd->iOutputLo;
+	const double	x_lo	= mfd->iInputLo / (double)0xffff;
+	const double	x_hi	= mfd->iInputHi / (double)0xffff;
+	double gammapower = 1.0 / mfd->rGammaCorr;
+	float vrange = y_range / (double)0xffff;
+	float vmin = y_base / (double)0xffff;
+	float vmax = (y_base + y_range) / (double)0xffff;
+	float vavg = (y_base + y_range * 0.5) / (double)0xffff;
+
+	uint32 w = px.w;
+	uint32 h = px.h;
+
+	float* dr = (float*)px.data;
+	float* dg = (float*)px.data2;
+	float* db = (float*)px.data3;
+
+	for(uint32 y=0; y<h; ++y) {
+		if (x_lo == x_hi) for(uint32 x=0; x<w; ++x) {
+			dr[x] = vavg;
+			dg[x] = vavg;
+			db[x] = vavg;
+		} else for(uint32 x=0; x<w; ++x) {
+			float vx = dr[x]*0.299 + dg[x]*0.587 + db[x]*0.114;
+			float vy;
+
+			if (vx < x_lo)
+				vy = vmin;
+			else if (vx > x_hi)
+				vy = vmax;
+			else {
+				vy = pow((vx - x_lo) / (x_hi - x_lo), gammapower);
+				vy = vmin + vrange * vy;
+			}
+
+			float r = vy-vx+dr[x];
+			float g = vy-vx+dg[x];
+			float b = vy-vx+db[x];
+			if(r<0) r=0; if(r>1) r=1;
+			if(g<0) g=0; if(g>1) g=1;
+			if(b<0) b=0; if(b>1) b=1;
+
+			dr[x] = r;
+			dg[x] = g;
+			db[x] = b;
+		}
+
+		dr += px.pitch/4;
+		dg += px.pitch2/4;
+		db += px.pitch3/4;
+	}
+}
+
+static void translate_plane_32F(float * VDRESTRICT dst, ptrdiff_t pitch, uint32 w, uint32 h, const LevelsFilterData *mfd) {
+	const long	y_base	= mfd->iOutputLo;
+	const long	y_range	= mfd->iOutputHi - mfd->iOutputLo;
+	const double	x_lo	= mfd->iInputLo / (double)0xffff;
+	const double	x_hi	= mfd->iInputHi / (double)0xffff;
+	double gammapower = 1.0 / mfd->rGammaCorr;
+	float vrange = y_range / (double)0xffff;
+	float vmin = y_base / (double)0xffff;
+	float vmax = (y_base + y_range) / (double)0xffff;
+	float vavg = (y_base + y_range * 0.5) / (double)0xffff;
+
+	for(uint32 y=0; y<h; ++y) {
+		if (x_lo == x_hi) for(uint32 x=0; x<w; ++x) {
+			dst[x] = vavg;
+		} else for(uint32 x=0; x<w; ++x) {
+			float vx = dst[x];
+			float vy;
+
+			if (vx < x_lo)
+				vy = vmin;
+			else if (vx > x_hi)
+				vy = vmax;
+			else {
+				vy = pow((vx - x_lo) / (x_hi - x_lo), gammapower);
+				vy = vmin + vrange * vy;
+			}
+
+			dst[x] = vy;
+		}
+
+		dst += pitch/4;
+	}
+}
+
 static int levels_run(const FilterActivation *fa, const FilterFunctions *ff) {
+	using namespace vd2;
 	const LevelsFilterData *mfd = (LevelsFilterData *)fa->filter_data;
 	const VDXPixmap& px = *fa->src.mpPixmap;
 
 	if (mfd->bLuma) {
 		switch(px.format) {
-		case nsVDXPixmap::kPixFormat_XRGB8888:
+		case kPixFormat_XRGB8888:
 			translate_rgba_luma((uint8 *)px.data, px.pitch, px.w, px.h, mfd);
 			break;
 
-		case nsVDXPixmap::kPixFormat_Y8:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar:
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
+			translate_rgba_luma_32F(px, mfd);
+			break;
+
+		case kPixFormat_Y8:
+		case kPixFormat_YUV444_Planar:
+		case kPixFormat_YUV422_Planar:
+		case kPixFormat_YUV420_Planar:
+		case kPixFormat_YUV411_Planar:
+		case kPixFormat_YUV410_Planar:
 			translate_plane((uint8 *)px.data, px.pitch, px.w, px.h, mfd->xtblmono2);
 			break;
 		}
 	} else {
-		translate_rgba((uint8 *)px.data, px.pitch, px.w, px.h, mfd->xtblmono);
+		switch(px.format) {
+		case kPixFormat_XRGB8888:
+			translate_rgba((uint8 *)px.data, px.pitch, px.w, px.h, mfd->xtblmono);
+			break;
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
+			translate_plane_32F((float *)px.data, px.pitch, px.w, px.h, mfd);
+			translate_plane_32F((float *)px.data2, px.pitch2, px.w, px.h, mfd);
+			translate_plane_32F((float *)px.data3, px.pitch3, px.w, px.h, mfd);
+			break;
+		}
 	}
 
 	return 0;
@@ -341,6 +445,7 @@ static int levels_run(const FilterActivation *fa, const FilterFunctions *ff) {
 /////////////////////////////////////////////////////////////////////
 
 static long levels_param(FilterActivation *fa, const FilterFunctions *ff) {
+	using namespace vd2;
 	LevelsFilterData *mfd = (LevelsFilterData *)fa->filter_data;
 	const VDXPixmapLayout& pxlsrc = *fa->src.mpPixmapLayout;
 	VDXPixmapLayout& pxldst = *fa->dst.mpPixmapLayout;
@@ -349,26 +454,35 @@ static long levels_param(FilterActivation *fa, const FilterFunctions *ff) {
 
 	if (mfd->bLuma) {
 		switch(pxlsrc.format) {
-			case nsVDXPixmap::kPixFormat_XRGB8888:
-			case nsVDXPixmap::kPixFormat_Y8:
-			case nsVDXPixmap::kPixFormat_YUV444_Planar:
-			case nsVDXPixmap::kPixFormat_YUV422_Planar:
-			case nsVDXPixmap::kPixFormat_YUV420_Planar:
-			case nsVDXPixmap::kPixFormat_YUV411_Planar:
-			case nsVDXPixmap::kPixFormat_YUV410_Planar:
-				break;
+		case kPixFormat_XRGB8888:
+		case kPixFormat_Y8:
+		case kPixFormat_YUV444_Planar:
+		case kPixFormat_YUV422_Planar:
+		case kPixFormat_YUV420_Planar:
+		case kPixFormat_YUV411_Planar:
+		case kPixFormat_YUV410_Planar:
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
+			break;
 
-			default:
-				return FILTERPARAM_NOT_SUPPORTED;
+		default:
+			return FILTERPARAM_NOT_SUPPORTED;
+		}
+
+		return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
+	} else {
+		switch(pxlsrc.format) {
+		case kPixFormat_XRGB8888:
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
+			break;
+
+		default:
+			return FILTERPARAM_NOT_SUPPORTED;
 		}
 
 		return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
 	}
-
-	if (pxlsrc.format != nsVDXPixmap::kPixFormat_XRGB8888)
-		return FILTERPARAM_NOT_SUPPORTED;
-
-	return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
 }
 
 static void levelsButtonCallback(bool fNewState, void *pvData) {
@@ -380,10 +494,10 @@ static void levelsButtonCallback(bool fNewState, void *pvData) {
 
 static void levelsRedoTables(LevelsFilterData *mfd) {
 	int i;
-	const long		y_base		= mfd->iOutputLo,
-					y_range		= mfd->iOutputHi - mfd->iOutputLo;
-	const double	x_lo		= mfd->iInputLo / (double)0xffff,
-					x_hi		= mfd->iInputHi / (double)0xffff;
+	const long	y_base	= mfd->iOutputLo;
+	const long	y_range	= mfd->iOutputHi - mfd->iOutputLo;
+	const double	x_lo	= mfd->iInputLo / (double)0xffff;
+	const double	x_hi	= mfd->iInputHi / (double)0xffff;
 
 	for(i=0; i<256; i++) {
 		bright_table_R[i] = 19595*i;
@@ -459,6 +573,29 @@ static void levelsRedoTables(LevelsFilterData *mfd) {
 }
 
 namespace {
+	void HistogramTallyRGB_float(const VDXPixmap& px, uint32 *histo) {
+		uint32 w = px.w;
+		uint32 h = px.h;
+
+		float* dr = (float*)px.data;
+		float* dg = (float*)px.data2;
+		float* db = (float*)px.data3;
+
+		for(uint32 y=0; y<h; ++y) {
+			for(uint32 x=0; x<w; ++x) {
+				float vx = dr[x]*0.299 + dg[x]*0.587 + db[x]*0.114;
+				int luma = vx*255;
+				if(luma<0) luma = 0;
+				if(luma>255) luma = 255;
+				++histo[luma];
+			}
+
+			dr += px.pitch/4;
+			dg += px.pitch2/4;
+			db += px.pitch3/4;
+		}
+	}
+
 	void HistogramTallyXRGB8888(const void *src0, ptrdiff_t srcpitch, uint32 w, uint32 h, uint32 *histo) {
 		const uint32 *src = (const uint32 *)src0;
 
@@ -497,21 +634,27 @@ namespace {
 }
 
 static void levelsSampleCallback(VDXFBitmap *src, long pos, long cnt, void *pv) {
+	using namespace vd2;
 	LevelsFilterData *mfd = (LevelsFilterData *)pv;
 
 	const VDXPixmap& pxsrc = *src->mpPixmap;
 
 	switch(pxsrc.format) {
-		case nsVDXPixmap::kPixFormat_XRGB8888:
+		case kPixFormat_XRGB8888:
 			HistogramTallyXRGB8888(pxsrc.data, pxsrc.pitch, pxsrc.w, pxsrc.h, mfd->mpHisto);
 			break;
 
-		case nsVDXPixmap::kPixFormat_Y8:
-		case nsVDXPixmap::kPixFormat_YUV444_Planar:
-		case nsVDXPixmap::kPixFormat_YUV422_Planar:
-		case nsVDXPixmap::kPixFormat_YUV420_Planar:
-		case nsVDXPixmap::kPixFormat_YUV411_Planar:
-		case nsVDXPixmap::kPixFormat_YUV410_Planar:
+		case kPixFormat_RGB_Planar32F:
+		case kPixFormat_RGBA_Planar32F:
+			HistogramTallyRGB_float(pxsrc, mfd->mpHisto);
+			break;
+
+		case kPixFormat_Y8:
+		case kPixFormat_YUV444_Planar:
+		case kPixFormat_YUV422_Planar:
+		case kPixFormat_YUV420_Planar:
+		case kPixFormat_YUV411_Planar:
+		case kPixFormat_YUV410_Planar:
 			HistogramTallyY8(pxsrc.data, pxsrc.pitch, pxsrc.w, pxsrc.h, mfd->mpHisto);
 			break;
 	}
