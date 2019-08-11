@@ -171,8 +171,8 @@ public:
 	void merge_fields(uint32 w, uint32 h, uint32 bpr);
 	void split_fields(uint32 bpr);
 
-	void ycbcr601_to_rgb32();
-	void ycbcr709_to_rgb32();
+	//void ycbcr601_to_rgb32();
+	//void ycbcr709_to_rgb32();
 	void rgb32_to_ycbcr601();
 	void rgb32_to_ycbcr709();
 

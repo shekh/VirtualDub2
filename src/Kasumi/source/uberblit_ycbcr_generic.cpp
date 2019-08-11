@@ -47,7 +47,6 @@ VDPixmapGenYCbCrToRGB32Generic::VDPixmapGenYCbCrToRGB32Generic(const VDPixmapGen
 	float bias;
 
 	if (studioRGB) {
-		// warning: this path is not used / not tested
 		scale = 4096.0f * (255.0f / 219.0f);
 		scale2 = 4096.0f * (255.0f / 224.0f);
 		bias = -16.0f / 255.0f;
@@ -62,9 +61,9 @@ VDPixmapGenYCbCrToRGB32Generic::VDPixmapGenYCbCrToRGB32Generic(const VDPixmapGen
 	mCoGCr = VDRoundToInt32(basis.mToRGB[1][1] * scale2);
 	mCoGCb = VDRoundToInt32(basis.mToRGB[0][1] * scale2);
 	mCoBCb = VDRoundToInt32(basis.mToRGB[0][2] * scale2);
-	mBiasR = VDRoundToInt32(bias*scale/256) - 128*mCoRCr/256 + 8;
-	mBiasG = VDRoundToInt32(bias*scale/256) - 128*(mCoGCr + mCoGCb)/256 + 8;
-	mBiasB = VDRoundToInt32(bias*scale/256) - 128*mCoBCb/256 + 8;
+	mBiasR = VDRoundToInt32(bias*scale) - 128*mCoRCr/256 + 8;
+	mBiasG = VDRoundToInt32(bias*scale) - 128*(mCoGCr + mCoGCb)/256 + 8;
+	mBiasB = VDRoundToInt32(bias*scale) - 128*mCoBCb/256 + 8;
 }
 
 uint32 VDPixmapGenYCbCrToRGB32Generic::GetType(uint32 output) const {

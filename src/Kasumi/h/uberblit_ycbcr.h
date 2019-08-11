@@ -144,6 +144,7 @@ public:
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
 class VDPixmapGenYCbCr601ToRGB32 : public VDPixmapGenYCbCrToRGB32Base {
 public:
 	uint32 GetType(uint32 output) const {
@@ -175,6 +176,7 @@ protected:
 		}
 	}
 };
+*/
 
 class VDPixmapGenYCbCr601ToRGB32F : public VDPixmapGenYCbCrToRGB32FBase {
 public:
@@ -293,6 +295,7 @@ protected:
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
 class VDPixmapGenYCbCr709ToRGB32 : public VDPixmapGenYCbCrToRGBBase {
 public:
 	void Start() {
@@ -332,6 +335,7 @@ protected:
 		}
 	}
 };
+*/
 
 class VDPixmapGenYCbCr709ToRGB32F : public VDPixmapGenYCbCrToRGBBase {
 public:

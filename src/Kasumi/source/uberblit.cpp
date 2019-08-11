@@ -1559,7 +1559,8 @@ uint32 ConvertSpace_BGR(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint
 	case kVDPixSpace_YCC_709:
 		switch(srcToken & kVDPixType_Mask) {
 		case kVDPixType_8_8_8:
-			gen.ycbcr709_to_rgb32();
+			gen.ycbcr_to_rgb32_generic(g_VDPixmapGenYCbCrBasis_709, true);
+			//gen.ycbcr709_to_rgb32();
 			srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_BGR | kVDPixType_8888;
 			break;
 
@@ -1584,7 +1585,8 @@ uint32 ConvertSpace_BGR(VDPixmapUberBlitterGenerator& gen, uint32 srcToken, uint
 	case kVDPixSpace_YCC_601:
 		switch(srcToken & kVDPixType_Mask) {
 		case kVDPixType_8_8_8:
-			gen.ycbcr601_to_rgb32();
+			gen.ycbcr_to_rgb32_generic(g_VDPixmapGenYCbCrBasis_601, true);
+			//gen.ycbcr601_to_rgb32();
 			srcToken = (srcToken & ~(kVDPixType_Mask | kVDPixSpace_Mask)) | kVDPixSpace_BGR | kVDPixType_8888;
 			break;
 

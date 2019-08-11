@@ -2096,6 +2096,7 @@ void VDPixmapUberBlitterGenerator::split_fields(uint32 bpr) {
 	mStack.push_back(StackEntry(src, 1));
 }
 
+/*
 void VDPixmapUberBlitterGenerator::ycbcr601_to_rgb32() {
 	StackEntry *args = &mStack.back() - 2;
 
@@ -2131,6 +2132,7 @@ void VDPixmapUberBlitterGenerator::ycbcr709_to_rgb32() {
 	mStack.pop_back();
 	mStack.pop_back();
 }
+*/
 
 void VDPixmapUberBlitterGenerator::rgb32_to_ycbcr601() {
 	StackEntry *args = &mStack.back();
