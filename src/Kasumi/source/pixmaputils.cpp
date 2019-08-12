@@ -114,6 +114,7 @@ extern VDPixmapFormatInfo g_vdPixmapFormats[] = {
     /* RGBA_Planar16 */             { "RGBA-P16",       false, 1, 1,  0,  0,  2, 3, 0, 0, 2,   0,  2 },
     /* RGBA_Planar32F */            { "RGBA-Float",     false, 1, 1,  0,  0,  4, 3, 0, 0, 4,   0,  4 },
     /* R_32F */                     { "R-Float",        false, 1, 1,  0,  0,  4, 0, 0, 0, 4,   0,  0 },
+    /* B48R */                      { "b48r",           false, 1, 1,  0,  0,  6, 0, 0, 0, 0,   0,  0 },
 };
 
 bool VDPixmapFormatHasAlpha(sint32 format) {
@@ -276,6 +277,7 @@ int VDPixmapFormatGroup(int src) {
 	case kPixFormat_R210:
 	case kPixFormat_R10K:
 	case kPixFormat_B64A:
+	case kPixFormat_B48R:
 	case kPixFormat_RGB_Planar16:
 	case kPixFormat_RGBA_Planar16:
 		return kPixFormat_XRGB64;
@@ -993,6 +995,7 @@ void MatchFilterFormat::initBase() {
 
 	case kPixFormat_R210:
 	case kPixFormat_R10K:
+	case kPixFormat_B48R:
 	case kPixFormat_RGB_Planar16:
 		base1 = kPixFormat_XRGB64;
 		{

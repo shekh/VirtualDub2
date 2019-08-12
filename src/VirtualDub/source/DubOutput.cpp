@@ -698,6 +698,7 @@ int VDAVIOutputImagesSystem::GetVideoOutputFormatOverride(int last_format) {
 			return last_format;
 		case kPixFormat_R210:
 		case kPixFormat_R10K:
+		case kPixFormat_B48R:
 		case kPixFormat_B64A:
 		case kPixFormat_YUV444_V410:
 		case kPixFormat_YUV444_Y410:

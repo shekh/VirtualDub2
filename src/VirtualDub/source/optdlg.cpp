@@ -507,6 +507,7 @@ void VDDialogSelectVideoFormatW32::RebuildList() {
 		nsVDPixmap::kPixFormat_XRGB8888,
 		nsVDPixmap::kPixFormat_XRGB64,
 		nsVDPixmap::kPixFormat_B64A,
+		nsVDPixmap::kPixFormat_B48R,
 		nsVDPixmap::kPixFormat_R210,
 		nsVDPixmap::kPixFormat_R10K,
 		nsVDPixmap::kPixFormat_Y8,
@@ -600,7 +601,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::Init(int format) {
 	using namespace nsVDPixmap;
 
 	mFormat = format;
-	VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_R_32F + 1);
+	VDASSERTCT(kPixFormat_Max_Standard == kPixFormat_B48R + 1);
 	InitText(0,space);
 	InitText(1,range);
 	InitText(3,enc);
@@ -612,6 +613,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::Init(int format) {
 		break;
 	case kPixFormat_XRGB64:
 	case kPixFormat_B64A:
+	case kPixFormat_B48R:
 	case kPixFormat_YUV444_Planar16:
 	case kPixFormat_YUV444_Alpha_Planar16:
 	case kPixFormat_YUV422_Planar16:
@@ -655,6 +657,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::InitText(int subItem, VDStringW& 
 		case kPixFormat_RGB888:
 		case kPixFormat_R210:
 		case kPixFormat_R10K:
+		case kPixFormat_B48R:
 		case kPixFormat_RGB_Planar:
 		case kPixFormat_RGB_Planar16:
 		case kPixFormat_RGB_Planar32F:
@@ -723,6 +726,7 @@ void VDDialogSelectVideoFormatW32::FormatItem::InitText(int subItem, VDStringW& 
 		case kPixFormat_B64A:
 		case kPixFormat_R210:
 		case kPixFormat_R10K:
+		case kPixFormat_B48R:
 		case kPixFormat_Y8_FR:
 			s = L"Full";
 			break;
@@ -762,6 +766,9 @@ void VDDialogSelectVideoFormatW32::FormatItem::InitText(int subItem, VDStringW& 
 			break;
 		case kPixFormat_R10K:
 			s = L"packed (R10k)";
+			break;
+		case kPixFormat_B48R:
+			s = L"packed (b48r)";
 			break;
 		case kPixFormat_RGB_Planar:
 		case kPixFormat_RGB_Planar16:

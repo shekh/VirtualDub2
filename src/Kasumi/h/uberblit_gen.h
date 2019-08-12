@@ -165,8 +165,10 @@ public:
 	void conv_X32F_to_X16();
 	void conv_X16_to_R210();
 	void conv_X16_to_R10K();
+	void conv_X16_to_B48R();
 	void conv_R210_to_X16();
 	void conv_R10K_to_X16();
+	void conv_B48R_to_X16();
 
 	void merge_fields(uint32 w, uint32 h, uint32 bpr);
 	void split_fields(uint32 bpr);

@@ -742,6 +742,7 @@ bool VDVideoDecompressorDIB::SetTargetFormat(int format) {
 	case nsVDPixmap::kPixFormat_YUV444_Y410:
 	case nsVDPixmap::kPixFormat_R210:
 	case nsVDPixmap::kPixFormat_R10K:
+	case nsVDPixmap::kPixFormat_B48R:
 	case nsVDPixmap::kPixFormat_YUV444_V308:
 	case nsVDPixmap::kPixFormat_YUV422_P210:
 	case nsVDPixmap::kPixFormat_YUV420_P010:

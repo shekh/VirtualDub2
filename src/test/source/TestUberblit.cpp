@@ -14,6 +14,7 @@ namespace {
 		switch (px.format) {
 		case nsVDPixmap::kPixFormat_YUV422_YU64:
 		case nsVDPixmap::kPixFormat_B64A:
+		case nsVDPixmap::kPixFormat_B48R:
 			return false;
 		}
 		return true;

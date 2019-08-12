@@ -2357,16 +2357,19 @@ void MakeOutputFormat::combineComp_repack() {
 		test_list.push_back(kPixFormat_B64A);
 		test_list.push_back(kPixFormat_RGBA_Planar16);
 		test_list.push_back(kPixFormat_RGB_Planar16);
+		test_list.push_back(kPixFormat_B48R);
 		test_list.push_back(kPixFormat_R10K);
 		test_list.push_back(kPixFormat_R210);
 	}
 	if (f==kPixFormat_RGB_Planar16) {
+		test_list.push_back(kPixFormat_B48R);
 		test_list.push_back(kPixFormat_XRGB64);
 		test_list.push_back(kPixFormat_B64A);
 	}
 	if (f==kPixFormat_RGBA_Planar16) {
 		test_list.push_back(kPixFormat_XRGB64);
 		test_list.push_back(kPixFormat_B64A);
+		test_list.push_back(kPixFormat_B48R);
 	}
 	if (f==kPixFormat_YUV420_Planar) {
 		test_list.push_back(kPixFormat_YUV420_NV12);
@@ -2479,6 +2482,7 @@ bool MakeOutputFormat::accept_format(int format, int variant)
 	if (os_format=="nut") switch(format) {
 	// disable fancy formats
 	case kPixFormat_B64A:
+	case kPixFormat_B48R:
 	case kPixFormat_YUVA444_Y416:
 	case kPixFormat_YUV444_Y410:
 	case kPixFormat_YUV420_P010:
@@ -2516,6 +2520,7 @@ bool MakeOutputFormat::accept_format(int format, int variant)
 		break;
 	// disable some
 	case kPixFormat_B64A:
+	case kPixFormat_B48R:
 	case kPixFormat_XRGB64:
 	case kPixFormat_XRGB8888:
 	case kPixFormat_Y16:

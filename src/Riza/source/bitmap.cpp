@@ -271,6 +271,10 @@ int VDBitmapFormatToPixmapFormat(const VDAVIBitmapInfoHeader& hdr, int& variant)
 	case VDMAKEFOURCC('R', '1', '0', 'k'):
 		return kPixFormat_R10K;
 
+	// b48r
+
+	case VDMAKEFOURCC('b', '4', '8', 'r'):
+		return kPixFormat_B48R;
 	// ----
 
 	case VDMAKEFOURCC('v', '3', '0', '8'):
@@ -538,6 +542,11 @@ bool VDMakeBitmapFormatFromPixmapFormat(vdstructex<VDAVIBitmapInfoHeader>& dst, 
 		dst->biCompression	= VDMAKEFOURCC('R', '1', '0', 'k');
 		dst->biBitCount		= 32;
 		dst->biSizeImage	= w * 4 * h;
+		break;
+	case kPixFormat_B48R:
+		dst->biCompression	= VDMAKEFOURCC('b', '4', '8', 'r');
+		dst->biBitCount		= 48;
+		dst->biSizeImage	= w*6 * h;
 		break;
 	case kPixFormat_XRGB64:
 		dst->biCompression	= VDMAKEFOURCC('B', 'R', 'A', 64);
@@ -910,6 +919,7 @@ void VDSetPixmapInfoForBitmap(FilterModPixmapInfo& info, int format, int variant
 	switch (format) {
 	case kPixFormat_XRGB64:
 	case kPixFormat_B64A:
+	case kPixFormat_B48R:
 		info.ref_r = 0xFFFF;
 		info.ref_g = 0xFFFF;
 		info.ref_b = 0xFFFF;

@@ -94,6 +94,7 @@ uint32 VDPixmapGetFormatTokenFromFormat(int format) {
 	case kPixFormat_YUV444_Y410:		return kVDPixType_Y410 | kVDPixSamp_444 | kVDPixSpace_YCC_601;
 	case kPixFormat_R210:				return kVDPixType_R210 | kVDPixSamp_444 | kVDPixSpace_BGR;
 	case kPixFormat_R10K:				return kVDPixType_R10K | kVDPixSamp_444 | kVDPixSpace_BGR;
+	case kPixFormat_B48R:				return kVDPixType_B48R | kVDPixSamp_444 | kVDPixSpace_BGR;
 	case kPixFormat_YUV444_V308:		return kVDPixType_V308 | kVDPixSamp_444 | kVDPixSpace_YCC_601;
 	case kPixFormat_YUV422_P210:
 	case kPixFormat_YUV422_P216:
@@ -477,6 +478,7 @@ namespace {
 							break;
 						case kVDPixType_R210:
 						case kVDPixType_R10K:
+						case kVDPixType_B48R:
 						case kVDPixType_16_16_16_LE:
 						case kVDPixType_16_16_16_16_LE:
 							targetType = kVDPixType_16x4_LE;
@@ -1471,6 +1473,18 @@ namespace {
 					}
 					break;
 
+				case kVDPixType_B48R:
+					switch(srcType) {
+						case kVDPixType_16x4_LE:
+							gen.conv_X16_to_B48R();
+							srcToken = (srcToken & ~kVDPixType_Mask) | kVDPixType_B48R;
+							break;
+						default:
+							targetType = kVDPixType_16x4_LE;
+							goto type_reconvert;
+					}
+					break;
+
 				default:
 					VDASSERT(false);
 					break;
@@ -2363,6 +2377,12 @@ uint32 BlitterLoadSrc(VDPixmapUberBlitterGenerator& gen, const VDPixmapLayout& s
 	case kVDPixType_R10K:
 		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w * 4);
 		gen.conv_R10K_to_X16();
+		type = kVDPixType_16x4_LE;
+		break;
+
+	case kVDPixType_B48R:
+		gen.ldsrc(0, 0, 0, 0, w, h, srcToken, w * 6);
+		gen.conv_B48R_to_X16();
 		type = kVDPixType_16x4_LE;
 		break;
 

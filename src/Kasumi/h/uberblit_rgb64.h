@@ -203,6 +203,24 @@ protected:
 	void Compute(void *dst0, sint32 y);
 };
 
+class VDPixmapGen_X16R16G16B16_To_B48R : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	void Start() {
+		StartWindow(mWidth * 6);
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_B48R;
+	}
+
+	virtual const char* dump_name(){ return "X16R16G16B16_To_B48R"; }
+
+protected:
+	
+	void Compute(void *dst0, sint32 y);
+};
+
 class VDPixmapGen_B64A_To_X16R16G16B16 : public VDPixmapGenWindowBasedOneSourceSimple {
 public:
 
@@ -215,6 +233,23 @@ public:
 	}
 
 	virtual const char* dump_name(){ return "B64A_To_X16R16G16B16"; }
+
+protected:
+	void Compute(void *dst0, sint32 y);
+};
+
+class VDPixmapGen_B48R_To_X16R16G16B16 : public VDPixmapGenWindowBasedOneSourceSimple {
+public:
+
+	void Start() {
+		StartWindow(mWidth * 8);
+	}
+
+	uint32 GetType(uint32 output) const {
+		return (mpSrc->GetType(mSrcIndex) & ~kVDPixType_Mask) | kVDPixType_16x4_LE;
+	}
+
+	virtual const char* dump_name(){ return "B48R_To_X16R16G16B16"; }
 
 protected:
 	void Compute(void *dst0, sint32 y);
