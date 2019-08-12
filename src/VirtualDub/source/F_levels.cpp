@@ -53,6 +53,7 @@ struct LevelsFilterData {
 	sint32		mHistoMax;
 	bool		fInhibitUpdate;
 	bool		bLuma;
+	bool		bFullRange;
 };
 
 /////////////////////////////////////////////////////////////////////
@@ -404,9 +405,10 @@ static int levels_run(const FilterActivation *fa, const FilterFunctions *ff) {
 	using namespace vd2;
 	const LevelsFilterData *mfd = (LevelsFilterData *)fa->filter_data;
 	const VDXPixmap& px = *fa->src.mpPixmap;
+	VDPixmapFormatEx format = VDPixmapFormatNormalize(px.format);
 
 	if (mfd->bLuma) {
-		switch(px.format) {
+		switch(format.format) {
 		case kPixFormat_XRGB8888:
 			translate_rgba_luma((uint8 *)px.data, px.pitch, px.w, px.h, mfd);
 			break;
@@ -426,7 +428,7 @@ static int levels_run(const FilterActivation *fa, const FilterFunctions *ff) {
 			break;
 		}
 	} else {
-		switch(px.format) {
+		switch(format.format) {
 		case kPixFormat_XRGB8888:
 			translate_rgba((uint8 *)px.data, px.pitch, px.w, px.h, mfd->xtblmono);
 			break;
@@ -451,9 +453,11 @@ static long levels_param(FilterActivation *fa, const FilterFunctions *ff) {
 	VDXPixmapLayout& pxldst = *fa->dst.mpPixmapLayout;
 
 	pxldst.pitch = pxlsrc.pitch;
+	VDPixmapFormatEx format = VDPixmapFormatNormalize(pxlsrc.format);
+	mfd->bFullRange = format.colorRangeMode==vd2::kColorRangeMode_Full;
 
 	if (mfd->bLuma) {
-		switch(pxlsrc.format) {
+		switch(format.format) {
 		case kPixFormat_XRGB8888:
 		case kPixFormat_Y8:
 		case kPixFormat_YUV444_Planar:
@@ -471,7 +475,7 @@ static long levels_param(FilterActivation *fa, const FilterFunctions *ff) {
 
 		return FILTERPARAM_SUPPORTS_ALTFORMATS | FILTERPARAM_PURE_TRANSFORM;
 	} else {
-		switch(pxlsrc.format) {
+		switch(format.format) {
 		case kPixFormat_XRGB8888:
 		case kPixFormat_RGB_Planar32F:
 		case kPixFormat_RGBA_Planar32F:
@@ -527,11 +531,18 @@ static void levelsRedoTables(LevelsFilterData *mfd) {
 			}
 		}
 
-		static const double u_scale = 219.0f / 255.0f;
-		static const double u_bias = 16.0f / 255.0f;
+		double u_scale = 1;
+		double u_bias = 0;
+		double u_scale2 = 1.0f / 255.0f;
+		double u_bias2 = 0;
 
-		static const double u_scale2 = 1.0f / 219.0f;
-		static const double u_bias2 = -16.0f / 219.0f;
+		if (!mfd->bFullRange) {
+			u_scale = 219.0f / 255.0f;
+			u_bias = 16.0f / 255.0f;
+
+			u_scale2 = 1.0f / 219.0f;
+			u_bias2 = -16.0f / 219.0f;
+		}
 
 		double u_lo = x_lo;
 		double u_hi = x_hi;
@@ -613,6 +624,18 @@ namespace {
 		} while(--h);
 	}
 
+	void HistogramTallyY8_FR(const void *src0, ptrdiff_t srcpitch, uint32 w, uint32 h, uint32 *histo) {
+		const uint8 *src = (const uint8 *)src0;
+
+		do {
+			for(uint32 x=0; x<w; ++x) {
+				++histo[src[x]];
+			}
+
+			src += srcpitch;
+		} while(--h);
+	}
+
 	void HistogramTallyY8(const void *src0, ptrdiff_t srcpitch, uint32 w, uint32 h, uint32 *histo) {
 		const uint8 *src = (const uint8 *)src0;
 		uint32 localHisto[256] = {0};
@@ -638,8 +661,9 @@ static void levelsSampleCallback(VDXFBitmap *src, long pos, long cnt, void *pv) 
 	LevelsFilterData *mfd = (LevelsFilterData *)pv;
 
 	const VDXPixmap& pxsrc = *src->mpPixmap;
+	VDPixmapFormatEx format = VDPixmapFormatNormalize(pxsrc.format);
 
-	switch(pxsrc.format) {
+	switch(format.format) {
 		case kPixFormat_XRGB8888:
 			HistogramTallyXRGB8888(pxsrc.data, pxsrc.pitch, pxsrc.w, pxsrc.h, mfd->mpHisto);
 			break;
@@ -655,7 +679,10 @@ static void levelsSampleCallback(VDXFBitmap *src, long pos, long cnt, void *pv) 
 		case kPixFormat_YUV420_Planar:
 		case kPixFormat_YUV411_Planar:
 		case kPixFormat_YUV410_Planar:
-			HistogramTallyY8(pxsrc.data, pxsrc.pitch, pxsrc.w, pxsrc.h, mfd->mpHisto);
+			if (mfd->bFullRange)
+				HistogramTallyY8_FR(pxsrc.data, pxsrc.pitch, pxsrc.w, pxsrc.h, mfd->mpHisto);
+			else
+				HistogramTallyY8(pxsrc.data, pxsrc.pitch, pxsrc.w, pxsrc.h, mfd->mpHisto);
 			break;
 	}
 }
