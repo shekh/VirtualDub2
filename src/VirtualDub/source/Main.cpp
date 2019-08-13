@@ -1180,6 +1180,8 @@ void VDSaveDialogAVI::ChangeFilterIndex() {
 		os_format.clear();
 	}
 	InitCodec();
+	g_FileOutDriver = os_driver;
+	g_FileOutFormat = os_format;
 }
 
 bool VDSaveDialogAVI::Commit(const VDStringW& fname) {
@@ -1197,8 +1199,6 @@ bool VDSaveDialogAVI::Commit(const VDStringW& fname) {
 		wchar_t ext[128];
 		char name[128];
 		driver->GetDriver()->EnumFormats(format,filter,ext,name);
-		g_FileOutDriver = driver->GetSignatureName();
-		g_FileOutFormat = name;
 		if (!fname.empty()) {
 			if (!CheckAudioCodec(name)) return false;
 			req.driver = driver;
@@ -1207,8 +1207,6 @@ bool VDSaveDialogAVI::Commit(const VDStringW& fname) {
 		}
 
 	} else {
-		g_FileOutDriver.clear();
-		g_FileOutFormat.clear();
 		if (!fname.empty()) {
 			if (!CheckAudioCodec("avi")) return false;
 			req.compat = fUseCompatibility;
