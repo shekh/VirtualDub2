@@ -1217,9 +1217,12 @@ void VDProjectUI::SaveImageAsk(bool skip_dialog) {
 
 	mLastDisplayedInputFrame = -1;
 	mLastDisplayedTimelineFrame = -1;
-	DisplayFrame();
+	bool use_input = mpInputDisplay && IsWindowVisible(mhwndInputFrame);
+	bool use_output = mpOutputDisplay && IsWindowVisible(mhwndOutputFrame);
+	DisplayFrame(true, true, use_input, use_output);
+	while(UpdateFrame());
 
-	if (mpOutputDisplay) {
+	if (use_output) {
 		if (filters.isRunning() && mpCurrentOutputFrame) {
 			VDFilterFrameBuffer *buf = mpCurrentOutputFrame->GetResultBuffer();
 			VDPixmap px = VDPixmapFromLayout(filters.GetOutputLayout(), (void *)buf->LockRead());
@@ -1228,7 +1231,7 @@ void VDProjectUI::SaveImageAsk(bool skip_dialog) {
 
 			SaveImage((HWND)mhwnd, frame, &px, skip_dialog);
 		}
-	} else if (mpInputDisplay) {
+	} else if (use_input) {
 		if (inputVideo && mpCurrentInputFrame) {
 			VDFilterFrameBuffer *buf = mpCurrentInputFrame->GetResultBuffer();
 			VDPixmap px = VDPixmapFromLayout(mpVideoFrameSource->GetOutputLayout(), (void *)buf->LockRead());
