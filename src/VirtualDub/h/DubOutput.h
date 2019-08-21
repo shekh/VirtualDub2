@@ -244,6 +244,7 @@ public:
 	VDAVIOutputCLISystem(const wchar_t *pszFilename, const wchar_t *setName);
 	~VDAVIOutputCLISystem();
 
+	void SetOpt(DubOptions& opt);
 	void SetBuffer(int size);
 	IVDMediaOutput *CreateSegment();
 	void CloseSegment(IVDMediaOutput *pSegment, bool bLast, bool finalize);
@@ -256,6 +257,7 @@ public:
 	const char* GetFormatName(){ return 0; }
 
 private:
+	DubOptions dubOpt;
 	VDStringW	mFilename;
 	int			mBufferSize;
 	VDStringW	mEncSetName;

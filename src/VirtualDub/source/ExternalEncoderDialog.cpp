@@ -179,6 +179,7 @@ bool VDUIDialogExtEncMain::OnCommand(uint32 id, uint32 extcode) {
 		const wchar_t *const kMenuItems[]={
 			L"%(width)\tVideo frame width",
 			L"%(height)\tVideo frame height",
+			L"%(pix_fmt)\tPixel format, compatible with ffmpeg -pix_fmt",
 			L"%(fps)\tVideo frame rate (fractional)",
 			L"%(fpsnum)\tVideo frame rate fraction numerator",
 			L"%(fpsden)\tVideo frame rate fraction denominator",
@@ -191,7 +192,8 @@ bool VDUIDialogExtEncMain::OnCommand(uint32 id, uint32 extcode) {
 			L"%(systemdir)\tOS system directory",
 			L"%(tempvideofile)\tTemporary video directory and file name",
 			L"%(tempaudiofile)\tTemporary audio directory and file name",
-			L"%(pix_fmt)\tPixel format, compatible with ffmpeg -pix_fmt",
+			L"%(selectionstart)\tSelection start frame",
+			L"%(selectionend)\tSelection end frame",
 			L"%(samplingrate)\tAudio sampling rate, in Hz",
 			L"%(samplingkhz)\tAudio sampling rate, in KHz (fractional)",
 			L"%(channels)\tAudio channel count",

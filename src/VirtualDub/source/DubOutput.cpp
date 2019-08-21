@@ -560,6 +560,10 @@ VDAVIOutputCLISystem::~VDAVIOutputCLISystem() {
 	}
 }
 
+void VDAVIOutputCLISystem::SetOpt(DubOptions& opt) {
+	this->dubOpt = opt;
+}
+
 void VDAVIOutputCLISystem::SetBuffer(int bufferSize) {
 	mBufferSize = bufferSize;
 }
@@ -583,6 +587,7 @@ IVDMediaOutput *VDAVIOutputCLISystem::CreateSegment() {
 	if (!mAudioFormat.empty())
 		out->createAudioStream()->setFormat(&mAudioFormat[0], mAudioFormat.size());
 
+	pOutput->SetOpt(dubOpt);
 	pOutput->SetBufferSize(mBufferSize);
 
 	out->init(mFilename.c_str());

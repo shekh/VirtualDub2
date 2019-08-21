@@ -36,6 +36,7 @@ public:
 
 	virtual ~IAVIOutputCLI() {}
 	virtual void SetInputLayout(const VDPixmapLayout& layout) = 0;
+	virtual void SetOpt(DubOptions& opt) = 0;
 	virtual void SetBufferSize(sint32 nBytes) = 0;
 	virtual void CloseWithoutFinalize() = 0;
 };

@@ -2183,6 +2183,8 @@ void VDProject::ExportViaEncoder(const wchar_t *filename, const wchar_t *setName
 		throw MyError("No input file to process.");
 
 	VDAVIOutputCLISystem out(filename, setName);
+	out.SetOpt(optsOverride ? *optsOverride : g_dubOpts);
+
 	VideoOperation op;
 	op.opt = optsOverride;
 	op.propagateErrors = propagateErrors;

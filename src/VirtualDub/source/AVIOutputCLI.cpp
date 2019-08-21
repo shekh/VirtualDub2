@@ -836,6 +836,10 @@ public:
 	void SetBufferSize(sint32 nBytes) {
 		mBufferSize = nBytes;
 	}
+	void SetOpt(DubOptions& opt) {
+		mSelectionStart = opt.video.mSelectionStart.mOffset;
+		mSelectionEnd = opt.video.mSelectionEnd.mOffset;
+	}
 
 	IVDMediaOutputStream *createVideoStream();
 	IVDMediaOutputStream *createAudioStream();
@@ -860,6 +864,8 @@ private:
 	uint32		mAudioSamplingRate;
 	uint32		mAudioChannels;
 	uint32		mAudioPrecision;
+	VDPosition	mSelectionStart;
+	VDPosition	mSelectionEnd;
 
 	VDStringW	mOutputFile;
 	VDStringW	mTempVideoFile;
@@ -1352,6 +1358,10 @@ void AVIOutputCLI::ExpandTokens(VDStringW& output, const wchar_t *templateLine0,
 			AppendDirectoryFromPath(output, programPath);
 		else if (!vdwcsicmp(token, L"systemdir"))
 			AppendDirectoryFromPath(output, VDGetSystemPath().c_str());
+		else if (!vdwcsicmp(token, L"selectionstart"))
+			output.append_sprintf(L"%I64u", mSelectionStart);
+		else if (!vdwcsicmp(token, L"selectionend"))
+			output.append_sprintf(L"%I64u", mSelectionEnd);
 		else
 			throw MyError("Unknown token in command line template: %%(%ls)", token);
 	}
