@@ -1577,33 +1577,39 @@ protected:
 	INT_PTR DlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 	void ReinitDialog();
 
-	void RedoIVTCEnables();
-
 	DubOptions& mOpts;
 	IVDVideoSource *const mpVideo;
 	AudioSource *const mpAudio;
 };
 
-void VDDialogVideoFrameRateW32::RedoIVTCEnables() {
-	bool f3, f4;
-	BOOL e;
+void print_fr(char* buf, const VDFraction& fr) {
+	sprintf(buf, "%.4f", fr.asDouble());
 
-	f3 = !!IsDlgButtonChecked(mhdlg, IDC_IVTC_RECONFIELDSFIXED);
-	f4 = !!IsDlgButtonChecked(mhdlg, IDC_IVTC_RECONFRAMESMANUAL);
+	VDFraction fr2(fr);
+	VDVERIFY(fr2.Parse(buf));
 
-	e = f3 || f4;
+	if (fr2 != fr)
+		sprintf(buf, "%u/%u (~%.7f)", fr.getHi(), fr.getLo(), fr.asDouble());
+}
 
-	EnableWindow(GetDlgItem(mhdlg, IDC_STATIC_IVTCOFFSET), e);
-	EnableWindow(GetDlgItem(mhdlg, IDC_IVTCOFFSET), e);
-	EnableWindow(GetDlgItem(mhdlg, IDC_INVPOLARITY), e);
+bool scan_fr(const char* buf, VDFraction& fr) {
+	unsigned hi, lo;
+	if (2==sscanf(buf, " %u / %u", &hi, &lo)) {
+		if (!lo) return false;
+		fr = VDFraction(hi, lo);
+	} else if (!fr.Parse(buf) || fr.asDouble() >= 1000000.0) {
+		return false;
+	}
+
+	if (fr.getHi() == 0) return false;
+	return true;
 }
 
 INT_PTR VDDialogVideoFrameRateW32::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
-    switch (message)
-    {
-        case WM_INITDIALOG:
+	switch (message) {
+		case WM_INITDIALOG:
 			ReinitDialog();
-            return (TRUE);
+			return (TRUE);
 
 		case WM_HELP:
 			{
@@ -1614,7 +1620,7 @@ INT_PTR VDDialogVideoFrameRateW32::DlgProc(UINT message, WPARAM wParam, LPARAM l
 			}
 			return TRUE;
 
-        case WM_COMMAND:
+		case WM_COMMAND:
 			switch(LOWORD(wParam)) {
 			case IDC_DECIMATE_1:
 			case IDC_DECIMATE_2:
@@ -1644,44 +1650,18 @@ INT_PTR VDDialogVideoFrameRateW32::DlgProc(UINT message, WPARAM wParam, LPARAM l
 					EnableWindow(GetDlgItem(mhdlg, IDC_FRAMERATE),FALSE);
 				break;
 
-			case IDC_IVTC_OFF:
-			case IDC_IVTC_RECONFIELDS:
-			case IDC_IVTC_RECONFIELDSFIXED:
-			case IDC_IVTC_RECONFRAMESMANUAL:
-				{
-					BOOL f = IsDlgButtonChecked(mhdlg, IDC_IVTC_OFF);
-
-					EnableWindow(GetDlgItem(mhdlg, IDC_DECIMATE_1), f);
-					EnableWindow(GetDlgItem(mhdlg, IDC_DECIMATE_2), f);
-					EnableWindow(GetDlgItem(mhdlg, IDC_DECIMATE_3), f);
-					EnableWindow(GetDlgItem(mhdlg, IDC_DECIMATE_N), f);
-					EnableWindow(GetDlgItem(mhdlg, IDC_DECIMATE_VALUE), f && IsDlgButtonChecked(mhdlg, IDC_DECIMATE_N));
-					EnableWindow(GetDlgItem(mhdlg, IDC_DECIMATE_TARGET), f);
-					EnableWindow(GetDlgItem(mhdlg, IDC_FRAMERATE_TARGET), f && IsDlgButtonChecked(mhdlg, IDC_DECIMATE_N));
-					RedoIVTCEnables();
-				}
-				break;
-
 			case IDOK:
 				{
 					VDFraction newTarget(0,0);
 					int newFRD = 1;
 
 					if (IsDlgButtonChecked(mhdlg, IDC_DECIMATE_TARGET)) {
-						double newFR;
-						char buf[128], tmp;
+						char buf[128];
 
 						GetDlgItemText(mhdlg, IDC_FRAMERATE_TARGET, buf, sizeof buf);
 
-						if (1!=sscanf(buf, "%lg %c", &newFR, &tmp) || newFR<=0.0) {
-							SetFocus(GetDlgItem(mhdlg, IDC_FRAMERATE));
-							MessageBeep(MB_ICONQUESTION);
-							return FALSE;
-						}
-
-						newTarget = VDFraction((uint32)(0.5 + newFR * 10000.0), 10000);
-						if (!newTarget.getHi()) {
-							SetFocus(GetDlgItem(mhdlg, IDC_FRAMERATE));
+						if (!scan_fr(buf,newTarget)) {
+							SetFocus(GetDlgItem(mhdlg, IDC_FRAMERATE_TARGET));
 							MessageBeep(MB_ICONQUESTION);
 							return FALSE;
 						}
@@ -1711,21 +1691,7 @@ INT_PTR VDDialogVideoFrameRateW32::DlgProc(UINT message, WPARAM wParam, LPARAM l
 						GetDlgItemText(mhdlg, IDC_FRAMERATE, buf, sizeof buf);
 
 						VDFraction fr;
-						unsigned hi, lo;
-						bool failed = false;
-						if (2==sscanf(buf, " %u / %u", &hi, &lo)) {
-							if (!lo)
-								failed = true;
-							else
-								fr = VDFraction(hi, lo);
-						} else if (!fr.Parse(buf) || fr.asDouble() >= 1000000.0) {
-							failed = true;
-						}
-
-						if (fr.getHi() == 0)
-							failed = true;
-
-						if (failed) {
+						if (!scan_fr(buf,fr)) {
 							SetFocus(GetDlgItem(mhdlg, IDC_FRAMERATE));
 							MessageBeep(MB_ICONQUESTION);
 							return FALSE;
@@ -1752,9 +1718,9 @@ INT_PTR VDDialogVideoFrameRateW32::DlgProc(UINT message, WPARAM wParam, LPARAM l
 				End(false);
 				return TRUE;
 			}
-            break;
-    }
-    return FALSE;
+			break;
+	}
+	return FALSE;
 }
 
 void VDDialogVideoFrameRateW32::ReinitDialog() {
@@ -1775,7 +1741,8 @@ void VDDialogVideoFrameRateW32::ReinitDialog() {
 		EnableWindow(GetDlgItem(mhdlg, IDC_DECIMATE_VALUE), FALSE);
 
 	if (mOpts.video.frameRateTargetLo) {
-		sprintf(buf, "%.4f", (double)mOpts.video.frameRateTargetHi / (double)mOpts.video.frameRateTargetLo);
+		VDFraction fr(mOpts.video.frameRateTargetHi, mOpts.video.frameRateTargetLo);
+		print_fr(buf,fr);
 		SetDlgItemText(mhdlg, IDC_FRAMERATE_TARGET, buf);
 	}
 
@@ -1794,14 +1761,7 @@ void VDDialogVideoFrameRateW32::ReinitDialog() {
 
 	if (mOpts.video.mFrameRateAdjustLo) {
 		VDFraction fr(mOpts.video.mFrameRateAdjustHi, mOpts.video.mFrameRateAdjustLo);
-		sprintf(buf, "%.4f", fr.asDouble());
-
-		VDFraction fr2(fr);
-		VDVERIFY(fr2.Parse(buf));
-
-		if (fr2 != fr)
-			sprintf(buf, "%u/%u (~%.7f)", fr.getHi(), fr.getLo(), fr.asDouble());
-
+		print_fr(buf,fr);
 		SetDlgItemText(mhdlg, IDC_FRAMERATE, buf);
 		CheckDlgButton(mhdlg, IDC_FRAMERATE_CHANGE, TRUE);
 	} else if (mOpts.video.mFrameRateAdjustHi == DubVideoOptions::kFrameRateAdjustSameLength) {
@@ -1814,8 +1774,6 @@ void VDDialogVideoFrameRateW32::ReinitDialog() {
 		CheckDlgButton(mhdlg, IDC_FRAMERATE_NOCHANGE, TRUE);
 		EnableWindow(GetDlgItem(mhdlg, IDC_FRAMERATE), FALSE);
 	}
-
-	RedoIVTCEnables();
 }
 
 bool VDDisplayVideoFrameRateDialog(VDGUIHandle hParent, DubOptions& opts, IVDVideoSource *pVS, AudioSource *pAS) {
