@@ -491,6 +491,7 @@ void VDOpenVideoDialogW32::ChangeOptions() {
 
 bool VDOpenVideoDialogW32::UpdateFilename() {
 	VDStringW s = OpenSave_GetFileName(mhdlg);
+	while(s.length()>0 && s[s.length()-1]==' ') s.erase(s.end()-1);
 	if (s.length()==0) return false;
 	if (s!=filename) {
 		filename = s;

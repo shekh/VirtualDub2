@@ -623,6 +623,10 @@ IVDVideoDecompressor *VDFindVideoDecompressor(uint32 preferredHandler, const voi
 
 			DWORD fcc = bmih->biCompression;
 
+			// now ignore this crap
+			if (fcc == BI_RGB || fcc == BI_RLE8)
+				return NULL;
+
 			if (fcc == BI_RGB || fcc == BI_RLE8)
 				fcc = 'ELRM';
 			else if (fcc == 'MARC')
