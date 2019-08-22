@@ -24,12 +24,12 @@
 #include <vd2/Kasumi/pixmaputils.h>
 #include "AVIStripeSystem.h"
 #include <vd2/plugin/vdinputdriver.h>
+#include "dub.h"
 #include "fixes.h"
 
 class IVDMediaOutput;
 class VDExtEncProfile;
 class IVDOutputDriver;
-class DubAudioOptions;
 
 class VDINTERFACE IVDDubberOutputSystem {
 public:

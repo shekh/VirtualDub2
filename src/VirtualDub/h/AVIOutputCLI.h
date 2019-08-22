@@ -22,6 +22,7 @@
 #include "ExternalEncoderProfile.h"
 
 struct VDPixmapLayout;
+class DubOptions;
 
 struct VDAVIOutputCLITemplate {
 	vdrefptr<VDExtEncProfile> mpVideoEncoderProfile;
