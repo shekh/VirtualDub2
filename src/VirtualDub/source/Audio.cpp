@@ -346,6 +346,12 @@ long AudioStream::Read(void *buffer, long max_samples, long *lplBytes) {
 }
 
 long AudioStream::ReadVBR(void *buffer, long size, long *lplBytes, sint64 *duration) {
+	if (samples_read >= stream_limit) {
+		*lplBytes = 0;
+		*duration = -1;
+		return 0;
+	}
+
 	long actual;
 	actual = _ReadVBR(buffer, size, lplBytes, duration);
 
