@@ -1831,43 +1831,6 @@ yasm -g cv8 -f win64 -o "$(IntDir)verstub.obj" verstub.asm
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)virtualdub.vdres;%(Outputs)</Outputs>
     </CustomBuild>
     <None Include="h\mjpeg_color.inl" />
-    <CustomBuild Include="res\Changes.txt">
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building resource text...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy /b %(RootDir)%(Directory)%(Filename).txt+%(RootDir)%(Directory)null.bin %(RootDir)%(Directory)%(Filename).bin
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)%(Filename).bin;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building resource text...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">copy /b %(RootDir)%(Directory)%(Filename).txt+%(RootDir)%(Directory)null.bin %(RootDir)%(Directory)%(Filename).bin
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)%(Filename).bin;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Building resource text...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy /b %(RootDir)%(Directory)%(Filename).txt+%(RootDir)%(Directory)null.bin %(RootDir)%(Directory)%(Filename).bin
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)%(Filename).bin;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building resource text...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">copy /b %(RootDir)%(Directory)%(Filename).txt+%(RootDir)%(Directory)null.bin %(RootDir)%(Directory)%(Filename).bin
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)%(Filename).bin;%(Outputs)</Outputs>
-    </CustomBuild>
-    <None Include="res\credits.txt" />
-    <CustomBuild Include="res\rel_notes.txt">
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building resource text...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy /b %(RootDir)%(Directory)%(Filename).txt+%(RootDir)%(Directory)null.bin %(RootDir)%(Directory)%(Filename).bin
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)%(Filename).bin;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building resource text...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">copy /b %(RootDir)%(Directory)%(Filename).txt+%(RootDir)%(Directory)null.bin %(RootDir)%(Directory)%(Filename).bin
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)%(Filename).bin;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Building resource text...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy /b %(RootDir)%(Directory)%(Filename).txt+%(RootDir)%(Directory)null.bin %(RootDir)%(Directory)%(Filename).bin
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)%(Filename).bin;%(Outputs)</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building resource text...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">copy /b %(RootDir)%(Directory)%(Filename).txt+%(RootDir)%(Directory)null.bin %(RootDir)%(Directory)%(Filename).bin
-</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)%(Filename).bin;%(Outputs)</Outputs>
-    </CustomBuild>
     <None Include="autogen\f_resize.inl" />
     <None Include="autogen\FilterAccelEngine.inl" />
   </ItemGroup>

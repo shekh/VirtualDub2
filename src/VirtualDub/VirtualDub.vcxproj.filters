@@ -22,10 +22,6 @@
     <Filter Include="Headers - MPEG/MJPEG support">
       <UniqueIdentifier>{ce2aef77-dfc8-478e-ad77-f0ba587f8b26}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Text resources">
-      <UniqueIdentifier>{0c50dc40-e9a9-4266-9f67-22eb4372025c}</UniqueIdentifier>
-      <Extensions>.txt</Extensions>
-    </Filter>
     <Filter Include="Source - Controls">
       <UniqueIdentifier>{17398e2e-325a-406b-9594-8babc7d90d6f}</UniqueIdentifier>
     </Filter>
@@ -1284,9 +1280,6 @@
     <None Include="h\mjpeg_color.inl">
       <Filter>Headers - MPEG/MJPEG support</Filter>
     </None>
-    <None Include="res\credits.txt">
-      <Filter>Text resources</Filter>
-    </None>
     <None Include="autogen\f_resize.inl">
       <Filter>Filters\Compiled Pixel Shaders</Filter>
     </None>
@@ -1301,6 +1294,9 @@
     </None>
     <None Include="manifest\win7.manifest">
       <Filter>Manifest Files</Filter>
+    </None>
+    <None Include="res\mod2.ico">
+      <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -1366,12 +1362,6 @@
   <ItemGroup>
     <CustomBuild Include="res\virtualdub.ami">
       <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="res\Changes.txt">
-      <Filter>Text resources</Filter>
-    </CustomBuild>
-    <CustomBuild Include="res\rel_notes.txt">
-      <Filter>Text resources</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>
