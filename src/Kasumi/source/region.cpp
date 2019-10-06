@@ -600,7 +600,8 @@ namespace {
 		const uint32 color_r = (color & 0x00FF0000) >> 16;
 		const uint32 color_b = color & 0x000000FF;
 		const uint32 color_g  = (color & 0x0000FF00) >> 8;
-		do {
+		const uint32 color_a  = (color & 0xFF000000) >> 24;
+		if (color_a==255) do {
 			const uint32 pb = dstp[0];
 			const uint32 pg = dstp[1];
 			const uint32 pr = dstp[2];
@@ -610,6 +611,17 @@ namespace {
 			dstp[1] = (pg*(64-a) + color_g*a + 32) >> 6;
 			dstp[2] = (pr*(64-a) + color_r*a + 32) >> 6;
 			dstp[3] = 255-((255-pa)*(64-a) >> 6);
+			dstp+=4;
+		} while(--w); else do {
+			const uint32 pb = dstp[0];
+			const uint32 pg = dstp[1];
+			const uint32 pr = dstp[2];
+			const uint32 pa = dstp[3];
+			const sint32 a  = (*alpha++)*color_a;
+			dstp[0] = (pb*(64*255-a) + color_b*a + 32*255) >> 14;
+			dstp[1] = (pg*(64*255-a) + color_g*a + 32*255) >> 14;
+			dstp[2] = (pr*(64*255-a) + color_r*a + 32*255) >> 14;
+			dstp[3] = 255-((255-pa)*(64*255-a) >> 14);
 			dstp+=4;
 		} while(--w);
 	}
@@ -624,10 +636,11 @@ namespace {
 		uint32 color_r = (color & 0x00FF0000) >> 16;
 		uint32 color_b = color & 0x000000FF;
 		uint32 color_g  = (color & 0x0000FF00) >> 8;
+		const uint32 color_a  = (color & 0xFF000000) >> 24;
 		color_r = color_r | (color_r<<8);
 		color_b = color_b | (color_b<<8);
 		color_g = color_g | (color_g<<8);
-		do {
+		if (color_a==255) do {
 			const uint32 pb = dstp[0];
 			const uint32 pg = dstp[1];
 			const uint32 pr = dstp[2];
@@ -638,8 +651,23 @@ namespace {
 			dstp[2] = (pr*(64-a) + color_r*a + 32) >> 6;
 			dstp[3] = 65535-((65535-pa)*(64-a) >> 6);
 			dstp+=4;
+		} while(--w); else do {
+			const uint32 pb = dstp[0];
+			const uint32 pg = dstp[1];
+			const uint32 pr = dstp[2];
+			const uint32 pa = dstp[3];
+			const sint32 a  = (*alpha++)*color_a;
+			dstp[0] = (pb*(64*255-a) + color_b*a + 32*255) >> 14;
+			dstp[1] = (pg*(64*255-a) + color_g*a + 32*255) >> 14;
+			dstp[2] = (pr*(64*255-a) + color_r*a + 32*255) >> 14;
+			dstp[3] = 65535-((65535-pa)*(64*255-a) >> 14);
+			dstp+=4;
 		} while(--w);
 	}
+
+	//! todo:
+	// fix alpha write to alpha plane
+	// fix blending with transparent color
 
 	void RenderABuffer8(const VDPixmap& dst, int y, const uint8 *alpha, uint32 w, uint32 color) {
 		if (!w)
@@ -1130,7 +1158,15 @@ bool VDPixmapFillRegionAntialiased_16x_8x(const VDPixmap& dst, const VDPixmapReg
 
 bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& region, int x, int y, uint32 color);
 
-bool VDPixmapFillPixmapAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& region, int x, int y, uint32 color) {
+bool VDPixmapFillPixmapAntialiased8x(const VDPixmap& dst0, const VDPixmapRegion& region, int x, int y, uint32 color) {
+	int xx0 = ((region.mBounds.left+x)/8-4) & ~3;
+	int xx1 = ((region.mBounds.right+x)/8+8) & ~3;
+	if(xx0<0) xx0 = 0;
+	if(xx1>dst0.w) xx1 = dst0.w;
+	VDPixmap dst = VDPixmapOffset(dst0,xx0,0);
+	dst.w = xx1-xx0;
+	x -= xx0*8;
+
 	using namespace vd2;
 	switch(dst.format) {
 	case nsVDPixmap::kPixFormat_XRGB8888:
@@ -1620,4 +1656,9 @@ void VDPixmapConvolveRegion(VDPixmapRegion& dst, const VDPixmapRegion& r1, const
 
 	if (tempCache)
 		tempCache->swap(temp);
+
+	dst.mBounds.left = r1.mBounds.left + r2.mBounds.left;
+	dst.mBounds.right = r1.mBounds.right + r2.mBounds.right;
+	dst.mBounds.top = r1.mBounds.top + r2.mBounds.top;
+	dst.mBounds.bottom = r1.mBounds.bottom + r2.mBounds.bottom;
 }
