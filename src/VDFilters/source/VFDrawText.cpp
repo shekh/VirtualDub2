@@ -80,6 +80,8 @@ struct VFDrawTextParam {
 	uint32 shadow_color;
 	float shadow_width;
 
+	int time_format;
+
 	VFDrawTextParam() {
 		x0 = 0;
 		y0 = 0;
@@ -94,6 +96,7 @@ struct VFDrawTextParam {
 		color = 0xFFFFFFFF;
 		shadow_color = 0xFF000000;
 		shadow_width = 1;
+		time_format = 0;
 	}
 };
 
@@ -127,7 +130,7 @@ public:
 };
 
 VDDrawTextDialog::VDDrawTextDialog(VFDrawTextParam& param, VDVFilterDrawText *fa)
-	: VDDialogFrameW32(IDD_FILTER_DRAWTEXT),
+: VDDialogFrameW32(param.time_format==0 ? IDD_FILTER_DRAWTEXT:IDD_FILTER_DRAWTIME),
 	param(param),
 	fa(fa)
 {
@@ -224,6 +227,8 @@ bool VDDrawTextDialog::OnLoaded() {
 	CheckDlgButton(mhdlg, IDC_ALIGN_LEFT,   param.align==0 ? BST_CHECKED:BST_UNCHECKED);
 	CheckDlgButton(mhdlg, IDC_ALIGN_CENTER, param.align==1 ? BST_CHECKED:BST_UNCHECKED);
 	CheckDlgButton(mhdlg, IDC_ALIGN_RIGHT,  param.align==2 ? BST_CHECKED:BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_OPTION_TIME,  param.time_format==1 ? BST_CHECKED:BST_UNCHECKED);
+	CheckDlgButton(mhdlg, IDC_OPTION_FRAME,  param.time_format==2 ? BST_CHECKED:BST_UNCHECKED);
 
 	if (fmpreview) {
 		PreviewExInfo mode;
@@ -295,6 +300,20 @@ INT_PTR VDDrawTextDialog::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 				param.shadow_width = (float)GetDlgItemInt(mhdlg,IDC_SHADOW_EDIT,0,false);
 				redo();
 				return TRUE;
+			}
+			break;
+
+		case IDC_OPTION_TIME:
+			if (IsDlgButtonChecked(mhdlg,IDC_OPTION_TIME)) {
+				param.time_format = 1;
+				redo();
+			}
+			break;
+
+		case IDC_OPTION_FRAME:
+			if (IsDlgButtonChecked(mhdlg,IDC_OPTION_FRAME)) {
+				param.time_format = 2;
+				redo();
 			}
 			break;
 
@@ -418,10 +437,16 @@ public:
 	void End();
 	void Run();
 	bool Configure(VDXHWND hwnd);
+	void FormatString(const VDStringW& text);
 	void GetScriptString(char *buf, int maxlen);
 	void ScriptConfig(IVDXScriptInterpreter *, const VDXScriptValue *argv, int argc);
 
 	VDXVF_DECLARE_SCRIPT_METHODS();
+};
+
+class VDVFilterDrawTime : public VDVFilterDrawText {
+public:
+	VDVFilterDrawTime(){ param.time_format=1; }
 };
 
 uint32 VDVFilterDrawText::GetParams() {
@@ -483,6 +508,12 @@ bool VDVFilterDrawText::Configure(VDXHWND hwnd) {
 }
 
 void VDVFilterDrawText::Start() {
+	if (param.time_format==0) {
+		FormatString(param.text);
+	}
+}
+
+void VDVFilterDrawText::FormatString(const VDStringW& text) {
 	const VDXPixmapLayout& pxsrc = *fa->src.mpPixmapLayout;
 
 	HDC hdc = CreateDC("DISPLAY", 0, 0, 0);
@@ -509,7 +540,7 @@ void VDVFilterDrawText::Start() {
 	if(param.align==0) dtflags |= DT_LEFT;
 	if(param.align==1) dtflags |= DT_CENTER;
 	if(param.align==2) dtflags |= DT_RIGHT;
-	DrawTextW(hdc,param.text.c_str(),param.text.length(),&rect,dtflags);
+	DrawTextW(hdc,text.c_str(),text.length(),&rect,dtflags);
 	EndPath(hdc);
 
 	int count = GetPath(hdc,0,0,0);
@@ -573,6 +604,29 @@ void VDVFilterDrawText::Run() {
 		}
 	}
 
+	if (param.time_format==1) {
+		VDStringW s;
+		sint64 t = fa->src.mFrameTimestampStart;
+		sint64 d = sint64(10000000)*60*60;
+		int h = int(t / d);
+		t = t % d;
+		d /= 60;
+		int m = int(t / d);
+		t = t % d;
+		d /= 60;
+		int c = int(t / d);
+		t = t % d;
+		d /= 1000;
+		int ms = int((t+d/2) / d);
+    s.sprintf(L"%d:%02d:%02d.%03d",h,m,c,ms);
+		FormatString(s);
+	}
+	if (param.time_format==2) {
+		VDStringW s;
+		s.sprintf(L"%ld",fa->src.mFrameNumber);
+		FormatString(s);
+	}
+
 	if (!mTextBorderRegion.mSpans.empty())
 		VDPixmapFillPixmapAntialiased8x(VDPixmap::copy(pxdst), mTextBorderRegion, 0, 0, color0);
 
@@ -599,8 +653,15 @@ void VDVFilterDrawText::ScriptConfig(IVDXScriptInterpreter *, const VDXScriptVal
 	param.face = VDTextU8ToW(face_s);
 
 	if (argc==12) {
-		VDString text_s(*argv[11].asString());
-		param.text = VDTextU8ToW(text_s);
+		if (argv[11].isString()) {
+			VDString text_s(*argv[11].asString());
+			param.text = VDTextU8ToW(text_s);
+			param.time_format = 0;
+		} else {
+			param.text.erase();
+			param.time_format = argv[11].asInt();
+			if (param.time_format<=0 || param.time_format>2) param.time_format = 1;
+		}
 	} else if (fma && fma->fmproject) {
 		size_t len;
 		fma->fmproject->GetData(0,&len,L"text.txt");
@@ -633,7 +694,10 @@ void VDVFilterDrawText::GetScriptString(char *buf, int maxlen) {
 	int color0 = param.shadow_color & 0xFFFFFF;
 
 	VDString s;
-	s.sprintf("Config(%g,%g,%g,%g, 0x%06lx, 0x%06lx, %g,%g,%d,%d,\"%s\",\"%s\")", param.x0, param.y0, param.x1, param.y1, color1, color0, param.shadow_width,param.size,param.weight, flags, face_s.c_str(), text_s.c_str());
+	if (param.time_format)
+		s.sprintf("Config(%g,%g,%g,%g, 0x%06lx, 0x%06lx, %g,%g,%d,%d,\"%s\",%d)", param.x0, param.y0, param.x1, param.y1, color1, color0, param.shadow_width,param.size,param.weight, flags, face_s.c_str(), param.time_format);
+	else
+		s.sprintf("Config(%g,%g,%g,%g, 0x%06lx, 0x%06lx, %g,%g,%d,%d,\"%s\",\"%s\")", param.x0, param.y0, param.x1, param.y1, color1, color0, param.shadow_width,param.size,param.weight, flags, face_s.c_str(), text_s.c_str());
 
 	if ((int)s.length()>=maxlen) {
 		SafePrintf(buf, maxlen, "Config(%g,%g,%g,%g, 0x%06lx, 0x%06lx, %g,%g,%d,%d,\"%s\")", param.x0, param.y0, param.x1, param.y1, color1, color0, param.shadow_width,param.size,param.weight, flags, face_s.c_str());
@@ -652,6 +716,7 @@ void VDVFilterDrawText::GetScriptString(char *buf, int maxlen) {
 VDXVF_BEGIN_SCRIPT_METHODS(VDVFilterDrawText)
 VDXVF_DEFINE_SCRIPT_METHOD(VDVFilterDrawText, ScriptConfig, "ddddiiddiiss")
 VDXVF_DEFINE_SCRIPT_METHOD(VDVFilterDrawText, ScriptConfig, "ddddiiddiis")
+VDXVF_DEFINE_SCRIPT_METHOD(VDVFilterDrawText, ScriptConfig, "ddddiiddiisi")
 VDXVF_END_SCRIPT_METHODS()
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -660,4 +725,9 @@ extern const VDXFilterDefinition2 g_VDVFDrawText = VDXVideoFilterDefinition<VDVF
 		NULL,
 		"DrawText",
 		"Draw basic text using vector fonts.");
+
+extern const VDXFilterDefinition2 g_VDVFDrawTime = VDXVideoFilterDefinition<VDVFilterDrawTime>(
+		NULL,
+		"DrawTime",
+		"Draw timecode using vector fonts.");
 
