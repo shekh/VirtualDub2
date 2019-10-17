@@ -618,10 +618,10 @@ namespace {
 			const uint32 pr = dstp[2];
 			const uint32 pa = dstp[3];
 			const sint32 a  = (*alpha++)*color_a;
-			dstp[0] = (pb*(64*255-a) + color_b*a + 32*255) >> 14;
-			dstp[1] = (pg*(64*255-a) + color_g*a + 32*255) >> 14;
-			dstp[2] = (pr*(64*255-a) + color_r*a + 32*255) >> 14;
-			dstp[3] = 255-((255-pa)*(64*255-a) >> 14);
+			dstp[0] = (pb*(64*256-a) + color_b*a + 32*256) >> 14;
+			dstp[1] = (pg*(64*256-a) + color_g*a + 32*256) >> 14;
+			dstp[2] = (pr*(64*256-a) + color_r*a + 32*256) >> 14;
+			dstp[3] = 255-((255-pa)*(64*256-a) >> 14);
 			dstp+=4;
 		} while(--w);
 	}
@@ -657,10 +657,10 @@ namespace {
 			const uint32 pr = dstp[2];
 			const uint32 pa = dstp[3];
 			const sint32 a  = (*alpha++)*color_a;
-			dstp[0] = (pb*(64*255-a) + color_b*a + 32*255) >> 14;
-			dstp[1] = (pg*(64*255-a) + color_g*a + 32*255) >> 14;
-			dstp[2] = (pr*(64*255-a) + color_r*a + 32*255) >> 14;
-			dstp[3] = 65535-((65535-pa)*(64*255-a) >> 14);
+			dstp[0] = (pb*(64*256-a) + color_b*a + 32*256) >> 14;
+			dstp[1] = (pg*(64*256-a) + color_g*a + 32*256) >> 14;
+			dstp[2] = (pr*(64*256-a) + color_r*a + 32*256) >> 14;
+			dstp[3] = 65535-((65535-pa)*(64*256-a) >> 14);
 			dstp+=4;
 		} while(--w);
 	}
@@ -1159,8 +1159,14 @@ bool VDPixmapFillRegionAntialiased_16x_8x(const VDPixmap& dst, const VDPixmapReg
 bool VDPixmapFillRegionAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& region, int x, int y, uint32 color);
 
 bool VDPixmapFillPixmapAntialiased8x(const VDPixmap& dst0, const VDPixmapRegion& region, int x, int y, uint32 color) {
+	int yy0 = ((region.mBounds.top+y)/8-4) & ~3;
+	int yy1 = ((region.mBounds.bottom+y)/8+8) & ~3;
+	if(yy1<=0) return true;
+	if(yy0>=dst0.h) return true;
 	int xx0 = ((region.mBounds.left+x)/8-4) & ~3;
 	int xx1 = ((region.mBounds.right+x)/8+8) & ~3;
+	if(xx1<=0) return true;
+	if(xx0>=dst0.w) return true;
 	if(xx0<0) xx0 = 0;
 	if(xx1>dst0.w) xx1 = dst0.w;
 	VDPixmap dst = VDPixmapOffset(dst0,xx0,0);
