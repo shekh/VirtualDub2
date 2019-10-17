@@ -183,6 +183,13 @@ void RunScriptMemory(const char *mem, int start_line, bool stopAtReloadMarker, b
 			t = s;
 			while(*t && *t!='\n') ++t;
 
+			errorLineStart = s;
+
+			linebuffer.resize(t+1-s);
+			memcpy(linebuffer.data(), s, t-s);
+			linebuffer[t-s] = 0;
+
+			s = linebuffer.data();
 			// check for reload marker
 			if (stopAtReloadMarker) {
 				const char *u = s;
@@ -193,13 +200,7 @@ void RunScriptMemory(const char *mem, int start_line, bool stopAtReloadMarker, b
 					break;
 			}
 
-			errorLineStart = s;
-
-			linebuffer.resize(t+1-s);
-			memcpy(linebuffer.data(), s, t-s);
-			linebuffer[t-s] = 0;
-
-			isi->ExecuteLine(linebuffer.data());
+			isi->ExecuteLine(s);
 
 			s = t;
 			if (*s=='\n') ++s;
