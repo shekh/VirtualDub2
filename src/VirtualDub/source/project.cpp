@@ -2570,7 +2570,7 @@ void VDProject::MoveToPreviousKey() {
 
 	VDPosition pos = mTimeline.GetPrevKey(GetCurrentFrame());
 	if (pos < 0)
-		return;
+		pos = 0;
 
 	if (mbZoomEnabled) {
 		if (pos<mposZoomStart)
@@ -2587,7 +2587,7 @@ void VDProject::MoveToNextKey() {
 	VDPosition pos = mTimeline.GetNextKey(GetCurrentFrame());
 
 	if (pos < 0)
-		return;
+		pos = mTimeline.GetEnd();
 
 	if (mbZoomEnabled) {
 		if (pos>mposZoomEnd)
