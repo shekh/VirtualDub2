@@ -797,56 +797,60 @@ int VDProcessCommandLine(const VDCommandLine& cmdLine) {
 }
 
 int ProcessCommandLine::showHelp() {
-	MyError msg(
+	const char* msg = 
 	//   12345678901234567890123456789012345678901234567890123456789012345678901234567890
 	"  /autorecover              Scan for auto-recover files\n"
-	"  /b <src-dir> <dst-dir>    Add batch entries for a directory\n"
-	"  /blockDebugOutput         Block debug output from specific DLLs\n"
-	"         [+/-dllname,...]\n"
-	"  /c                        Clear job list\n"
+//	"  /blockDebugOutput         Block debug output from specific DLLs\n"
+//	"         [+/-dllname,...]\n"
 	"  /capture                  Switch to capture mode\n"
 	"  /capaudiorec [on|off]     Enable/disable capture audio recording\n"
 	"  /capaudioplay [on|off]    Enable/disable capture audio playback\n"
-	"  /capchannel <ch> [<freq>] Set capture channel (opt. frequency in MHz)\n"
-	"                            Use antenna:<n> or cable:<n> to force mode\n"
+	"  /capchannel <ch> [<freq>] Set capture channel (opt. frequency in MHz), use antenna:<n> or cable:<n> to force mode\n"
 	"  /capdevice <devname>      Set capture device\n"
 	"  /capfile <filename>       Set capture filename\n"
 	"  /capfileinc <filename>    Set capture filename and bump until clear\n"
 	"  /capfilealloc <size>      Preallocate capture file in megabytes\n"
-	"  /capstart [<time>[s]]     Capture with optional time limit\n"
-	"                            (default is minutes, use 's' for seconds)\n"
-	"  /cmd <command>            Run quick script command\n"
+	"  /capstart [<time>[s]]     Capture with optional time limit (default is minutes, use 's' for seconds)\n"
 	"  /F <filter>               Load filter\n"
 	"  /edit <instance>          Open video filter configure dialog\n"
 	"  /h                        Disable exception filter\n"
 	"  /hexedit [<filename>]     Open hex editor\n"
 	"  /hexview [<filename>]     Open hex editor (read-only mode)\n"
-	"  /i <script> [<args...>]   Invoke script with arguments\n"
-	"  /master <file>            Join shared job queue in non-autostart mode\n"
-	"  /min                      Start minimized\n"
-	"  /max                      Start maximized\n"
-	"  /noStupidAntiDebugChecks  Stop lame drivers from screwing up debugging\n"
-	"                            sessions\n"
-	"  /p <src> <dst>            Add a batch entry for a file\n"
-	"  /portable                 Switch to portable settings mode\n"
-	"  /priority <pri>           Start in low, belowNormal, normal, aboveNormal,\n"
-	"                            high, or realtime priority\n"
-	"  /queryVersion             Return build number\n"
-	"  /r                        Run job queue\n"
+//	"  /noStupidAntiDebugChecks  Stop lame drivers from screwing up debugging\n"
+//	"                            sessions\n"
 	"  /resetall                 Reset all settings to defaults\n"
 	"  /s <script>               Run a script\n"
-	"  /safecpu                  Do not use CPU extensions on startup\n"
+	"  /i <script> [<args...>]   Invoke script with arguments\n"
+	"  /cmd <command>            Run quick script command\n"
+	"  /c                        Clear job list\n"
+	"  /b <src-dir> <dst-dir>    Add batch entries for a directory\n"
+	"  /p <src> <dst>            Add a batch entry for a file (SaveAVI)\n"
+	"  /SaveAVI <src> <dst>                   \n"
+	"  /ExportViaEncoderSet <src> <dst> <set> \n"
+	"  /RunNullVideoPass <src>                \n"
+	"  /SaveAVI * <dst>          (* to use source loaded with other commands)\n"
+	"  /RunNullVideoPass *                    \n"
+	"  /ExportViaEncoderSet * <dst> <set>     \n"
+	"                            \n"
+	"  /r                        Run job queue\n"
+	"  /master <file>            Join shared job queue in non-autostart mode\n"
 	"  /slave <file>             Join shared job queue in autostart mode\n"
+	"  /portable                 Switch to portable settings mode\n"
+	"  /priority <pri>           Start in low, belowNormal, normal, aboveNormal, high, or realtime priority\n"
+	"  /queryVersion             Return build number\n"
+	"  /safecpu                  Do not use CPU extensions on startup\n"
+	"  /min                      Start minimized\n"
+	"  /max                      Start maximized\n"
 	"  /topmost                  Create window as always-on-top\n"
-	"  /vdxadebug                Enable filter acceleration debug window\n"
+//	"  /vdxadebug                Enable filter acceleration debug window\n"
 	"  /x                        Exit when complete\n"
-	);
+	;
 
 	if (g_consoleMode) {
-		VDLog(kVDLogError, VDTextAToW(msg.gets()));
+		VDLog(kVDLogError, VDTextAToW(msg));
 		return 5;
 	} else {
-		msg.post(g_hWnd, "Command-line flags:");
+		MessageBox(g_hWnd, msg, "Command-line flags:", MB_OK | MB_SETFOREGROUND);
 		return -1;
 	}
 }
@@ -1165,13 +1169,67 @@ int ProcessCommandLine::scan(const VDCommandLine& cmdLine, bool execute) {
 						}
 					}
 				}
-				else if (!wcscmp(token, L"p")) {
+				else if (!wcscmp(token, L"p") || !wcscmp(token, L"SaveAVI")) {
 					const wchar_t *path2;
 
 					if (!cmdLine.GetNextNonSwitchArgument(it, token) || !cmdLine.GetNextNonSwitchArgument(it, path2))
-						throw MyError("Command line error: syntax is /p <src_file> <dst_file>");
+						throw MyError("Command line error: syntax is /SaveAVI <src_file> <dst_file>");
 
-					if (execute) JobAddBatchFile(token, path2);
+					if (execute) {
+						JobRequestVideo req;
+						req.opt = &g_dubOpts;
+						req.fileInput = token;
+						req.fileOutput = path2;
+						if (req.fileInput==L"*") {
+							if (!inputVideo) {
+								throw MyError("Command line error: \"/SaveAVI * <dst_file>\" requires source video");
+							}
+							SetProject(req, g_project);
+						}
+
+						JobAddConfiguration(req);
+					}
+				}
+				else if (!wcscmp(token, L"RunNullVideoPass")) {
+					if (!cmdLine.GetNextNonSwitchArgument(it, token))
+						throw MyError("Command line error: syntax is /RunNullVideoPass <src_file>");
+
+					if (execute) {
+						JobRequest req;
+						req.opt = &g_dubOpts;
+						req.fileInput = token;
+						if (req.fileInput==L"*") {
+							if (!inputVideo) {
+								throw MyError("Command line error: \"/RunNullVideoPass *\" requires source video");
+							}
+							SetProject(req, g_project);
+						}
+
+						JobAddConfigurationRunVideoAnalysisPass(req);
+					}
+				}
+				else if (!wcscmp(token, L"ExportViaEncoderSet")) {
+					const wchar_t *path2;
+					const wchar_t *set;
+
+					if (!cmdLine.GetNextNonSwitchArgument(it, token) || !cmdLine.GetNextNonSwitchArgument(it, path2) || !cmdLine.GetNextNonSwitchArgument(it, set))
+						throw MyError("Command line error: syntax is /ExportViaEncoderSet <src_file> <dst_file> <set_name>");
+
+					if (execute) {
+						JobRequestExtVideo req;
+						req.opt = &g_dubOpts;
+						req.fileInput = token;
+						req.fileOutput = path2;
+						req.encSetName = set;
+						if (req.fileInput==L"*") {
+							if (!inputVideo) {
+								throw MyError("Command line error: \"/ExportViaEncoderSet * <dst_file> <set_name>\" requires source video");
+							}
+							SetProject(req, g_project);
+						}
+
+						JobAddConfigurationExportViaEncoder(req);
+					}
 				}
 				else if (!wcscmp(token, L"priority")) {
 					if (!cmdLine.GetNextNonSwitchArgument(it, token))
