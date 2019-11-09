@@ -829,6 +829,7 @@ protected:
 	void CloneDialog();
 	void SaveFilters();
 	void AddFilter(int pos);
+	void AddFilterCopy();
 	bool ConfigureFilter(FilterInstance *fa);
 	bool ConfigureCrop(FilterInstance *fa);
 	bool ConfigureBlend(FilterInstance *fa);
@@ -1098,6 +1099,10 @@ bool VDVideoFiltersDialog::OnCommand(uint32 id, uint32 extcode) {
 
 		case ID_FILTERLIST_ADDFILTERBEFORE:
 			AddFilter(0);
+			return true;
+
+		case ID_FILTERLIST_ADDCOPY:
+			AddFilterCopy();
 			return true;
 
 		case IDC_DELETE:
@@ -1482,6 +1487,46 @@ void VDVideoFiltersDialog::AddFilter(int pos) {
 				return;
 			}
 		}
+
+		RedoFilters();
+
+		mListView.SetSelectedIndex(index);
+
+		EnableConfigureBox(index);
+	} catch(const MyError& e) {
+		e.post(mhdlg, g_szError);
+	}
+}
+
+void VDVideoFiltersDialog::AddFilterCopy() {
+	int src_index = mListView.GetSelectedIndex();
+	if (src_index==-1) return;
+	FilterListItem *fli = vdpoly_cast<FilterListItem *>(static_cast<FilterListItemBase *>(mListView.GetVirtualItem(src_index)));
+
+	if (!fli) return;
+	FilterInstance *fa0 = fli->mpEntry->mpInstance;
+
+	try {
+		vdrefptr<VDFilterChainEntry> ent(new VDFilterChainEntry);
+		vdrefptr<FilterInstance> fa(fa0->Clone());
+		VDParameterCurve* curve = fa->GetAlphaParameterCurve();
+		if (curve)
+			fa->SetAlphaParameterCurve(new VDParameterCurve(*curve));
+
+		bool enable = fa0->IsEnabled();
+		fa->SetEnabled(enable);
+
+		ent->mpInstance = fa;
+
+		++mFilterEnablesUpdateLock;
+		int insert_index = src_index+1;
+
+		const int index = mListView.InsertVirtualItem(insert_index, new FilterListItem(this, ent));
+		if (index >= 0) {
+			mListView.SetSelectedIndex(index);
+			mListView.SetItemChecked(index, enable);
+		}
+		--mFilterEnablesUpdateLock;
 
 		RedoFilters();
 

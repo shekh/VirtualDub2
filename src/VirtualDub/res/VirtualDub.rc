@@ -697,6 +697,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Add Filter before...",        ID_FILTERLIST_ADDFILTERBEFORE
         MENUITEM "Add Filter after...",         ID_FILTERLIST_ADDFILTERAFTER
+        MENUITEM "Duplicate Filter",            ID_FILTERLIST_ADDCOPY
         MENUITEM SEPARATOR
         MENUITEM "Delete",                      ID_FILTERLIST_DELETE
     END

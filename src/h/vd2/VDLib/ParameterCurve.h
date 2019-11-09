@@ -18,6 +18,7 @@ public:
 	typedef vdfastvector<Point> PointList;
 
 	VDParameterCurve();
+	VDParameterCurve(const VDParameterCurve& a);
 	~VDParameterCurve();
 
 	int AddRef();

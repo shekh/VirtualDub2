@@ -25,6 +25,14 @@ VDParameterCurve::VDParameterCurve()
 {
 }
 
+VDParameterCurve::VDParameterCurve(const VDParameterCurve& a)
+	: mMinVal(a.mMinVal)
+	, mMaxVal(a.mMaxVal)
+	, mRefCount(0)
+	, mPoints(a.mPoints)
+{
+}
+
 VDParameterCurve::~VDParameterCurve() {
 }
 
