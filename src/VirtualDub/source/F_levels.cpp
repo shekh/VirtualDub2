@@ -490,13 +490,6 @@ static long levels_param(FilterActivation *fa, const FilterFunctions *ff) {
 	}
 }
 
-static void levelsButtonCallback(bool fNewState, void *pvData) {
-	HWND hdlg = (HWND)pvData;
-
-	EnableWindow(GetDlgItem(hdlg, IDC_SAMPLE), fNewState);
-	EnableWindow(GetDlgItem(hdlg, IDC_SAMPLE_MULTIPLE), fNewState);
-}
-
 static void levelsRedoTables(LevelsFilterData *mfd) {
 	int i;
 	const long	y_base	= mfd->iOutputLo;
@@ -746,7 +739,8 @@ static INT_PTR APIENTRY levelsDlgProc( HWND hDlg, UINT message, WPARAM wParam, L
 
 				CheckDlgButton(hDlg, IDC_LUMA, mfd->bLuma ? BST_CHECKED : BST_UNCHECKED);
 
-				mfd->ifp->SetButtonCallback(levelsButtonCallback, (void *)hDlg);
+				EnableWindow(GetDlgItem(hDlg, IDC_SAMPLE), true);
+				EnableWindow(GetDlgItem(hDlg, IDC_SAMPLE_MULTIPLE), true);
 				mfd->ifp->SetSampleCallback(levelsSampleCallback, (void *)mfd);
 				mfd->ifp->InitButton((VDXHWND)GetDlgItem(hDlg, IDC_PREVIEW));
 

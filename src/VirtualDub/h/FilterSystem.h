@@ -91,6 +91,7 @@ public:
 	void DeallocateBuffers();
 	const VDPixmapLayout& GetInputLayout() const;
 	const VDPixmapLayout& GetOutputLayout() const;
+	const VDFraction GetInputFrameRate() const;
 	bool isRunning() const;
 	bool isEmpty() const;
 	bool isTrimmedChain() const { return mbTrimmedChain; }

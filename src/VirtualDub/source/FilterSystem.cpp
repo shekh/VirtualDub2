@@ -1151,6 +1151,10 @@ const VDPixmapLayout& FilterSystem::GetOutputLayout() const {
 	return mpBitmaps->mFinalLayout;
 }
 
+const VDFraction FilterSystem::GetInputFrameRate() const {
+	return VDFraction(mpBitmaps->mInitialBitmap.mFrameRateHi,mpBitmaps->mInitialBitmap.mFrameRateLo);
+}
+
 bool FilterSystem::isRunning() const {
 	return mbFiltersInited;
 }
