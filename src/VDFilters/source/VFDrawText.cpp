@@ -466,6 +466,7 @@ uint32 VDVFilterDrawText::GetParams() {
 	case kPixFormat_YUV444_Planar:
 	case kPixFormat_YUV422_Planar:
 	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV410_Planar:
 	case kPixFormat_YUV444_Planar16:
 	case kPixFormat_YUV422_Planar16:
 	case kPixFormat_YUV420_Planar16:
@@ -586,6 +587,7 @@ void VDVFilterDrawText::Run() {
 	case kPixFormat_YUV444_Planar:
 	case kPixFormat_YUV422_Planar:
 	case kPixFormat_YUV420_Planar:
+	case kPixFormat_YUV410_Planar:
 	case kPixFormat_YUV444_Planar16:
 	case kPixFormat_YUV422_Planar16:
 	case kPixFormat_YUV420_Planar16:

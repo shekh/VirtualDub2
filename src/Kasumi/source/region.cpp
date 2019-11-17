@@ -873,13 +873,13 @@ bool VDPixmapFillRegionAntialiased_32x_32x(const VDPixmap& dst, const VDPixmapRe
 		uint32 span0 = pSpan[0];
 		uint32 span1 = pSpan[1];
 
-		sint32 py = (span0 >> 16) - 0x8000 + y;
+		sint32 py = (span0 >> 16) - 0x8000 + y*4;
 
 		if ((uint32)py >= (uint32)dsth32)
 			continue;
 
-		sint32 px1 = (span0 & 0xffff) - 0x8000 + x;
-		sint32 px2 = (span1 & 0xffff) - 0x8000 + x;
+		sint32 px1 = (span0 & 0xffff) - 0x8000 + x*4;
+		sint32 px2 = (span1 & 0xffff) - 0x8000 + x*4;
 		sint32 w = span1-span0;
 
 		if (lasty != py) {
@@ -985,13 +985,13 @@ bool VDPixmapFillRegionAntialiased_16x_16x(const VDPixmap& dst, const VDPixmapRe
 		uint32 span0 = pSpan[0];
 		uint32 span1 = pSpan[1];
 
-		sint32 py = (span0 >> 16) - 0x8000 + y;
+		sint32 py = (span0 >> 16) - 0x8000 + y*2;
 
 		if ((uint32)py >= (uint32)dsth16)
 			continue;
 
-		sint32 px1 = (span0 & 0xffff) - 0x8000 + x;
-		sint32 px2 = (span1 & 0xffff) - 0x8000 + x;
+		sint32 px1 = (span0 & 0xffff) - 0x8000 + x*2;
+		sint32 px2 = (span1 & 0xffff) - 0x8000 + x*2;
 		sint32 w = span1-span0;
 
 		if (lasty != py) {
@@ -1102,8 +1102,8 @@ bool VDPixmapFillRegionAntialiased_16x_8x(const VDPixmap& dst, const VDPixmapReg
 		if ((uint32)py >= (uint32)dsth8)
 			continue;
 
-		sint32 px1 = (span0 & 0xffff) - 0x8000 + x;
-		sint32 px2 = (span1 & 0xffff) - 0x8000 + x;
+		sint32 px1 = (span0 & 0xffff) - 0x8000 + x*2;
+		sint32 px2 = (span1 & 0xffff) - 0x8000 + x*2;
 		sint32 w = span1-span0;
 
 		if (lasty != py) {
