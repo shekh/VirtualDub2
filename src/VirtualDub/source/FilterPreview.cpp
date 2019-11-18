@@ -321,6 +321,7 @@ public:
 	void RedoFrame();
 	void UndoSystem();
 	void RedoSystem();
+	void SampleRedoSystem();
 	void Close();
 	const VDPixmapLayout& GetFrameBufferLayout();
 	void CopyOutputFrameToClipboard();
@@ -1733,8 +1734,18 @@ void FilterPreview::RedoFrame() {
 void FilterPreview::RedoSystem() {
 	if (mhdlg)
 		SendMessage(mhdlg, MYWM_RESTART, 0, 0);
-	else
-		InitFilterSystem();
+	SetRangeFrames();
+}
+
+void FilterPreview::SampleRedoSystem() {
+	if (mhdlg)
+		SendMessage(mhdlg, MYWM_RESTART, 0, 0);
+	else {
+		try {
+			InitFilterSystem();
+		} catch(const MyError&){
+		}
+	}
 	SetRangeFrames();
 }
 
@@ -1807,7 +1818,7 @@ bool FilterPreview::SampleCurrentFrame() {
 		return false;
 
 	if (!mpFiltSys->isRunning()) {
-		RedoSystem();
+		SampleRedoSystem();
 
 		if (!mpFiltSys->isRunning())
 			return false;
@@ -1892,6 +1903,9 @@ void FilterPreview::UpdateButton() {
 
 static INT_PTR CALLBACK SampleFramesDlgProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
+	case WM_INITDIALOG:
+		CheckDlgButton(hdlg, IDC_ONEKEYPERSEC, BST_CHECKED);
+		return TRUE;
 	case WM_COMMAND:
 		switch(LOWORD(wParam)) {
 		case IDOK:
@@ -1930,7 +1944,7 @@ long FilterPreview::SampleFrames() {
 		return -1;
 
 	if (!mpFiltSys->isRunning()) {
-		RedoSystem();
+		SampleRedoSystem();
 
 		if (!mpFiltSys->isRunning())
 			return -1;
@@ -2019,7 +2033,7 @@ long FilterPreview::SampleFrames(IFilterModPreviewSample* handler) {
 		return -1;
 
 	if (!mpFiltSys->isRunning()) {
-		RedoSystem();
+		SampleRedoSystem();
 
 		if (!mpFiltSys->isRunning())
 			return -1;
