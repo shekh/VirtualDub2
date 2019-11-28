@@ -3998,6 +3998,7 @@ HRESULT VDCaptureDriverDS::CreateRenderer(IBaseFilter **ppR)
 	*ppR = NULL;
 	HRESULT hr = 0;
 
+	/*
 	// Create the EVR and add it to the filter graph.
 	IBaseFilter* pEvr = NULL;
 	hr = CoCreateInstance(CLSID_EnhancedVideoRenderer, NULL, CLSCTX_INPROC, IID_IBaseFilter, (void**)&pEvr);
@@ -4027,6 +4028,7 @@ HRESULT VDCaptureDriverDS::CreateRenderer(IBaseFilter **ppR)
 		*ppR = pEvr;
 		return hr;
 	}
+	*/
 
 	// Create the VMR and add it to the filter graph.
 	IBaseFilter* pVmr = NULL;
@@ -4038,9 +4040,11 @@ HRESULT VDCaptureDriverDS::CreateRenderer(IBaseFilter **ppR)
 			IVMRFilterConfig9* pConfig = NULL;
 
 			pVmr->QueryInterface(IID_IVMRFilterConfig9, (void**)&pConfig);
-			pConfig->SetRenderingMode(VMR9Mode_Windowless);
+			//pConfig->SetRenderingMode(VMR9Mode_Windowless);
+			pConfig->SetNumberOfStreams(1);
 			pConfig->Release();
 
+			/*
 			IVMRWindowlessControl9 *pWC = NULL;
 			hr = pVmr->QueryInterface(IID_IVMRWindowlessControl9, (void**)&pWC);
 			if(SUCCEEDED(hr)) {
@@ -4053,6 +4057,7 @@ HRESULT VDCaptureDriverDS::CreateRenderer(IBaseFilter **ppR)
 
 				pWC->Release();
 			}
+			*/
 		}
 
 		*ppR = pVmr;
@@ -4200,8 +4205,12 @@ bool VDCaptureDriverDS::BuildGraph(bool bNeedCapture, bool bEnableAudio) {
 	VDASSERT(!pPreviewPin || (pPreviewPin != mpAudioPin));
 	VDASSERT(!pCapturePin || (pCapturePin != mpAudioPin));
 
-	//IBaseFilter* render;
-	//DS_VERIFY(CreateRenderer(&render), "create renderer");
+	IBaseFilter* render;
+	DS_VERIFY(CreateRenderer(&render), "create renderer");
+	if (render) {
+		mExtraFilters.push_back(render);
+		render->Release();
+	}
 
 	switch(mDisplayMode) {
 	case kDisplayHardware:
