@@ -991,7 +991,7 @@ void VDCaptureProjectUI::SetFullScreen(bool fs) {
 	if (fs == mbFullScreen)
 		return;
 
-	mpDisplay->SetFullScreen(fs);
+	//mpDisplay->SetFullScreen(fs);
 
 	mbFullScreen = fs;
 

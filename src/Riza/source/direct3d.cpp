@@ -1307,6 +1307,7 @@ HRESULT VDD3D9Manager::DrawElements(D3DPRIMITIVETYPE type, UINT vertStart, UINT 
 	return hr;
 }
 
+/*
 HRESULT VDD3D9Manager::Present(const RECT *src, HWND hwndDest, bool vsync, float& syncdelta, VDD3DPresentHistory& history) {
 	if (!mPresentParms.Windowed)
 		return S_OK;
@@ -1420,7 +1421,9 @@ HRESULT VDD3D9Manager::Present(const RECT *src, HWND hwndDest, bool vsync, float
 
 	return hr;
 }
+*/
 
+//! full screen stuff was only included in capture and didnt work either
 HRESULT VDD3D9Manager::PresentFullScreen(bool wait) {
 	if (mPresentParms.Windowed)
 		return S_OK;
@@ -1529,6 +1532,8 @@ bool VDD3D9Manager::CreateSharedTexture(const char *name, SharedTextureFactory f
 }
 
 bool VDD3D9Manager::CreateSwapChain(HWND hwnd, int width, int height, bool clipToMonitor, IVDD3D9SwapChain **ppSwapChain) {
+	mbClip = clipToMonitor;
+	
 	D3DPRESENT_PARAMETERS pparms={};
 
 	pparms.Windowed			= TRUE;
@@ -1536,17 +1541,22 @@ bool VDD3D9Manager::CreateSwapChain(HWND hwnd, int width, int height, bool clipT
 	pparms.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 	pparms.BackBufferCount	= 1;
 
+	// note: flipex is not suitable (need to keep backbuffer anyway for dirty updates)
+	/*
 	if (mpD3DDeviceEx) {
 		pparms.SwapEffect = D3DSWAPEFFECT_FLIPEX;
 		pparms.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
 		pparms.BackBufferCount	= 3;
 	}
+	*/
 
 	pparms.BackBufferWidth	= width;
 	pparms.BackBufferHeight	= height;
 	pparms.BackBufferFormat	= mPresentParms.BackBufferFormat;
 	pparms.hDeviceWindow = hwnd;
-	pparms.Flags = clipToMonitor && !mpD3DDeviceEx ? D3DPRESENTFLAG_DEVICECLIP : 0;
+	pparms.Flags = 0;
+	// DEVICECLIP is buggy on win10: wrong clip for rotated monitor
+	//pparms.Flags = clipToMonitor && !mpD3DDeviceEx ? D3DPRESENTFLAG_DEVICECLIP : 0;
 
 	vdrefptr<IDirect3DSwapChain9> pD3DSwapChain;
 	HRESULT hr = mpD3DDevice->CreateAdditionalSwapChain(&pparms, ~pD3DSwapChain);
@@ -1576,7 +1586,7 @@ void VDD3D9Manager::SetSwapChainActive(IVDD3D9SwapChain *pSwapChain) {
 	pD3DBackBuffer->Release();
 }
 
-HRESULT VDD3D9Manager::PresentSwapChain(IVDD3D9SwapChain *pSwapChain, const RECT *srcRect, HWND hwndDest, bool vsync, bool newframe, bool donotwait, float& syncDelta, VDD3DPresentHistory& history) {
+HRESULT VDD3D9Manager::PresentSwapChain(IVDD3D9SwapChain *pSwapChain, const RECT *srcRect0, HWND hwndDest, bool vsync, bool newframe, bool donotwait, float& syncDelta, VDD3DPresentHistory& history) {
 	if (!mPresentParms.Windowed)
 		return S_OK;
 
@@ -1589,6 +1599,8 @@ HRESULT VDD3D9Manager::PresentSwapChain(IVDD3D9SwapChain *pSwapChain, const RECT
 	IDirect3DSwapChain9 *pD3DSwapChain = static_cast<VDD3D9SwapChain *>(pSwapChain)->GetD3DSwapChain();
 	HRESULT hr;
 
+	// this belongs to flipex experiment (not working)
+	/*
 	if (mpD3DDeviceEx) {
 		DWORD flags = 0;
 
@@ -1619,6 +1631,23 @@ HRESULT VDD3D9Manager::PresentSwapChain(IVDD3D9SwapChain *pSwapChain, const RECT
 		history.mbPresentPending = false;
 		return hr;
 	}
+	*/
+
+	RECT srcRect = *srcRect0;
+	if (mbClip) {
+		RECT r = *srcRect0;
+		MapWindowPoints(hwndDest,0,(POINT*)&r,2);
+		HMONITOR hmon = mpD3D->GetAdapterMonitor(mAdapter);
+		MONITORINFO monInfo = {sizeof(MONITORINFO)};
+		GetMonitorInfo(hmon, &monInfo);
+		RECT& mr = monInfo.rcMonitor;
+		if (mr.top>r.top) r.top = mr.top;
+		if (mr.left>r.left) r.left = mr.left;
+		if (mr.right<r.right) r.right = mr.right;
+		if (mr.bottom<r.bottom) r.bottom = mr.bottom;
+		MapWindowPoints(0,hwndDest,(POINT*)&r,2);
+		srcRect = r;
+	}
 
 	if (!vsync || !(mDevCaps.Caps & D3DCAPS_READ_SCANLINE)) {
 		if (!newframe)
@@ -1627,7 +1656,7 @@ HRESULT VDD3D9Manager::PresentSwapChain(IVDD3D9SwapChain *pSwapChain, const RECT
 		syncDelta = 0.0f;
 
 		for(;;) {
-			hr = pD3DSwapChain->Present(srcRect, NULL, hwndDest, NULL, D3DPRESENT_DONOTWAIT);
+			hr = pD3DSwapChain->Present(&srcRect, &srcRect, hwndDest, NULL, D3DPRESENT_DONOTWAIT);
 
 			if (hr != D3DERR_WASSTILLDRAWING)
 				break;
@@ -1650,23 +1679,11 @@ HRESULT VDD3D9Manager::PresentSwapChain(IVDD3D9SwapChain *pSwapChain, const RECT
 		if (!GetWindowRect(hwndDest, &r))
 			return E_FAIL;
 
-		int top = 0;
-		int bottom = GetSystemMetrics(SM_CYSCREEN);
-
-		// GetMonitorInfo() requires Windows 98. We might never fail on this because
-		// I think DirectX 9.0c requires 98+, but we have to dynamically link anyway
-		// to avoid a startup link failure on 95.
-		typedef BOOL (APIENTRY *tpGetMonitorInfo)(HMONITOR mon, LPMONITORINFO lpmi);
-		static tpGetMonitorInfo spGetMonitorInfo = (tpGetMonitorInfo)GetProcAddress(GetModuleHandle("user32"), "GetMonitorInfo");
-
-		if (spGetMonitorInfo) {
-			HMONITOR hmon = mpD3D->GetAdapterMonitor(mAdapter);
-			MONITORINFO monInfo = {sizeof(MONITORINFO)};
-			if (spGetMonitorInfo(hmon, &monInfo)) {
-				top = monInfo.rcMonitor.top;
-				bottom = monInfo.rcMonitor.bottom;
-			}
-		}
+		HMONITOR hmon = mpD3D->GetAdapterMonitor(mAdapter);
+		MONITORINFO monInfo = {sizeof(MONITORINFO)};
+		GetMonitorInfo(hmon, &monInfo);
+		int top = monInfo.rcMonitor.top;
+		int bottom = monInfo.rcMonitor.bottom;
 
 		if (r.top < top)
 			r.top = top;
@@ -1742,12 +1759,12 @@ HRESULT VDD3D9Manager::PresentSwapChain(IVDD3D9SwapChain *pSwapChain, const RECT
 	history.mbPresentBlitStarted = true;
 
 	if (donotwait) {
-		hr = pD3DSwapChain->Present(srcRect, NULL, hwndDest, NULL, D3DPRESENT_DONOTWAIT);
+		hr = pD3DSwapChain->Present(&srcRect, &srcRect, hwndDest, NULL, D3DPRESENT_DONOTWAIT);
 
 		if (hr == D3DERR_WASSTILLDRAWING)
 			return S_FALSE;
 	} else
-		hr = pD3DSwapChain->Present(srcRect, NULL, hwndDest, NULL, 0);
+		hr = pD3DSwapChain->Present(&srcRect, &srcRect, hwndDest, NULL, 0);
 
 	history.mbPresentPending = false;
 	if (FAILED(hr))

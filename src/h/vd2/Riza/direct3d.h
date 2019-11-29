@@ -207,7 +207,7 @@ public:
 
 	HRESULT		DrawArrays(D3DPRIMITIVETYPE type, UINT vertStart, UINT primCount);
 	HRESULT		DrawElements(D3DPRIMITIVETYPE type, UINT vertStart, UINT vertCount, UINT idxStart, UINT primCount);
-	HRESULT		Present(const RECT *srcRect, HWND hwndDest, bool vsync, float& syncDelta, VDD3DPresentHistory& history);
+	//HRESULT		Present(const RECT *srcRect, HWND hwndDest, bool vsync, float& syncDelta, VDD3DPresentHistory& history);
 	HRESULT		PresentFullScreen(bool wait);
 
 	bool		Is3DCardLame();
@@ -251,6 +251,7 @@ protected:
 	VDThreadID			mThreadID;
 
 	bool				mbUseD3D9Ex;
+	bool				mbClip;
 	bool				mbDeviceValid;
 	bool				mbInScene;
 	bool				mbSupportsEventQueries;
