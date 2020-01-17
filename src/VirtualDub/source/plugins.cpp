@@ -325,6 +325,29 @@ bool VDExternalModule::Lock() {
 		{
 			VDExternalCodeBracket bracket(mFilename.c_str(), __FILE__, __LINE__);
 
+			HANDLE h = CreateFileW(mFilename.c_str(), GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+			if (h==INVALID_HANDLE_VALUE)
+				throw MyWin32Error("Cannot load plugin module \"%ls\": %%s", GetLastError(), mFilename.c_str());
+
+			const int size = 4096;
+			char buf[size];
+			DWORD rsize;
+			ReadFile(h,buf,size,&rsize,0);
+			CloseHandle(h);
+			if (rsize==size) {
+				IMAGE_DOS_HEADER* h0 = (IMAGE_DOS_HEADER*)buf;
+				IMAGE_NT_HEADERS* h1 = (IMAGE_NT_HEADERS*)(buf+h0->e_lfanew);
+				IMAGE_FILE_HEADER* fh = &h1->FileHeader;
+				#ifdef _M_AMD64
+				if (fh->Machine==IMAGE_FILE_MACHINE_I386)
+					throw MyError("Cannot load plugin module \"%ls\": this is 32-bit plugin", mFilename.c_str());
+				#endif
+				#ifdef _M_IX86
+				if (fh->Machine==IMAGE_FILE_MACHINE_AMD64)
+					throw MyError("Cannot load plugin module \"%ls\": this is 64-bit plugin", mFilename.c_str());
+				#endif
+			}
+
 			if (GetVersion() & 0x80000000)
 				mhModule = LoadLibraryA(VDTextWToA(mFilename).c_str());
 			else
