@@ -62,12 +62,14 @@ struct JobRequest{
 
 struct JobRequestVideo: public JobRequest{
 	bool fCompatibility;
+	long lSegmentCount;
 	long lSpillThreshold;
 	long lSpillFrameThreshold;
 	int spillDigits;
 
 	JobRequestVideo() {
 		fCompatibility = false;
+		lSegmentCount = 0;
 		lSpillThreshold = 0;
 		lSpillFrameThreshold = 0;
 		spillDigits = 0;

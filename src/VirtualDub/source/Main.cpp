@@ -1368,9 +1368,12 @@ bool VDSaveDialogAudio::Commit(const VDStringW& fname) {
 
 ///////////////////////////////////////////////////////////////////////////
 
+static const char g_szRegKeySegmentCount[]="Segment count";
+static const char g_szRegKeyUseSegmentCount[]="Use segment count";
 static const char g_szRegKeySegmentFrameCount[]="Segment frame limit";
 static const char g_szRegKeyUseSegmentFrameCount[]="Use segment frame limit";
 static const char g_szRegKeySegmentSizeLimit[]="Segment size limit";
+static const char g_szRegKeyUseSegmentSizeLimit[]="Use segment size limit";
 static const char g_szRegKeySaveSelectionAndEditList[]="Save edit list";
 static const char g_szRegKeySaveTextInfo[]="Save text info";
 static const char g_szRegKeySegmentDigitCount[]="Segment digit count";
@@ -1382,17 +1385,21 @@ void SaveSegmentedAVI(HWND hWnd, bool queueAsJob) {
 	}
 
 	static const VDFileDialogOption sOptions[]={
-		{ VDFileDialogOption::kEnabledInt, 1, L"&Limit number of video frames per segment:", 1, 0x7fffffff },
-		{ VDFileDialogOption::kInt, 3, L"File segment &size limit in MB (50-2048):", 50, 2048 },
-		{ VDFileDialogOption::kInt, 4, L"Minimum digit count (1-10):", 1, 10 },
+		{ VDFileDialogOption::kEnabledInt, 1, L"Split in how &many segments:", 1, 0x7fffffff },
+		{ VDFileDialogOption::kEnabledInt, 3, L"&Limit number of video frames per segment:", 1, 0x7fffffff },
+		{ VDFileDialogOption::kEnabledInt, 5, L"File segment &size limit in MB (50-2048):", 50, 2048 },
+		{ VDFileDialogOption::kInt, 7, L"Minimum digit count (1-10):", 1, 10 },
 		{0}
 	};
 
 	VDRegistryAppKey key(g_szRegKeyPersistence);
-	int optVals[5]={
+	int optVals[8]={
 		0,
+		key.getBool(g_szRegKeyUseSegmentCount, false),
+		key.getInt(g_szRegKeySegmentCount, 1),
 		key.getBool(g_szRegKeyUseSegmentFrameCount, false),
 		key.getInt(g_szRegKeySegmentFrameCount, 100),
+		key.getBool(g_szRegKeyUseSegmentSizeLimit, true),
 		key.getInt(g_szRegKeySegmentSizeLimit, 2000),
 		key.getInt(g_szRegKeySegmentDigitCount, 2),
 	};
@@ -1400,12 +1407,17 @@ void SaveSegmentedAVI(HWND hWnd, bool queueAsJob) {
 	VDStringW fname(VDGetSaveFileName(VDFSPECKEY_SAVEVIDEOFILE, (VDGUIHandle)hWnd, L"Save segmented AVI", fileFiltersAppendAVI, L"avi", sOptions, optVals));
 
 	if (!fname.empty()) {
-		key.setBool(g_szRegKeyUseSegmentFrameCount, !!optVals[1]);
+		key.setBool(g_szRegKeyUseSegmentCount, !!optVals[1]);
+		key.setBool(g_szRegKeyUseSegmentFrameCount, !!optVals[3]);
+		key.setBool(g_szRegKeyUseSegmentSizeLimit, !!optVals[5]);
 		if (optVals[1])
-			key.setInt(g_szRegKeySegmentFrameCount, optVals[2]);
-		key.setInt(g_szRegKeySegmentSizeLimit, optVals[3]);
+			key.setInt(g_szRegKeySegmentCount, optVals[2]);
+		if (optVals[3])
+			key.setInt(g_szRegKeySegmentFrameCount, optVals[4]);
+		if (optVals[5])
+			key.setInt(g_szRegKeySegmentSizeLimit, optVals[6]);
 
-		int digits = optVals[4];
+		int digits = optVals[7];
 
 		if (digits < 1)
 			digits = 1;
@@ -1504,13 +1516,19 @@ void SaveSegmentedAVI(HWND hWnd, bool queueAsJob) {
 			JobRequestVideo req;
 			SetProject(req, g_project);
 			req.fileOutput = fname;
-			req.fCompatibility = true;
-			req.lSpillThreshold = optVals[3];
-			if (optVals[1]) req.lSpillFrameThreshold = optVals[2];
+			if (optVals[1]) req.lSegmentCount = optVals[2];
+			if (optVals[3]) req.lSpillFrameThreshold = optVals[4];
+			if (optVals[5]) req.lSpillThreshold = optVals[6];
 			req.spillDigits = digits;
 			JobAddConfiguration(req);
 		} else {
-			SaveSegmentedAVI(fname.c_str(), false, NULL, optVals[3], optVals[1] ? optVals[2] : 0, digits);
+			RequestSegmentVideo req;
+			req.fileOutput = fname;
+			if (optVals[1]) req.lSegmentCount = optVals[2];
+			if (optVals[3]) req.lSpillFrameThreshold = optVals[4];
+			if (optVals[5]) req.lSpillThreshold = optVals[6];
+			req.spillDigits = digits;
+			SaveSegmentedAVI(req);
 		}
 	}
 }

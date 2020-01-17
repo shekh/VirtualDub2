@@ -2224,7 +2224,19 @@ static void func_VirtualDub_SaveSegmentedAVI(IVDScriptInterpreter *, VDScriptVal
 	if (arg_count >= 4)
 		digits = arglist[3].asInt();
 
-	SaveSegmentedAVI(filename.c_str(), true, &opts, arglist[1].asInt(), arglist[2].asInt(), digits);
+	int segments = 0;
+	if (arg_count >= 5)
+		segments = arglist[4].asInt();
+
+	RequestSegmentVideo req;
+	req.fileOutput = filename;
+	req.propagateErrors = true;
+	req.opt = &opts;
+	req.lSegmentCount = segments;
+	req.lSpillThreshold = arglist[1].asInt();
+	req.lSpillFrameThreshold = arglist[2].asInt();
+	req.spillDigits = digits;
+	SaveSegmentedAVI(req);
 }
 
 static void func_VirtualDub_SaveImageSequence(IVDScriptInterpreter *, VDScriptValue *arglist, int arg_count) {
@@ -2462,6 +2474,7 @@ static const VDScriptFunctionDef obj_VirtualDub_functbl[]={
 	{ func_VirtualDub_SaveCompatibleAVI, "SaveCompatibleAVI",	"0s" },
 	{ func_VirtualDub_SaveSegmentedAVI,	"SaveSegmentedAVI",		"0sii" },
 	{ func_VirtualDub_SaveSegmentedAVI,	NULL,					"0siii" },
+	{ func_VirtualDub_SaveSegmentedAVI,	NULL,					"0siiii" },
 	{ func_VirtualDub_SaveImageSequence,	"SaveImageSequence",	"0ssii" },
 	{ func_VirtualDub_SaveImageSequence,	NULL,					"0ssiii" },
 	{ func_VirtualDub_SaveImageSequence2,	"SaveImageSequence2",	"0ssiii" },

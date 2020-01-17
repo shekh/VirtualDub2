@@ -91,6 +91,20 @@ struct RequestVideo: public CommandRequest {
 	}
 };
 
+struct RequestSegmentVideo: public RequestVideo {
+	long lSegmentCount;
+	long lSpillThreshold;
+	long lSpillFrameThreshold;
+	int spillDigits;
+
+	RequestSegmentVideo() {
+		lSegmentCount = 0;
+		lSpillThreshold = 0;
+		lSpillFrameThreshold = 0;
+		spillDigits = 0;
+	}
+};
+
 struct RequestWAV: public CommandRequest {
 	bool auto_w64;
 
@@ -111,6 +125,7 @@ struct RequestImages: public CommandRequest {
 struct VideoOperation {
 	DubOptions* opt;
 	CommandRequest* req;
+	long lSegmentCount;
 	long lSpillThreshold;
 	long lSpillFrameThreshold;
 	char iDubPriority;
@@ -123,6 +138,7 @@ struct VideoOperation {
 		req = 0;
 		opt = 0;
 		propagateErrors = false;
+		lSegmentCount = 0;
 		lSpillThreshold = 0;
 		lSpillFrameThreshold = 0;
 		iDubPriority = 0;
@@ -134,6 +150,7 @@ struct VideoOperation {
 		this->req = req;
 		opt = req->opt;
 		propagateErrors = req->propagateErrors;
+		lSegmentCount = 0;
 		lSpillThreshold = 0;
 		lSpillFrameThreshold = 0;
 		iDubPriority = 0;
@@ -152,7 +169,7 @@ void SaveAVI(RequestVideo& req);
 void SavePlugin(RequestVideo& req);
 void SaveStripedAVI(const wchar_t *szFile);
 void SaveStripeMaster(const wchar_t *szFile);
-void SaveSegmentedAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, long lSpillThreshold, long lSpillFrameThreshold, int digits);
+void SaveSegmentedAVI(RequestSegmentVideo& req);
 void SaveImageSequence(RequestImages& req);
 void EnsureSubset();
 void ScanForUnreadableFrames(FrameSubset *pSubset, IVDVideoSource *pVideoSource);

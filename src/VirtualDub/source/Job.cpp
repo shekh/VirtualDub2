@@ -754,7 +754,9 @@ void JobAddConfiguration(JobRequestVideo& req) {
 	VDStringA sname = VDEncodeScriptString(req.fileOutput);
 
 	// Add actual run option
-	if (req.lSpillThreshold)
+	if (req.lSegmentCount>1)
+		output.addf("VirtualDub.SaveSegmentedAVI(\"%s\", %d, %d, %d, %d);", sname.c_str(), req.lSpillThreshold, req.lSpillFrameThreshold, req.spillDigits, req.lSegmentCount);
+	else if (req.lSpillThreshold || req.lSpillFrameThreshold)
 		output.addf("VirtualDub.SaveSegmentedAVI(\"%s\", %d, %d, %d);", sname.c_str(), req.lSpillThreshold, req.lSpillFrameThreshold, req.spillDigits);
 	else
 		output.addf("VirtualDub.Save%sAVI(\"%s\");", req.fCompatibility ? "Compatible" : "", sname.c_str());

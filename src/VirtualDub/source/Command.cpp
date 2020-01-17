@@ -316,28 +316,31 @@ void SaveStripeMaster(const wchar_t *szFile) {
 	//g_project->RunOperation(&outstriped, 2, NULL, g_prefs.main.iDubPriority, false, 0, 0, VDPreferencesGetRenderBackgroundPriority());
 }
 
-void SaveSegmentedAVI(const wchar_t *szFilename, bool fProp, DubOptions *quick_opts, long lSpillThreshold, long lSpillFrameThreshold, int digits) {
+void SaveSegmentedAVI(RequestSegmentVideo& req) {
 	if (!inputVideo)
 		throw MyError("No input file to process.");
 
-	if (digits < 1 || digits > 10)
-		throw MyError("Invalid digit count: %d", digits);
+	if (req.spillDigits < 1 || req.spillDigits > 10)
+		throw MyError("Invalid digit count: %d", req.spillDigits);
 
 	VDAVIOutputFileSystem outfile;
 
 	outfile.SetIndexing(false);
 	outfile.SetCaching(false);
+	if (req.lSpillThreshold && req.lSpillThreshold>2048)
+		outfile.SetIndexing(true); // required to produce valid file
 	outfile.SetBuffer(VDPreferencesGetRenderOutputBufferSize());
 
-	const VDStringW filename(szFilename);
-	outfile.SetFilenamePattern(VDFileSplitExtLeft(filename).c_str(), VDFileSplitExtRight(filename).c_str(), digits);
+	const VDStringW filename(req.fileOutput);
+	outfile.SetFilenamePattern(VDFileSplitExtLeft(req.fileOutput).c_str(), VDFileSplitExtRight(req.fileOutput).c_str(), req.spillDigits);
 
 	VideoOperation op;
 	op.setPrefs();
-	op.opt = quick_opts;
-	op.propagateErrors = fProp;
-	op.lSpillThreshold = lSpillThreshold;
-	op.lSpillFrameThreshold = lSpillFrameThreshold;
+	op.opt = req.opt;
+	op.propagateErrors = req.propagateErrors;
+	op.lSegmentCount = req.lSegmentCount;
+	op.lSpillThreshold = req.lSpillThreshold;
+	op.lSpillFrameThreshold = req.lSpillFrameThreshold;
 	g_project->RunOperation(&outfile, op);
 
 	//g_project->RunOperation(&outfile, FALSE, quick_opts, g_prefs.main.iDubPriority, fProp, lSpillThreshold, lSpillFrameThreshold, VDPreferencesGetRenderBackgroundPriority());
