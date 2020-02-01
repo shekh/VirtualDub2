@@ -191,7 +191,6 @@ void VDDrawTextDialog::pick_font() {
 	CHOOSEFONTW cf = {0};
 
 	wcscpy(lf.lfFaceName,param.face.c_str());
-	lf.lfHeight = LONG(param.size);
 	HDC hdc = GetDC(mhdlg);
 	lf.lfHeight = -LONG(param.size*GetDeviceCaps(hdc, LOGPIXELSY)/72);
 	ReleaseDC(mhdlg, hdc);
@@ -520,7 +519,7 @@ void VDVFilterDrawText::FormatString(const VDStringW& text) {
 	HDC hdc = CreateDC("DISPLAY", 0, 0, 0);
 
 	LOGFONTW f = {0,0, 0,0, param.weight, 0,0,0, ANSI_CHARSET, OUT_TT_ONLY_PRECIS, CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH,};
-	f.lfHeight = -LONG(param.size*GetDeviceCaps(hdc, LOGPIXELSY)/72*64);
+	f.lfHeight = -LONG(param.size*96/72*64);
 	wcscpy(f.lfFaceName,param.face.c_str());
 	f.lfItalic = param.italic;
 	HFONT hfont = CreateFontIndirectW(&f);
