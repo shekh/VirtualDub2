@@ -23,6 +23,7 @@ struct VDPixmap;
 
 #include <vd2/system/vectors.h>
 #include <vd2/system/vdstl.h>
+#include <Windows.h>
 
 class VDPixmapRegion {
 public:
@@ -89,5 +90,7 @@ bool VDPixmapFillPixmapAntialiased8x(const VDPixmap& dst, const VDPixmapRegion& 
 
 void VDPixmapCreateRoundRegion(VDPixmapRegion& dst, float r);
 void VDPixmapConvolveRegion(VDPixmapRegion& dst, const VDPixmapRegion& r1, const VDPixmapRegion& r2, VDPixmapRegion *tempCache = NULL);
+
+void VDPixmapConvertGDIPathToPath(VDPixmapPathRasterizer& rast, vdfastvector<POINT>& point, vdfastvector<unsigned char>& flag);
 
 #endif

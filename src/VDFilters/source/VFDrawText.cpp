@@ -27,43 +27,6 @@ uint32 colorref_to_argb(COLORREF color) {
 	return 0xFF000000 | (r<<16) | (g<<8) | (b);
 }
 
-void VDPixmapConvertGDIPathToPath(VDPixmapPathRasterizer& rast, vdfastvector<POINT>& point, vdfastvector<unsigned char>& flag) {
-	int loop_start=0;
-	{for(int i=0; i<(int)point.size(); i++){
-		POINT* p0 = &point[i];
-		char f0 = flag[i];
-
-		if(f0==PT_MOVETO){
-			loop_start = i;
-			continue;
-		}
-
-		if(f0 & PT_BEZIERTO){
-			vdint2 bp[4];
-			bp[0].set(p0[-1].x, p0[-1].y);
-			bp[1].set(p0[0].x, p0[0].y);
-			bp[2].set(p0[1].x, p0[1].y);
-			bp[3].set(p0[2].x, p0[2].y);
-			rast.CubicBezier(bp);
-			i+=2;
-		} else if(f0 & PT_LINETO){
-			vdint2 bp[2];
-			bp[0].set(p0[-1].x, p0[-1].y);
-			bp[1].set(p0[0].x,  p0[0].y);
-			rast.Line(bp[0], bp[1]);
-		}
-
-		if(flag[i] & PT_CLOSEFIGURE){
-			POINT* p0 = &point[i];
-			POINT* p1 = &point[loop_start];
-			vdint2 bp[2];
-			bp[0].set(p0[0].x, p0[0].y);
-			bp[1].set(p1[0].x, p1[0].y);
-			rast.Line(bp[0], bp[1]);
-		}
-	}}
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VFDrawTextParam {
