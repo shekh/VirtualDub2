@@ -2168,7 +2168,8 @@ unknown_PCM_format:
 			int outputFormatID = g_compression.driver->queryInputFormat(&outputFormatInfo);
 			//VDPixmapLayout driverLayout;
 			//VDGetPixmapLayoutForBitmapFormat(*(VDAVIBitmapInfoHeader*)bmiToFile,0,driverLayout);
-			VDPixmapCreateLinearLayout(icd.driverLayout,outputFormatID,bmiToFile->biWidth,abs(bmiToFile->biHeight),16);
+			//VDPixmapCreateLinearLayout(icd.driverLayout,outputFormatID,bmiToFile->biWidth,abs(bmiToFile->biHeight),16);
+			VDMakeBitmapCompatiblePixmapLayout(icd.driverLayout, bmiToFile->biWidth, bmiToFile->biHeight, outputFormatID, 0);
 			if (g_compression.driver->compressQuery(NULL, NULL, &icd.driverLayout)==ICERR_OK) {
 				// use layout
 				if (mFilterInputLayout.format==0)
@@ -2189,10 +2190,10 @@ unknown_PCM_format:
 			VDFraction scaledRate(1000000, VDClampToSint32(outputFrameRate.scale64ir(1000000)));
 			icd.mpVideoCompressor->SetDriver(g_compression.driver, g_compression.lDataRate*1024, g_compression.lQ, g_compression.lKey, false);
 			if (icd.driverLayout.format) {
+				icd.createOutputBlitter(); // may change driverLayout alignment
 				icd.mpVideoCompressor->GetOutputFormat(&icd.driverLayout, bmiOutput);
 				icd.mpVideoCompressor->Start(icd.driverLayout, outputFormatInfo, bmiOutput.data(), bmiOutput.size(), scaledRate, 0x0FFFFFFF);
 				icd.mpVideoCompressor->GetOutputFormat(&icd.driverLayout, bmiOutput);
-				icd.createOutputBlitter();
 			} else {
 				icd.mpVideoCompressor->GetOutputFormat(bmiToFile, bmiOutput);
 				icd.mpVideoCompressor->Start(bmiToFile, biSizeToFile, bmiOutput.data(), bmiOutput.size(), scaledRate, 0x0FFFFFFF);
@@ -3562,6 +3563,8 @@ void VDCaptureData::createOutputBlitter(bool flush) {
 
 		IVDPixmapExtraGen* extraDst = VDPixmapCreateNormalizer(fmt, out_info);
 		if (pxsrc.format!=fmt.format || extraDst || flush) {
+			// only forcing alignment with conversion on
+			VDPixmapCreateLinearLayout(driverLayout,driverLayout.format,driverLayout.w,driverLayout.h,16);
 			repack_buffer.init(driverLayout);
 			repack_buffer.format = fmt.format;
 			repack_buffer.info.colorSpaceMode = fmt.colorSpaceMode;
