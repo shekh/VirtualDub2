@@ -260,6 +260,7 @@ public:
 	void MoveToPreviousDrop();
 	void MoveToNextDrop();
 	void ResetTimeline();
+	bool IsTimelineReset();
 	void ResetTimelineWithConfirmation();
 	void ScanForErrors();
 	void AbortOperation();

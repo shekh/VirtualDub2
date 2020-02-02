@@ -32,6 +32,12 @@ void VDTimeline::SetFromSource() {
 	mSubset.insert(mSubset.begin(), FrameSubsetNode(mpTiming->GetStart(), mpTiming->GetLength(), false, 0));
 }
 
+bool VDTimeline::IsReset() const {
+	FrameSubset	ref_subset;
+	ref_subset.insert(ref_subset.begin(), FrameSubsetNode(mpTiming->GetStart(), mpTiming->GetLength(), false, 0));
+	return ref_subset==mSubset;
+}
+
 VDPosition VDTimeline::GetNearestKey(VDPosition pos) {
 	if (pos <= 0)
 		return 0;

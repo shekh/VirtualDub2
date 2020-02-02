@@ -44,6 +44,10 @@ FrameSubset& FrameSubset::operator=(const FrameSubset& src) {
 	return *this;
 }
 
+bool FrameSubset::operator==(const FrameSubset& a) const {
+	return mTimeline==a.mTimeline;
+}
+
 void FrameSubset::clear() {
 	mTimeline.clear();
 	invalidateCache();

@@ -585,12 +585,14 @@ void JobCreateScript(JobScriptOutput& output, bool project_relative, const DubOp
 	switch(editListMode) {
 		case kVDJobEditListMode_Include:
 			{
-				const FrameSubset& fs = g_project->GetTimeline().GetSubset();
+				if (!g_project->IsTimelineReset()) {
+					const FrameSubset& fs = g_project->GetTimeline().GetSubset();
 
-				output.addf("VirtualDub.subset.Clear();");
+					output.addf("VirtualDub.subset.Clear();");
 
-				for(FrameSubset::const_iterator it(fs.begin()), itEnd(fs.end()); it!=itEnd; ++it)
-					output.addf("VirtualDub.subset.Add%sRange(%I64d,%I64d);", it->bMask ? "Masked" : "", it->start, it->len);
+					for(FrameSubset::const_iterator it(fs.begin()), itEnd(fs.end()); it!=itEnd; ++it)
+						output.addf("VirtualDub.subset.Add%sRange(%I64d,%I64d);", it->bMask ? "Masked" : "", it->start, it->len);
+				}
 
 				// Note that this must be AFTER the subset (we used to place it before, which was a bug).
 				if (g_project->IsSelectionPresent()) {

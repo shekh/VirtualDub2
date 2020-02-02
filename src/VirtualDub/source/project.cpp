@@ -2721,6 +2721,12 @@ void VDProject::MoveToNextDrop() {
 	}
 }
 
+bool VDProject::IsTimelineReset() {
+	if (inputAVI) {
+		return mTimeline.IsReset();
+	} else return true;
+}
+
 void VDProject::ResetTimeline() {
 	if (inputAVI) {
 		BeginTimelineUpdate(VDLoadString(0, kVDST_Project, kVDM_ResetTimeline));

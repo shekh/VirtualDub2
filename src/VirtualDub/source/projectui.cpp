@@ -3104,6 +3104,9 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_QUEUEBATCHOPERATION_EXPORTUSINGEXTERNALENCODER, bSourceFileExists);
 
 	const bool bSelectionExists = bSourceFileExists && IsSelectionPresent();
+	VDPosition z0,z1;
+	bool bZoom = GetZoomRange(z0,z1);
+	bool bReset = IsTimelineReset() && !bZoom;
 
 	VDEnableMenuItemW32(hMenu, ID_EDIT_CUT					, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_COPY					, bSourceFileExists);
@@ -3114,7 +3117,7 @@ void VDProjectUI::UpdateMainMenu(HMENU hMenu) {
 	VDEnableMenuItemW32(hMenu, ID_EDIT_SETSELEND			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_MASK					, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_UNMASK				, bSourceFileExists);
-	VDEnableMenuItemW32(hMenu, ID_EDIT_RESET				, bSourceFileExists);
+	VDEnableMenuItemW32(hMenu, ID_EDIT_RESET				, bSourceFileExists && !bReset);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_CROPTOSELECTION		, bSelectionExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_SETMARKER			, bSourceFileExists);
 	VDEnableMenuItemW32(hMenu, ID_EDIT_CLEARMARKERS			, bSourceFileExists);

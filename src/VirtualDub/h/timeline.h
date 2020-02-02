@@ -55,6 +55,7 @@ public:
 
 	void SetTimingSource(IVDTimelineTimingSource *pT) { mpTiming = pT; }
 	void SetFromSource();
+	bool IsReset() const;
 
 	VDPosition		GetStart()			{ return 0; }
 	VDPosition		GetEnd()			{ return mSubset.getTotalFrames(); }

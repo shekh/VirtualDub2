@@ -36,6 +36,7 @@ public:
 
 	FrameSubsetNode() {}
 	FrameSubsetNode(sint64 _s, sint64 _l, bool _bMask, int source_) : start(_s), len(_l), bMask(_bMask), source(source_) {}
+	bool operator==(const FrameSubsetNode& a) const { return start==a.start && len==a.len && bMask==a.bMask && source==a.source; }
 
 	sint64 end() const { return start+len; }
 
@@ -59,6 +60,7 @@ public:
 	~FrameSubset();
 
 	FrameSubset& operator=(const FrameSubset&);
+	bool operator==(const FrameSubset&) const;
 
 	void clear();
 	void addFrom(FrameSubset&);
