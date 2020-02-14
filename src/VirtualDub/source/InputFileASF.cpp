@@ -43,6 +43,7 @@ public:
 			0xa6, 0xd9, 0x00, 0xaa, 0x00, 0x62, 0xce, 0x6c
 		};
 
+		if (nHeaderSize < 16) return kDC_Error_MoreData;
 		if (nHeaderSize >= 16) {
 			if (!memcmp(pHeader, asf_sig, 16))
 				return kDC_VeryLow;

@@ -154,7 +154,7 @@ extern void ChooseCompressor(HWND hwndParent, COMPVARS2 *lpCompVars);
 extern WAVEFORMATEX *AudioChooseCompressor(HWND hwndParent, WAVEFORMATEX *, WAVEFORMATEX *, VDString& shortNameHint, vdblock<char>& config, bool enable_plugin=true);
 extern void VDDisplayLicense(HWND hwndParent, bool conditional);
 
-extern void OpenInput(bool append=false, bool audio=false);
+extern void OpenInput(bool append=false, bool audio=false, const wchar_t* filename=0, MyError* err=0);
 extern void SaveAVI(HWND, bool, bool queueAsBatch);
 extern void SaveSegmentedAVI(HWND, bool queueAsBatch);
 extern void SaveAudio(HWND, bool queueAsBatch);
@@ -3691,6 +3691,12 @@ void VDProjectUI::HandleDragDrop(HDROP hdrop) {
 			}
 
 			logDisp.Post(mhwnd);
+		} catch (MyFileError& e) {
+			if (!isAppend && e.error==MyFileError::file_type_unknown) {
+				OpenInput(false,false,filenames.front().c_str(),&e);
+				return;
+			}
+			e.post((HWND)mhwnd, g_szError);
 		} catch(const MyError& e) {
 			e.post((HWND)mhwnd, g_szError);
 		}

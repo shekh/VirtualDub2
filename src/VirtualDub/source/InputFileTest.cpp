@@ -1328,7 +1328,7 @@ public:
 	}
 
 	DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
-		return kDC_None;
+		return kDC_Error_NotImpl;
 	}
 
 	InputFile *CreateInputFile(uint32 flags) {

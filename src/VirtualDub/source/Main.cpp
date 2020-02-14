@@ -280,6 +280,7 @@ static const wchar_t fileFiltersSaveProject[]=
 class VDOpenVideoDialogW32 {
 public:
 	VDOpenVideoDialogW32() {
+		init_error = 0;
 		nFilterIndex = 0;
 		select_mode = 1;
 		append_mode = false;
@@ -302,6 +303,7 @@ public:
 	void InitSelectMode();
 
 	HWND mhdlg;
+	MyError* init_error;
 	vdrefptr<IVDInputDriver> driver;
 	VDString driver_options;
 	VDStringW filename;
@@ -318,6 +320,7 @@ public:
 	bool append_mode;
 	bool audio_mode;
 	bool is_auto;
+	bool is_detected;
 	bool change_driver;
 };
 
@@ -338,6 +341,7 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 				detectList.erase(detectList.begin()+d0);
 				detectList.insert(detectList.begin(),driver);
 				is_auto = true;
+				is_detected = true;
 
 				VDStringW force_driver;
 				VDXMediaInfo info;
@@ -374,6 +378,42 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 					}
 				}
 
+			} else {
+				// undetected options
+				VDGetInputDriverForFile(audio_mode ? IVDInputDriver::kF_Audio : IVDInputDriver::kF_Video, detectList);
+				driver = 0;
+				is_auto = false;
+				is_detected = false;
+				change_driver = true;
+
+				VDStringW force_driver(L"Raw video input driver (internal)");
+				format_id = VDString("*")+VDTextWToA(VDFileSplitExtRight(filename));
+
+				if (!init_driver.empty()) {
+					force_driver = init_driver;
+					opt_driver = init_driver;
+				} else if(!format_id.empty()) {
+					VDRegistryAppKey key(audio_mode ? "File formats (audio)" : "File formats");
+					key.getString(format_id.c_str(), force_driver);
+				}
+				if (format_id==last_override_format) {
+					force_driver = last_override_driver;
+				} else {
+					last_override_format = format_id;
+					last_override_driver = force_driver;
+				}
+
+				if (!force_driver.empty()) {
+					tVDInputDrivers::const_iterator it(detectList.begin()), itEnd(detectList.end());
+					for(int i=0; it!=itEnd; ++it,i++) {
+						IVDInputDriver *pDriver = *it;
+						if (pDriver->GetSignatureName()==force_driver) {
+							driver = pDriver;
+							break;
+						}
+					}
+				}
+
 			}
 		} catch (const MyError&) {
 		}
@@ -403,6 +443,14 @@ void VDOpenVideoDialogW32::ChangeFilename() {
 		}
 
 		SendMessage(w1,CB_SETCURSEL,select,0);
+	} else {
+		tVDInputDrivers::const_iterator it(detectList.begin()), itEnd(detectList.end());
+		for(int i=0; it!=itEnd; ++it, i++) {
+			IVDInputDriver *pDriver = *it;
+			SendMessageW(w1,CB_ADDSTRING,0,(LPARAM)pDriver->GetSignatureName());
+		}
+
+		SendMessage(w1,CB_SETCURSEL,-1,0);
 	}
 	EnableWindow(w1,detectList.size()>1);
 	ChangeDriver();
@@ -466,7 +514,7 @@ void VDOpenVideoDialogW32::ForceUseDriver(int i) {
 
 	driver_options.clear();
 	driver = detectList[i];
-	is_auto = i==0;
+	is_auto = is_detected && i==0;
 	change_driver = true;
 	ChangeDriver();
 }
@@ -658,6 +706,11 @@ UINT_PTR CALLBACK OpenVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 		if (wParam==1) {
 			VDOpenVideoDialogW32* dlg = (VDOpenVideoDialogW32*)GetWindowLongPtr(hdlg, DWLP_USER);
 			dlg->UpdateFilename();
+			if (dlg->init_error) {
+				MyError* e = dlg->init_error;
+				dlg->init_error = 0;
+				e->post(hdlg, g_szError);
+			}
 			return TRUE;
 		}
 
@@ -689,8 +742,9 @@ UINT_PTR CALLBACK OpenVideoProc(HWND hdlg, UINT msg, WPARAM wParam, LPARAM lPara
 VDStringW g_OpenVideoFilter;
 VDStringW g_OpenAudioFilter;
 
-void OpenInput(bool append, bool audio) {
+void OpenInput(bool append, bool audio, const wchar_t* filename, MyError* err) {
 	VDOpenVideoDialogW32 dlg;
+	dlg.init_error = err;
 	VDGetInputDrivers(dlg.inputDrivers, audio ? IVDInputDriver::kF_Audio : IVDInputDriver::kF_Video);
 	VDStringW fileFilters(VDMakeInputDriverFileFilter(dlg.inputDrivers, dlg.xlat));
 	vdvector<VDStringW> filter_list;
@@ -727,6 +781,11 @@ void OpenInput(bool append, bool audio) {
 				dlg.nFilterIndex = i+1;
 			break;
 		}
+	}
+
+	if (filename) {
+		fn.lpstrFile = (wchar_t*)filename;
+		dlg.nFilterIndex = filter_list.size();
 	}
 
 	const wchar_t* title = L"Open video file";
@@ -767,7 +826,7 @@ void OpenInput(bool append, bool audio) {
 	// remember override on confirmed open
 	if (!dlg.format_id.empty() && dlg.change_driver) {
 		VDRegistryAppKey key(audio ? "File formats (audio)" : "File formats");
-		if (dlg.driver==dlg.detectList[0])
+		if (dlg.is_auto)
 			key.removeValue(dlg.format_id.c_str());
 		else
 			key.setString(dlg.format_id.c_str(), dlg.driver->GetSignatureName());

@@ -402,6 +402,7 @@ public:
 	}
 
 	DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+		if (nFooterSize < 36) return kDC_Error_MoreData;
 		if (nFooterSize >= 36) {
 			const uint8 *buf = (const uint8 *)pFooter;
 			FilmstripHeader hdr;

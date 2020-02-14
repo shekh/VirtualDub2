@@ -219,11 +219,16 @@ bool VDXAPIENTRY VDInputFileTestId::GetAudioSource(int index, IVDXAudioSource **
 class VDInputDriverTestId : public vdxunknown<IVDXInputFileDriver> {
 public:
 	int VDXAPIENTRY DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize);
+	int VDXAPIENTRY DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize);
 	bool VDXAPIENTRY CreateInputFile(uint32 flags, IVDXInputFile **ppFile);
 };
 
 int VDXAPIENTRY VDInputDriverTestId::DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
 	return -1;
+}
+
+int VDXAPIENTRY VDInputDriverTestId::DetectBySignature2(VDXMediaInfo& info, const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+	return kDC_Error_NotImpl;
 }
 
 bool VDXAPIENTRY VDInputDriverTestId::CreateInputFile(uint32 flags, IVDXInputFile **ppFile) {

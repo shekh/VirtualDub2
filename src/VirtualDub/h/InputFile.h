@@ -39,6 +39,16 @@ struct VDXMediaInfo;
 
 class VDStringA;
 
+class MyFileError : public MyError {
+public:
+	enum {
+		file_type_unknown=1,
+	};
+	int error;
+
+	MyFileError(int error, const char *f, ...);
+};
+
 class InputFileOptions {
 public:
 	virtual ~InputFileOptions();
@@ -119,7 +129,10 @@ public:
 		kDC_VeryLow,
 		kDC_Low,
 		kDC_Moderate,
-		kDC_High
+		kDC_High,
+
+		kDC_Error_NotImpl = -1,
+		kDC_Error_MoreData = -2,
 	};
 
 	virtual int				GetDefaultPriority() = 0;
@@ -147,6 +160,7 @@ void VDGetInputDriverFileFilters(const tVDInputDrivers& l, vdvector<VDStringW>& 
 
 IVDInputDriver::DetectionConfidence VDTestInputDriverForFile(VDXMediaInfo& info, const wchar_t *fn, IVDInputDriver *pDriver);
 int VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags, tVDInputDrivers& list);
+void VDGetInputDriverForFile(uint32 flags, tVDInputDrivers& list);
 IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags);
 void VDOpenMediaFile(const wchar_t *filename, uint32 flags, InputFile **pFile);
 

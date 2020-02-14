@@ -166,6 +166,7 @@ public:
 	}
 
 	DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+		if (nHeaderSize < 12) return kDC_Error_MoreData;
 		if (nHeaderSize >= 12) {
 			if (!memcmp(pHeader, "RIFF", 4) && !memcmp((char*)pHeader+8, "AVI ", 4))
 				return kDC_High;
@@ -226,16 +227,6 @@ public:
 	DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
 		if (nHeaderSize >= 12) {
 			if (!memcmp(pHeader, "RIFF", 4) && !memcmp((char*)pHeader+8, "VDRM", 4))
-				return kDC_High;
-		}
-
-		if (nHeaderSize >= 12) {
-			if (!memcmp(pHeader, "#VapourSynth", 12))
-				return kDC_High;
-		}
-
-		if (nHeaderSize >= 15) {
-			if (!memcmp(pHeader, "\xEF\xBB\xBF#VapourSynth", 15))
 				return kDC_High;
 		}
 

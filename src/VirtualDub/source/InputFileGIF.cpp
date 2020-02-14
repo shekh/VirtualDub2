@@ -897,6 +897,7 @@ public:
 	}
 
 	DetectionConfidence DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) {
+		if (nHeaderSize < 3) return kDC_Error_MoreData;
 		if (nHeaderSize >= 3) {
 			const uint8 *buf = (const uint8 *)pHeader;
 

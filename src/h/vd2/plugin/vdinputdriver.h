@@ -330,7 +330,10 @@ public:
 		kDC_VeryLow,
 		kDC_Low,
 		kDC_Moderate,
-		kDC_High
+		kDC_High,
+
+		kDC_Error_NotImpl = -1,
+		kDC_Error_MoreData = -2,
 	};
 
 	virtual int		VDXAPIENTRY DetectBySignature(const void *pHeader, sint32 nHeaderSize, const void *pFooter, sint32 nFooterSize, sint64 nFileSize) = 0;

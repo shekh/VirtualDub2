@@ -25,10 +25,20 @@
 #include <vd2/system/error.h>
 #include <vd2/system/VDString.h>
 #include <vd2/system/file.h>
+#include <vd2/system/filesys.h>
 #include <vd2/system/registry.h>
 
 extern const char g_szError[];
 extern const wchar_t fileFiltersAppendAll[];
+
+MyFileError::MyFileError(int error, const char *format, ...) {
+	va_list val;
+
+	va_start(val, format);
+	vsetf(format, val);
+	va_end(val);
+	this->error = error;
+}
 
 /////////////////////////////////////////////////////////////////////
 
@@ -467,6 +477,8 @@ int VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags, tVDInputDriv
 
 		VDXMediaInfo info;
 		IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature3(info, buf, dwBegin, endbuf, dwEnd, fileSize, fn);
+		if (result < 0)
+			continue;
 
 		if (result == IVDInputDriver::kDC_None && pDriver->DetectByFilename(fn)) {
 			result = IVDInputDriver::kDC_Low;
@@ -488,11 +500,51 @@ int VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags, tVDInputDriv
 	return selectedDriver;
 }
 
+void VDGetInputDriverForFile(uint32 flags, tVDInputDrivers& list) {
+	tVDInputDrivers inputDrivers;
+	VDGetInputDrivers(inputDrivers, flags);
+
+	tVDInputDrivers::const_iterator it(inputDrivers.begin()), itEnd(inputDrivers.end());
+
+	for(; it!=itEnd; ++it) {
+		IVDInputDriver *pDriver = *it;
+		const wchar_t* name = pDriver->GetSignatureName();
+		if (!name)
+			continue;
+
+		if (pDriver->GetFlags() & IVDInputDriver::kF_Duplicate)
+			continue;
+
+		VDXMediaInfo info;
+		IVDInputDriver::DetectionConfidence result = pDriver->DetectBySignature3(info, 0, 0, 0, 0, 0, 0);
+		if (result < 0)
+			continue;
+
+		list.push_back(*it);
+	}
+}
+
 IVDInputDriver *VDAutoselectInputDriverForFile(const wchar_t *fn, uint32 flags) {
 	tVDInputDrivers list;
 	int x = VDAutoselectInputDriverForFile(fn,flags,list);
-	if (x==-1)
-		throw MyError("The file \"%ls\" is of an unknown or unsupported file type.", fn);
+	if (x==-1) {
+		VDGetInputDriverForFile(flags,list);
+
+		VDStringW force_driver;
+		VDString format_id = VDString("*")+VDTextWToA(VDFileSplitExt(fn));
+		VDRegistryAppKey key(flags==IVDInputDriver::kF_Audio ? "File formats (audio)" : "File formats");
+		key.getString(format_id.c_str(), force_driver);
+
+		tVDInputDrivers::const_iterator it(list.begin()), itEnd(list.end());
+		for(int i=0; it!=itEnd; ++it,i++) {
+			IVDInputDriver *pDriver = *it;
+			if (pDriver->GetSignatureName()==force_driver) {
+				return pDriver;
+			}
+		}
+
+		throw MyFileError(MyFileError::file_type_unknown, "The file \"%ls\" is of an unknown or unsupported file type.", fn);
+	}
 	
 	IVDInputDriver* driver = list[x];
 	VDXMediaInfo info;

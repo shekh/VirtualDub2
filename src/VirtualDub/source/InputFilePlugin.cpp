@@ -1552,7 +1552,7 @@ VDInputDriverPlugin::DetectionConfidence VDInputDriverPlugin::DetectBySignature3
 
 	if (sig) {
 		if (nHeaderSize < (mpShadowedDef->mSignatureLength >> 1))
-			return kDC_None;
+			return kDC_Error_MoreData;
 
 		const uint8 *data = (const uint8 *)pHeader;
 		for(uint32 i=0; i<mpShadowedDef->mSignatureLength; i+=2) {
