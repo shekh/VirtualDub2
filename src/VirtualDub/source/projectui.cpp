@@ -1542,6 +1542,7 @@ const int VDUIDialogSaveRawVideoFormat::kFormats[] = {
 	nsVDPixmap::kPixFormat_XRGB8888,
 	nsVDPixmap::kPixFormat_Y8,
 	nsVDPixmap::kPixFormat_Y8_FR,
+	nsVDPixmap::kPixFormat_Y16,
 	nsVDPixmap::kPixFormat_YUV422_UYVY,
 	nsVDPixmap::kPixFormat_YUV422_UYVY_709,
 	nsVDPixmap::kPixFormat_YUV422_UYVY_FR,

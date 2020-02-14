@@ -158,6 +158,7 @@ const int VDInputFileRawVideoOptionsDialog::kFormats[] = {
 	nsVDPixmap::kPixFormat_XRGB8888,
 	nsVDPixmap::kPixFormat_Y8,
 	nsVDPixmap::kPixFormat_Y8_FR,
+	nsVDPixmap::kPixFormat_Y16,
 	nsVDPixmap::kPixFormat_YUV422_UYVY,
 	nsVDPixmap::kPixFormat_YUV422_UYVY_709,
 	nsVDPixmap::kPixFormat_YUV422_UYVY_FR,
@@ -429,7 +430,12 @@ const void *VDVideoSourceRawVideo::getFrame(VDPosition frameNum) {
 }
 
 const void *VDVideoSourceRawVideo::streamGetFrame(const void *inputBuffer, uint32 data_len, bool is_preroll, VDPosition frame_num, VDPosition target_sample) {
-	const VDPixmap& srcbm = VDPixmapFromLayout(mLayout, (void *)inputBuffer);
+	VDPixmap srcbm = VDPixmapFromLayout(mLayout, (void *)inputBuffer);
+	switch (srcbm.format) {
+	case nsVDPixmap::kPixFormat_Y16:
+		srcbm.info.ref_r = 0xFFFF;
+		break;
+	}
 
 	VDPixmapBlt(mTargetFormat, srcbm);
 
@@ -441,6 +447,8 @@ const void *VDVideoSourceRawVideo::streamGetFrame(const void *inputBuffer, uint3
 bool VDVideoSourceRawVideo::setTargetFormat(VDPixmapFormatEx format) {
 	if (!format)
 		format = mLayout.format;
+	else
+		return false;
 
 	if (!VideoSource::setTargetFormat(format))
 		return false;

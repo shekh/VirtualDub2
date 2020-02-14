@@ -190,6 +190,7 @@ stringset 11 {		// kVDST_RawVideoFormats
 	message 42, "4:2:0 YCbCr planar, R.709, 8-bit, Y:0-255, coaligned";
 	message 43, "4:1:1 YCbCr planar, R.709, 8-bit, Y:0-255, coaligned";
 	message 44, "4:1:0 YCbCr planar, R.709, 8-bit, Y:0-255, coaligned";
+	message 61, "Grayscale, 16-bit, 0-65535 range";
 }
 
 stringset 100 {		// kVDST_PNGDecodeErrors
