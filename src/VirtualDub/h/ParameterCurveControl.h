@@ -42,6 +42,10 @@ public:
 	virtual void SetCurve(VDParameterCurve *pCurve) = 0;
 
 	virtual void SetPosition(VDPosition pos) = 0;
+	virtual void SetSelectedPoint(int x) = 0;
+	virtual int GetSelectedPoint() = 0;
+	virtual void DeletePoint(int x) = 0;
+	virtual void SetValue(int x, double v) = 0;
 
 	// events
 	virtual VDEvent<IVDUIParameterCurveControl, int>& CurveUpdatedEvent() = 0;

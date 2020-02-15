@@ -59,6 +59,15 @@ public:
 	void SetCurve(VDParameterCurve *curve);
 
 	void SetPosition(VDPosition pos);
+	void SetSelectedPoint(int x);
+	void SetSelectedPoint(VDParameterCurve::PointList::iterator it);
+	int GetSelectedPoint() {
+		if (!mpCurve) return -1;
+		if (mSelectedPoint==mpCurve->Points().end()) return -1;
+		return mSelectedPoint-mpCurve->Points().begin();
+	}
+	void DeletePoint(int x);
+	void SetValue(int x, double v);
 
 	VDEvent<IVDUIParameterCurveControl, int>& CurveUpdatedEvent() { return mCurveUpdatedEvent; }
 	VDEvent<IVDUIParameterCurveControl, Status>& StatusUpdatedEvent() { return mStatusUpdatedEvent; }
@@ -171,12 +180,12 @@ VDParameterCurveControlW32::VDParameterCurveControlW32(HWND hwnd)
 	, mDragPart(kPartNone)
 	, mbTrackingMouse(false)
 	, mStatus(kStatus_Nothing)
-	, mhpenGridLines(CreatePen(PS_SOLID, 0, RGB(64, 64, 64)))
-	, mhpenGridLines2(CreatePen(PS_SOLID, 0, RGB(8, 8, 8)))
+	, mhpenGridLines(CreatePen(PS_SOLID, 0, RGB(64, 84, 64)))
+	, mhpenGridLines2(CreatePen(PS_SOLID, 0, RGB(8, 58, 8)))
 	, mhpenCurve(CreatePen(PS_SOLID, 0, RGB(255,255,255)))
 	, mhpenLine(CreatePen(PS_SOLID, 0, RGB(128,255,192)))
 	, mhpenEndLine(CreatePen(PS_SOLID, 0, RGB(224,224,128)))
-	, mhpenCurrentPos(CreatePen(PS_SOLID, 0, RGB(128, 0, 0)))
+	, mhpenCurrentPos(CreatePen(PS_SOLID, 0, RGB(100, 100, 255)))
 	, mhcurMove(LoadCursor(g_hInst, MAKEINTRESOURCE(IDC_DRAGPOINT)))
 	, mhcurAdd(LoadCursor(g_hInst, MAKEINTRESOURCE(IDC_ADDPOINT)))
 	, mhcurRemove(LoadCursor(g_hInst, MAKEINTRESOURCE(IDC_REMOVEPOINT)))
@@ -236,21 +245,24 @@ void VDParameterCurveControlW32::SetCurve(VDParameterCurve *curve) {
 		mHighlightedPart = kPartNone;
 	}
 	InvalidateRect(mhwnd, NULL, TRUE);
+	mCurveUpdatedEvent.Raise(this, 1);
 }
 
 void VDParameterCurveControlW32::SetPosition(VDPosition pos) {
-	int x0 = CurveToScreenX(mPosX);
-	int x1 = CurveToScreenX((double)pos);
+	int a0 = CurveToScreenX(mPosX);
+	int a1 = CurveToScreenX(mPosX+1);
+	int b0 = CurveToScreenX((double)pos);
+	int b1 = CurveToScreenX((double)pos+1);
 	mPosX = (double)pos;
 
 	// redo old focus
-	RECT r2 = {x0-8,0,x0+8,mHeight};
+	RECT r2 = {a0-8,0,a1+8,mHeight};
 	InvalidateRect(mhwnd,&r2,false);
 
-	ScrollWindow(mhwnd,x0-x1,0,0,0);
+	ScrollWindow(mhwnd,a0-b0,0,0,0);
 
 	// redo new focus
-	RECT r3 = {x1-8,0,x1+8,mHeight};
+	RECT r3 = {b0-8,0,b1+8,mHeight};
 	InvalidateRect(mhwnd,&r3,false);
 }
 
@@ -375,13 +387,13 @@ void VDParameterCurveControlW32::OnLButtonDown(int x, int y, uint32 modifiers) {
 				return;
 		}
 
-		mSelectedPoint = mpCurve->Points().insert(it, pt);
-
-		InvalidateAroundPoint(mSelectedPoint);
 		InvalidateAtPoint(mSelectedPoint);
+		mSelectedPoint = mpCurve->Points().end();
+		SetSelectedPoint(mpCurve->Points().insert(it, pt));
+		InvalidateAroundPoint(mSelectedPoint);
 	} else if (mDragPart != dobj.mPart || mSelectedPoint != dobj.mPoint) {
 		mDragPart = dobj.mPart;
-		mSelectedPoint = dobj.mPoint;
+		SetSelectedPoint(dobj.mPoint);
 
 		if (mDragPart)
 			InvalidateAtPoint(mSelectedPoint);
@@ -389,8 +401,10 @@ void VDParameterCurveControlW32::OnLButtonDown(int x, int y, uint32 modifiers) {
 		if (mDragPart) {
 			if (modifiers & MK_CONTROL) {
 				InvalidateAroundPoint(mSelectedPoint);
+				InvalidateAtPoint(mSelectedPoint);
+				mSelectedPoint = mpCurve->Points().end();
 				mpCurve->Points().erase(mSelectedPoint);
-				mSelectedPoint = mpCurve->End();
+				SetSelectedPoint(mpCurve->End());
 				mDragPart = kPartNone;
 				mCurveUpdatedEvent.Raise(this, 0);
 			} else {
@@ -548,24 +562,26 @@ void VDParameterCurveControlW32::OnPaint() {
 
 			HBRUSH hBackFill = (HBRUSH)GetStockObject(BLACK_BRUSH);
 
-			SetTextColor(hdc, RGB(255, 255, 255));
-			SetBkMode(hdc, TRANSPARENT);
-			SetTextAlign(hdc, TA_TOP | TA_LEFT);
-
-			int sy0 = CurveToScreenY(0.0);
-			int sy1 = CurveToScreenY(1.0);
-
-			RECT rFill = {r.right, r.top, r.right, r.right};
-			int offset = (int)((ix2-1) % 5);
-			if (offset < 0)
-				offset += 5;
-			for(VDPosition ix=ix2-1; ix>=ix1; --ix) {
+			RECT rFill = {r.right, r.top, r.right, r.bottom};
+			{for(VDPosition ix=ix2-1; ix>=ix1; --ix) {
 				int sx = CurveToScreenX((double)ix);
 
 				if (sx+1 < rFill.right) {
 					rFill.left = sx+1;
 					FillRect(hdc, &rFill, hBackFill);
 				}
+				rFill.right = sx;
+			}}
+			if (rFill.right > r.left) {
+				rFill.left = r.left;
+				FillRect(hdc, &rFill, hBackFill);
+			}
+
+			int offset = (int)((ix2-1) % 5);
+			if (offset < 0)
+				offset += 5;
+			{for(VDPosition ix=ix2-1; ix>=ix1; --ix) {
+				int sx = CurveToScreenX((double)ix);
 
 				if (offset) {
 					MoveToEx(hdc, sx, r.top, NULL);
@@ -575,23 +591,28 @@ void VDParameterCurveControlW32::OnPaint() {
 					MoveToEx(hdc, sx, r.top, NULL);
 					LineTo(hdc, sx, r.bottom);
 					SelectObject(hdc, mhpenGridLines2);
-
-					wchar_t buf[64];
-					swprintf(buf, 64, L"%lld", (long long)ix);
-					ExtTextOutW(hdc, sx+4, sy0+4, 0, NULL, buf, wcslen(buf), NULL);
 				}
 
-				rFill.right = sx;
 				if (--offset < 0)
 					offset += 5;
-			}
+			}}
 
-			if (rFill.right > r.left) {
-				rFill.left = r.left;
-				FillRect(hdc, &rFill, hBackFill);
+			{
+				// draw x focus line
+				int x0 = CurveToScreenX(mPosX);
+				int x1 = CurveToScreenX(mPosX+1);
+				HBRUSH b1 = CreateSolidBrush(RGB(0, 70, 100));
+				RECT rFill = {x0, r.top, x1, r.bottom};
+				FillRect(hdc, &rFill, b1);
+				DeleteObject(b1);
+				SelectObject(hdc, mhpenCurrentPos);
+				MoveToEx(hdc, x0, r.top, NULL);
+				LineTo(hdc, x0, r.bottom);
 			}
 
 			// draw y=0 and y=1 lines
+			int sy0 = CurveToScreenY(0.0);
+			int sy1 = CurveToScreenY(1.0);
 			SelectObject(hdc, mhpenGridLines);
 			MoveToEx(hdc, r.left, sy0, NULL);
 			LineTo(hdc, r.right, sy0);
@@ -599,11 +620,38 @@ void VDParameterCurveControlW32::OnPaint() {
 			MoveToEx(hdc, r.left, sy1, NULL);
 			LineTo(hdc, r.right, sy1);
 
-			// draw x focus line
-			SelectObject(hdc, mhpenCurrentPos);
-			int xfocus = CurveToScreenX(mPosX);
-			MoveToEx(hdc, xfocus, r.top, NULL);
-			LineTo(hdc, xfocus, r.bottom);
+			if (mSelectedPoint!=pts.end()) {
+				const VDParameterCurvePoint& pt = *mSelectedPoint;
+				int x = CurveToScreenX(pt.mX);
+				int y = CurveToScreenY(pt.mY);
+				POINT r[] = {{x-7,y},{x,y+7},{x+8,y},{x,y-7}};
+				HBRUSH b1 = CreateSolidBrush(RGB(255, 100, 0));
+				HGDIOBJ b0 = SelectObject(hdc,b1);
+				SelectObject(hdc,GetStockObject(NULL_PEN));
+				Polygon(hdc,r,4);
+				SelectObject(hdc,b0);
+				DeleteObject(b1);
+			}
+
+			SetTextColor(hdc, RGB(255, 255, 255));
+			SetBkMode(hdc, TRANSPARENT);
+			SetTextAlign(hdc, TA_TOP | TA_LEFT);
+
+			offset = (int)((ix2-1) % 5);
+			if (offset < 0)
+				offset += 5;
+			{for(VDPosition ix=ix2-1; ix>=ix1; --ix) {
+				int sx = CurveToScreenX((double)ix);
+
+				if (offset==0) {
+					wchar_t buf[64];
+					swprintf(buf, 64, L"%lld", (long long)ix);
+					ExtTextOutW(hdc, sx+4, sy0+4, 0, NULL, buf, wcslen(buf), NULL);
+				}
+
+				if (--offset < 0)
+					offset += 5;
+			}}
 
 			VDParameterCurve::PointList::const_iterator it1(mpCurve->LowerBound(x1));
 			VDParameterCurve::PointList::const_iterator it2(mpCurve->LowerBound(x2));
@@ -640,9 +688,10 @@ void VDParameterCurveControlW32::OnPaint() {
 				else if (highlighted)
 					SetBkColor(hdc, RGB(255, 255, 0));
 				else
-					SetBkColor(hdc, RGB(0, 0, 255));
+					SetBkColor(hdc, RGB(255, 100, 100));
 
-				ExtTextOut(hdc, x, y, ETO_OPAQUE, &rPt, "", 0, NULL);
+				if (!selected)
+					ExtTextOut(hdc, x, y, ETO_OPAQUE, &rPt, "", 0, NULL);
 
 				VDParameterCurve::PointList::const_iterator itNext(it1);
 				++itNext;
@@ -685,6 +734,15 @@ void VDParameterCurveControlW32::OnPaint() {
 					MoveToEx(hdc, x, y, NULL);
 					LineTo(hdc, mWidth, y);
 				}
+			}
+
+			if (mSelectedPoint!=pts.end()) {
+				const VDParameterCurvePoint& pt = *mSelectedPoint;
+				int x = CurveToScreenX(pt.mX);
+				int y = CurveToScreenY(pt.mY);
+				RECT rPt = { x-2, y-2, x+3, y+3 };
+				SetBkColor(hdc, RGB(0, 0, 0));
+				ExtTextOut(hdc, x, y, ETO_OPAQUE, &rPt, "", 0, NULL);
 			}
 		}
 
@@ -776,12 +834,51 @@ void VDParameterCurveControlW32::SetStatus(Status s) {
 	}
 }
 
+void VDParameterCurveControlW32::DeletePoint(int x) {
+	InvalidateAtPoint(mSelectedPoint);
+	mSelectedPoint = mpCurve->Points().end();
+	VDParameterCurve::PointList::iterator it = mpCurve->Points().begin()+x;
+	InvalidateAroundPoint(it);
+	mpCurve->Points().erase(it);
+	SetSelectedPoint(mpCurve->End());
+	mCurveUpdatedEvent.Raise(this, 0);
+}
+
+void VDParameterCurveControlW32::SetValue(int x, double cy) {
+	VDParameterCurve::PointList::iterator it = mpCurve->Points().begin()+x;
+	cy = std::max<double>(cy, mpCurve->GetYMin());
+	cy = std::min<double>(cy, mpCurve->GetYMax());
+
+	if (cy != it->mY) {
+		int xold = CurveToScreenX(it->mX);
+		RECT r = { xold-8, 0, xold+9, mHeight };
+		InvalidateRect(mhwnd, &r, TRUE);
+		mSelectedPoint->mY = cy;
+		InvalidateAroundPoint(it);
+		mCurveUpdatedEvent.Raise(this, 0);
+	}
+}
+
+void VDParameterCurveControlW32::SetSelectedPoint(int x) {
+	VDParameterCurve::PointList::iterator it = mpCurve->Points().end();
+	if (x!=-1) it = mpCurve->Points().begin()+x;
+	SetSelectedPoint(it);
+}
+
+void VDParameterCurveControlW32::SetSelectedPoint(VDParameterCurve::PointList::iterator it) {
+	if(it==mSelectedPoint) return;
+	InvalidateAtPoint(mSelectedPoint);
+	mSelectedPoint = it;
+	InvalidateAtPoint(mSelectedPoint);
+	mCurveUpdatedEvent.Raise(this, 1);
+}
+
 void VDParameterCurveControlW32::InvalidateAtPoint(VDParameterCurve::PointList::iterator it) {
 	if (it != mpCurve->End()) {
 		int x = CurveToScreenX(it->mX);
 		int y = CurveToScreenY(it->mY);
 
-		RECT rPt = { x-2, y-2, x+3, y+3 };
+		RECT rPt = { x-8, y-8, x+9, y+9 };
 		InvalidateRect(mhwnd, &rPt, TRUE);
 	}
 }

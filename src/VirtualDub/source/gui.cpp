@@ -173,24 +173,47 @@ bool guiCheckDialogs(LPMSG pMsg) {
 		hwndAncestor = VDGetAncestorW32(pMsg->hwnd, GA_ROOT);
 
 	while(pmdn_next = pmdn->NextFromHead()) {
-		if (pmdn->mhAccel && hwndAncestor == pmdn->hdlg)
-			if (TranslateAccelerator(pmdn->hdlg, pmdn->mhAccel, pMsg))
-				return true;
-
-		if (pmdn->hook && hwndAncestor == pmdn->hdlg) {
-			if(pMsg->message>=WM_KEYFIRST && pMsg->message<=WM_KEYLAST) {
-				if (SendMessage(pmdn->hdlg, pMsg->message, pMsg->wParam, pMsg->lParam))
+		if (hwndAncestor == pmdn->hdlg) {
+			if (pmdn->mhAccel)
+				if (TranslateAccelerator(pmdn->hdlg, pmdn->mhAccel, pMsg))
 					return true;
+
+			if (pmdn->hook) {
+				if(pMsg->message>=WM_KEYFIRST && pMsg->message<=WM_KEYLAST) {
+					if (SendMessage(pmdn->hdlg, pMsg->message, pMsg->wParam, pMsg->lParam))
+						return true;
+				}
+			}
+
+			if (pmdn->edit_thunk) {
+				if (pMsg->message==WM_KEYDOWN) {
+					switch (pMsg->wParam) {
+					case VK_ESCAPE:
+					case VK_CANCEL:
+					case VK_RETURN:
+					case VK_EXECUTE:
+						SetFocus(pmdn->hdlg);
+						return true;
+					}
+				}
+				int x = SendMessage(pMsg->hwnd,WM_GETDLGCODE,0,(LPARAM)pMsg);
+				if ((x & DLGC_WANTCHARS) && (x & DLGC_HASSETSEL)) {
+					TranslateMessage(pMsg);
+					DispatchMessage(pMsg);
+					return true;
+				}
 			}
 		}
 
-		if (IsDialogMessage(pmdn->hdlg, pMsg))
-			return true;
+		if (!pmdn->edit_thunk) {
+			if (IsDialogMessage(pmdn->hdlg, pMsg))
+				return true;
+		}
 
 		pmdn = pmdn_next;
 	}
 
-  if (VDCheckToolsDialogs(pMsg)) return true;
+	if (VDCheckToolsDialogs(pMsg)) return true;
 
 	return false;
 }

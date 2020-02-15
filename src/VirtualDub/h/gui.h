@@ -34,9 +34,10 @@ public:
 	HWND hdlg;
 	HACCEL	mhAccel;
 	bool hook;
+	bool edit_thunk;
 
-	ModelessDlgNode() { hook=false; }
-	ModelessDlgNode(HWND _hdlg, HACCEL hAccel = NULL) : hdlg(_hdlg), mhAccel(hAccel) { hook=false; }
+	ModelessDlgNode() { hook=false; edit_thunk=false; }
+	ModelessDlgNode(HWND _hdlg, HACCEL hAccel = NULL) : hdlg(_hdlg), mhAccel(hAccel) { hook=false; edit_thunk=false; }
 };
 
 void guiOpenDebug();

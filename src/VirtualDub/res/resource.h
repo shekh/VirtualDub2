@@ -254,6 +254,7 @@
 #define IDI_POS_MARKOUT2                318
 #define IDI_POS_STOP_x128               319
 #define IDD_FILTER_CANVAS               319
+#define IDD_CURVE                       320
 #define IDI_POS_MARKIN_x128             321
 #define IDI_POS_MARKIN2_x128            322
 #define IDI_POS_MARKOUT_x128            323
@@ -723,12 +724,15 @@
 #define IDC_DUMPSTATUS                  1282
 #define IDC_BROWSE                      1282
 #define IDC_COMPRESSION_CHANGE          1282
+#define IDC_CURVE_PREV                  1282
 #define IDS_AUDIO_SOURCE_AVI            1283
 #define IDC_REGDUMP                     1283
 #define IDC_ALPHAFILE_BROWSE            1283
 #define IDC_COMPRESSION_CHANGE2         1283
+#define IDC_CURVE_NEXT                  1283
 #define IDS_AUDIO_SOURCE_WAV            1284
 #define IDC_STATIC_BOMBREASON           1284
+#define IDC_CURVE_DELETE                1284
 #define IDS_AUDIO_COMPRESSION           1285
 #define IDC_STATIC_OPTPREVIEW           1285
 #define IDC_STATIC_AUDIOBUFFER          1285
@@ -1060,6 +1064,8 @@
 #define IDC_CH_7                        1580
 #define IDC_CH_SPIN7                    1581
 #define IDC_FRAME_RELATIVE              1581
+#define IDC_CURVE                       1582
+#define IDC_CURVE_VALUE                 1583
 #define IDS_VIDEO_SEEK_START            1664
 #define IDS_VIDEO_SEEK_END              1665
 #define IDS_VIDEO_SEEK_PREV             1666
@@ -1650,7 +1656,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        338
 #define _APS_NEXT_COMMAND_VALUE         40629
-#define _APS_NEXT_CONTROL_VALUE         1582
+#define _APS_NEXT_CONTROL_VALUE         1584
 #define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

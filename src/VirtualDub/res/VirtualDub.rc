@@ -10,7 +10,8 @@
 #include "winresrc.h"
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
-#endif
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -2929,6 +2930,20 @@ BEGIN
     CONTROL         "BR",IDC_DIR_BOTTOMRIGHT,"Button",BS_AUTORADIOBUTTON | BS_PUSHLIKE,74,97,17,14
 END
 
+IDD_CURVE DIALOGEX 0, 0, 537, 18
+STYLE DS_SETFONT | DS_3DLOOK | WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS
+EXSTYLE WS_EX_NOPARENTNOTIFY
+FONT 8, "MS Sans Serif", 0, 0, 0x0
+BEGIN
+    PUSHBUTTON      "Prev point",IDC_CURVE_PREV,3,3,50,12
+    PUSHBUTTON      "Next point",IDC_CURVE_NEXT,55,3,50,12
+    LTEXT           "Value:",-1,126,5,21,8
+    EDITTEXT        IDC_CURVE_VALUE,152,3,36,12,ES_MULTILINE | ES_AUTOHSCROLL | ES_WANTRETURN
+    PUSHBUTTON      "Delete",IDC_CURVE_DELETE,191,3,50,12
+    LTEXT           "Curve:",-1,259,5,22,8
+    COMBOBOX        IDC_CURVE,286,3,246,56,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3910,6 +3925,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 166
     END
+
+    IDD_CURVE, DIALOG
+    BEGIN
+        LEFTMARGIN, 3
+        RIGHTMARGIN, 532
+        TOPMARGIN, 3
+        BOTTOMMARGIN, 15
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -4271,7 +4294,8 @@ END
 //
 #include "version.rc"
 IDR_RESOURCES      STUFF   DISCARDABLE     "virtualdub.vdres"
-
+
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

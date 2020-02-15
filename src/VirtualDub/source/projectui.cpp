@@ -632,6 +632,7 @@ VDProjectUI::VDProjectUI()
 	mInputZoom = 1;
 	mOutputZoom = 1;
 	mbShowAudio = false;
+	mbShowCurve = false;
 }
 
 VDProjectUI::~VDProjectUI() {
@@ -836,6 +837,12 @@ bool VDProjectUI::Attach(VDGUIHandle hwnd) {
 	VDToolsAttach((HWND)mhwnd);
 
 	if (mbShowAudio) OpenAudioDisplay();
+	if (mbShowCurve) OpenCurveEditor();
+
+	root_dlg_node.hdlg = (HWND)hwnd;
+	root_dlg_node.mhAccel = 0;
+	root_dlg_node.edit_thunk = true;
+	guiAddModelessDialog(&root_dlg_node);
 
 	return true;
 }
@@ -1085,8 +1092,8 @@ void VDProjectUI::Detach() {
 
 	if (mhwnd) {
 		VDUIFrame *pFrame = VDUIFrame::GetFrame((HWND)mhwnd);
-
 		pFrame->Detach();
+		root_dlg_node.Remove();
 	}
 
 	extern void VDCloseProfileWindow();
@@ -2431,10 +2438,13 @@ bool VDProjectUI::MenuHit(UINT id) {
 			break;
 
 		case ID_VIEW_CURVEEDITOR:
-			if (mpCurveEditor)
+			if (mpCurveEditor) {
+				mbShowCurve = false;
 				CloseCurveEditor();
-			else
+			} else {
+				mbShowCurve = true;
 				OpenCurveEditor();
+			}
 			break;
 
 		case ID_VIEW_AUDIODISPLAY:
@@ -4387,6 +4397,90 @@ void VDProjectUI::UpdateAudioDisplayPosition() {
 	}
 }
 
+const UINT WM_EDIT_CHANGED = WM_USER+666;
+LRESULT CALLBACK EditWndProc(HWND wnd,UINT msg,WPARAM wparam,LPARAM lparam)
+{
+	if(msg==WM_KILLFOCUS){
+		WPARAM id = GetWindowLong(wnd,GWL_ID);
+		SendMessage(GetParent(wnd),WM_EDIT_CHANGED,id,(LONG)wnd);
+	}
+
+	WNDPROC p = (WNDPROC)GetWindowLongPtr(wnd,GWLP_USERDATA);
+	return CallWindowProc(p,wnd,msg,wparam,lparam);
+}
+
+void init_edit(HWND mhdlg, int id)
+{
+	HWND hWnd = GetDlgItem(mhdlg,id);
+	LPARAM p = GetWindowLongPtr(hWnd,GWLP_WNDPROC);
+	SetWindowLongPtr(hWnd,GWLP_USERDATA,p);
+	SetWindowLongPtr(hWnd,GWLP_WNDPROC,(LPARAM)EditWndProc);
+}
+
+INT_PTR CALLBACK CurveProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg) {
+	case WM_INITDIALOG:
+		SetWindowLongPtr(wnd,DWLP_USER,lParam);
+		init_edit(wnd,IDC_CURVE_VALUE);
+		break;
+
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case IDC_CURVE:
+			if(HIWORD(wParam)==CBN_SELCHANGE){
+				int sel = (int)SendDlgItemMessage(wnd, IDC_CURVE, CB_GETCURSEL, 0, 0);
+				int id = (int)SendDlgItemMessage(wnd, IDC_CURVE, CB_GETITEMDATA, sel, 0);
+				VDProjectUI* project = (VDProjectUI*)GetWindowLongPtr(wnd,DWLP_USER);
+				project->SelectCurve(id);
+				return TRUE;
+			}
+			break;
+		case IDC_CURVE_NEXT:
+			{
+				VDProjectUI* project = (VDProjectUI*)GetWindowLongPtr(wnd,DWLP_USER);
+				project->CurveMoveToNext(1);
+				return TRUE;
+			}
+			break;
+		case IDC_CURVE_PREV:
+			{
+				VDProjectUI* project = (VDProjectUI*)GetWindowLongPtr(wnd,DWLP_USER);
+				project->CurveMoveToNext(-1);
+				return TRUE;
+			}
+			break;
+		case IDC_CURVE_DELETE:
+			{
+				VDProjectUI* project = (VDProjectUI*)GetWindowLongPtr(wnd,DWLP_USER);
+				project->CurveDeleteSelected();
+				return TRUE;
+			}
+			break;
+		}
+		break;
+
+	case WM_EDIT_CHANGED:
+		{
+			VDProjectUI* project = (VDProjectUI*)GetWindowLongPtr(wnd,DWLP_USER);
+			char buf[512];
+			if (GetDlgItemText(wnd, IDC_CURVE_VALUE, buf, sizeof buf)) {
+				double v;
+				if (sscanf(buf, " %lg", &v)==1) {
+					project->CurveSetValue(v);
+					project->CurveLoadSelected();
+					return TRUE;
+				}
+			}
+			project->CurveLoadSelected();
+			return TRUE;
+		}
+		break;
+	}
+
+	return FALSE;
+}
+
 void VDProjectUI::OpenCurveEditor() {
 	if (mpCurveEditor)
 		return;
@@ -4406,14 +4500,15 @@ void VDProjectUI::OpenCurveEditor() {
 	mpUICurveSet->SetAlignment(nsVDUI::kFill, nsVDUI::kFill);
 	mpUICurveSet->Create(&parms);
 
-	mpUICurveComboBox = VDCreateUIComboBox();
-	mpUICurveSet->AddChild(mpUICurveComboBox);
-	parms.Clear();
-	mpUICurveComboBox->SetAlignment(nsVDUI::kFill, nsVDUI::kTop);
-	mpUICurveComboBox->Create(&parms);
-	mpUICurveComboBox->SetID(100);
-
 	HWND hwndParent = vdpoly_cast<IVDUIWindowW32 *>(mpUIBase)->GetHandleW32();
+	mhwndCurveCtl = CreateDialogParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_CURVE),(HWND)hwndParent,CurveProc,(LPARAM)this);
+	RECT r;
+	GetWindowRect(mhwndCurveCtl,&r);
+	mpUICurveCtl = VDUICreatePeer((VDGUIHandle)mhwndCurveCtl);
+	mpUICurveCtl->SetAlignment(nsVDUI::kFill, nsVDUI::kTop);
+	mpUICurveCtl->SetMinimumSize(vduisize(0,r.bottom-r.top));
+	mpUICurveSet->AddChild(mpUICurveCtl);
+
 	mhwndCurveEditor = CreateWindowEx(WS_EX_STATICEDGE, g_VDParameterCurveControlClass, "", WS_CHILD|WS_VISIBLE, 0, 0, 0, 0, (HWND)hwndParent, NULL, GetModuleHandle(NULL), NULL);
 	mpUICurveEditor = VDUICreatePeer((VDGUIHandle)mhwndCurveEditor);
 	mpUICurveEditor->SetAlignment(nsVDUI::kFill, nsVDUI::kFill);
@@ -4439,7 +4534,7 @@ void VDProjectUI::CloseCurveEditor() {
 		mpUISplitSet->RemoveChild(mpUICurveSet);
 		mpUICurveSet->Shutdown();
 		mpUICurveEditor = NULL;
-		mpUICurveComboBox = NULL;
+		mpUICurveCtl = NULL;
 		mpUICurveSet = NULL;
 	}
 
@@ -4447,6 +4542,11 @@ void VDProjectUI::CloseCurveEditor() {
 	if (mhwndCurveEditor) {
 		DestroyWindow(mhwndCurveEditor);
 		mhwndCurveEditor = NULL;
+	}
+
+	if (mhwndCurveCtl) {
+		DestroyWindow(mhwndCurveCtl);
+		mhwndCurveCtl = NULL;
 	}
 
 	OnSize();
@@ -4458,13 +4558,12 @@ void VDProjectUI::UpdateCurveList() {
 	if (mpCurveEditor)
 		pcSelected = mpCurveEditor->GetCurve();
 
-	IVDUIList *pList = vdpoly_cast<IVDUIList *>(mpUICurveComboBox);
-	if (pList) {
-		mpUICurveComboBox->SetValue(-1);
-		pList->Clear();
+	HWND combo = GetDlgItem(mhwndCurveCtl,IDC_CURVE);
+	SendMessage(combo,CB_RESETCONTENT,0,0);
 
+	if (combo) {
 		bool curvesFound = false;
-		int index = 1;
+		int index = 0;
 		int comboIndex = 0;
 		int currentSelect = -1;
 
@@ -4477,7 +4576,10 @@ void VDProjectUI::UpdateCurveList() {
 			VDParameterCurve *pc = fa->GetAlphaParameterCurve();
 			if (pc) {
 				const char *name = fa->GetName();
-				pList->AddItem(VDswprintf(L"Video filter %d: %hs (Opacity curve)", 2, &index, &name).c_str(), (uintptr)index);
+				VDStringW s;
+				s.sprintf(L"Video filter %d: %hs (Opacity curve)", index, name);
+				SendMessageW(combo,CB_ADDSTRING,0,(LPARAM)s.c_str());
+				SendMessageW(combo,CB_SETITEMDATA,comboIndex,index);
 				curvesFound = true;
 
 				if (pc == pcSelected)
@@ -4491,71 +4593,202 @@ void VDProjectUI::UpdateCurveList() {
 			++index;
 		}
 
-		if (!curvesFound)
-			pList->AddItem(L"There are no video filters with parameter curves.", NULL);
-
-		mpUICurveComboBox->SetEnabled(curvesFound);
-
-		if (currentSelect >= 0) {
-			mpUICurveComboBox->SetValue(currentSelect);
-		} else {
-			mpCurveEditor->SetCurve(NULL);
-			mpUICurveComboBox->SetValue(0);
-			currentSelect = 0;
+		if (!curvesFound) {
+			SendMessageW(combo,CB_ADDSTRING,0,(LPARAM)L"There are no video filters with parameter curves.");
+			SendMessageW(combo,CB_SETITEMDATA,0,-1);
 		}
 
-		HandleUIEvent(NULL, mpUICurveComboBox, 100, kEventSelect, currentSelect);
+		EnableWindow(combo,curvesFound);
+
+		if (currentSelect >= 0) {
+			SendMessage(combo,CB_SETCURSEL,currentSelect,0);
+			int id = SendMessage(combo,CB_GETITEMDATA,currentSelect,0);
+			SelectCurve(id);
+		} else {
+			mpCurveEditor->SetCurve(NULL);
+			SendMessage(combo,CB_SETCURSEL,0,0);
+			SelectCurve(0);
+		}
 	}
 }
 
-void VDProjectUI::UpdateCurveEditorPosition() {
-	if (!mpCurveEditor)
-		return;
+FilterInstance* VDProjectUI::FilterForCurve(int id) {
+	if (!filters.isRunning()) {
+		try {
+			StartFilters();
 
-	int selIndex = mpUICurveComboBox->GetValue();
-
-	if (selIndex >= 0)
-		selIndex = vdpoly_cast<IVDUIList *>(mpUICurveComboBox)->GetItemData(selIndex) - 1;
-
-	if (selIndex >= 0) {
-		if (!filters.isRunning()) {
-			try {
-				StartFilters();
-
-				if (!filters.isRunning())
-					return;
-			} catch(const MyError&) {
-				return;
-			}
+			if (!filters.isRunning())
+				return 0;
+		} catch(const MyError&) {
+			return 0;
 		}
+	}
 
-		FilterInstance *selected = NULL;
-
-		for(VDFilterChainDesc::Entries::const_iterator it(g_filterChain.mEntries.begin()), itEnd(g_filterChain.mEntries.end());
-			it != itEnd;
-			++it)
-		{
+	for(VDFilterChainDesc::Entries::const_iterator it(g_filterChain.mEntries.begin()), itEnd(g_filterChain.mEntries.end());
+		it != itEnd;
+		++it)
+	{
+		if (id==0) {
 			FilterInstance *fa = (*it)->mpInstance;
-
-			if (!selIndex--)
-				selected = fa;
+			return fa;
+			break;
 		}
+		id--;
+	}
 
-		if (selected) {
-			sint64 timelineFrame = GetCurrentFrame();
+	return 0;
+}
 
-			if (timelineFrame >= mTimeline.GetLength())
-				--timelineFrame;
+VDPosition VDProjectUI::TimelineToCurve(VDPosition x, FilterInstance* fa) {
+	if (x >= mTimeline.GetLength())	x--;
 
-			sint64 outFrame = mTimeline.TimelineToSourceFrame(timelineFrame);
+	sint64 outFrame = mTimeline.TimelineToSourceFrame(x);
+	if (outFrame < 0) return -1;
+	sint64 symFrame = filters.GetSymbolicFrame(outFrame, fa);
+	return symFrame;
+}
 
-			if (outFrame >= 0) {
-				sint64 symFrame = filters.GetSymbolicFrame(outFrame, selected);
+VDPosition VDProjectUI::CurveToTimeline(double x, FilterInstance* fa) {
+	//! cannot reverse filter transform
+	bool masked;
+	sint64 pos = mTimeline.GetSubset().revLookupFrame(x,masked);
+	return pos;
+}
 
-				if (symFrame >= 0)
-					mpCurveEditor->SetPosition(symFrame);
-			}
+void VDProjectUI::UpdateCurveEditorPosition() {
+	if (!mpCurveEditor)	return;
+	int selIndex = (int)SendDlgItemMessage(mhwndCurveCtl, IDC_CURVE, CB_GETCURSEL, 0, 0);
+	if (selIndex==-1) return;
+	int id = (int)SendDlgItemMessage(mhwndCurveCtl, IDC_CURVE, CB_GETITEMDATA, selIndex, 0);
+	if (id==-1) return;
+	FilterInstance* fa = FilterForCurve(id);
+	if (!fa) return;
+
+	sint64 timelineFrame = GetCurrentFrame();
+	sint64 symFrame = TimelineToCurve(timelineFrame,fa);
+
+	if (symFrame >= 0)
+		mpCurveEditor->SetPosition(symFrame);
+}
+
+void VDProjectUI::SelectCurve(int id) {
+	VDParameterCurve *pc = NULL;
+	FilterInstance* fa = FilterForCurve(id);
+	if (fa) pc = fa->GetAlphaParameterCurve();
+	mpCurveEditor->SetCurve(pc);
+}
+
+void VDProjectUI::CurveDeleteSelected() {
+	if (!mpCurveEditor) return;
+	int pt = mpCurveEditor->GetSelectedPoint();
+	if (pt!=-1) mpCurveEditor->DeletePoint(pt);
+}
+
+void VDProjectUI::CurveSetValue(double v) {
+	if (!mpCurveEditor) return;
+	int pt = mpCurveEditor->GetSelectedPoint();
+	if (pt!=-1) mpCurveEditor->SetValue(pt,v);
+}
+
+void VDProjectUI::CurveMoveToNext(int d) {
+	if (!mpCurveEditor) return;
+	VDParameterCurve* pc = mpCurveEditor->GetCurve();
+	if (!pc) return;
+	int selIndex = (int)SendDlgItemMessage(mhwndCurveCtl, IDC_CURVE, CB_GETCURSEL, 0, 0);
+	if (selIndex==-1) return;
+	int id = (int)SendDlgItemMessage(mhwndCurveCtl, IDC_CURVE, CB_GETITEMDATA, selIndex, 0);
+	if (id==-1) return;
+	FilterInstance* fa = FilterForCurve(id);
+	if (!fa) return;
+
+	VDParameterCurve::PointList& points = pc->Points();
+	int pt = mpCurveEditor->GetSelectedPoint();
+	if (pt!=-1) {
+		if (d<0 && pt==0) return;
+		if (d>0 && pt==points.size()-1) return;
+		pt += d;
+		mpCurveEditor->SetSelectedPoint(pt);
+		double x = points[pt].mX;
+		VDPosition pos1 = CurveToTimeline(x,fa);
+		if (pos1!=-1) MoveToFrame(pos1);
+		return;
+	}
+
+	sint64 timelineFrame = GetCurrentFrame();
+	sint64 symFrame = TimelineToCurve(timelineFrame,fa);
+	double pos = symFrame;
+
+	if(d>0) for(int i=0; i<points.size(); i++){
+		double x = points[i].mX;
+		if (x>pos+1) {
+			mpCurveEditor->SetSelectedPoint(i);
+			VDPosition pos1 = CurveToTimeline(x,fa);
+			if (pos1!=-1) MoveToFrame(pos1);
+			break;
 		}
+	}
+	if(d<0) for(int i=points.size()-1; i>=0; i--){
+		double x = points[i].mX;
+		if (x<pos) {
+			mpCurveEditor->SetSelectedPoint(i);
+			VDPosition pos1 = CurveToTimeline(x,fa);
+			if (pos1!=-1) MoveToFrame(pos1);
+			break;
+		}
+	}
+}
+
+void VDProjectUI::CurveLoadSelected() {
+	int pt = mpCurveEditor->GetSelectedPoint();
+	HWND e = GetDlgItem(mhwndCurveCtl,IDC_CURVE_VALUE);
+	if (pt==-1) {
+		EnableWindow(e,false);
+		EnableWindow(GetDlgItem(mhwndCurveCtl,IDC_CURVE_DELETE),false);
+	} else {
+		EnableWindow(e,true);
+		EnableWindow(GetDlgItem(mhwndCurveCtl,IDC_CURVE_DELETE),true);
+		VDParameterCurve* pc = mpCurveEditor->GetCurve();
+		double y = pc->Points()[pt].mY;
+		char buf[20];
+		sprintf(buf,"%1.3lg",y);
+		SetWindowText(e,buf);
+	}
+}
+
+void VDProjectUI::OnCurveUpdated(IVDUIParameterCurveControl *source, const int& args) {
+	if (args==1) {
+		CurveLoadSelected();
+		return;
+	}
+	
+	if (!inputVideo) {
+		UIRefreshOutputFrame(false);
+		return;
+	}
+
+	try {
+		VDPosition timelinePos = GetCurrentFrame();
+
+		RefilterFrame(timelinePos);
+	} catch(const MyError&) {
+		// do nothing
+	}
+}
+
+void VDProjectUI::OnCurveStatusUpdated(IVDUIParameterCurveControl *source, const IVDUIParameterCurveControl::Status& status) {
+	switch(status) {
+		case IVDUIParameterCurveControl::kStatus_Nothing:
+			SetStatus(L"");
+			break;
+		case IVDUIParameterCurveControl::kStatus_Focused:
+			SetStatus(L"Parameter curve editor: Move mouse to an existing point; Shift+Left to add point; Shift+Right to toggle between line/curve");
+			break;
+		case IVDUIParameterCurveControl::kStatus_PointDrag:
+			SetStatus(L"Parameter curve editor: Dragging point. Release left mouse button to place.");
+			break;
+		case IVDUIParameterCurveControl::kStatus_PointHighlighted:
+			SetStatus(L"Parameter curve editor: Left+Drag to drag point; Ctrl+Left to delete point.");
+			break;
 	}
 }
 
@@ -5313,6 +5546,7 @@ void VDProjectUI::LoadSettings() {
 	}
 	mbMaximize							= key.getBool("Maximize main layout", mbMaximize);
 	mbShowAudio = key.getBool("Show audio", mbShowAudio);
+	mbShowCurve = key.getBool("Show curve", mbShowCurve);
 
 	// these are only saved from the Video Depth dialog.
 	VDRegistryAppKey keyPrefs("Preferences");
@@ -5356,66 +5590,15 @@ void VDProjectUI::SaveSettings() {
 	key.setInt("Output pane size", int(mOutputZoom*100));
 	key.setBool("Maximize main layout", mbMaximize);
 	key.setBool("Show audio", mbShowAudio);
+	key.setBool("Show curve", mbShowCurve);
 }
 
 bool VDProjectUI::HandleUIEvent(IVDUIBase *pBase, IVDUIWindow *pWin, uint32 id, eEventType type, int item) {
-	switch(type) {
-		case IVDUICallback::kEventSelect:
-			if (id == 100) {
-				VDParameterCurve *pc = NULL;
-				if (item >= 0) {
-					int id = (int)vdpoly_cast<IVDUIList *>(pWin)->GetItemData(item);
-
-					for(VDFilterChainDesc::Entries::const_iterator it(g_filterChain.mEntries.begin()), itEnd(g_filterChain.mEntries.end());
-						it != itEnd;
-						++it)
-					{
-						FilterInstance *fa = (*it)->mpInstance;
-
-						if (!--id) {
-							pc = fa->GetAlphaParameterCurve();
-							break;
-						}
-					}
-				}
-
-				mpCurveEditor->SetCurve(pc);
-			}
-			break;
+	if (pBase==vdpoly_cast<IVDUIBase *>(mpUIBase) && type==kEventSelect && id==11) {
+		SetFocus(g_hWnd);
+		return true;
 	}
 	return false;
-}
-
-void VDProjectUI::OnCurveUpdated(IVDUIParameterCurveControl *source, const int& args) {
-	if (!inputVideo) {
-		UIRefreshOutputFrame(false);
-		return;
-	}
-
-	try {
-		VDPosition timelinePos = GetCurrentFrame();
-
-		RefilterFrame(timelinePos);
-	} catch(const MyError&) {
-		// do nothing
-	}
-}
-
-void VDProjectUI::OnCurveStatusUpdated(IVDUIParameterCurveControl *source, const IVDUIParameterCurveControl::Status& status) {
-	switch(status) {
-		case IVDUIParameterCurveControl::kStatus_Nothing:
-			SetStatus(L"");
-			break;
-		case IVDUIParameterCurveControl::kStatus_Focused:
-			SetStatus(L"Parameter curve editor: Move mouse to an existing point; Shift+Left to add point; Shift+Right to toggle between line/curve");
-			break;
-		case IVDUIParameterCurveControl::kStatus_PointDrag:
-			SetStatus(L"Parameter curve editor: Dragging point. Release left mouse button to place.");
-			break;
-		case IVDUIParameterCurveControl::kStatus_PointHighlighted:
-			SetStatus(L"Parameter curve editor: Left+Drag to drag point; Ctrl+Left to delete point.");
-			break;
-	}
 }
 
 void VDProjectUI::OnAudioDisplayUpdateRequired(IVDUIAudioDisplayControl *source, const VDPosition& pos) {

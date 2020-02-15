@@ -109,6 +109,14 @@ public:
 	const wchar_t *edit_token;
 	WNDPROC prevStatusProc;
 	void UpdateAccelMain();
+	void SelectCurve(int id);
+	void CurveMoveToNext(int d);
+	void CurveDeleteSelected();
+	void CurveSetValue(double v);
+	void CurveLoadSelected();
+	FilterInstance* FilterForCurve(int id);
+	VDPosition TimelineToCurve(VDPosition x, FilterInstance* fa);
+	VDPosition CurveToTimeline(double x, FilterInstance* fa);
 
 protected:
 	void OpenPreviousNext(bool next);
@@ -203,12 +211,14 @@ protected:
 	HWND		mhwndOutputDisplay;
 	HWND		mhwndMaxDisplay;
 	ModelessDlgNode	max_dlg_node;
+	ModelessDlgNode	root_dlg_node;
 	IVDVideoDisplay	*mpInputDisplay;
 	IVDVideoDisplay	*mpOutputDisplay;
 
 	HWND		mhwndFilters;
 
 	vdrefptr<IVDUIParameterCurveControl> mpCurveEditor;
+	HWND		mhwndCurveCtl;
 	HWND		mhwndCurveEditor;
 
 	vdrefptr<IVDUIAudioDisplayControl> mpAudioDisplay;
@@ -252,6 +262,7 @@ protected:
 	float		mOutputZoom;
 
 	bool		mbShowAudio;
+	bool		mbShowCurve;
 
 	VDThreadID	mThreadId;
 
@@ -267,10 +278,10 @@ protected:
 	vdrefptr<IVDUIWindow>	mpUISplitSet;
 	vdrefptr<IVDUIWindow>	mpUICurveSet;
 	vdrefptr<IVDUIWindow>	mpUICurveSplitBar;
+	vdrefptr<IVDUIWindow>	mpUICurveCtl;
 	vdrefptr<IVDUIWindow>	mpUICurveEditor;
 	vdrefptr<IVDUIWindow>	mpUIInputFrame;
 	vdrefptr<IVDUIWindow>	mpUIOutputFrame;
-	vdrefptr<IVDUIWindow>	mpUICurveComboBox;
 
 	vdrefptr<IVDUIWindow>	mpUIAudioSplitBar;
 	vdrefptr<IVDUIWindow>	mpUIAudioDisplay;
