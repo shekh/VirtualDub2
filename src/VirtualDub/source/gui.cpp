@@ -186,21 +186,33 @@ bool guiCheckDialogs(LPMSG pMsg) {
 			}
 
 			if (pmdn->edit_thunk) {
-				if (pMsg->message==WM_KEYDOWN) {
-					switch (pMsg->wParam) {
-					case VK_ESCAPE:
-					case VK_CANCEL:
-					case VK_RETURN:
-					case VK_EXECUTE:
-						SetFocus(pmdn->hdlg);
-						return true;
-					}
-				}
 				int x = SendMessage(pMsg->hwnd,WM_GETDLGCODE,0,(LPARAM)pMsg);
 				if ((x & DLGC_WANTCHARS) && (x & DLGC_HASSETSEL)) {
+					if (pMsg->message==WM_KEYDOWN) {
+						switch (pMsg->wParam) {
+						case VK_ESCAPE:
+						case VK_CANCEL:
+						case VK_RETURN:
+						case VK_EXECUTE:
+							SetFocus(pmdn->hdlg);
+							return true;
+						}
+					}
+
 					TranslateMessage(pMsg);
 					DispatchMessage(pMsg);
 					return true;
+				} else {
+					if (pMsg->message==WM_KEYDOWN) {
+						switch (pMsg->wParam) {
+						case VK_ESCAPE:
+						case VK_CANCEL:
+						case VK_RETURN:
+						case VK_EXECUTE:
+							SetFocus(pmdn->hdlg);
+							break;
+						}
+					}
 				}
 			}
 		}
