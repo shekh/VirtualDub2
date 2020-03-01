@@ -388,8 +388,9 @@ void VDParameterCurveControlW32::OnLButtonDown(int x, int y, uint32 modifiers) {
 		}
 
 		InvalidateAtPoint(mSelectedPoint);
+		VDParameterCurve::PointList::iterator	p1 = mpCurve->Points().insert(it, pt);
 		mSelectedPoint = mpCurve->Points().end();
-		SetSelectedPoint(mpCurve->Points().insert(it, pt));
+		SetSelectedPoint(p1);
 		InvalidateAroundPoint(mSelectedPoint);
 	} else if (mDragPart != dobj.mPart || mSelectedPoint != dobj.mPoint) {
 		mDragPart = dobj.mPart;
