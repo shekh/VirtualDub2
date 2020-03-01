@@ -594,11 +594,17 @@ public:
 	uint32 GetFlags() { return kF_Video | kF_PromptForOpts | kF_SupportsOpts; }
 
 	const wchar_t *GetFilenamePattern() {
-		return L"Raw video (*.bin)\0*.bin\0";
+		return L"Raw video (*.yuv,*.rgb,*.bin)\0*.yuv;*.rgb;*.bin\0";
 	}
 
 	bool DetectByFilename(const wchar_t *pszFilename) {
 		size_t l = wcslen(pszFilename);
+
+		if (l>4 && !_wcsicmp(pszFilename + l - 4, L".yuv"))
+			return true;
+
+		if (l>4 && !_wcsicmp(pszFilename + l - 4, L".rgb"))
+			return true;
 
 		if (l>4 && !_wcsicmp(pszFilename + l - 4, L".bin"))
 			return true;

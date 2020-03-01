@@ -1649,7 +1649,7 @@ void VDProjectUI::SaveRawVideoAsk(bool batchMode) {
 	key.setBool("Export raw video: Swap chroma planes", format.mbSwapChromaPlanes);
 	key.setBool("Export raw video: Use bottom-up orientation", format.mbBottomUp);
 
-	const VDStringW filename(VDGetSaveFileName(kFileDialog_RawVideoOut, mhwnd, L"Save raw video", L"All types\0*.bin\0Raw YUV (*.yuv)\0*.yuv\0", NULL));
+	const VDStringW filename(VDGetSaveFileName(kFileDialog_RawVideoOut, mhwnd, L"Save raw video", L"Raw YUV (*.yuv)\0*.yuv\0Raw RGB (*.rgb)\0*.rgb\0Raw (*.bin)\0*.bin\0", NULL));
 	if (!filename.empty()) {
 		if (batchMode) {
 			JobRequestRawVideo req;
