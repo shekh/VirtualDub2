@@ -104,6 +104,7 @@ extern uint32& VDPreferencesGetRenderVideoBufferCount();
 extern bool VDPreferencesGetFilterAccelVisualDebugEnabled();
 extern bool VDPreferencesGetFilterAccelEnabled();
 extern sint32 VDPreferencesGetFilterThreadCount();
+extern bool VDPreferencesAVITestRaw();
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -2501,6 +2502,12 @@ bool MakeOutputFormat::accept_format(int format, int variant)
 	case kPixFormat_RGBA_Planar:
 	case kPixFormat_RGB_Planar16:
 	case kPixFormat_RGBA_Planar16:
+		if (os_format.empty() || os_format=="avi") {
+			if (VDPreferencesAVITestRaw()) {
+				uncommon_raw = true;
+				return true;
+			}
+		}
 		return false;
 	}
 

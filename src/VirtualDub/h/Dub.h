@@ -296,6 +296,7 @@ struct MakeOutputFormat {
 	bool use_vc_format;
 	bool own_vc;
 	VDStringA error;
+	bool uncommon_raw;
 
 	MakeOutputFormat() {
 		os = 0;
@@ -308,6 +309,7 @@ struct MakeOutputFormat {
 		use_os_format = false;
 		use_vc_format = false;
 		compVariant = 0;
+		uncommon_raw = false;
 	}
 	~MakeOutputFormat() {
 		if (own_vc) delete vc;

@@ -815,6 +815,10 @@ void VDUIDialogChooseVideoCompressorW32::SelectCompressor(CodecInfo *pii) {
 		SetControlText(IDC_STATIC_FOURCC, L"");
 		SetControlText(IDC_STATIC_DRIVER, L"");
 
+		if (!pii) {
+			SetControlText(IDC_STATIC_DRIVER, L"Uncompressed");
+		}
+
 		mpCurrent = pii;
 		UpdateEnables();
 		return;
@@ -1029,6 +1033,7 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	VDString s;
 	VDPixmapFormatEx src;
 	bool codec_failed = false;
+	bool uncommon_raw = false;
 
 	if (mCapture) {
 		src = filter_format;
@@ -1042,8 +1047,14 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 		make.out = format;
 		make.combineComp();
 		format = make.out;
+		uncommon_raw = make.uncommon_raw;
 		if (!make.error.empty()) codec_failed = true;
 		if (format==0) s += "as capture";
+		if (!mhCodec) {
+			VDStringW s;
+			if (!make.compDib.empty()) s = printW_fourcc(make.compDib->biCompression);
+			SetControlText(IDC_STATIC_FOURCC, s.c_str());
+		}
 	}
 
 	if (!mCapture){
@@ -1058,6 +1069,12 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 		make.combine();
 		make.combineComp();
 		format = make.out;
+		uncommon_raw = make.uncommon_raw;
+		if (!mhCodec) {
+			VDStringW s;
+			if (!make.compDib.empty()) s = printW_fourcc(make.compDib->biCompression);
+			SetControlText(IDC_STATIC_FOURCC, s.c_str());
+		}
 		src = make.flt;
 		if (!make.error.empty()) codec_failed = true;
 		if (make.mode == DubVideoOptions::M_FASTREPACK) format = 0;
@@ -1073,6 +1090,10 @@ void VDUIDialogChooseVideoCompressorW32::UpdateFormat() {
 	}
 
 	if (format) s += VDPixmapFormatPrintSpec(format);
+	if (!mhCodec) {
+		LBClear(IDC_SIZE_RESTRICTIONS);
+		if (uncommon_raw) LBAddString(IDC_SIZE_RESTRICTIONS, L"This format layout is uncommon.");
+	}
 
 	VDStringW msg;
 	format = VDPixmapFormatCombine(format);

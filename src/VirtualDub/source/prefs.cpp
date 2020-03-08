@@ -71,6 +71,7 @@ namespace {
 		bool			mbUseVideoFccHandler;
 		bool			mbAVIIgnoreIndex;
 		bool			mbAVIRekey;
+		bool			mbAVITestRaw;
 
 		uint32			mAVIAlignmentThreshold;
 		uint32			mRenderOutputBufferSize;
@@ -394,6 +395,7 @@ public:
 		switch(type) {
 		case kEventAttach:
 			mpBase = pBase;
+			SetValue(111, 0 != (mPrefs.mbAVITestRaw));
 			SetValue(100, 0 != (mPrefs.mOldPrefs.fAVIRestrict1Gb));
 			SetValue(101, 0 != (mPrefs.mOldPrefs.fNoCorrectLayer3));
 			SetValue(102, mPrefs.mbAllowDirectYCbCrDecoding);
@@ -417,6 +419,7 @@ public:
 			return true;
 		case kEventDetach:
 		case kEventSync:
+			mPrefs.mbAVITestRaw = 0 != GetValue(111);
 			mPrefs.mOldPrefs.fAVIRestrict1Gb = 0 != GetValue(100);
 			mPrefs.mOldPrefs.fNoCorrectLayer3 = 0 != GetValue(101);
 			mPrefs.mbAllowDirectYCbCrDecoding = 0!=GetValue(102);
@@ -1007,6 +1010,7 @@ void LoadPreferences() {
 	g_prefs2.mbConfirmRenderAbort = key.getBool("Confirm render abort", true);
 	g_prefs2.mbConfirmExit = key.getBool("Confirm exit", false);
 
+	g_prefs2.mbAVITestRaw = key.getBool("AVI: Write nonstandard raw", false);
 	g_prefs2.mbRenderWarnNoAudio = key.getBool("Render: Warn if no audio", false);
 	g_prefs2.mbEnableAVIAlignmentThreshold = key.getBool("AVI: Alignment threshold enable", false);
 	g_prefs2.mbEnableAVIVBRWarning = key.getBool("AVI: VBR warning enabled", true);
@@ -1094,6 +1098,7 @@ void VDSavePreferences(VDPreferences2& prefs) {
 	key.setBool("Confirm render abort", prefs.mbConfirmRenderAbort);
 	key.setBool("Confirm exit", prefs.mbConfirmExit);
 
+	key.setBool("AVI: Write nonstandard raw", prefs.mbAVITestRaw);
 	key.setBool("Render: Warn if no audio", prefs.mbRenderWarnNoAudio);
 	key.setBool("AVI: Alignment threshold enable", prefs.mbEnableAVIAlignmentThreshold);
 	key.setInt("AVI: Alignment threshold", prefs.mAVIAlignmentThreshold);
@@ -1236,6 +1241,10 @@ bool VDPreferencesAVIIgnoreIndex() {
 
 bool VDPreferencesAVIRekey() {
 	return g_prefs2.mbAVIRekey;
+}
+
+bool VDPreferencesAVITestRaw() {
+	return g_prefs2.mbAVITestRaw;
 }
 
 bool VDPreferencesIsPreferInternalAudioDecodersEnabled() {

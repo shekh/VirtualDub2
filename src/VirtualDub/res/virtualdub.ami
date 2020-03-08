@@ -412,6 +412,7 @@ dialog 1014, "" : fill, child {
 	group 0, "AVI options" {
 		set 0: vertical {
 			now valign=top, align=left;
+			checkbox 111, "Enable writing non-standard uncompressed formats";
 			checkbox 100, "Use 1GB instead of 2GB as threshold for OpenDML indexing";
 			checkbox 101, "Disable auto-correction of data rate for MPEG layer III audio streams";
 			checkbox 102, "Directly decode uncompressed YCbCr (YUV) sources";
