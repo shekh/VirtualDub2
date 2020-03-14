@@ -403,8 +403,8 @@ void VDParameterCurveControlW32::OnLButtonDown(int x, int y, uint32 modifiers) {
 			if (modifiers & MK_CONTROL) {
 				InvalidateAroundPoint(mSelectedPoint);
 				InvalidateAtPoint(mSelectedPoint);
-				mSelectedPoint = mpCurve->Points().end();
 				mpCurve->Points().erase(mSelectedPoint);
+				mSelectedPoint = mpCurve->Points().end();
 				SetSelectedPoint(mpCurve->End());
 				mDragPart = kPartNone;
 				mCurveUpdatedEvent.Raise(this, 0);
