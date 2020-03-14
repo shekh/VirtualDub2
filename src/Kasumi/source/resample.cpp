@@ -380,8 +380,8 @@ bool VDPixmapResampler::Init(const vdrect32f& dstrect0, uint32 dw, uint32 dh, in
 				subsw = (int)srcrect.width();
 			}
 			if (yoffset2-floor(yoffset2)==0.5 && yfactor==1.0) {
-				y0 = (int)floor(yoffset);
-				yoffset = 0.5;
+				y02 = (int)floor(yoffset2);
+				yoffset2 = 0.5;
 				subsh = (int)srcrect.height();
 			}
 			const VDPixmapFormatInfo& info = VDPixmapGetInfo(dstformat);
