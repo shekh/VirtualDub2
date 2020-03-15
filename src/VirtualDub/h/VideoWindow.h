@@ -49,7 +49,8 @@ IVDVideoWindow *VDGetIVideoWindow(HWND hwnd);
 
 enum {
 	VWN_RESIZED		= 16,				// WM_NOTIFY: window rect was changed
-	VWN_REQUPDATE	= 17
+	VWN_REQUPDATE	= 17,
+	VWN_REPOSITION	= 18
 };
 
 #endif

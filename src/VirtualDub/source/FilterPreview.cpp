@@ -50,6 +50,8 @@ extern void SaveImage(HWND, VDPosition frame, VDPixmap* px, bool skip_dialog);
 
 int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx format);
 
+float g_previewZoom = 1.0;
+
 namespace {
 	static const UINT IDC_FILTDLG_POSITION = 500;
 
@@ -619,6 +621,13 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		return TRUE;
 
 	case WM_DESTROY:
+		if (mpVideoWindow) {
+			if (mpVideoWindow->GetAutoSize())
+				g_previewZoom = 0;
+			else
+				g_previewZoom = mpVideoWindow->GetZoom();
+		}
+
 		if (mpDisplay) {
 			mpDisplay->Destroy();
 			mpDisplay = NULL;
@@ -698,6 +707,10 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		}
 		break;
 
+	case WM_EXITSIZEMOVE:
+		mpVideoWindow->SetAutoSize(false);
+		return TRUE;
+
 	case WM_SIZE:
 		OnResize();
 		return TRUE;
@@ -768,6 +781,18 @@ BOOL FilterPreview::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 				OnVideoRedraw();
 			} else if (hdr.hwndFrom == mhwndVideoWindow) {
 				switch(hdr.code) {
+					case VWN_REPOSITION:
+						{
+							RECT r;
+							GetWindowRect(mhdlg,&r);
+							RECT r1 = {0,0,0,0};
+							AdjustWindowRectEx(&r1, GetWindowLong(mhdlg, GWL_STYLE), FALSE, GetWindowLong(mhdlg, GWL_EXSTYLE));
+							int w = mWorkArea.right-r.left - (r1.right-r1.left);
+							int h = mWorkArea.bottom-r.top - (r1.bottom-r1.top);
+							mpVideoWindow->SetZoom(mpVideoWindow->GetMaxZoomForArea(w, h), false);
+						}
+						break;
+
 					case VWN_RESIZED:
 						{
 							RECT r;
@@ -926,6 +951,11 @@ void FilterPreview::OnInit() {
 	mpVideoWindow->SetMouseTransparent(true);
 	mpVideoWindow->SetBorder(mBorder);
 	mpVideoWindow->InitSourcePAR();
+	if (g_previewZoom==0) {
+		mpVideoWindow->SetAutoSize(true);
+	} else {
+		mpVideoWindow->SetZoom(g_previewZoom,false);
+	}
 
 	if (mBorder) {
 		mbShowOverlay = true;
@@ -1140,14 +1170,6 @@ VDPosition FilterPreview::InitPosition() {
 
 void FilterPreview::OnVideoResize(bool bInitial) {
 	if (bInitial) {
-		RECT rParent;
-		GetWindowRect(mhwndParent, &rParent);
-
-		int init_x = rParent.right + 16;
-		int init_y = mWorkArea.top;
-
-		SetWindowPos(mhdlg, 0, init_x, init_y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
-
 		RECT rMain;
 		GetWindowRect(g_projectui->GetHwnd(), &rMain);
 		POINT pp = {0,0};
@@ -1169,6 +1191,11 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 		mWorkArea.right = x1;
 		mWorkArea.bottom = y1;
 
+		RECT rParent;
+		GetWindowRect(mhwndParent, &rParent);
+		int init_x = rParent.right + 16;
+		int init_y = mWorkArea.top;
+		SetWindowPos(mhdlg, 0, init_x, init_y, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
 		SetWindowPos(mhwndVideoWindow, NULL, 0, 0, 0, 0, SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);
 
 		WINDOWPLACEMENT wpos = {sizeof(wpos)};
@@ -1246,6 +1273,8 @@ void FilterPreview::OnVideoResize(bool bInitial) {
 	bool fResize = oldw != w || oldh != h;
 	if (fResize)
 		mpVideoWindow->Resize();
+	if (mpVideoWindow->GetAutoSize())
+		SendMessage(mhwndVideoWindow,WM_COMMAND,ID_DISPLAY_ZOOM_AUTOSIZE,0);
 
 	OnVideoRedraw();
 }
@@ -1507,6 +1536,10 @@ bool FilterPreview::OnCommand(UINT cmd) {
 		EnableWindow(mhwndParent,false);
 		SendMessage(mhwndFilterList,WM_COMMAND,ID_VIDEO_FILTERS,0);
 		EnableWindow(mhwndParent,true);
+		return true;
+
+	case ID_PANELAYOUT_AUTOSIZE:
+		SendMessage(mhwndVideoWindow,WM_COMMAND,ID_DISPLAY_ZOOM_AUTOSIZE,0);
 		return true;
 
 	case ID_OPTIONS_SHOWPROFILER:
@@ -2241,6 +2274,10 @@ BOOL PixmapView::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 		if (destroyCB) destroyCB(this,destroyCBData);
 		return TRUE;
 
+	case WM_EXITSIZEMOVE:
+		mpVideoWindow->SetAutoSize(false);
+		return TRUE;
+
 	case WM_SIZE:
 		OnResize();
 		OnVideoRedraw();
@@ -2258,6 +2295,20 @@ BOOL PixmapView::DlgProc(UINT message, WPARAM wParam, LPARAM lParam) {
 			const NMHDR& hdr = *(const NMHDR *)lParam;
 			if (hdr.hwndFrom == mhwndVideoWindow) {
 				switch(hdr.code) {
+					case VWN_REPOSITION:
+						{
+							RECT r;
+							GetWindowRect(mhdlg,&r);
+							RECT r1 = {0,0,0,0};
+							AdjustWindowRectEx(&r1, GetWindowLong(mhdlg, GWL_STYLE), FALSE, GetWindowLong(mhdlg, GWL_EXSTYLE));
+							MONITORINFO info = {sizeof(info)};
+							GetMonitorInfo(MonitorFromWindow(mhdlg,MONITOR_DEFAULTTONEAREST), &info);
+							int w = info.rcWork.right-r.left - (r1.right-r1.left);
+							int h = info.rcWork.bottom-r.top - (r1.bottom-r1.top);
+							mpVideoWindow->SetZoom(mpVideoWindow->GetMaxZoomForArea(w, h), false);
+						}
+						break;
+
 					case VWN_RESIZED:
 						{
 							RECT r;
@@ -2368,6 +2419,10 @@ bool PixmapView::OnCommand(UINT cmd) {
 
 	case ID_FILE_SAVEIMAGE2:
 		SaveImageAsk(true);
+		return true;
+
+	case ID_PANELAYOUT_AUTOSIZE:
+		SendMessage(mhwndVideoWindow,WM_COMMAND,ID_DISPLAY_ZOOM_AUTOSIZE,0);
 		return true;
 
 	case ID_OPTIONS_SHOWPROFILER:

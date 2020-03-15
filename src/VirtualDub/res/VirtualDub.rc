@@ -10,8 +10,7 @@
 #include "winresrc.h"
 #ifndef IDC_STATIC
 #define IDC_STATIC (-1)
-#endif
-
+#endif
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -563,6 +562,7 @@ BEGIN
         MENUITEM "200%",                        ID_DISPLAY_ZOOM_200
         MENUITEM "300%",                        ID_DISPLAY_ZOOM_300
         MENUITEM "400%",                        ID_DISPLAY_ZOOM_400
+        MENUITEM "Auto size",                   ID_DISPLAY_ZOOM_AUTOSIZE
         MENUITEM "Reset to exact size",         ID_DISPLAY_ZOOM_EXACT
         MENUITEM "Aspect Ratio",                ID_DISPLAY_ASPECTRATIO, INACTIVE, MENUBARBREAK
         MENUITEM SEPARATOR
@@ -4294,8 +4294,7 @@ END
 //
 #include "version.rc"
 IDR_RESOURCES      STUFF   DISCARDABLE     "virtualdub.vdres"
-
-
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

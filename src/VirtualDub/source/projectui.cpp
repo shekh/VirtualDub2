@@ -906,6 +906,7 @@ void VDProjectUI::UpdateAccelPreview() {
 		ID_FILE_SAVEPROJECT,
 		ID_VIDEO_FILTERS,
 		ID_OPTIONS_SHOWPROFILER,
+		ID_PANELAYOUT_AUTOSIZE,
 
 		ID_VIDEO_SEEK_NEXTSCENE,
 		ID_VIDEO_SEEK_PREVSCENE,
@@ -3415,6 +3416,12 @@ LRESULT VDProjectUI::MainWndProc( UINT msg, WPARAM wParam, LPARAM lParam) {
 			case 1:
 			case 2:
 				switch(nmh->code) {
+				case VWN_REPOSITION:
+					mbAutoSizeInput = VDGetIVideoWindow(mhwndInputFrame)->GetAutoSize();
+					mbAutoSizeOutput = VDGetIVideoWindow(mhwndOutputFrame)->GetAutoSize();
+					RepositionPanes(true);
+					break;
+
 				case VWN_RESIZED:
 					if (nmh->idFrom == 1) {
 						GetClientRect(nmh->hwndFrom, &mrInputFrame);
@@ -3609,6 +3616,12 @@ LRESULT VDProjectUI::DubWndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 			case 1:
 			case 2:
 				switch(nmh->code) {
+				case VWN_REPOSITION:
+					mbAutoSizeInput = VDGetIVideoWindow(mhwndInputFrame)->GetAutoSize();
+					mbAutoSizeOutput = VDGetIVideoWindow(mhwndOutputFrame)->GetAutoSize();
+					RepositionPanes(true);
+					break;
+
 				case VWN_RESIZED:
 					if (nmh->idFrom == 1) {
 						GetClientRect(nmh->hwndFrom, &mrInputFrame);

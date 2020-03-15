@@ -970,6 +970,16 @@ void VDVideoWindow::OnCommand(int cmd) {
 	case ID_DISPLAY_ZOOM_200:		mbAutoSize = false; SetZoom(2.0); break;
 	case ID_DISPLAY_ZOOM_300:		mbAutoSize = false; SetZoom(3.0); break;
 	case ID_DISPLAY_ZOOM_400:		mbAutoSize = false; SetZoom(4.0); break;
+	case ID_DISPLAY_ZOOM_AUTOSIZE:
+		mbAutoSize = true;
+		if (!mbFullscreen){
+			NMHDR hdr;
+			hdr.hwndFrom = mhwnd;
+			hdr.idFrom = GetWindowLong(mhwnd, GWL_ID);
+			hdr.code = VWN_REPOSITION;
+			SendMessage(GetParent(mhwnd), WM_NOTIFY, (WPARAM)hdr.idFrom, (LPARAM)&hdr);
+		}
+		break;
 	case ID_DISPLAY_ZOOM_EXACT:
 		mbAutoSize = false;
 		mZoom = 1.0;
@@ -1035,18 +1045,35 @@ void VDVideoWindow::OnCommand(int cmd) {
 void VDVideoWindow::OnContextMenu(int x, int y) {
 	HMENU hmenu = GetSubMenu(mhmenu, 0);
 
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_6, fabs(mZoom - 0.0625) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_12, fabs(mZoom - 0.125) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_25, fabs(mZoom - 0.25) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_33, fabs(mZoom - 1.0/3.0) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_50, fabs(mZoom - 0.5) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_66, fabs(mZoom - 2.0/3.0) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_75, fabs(mZoom - 3.0/4.0) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_100, fabs(mZoom - 1.0) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_150, fabs(mZoom - 1.5) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_200, fabs(mZoom - 2.0) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_300, fabs(mZoom - 3.0) < 1e-5);
-	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_400, fabs(mZoom - 4.0) < 1e-5);
+	if (mbAutoSize) {
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_AUTOSIZE, true);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_6, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_12, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_25, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_33, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_50, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_66, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_75, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_100, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_150, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_200, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_300, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_400, false);
+	} else {
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_AUTOSIZE, false);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_6, fabs(mZoom - 0.0625) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_12, fabs(mZoom - 0.125) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_25, fabs(mZoom - 0.25) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_33, fabs(mZoom - 1.0/3.0) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_50, fabs(mZoom - 0.5) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_66, fabs(mZoom - 2.0/3.0) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_75, fabs(mZoom - 3.0/4.0) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_100, fabs(mZoom - 1.0) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_150, fabs(mZoom - 1.5) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_200, fabs(mZoom - 2.0) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_300, fabs(mZoom - 3.0) < 1e-5);
+		VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_ZOOM_400, fabs(mZoom - 4.0) < 1e-5);
+	}
 
 	VDCheckMenuItemByCommandW32(hmenu, ID_DISPLAY_AR_PIXEL_SOURCE, mbUseSourcePAR);
 
