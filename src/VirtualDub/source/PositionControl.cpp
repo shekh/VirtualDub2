@@ -1252,6 +1252,7 @@ void VDPositionControlW32::UpdateString(VDPosition pos) {
 void VDPositionControlW32::SetTimeFormat(int format) {
 	VDPreferencesSetTimeFormat(format);
 	UpdateString();
+	Notify(PCN_FORMAT, VDPositionControlEventData::kEventNone);
 }
 
 void VDPositionControlW32::SetMessage(const wchar_t* s) {

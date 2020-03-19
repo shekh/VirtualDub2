@@ -407,7 +407,7 @@ void VDSetDialogDefaultIcons(HWND hdlg) {
 		SendMessage(hdlg, WM_SETICON, ICON_SMALL, (LPARAM)hSmallIcon);
 }
 
-void guiSetStatus(char *format, int nPart, ...) {
+void guiSetStatus(const char *format, int nPart, ...) {
 	char buf[1024];
 	va_list val;
 
@@ -423,6 +423,10 @@ void guiSetStatus(char *format, int nPart, ...) {
 	}
 
 	SendMessage(GetDlgItem(g_hWnd, IDC_STATUS_WINDOW), SB_SETTEXT, nPart, (LPARAM)buf);
+}
+
+void guiSetStatusW(const wchar_t *text, int nPart) {
+	SendMessageW(GetDlgItem(g_hWnd, IDC_STATUS_WINDOW), SB_SETTEXTW, nPart, (LPARAM)text);
 }
 
 void guiSetTitle(HWND hWnd, UINT uID, ...) {

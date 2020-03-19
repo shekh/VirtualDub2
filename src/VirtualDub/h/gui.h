@@ -68,7 +68,8 @@ void VDUISetListViewColumnsW32(HWND hwnd, const float *relwidths, int count);
 
 void VDSetDialogDefaultIcons(HWND hdlg);
 
-void guiSetStatus(char *format, int nPart, ...);
+void guiSetStatus(const char *format, int nPart, ...);
+void guiSetStatusW(const wchar_t *text, int nPart);
 void guiSetTitle(HWND hWnd, UINT uID, ...);
 void guiSetTitleW(HWND hWnd, UINT uID, ...);
 void guiMenuHelp(HWND hwnd, WPARAM wParam, WPARAM part, const UINT *iTranslator);

@@ -177,6 +177,8 @@ int VDRenderSetVideoSourceInputFormat(IVDVideoSource *vsrc, VDPixmapFormatEx for
 void VDUIDisplayDialogConfigureExternalEncoders(VDGUIHandle h);
 void VDUIShowDialogPlugins(VDGUIHandle h);
 
+VDStringW GetTimeSpanString(VDPosition time, VDPosition total);
+
 ///////////////////////////////////////////////////////////////////////////
 #define MENU_TO_HELP(x) ID_##x, IDS_##x
 
@@ -2693,6 +2695,7 @@ bool VDProjectUI::MenuHit(UINT id) {
 					ShowWindow(mhwndPosition, mbPositionControlVisible ? SW_SHOWNA : SW_HIDE);
 					OnSize();
 					mpPosition->SetPosition(GetCurrentFrame());
+					UINotifySelection();
 				}
 			}
 			break;
@@ -3891,6 +3894,9 @@ void VDProjectUI::OnPositionNotify(int code) {
 			}
 		}
 		break;
+	case PCN_FORMAT:
+		UINotifySelection();
+		break;
 	}
 }
 
@@ -5021,12 +5027,27 @@ void VDProjectUI::UISelectionUpdated(bool notifyUser) {
 }
 
 void VDProjectUI::UINotifySelection() {
+	if (!inputAVI) {
+		guiSetStatusW(0, 255);
+		return;
+	}
+
 	VDPosition start(GetSelectionStartFrame());
 	VDPosition end(GetSelectionEndFrame());
-	if (start <= end)
-		guiSetStatus("Selecting frames %u-%u (%u frames)", 255, (unsigned)start, (unsigned)end, (unsigned)(end - start));
-	else
-		guiSetStatus("", 255);
+	if (start < end) {
+		VDPosition time = mVideoTimelineFrameRate.scale64ir((end - start) * 1000);
+		VDPosition total = mVideoTimelineFrameRate.scale64ir(mTimeline.GetSubset().getTotalFrames() * 1000);
+		VDStringW t = GetTimeSpanString(time,total);
+
+		VDStringW s;
+		s.append_sprintf(L"Selecting frames %u-%u (%u frames, %s)", (unsigned)start, (unsigned)end, (unsigned)(end - start), t.c_str());
+		guiSetStatusW(s.c_str(), 255);
+	} else if (start==end) {
+		VDStringW s;
+		s.append_sprintf(L"Selecting frames %u-%u (0 frames)", (unsigned)start, (unsigned)end);
+		guiSetStatusW(s.c_str(), 255);
+	} else
+		guiSetStatusW(0, 255);
 }
 
 void VDProjectUI::UIShuttleModeUpdated() {
@@ -5340,6 +5361,37 @@ VDStringW GetTimeString(VDPosition time, VDPosition total, bool zero_fill, unsig
 		unsigned mm = (unsigned)((total / 60000) % 60);
 		unsigned ss = (unsigned)((total / 1000) % 60);
 		_snwprintf(buf, buflen, zero_fill ? L"%0*u:%02u:%02u.%03u / %0*u:%02u:%02u" : L"%*u:%02u:%02u.%03u / %*u:%02u:%02u", width, h, m, s, t, width, hh, mm, ss);
+	}
+
+	return VDStringW(buf);
+}
+
+VDStringW GetTimeSpanString(VDPosition time, VDPosition total) {
+	wchar_t buf[1024];
+	int buflen = 1024;
+
+	int format = VDPreferencesGetTimeFormat();
+
+	wcscpy(buf,L"?");
+
+	if (format==pref_time_r100) {
+		_snwprintf(buf, buflen, L"%3.2f%%", double(time)/total*100);
+	}
+	if (format==pref_time_ms || format==pref_time_ms_r) {
+		_snwprintf(buf, buflen, L"%I64u ms", time);
+	}
+	if (format==pref_time_s || format==pref_time_s_r) {
+		_snwprintf(buf, buflen, L"%0.3g s", double(time)/1000);
+	}
+	if (format==pref_time_m || format==pref_time_m_r) {
+		_snwprintf(buf, buflen, L"%0.2g min", double(time)/60000);
+	}
+	if (format==pref_time_hmst || format==pref_time_hmst_r) {
+		unsigned h = (unsigned)(time / 3600000);
+		unsigned m = (unsigned)((time / 60000) % 60);
+		unsigned s = (unsigned)((time / 1000) % 60);
+		unsigned t = time % 1000;
+		_snwprintf(buf, buflen, L"%u:%02u:%02u.%03u", h, m, s, t);
 	}
 
 	return VDStringW(buf);

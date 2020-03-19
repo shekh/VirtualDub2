@@ -102,6 +102,7 @@ IVDPositionControl *VDGetIPositionControl(VDGUIHandle h);
 #define PCN_PAGERIGHT			(NM_FIRST+5)
 #define PCN_BEGINTRACK			(NM_FIRST+6)
 #define PCN_ENDTRACK			(NM_FIRST+7)
+#define PCN_FORMAT				(NM_FIRST+8)
 
 #define PCN_STOP				(0)
 #define PCN_PLAY				(1)
