@@ -49,7 +49,9 @@ namespace {
 		L"Pin Light",
 		L"Hard Mix",
 		L"Difference",
-		L"Exclusion"
+		L"Exclusion",
+		L"Subtract",
+		L"Divide
 	};
 }
 
@@ -73,6 +75,8 @@ struct VDVFBlendLayersConfig {
 		kMode_HardMix,
 		kMode_Difference,
 		kMode_Exclusion,
+		kMode_Subtract,
+		kMode_Divide,
 		kModeCount
 	};
 
@@ -396,6 +400,17 @@ void VDVFBlendLayers::Run() {
 		case VDVFBlendLayersConfig::kMode_Exclusion:
 			VDDSPProcessPlane3(dstp, dstpitch, srcp1, src1pitch, srcp2, src2pitch, w16, h, VDDSPBlend8_Exclusion);
 			break;
+
+		case VDVFBlendLayersConfig::kMode_Subtract:
+			if (sse2)
+				VDDSPProcessPlane3(dstp, dstpitch, srcp1, src1pitch, srcp2, src2pitch, w16, h, VDDSPBlend8_Subtract_SSE2);
+			else
+				VDDSPProcessPlane3(dstp, dstpitch, srcp1, src1pitch, srcp2, src2pitch, w16, h, VDDSPBlend8_Subtract);
+			break;
+
+		case VDVFBlendLayersConfig::kMode_Divide:
+			VDDSPProcessPlane3(dstp, dstpitch, srcp1, src1pitch, srcp2, src2pitch, w16, h, VDDSPBlend8_Divide);
+			break;
 	}
 
 	if (factor8 != 255)
@@ -496,6 +511,16 @@ void VDVFBlendLayers::StartAccel(IVDXAContext *vdxa) {
 		case VDVFBlendLayersConfig::kMode_Exclusion:
 			bytecode = kVDVFBlendLayersFP_Exclusion;
 			bclen = sizeof kVDVFBlendLayersFP_Exclusion;
+			break;
+
+		case VDVFBlendLayersConfig::kMode_Subtract:
+			bytecode = kVDVFBlendLayersFP_Subtract;
+			bclen = sizeof kVDVFBlendLayersFP_Subtract;
+			break;
+
+		case VDVFBlendLayersConfig::kMode_Divide:
+			bytecode = kVDVFBlendLayersFP_Divide;
+			bclen = sizeof kVDVFBlendLayersFP_Divide;
 			break;
 	}
 
